@@ -189,8 +189,8 @@ public class IOFutureTest
         }, null);
 
         long start=System.currentTimeMillis();
-        assertFalse(future.block(10,TimeUnit.MILLISECONDS));
-        assertThat(System.currentTimeMillis()-start,greaterThan(9L));
+        assertFalse(future.block(100,TimeUnit.MILLISECONDS));
+        assertThat(System.currentTimeMillis()-start,greaterThan(10L));
 
         assertFalse(ready.get());
         assertNull(fail.get());
@@ -203,13 +203,13 @@ public class IOFutureTest
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){e.printStackTrace();}
-                f0.ready();
+                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
+                f0.complete();
             }
         }.start();
 
         assertTrue(future.block(1000,TimeUnit.MILLISECONDS));
-        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(49L));
+        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(10L));
         Assert.assertThat(System.currentTimeMillis()-start,lessThan(1000L));
 
         assertTrue(future.isDone());
@@ -230,13 +230,13 @@ public class IOFutureTest
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){e.printStackTrace();}
-                f1.ready();
+                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
+                f1.complete();
             }
         }.start();
 
         future.block();
-        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(49L));
+        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(10L));
 
         assertTrue(future.isDone());
         assertTrue(future.isComplete());
@@ -273,8 +273,8 @@ public class IOFutureTest
         }, null);
 
         long start=System.currentTimeMillis();
-        assertFalse(future.block(10,TimeUnit.MILLISECONDS));
-        assertThat(System.currentTimeMillis()-start,greaterThan(9L));
+        assertFalse(future.block(100,TimeUnit.MILLISECONDS));
+        assertThat(System.currentTimeMillis()-start,greaterThan(10L));
 
         assertFalse(ready.get());
         assertNull(fail.get());
@@ -286,7 +286,7 @@ public class IOFutureTest
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){e.printStackTrace();}
+                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
                 f0.fail(ex);
             }
         }.start();
@@ -300,7 +300,7 @@ public class IOFutureTest
         {
             Assert.assertEquals(ex,e.getCause());
         }
-        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(49L));
+        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(10L));
         Assert.assertThat(System.currentTimeMillis()-start,lessThan(1000L));
 
         assertTrue(future.isDone());
@@ -329,7 +329,7 @@ public class IOFutureTest
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){e.printStackTrace();}
+                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
                 f1.fail(ex);
             }
         }.start();
@@ -343,7 +343,7 @@ public class IOFutureTest
         {
             Assert.assertEquals(ex,e.getCause());
         }
-        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(49L));
+        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(10L));
 
         assertTrue(future.isDone());
         try

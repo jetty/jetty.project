@@ -14,17 +14,17 @@ import org.eclipse.jetty.util.Callback;
 /** Dispatched IOFuture.
  * <p>An implementation of IOFuture that can be extended to implement the
  * {@link #dispatch(Runnable)} method so that callbacks can be dispatched.
- * By default, the callbacks are called by the thread that called {@link #ready()} or
+ * By default, the callbacks are called by the thread that called {@link #complete()} or
  * {@link #fail(Throwable)}
  */
 public class DispatchedIOFuture implements IOFuture
 {
     private final Lock _lock;
     private final Condition _block;
+    private boolean _done;
     private boolean _complete;
-    private boolean _ready;
     private Throwable _cause;
-    private Callback _callback;
+    private Callback<?> _callback;
     private Object _context;
 
     public DispatchedIOFuture()
@@ -39,8 +39,8 @@ public class DispatchedIOFuture implements IOFuture
 
     public DispatchedIOFuture(boolean ready,Lock lock)
     {
-        _ready=ready;
         _complete=ready;
+        _done=ready;
         _lock = lock;
         _block = _lock.newCondition();
     }
@@ -50,11 +50,11 @@ public class DispatchedIOFuture implements IOFuture
         _lock.lock();
         try
         {
-            if (_complete)
+            if (_done)
                 throw new IllegalStateException("complete",cause);
 
             _cause=cause;
-            _complete=true;
+            _done=true;
 
             if (_callback!=null)
                 dispatchFailed();
@@ -66,15 +66,15 @@ public class DispatchedIOFuture implements IOFuture
         }
     }
 
-    public void ready()
+    public void complete()
     {
         _lock.lock();
         try
         {
-            if (_complete)
+            if (_done)
                 throw new IllegalStateException();
-            _ready=true;
             _complete=true;
+            _done=true;
 
             if (_callback!=null)
                 dispatchCompleted();
@@ -91,10 +91,10 @@ public class DispatchedIOFuture implements IOFuture
         _lock.lock();
         try
         {
-            if (_complete)
+            if (_done)
                 throw new IllegalStateException();
-            _ready=false;
-            _complete=true;
+            _complete=false;
+            _done=true;
             _block.signal();
         }
         finally
@@ -109,7 +109,7 @@ public class DispatchedIOFuture implements IOFuture
         _lock.lock();
         try
         {
-            return _complete;
+            return _done;
         }
         finally
         {
@@ -123,9 +123,9 @@ public class DispatchedIOFuture implements IOFuture
         _lock.lock();
         try
         {
-            if (_complete)
+            if (_done)
             {
-                if (_ready)
+                if (_complete)
                     return true;
                 throw new ExecutionException(_cause);
             }
@@ -150,7 +150,7 @@ public class DispatchedIOFuture implements IOFuture
         _lock.lock();
         try
         {
-            while (!_complete)
+            while (!_done)
                 _block.await();
             isComplete();
         }
@@ -167,7 +167,7 @@ public class DispatchedIOFuture implements IOFuture
         _lock.lock();
         try
         {
-            if (!_complete)
+            if (!_done)
                 _block.await(timeout,units);
             return isComplete();
         }
@@ -188,9 +188,9 @@ public class DispatchedIOFuture implements IOFuture
             _callback=callback;
             _context=context;
 
-            if (_complete)
+            if (_done)
             {
-                if (_ready)
+                if (_complete)
                     dispatchCompleted();
                 else
                     dispatchFailed();
@@ -210,9 +210,7 @@ public class DispatchedIOFuture implements IOFuture
     private void dispatchCompleted()
     {
         final Callback callback=_callback;
-        _callback=null;
         final Object context=_context;
-        _context=null;
         dispatch(new Runnable()
         {
             @Override
@@ -226,11 +224,8 @@ public class DispatchedIOFuture implements IOFuture
     private void dispatchFailed()
     {
         final Callback callback=_callback;
-        _callback=null;
         final Throwable cause=_cause;
-        _cause=null;
         final Object context=_context;
-        _context=null;
         dispatch(new Runnable()
         {
             @Override
@@ -246,7 +241,7 @@ public class DispatchedIOFuture implements IOFuture
     {
         return String.format("DIOF@%x{%s,%s}",
                 hashCode(),
-                _complete?(_ready?"R":_cause):"-",
+                _done?(_complete?"R":_cause):"-",
                 _callback==null?"-":_callback);
     }
 

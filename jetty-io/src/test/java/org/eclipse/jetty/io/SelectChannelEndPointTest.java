@@ -171,7 +171,6 @@ public class SelectChannelEndPointTest
                 // Timeout does not close, so echo exception then shutdown
                 try
                 {
-                    System.err.println(e);
                     _endp.write(BufferUtil.toBuffer("EE: "+BufferUtil.toString(_in))).block();
                     _endp.shutdownOutput();
                 }

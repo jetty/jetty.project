@@ -440,7 +440,7 @@ public class ConnectHandler extends HandlerWrapper
         protected void endPointOpened(SelectChannelEndPoint endpoint)
         {
             ProxyToServerConnection proxyToServer = (ProxyToServerConnection)endpoint.getSelectionKey().attachment();
-            proxyToServer.ready();
+            proxyToServer.complete();
         }
 
         @Override

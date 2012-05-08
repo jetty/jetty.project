@@ -113,7 +113,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
                 }
             }
             // we are complete and ready
-            _writeFuture.ready();
+            _writeFuture.complete();
         }
         catch(final IOException e)
         {

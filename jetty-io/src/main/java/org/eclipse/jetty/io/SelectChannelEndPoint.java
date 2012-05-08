@@ -128,7 +128,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             _interestOps=0;
 
             if (can_read && !_readFuture.isDone())
-                _readFuture.ready();
+                _readFuture.complete();
 
             if (can_write && _writeBuffers!=null)
                 completeWrite();
@@ -290,7 +290,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 }
             }
             // we are complete and ready
-            _writeFuture.ready();
+            _writeFuture.complete();
         }
         catch(final IOException e)
         {

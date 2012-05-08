@@ -530,7 +530,7 @@ public class SslConnection extends AbstractAsyncConnection
 
         // If any bytes were produced and we have an app read waiting, make it ready.
         if (result.bytesProduced()>0 && !_appReadFuture.isDone())
-            _appReadFuture.ready();
+            _appReadFuture.complete();
 
         return result.bytesConsumed()>0 || result.bytesProduced()>0;
     }
@@ -805,7 +805,7 @@ public class SslConnection extends AbstractAsyncConnection
                     if (b.hasRemaining())
                         return;
                 }
-                _appWriteFuture.ready();
+                _appWriteFuture.complete();
             }
             catch (IOException e)
             {
