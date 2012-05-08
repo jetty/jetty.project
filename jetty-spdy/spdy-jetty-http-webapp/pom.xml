@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.eclipse.jetty.spdy</groupId>
+        <artifactId>spdy-parent</artifactId>
+        <version>9.0.0-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>spdy-jetty-http-webapp</artifactId>
+    <packaging>war</packaging>
+    <name>Jetty :: SPDY :: Jetty HTTP Web Application</name>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>config</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+<!--
+            <plugin>
+                <groupId>org.mortbay.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>${project.version}</version>
+                <configuration>
+                    <stopPort>8888</stopPort>
+                    <stopKey>quit</stopKey>
+                    <jvmArgs>
+                        -Dlog4j.configuration=file://${basedir}/src/main/resources/log4j.properties
+                        -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${project.version}/npn-boot-${project.version}.jar
+                    </jvmArgs>
+                    <jettyXml>${basedir}/src/main/config/etc/jetty-spdy.xml</jettyXml>
+                    <contextPath>/</contextPath>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.jetty.spdy</groupId>
+                        <artifactId>spdy-jetty-http</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                        <version>${slf4j-version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+-->
+        </plugins>
+    </build>
+</project>
