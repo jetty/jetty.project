@@ -447,7 +447,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 while (changes-->0 && (change=_changes.poll())!=null)
                 {
                     Channel ch=null;
-                    SelectionKey key=null;
 
                     try
                     {
@@ -468,13 +467,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
                             if ((channel instanceof SocketChannel) && ((SocketChannel)channel).isConnected())
                             {
-                                key = channel.register(selector,SelectionKey.OP_READ,att);
+                                SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
                                 SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
                                 key.attach(endpoint);
                             }
                             else if (channel.isOpen())
                             {
-                                key = channel.register(selector,SelectionKey.OP_CONNECT,att);
+                                channel.register(selector,SelectionKey.OP_CONNECT,att);
                             }
                         }
                         else if (change instanceof SocketChannel)
@@ -482,7 +481,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             // Newly registered channel
                             final SocketChannel channel=(SocketChannel)change;
                             ch=channel;
-                            key = channel.register(selector,SelectionKey.OP_READ,null);
+                            SelectionKey key = channel.register(selector,SelectionKey.OP_READ,null);
                             SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
                         }
@@ -555,7 +554,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     if (wait>0)
                     {
                         long before=now;
-                        selected=selector.select(wait);
+                        selector.select(wait);
                         now = System.currentTimeMillis();
                         _timeout.setNow(now);
 

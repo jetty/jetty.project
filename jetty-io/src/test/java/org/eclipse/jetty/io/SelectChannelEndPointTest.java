@@ -507,7 +507,7 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.register(server);
-        int writes = 100000;
+        int writes = 1000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);

@@ -269,27 +269,29 @@ public class HttpGeneratorServerTest
                         if (chunks-->1)
                             content.limit(content.position()+content.remaining()/2);
 
-                        // System.err.printf("content %d %s%n",chunks,BufferUtil.toDetailString(content));
+                        if (chunks<0)
+                            throw new IllegalStateException();
+                        System.err.printf("content %d %s%n",chunks,BufferUtil.toDetailString(content));
                     }
                 }
 
                 // Generate
                 Action action=BufferUtil.hasContent(content)?null:Action.COMPLETE;
 
-                /* System.err.printf("generate(%s,%s,%s,%s,%s)@%s%n",
+                System.err.printf("generate(%s,%s,%s,%s,%s)@%s%n",
                         BufferUtil.toSummaryString(header),
                         BufferUtil.toSummaryString(chunk),
                         BufferUtil.toSummaryString(buffer),
                         BufferUtil.toSummaryString(content),
-                        action,gen.getState());*/
+                        action,gen.getState());
                 HttpGenerator.Result result=gen.generate(info,header,chunk,buffer,content,action);
-                /*System.err.printf("%s (%s,%s,%s,%s,%s)@%s%n",
+                System.err.printf("%s (%s,%s,%s,%s,%s)@%s%n",
                         result,
                         BufferUtil.toSummaryString(header),
                         BufferUtil.toSummaryString(chunk),
                         BufferUtil.toSummaryString(buffer),
                         BufferUtil.toSummaryString(content),
-                        action,gen.getState());*/
+                        action,gen.getState());
 
                 switch(result)
                 {
@@ -413,14 +415,15 @@ public class HttpGeneratorServerTest
                     for (int c=0;c<(v==11?connect.length:(connect.length-1));c++)
                     {
                         String t="v="+v+",chunks="+chunks+",connect="+connect[c]+",tr="+r+"="+tr[r];
-                        // System.err.println(t);
+                        System.err.println("\n==========================================");
+                        System.err.println(t);
 
                         gen.reset();
                         tr[r].getHttpFields().clear();
 
                         String response=tr[r].build(tr[r],v,gen,"OK\r\nTest",connect[c],null,chunks);
 
-                        // System.err.println("===\n"+t+"\n"+response+(gen.isPersistent()?"...\n":"---\n"));
+                        System.err.println("---\n"+t+"\n"+response+(gen.isPersistent()?"...":"==="));
 
                         if (v==9)
                         {

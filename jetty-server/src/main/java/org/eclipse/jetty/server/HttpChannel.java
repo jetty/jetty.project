@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.sql.Connection;
 import java.util.List;
 
 import javax.servlet.DispatcherType;
@@ -39,7 +40,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
@@ -75,7 +76,7 @@ public abstract class HttpChannel
     private int _requests;
 
     private final Server _server;
-    private final AsyncConnection _connection;
+    private final EndPoint _endp;
     private final HttpURI _uri;
 
     private final HttpFields _requestFields;
@@ -111,10 +112,10 @@ public abstract class HttpChannel
     /** Constructor
      *
      */
-    public HttpChannel(Server server,AsyncConnection connection)
+    public HttpChannel(Server server,EndPoint endp)
     {
         _server = server;
-        _connection = connection;
+        _endp = endp;
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
@@ -122,13 +123,7 @@ public abstract class HttpChannel
         _response = new Response(this);
         _async = _request.getAsyncContinuation();
     }
-    
-    /* ------------------------------------------------------------ */
-    public AsyncConnection getConnection()
-    {
-        return _connection;
-    }
-
+   
     /* ------------------------------------------------------------ */
     public HttpParser.RequestHandler getRequestHandler()
     {
@@ -201,13 +196,13 @@ public abstract class HttpChannel
     /* ------------------------------------------------------------ */
     public InetSocketAddress getLocalAddress()
     {
-        return getConnection().getEndPoint().getLocalAddress();
+        return _endp.getLocalAddress();
     }
 
     /* ------------------------------------------------------------ */
     public InetSocketAddress getRemoteAddress()
     {
-        return getConnection().getEndPoint().getRemoteAddress();
+        return _endp.getRemoteAddress();
     }
     
     /* ------------------------------------------------------------ */

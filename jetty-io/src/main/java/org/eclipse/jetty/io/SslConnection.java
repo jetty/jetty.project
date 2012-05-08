@@ -44,7 +44,7 @@ public class SslConnection extends AbstractAsyncConnection
     static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.ssl");
     
     private static final ByteBuffer __ZERO_BUFFER=BufferUtil.allocate(0);
-    private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<SslBuffers>();
+    private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<>();
     
     private final Lock _lock = new ReentrantLock();
     private final IOFuture.Callback _netWriteCallback = new NetWriteCallback();
@@ -67,7 +67,6 @@ public class SslConnection extends AbstractAsyncConnection
     private boolean _oshut;
     private IOFuture _netReadFuture;
     private IOFuture _netWriteFuture;
-
 
 
     private final class NetWriteCallback implements IOFuture.Callback
@@ -235,9 +234,6 @@ public class SslConnection extends AbstractAsyncConnection
         _appConnection.onIdleExpired(idleForMs);
     }
 
-
-    long _last;
-    
     /* ------------------------------------------------------------ */
     @Override
     public void onReadable()
@@ -245,7 +241,6 @@ public class SslConnection extends AbstractAsyncConnection
         _lock.lock();
         try
         {        
-            _last=System.currentTimeMillis();
             LOG.debug("onReadable {}",this); 
             
             _netReadFuture=null;
@@ -572,11 +567,6 @@ public class SslConnection extends AbstractAsyncConnection
             return _engine;
         }
 
-        public EndPoint getIoEndPoint()
-        {
-            return _endp;
-        }
-
         @Override
         public void shutdownOutput() throws IOException
         {
@@ -743,11 +733,6 @@ public class SslConnection extends AbstractAsyncConnection
         public long getCreatedTimeStamp()
         {
             return _endp.getCreatedTimeStamp();
-        }
-
-        public AbstractAsyncConnection getAsyncConnection()
-        {
-            return _appConnection;
         }
 
         @Override

@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.CompletedIOFuture;
 import org.eclipse.jetty.io.EofException;
@@ -168,7 +167,7 @@ public class HttpConnection extends AbstractAsyncConnection
     @Override
     public void onReadable()
     {
-        AsyncConnection connection = this;
+        AbstractAsyncConnection connection = this;
         boolean progress=true;
 
         try
@@ -226,7 +225,7 @@ public class HttpConnection extends AbstractAsyncConnection
                         // look for a switched connection instance?
                         if (_channel.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            AsyncConnection switched=(AsyncConnection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
+                            AbstractAsyncConnection switched=(AbstractAsyncConnection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
                                 connection=switched;
                         }
@@ -470,28 +469,6 @@ public class HttpConnection extends AbstractAsyncConnection
         _channel.onClose();
     }
     
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onInputShutdown()
-    {
-        // If we don't have a committed response and we are not suspended
-        if (_generator.isIdle() && !_channel.getRequest().getAsyncContinuation().isSuspended())
-        {
-            // then no more can happen, so close.
-            try
-            {
-                _endp.close();
-            }
-            catch (IOException e)
-            {
-                LOG.debug(e);
-            }
-        }
-        
-        // Make idle parser seek EOF
-        if (_parser.isIdle())
-            _parser.setPersistent(false);
-    }
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -500,7 +477,7 @@ public class HttpConnection extends AbstractAsyncConnection
     {
         private HttpOverHttpChannel(Server server)
         {
-            super(server,HttpConnection.this);
+            super(server,getEndPoint());
         }
 
         @Override
@@ -654,7 +631,7 @@ public class HttpConnection extends AbstractAsyncConnection
                 try
                 {
                     // Wait until we can read
-                    getEndPoint().read().block();
+                    getEndPoint().readable().block();
 
                     // We will need a buffer to read into
                     if (_requestBuffer==null)
