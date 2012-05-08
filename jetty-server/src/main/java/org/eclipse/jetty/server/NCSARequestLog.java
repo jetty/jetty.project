@@ -485,7 +485,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             if (_logDateCache != null)
                 buf.append(_logDateCache.format(request.getTimeStamp()));
             else
-                buf.write(request.getTimeStampBuffer().toString());
+                buf.append(request.getTimeStamp());
 
             buf.append("] \"");
             buf.append(request.getMethod());
@@ -506,7 +506,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             else
                 buf.append("Async");
 
-            long responseLength = response.getContentCount();
+            long responseLength = response.getLongContentLength();
             if (responseLength >= 0)
             {
                 buf.append(' ');

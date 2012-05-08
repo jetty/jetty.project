@@ -41,19 +41,16 @@ import java.nio.charset.Charset;
  * in the buffer before the position and the start of this data is given by the return value of {@link #flipToFill(ByteBuffer)}
  * <p>
  * A typical pattern for using the buffers in this style is:
- * <pre>
+ * <blockquote><pre>
  *    ByteBuffer buf = BufferUtil.allocate(4096);
- *    
- *    while(true)
+ *    while(in.isOpen())
  *    {
  *        int pos=BufferUtil.flipToFill(buf);
- *        if (inChannel.read(buf)<0)
+ *        if (in.read(buf)<0)
  *          break;
  *        BufferUtil.flipToFlush(buf,pos);
- *        outChannel.write(buf);
- *    }
- *  </pre>
- * 
+ *        out.write(buf);
+ *    }</pre></blockquote>
  */
 public class BufferUtil
 {
@@ -123,6 +120,9 @@ public class BufferUtil
      * If the buffer is empty, then this call is effectively {@link #clearToFill(ByteBuffer)}.
      * If there is no unused space to fill, a {@link ByteBuffer#compact()} is done to attempt
      * to create space.
+     * <p>
+     * This method is used as a replacement to {@link ByteBuffer#compact()}.
+     * 
      * @param buffer The buffer to flip
      * @return The position of the valid data before the flipped position. This value should be 
      * passed to a subsequent call to {@link #flipToFlush(ByteBuffer, int)}
@@ -157,6 +157,8 @@ public class BufferUtil
     /** Flip the buffer to Flush mode.
      * The limit is set to the first unused byte(the old position) amd
      * the position is set to the passed position.
+     * <p>
+     * This method is used as a replacement of {@link Buffer#flip()}.
      * @param buffer the buffer to be flipped
      * @param position The position of valid data to flip to. This should
      * be the return value of the previous call to {@link #flipToFill(ByteBuffer)}
@@ -310,7 +312,8 @@ public class BufferUtil
             flipToFlush(to,pos);
         }
     }
-
+    
+    /* ------------------------------------------------------------ */
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
     {
         RandomAccessFile raf = new RandomAccessFile(file,"r");
