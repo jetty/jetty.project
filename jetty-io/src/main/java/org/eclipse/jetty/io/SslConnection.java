@@ -745,8 +745,7 @@ public class SslConnection extends AbstractAsyncConnection
             return _endp.getCreatedTimeStamp();
         }
 
-        @Override
-        public AsyncConnection getAsyncConnection()
+        public AbstractAsyncConnection getAsyncConnection()
         {
             return _appConnection;
         }
@@ -832,5 +831,4 @@ public class SslConnection extends AbstractAsyncConnection
             }
         }
     }
-    
 }

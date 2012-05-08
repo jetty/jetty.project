@@ -11,24 +11,16 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -61,7 +53,7 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        protected void endPointUpgraded(SelectChannelEndPoint endpoint, AsyncConnection oldConnection)
+        protected void endPointUpgraded(SelectChannelEndPoint endpoint, AbstractAsyncConnection oldConnection)
         {
         }
 

@@ -3,8 +3,6 @@ package org.eclipse.jetty.io;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.thread.ThreadPool;
-
 public class CompletedIOFuture implements IOFuture
 {
     private final boolean _ready;

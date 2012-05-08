@@ -1,16 +1,12 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-public abstract class AbstractAsyncConnection implements AsyncConnection
+public abstract class AbstractAsyncConnection
 {
     private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
     protected final AsyncEndPoint _endp;
@@ -23,14 +19,16 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         _endp=endp;
     }
     
-    @Override
+    public abstract void onReadable();
+    public abstract void onClose();
+    
+    
     public AsyncEndPoint getEndPoint()
     {
         return _endp;
     }
 
     
-    @Override
     public void onIdleExpired(long idleForMs)
     {
         try
@@ -56,7 +54,6 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         }
     }
         
-    @Override
     public IOFuture scheduleOnReadable()
     {
         IOFuture read=getEndPoint().readable();
@@ -64,7 +61,6 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         return read;
     }
     
-    @Override
     public void onReadFail(Throwable cause)
     {
         LOG.debug("read failed: "+cause);

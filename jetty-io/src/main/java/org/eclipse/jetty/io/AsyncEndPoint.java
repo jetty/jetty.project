@@ -83,9 +83,6 @@ import java.util.concurrent.Future;
 public interface AsyncEndPoint extends EndPoint
 {
     /* ------------------------------------------------------------ */
-    AsyncConnection getAsyncConnection();
-
-    /* ------------------------------------------------------------ */
     /** Schedule a read operation.
      * <p>
      * This method allows a {@link #fill(ByteBuffer)} operation to be scheduled 

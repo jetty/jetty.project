@@ -11,10 +11,6 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;

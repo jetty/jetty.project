@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.io;
 
+import static org.eclipse.jetty.io.CompletedIOFuture.COMPLETE;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
@@ -26,7 +28,6 @@ import org.eclipse.jetty.io.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout.Task;
-import static org.eclipse.jetty.io.CompletedIOFuture.COMPLETE;
 
 /* ------------------------------------------------------------ */
 /**
@@ -75,8 +76,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public AsyncConnection getAsyncConnection()
+    public AbstractAsyncConnection getAsyncConnection()
     {
         return _connection;
     }
@@ -100,7 +100,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     public void setAsyncConnection(AbstractAsyncConnection connection)
     {
-        AsyncConnection old=getAsyncConnection();
+        AbstractAsyncConnection old=getAsyncConnection();
         _connection=connection;
         if (old!=null && old!=connection)
             _manager.endPointUpgraded(this,old);

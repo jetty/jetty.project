@@ -337,7 +337,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected abstract void endPointOpened(SelectChannelEndPoint endpoint);
 
     /* ------------------------------------------------------------ */
-    protected abstract void endPointUpgraded(SelectChannelEndPoint endpoint,AsyncConnection oldConnection);
+    protected abstract void endPointUpgraded(SelectChannelEndPoint endpoint,AbstractAsyncConnection oldConnection);
 
     /* ------------------------------------------------------------------------------- */
     public abstract AbstractAsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment);
@@ -839,7 +839,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             LOG.debug("destroyEndPoint {}",endp);
             _endPoints.remove(endp);
-            AsyncConnection connection=endp.getAsyncConnection();
+            AbstractAsyncConnection connection=endp.getAsyncConnection();
             if (connection!=null)
                 connection.onClose();
             endPointClosed(endp);

@@ -13,25 +13,20 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEndPoint
 {
-
-
-
     public static final Logger LOG=Log.getLogger(AsyncByteArrayEndPoint.class);
     
     private final Lock _lock = new ReentrantLock();
     private volatile boolean _idlecheck;
 
-    private volatile AsyncConnection _connection;
+    private volatile AbstractAsyncConnection _connection;
 
     private DispatchedIOFuture _readFuture;
     private DispatchedIOFuture _writeFuture;
 
     private ByteBuffer[] _writeBuffers;
     
-    
-    
-    @Override
-    public AsyncConnection getAsyncConnection()
+        
+    public AbstractAsyncConnection getAsyncConnection()
     {
         return _connection;
     }    
