@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -68,7 +67,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         // SSL does not do half closes
     }
 
-    
+
     @Test
     public void testTcpClose() throws Exception
     {
@@ -185,9 +184,10 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     {
         super.testWriteBlock();
     }
-    
+
     @Test
     @Override
+    @Ignore
     public void testStress() throws Exception
     {
         super.testStress();

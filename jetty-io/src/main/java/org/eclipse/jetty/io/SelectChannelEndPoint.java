@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.eclipse.jetty.io.CompletedIOFuture.COMPLETE;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
@@ -36,31 +34,31 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPoint
 {
     public static final Logger LOG=Log.getLogger(SelectChannelEndPoint.class);
-    
+
     private final Lock _lock = new ReentrantLock();
-    
+
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
-    
+
     private DispatchedIOFuture _readFuture=new DispatchedIOFuture(true,_lock);
     private DispatchedIOFuture _writeFuture=new DispatchedIOFuture(true,_lock);
-    
+
     private  SelectionKey _key;
 
     private boolean _selected;
     private boolean _changing;
-    
+
     /** The desired value for {@link SelectionKey#interestOps()} */
     private int _interestOps;
-    
+
     /** true if {@link SelectSet#destroyEndPoint(SelectChannelEndPoint)} has not been called */
     private boolean _open;
 
     private volatile boolean _idlecheck;
     private volatile AbstractAsyncConnection _connection;
-    
+
     private ByteBuffer[] _writeBuffers;
-    
+
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
         throws IOException
@@ -105,7 +103,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         if (old!=null && old!=connection)
             _manager.endPointUpgraded(this,old);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /** Called by selectSet to schedule handling
@@ -123,7 +121,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 // TODO wake ups?
                 return;
             }
-            
+
             //TODO do we need to test interest here ???
             boolean can_read=(_key.isReadable() && (_key.interestOps()&SelectionKey.OP_READ)==SelectionKey.OP_READ);
             boolean can_write=(_key.isWritable() && (_key.interestOps()&SelectionKey.OP_WRITE)==SelectionKey.OP_WRITE);
@@ -131,10 +129,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
             if (can_read && !_readFuture.isDone())
                 _readFuture.ready();
-            
+
             if (can_write && _writeBuffers!=null)
                 completeWrite();
-            
+
         }
         finally
         {
@@ -174,7 +172,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     /* ------------------------------------------------------------ */
     public void checkForIdleOrReadWriteTimeout(long now)
-    {        
+    {
         if (_idlecheck || !_readFuture.isDone() || !_writeFuture.isDone())
         {
             long idleTimestamp=getIdleTimestamp();
@@ -225,11 +223,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         {
             if (_readFuture!=null && !_readFuture.isDone())
                 throw new IllegalStateException("previous read not complete");
-                
+
             _readFuture=new InterestedFuture(SelectionKey.OP_READ);
             _interestOps=_interestOps|SelectionKey.OP_READ;
             updateKey();
-            
+
             return _readFuture;
         }
         finally
@@ -237,8 +235,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             _lock.unlock();
         }
     }
-    
-   
+
+
     /* ------------------------------------------------------------ */
     @Override
     public IOFuture write(ByteBuffer... buffers)
@@ -263,12 +261,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     return _writeFuture;
                 }
             }
-            return COMPLETE;
+            return DoneIOFuture.COMPLETE;
         }
         catch(IOException e)
         {
             return new DoneIOFuture(e);
-        } 
+        }
         finally
         {
             _lock.unlock();
@@ -281,7 +279,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         try
         {
             flush(_writeBuffers);
-            
+
             // Are we complete?
             for (ByteBuffer b : _writeBuffers)
             {
@@ -300,12 +298,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             if (!_writeFuture.isDone())
                 _writeFuture.fail(e);
         }
-        
+
 
     }
 
-    
-    
+
+
     /* ------------------------------------------------------------ */
     @Override
     public int flush(ByteBuffer... buffers) throws IOException
@@ -315,7 +313,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             notIdle();
         return l;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Updates selection key. This method schedules a call to doUpdateKey to do the keyChange
@@ -457,7 +455,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 		    _lock.unlock();
 		}
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -485,8 +483,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         {
             keyString += "-";
         }
-        
-        
+
+
         return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",
                 hashCode(),
                 getRemoteAddress(),
@@ -506,7 +504,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         return _selectSet;
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

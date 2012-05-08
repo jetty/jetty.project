@@ -14,7 +14,7 @@ import org.eclipse.jetty.util.Callback;
 /** Dispatched IOFuture.
  * <p>An implementation of IOFuture that can be extended to implement the
  * {@link #dispatch(Runnable)} method so that callbacks can be dispatched.
- * By default, the callbacks are called by the thread that called {@link #ready()} or 
+ * By default, the callbacks are called by the thread that called {@link #ready()} or
  * {@link #fail(Throwable)}
  */
 public class DispatchedIOFuture implements IOFuture
@@ -25,17 +25,18 @@ public class DispatchedIOFuture implements IOFuture
     private boolean _ready;
     private Throwable _cause;
     private Callback _callback;
-    
+    private Object _context;
+
     public DispatchedIOFuture()
     {
         this(new ReentrantLock());
     }
-    
+
     public DispatchedIOFuture(Lock lock)
     {
         this(false, lock);
     }
-    
+
     public DispatchedIOFuture(boolean ready,Lock lock)
     {
         _ready=ready;
@@ -43,7 +44,7 @@ public class DispatchedIOFuture implements IOFuture
         _lock = lock;
         _block = _lock.newCondition();
     }
-    
+
     public void fail(final Throwable cause)
     {
         _lock.lock();
@@ -51,10 +52,10 @@ public class DispatchedIOFuture implements IOFuture
         {
             if (_complete)
                 throw new IllegalStateException("complete",cause);
-            
+
             _cause=cause;
             _complete=true;
-            
+
             if (_callback!=null)
                 dispatchFailed();
             _block.signal();
@@ -64,7 +65,7 @@ public class DispatchedIOFuture implements IOFuture
             _lock.unlock();
         }
     }
-    
+
     public void ready()
     {
         _lock.lock();
@@ -84,7 +85,7 @@ public class DispatchedIOFuture implements IOFuture
             _lock.unlock();
         }
     }
-    
+
     protected void cancelled()
     {
         _lock.lock();
@@ -101,7 +102,7 @@ public class DispatchedIOFuture implements IOFuture
             _lock.unlock();
         }
     }
-    
+
     @Override
     public boolean isDone()
     {
@@ -117,7 +118,7 @@ public class DispatchedIOFuture implements IOFuture
     }
 
     @Override
-    public boolean isReady() throws ExecutionException
+    public boolean isComplete() throws ExecutionException
     {
         _lock.lock();
         try
@@ -128,7 +129,7 @@ public class DispatchedIOFuture implements IOFuture
                     return true;
                 throw new ExecutionException(_cause);
             }
-            
+
             return false;
         }
         finally
@@ -175,7 +176,7 @@ public class DispatchedIOFuture implements IOFuture
             _lock.unlock();
         }
     }
-    
+
     @Override
     public <C> void setCallback(Callback<C> callback, C context)
     {
@@ -186,7 +187,7 @@ public class DispatchedIOFuture implements IOFuture
                 throw new IllegalStateException();
             _callback=callback;
             _context=context;
-            
+
             if (_complete)
             {
                 if (_ready)
@@ -200,7 +201,7 @@ public class DispatchedIOFuture implements IOFuture
             _lock.unlock();
         }
     }
-    
+
     protected void dispatch(Runnable callback)
     {
         new Thread(callback).start();
@@ -221,7 +222,7 @@ public class DispatchedIOFuture implements IOFuture
             }
         });
     }
-    
+
     private void dispatchFailed()
     {
         final Callback callback=_callback;

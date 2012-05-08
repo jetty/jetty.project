@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.io;
 
-import static org.eclipse.jetty.io.CompletedIOFuture.COMPLETE;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -43,16 +40,16 @@ import org.eclipse.jetty.util.log.Logger;
 public class SslConnection extends AbstractAsyncConnection
 {
     static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.ssl");
-    
+
     private static final ByteBuffer __ZERO_BUFFER=BufferUtil.allocate(0);
     private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<SslBuffers>();
-    
+
     private final Lock _lock = new ReentrantLock();
     private final NetWriteCallback _netWriteCallback = new NetWriteCallback();
 
     private DispatchedIOFuture _appReadFuture = new DispatchedIOFuture(true,_lock);
     private DispatchedIOFuture _appWriteFuture = new DispatchedIOFuture(true,_lock);
-    
+
     private final SSLEngine _engine;
     private final SSLSession _session;
     private AbstractAsyncConnection _appConnection;
@@ -87,8 +84,8 @@ public class SslConnection extends AbstractAsyncConnection
                 LOG.warn("write FAILED",cause);
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /* this is a half baked buffer pool
      */
@@ -104,9 +101,9 @@ public class SslConnection extends AbstractAsyncConnection
             _outNet=BufferUtil.allocateDirect(packetSize);
             _inApp=BufferUtil.allocate(appSize);
         }
-        
+
     }
-    
+
     /* ------------------------------------------------------------ */
     public SslConnection(SSLEngine engine,AsyncEndPoint endp)
     {
@@ -126,16 +123,16 @@ public class SslConnection extends AbstractAsyncConnection
 
     /* ------------------------------------------------------------ */
     public void setAppConnection(AbstractAsyncConnection connection)
-    {        
+    {
         _appConnection=connection;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected AppEndPoint newAppEndPoint()
     {
         return new AppEndPoint();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if SSL re-negotiation is allowed (default false)
@@ -208,7 +205,7 @@ public class SslConnection extends AbstractAsyncConnection
                     _buffers._inNet.clear().limit(0);
                     _buffers._outNet.clear().limit(0);
                     _buffers._inApp.clear().limit(0);
-                    
+
                     __buffers.set(_buffers);
                     _buffers=null;
                 }
@@ -233,18 +230,18 @@ public class SslConnection extends AbstractAsyncConnection
     {
         _appConnection.onIdleExpired(idleForMs);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void onReadable()
     {
         _lock.lock();
         try
-        {        
-            LOG.debug("onReadable {}",this); 
-            
+        {
+            LOG.debug("onReadable {}",this);
+
             _netReadFuture=null;
-            allocateBuffers();     
+            allocateBuffers();
 
             boolean progress=true;
             while(progress)
@@ -259,10 +256,10 @@ public class SslConnection extends AbstractAsyncConnection
                     if (filled>0)
                         progress=true;
                 }
-                    
+
                 // process the data
                 progress|=process(null);
-                
+
             }
         }
         catch(IOException e)
@@ -274,12 +271,12 @@ public class SslConnection extends AbstractAsyncConnection
             releaseBuffers();
             if (_appReadFuture!=null && !_appReadFuture.isDone() && _netReadFuture==null && !BufferUtil.isFull(_inNet))
                 _netReadFuture=scheduleOnReadable();
-            
-            LOG.debug("!onReadable {} {}",this,_netReadFuture); 
+
+            LOG.debug("!onReadable {} {}",this,_netReadFuture);
 
             _lock.unlock();
         }
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -288,7 +285,7 @@ public class SslConnection extends AbstractAsyncConnection
     {
         _lock.lock();
         try
-        {     
+        {
             if (!_appReadFuture.isDone())
                 _appReadFuture.fail(cause);
         }
@@ -297,19 +294,19 @@ public class SslConnection extends AbstractAsyncConnection
             _lock.unlock();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     private boolean process(ByteBuffer appOut) throws IOException
     {
         boolean some_progress=false;
-        
+
         if (!_lock.tryLock())
             throw new IllegalStateException();
-            
+
         try
         {
             allocateBuffers();
-            
+
             // If we have no data to flush, flush the empty buffer
             if (appOut==null)
                 appOut=__ZERO_BUFFER;
@@ -394,7 +391,7 @@ public class SslConnection extends AbstractAsyncConnection
             // Has the net data consumed allowed us to release net backpressure?
             if (BufferUtil.compact(_inNet) && !_appReadFuture.isDone() && _netReadFuture==null)
                 _netReadFuture=scheduleOnReadable();
-            
+
             releaseBuffers();
             _lock.unlock();
         }
@@ -405,7 +402,7 @@ public class SslConnection extends AbstractAsyncConnection
     {
         if (_netWriteFuture!=null && !_netWriteFuture.isDone())
             return false;
-        
+
         final SSLEngineResult result;
 
         int pos=BufferUtil.flipToFill(_outNet);
@@ -417,7 +414,7 @@ public class SslConnection extends AbstractAsyncConnection
         {
             BufferUtil.flipToFlush(_outNet,pos);
         }
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("{} wrap {} {} consumed={} produced={}",
                     _session,
@@ -459,7 +456,7 @@ public class SslConnection extends AbstractAsyncConnection
             _netWriteFuture=write;
             _netWriteFuture.setCallback(_netWriteCallback, null);
         }
-        
+
         return result.bytesConsumed()>0 || result.bytesProduced()>0 ;
     }
 
@@ -472,13 +469,13 @@ public class SslConnection extends AbstractAsyncConnection
             LOG.debug("{} unwrap read {}",_session,_netReadFuture);
             return false;
         }
-        
+
         final SSLEngineResult result;
 
         int pos = BufferUtil.flipToFill(_inApp);
         try
         {
-            result=_engine.unwrap(_inNet,_inApp);   
+            result=_engine.unwrap(_inNet, _inApp);
         }
         catch(SSLException e)
         {
@@ -490,15 +487,15 @@ public class SslConnection extends AbstractAsyncConnection
         {
             BufferUtil.flipToFlush(_inApp,pos);
         }
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("{} unwrap {} {} consumed={} produced={}",
                     _session,
                     result.getStatus(),
                     result.getHandshakeStatus(),
                     result.bytesConsumed(),
-                    result.bytesProduced());        
-        
+                    result.bytesProduced());
+
         switch(result.getStatus())
         {
             case BUFFER_UNDERFLOW:
@@ -507,7 +504,7 @@ public class SslConnection extends AbstractAsyncConnection
                     _inNet.clear().limit(0);
                 else if (_netReadFuture==null)
                     _netReadFuture=scheduleOnReadable();
-                    
+
                 break;
 
             case BUFFER_OVERFLOW:
@@ -537,7 +534,7 @@ public class SslConnection extends AbstractAsyncConnection
 
         return result.bytesConsumed()>0 || result.bytesProduced()>0;
     }
-    
+
     /* ------------------------------------------------------------ */
     public AsyncEndPoint getAppEndPoint()
     {
@@ -556,12 +553,12 @@ public class SslConnection extends AbstractAsyncConnection
     public class AppEndPoint extends AbstractEndPoint implements AsyncEndPoint
     {
         ByteBuffer[] _writeBuffers;
-        
+
         AppEndPoint()
         {
             super(_endp.getLocalAddress(),_endp.getRemoteAddress());
         }
-        
+
         public SSLEngine getSslEngine()
         {
             return _engine;
@@ -725,7 +722,7 @@ public class SslConnection extends AbstractAsyncConnection
                     _appReadFuture,_appWriteFuture,
                     _appConnection);
         }
-      
+
 
         @Override
         public long getIdleTimestamp()
@@ -737,7 +734,6 @@ public class SslConnection extends AbstractAsyncConnection
         public long getCreatedTimeStamp()
         {
             return _endp.getCreatedTimeStamp();
-                        notIdle();
         }
 
         @Override
@@ -749,8 +745,8 @@ public class SslConnection extends AbstractAsyncConnection
             {
                 // Do we already have application input data?
                 if (BufferUtil.hasContent(_inApp))
-                    return COMPLETE;
-                
+                    return DoneIOFuture.COMPLETE;
+
                 // No, we need to schedule a network read
                 _appReadFuture=new DispatchedIOFuture(_lock);
                 if (_netReadFuture==null)
@@ -772,11 +768,11 @@ public class SslConnection extends AbstractAsyncConnection
                 if (!_appWriteFuture.isDone())
                     throw new IllegalStateException("previous write not complete");
 
-                // Try to process all 
+                // Try to process all
                 for (ByteBuffer b : buffers)
                 {
                     process(b);
-                    
+
                     if (b.hasRemaining())
                     {
                         _writeBuffers=buffers;
@@ -784,7 +780,7 @@ public class SslConnection extends AbstractAsyncConnection
                         return _appWriteFuture;
                     }
                 }
-                return COMPLETE;
+                return DoneIOFuture.COMPLETE;
             }
             catch (IOException e)
             {
@@ -795,17 +791,17 @@ public class SslConnection extends AbstractAsyncConnection
                 _lock.unlock();
             }
         }
-        
+
         void completeWrite()
         {
             _lock.lock();
             try
             {
-                // Try to process all 
+                // Try to process all
                 for (ByteBuffer b : _writeBuffers)
                 {
                     process(b);
-                    
+
                     if (b.hasRemaining())
                         return;
                 }

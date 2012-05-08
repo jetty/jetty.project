@@ -24,7 +24,7 @@ public class DoneIOFuture implements IOFuture
 
     private DoneIOFuture(boolean ready, Throwable cause)
     {
-        _ready=false;
+        _ready=ready;
         _cause=cause;
     }
 
@@ -73,7 +73,7 @@ public class DoneIOFuture implements IOFuture
 
     protected void dispatch(Runnable callback)
     {
-        new Thread(callback).start();
+        callback.run();
     }
 
     @Override
