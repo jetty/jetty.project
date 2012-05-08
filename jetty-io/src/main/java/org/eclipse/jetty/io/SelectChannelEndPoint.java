@@ -195,10 +195,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                             _readFuture.fail(new TimeoutException());
                         if (!_writeFuture.isComplete())
                             _writeFuture.fail(new TimeoutException());
+                        notIdle();
                     }
                     finally
                     {
-                        notIdle();
                         _lock.unlock();
                     }
                 }
@@ -443,15 +443,18 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _lock.lock();
         try
         {
-            super.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
+            try
+            {
+                super.close();
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
+            updateKey();
         }
         finally
         {
-            updateKey();
             _lock.unlock();
         }
     }

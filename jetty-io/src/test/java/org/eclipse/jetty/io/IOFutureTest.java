@@ -202,7 +202,7 @@ public class IOFutureTest
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){}
+                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){e.printStackTrace();}
                 f0.ready();
             }
         }.start();
@@ -229,7 +229,7 @@ public class IOFutureTest
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){}
+                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){e.printStackTrace();}
                 f1.ready();
             }
         }.start();
@@ -285,7 +285,7 @@ public class IOFutureTest
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){}
+                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){e.printStackTrace();}
                 f0.fail(ex);
             }
         }.start();
@@ -328,7 +328,7 @@ public class IOFutureTest
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){}
+                try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){e.printStackTrace();}
                 f1.fail(ex);
             }
         }.start();

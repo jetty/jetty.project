@@ -28,16 +28,12 @@ public class DispatchedIOFuture implements IOFuture
     
     public DispatchedIOFuture()
     {
-        // System.err.println(this);new Throwable().printStackTrace();
-        _lock = new ReentrantLock();
-        _block = _lock.newCondition();
+        this(false,new ReentrantLock());
     }
     
     public DispatchedIOFuture(Lock lock)
     {
-        // System.err.println(this);new Throwable().printStackTrace();
-        _lock = lock;
-        _block = _lock.newCondition();
+        this(false,lock);
     }
     
     public DispatchedIOFuture(boolean ready,Lock lock)
@@ -209,7 +205,7 @@ public class DispatchedIOFuture implements IOFuture
     
     protected void dispatch(Runnable callback)
     {
-        new Thread(callback).run();
+        new Thread(callback).start();
     }
 
     private void dispatchReady()

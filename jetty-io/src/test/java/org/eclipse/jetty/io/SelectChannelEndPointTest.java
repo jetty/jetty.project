@@ -360,7 +360,8 @@ public class SelectChannelEndPointTest
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
 
-        while(_lastEndp==null);
+        while(_lastEndp==null)
+            Thread.sleep(10);
         
         _lastEndp.setMaxIdleTime(10*specifiedTimeout);
         Thread.sleep(2 * specifiedTimeout);

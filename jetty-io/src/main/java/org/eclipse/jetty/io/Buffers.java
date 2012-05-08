@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
  */
 public interface Buffers
 {
-    enum Type { DIRECT, INDIRECT } ;
+    enum Type { DIRECT, INDIRECT }
     
     ByteBuffer getHeader();
     ByteBuffer getBuffer();

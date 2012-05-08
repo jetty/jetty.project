@@ -165,10 +165,11 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
                             _readFuture.fail(new TimeoutException());
                         if (!_writeFuture.isComplete())
                             _writeFuture.fail(new TimeoutException());
+
+                        notIdle();
                     }
                     finally
                     {
-                        notIdle();
                         _lock.unlock();
                     }
                 }
