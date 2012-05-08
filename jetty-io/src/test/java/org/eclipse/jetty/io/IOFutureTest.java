@@ -1,79 +1,80 @@
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.number.OrderingComparison.greaterThan;
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.IOFuture.Callback;
+import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.number.OrderingComparison.greaterThan;
+import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class IOFutureTest
 {
     @Test
     public void testReadyCompleted() throws Exception
     {
-        IOFuture future = new CompletedIOFuture();
-        
+        IOFuture future = new DoneIOFuture();
+
+        assertTrue(future.isDone());
         assertTrue(future.isComplete());
-        assertTrue(future.isReady());
-        
+
         long start=System.currentTimeMillis();
         future.block();
         Assert.assertThat(System.currentTimeMillis()-start,lessThan(10L));
-        
+
         start=System.currentTimeMillis();
         future.block(1000,TimeUnit.MILLISECONDS);
         Assert.assertThat(System.currentTimeMillis()-start,lessThan(10L));
-        
+
         final AtomicBoolean ready = new AtomicBoolean(false);
         final AtomicReference<Throwable> fail = new AtomicReference<>();
-        
-        future.setCallback(new Callback()
+
+        future.setCallback(new Callback<Object>()
         {
             @Override
-            public void onReady()
-            {          
+            public void completed(Object context)
+            {
                 ready.set(true);
             }
-            
+
             @Override
-            public void onFail(Throwable cause)
+            public void failed(Object context, Throwable cause)
             {
                 fail.set(cause);
             }
-        });
+        }, null);
 
         assertTrue(ready.get());
-        assertEquals((Throwable)null,fail.get());
+        assertNull(fail.get());
     }
-    
+
 
     @Test
     public void testFailedCompleted() throws Exception
     {
         Exception ex=new Exception("failed");
-        IOFuture future = new CompletedIOFuture(ex);
-        
-        assertTrue(future.isComplete());
+        IOFuture future = new DoneIOFuture(ex);
+
+        assertTrue(future.isDone());
         try
         {
-            future.isReady();
+            future.isComplete();
             Assert.fail();
         }
         catch(ExecutionException e)
         {
             Assert.assertEquals(ex,e.getCause());
         }
-        
+
 
         long start=System.currentTimeMillis();
         try
@@ -86,9 +87,9 @@ public class IOFutureTest
             Assert.assertEquals(ex,e.getCause());
         }
         Assert.assertThat(System.currentTimeMillis()-start,lessThan(10L));
-        
 
-        
+
+
         start=System.currentTimeMillis();
         try
         {
@@ -100,100 +101,100 @@ public class IOFutureTest
             Assert.assertEquals(ex,e.getCause());
         }
         Assert.assertThat(System.currentTimeMillis()-start,lessThan(10L));
-        
-        
+
+
         final AtomicBoolean ready = new AtomicBoolean(false);
         final AtomicReference<Throwable> fail = new AtomicReference<>();
-        
-        future.setCallback(new Callback()
+
+        future.setCallback(new Callback<Object>()
         {
             @Override
-            public void onReady()
-            {          
+            public void completed(Object context)
+            {
                 ready.set(true);
             }
-            
+
             @Override
-            public void onFail(Throwable cause)
+            public void failed(Object context, Throwable cause)
             {
                 fail.set(cause);
             }
-        });
+        }, null);
 
         assertFalse(ready.get());
         assertEquals(ex,fail.get());
     }
-    
-    
+
+
 
     @Test
     public void testInCompleted() throws Exception
     {
         IOFuture future = new DispatchedIOFuture();
-        
+
+        assertFalse(future.isDone());
         assertFalse(future.isComplete());
-        assertFalse(future.isReady());
-        
+
         long start=System.currentTimeMillis();
         future.block(10,TimeUnit.MILLISECONDS);
         Assert.assertThat(System.currentTimeMillis()-start,greaterThan(9L));
-        
+
         final AtomicBoolean ready = new AtomicBoolean(false);
         final AtomicReference<Throwable> fail = new AtomicReference<>();
-        
-        future.setCallback(new Callback()
+
+        future.setCallback(new Callback<Object>()
         {
             @Override
-            public void onReady()
-            {          
+            public void completed(Object context)
+            {
                 ready.set(true);
             }
-            
+
             @Override
-            public void onFail(Throwable cause)
+            public void failed(Object context, Throwable cause)
             {
                 fail.set(cause);
             }
-        });
+        }, null);
 
         assertFalse(ready.get());
-        assertEquals((Throwable)null,fail.get());
+        assertNull(fail.get());
     }
-    
+
 
     @Test
     public void testReady() throws Exception
     {
         DispatchedIOFuture future = new DispatchedIOFuture();
-        
+
+        assertFalse(future.isDone());
         assertFalse(future.isComplete());
-        assertFalse(future.isReady());
-        
+
         final AtomicBoolean ready = new AtomicBoolean(false);
         final AtomicReference<Throwable> fail = new AtomicReference<>();
-        
-        future.setCallback(new Callback()
+
+        future.setCallback(new Callback<Object>()
         {
             @Override
-            public void onReady()
-            {          
+            public void completed(Object context)
+            {
                 ready.set(true);
             }
-            
+
             @Override
-            public void onFail(Throwable cause)
+            public void failed(Object context, Throwable cause)
             {
                 fail.set(cause);
             }
-        });
+        }, null);
 
         long start=System.currentTimeMillis();
         assertFalse(future.block(10,TimeUnit.MILLISECONDS));
         assertThat(System.currentTimeMillis()-start,greaterThan(9L));
 
         assertFalse(ready.get());
-        assertEquals((Throwable)null,fail.get());
-        
+        assertNull(fail.get());
+
 
         start=System.currentTimeMillis();
         final DispatchedIOFuture f0=future;
@@ -211,17 +212,17 @@ public class IOFutureTest
         Assert.assertThat(System.currentTimeMillis()-start,greaterThan(49L));
         Assert.assertThat(System.currentTimeMillis()-start,lessThan(1000L));
 
+        assertTrue(future.isDone());
         assertTrue(future.isComplete());
-        assertTrue(future.isReady());
         assertTrue(ready.get());
-        assertEquals((Throwable)null,fail.get());
-        
+        assertNull(fail.get());
+
         ready.set(false);
-        
-        
+
+
         future = new DispatchedIOFuture();
+        assertFalse(future.isDone());
         assertFalse(future.isComplete());
-        assertFalse(future.isReady());
         start=System.currentTimeMillis();
         final DispatchedIOFuture f1=future;
         new Thread()
@@ -237,46 +238,46 @@ public class IOFutureTest
         future.block();
         Assert.assertThat(System.currentTimeMillis()-start,greaterThan(49L));
 
+        assertTrue(future.isDone());
         assertTrue(future.isComplete());
-        assertTrue(future.isReady());
         assertFalse(ready.get()); // no callback set
-        assertEquals((Throwable)null,fail.get());
+        assertNull(fail.get());
     }
-    
+
 
     @Test
     public void testFail() throws Exception
     {
         DispatchedIOFuture future = new DispatchedIOFuture();
         final Exception ex=new Exception("failed");
-        
+
+        assertFalse(future.isDone());
         assertFalse(future.isComplete());
-        assertFalse(future.isReady());
-        
+
         final AtomicBoolean ready = new AtomicBoolean(false);
         final AtomicReference<Throwable> fail = new AtomicReference<>();
-        
-        future.setCallback(new Callback()
+
+        future.setCallback(new Callback<Object>()
         {
             @Override
-            public void onReady()
-            {          
+            public void completed(Object context)
+            {
                 ready.set(true);
             }
-            
+
             @Override
-            public void onFail(Throwable cause)
+            public void failed(Object context, Throwable cause)
             {
                 fail.set(cause);
             }
-        });
+        }, null);
 
         long start=System.currentTimeMillis();
         assertFalse(future.block(10,TimeUnit.MILLISECONDS));
         assertThat(System.currentTimeMillis()-start,greaterThan(9L));
 
         assertFalse(ready.get());
-        assertEquals((Throwable)null,fail.get());
+        assertNull(fail.get());
 
         start=System.currentTimeMillis();
         final DispatchedIOFuture f0=future;
@@ -302,10 +303,10 @@ public class IOFutureTest
         Assert.assertThat(System.currentTimeMillis()-start,greaterThan(49L));
         Assert.assertThat(System.currentTimeMillis()-start,lessThan(1000L));
 
-        assertTrue(future.isComplete());
+        assertTrue(future.isDone());
         try
         {
-            future.isReady();
+            future.isComplete();
             Assert.fail();
         }
         catch(ExecutionException e)
@@ -318,9 +319,9 @@ public class IOFutureTest
         future=new DispatchedIOFuture();
         ready.set(false);
         fail.set(null);
-        
+
+        assertFalse(future.isDone());
         assertFalse(future.isComplete());
-        assertFalse(future.isReady());
         start=System.currentTimeMillis();
         final DispatchedIOFuture f1=future;
         new Thread()
@@ -344,10 +345,10 @@ public class IOFutureTest
         }
         Assert.assertThat(System.currentTimeMillis()-start,greaterThan(49L));
 
-        assertTrue(future.isComplete());
+        assertTrue(future.isDone());
         try
         {
-            future.isReady();
+            future.isComplete();
             Assert.fail();
         }
         catch(ExecutionException e)
@@ -355,8 +356,6 @@ public class IOFutureTest
             Assert.assertEquals(ex,e.getCause());
         }
         assertFalse(ready.get()); // no callback set
-        assertEquals((Throwable)null,fail.get()); // no callback set
-        
+        assertNull(fail.get()); // no callback set
     }
-
 }

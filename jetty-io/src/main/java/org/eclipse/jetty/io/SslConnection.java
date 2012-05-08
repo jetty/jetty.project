@@ -27,6 +27,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -44,10 +45,10 @@ public class SslConnection extends AbstractAsyncConnection
     static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.ssl");
     
     private static final ByteBuffer __ZERO_BUFFER=BufferUtil.allocate(0);
-    private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<>();
+    private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<SslBuffers>();
     
     private final Lock _lock = new ReentrantLock();
-    private final IOFuture.Callback _netWriteCallback = new NetWriteCallback();
+    private final NetWriteCallback _netWriteCallback = new NetWriteCallback();
 
     private DispatchedIOFuture _appReadFuture = new DispatchedIOFuture(true,_lock);
     private DispatchedIOFuture _appWriteFuture = new DispatchedIOFuture(true,_lock);
@@ -68,20 +69,19 @@ public class SslConnection extends AbstractAsyncConnection
     private IOFuture _netReadFuture;
     private IOFuture _netWriteFuture;
 
-
-    private final class NetWriteCallback implements IOFuture.Callback
+    private final class NetWriteCallback implements Callback<Void>
     {
         @Override
-        public void onReady()
+        public void completed(Void context)
         {
             _appEndPoint.completeWrite();
         }
 
         @Override
-        public void onFail(Throwable cause)
+        public void failed(Void context, Throwable cause)
         {
             LOG.debug("write FAILED",cause);
-            if (!_appWriteFuture.isComplete())
+            if (!_appWriteFuture.isDone())
                 _appWriteFuture.fail(cause);
             else
                 LOG.warn("write FAILED",cause);
@@ -233,7 +233,7 @@ public class SslConnection extends AbstractAsyncConnection
     {
         _appConnection.onIdleExpired(idleForMs);
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public void onReadable()
@@ -272,7 +272,7 @@ public class SslConnection extends AbstractAsyncConnection
         finally
         {
             releaseBuffers();
-            if (_appReadFuture!=null && !_appReadFuture.isComplete() && _netReadFuture==null && !BufferUtil.isFull(_inNet))
+            if (_appReadFuture!=null && !_appReadFuture.isDone() && _netReadFuture==null && !BufferUtil.isFull(_inNet))
                 _netReadFuture=scheduleOnReadable();
             
             LOG.debug("!onReadable {} {}",this,_netReadFuture); 
@@ -289,7 +289,7 @@ public class SslConnection extends AbstractAsyncConnection
         _lock.lock();
         try
         {     
-            if (!_appReadFuture.isComplete())
+            if (!_appReadFuture.isDone())
                 _appReadFuture.fail(cause);
         }
         finally
@@ -392,7 +392,7 @@ public class SslConnection extends AbstractAsyncConnection
         finally
         {
             // Has the net data consumed allowed us to release net backpressure?
-            if (BufferUtil.compact(_inNet) && !_appReadFuture.isComplete() && _netReadFuture==null)
+            if (BufferUtil.compact(_inNet) && !_appReadFuture.isDone() && _netReadFuture==null)
                 _netReadFuture=scheduleOnReadable();
             
             releaseBuffers();
@@ -403,7 +403,7 @@ public class SslConnection extends AbstractAsyncConnection
 
     private boolean wrap(final ByteBuffer outApp) throws IOException
     {
-        if (_netWriteFuture!=null && !_netWriteFuture.isComplete())
+        if (_netWriteFuture!=null && !_netWriteFuture.isDone())
             return false;
         
         final SSLEngineResult result;
@@ -453,11 +453,11 @@ public class SslConnection extends AbstractAsyncConnection
         if (BufferUtil.hasContent(_outNet))
         {
             IOFuture write =_endp.write(_outNet);
-            if (write.isComplete())
+            if (write.isDone())
                 return true;
 
             _netWriteFuture=write;
-            _netWriteFuture.setCallback(_netWriteCallback);
+            _netWriteFuture.setCallback(_netWriteCallback, null);
         }
         
         return result.bytesConsumed()>0 || result.bytesProduced()>0 ;
@@ -532,7 +532,7 @@ public class SslConnection extends AbstractAsyncConnection
         }
 
         // If any bytes were produced and we have an app read waiting, make it ready.
-        if (result.bytesProduced()>0 && !_appReadFuture.isComplete())
+        if (result.bytesProduced()>0 && !_appReadFuture.isDone())
             _appReadFuture.ready();
 
         return result.bytesConsumed()>0 || result.bytesProduced()>0;
@@ -568,7 +568,7 @@ public class SslConnection extends AbstractAsyncConnection
         }
 
         @Override
-        public void shutdownOutput() throws IOException
+        public void shutdownOutput()
         {
             _lock.lock();
             try
@@ -577,6 +577,10 @@ public class SslConnection extends AbstractAsyncConnection
                 _engine.closeOutbound();
                 _oshut=true;
                 process(null);
+            }
+            catch (IOException e)
+            {
+                LOG.debug(e);
             }
             finally
             {
@@ -733,6 +737,7 @@ public class SslConnection extends AbstractAsyncConnection
         public long getCreatedTimeStamp()
         {
             return _endp.getCreatedTimeStamp();
+                        notIdle();
         }
 
         @Override
@@ -764,7 +769,7 @@ public class SslConnection extends AbstractAsyncConnection
             _lock.lock();
             try
             {
-                if (!_appWriteFuture.isComplete())
+                if (!_appWriteFuture.isDone())
                     throw new IllegalStateException("previous write not complete");
 
                 // Try to process all 
@@ -783,7 +788,7 @@ public class SslConnection extends AbstractAsyncConnection
             }
             catch (IOException e)
             {
-                return new CompletedIOFuture(e);
+                return new DoneIOFuture(e);
             }
             finally
             {

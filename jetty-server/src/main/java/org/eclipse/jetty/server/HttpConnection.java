@@ -27,11 +27,12 @@ import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AbstractAsyncConnection;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.CompletedIOFuture;
+import org.eclipse.jetty.io.DispatchedIOFuture;
+import org.eclipse.jetty.io.DoneIOFuture;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.IOFuture;
-import org.eclipse.jetty.io.DispatchedIOFuture;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -350,7 +351,7 @@ public class HttpConnection extends AbstractAsyncConnection
             do
             {
                 // block if the last write is not complete
-                if (_writeFuture!=null && !_writeFuture.isComplete())
+                if (_writeFuture!=null && !_writeFuture.isDone())
                     _writeFuture.block();
 
                 if (LOG.isDebugEnabled())
@@ -457,7 +458,7 @@ public class HttpConnection extends AbstractAsyncConnection
             {
                 if (BufferUtil.hasContent(b2))
                     return _endp.write(b2);
-                return CompletedIOFuture.COMPLETE;
+                return DoneIOFuture.COMPLETE;
             }
         }
     }

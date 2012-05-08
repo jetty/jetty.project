@@ -16,7 +16,6 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.GatheringByteChannel;
@@ -29,7 +28,6 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Channel End Point.
  * <p>Holds the channel and socket for an NIO endpoint.
- *
  */
 public class ChannelEndPoint extends AbstractEndPoint
 {
@@ -43,63 +41,45 @@ public class ChannelEndPoint extends AbstractEndPoint
     public ChannelEndPoint(SocketChannel channel) throws IOException
     {
         super((InetSocketAddress)channel.socket().getLocalSocketAddress(),
-              (InetSocketAddress)channel.socket().getRemoteSocketAddress() );
-
-        this._channel = channel;
+              (InetSocketAddress)channel.socket().getRemoteSocketAddress());
+        _channel = channel;
         _socket=channel.socket();
-        setMaxIdleTime(_socket.getSoTimeout());
-        _socket.setSoTimeout(0);
     }
 
-    /*
-     * @see org.eclipse.io.EndPoint#isOpen()
-     */
     @Override
     public boolean isOpen()
     {
         return _channel.isOpen();
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.io.EndPoint#close()
-     */
     private void shutdownInput() throws IOException
     {
         _ishut=true;
         if (_oshut)
             close();
     }
-    
-    /* (non-Javadoc)
-     * @see org.eclipse.io.EndPoint#close()
-     */
+
     @Override
-    public void shutdownOutput() throws IOException
+    public void shutdownOutput()
     {
-        LOG.debug("oshut {}",this);
+        LOG.debug("oshut {}", this);
         _oshut = true;
         if (_channel.isOpen())
         {
-            if (_socket != null)
+            try
             {
-                try
+                if (!_socket.isOutputShutdown())
+                    _socket.shutdownOutput();
+            }
+            catch (IOException e)
+            {
+                LOG.debug(e);
+            }
+            finally
+            {
+                if (_ishut)
                 {
-                    if (!_socket.isOutputShutdown())
-                    {
-                        _socket.shutdownOutput();
-                    }
-                }
-                catch (SocketException e)
-                {
-                    LOG.debug(e.toString());
-                    LOG.ignore(e);
-                }
-                finally
-                {
-                    if (_ishut)
-                    {
-                        close();
-                    }
+                    close();
                 }
             }
         }
@@ -108,36 +88,29 @@ public class ChannelEndPoint extends AbstractEndPoint
     @Override
     public boolean isOutputShutdown()
     {
-        return _oshut || !_channel.isOpen() || _socket != null && _socket.isOutputShutdown();
+        return _oshut || !_channel.isOpen() || _socket.isOutputShutdown();
     }
 
     @Override
     public boolean isInputShutdown()
     {
-        return _ishut || !_channel.isOpen() || _socket != null && _socket.isInputShutdown();
+        return _ishut || !_channel.isOpen() || _socket.isInputShutdown();
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.io.EndPoint#close()
-     */
     @Override
     public void close()
     {
+        LOG.debug("close {}", this);
         try
         {
-            LOG.debug("close {}",this);
             _channel.close();
         }
-        catch(IOException e)
+        catch (IOException e)
         {
-            LOG.warn(e.toString());
             LOG.debug(e);
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
-     */
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
@@ -151,7 +124,7 @@ public class ChannelEndPoint extends AbstractEndPoint
 
             if (filled==-1)
                 shutdownInput();
-            
+
             return filled;
         }
         catch(IOException e)
@@ -166,9 +139,6 @@ public class ChannelEndPoint extends AbstractEndPoint
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
-     */
     @Override
     public int flush(ByteBuffer... buffers) throws IOException
     {
@@ -194,26 +164,19 @@ public class ChannelEndPoint extends AbstractEndPoint
         return len;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the channel.
-     */
     public ByteChannel getChannel()
     {
         return _channel;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Object getTransport()
     {
         return _channel;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public Socket getSocket()
     {
         return _socket;
     }
-    
 }

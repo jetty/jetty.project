@@ -1,7 +1,6 @@
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
-
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -9,20 +8,17 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractAsyncConnection
 {
     private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
-    protected final AsyncEndPoint _endp;
-    
-    private final IOFuture.Callback _readCallback = new ReadCallback();
-    
+    private final AsyncEndPoint _endp;
+    private final ReadCallback _readCallback = new ReadCallback();
 
     public AbstractAsyncConnection(AsyncEndPoint endp)
     {
         _endp=endp;
     }
-    
+
     public abstract void onReadable();
     public abstract void onClose();
-    
-    
+
     public AsyncEndPoint getEndPoint()
     {
         return _endp;
@@ -31,60 +27,49 @@ public abstract class AbstractAsyncConnection
     
     public void onIdleExpired(long idleForMs)
     {
-        try
-        {
-            LOG.debug("onIdleExpired {}ms {} {}",idleForMs,this,_endp);
-            if (_endp.isOutputShutdown())
-                _endp.close();
-            else
-                _endp.shutdownOutput();
-        }
-        catch(IOException e)
-        {
-            LOG.ignore(e);
+        LOG.debug("onIdleExpired {}ms {} {}",idleForMs,this,_endp);
+        if (_endp.isOutputShutdown())
             _endp.close();
-        }
+        else
+            _endp.shutdownOutput();
     }
-        
+
     public IOFuture scheduleOnReadable()
     {
         IOFuture read=getEndPoint().readable();
-        read.setCallback(_readCallback);
+        read.setCallback(_readCallback, null);
         return read;
     }
-    
+
     public void onReadFail(Throwable cause)
     {
         LOG.debug("read failed: "+cause);
     }
-    
-    
+
     @Override
     public String toString()
     {
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
-    
 
-    private class ReadCallback implements IOFuture.Callback
+    private class ReadCallback implements Callback<Void>
     {
         @Override
-        public void onReady()
+        public void completed(Void context)
         {
             onReadable();
         }
 
         @Override
-        public void onFail(Throwable cause)
+        public void failed(Void context, Throwable x)
         {
-            onReadFail(cause);
+            onReadFail(x);
         }
-        
+
         @Override
         public String toString()
         {
-            return String.format("AAC$ReadCB@%x",hashCode());
+            return String.format("%s@%x",getClass().getSimpleName(),hashCode());
         }
     }
-
 }

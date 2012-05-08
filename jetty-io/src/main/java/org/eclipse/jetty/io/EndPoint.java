@@ -41,36 +41,35 @@ public interface EndPoint
 
     /* ------------------------------------------------------------ */
     boolean isOpen();
-    
+
     /* ------------------------------------------------------------ */
     long getCreatedTimeStamp();
-    
+
     /* ------------------------------------------------------------ */
     /** Shutdown the output.
-     * <p>This call indicates that no more data will be sent on this endpoint that 
-     * that the remote end should read an EOF once all previously sent data has been 
+     * <p>This call indicates that no more data will be sent on this endpoint that
+     * that the remote end should read an EOF once all previously sent data has been
      * consumed. Shutdown may be done either at the TCP/IP level, as a protocol exchange (Eg
      * TLS close handshake) or both.
      * <p>
      * If the endpoint has {@link #isInputShutdown()} true, then this call has the same effect
      * as {@link #close()}.
-     * @throws IOException
      */
-    void shutdownOutput() throws IOException;
+    void shutdownOutput();
 
     /* ------------------------------------------------------------ */
     /** Test if output is shutdown.
-     * The output is shutdown by a call to {@link #shutdownOutput()} 
+     * The output is shutdown by a call to {@link #shutdownOutput()}
      * or {@link #close()}.
      * @return true if the output is shutdown or the endpoint is closed.
      */
     boolean isOutputShutdown();
-    
+
     /* ------------------------------------------------------------ */
     /** Test if the input is shutdown.
-     * The input is shutdown if an EOF has been read while doing 
+     * The input is shutdown if an EOF has been read while doing
      * a {@link #fill(ByteBuffer)}.   Once the input is shutdown, all calls to
-     * {@link #fill(ByteBuffer)} will  return -1, until such time as the 
+     * {@link #fill(ByteBuffer)} will  return -1, until such time as the
      * end point is close, when they will return {@link EofException}.
      * @return True if the input is shutdown or the endpoint is closed.
      */
@@ -82,11 +81,11 @@ public interface EndPoint
     void close();
 
     /**
-     * Fill the passed buffer with data from this endpoint.  The bytes are appended to any 
-     * data already in the buffer by writing from the buffers limit up to it's capacity. 
-     * The limit is updated to include the filled bytes.  
-     * 
-     * @param buffer The buffer to fill. The position and limit are modified during the fill. After the 
+     * Fill the passed buffer with data from this endpoint.  The bytes are appended to any
+     * data already in the buffer by writing from the buffers limit up to it's capacity.
+     * The limit is updated to include the filled bytes.
+     *
+     * @param buffer The buffer to fill. The position and limit are modified during the fill. After the
      * operation, the position is unchanged and the limit is increased to reflect the new data filled.
      * @return an <code>int</code> value indicating the number of bytes
      * filled or -1 if EOF is read or the input is shutdown.
@@ -96,15 +95,15 @@ public interface EndPoint
 
 
     /**
-     * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed 
-     * are taken from the header/buffer position up until the buffer limit.  The header/buffers position 
-     * is updated to indicate how many bytes have been consumed.  
-     * 
+     * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
+     * are taken from the header/buffer position up until the buffer limit.  The header/buffers position
+     * is updated to indicate how many bytes have been consumed.
+     *
      * @return  the number of bytes written
      * @throws EofException If the endpoint is closed or output is shutdown.
      */
     int flush(ByteBuffer... buffer) throws IOException;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return The underlying transport object (socket, channel, etc.)
@@ -114,7 +113,7 @@ public interface EndPoint
     /* ------------------------------------------------------------ */
     /** Get the max idle time in ms.
      * <p>The max idle time is the time the endpoint can be idle before
-     * extraordinary handling takes place.  
+     * extraordinary handling takes place.
      * @return the max idle time in ms or if ms <= 0 implies an infinite timeout
      */
     int getMaxIdleTime();
@@ -125,7 +124,7 @@ public interface EndPoint
      * @throws IOException if the timeout cannot be set.
      */
     void setMaxIdleTime(int timeMs) throws IOException;
-    
+
 
 
 }

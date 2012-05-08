@@ -91,7 +91,7 @@
         <executions>
           <execution>
             <id>set-osgi-version</id>
-            <phase>validate</phase> 
+            <phase>validate</phase>
             <goals>
               <goal>parse-version</goal>
             </goals>
@@ -239,10 +239,9 @@
               <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
-              <Bundle-Localization>plugin</Bundle-Localization>
               <Bundle-Classpath>.</Bundle-Classpath>
               <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-              <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2012 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
             </instructions>
           </configuration>
@@ -292,7 +291,7 @@
       </plugins>
     </pluginManagement>
   </build>
-  <reporting>   
+  <reporting>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -489,6 +488,11 @@
         <version>4.8.1</version>
       </dependency>
       <dependency>
+      	<groupId>org.hamcrest</groupId>
+      	<artifactId>hamcrest-all</artifactId>
+      	<version>1.1</version>
+      </dependency>
+      <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>1.8.5</version>
@@ -504,6 +508,42 @@
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
+    <profile>
+      <!-- Modules that are only for JDK7+ builds -->
+      <id>JDK7-plus-modules</id>
+      <activation>
+        <jdk>[1.7,)</jdk>
+      </activation>
+      <modules>
+        <module>jetty-spdy</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>eclipse-release</id>
+   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[1.7,)</version>
+                </requireJavaVersion>
+              </rules>    
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+    </profile>
     <profile>
       <!--
         Moves the jetty-aggregate build tree to a profile called 'aggregates'.

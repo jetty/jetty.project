@@ -3,31 +3,37 @@ package org.eclipse.jetty.io;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-public class CompletedIOFuture implements IOFuture
+import org.eclipse.jetty.util.Callback;
+
+public class DoneIOFuture implements IOFuture
 {
     private final boolean _ready;
     private final Throwable _cause;
-   
-    public final static CompletedIOFuture COMPLETE=new CompletedIOFuture(); 
-    
-    public CompletedIOFuture()
+
+    public final static DoneIOFuture COMPLETE=new DoneIOFuture();
+
+    public DoneIOFuture()
     {
-        _ready=true;
-        _cause=null;
+        this(true,null);
     }
-    
-    public CompletedIOFuture(Throwable cause)
+
+    public DoneIOFuture(Throwable cause)
+    {
+        this(false,cause);
+    }
+
+    private DoneIOFuture(boolean ready, Throwable cause)
     {
         _ready=false;
         _cause=cause;
     }
-    
+
     @Override
-    public boolean isReady() throws ExecutionException
+    public boolean isComplete() throws ExecutionException
     {
         if (_ready)
             return true;
-        
+
         throw new ExecutionException(_cause);
     }
 
@@ -40,17 +46,17 @@ public class CompletedIOFuture implements IOFuture
     @Override
     public void block() throws ExecutionException
     {
-        isReady();
-    }
-    
-    @Override
-    public boolean block(long timeout, TimeUnit units) throws ExecutionException
-    {
-        return isReady();
+        isComplete();
     }
 
     @Override
-    public void setCallback(final Callback callback)
+    public boolean block(long timeout, TimeUnit units) throws ExecutionException
+    {
+        return isComplete();
+    }
+
+    @Override
+    public <C> void setCallback(final Callback<C> callback, final C context)
     {
         dispatch(new Runnable()
         {
@@ -58,20 +64,20 @@ public class CompletedIOFuture implements IOFuture
             public void run()
             {
                 if (_ready)
-                    callback.onReady();
+                    callback.completed(context);
                 else
-                    callback.onFail(_cause);
+                    callback.failed(context, _cause);
             }
         });
     }
-    
+
     protected void dispatch(Runnable callback)
     {
-        callback.run();
+        new Thread(callback).start();
     }
 
     @Override
-    public boolean isComplete()
+    public boolean isDone()
     {
         return true;
     }
@@ -79,7 +85,8 @@ public class CompletedIOFuture implements IOFuture
     @Override
     public String toString()
     {
-        return String.format("CIOF@%x{%s}",
+        return String.format("%s@%x{%s}",
+                getClass().getSimpleName(),
                 hashCode(),
                 _ready?"R":_cause);
     }

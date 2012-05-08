@@ -9,7 +9,7 @@ import org.junit.BeforeClass;
 public class ChannelEndPointTest extends EndPointTest<ChannelEndPoint>
 {
     static ServerSocketChannel connector;
-    
+
     @BeforeClass
     public static void open() throws Exception
     {
@@ -27,8 +27,8 @@ public class ChannelEndPointTest extends EndPointTest<ChannelEndPoint>
     @Override
     protected EndPointPair<ChannelEndPoint> newConnection() throws Exception
     {
-        EndPointPair<ChannelEndPoint> c = new EndPointPair<ChannelEndPoint>();
-        
+        EndPointPair<ChannelEndPoint> c = new EndPointPair<>();
+
         c.client=new ChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()));
         c.server=new ChannelEndPoint(connector.accept());
         return c;

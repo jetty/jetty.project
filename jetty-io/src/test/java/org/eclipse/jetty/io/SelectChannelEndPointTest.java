@@ -60,8 +60,7 @@ public class SelectChannelEndPointTest
         @Override
         public AbstractAsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
         {
-            AbstractAsyncConnection connection = SelectChannelEndPointTest.this.newConnection(channel,endpoint);
-            return connection;
+            return SelectChannelEndPointTest.this.newConnection(channel,endpoint);
         }
 
         @Override
@@ -123,6 +122,7 @@ public class SelectChannelEndPointTest
         @Override
         public synchronized void onReadable()
         {
+            AsyncEndPoint _endp = getEndPoint();
             try
             {
                 _last=System.currentTimeMillis();
@@ -277,8 +277,9 @@ public class SelectChannelEndPointTest
         int i=0;
         while (server.isOpen())
         {
-            assert(i++<10);
             Thread.sleep(10);
+            if (++i == 10)
+                Assert.fail();
         }
 
     }
@@ -360,8 +361,7 @@ public class SelectChannelEndPointTest
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
 
-        while(_lastEndp==null)
-            Thread.sleep(10);
+        while(_lastEndp==null);
         
         _lastEndp.setMaxIdleTime(10*specifiedTimeout);
         Thread.sleep(2 * specifiedTimeout);
@@ -507,7 +507,7 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.register(server);
-        int writes = 1000;
+        int writes = 100000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);

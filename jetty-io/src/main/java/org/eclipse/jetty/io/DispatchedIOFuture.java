@@ -7,6 +7,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.eclipse.jetty.util.Callback;
+
 
 /* ------------------------------------------------------------ */
 /** Dispatched IOFuture.
@@ -19,21 +21,19 @@ public class DispatchedIOFuture implements IOFuture
 {
     private final Lock _lock;
     private final Condition _block;
-    
     private boolean _complete;
     private boolean _ready;
     private Throwable _cause;
-    
     private Callback _callback;
     
     public DispatchedIOFuture()
     {
-        this(false,new ReentrantLock());
+        this(new ReentrantLock());
     }
     
     public DispatchedIOFuture(Lock lock)
     {
-        this(false,lock);
+        this(false, lock);
     }
     
     public DispatchedIOFuture(boolean ready,Lock lock)
@@ -46,7 +46,6 @@ public class DispatchedIOFuture implements IOFuture
     
     public void fail(final Throwable cause)
     {
-        // System.err.println(this);new Throwable().printStackTrace();
         _lock.lock();
         try
         {
@@ -57,7 +56,7 @@ public class DispatchedIOFuture implements IOFuture
             _complete=true;
             
             if (_callback!=null)
-                dispatchFail();
+                dispatchFailed();
             _block.signal();
         }
         finally
@@ -68,7 +67,6 @@ public class DispatchedIOFuture implements IOFuture
     
     public void ready()
     {
-        // System.err.println(this);new Throwable().printStackTrace();
         _lock.lock();
         try
         {
@@ -78,7 +76,7 @@ public class DispatchedIOFuture implements IOFuture
             _complete=true;
 
             if (_callback!=null)
-                dispatchReady();
+                dispatchCompleted();
             _block.signal();
         }
         finally
@@ -89,7 +87,6 @@ public class DispatchedIOFuture implements IOFuture
     
     protected void cancelled()
     {
-        // System.err.println(this);new Throwable().printStackTrace();
         _lock.lock();
         try
         {
@@ -106,7 +103,7 @@ public class DispatchedIOFuture implements IOFuture
     }
     
     @Override
-    public boolean isComplete()
+    public boolean isDone()
     {
         _lock.lock();
         try
@@ -154,7 +151,7 @@ public class DispatchedIOFuture implements IOFuture
         {
             while (!_complete)
                 _block.await();
-            isReady();
+            isComplete();
         }
         finally
         {
@@ -171,7 +168,7 @@ public class DispatchedIOFuture implements IOFuture
         {
             if (!_complete)
                 _block.await(timeout,units);
-            return isReady();
+            return isComplete();
         }
         finally
         {
@@ -180,7 +177,7 @@ public class DispatchedIOFuture implements IOFuture
     }
     
     @Override
-    public void setCallback(Callback callback)
+    public <C> void setCallback(Callback<C> callback, C context)
     {
         _lock.lock();
         try
@@ -188,13 +185,14 @@ public class DispatchedIOFuture implements IOFuture
             if (_callback!=null)
                 throw new IllegalStateException();
             _callback=callback;
+            _context=context;
             
             if (_complete)
             {
                 if (_ready)
-                    dispatchReady();
+                    dispatchCompleted();
                 else
-                    dispatchFail();
+                    dispatchFailed();
             }
         }
         finally
@@ -208,36 +206,39 @@ public class DispatchedIOFuture implements IOFuture
         new Thread(callback).start();
     }
 
-    private void dispatchReady()
+    private void dispatchCompleted()
     {
         final Callback callback=_callback;
         _callback=null;
+        final Object context=_context;
+        _context=null;
         dispatch(new Runnable()
         {
             @Override
             public void run()
             {
-                callback.onReady();
+                callback.completed(context);
             }
         });
     }
     
-    private void dispatchFail()
+    private void dispatchFailed()
     {
         final Callback callback=_callback;
+        _callback=null;
         final Throwable cause=_cause;
-        _callback=null;
+        _cause=null;
+        final Object context=_context;
+        _context=null;
         dispatch(new Runnable()
         {
             @Override
             public void run()
             {
-                callback.onFail(cause);
+                callback.failed(context, cause);
             }
         });
     }
-    
-
 
     @Override
     public String toString()

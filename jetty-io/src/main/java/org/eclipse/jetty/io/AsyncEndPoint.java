@@ -12,7 +12,7 @@ import java.util.concurrent.Future;
  * handlers, but does not use those actual interfaces because: they have
  * some inefficiencies (eg buffers must be allocated before read); they have
  * unrequired overheads due to their generic nature (passing of attachments
- * and returning operation counts); there is no need to pass timeouts as 
+ * and returning operation counts); there is no need to pass timeouts as
  * {@link EndPoint#getMaxIdleTime() is used.
  * <p>
  * The intent of this API is that it can be used in either: a polling mode (like {@link Future})
@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
  * <pre>
  * IOFuture read = endpoint.readable();
  * ...
- * while (!read.isReady()) 
+ * while (!read.isComplete())
  *   Thread.sleep(10);
  * endpoint.fill(buffer);
  * </pre>
@@ -38,7 +38,7 @@ import java.util.concurrent.Future;
  *   public void onFail(IOException e) { ... }
  * }
  * </pre>
- * 
+ *
  * <h3>Blocking write</h3>
  * <pre>
  * endpoint.write(buffer).block();
@@ -47,9 +47,9 @@ import java.util.concurrent.Future;
  * <pre>
  * IOFuture write = endpoint.write(buffer);
  * ...
- * while (!write.isReady())
+ * while (!write.isComplete())
  *   Thread.sleep(10);
- * 
+ *
  * </pre>
  * <h3>Callback write</h3>
  * <pre>
@@ -73,36 +73,36 @@ import java.util.concurrent.Future;
  *   });
  * ...
  * </pre>
- * 
+ *
  * <h2>Compatibility Notes</h2>
- * Some Async IO APIs have the concept of setting read interest.  With this 
- * API calling {@link #readable()} is equivalent to setting read interest to true 
- * and calling {@link IOFuture#cancel()} is equivalent to setting read interest 
- * to false. 
+ * Some Async IO APIs have the concept of setting read interest.  With this
+ * API calling {@link #readable()} is equivalent to setting read interest to true
+ * and calling {@link IOFuture#cancel()} is equivalent to setting read interest
+ * to false.
  */
 public interface AsyncEndPoint extends EndPoint
 {
     /* ------------------------------------------------------------ */
     /** Schedule a read operation.
      * <p>
-     * This method allows a {@link #fill(ByteBuffer)} operation to be scheduled 
+     * This method allows a {@link #fill(ByteBuffer)} operation to be scheduled
      * with either blocking, polling or callback semantics.
-     * @return an {@link IOFuture} instance that will be ready when a call to {@link #fill(ByteBuffer)} will 
-     * return immediately with data without blocking. 
+     * @return an {@link IOFuture} instance that will be ready when a call to {@link #fill(ByteBuffer)} will
+     * return immediately with data without blocking.
      * @throws IllegalStateException if another read operation has been scheduled and has not timedout, been cancelled or is ready.
      */
     IOFuture readable() throws IllegalStateException;
-    
+
     /* ------------------------------------------------------------ */
-    /** Schedule a write operation.
-     * This method performs {@link #flush(ByteBuffer...)} operations and allows the completion of 
+    /**
+     * This method performs {@link #flush(ByteBuffer...)} operations and allows the completion of
      * the entire write to be scheduled with blocking, polling or callback semantics.
      * @param buffers One or more {@link ByteBuffer}s that will be flushed.
-     * @return an {@link IOFuture} instance that will be ready when all the data in the buffers passed has been consumed by 
-     * one or more calls to {@link #flush(ByteBuffer)}. 
+     * @return an {@link IOFuture} instance that will be ready when all the data in the buffers passed has been consumed by
+     * one or more calls to {@link #flush(ByteBuffer...)}.
      */
     IOFuture write(ByteBuffer... buffers) throws IllegalStateException;
-    
+
     /* ------------------------------------------------------------ */
     /** Set if the endpoint should be checked for idleness
      */
