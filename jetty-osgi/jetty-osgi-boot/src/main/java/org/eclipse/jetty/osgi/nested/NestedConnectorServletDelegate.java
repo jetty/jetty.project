@@ -27,20 +27,19 @@ import org.eclipse.jetty.nested.NestedConnector;
  */
 public class NestedConnectorServletDelegate extends HttpServlet
 {
-	private static final long serialVersionUID = 1L;
-	
-	private final NestedConnector _nestedConnector;
-	
-	public NestedConnectorServletDelegate(NestedConnector nestedConnector)
-	{
-		_nestedConnector = nestedConnector;
-	}
-	
-	@Override
-	public void service(ServletRequest req,	ServletResponse res)
-			throws ServletException, IOException
-	{
-		_nestedConnector.service(req, res);
-	}
+    private static final long serialVersionUID = 1L;
+
+    private final NestedConnector _nestedConnector;
+
+    public NestedConnectorServletDelegate(NestedConnector nestedConnector)
+    {
+        _nestedConnector = nestedConnector;
+    }
+
+    @Override
+    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+    {
+        _nestedConnector.service(req, res);
+    }
 
 }

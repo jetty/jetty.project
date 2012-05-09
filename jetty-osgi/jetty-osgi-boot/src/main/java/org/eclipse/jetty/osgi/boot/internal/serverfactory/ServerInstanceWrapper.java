@@ -185,8 +185,7 @@ public class ServerInstanceWrapper
         {
             Thread.currentThread().setContextClassLoader(contextCl);
         }
-        
-        
+
     }
 
     public void stop()
