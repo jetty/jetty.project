@@ -121,12 +121,6 @@ public class SslConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public void setAppConnection(AsyncConnection connection)
-    {
-        _appConnection=connection;
-    }
-
-    /* ------------------------------------------------------------ */
     protected AppEndPoint newAppEndPoint()
     {
         return new AppEndPoint();
@@ -814,6 +808,18 @@ public class SslConnection extends AbstractAsyncConnection
             {
                 _lock.unlock();
             }
+        }
+
+        @Override
+        public AsyncConnection getAsyncConnection()
+        {
+            return _appConnection;
+        }
+
+        @Override
+        public void setAsyncConnection(AsyncConnection connection)
+        {
+            _appConnection = connection;
         }
     }
 }

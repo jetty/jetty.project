@@ -18,7 +18,7 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.ByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 
 public abstract class ControlFrameGenerator

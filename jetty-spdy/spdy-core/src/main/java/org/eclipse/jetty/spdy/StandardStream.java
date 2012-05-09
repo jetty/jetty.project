@@ -345,11 +345,11 @@ public class StandardStream implements IStream
     {
         if (isClosed() || isReset())
         {
-            callback.failed(new StreamException(getId(),StreamStatus.STREAM_ALREADY_CLOSED));
+            callback.failed(this, new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED));
             return;
         }
-        PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo);
-        session.syn(pushSynInfo,null,timeout,unit, callback);
+        PushSynInfo pushSynInfo = new PushSynInfo(getId(), synInfo);
+        session.syn(pushSynInfo, null, timeout, unit, callback);
     }
 
     @Override

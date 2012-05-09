@@ -16,50 +16,18 @@
 
 package org.eclipse.jetty.spdy;
 
-import java.io.IOException;
-
-import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.nio.AsyncConnection;
 
-public class EmptyAsyncConnection extends AbstractConnection implements AsyncConnection
+public class EmptyAsyncConnection extends AbstractAsyncConnection
 {
     public EmptyAsyncConnection(AsyncEndPoint endPoint)
     {
         super(endPoint);
     }
 
-    public Connection handle() throws IOException
-    {
-        return this;
-    }
-
     @Override
-    public AsyncEndPoint getEndPoint()
-    {
-        return (AsyncEndPoint)super.getEndPoint();
-    }
-
-    @Override
-    public boolean isIdle()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isSuspended()
-    {
-        return false;
-    }
-
-    @Override
-    public void onClose()
-    {
-    }
-
-    @Override
-    public void onInputShutdown() throws IOException
+    public void onReadable()
     {
     }
 }

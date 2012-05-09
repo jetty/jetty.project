@@ -17,12 +17,16 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     }
 
     public abstract void onReadable();
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.io.AsyncConnection#onClose()
-     */
+
     @Override
-    public abstract void onClose();
+    public void onOpen()
+    {
+    }
+
+    @Override
+    public void onClose()
+    {
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -34,7 +38,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         return _endp;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.io.AsyncConnection#onIdleExpired(long)

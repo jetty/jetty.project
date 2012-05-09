@@ -23,6 +23,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
@@ -72,7 +74,7 @@ public class AsyncTimeoutTest
             }
 
             @Override
-            public void failed(Throwable x)
+            public void failed(Stream context, Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -120,7 +122,7 @@ public class AsyncTimeoutTest
             }
 
             @Override
-            public void failed(Throwable x)
+            public void failed(Void context, Throwable x)
             {
                 failedLatch.countDown();
             }

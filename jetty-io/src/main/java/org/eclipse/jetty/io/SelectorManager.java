@@ -328,19 +328,19 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     /**
      * @param endpoint
      */
-    protected abstract void endPointClosed(SelectChannelEndPoint endpoint);
+    protected abstract void endPointClosed(AsyncEndPoint endpoint);
 
     /* ------------------------------------------------------------ */
     /**
      * @param endpoint
      */
-    protected abstract void endPointOpened(SelectChannelEndPoint endpoint);
+    protected abstract void endPointOpened(AsyncEndPoint endpoint);
 
     /* ------------------------------------------------------------ */
-    protected abstract void endPointUpgraded(SelectChannelEndPoint endpoint,AsyncConnection oldConnection);
+    protected abstract void endPointUpgraded(AsyncEndPoint endpoint,AsyncConnection oldConnection);
 
     /* ------------------------------------------------------------------------------- */
-    public abstract AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment);
+    public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment);
 
     /* ------------------------------------------------------------ */
     /**
@@ -351,7 +351,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @return the new endpoint {@link SelectChannelEndPoint}
      * @throws IOException
      */
-    protected abstract SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
+    protected abstract AsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
 
     /* ------------------------------------------------------------------------------- */
     protected void connectionFailed(SocketChannel channel,Throwable ex,Object attachment)
@@ -392,7 +392,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private boolean _pausing;
         private boolean _paused;
         private volatile long _idleTick;
-        private ConcurrentMap<SelectChannelEndPoint,Object> _endPoints = new ConcurrentHashMap<SelectChannelEndPoint, Object>();
+        private ConcurrentMap<AsyncEndPoint,Object> _endPoints = new ConcurrentHashMap<>();
 
         /* ------------------------------------------------------------ */
         SelectSet(int acceptorID) throws Exception
@@ -468,7 +468,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             if ((channel instanceof SocketChannel) && ((SocketChannel)channel).isConnected())
                             {
                                 SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
-                                SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
+                                AsyncEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
                                 key.attach(endpoint);
                             }
                             else if (channel.isOpen())
@@ -482,7 +482,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             final SocketChannel channel=(SocketChannel)change;
                             ch=channel;
                             SelectionKey key = channel.register(selector,SelectionKey.OP_READ,null);
-                            SelectChannelEndPoint endpoint = createEndPoint(channel,key);
+                            AsyncEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
                         }
                         else if (change instanceof ChangeTask)
@@ -624,9 +624,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                 if (connected)
                                 {
                                     key.interestOps(SelectionKey.OP_READ);
-                                    SelectChannelEndPoint endpoint = createEndPoint(channel,key);
+                                    AsyncEndPoint endpoint = createEndPoint(channel, key);
                                     key.attach(endpoint);
-                                    endpoint.onSelected();
+                                    // TODO: remove the cast
+                                    ((SelectChannelEndPoint)endpoint).onSelected();
                                 }
                                 else
                                 {
@@ -638,10 +639,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         {
                             // Wrap readable registered channel in an endpoint
                             channel = (SocketChannel)key.channel();
-                            SelectChannelEndPoint endpoint = createEndPoint(channel,key);
+                            AsyncEndPoint endpoint = createEndPoint(channel, key);
                             key.attach(endpoint);
                             if (key.isReadable())
-                                endpoint.onSelected();
+                            {
+                                // TODO: remove the cast
+                                ((SelectChannelEndPoint)endpoint).onSelected();
+                            }
                         }
                         key = null;
                     }
@@ -697,9 +701,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     {
                         public void run()
                         {
-                            for (SelectChannelEndPoint endp:_endPoints.keySet())
+                            for (AsyncEndPoint endp:_endPoints.keySet())
                             {
-                                endp.checkForIdleOrReadWriteTimeout(idle_now);
+                                // TODO: remove the cast
+                                ((SelectChannelEndPoint)endp).checkForIdleOrReadWriteTimeout(idle_now);
                             }
                         }
                         public String toString() {return "Idle-"+super.toString();}
@@ -824,9 +829,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
 
         /* ------------------------------------------------------------ */
-        private SelectChannelEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
+        private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
         {
-            SelectChannelEndPoint endp = newEndPoint(channel,this,sKey);
+            AsyncEndPoint endp = newEndPoint(channel, this, sKey);
             LOG.debug("created {}",endp);
             endPointOpened(endp);
             _endPoints.put(endp,this);
