@@ -85,13 +85,30 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         public void completed(Void context)
         {
             if (_readInterested.compareAndSet(true,false))
-                onReadable();
+            {
+                new Thread(new Runnable()
+                {
+                    public void run()
+                    {
+                        onReadable();
+                    }
+                }).start();
+            }
         }
 
         @Override
-        public void failed(Void context, Throwable x)
+        public void failed(Void context, final Throwable x)
         {
-            onReadFail(x);
+            if (_readInterested.compareAndSet(true,false))
+            {
+                new Thread(new Runnable()
+                {
+                    public void run()
+                    {
+                        onReadFail(x);
+                    }
+                }).start();
+            }
         }
 
         @Override
