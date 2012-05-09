@@ -765,7 +765,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
             flush();
         }
-        catch (Throwable x)
+        catch (Exception x)
         {
             notifyHandlerFailed(handler,x);
         }
@@ -810,45 +810,55 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         FrameBytes frameBytes = null;
         ByteBuffer buffer = null;
-        synchronized (queue)
+        try
         {
-            if (flushing || queue.isEmpty())
-                return;
-
-            Set<IStream> stalledStreams = null;
-            for (int i = 0; i < queue.size(); ++i)
+            synchronized (queue)
             {
-                frameBytes = queue.get(i);
+                if (flushing || queue.isEmpty())
+                    return;
 
-                IStream stream = frameBytes.getStream();
-                if (stream != null && stalledStreams != null && stalledStreams.contains(stream))
-                    continue;
-
-                buffer = frameBytes.getByteBuffer();
-                if (buffer != null)
+                Set<IStream> stalledStreams = null;
+                for (int i = 0; i < queue.size(); ++i)
                 {
-                    queue.remove(i);
-                    // TODO: stream.isUniDirectional() check here is only needed for pushStreams which send a syn with close=true --> find a better solution
-                    if (stream != null && !streams.containsValue(stream) && !stream.isUnidirectional())
-                        frameBytes.fail(new StreamException(stream.getId(),StreamStatus.INVALID_STREAM));
-                    break;
+                    frameBytes = queue.get(i);
+
+                    IStream stream = frameBytes.getStream();
+                    if (stream != null && stalledStreams != null && stalledStreams.contains(stream))
+                        continue;
+
+                    buffer = frameBytes.getByteBuffer();
+                    if (buffer != null)
+                    {
+                        queue.remove(i);
+                        // TODO: stream.isUniDirectional() check here is only needed for pushStreams which send a syn with close=true --> find a better solution
+                        if (stream != null && !streams.containsValue(stream) && !stream.isUnidirectional())
+                            frameBytes.fail(new StreamException(stream.getId(),StreamStatus.INVALID_STREAM));
+                        break;
+                    }
+
+                    if (stalledStreams == null)
+                        stalledStreams = new HashSet<>();
+                    if (stream != null)
+                        stalledStreams.add(stream);
+
+                    logger.debug("Flush stalled for {}, {} frame(s) in queue",frameBytes,queue.size());
                 }
 
-                if (stalledStreams == null)
-                    stalledStreams = new HashSet<>();
-                if (stream != null)
-                    stalledStreams.add(stream);
+                if (buffer == null)
+                    return;
 
-                logger.debug("Flush stalled for {}, {} frame(s) in queue",frameBytes,queue.size());
+                flushing = true;
+                logger.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
             }
-
-            if (buffer == null)
-                return;
-
-            flushing = true;
-            logger.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
+            write(buffer,this,frameBytes);
         }
-        write(buffer,this,frameBytes);
+        catch (Exception x)
+        {
+            if(frameBytes!=null)
+                frameBytes.fail(x);
+            else
+                throw x;
+        }
     }
 
     private void append(FrameBytes frameBytes)
@@ -1106,7 +1116,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 buffer = generator.data(stream.getId(),size,dataInfo);
                 return buffer;
             }
-            catch (Throwable x)
+            catch (Exception x)
             {
                 fail(x);
                 return null;
