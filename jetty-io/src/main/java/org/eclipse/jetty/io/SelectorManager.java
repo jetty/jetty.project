@@ -351,7 +351,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @return the new endpoint {@link SelectChannelEndPoint}
      * @throws IOException
      */
-    protected abstract AsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
+    protected abstract SelectableAsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
 
     /* ------------------------------------------------------------------------------- */
     protected void connectionFailed(SocketChannel channel,Throwable ex,Object attachment)
@@ -453,7 +453,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         if (change instanceof EndPoint)
                         {
                             // Update the operations for a key.
-                            SelectChannelEndPoint endpoint = (SelectChannelEndPoint)change;
+                            SelectableAsyncEndPoint endpoint = (SelectableAsyncEndPoint)change;
                             ch=endpoint.getChannel();
                             endpoint.doUpdateKey();
                         }
@@ -595,17 +595,17 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         if (!key.isValid())
                         {
                             key.cancel();
-                            SelectChannelEndPoint endpoint = (SelectChannelEndPoint)key.attachment();
+                            SelectableAsyncEndPoint endpoint = (SelectableAsyncEndPoint)key.attachment();
                             if (endpoint != null)
                                 endpoint.doUpdateKey();
                             continue;
                         }
 
                         Object att = key.attachment();
-                        if (att instanceof SelectChannelEndPoint)
+                        if (att instanceof SelectableAsyncEndPoint)
                         {
                             if (key.isReadable()||key.isWritable())
-                                ((SelectChannelEndPoint)att).onSelected();
+                                ((SelectableAsyncEndPoint)att).onSelected();
                         }
                         else if (key.isConnectable())
                         {
@@ -628,7 +628,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                     AsyncEndPoint endpoint = createEndPoint(channel, key);
                                     key.attach(endpoint);
                                     // TODO: remove the cast
-                                    ((SelectChannelEndPoint)endpoint).onSelected();
+                                    ((SelectableAsyncEndPoint)endpoint).onSelected();
                                 }
                                 else
                                 {
@@ -645,7 +645,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             if (key.isReadable())
                             {
                                 // TODO: remove the cast
-                                ((SelectChannelEndPoint)endpoint).onSelected();
+                                ((SelectableAsyncEndPoint)endpoint).onSelected();
                             }
                         }
                         key = null;
@@ -705,7 +705,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             for (AsyncEndPoint endp:_endPoints.keySet())
                             {
                                 // TODO: remove the cast
-                                ((SelectChannelEndPoint)endp).checkForIdleOrReadWriteTimeout(idle_now);
+                                ((SelectableAsyncEndPoint)endp).checkForIdleOrReadWriteTimeout(idle_now);
                             }
                         }
                         public String toString() {return "Idle-"+super.toString();}
@@ -840,7 +840,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
 
         /* ------------------------------------------------------------ */
-        public void destroyEndPoint(SelectChannelEndPoint endp)
+        public void destroyEndPoint(SelectableAsyncEndPoint endp)
         {
             LOG.debug("destroyEndPoint {}",endp);
             _endPoints.remove(endp);
@@ -1020,4 +1020,15 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private interface ChangeTask extends Runnable
     {}
 
+    // TODO review this interface
+    public interface SelectableAsyncEndPoint extends AsyncEndPoint
+    {
+        void onSelected();
+
+        Channel getChannel();
+
+        void doUpdateKey();
+
+        void checkForIdleOrReadWriteTimeout(long idle_now);
+    }
 }

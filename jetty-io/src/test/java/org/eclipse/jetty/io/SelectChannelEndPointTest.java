@@ -138,12 +138,17 @@ public class SelectChannelEndPointTest
                     int filled=_endp.fill(_in);
                     if (filled>0)
                         progress=true;
+                    System.err.println("filled "+filled);
 
                     // If the tests wants to block, then block
                     while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
                     {
-                        _endp.readable().block();
+                        FutureCallback<Void> blockingRead= new FutureCallback<>();
+                        System.err.println("blocking read on "+blockingRead);
+                        _endp.readable(null,blockingRead);
+                        blockingRead.get();
                         filled=_endp.fill(_in);
+                        System.err.println("FILLED "+filled);
                         progress|=filled>0;
                     }
 
@@ -157,7 +162,11 @@ public class SelectChannelEndPointTest
                         ByteBuffer out=_out.duplicate();
                         BufferUtil.clear(_out);
                         for (int i=0;i<_writeCount;i++)
-                            _endp.write(out.asReadOnlyBuffer()).block();
+                        {
+                            FutureCallback<Void> blockingWrite= new FutureCallback<>();
+                            _endp.write(null,blockingWrite,out.asReadOnlyBuffer());
+                            blockingWrite.get();
+                        }
                         progress=true;
                     }
 
@@ -171,7 +180,9 @@ public class SelectChannelEndPointTest
                 // Timeout does not close, so echo exception then shutdown
                 try
                 {
-                    _endp.write(BufferUtil.toBuffer("EE: "+BufferUtil.toString(_in))).block();
+                    FutureCallback<Void> blockingWrite= new FutureCallback<>();
+                    _endp.write(null,blockingWrite,BufferUtil.toBuffer("EE: "+BufferUtil.toString(_in)));
+                    blockingWrite.get();
                     _endp.shutdownOutput();
                 }
                 catch(Exception e2)

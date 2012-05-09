@@ -1,5 +1,7 @@
 package org.eclipse.jetty.io;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -10,6 +12,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
     private final AsyncEndPoint _endp;
     private final ReadCallback _readCallback = new ReadCallback();
+    private final AtomicBoolean _readInterested = new AtomicBoolean();
 
     public AbstractAsyncConnection(AsyncEndPoint endp)
     {
@@ -52,31 +55,37 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         else
             _endp.shutdownOutput();
     }
-
-    public IOFuture scheduleOnReadable()
+    
+    /* ------------------------------------------------------------ */
+    public void scheduleOnReadable()
     {
-        IOFuture read=getEndPoint().readable();
-        read.setCallback(_readCallback, null);
-        return read;
+        if (_readInterested.compareAndSet(false,true))
+            getEndPoint().readable(null,_readCallback);
     }
-
+    
+    /* ------------------------------------------------------------ */
     public void onReadFail(Throwable cause)
     {
         LOG.debug("read failed: "+cause);
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     private class ReadCallback implements Callback<Void>
     {
         @Override
         public void completed(Void context)
         {
-            onReadable();
+            if (_readInterested.compareAndSet(true,false))
+                onReadable();
         }
 
         @Override

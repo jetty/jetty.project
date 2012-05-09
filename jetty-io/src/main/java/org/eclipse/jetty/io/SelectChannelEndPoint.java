@@ -23,6 +23,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.io.SelectorManager.SelectSet;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout.Task;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 /**
  * An Endpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorManager.SelectableAsyncEndPoint
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
@@ -40,8 +41,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
 
-    private DispatchingIOFuture _readFuture = new DispatchingIOFuture(true,_lock);
-    private DispatchingIOFuture _writeFuture = new DispatchingIOFuture(true,_lock);
+    private Callback _readCallback;
+    private Object _readContext;
+    private Callback _writeCallback;
+    private Object _writeContext;
 
     private SelectionKey _key;
 
@@ -73,6 +76,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public AsyncConnection getAsyncConnection()
     {
         return _connection;
@@ -94,6 +98,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setAsyncConnection(AsyncConnection connection)
     {
         AsyncConnection old = getAsyncConnection();
@@ -107,6 +112,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
      * Called by selectSet to schedule handling
      * 
      */
+    @Override
     public void onSelected()
     {
         synchronized (_lock)
@@ -126,10 +132,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 boolean can_write = (_key.isWritable() && (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE);
                 _interestOps = 0;
 
-                if (can_read && !_readFuture.isDone())
-                    _readFuture.complete();
-
-                if (can_write && _writeBuffers != null)
+                if (can_read)
+                    readCompleted();
+                if (can_write)
                     completeWrite();
 
             }
@@ -168,31 +173,90 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void checkForIdleOrReadWriteTimeout(long now)
     {
-        if (_idlecheck || !_readFuture.isDone() || !_writeFuture.isDone())
+        synchronized (_lock)
         {
-            long idleTimestamp = getIdleTimestamp();
-            long max_idle_time = getMaxIdleTime();
-
-            if (idleTimestamp != 0 && max_idle_time > 0)
+            if (_idlecheck || _readCallback!=null || _writeCallback!=null)
             {
-                long idleForMs = now - idleTimestamp;
+                long idleTimestamp = getIdleTimestamp();
+                long max_idle_time = getMaxIdleTime();
 
-                if (idleForMs > max_idle_time)
+                if (idleTimestamp != 0 && max_idle_time > 0)
                 {
-                    synchronized (_lock)
+                    long idleForMs = now - idleTimestamp;
+
+                    if (idleForMs > max_idle_time)
                     {
+                        notIdle();
+                        
                         if (_idlecheck)
                             _connection.onIdleExpired(idleForMs);
-                        if (!_readFuture.isDone())
-                            _readFuture.fail(new TimeoutException());
-                        if (!_writeFuture.isDone())
-                            _writeFuture.fail(new TimeoutException());
-                        notIdle();
+                        
+                        TimeoutException timeout = new TimeoutException();
+                        readFailed(timeout);
+                        writeFailed(timeout);
                     }
                 }
             }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void readCompleted()
+    {
+        if (_readCallback!=null)
+        {
+            Callback cb=_readCallback;
+            Object ctx=_readContext;
+            _readCallback=null;
+            _readContext=null;
+            System.err.printf("ReadComplete %s %s%n",ctx,cb);
+            cb.completed(ctx); // TODO after lock released?
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void writeCompleted()
+    {
+        if (_writeCallback!=null)
+        {
+            Callback cb=_writeCallback;
+            Object ctx=_writeContext;
+            _writeCallback=null;
+            _writeContext=null;
+            _writeBuffers=null;
+            System.err.printf("writeComplete %s %s%n",ctx,cb);
+            cb.completed(ctx); // TODO after lock released?
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void readFailed(Throwable cause)
+    {
+        if (_readCallback!=null)
+        {
+            Callback cb=_readCallback;
+            Object ctx=_readContext;
+            _readCallback=null;
+            _readContext=null;
+            System.err.printf("ReadFail %s %s%n",ctx,cb);
+            cb.failed(ctx,cause); // TODO after lock released?
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void writeFailed(Throwable cause)
+    {
+        if (_writeCallback!=null)
+        {
+            Callback cb=_writeCallback;
+            Object ctx=_writeContext;
+            _writeCallback=null;
+            _writeContext=null;
+            System.err.printf("writeFailed %s %s%n",ctx,cb);
+            cb.failed(ctx,cause); // TODO after lock released?
         }
     }
 
@@ -207,31 +271,29 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public IOFuture readable() throws IllegalStateException
+    @Override    
+    public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
     {
         synchronized (_lock)
         {
-            if (_readFuture != null && !_readFuture.isDone())
+            if (_readCallback != null)
                 throw new IllegalStateException("previous read not complete");
-
-            _readFuture = new InterestedFuture(SelectionKey.OP_READ);
-            _interestOps = _interestOps | SelectionKey.OP_READ;
+            _readContext=context;
+            _readCallback=callback;
+            _interestOps=_interestOps | SelectionKey.OP_READ;
             updateKey();
-
-            return _readFuture;
         }
     }
 
     /* ------------------------------------------------------------ */
     @Override
-    public IOFuture write(ByteBuffer... buffers)
+    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
     {
         synchronized (_lock)
         {
             try
             {
-                if (_writeFuture != null && !_writeFuture.isDone())
+                if (_writeCallback!=null)
                     throw new IllegalStateException("previous write not complete");
 
                 flush(buffers);
@@ -241,18 +303,20 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 {
                     if (b.hasRemaining())
                     {
-                        _writeBuffers = buffers;
-                        _writeFuture = new InterestedFuture(SelectionKey.OP_WRITE);
+                        _writeBuffers=buffers;
+                        _writeContext=context;
+                        _writeCallback=callback;
                         _interestOps = _interestOps | SelectionKey.OP_WRITE;
                         updateKey();
-                        return _writeFuture;
+                        return;
                     }
                 }
-                return DoneIOFuture.COMPLETE;
+                
+                callback.completed(context);
             }
             catch (IOException e)
             {
-                return new DoneIOFuture(e);
+                callback.failed(context,e);
             }
         }
     }
@@ -260,6 +324,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     private void completeWrite()
     {
+        if (_writeBuffers==null)
+            return;
+        
         try
         {
             flush(_writeBuffers);
@@ -274,13 +341,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 }
             }
             // we are complete and ready
-            _writeFuture.complete();
+            writeCompleted();
         }
-        catch (final IOException e)
+        catch (IOException e)
         {
-            _writeBuffers = null;
-            if (!_writeFuture.isDone())
-                _writeFuture.fail(e);
+            writeFailed(e);
         }
 
     }
@@ -332,7 +397,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /**
      * Synchronize the interestOps with the actual key. Call is scheduled by a call to updateKey
      */
-    void doUpdateKey()
+    @Override
+    public void doUpdateKey()
     {
         synchronized (_lock)
         {
@@ -449,7 +515,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
 
         return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",hashCode(),getRemoteAddress(),getLocalAddress(),isOpen(),
-                isInputShutdown(),isOutputShutdown(),_interestOps,keyString,_readFuture,_writeFuture,getAsyncConnection());
+                isInputShutdown(),isOutputShutdown(),_interestOps,keyString,_readCallback,_writeCallback,getAsyncConnection());
     }
 
     /* ------------------------------------------------------------ */
@@ -458,38 +524,4 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         return _selectSet;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class InterestedFuture extends DispatchingIOFuture
-    {
-        private final int _interest;
-
-        private InterestedFuture(int interest)
-        {
-            super(_lock);
-            _interest = interest;
-        }
-
-        @Override
-        protected void dispatch(Runnable task)
-        {
-            if (!_manager.dispatch(task))
-            {
-                LOG.warn("Dispatch failed: i=" + _interest);
-                throw new IllegalStateException();
-            }
-        }
-
-        @Override
-        public void cancel()
-        {
-            synchronized (_lock)
-            {
-                _interestOps = _interestOps & ~_interest;
-                updateKey();
-                cancelled();
-            }
-        }
-    }
 }
