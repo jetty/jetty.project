@@ -1,5 +1,6 @@
 package org.eclipse.jetty.io;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,6 +15,7 @@ import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -163,145 +165,206 @@ public class IOFutureTest
 
 
     @Test
-    public void testReady() throws Exception
+    public void testBlockWaitsWhenNotCompleted() throws Exception
     {
         DispatchingIOFuture future = new DispatchingIOFuture();
 
         assertFalse(future.isDone());
         assertFalse(future.isComplete());
 
-        final AtomicBoolean ready = new AtomicBoolean(false);
-        final AtomicReference<Throwable> fail = new AtomicReference<>();
+        final AtomicBoolean completed = new AtomicBoolean(false);
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
 
         future.setCallback(new Callback<Object>()
         {
             @Override
             public void completed(Object context)
             {
-                ready.set(true);
+                completed.set(true);
             }
 
             @Override
             public void failed(Object context, Throwable cause)
             {
-                fail.set(cause);
+                failure.set(cause);
             }
         }, null);
 
-        long start=System.currentTimeMillis();
-        assertFalse(future.block(100,TimeUnit.MILLISECONDS));
-        assertThat(System.currentTimeMillis()-start,greaterThan(10L));
+        long sleep = 1000;
+        long start = System.nanoTime();
+        assertFalse(future.block(sleep, TimeUnit.MILLISECONDS));
+        assertThat(System.nanoTime() - start, greaterThan(TimeUnit.MILLISECONDS.toNanos(sleep / 2)));
 
-        assertFalse(ready.get());
-        assertNull(fail.get());
+        assertFalse(completed.get());
+        assertNull(failure.get());
+    }
 
+    @Test
+    public void testTimedBlockWokenUpWhenCompleted() throws Exception
+    {
+        final DispatchingIOFuture future = new DispatchingIOFuture();
 
-        start=System.currentTimeMillis();
-        final DispatchingIOFuture f0=future;
+        final CountDownLatch completed = new CountDownLatch(1);
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+
+        future.setCallback(new Callback<Object>()
+        {
+            @Override
+            public void completed(Object context)
+            {
+                completed.countDown();
+            }
+
+            @Override
+            public void failed(Object context, Throwable cause)
+            {
+                failure.set(cause);
+            }
+        }, null);
+
+        long start = System.nanoTime();
+        final long delay = 500;
         new Thread()
         {
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
-                f0.complete();
+                try
+                {
+                    // Want the call to block() below to happen before the call to complete() here
+                    TimeUnit.MILLISECONDS.sleep(delay);
+                    future.complete();
+                }
+                catch (InterruptedException x)
+                {
+                    Assert.fail();
+                }
             }
         }.start();
 
-        assertTrue(future.block(1000,TimeUnit.MILLISECONDS));
-        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(10L));
-        Assert.assertThat(System.currentTimeMillis()-start,lessThan(1000L));
+        assertTrue(future.block(delay * 4, TimeUnit.MILLISECONDS));
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        Assert.assertThat(elapsed, greaterThan(delay / 2));
+        Assert.assertThat(elapsed, lessThan(delay * 2));
 
         assertTrue(future.isDone());
         assertTrue(future.isComplete());
-        assertTrue(ready.get());
-        assertNull(fail.get());
+        assertTrue(completed.await(delay * 4, TimeUnit.MILLISECONDS));
+        assertNull(failure.get());
+    }
 
-        ready.set(false);
+    @Test
+    public void testBlockWokenUpWhenCompleted() throws Exception
+    {
+        final DispatchingIOFuture future = new DispatchingIOFuture();
 
+        final CountDownLatch completed = new CountDownLatch(1);
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
 
-        future = new DispatchingIOFuture();
-        assertFalse(future.isDone());
-        assertFalse(future.isComplete());
-        start=System.currentTimeMillis();
-        final DispatchingIOFuture f1=future;
+        future.setCallback(new Callback<Object>()
+        {
+            @Override
+            public void completed(Object context)
+            {
+                completed.countDown();
+            }
+
+            @Override
+            public void failed(Object context, Throwable cause)
+            {
+                failure.set(cause);
+            }
+        }, null);
+
+        final long delay = 500;
+        long start = System.nanoTime();
         new Thread()
         {
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
-                f1.complete();
+                try
+                {
+                    // Want the call to block() below to happen before the call to complete() here
+                    TimeUnit.MILLISECONDS.sleep(delay);
+                    future.complete();
+                }
+                catch (InterruptedException x)
+                {
+                    Assert.fail();
+                }
             }
         }.start();
 
         future.block();
-        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(10L));
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        Assert.assertThat(elapsed, greaterThan(delay / 2));
+        Assert.assertThat(elapsed, lessThan(delay * 2));
 
         assertTrue(future.isDone());
         assertTrue(future.isComplete());
-        assertFalse(ready.get()); // no callback set
-        assertNull(fail.get());
+        assertTrue(completed.await(delay * 4, TimeUnit.MILLISECONDS));
+        assertNull(failure.get());
     }
 
-
     @Test
-    public void testFail() throws Exception
+    public void testTimedBlockWokenUpOnFailure() throws Exception
     {
-        DispatchingIOFuture future = new DispatchingIOFuture();
-        final Exception ex=new Exception("failed");
+        final DispatchingIOFuture future = new DispatchingIOFuture();
+        final Exception ex = new Exception("failed");
 
-        assertFalse(future.isDone());
-        assertFalse(future.isComplete());
-
-        final AtomicBoolean ready = new AtomicBoolean(false);
-        final AtomicReference<Throwable> fail = new AtomicReference<>();
-
+        final AtomicBoolean completed = new AtomicBoolean(false);
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        final CountDownLatch failureLatch = new CountDownLatch(1);
         future.setCallback(new Callback<Object>()
         {
             @Override
             public void completed(Object context)
             {
-                ready.set(true);
+                completed.set(true);
             }
 
             @Override
-            public void failed(Object context, Throwable cause)
+            public void failed(Object context, Throwable x)
             {
-                fail.set(cause);
+                failure.set(x);
+                failureLatch.countDown();
             }
         }, null);
 
-        long start=System.currentTimeMillis();
-        assertFalse(future.block(100,TimeUnit.MILLISECONDS));
-        assertThat(System.currentTimeMillis()-start,greaterThan(10L));
-
-        assertFalse(ready.get());
-        assertNull(fail.get());
-
-        start=System.currentTimeMillis();
-        final DispatchingIOFuture f0=future;
+        final long delay = 500;
+        long start = System.nanoTime();
         new Thread()
         {
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
-                f0.fail(ex);
+                try
+                {
+                    // Want the call to block() below to happen before the call to fail() here
+                    TimeUnit.MILLISECONDS.sleep(delay);
+                    future.fail(ex);
+                }
+                catch (InterruptedException x)
+                {
+                    Assert.fail();
+                }
             }
         }.start();
 
         try
         {
-            future.block(1000,TimeUnit.MILLISECONDS);
+            future.block(delay * 4, TimeUnit.MILLISECONDS);
             Assert.fail();
         }
-        catch(ExecutionException e)
+        catch (ExecutionException e)
         {
-            Assert.assertEquals(ex,e.getCause());
+            Assert.assertSame(ex, e.getCause());
         }
-        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(10L));
-        Assert.assertThat(System.currentTimeMillis()-start,lessThan(1000L));
+
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        Assert.assertThat(elapsed, greaterThan(delay / 2));
+        Assert.assertThat(elapsed, lessThan(delay * 2));
 
         assertTrue(future.isDone());
         try
@@ -309,28 +372,58 @@ public class IOFutureTest
             future.isComplete();
             Assert.fail();
         }
-        catch(ExecutionException e)
+        catch (ExecutionException e)
         {
-            Assert.assertEquals(ex,e.getCause());
+            assertSame(ex, e.getCause());
         }
-        assertFalse(ready.get());
-        assertEquals(ex,fail.get());
 
-        future=new DispatchingIOFuture();
-        ready.set(false);
-        fail.set(null);
+        assertFalse(completed.get());
+        assertTrue(failureLatch.await(delay * 4, TimeUnit.MILLISECONDS));
+        assertSame(ex, failure.get());
+    }
 
-        assertFalse(future.isDone());
-        assertFalse(future.isComplete());
-        start=System.currentTimeMillis();
-        final DispatchingIOFuture f1=future;
+    @Test
+    public void testBlockWokenUpOnFailure() throws Exception
+    {
+        final DispatchingIOFuture future = new DispatchingIOFuture();
+        final Exception ex = new Exception("failed");
+
+        final AtomicBoolean completed = new AtomicBoolean(false);
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        final CountDownLatch failureLatch = new CountDownLatch(1);
+        future.setCallback(new Callback<Object>()
+        {
+            @Override
+            public void completed(Object context)
+            {
+                completed.set(true);
+            }
+
+            @Override
+            public void failed(Object context, Throwable x)
+            {
+                failure.set(x);
+                failureLatch.countDown();
+            }
+        }, null);
+
+        final long delay = 500;
+        long start = System.nanoTime();
         new Thread()
         {
             @Override
             public void run()
             {
-                try{TimeUnit.MILLISECONDS.sleep(100);}catch(Exception e){e.printStackTrace();}
-                f1.fail(ex);
+                try
+                {
+                    // Want the call to block() below to happen before the call to fail() here
+                    TimeUnit.MILLISECONDS.sleep(delay);
+                    future.fail(ex);
+                }
+                catch (InterruptedException x)
+                {
+                    Assert.fail();
+                }
             }
         }.start();
 
@@ -339,11 +432,14 @@ public class IOFutureTest
             future.block();
             Assert.fail();
         }
-        catch(ExecutionException e)
+        catch (ExecutionException e)
         {
-            Assert.assertEquals(ex,e.getCause());
+            Assert.assertSame(ex, e.getCause());
         }
-        Assert.assertThat(System.currentTimeMillis()-start,greaterThan(10L));
+
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        Assert.assertThat(elapsed, greaterThan(delay / 2));
+        Assert.assertThat(elapsed, lessThan(delay * 2));
 
         assertTrue(future.isDone());
         try
@@ -351,11 +447,13 @@ public class IOFutureTest
             future.isComplete();
             Assert.fail();
         }
-        catch(ExecutionException e)
+        catch (ExecutionException e)
         {
-            Assert.assertEquals(ex,e.getCause());
+            assertSame(ex, e.getCause());
         }
-        assertFalse(ready.get()); // no callback set
-        assertNull(fail.get()); // no callback set
+
+        assertFalse(completed.get());
+        assertTrue(failureLatch.await(delay * 4, TimeUnit.MILLISECONDS));
+        assertSame(ex, failure.get());
     }
 }

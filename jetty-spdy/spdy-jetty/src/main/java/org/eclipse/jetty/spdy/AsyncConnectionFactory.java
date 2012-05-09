@@ -18,8 +18,8 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.nio.AsyncConnection;
 
 public interface AsyncConnectionFactory
 {

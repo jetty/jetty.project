@@ -42,15 +42,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.SslConnection;
 import org.eclipse.jetty.io.StandardByteBufferPool;
-import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager;
-import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -294,25 +292,25 @@ public class SPDYClient
                 SelectChannelEndPoint result = new SelectChannelEndPoint(channel, selectSet, key, (int)maxIdleTime);
 
                 AsyncConnection connection = newConnection(channel, result, attachment);
-                result.setConnection(connection);
+                result.setAsyncConnection(connection);
 
                 return result;
             }
 
             @Override
-            protected void endPointOpened(SelectChannelEndPoint endpoint)
+            protected void endPointOpened(AsyncEndPoint endpoint)
             {
             }
 
             @Override
-            protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
+            protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
             {
             }
 
             @Override
-            protected void endPointClosed(SelectChannelEndPoint endpoint)
+            protected void endPointClosed(AsyncEndPoint endpoint)
             {
-                endpoint.getConnection().onClose();
+                endpoint.getAsyncConnection().onClose();
             }
 
             @Override
@@ -338,8 +336,8 @@ public class SPDYClient
                                 super.onClose();
                             }
                         };
-                        endPoint.setConnection(sslConnection);
-                        AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+                        endPoint.setAsyncConnection(sslConnection);
+                        AsyncEndPoint sslEndPoint = sslConnection.getAppEndPoint();
                         sslEndPointRef.set(sslEndPoint);
 
                         // Instances of the ClientProvider inner class strong reference the
@@ -365,7 +363,7 @@ public class SPDYClient
                                 ClientSPDYAsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
                                 AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                                 AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachmentRef.get());
-                                sslEndPoint.setConnection(connection);
+                                sslEndPoint.setAsyncConnection(connection);
                             }
 
                             @Override
@@ -378,13 +376,13 @@ public class SPDYClient
                                 AsyncConnectionFactory connectionFactory = client.getAsyncConnectionFactory(protocol);
                                 AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                                 AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachmentRef.get());
-                                sslEndPoint.setConnection(connection);
+                                sslEndPoint.setAsyncConnection(connection);
                                 return protocol;
                             }
                         });
 
                         AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
-                        sslEndPoint.setConnection(connection);
+                        sslEndPoint.setAsyncConnection(connection);
 
                         startHandshake(engine);
 
@@ -394,13 +392,13 @@ public class SPDYClient
                     {
                         AsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
                         AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
-                        endPoint.setConnection(connection);
+                        endPoint.setAsyncConnection(connection);
                         return connection;
                     }
                 }
                 catch (RuntimeException x)
                 {
-                    sessionPromise.failed(x);
+                    sessionPromise.failed(null, x);
                     throw x;
                 }
             }
@@ -444,7 +442,7 @@ public class SPDYClient
             Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
 
             SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, factory.bufferPool, parser, factory);
-            endPoint.setConnection(connection);
+            endPoint.setAsyncConnection(connection);
 
             StandardSession session = new StandardSession(sessionPromise.client.version, factory.bufferPool, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator);
             parser.addListener(session);

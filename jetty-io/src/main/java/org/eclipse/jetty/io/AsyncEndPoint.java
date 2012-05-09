@@ -120,4 +120,7 @@ public interface AsyncEndPoint extends EndPoint
      */
     long getIdleTimestamp();
 
+    AsyncConnection getAsyncConnection();
+
+    void setAsyncConnection(AsyncConnection connection);
 }

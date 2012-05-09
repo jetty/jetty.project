@@ -95,20 +95,13 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     public void close(boolean onlyOutput)
     {
         AsyncEndPoint endPoint = getEndPoint();
-        try
+        // We need to gently close first, to allow
+        // SSL close alerts to be sent by Jetty
+        logger.debug("Shutting down output {}", endPoint);
+        endPoint.shutdownOutput();
+        if (!onlyOutput)
         {
-            // We need to gently close first, to allow
-            // SSL close alerts to be sent by Jetty
-            logger.debug("Shutting down output {}", endPoint);
-            endPoint.shutdownOutput();
-            if (!onlyOutput)
-            {
-                logger.debug("Closing {}", endPoint);
-                endPoint.close();
-            }
-        }
-        catch (IOException x)
-        {
+            logger.debug("Closing {}", endPoint);
             endPoint.close();
         }
     }
@@ -117,11 +110,6 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     public void onIdle(boolean idle)
     {
         getEndPoint().setCheckForIdle(idle);
-    }
-
-    @Override
-    public void onClose()
-    {
     }
 
     @Override

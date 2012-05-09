@@ -16,15 +16,13 @@
 
 package org.eclipse.jetty.spdy;
 
-import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -65,7 +63,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         SPDYServerConnector connector = (SPDYServerConnector)attachment;
 
         SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, bufferPool, parser, listener, connector);
-        endPoint.setConnection(connection);
+        endPoint.setAsyncConnection(connection);
 
         final StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator);
         parser.addListener(session);
@@ -85,7 +83,6 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     {
         private final ServerSessionFrameListener listener;
         private final SPDYServerConnector connector;
-        private volatile boolean connected;
 
         private ServerSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
         {
@@ -95,16 +92,11 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         }
 
         @Override
-        public Connection handle() throws IOException
+        public void onOpen()
         {
-            if (!connected)
-            {
-                // NPE guard to support tests
-                if (listener != null)
-                    listener.onConnect(getSession());
-                connected = true;
-            }
-            return super.handle();
+            // NPE guard to support tests
+            if (listener != null)
+                listener.onConnect(getSession());
         }
 
         @Override

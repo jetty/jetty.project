@@ -1,11 +1,5 @@
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -29,6 +23,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class SelectChannelEndPointTest
 {
     protected volatile AsyncEndPoint _lastEndp;
@@ -43,22 +43,22 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        protected void endPointClosed(SelectChannelEndPoint endpoint)
+        protected void endPointClosed(AsyncEndPoint endpoint)
         {
         }
 
         @Override
-        protected void endPointOpened(SelectChannelEndPoint endpoint)
+        protected void endPointOpened(AsyncEndPoint endpoint)
         {
         }
 
         @Override
-        protected void endPointUpgraded(SelectChannelEndPoint endpoint, AsyncConnection oldConnection)
+        protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
         {
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
+        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel,endpoint);
         }
@@ -138,7 +138,7 @@ public class SelectChannelEndPointTest
                     int filled=_endp.fill(_in);
                     if (filled>0)
                         progress=true;
-                                            
+
                     // If the tests wants to block, then block
                     while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
                     {
@@ -146,11 +146,11 @@ public class SelectChannelEndPointTest
                         filled=_endp.fill(_in);
                         progress|=filled>0;
                     }
-                        
+
                     // Copy to the out buffer
                     if (BufferUtil.hasContent(_in) && BufferUtil.append(_in,_out)>0)
                         progress=true;
-                    
+
                     // Blocking writes
                     if (BufferUtil.hasContent(_out))
                     {
@@ -160,7 +160,7 @@ public class SelectChannelEndPointTest
                             _endp.write(out.asReadOnlyBuffer()).block();
                         progress=true;
                     }
-                    
+
                     // are we done?
                     if (_endp.isInputShutdown())
                         _endp.shutdownOutput();
@@ -209,12 +209,7 @@ public class SelectChannelEndPointTest
             */
             super.onIdleExpired(idleForMs);
         }
-        
-        @Override
-        public void onClose()
-        {            
-        }
-        
+
         @Override
         public String toString()
         {
@@ -223,7 +218,7 @@ public class SelectChannelEndPointTest
         }
     }
 
-    
+
     @Test
     public void testEcho() throws Exception
     {
@@ -361,10 +356,10 @@ public class SelectChannelEndPointTest
         clientOutputStream.flush();
 
         while(_lastEndp==null);
-        
+
         _lastEndp.setMaxIdleTime(10*specifiedTimeout);
         Thread.sleep(2 * specifiedTimeout);
-        
+
         // No echo as blocking for 10
         long start=System.currentTimeMillis();
         try
@@ -390,7 +385,7 @@ public class SelectChannelEndPointTest
             assertEquals(c,(char)b);
         }
     }
-    
+
     @Test
     public void testIdle() throws Exception
     {
@@ -424,33 +419,33 @@ public class SelectChannelEndPointTest
         long idle=System.currentTimeMillis()-start;
         assertTrue(idle>400);
         assertTrue(idle<2000);
-        
+
         // But endpoint is still open.
         assertTrue(_lastEndp.isOpen());
-        
-        
+
+
         // Wait for another idle callback
         Thread.sleep(2000);
         // endpoint is closed.
-        
+
         assertFalse(_lastEndp.isOpen());
-        
+
     }
-    
-    
+
+
     @Test
     public void testBlockedReadIdle() throws Exception
     {
         Socket client = newClient();
         OutputStream clientOutputStream = client.getOutputStream();
-        
+
         client.setSoTimeout(5000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
         _manager.register(server);
-        
+
         // Write client to server
         clientOutputStream.write("HelloWorld".getBytes("UTF-8"));
 
@@ -464,12 +459,12 @@ public class SelectChannelEndPointTest
 
         // Set Max idle
         _lastEndp.setMaxIdleTime(500);
-        
+
         // Write 8 and cause block waiting for 10
         _blockAt=10;
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
-        
+
         // read until idle shutdown received
         long start=System.currentTimeMillis();
         int b=client.getInputStream().read();
@@ -484,14 +479,14 @@ public class SelectChannelEndPointTest
             assertTrue(b>0);
             assertEquals(c,(char)b);
         }
-        
+
         // But endpoint is still open.
         assertTrue(_lastEndp.isOpen());
-       
+
         // Wait for another idle callback
         Thread.sleep(2000);
         // endpoint is closed.
-        
+
         assertFalse(_lastEndp.isOpen());
     }
 
@@ -517,7 +512,7 @@ public class SelectChannelEndPointTest
         out.write(bytes);
         out.write(count);
         out.flush();
-        
+
         while (_lastEndp==null)
             Thread.sleep(10);
         _lastEndp.setMaxIdleTime(5000);
@@ -540,7 +535,7 @@ public class SelectChannelEndPointTest
                             Assert.assertThat(b,greaterThan(0));
                             assertEquals(0xff&b0,b);
                         }
-                        
+
                         count=0;
                         int b=in.read();
                         while(b>0 && b!='\n')
@@ -549,7 +544,7 @@ public class SelectChannelEndPointTest
                             b=in.read();
                         }
                         last=System.currentTimeMillis();
-                        
+
                         latch.countDown();
                     }
                 }
@@ -565,7 +560,7 @@ public class SelectChannelEndPointTest
                 }
             }
         }.start();
-        
+
         // Write client to server
         for (int i=1;i<writes;i++)
         {
@@ -580,7 +575,7 @@ public class SelectChannelEndPointTest
 
         assertTrue(latch.await(100,TimeUnit.SECONDS));
     }
-    
+
 
     @Test
     public void testWriteBlock() throws Exception
@@ -615,7 +610,7 @@ public class SelectChannelEndPointTest
                 TimeUnit.MILLISECONDS.sleep(10);
         }
 
-        
+
         client.close();
 
         int i=0;

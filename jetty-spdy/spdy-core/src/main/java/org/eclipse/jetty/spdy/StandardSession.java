@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
@@ -756,7 +757,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         catch (Throwable x)
         {
-            notifyHandlerFailed(callback, x);
+            notifyHandlerFailed(callback, context, x);
         }
     }
 
@@ -884,7 +885,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     }
 
     @Override
-    public void failed(Throwable x)
+    public void failed(FrameBytes context, Throwable x)
     {
         throw new SPDYException(x);
     }
@@ -946,12 +947,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
     }
 
-    private <C> void notifyHandlerFailed(Callback<C> callback, Throwable x)
+    private <C> void notifyHandlerFailed(Callback<C> callback, C context, Throwable x)
     {
         try
         {
             if (callback != null)
-                callback.failed(x);
+                callback.failed(context, x);
         }
         catch (Exception xx)
         {
@@ -1008,7 +1009,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         public void fail(Throwable x)
         {
             cancelTask();
-            notifyHandlerFailed(callback,x);
+            notifyHandlerFailed(callback, context, x);
         }
 
         private void cancelTask()

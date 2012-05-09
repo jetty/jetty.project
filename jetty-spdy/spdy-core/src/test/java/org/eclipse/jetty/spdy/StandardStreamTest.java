@@ -101,7 +101,7 @@ public class StandardStreamTest
         stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Callback.Adapter<Stream>()
         {
             @Override
-            public void failed(Throwable x)
+            public void failed(Stream context, Throwable x)
             {
                 failedLatch.countDown();
             }

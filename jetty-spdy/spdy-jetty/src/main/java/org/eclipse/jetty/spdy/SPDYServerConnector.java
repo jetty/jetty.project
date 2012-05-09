@@ -33,11 +33,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.SslConnection;
 import org.eclipse.jetty.io.StandardByteBufferPool;
-import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -189,8 +189,8 @@ public class SPDYServerConnector extends SelectChannelConnector
                     super.onClose();
                 }
             };
-            endPoint.setConnection(sslConnection);
-            AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+            endPoint.setAsyncConnection(sslConnection);
+            AsyncEndPoint sslEndPoint = sslConnection.getAppEndPoint();
             sslEndPointRef.set(sslEndPoint);
 
             // Instances of the ServerProvider inner class strong reference the
@@ -209,7 +209,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                     AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
                     AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
-                    sslEndPoint.setConnection(connection);
+                    sslEndPoint.setAsyncConnection(connection);
                 }
 
                 @Override
@@ -224,12 +224,12 @@ public class SPDYServerConnector extends SelectChannelConnector
                     AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory(protocol);
                     AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
-                    sslEndPoint.setConnection(connection);
+                    sslEndPoint.setAsyncConnection(connection);
                 }
             });
 
             AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
-            sslEndPoint.setConnection(connection);
+            sslEndPoint.setAsyncConnection(connection);
 
             startHandshake(engine);
 
@@ -239,7 +239,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         {
             AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
             AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, this);
-            endPoint.setConnection(connection);
+            endPoint.setAsyncConnection(connection);
             return connection;
         }
     }

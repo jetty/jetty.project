@@ -38,14 +38,16 @@ public class Promise<T> implements Callback<T>, Future<T>
     private T promise;
 
     @Override
-    public void completed(T result)
+    public void completed(T context)
     {
-        this.promise = result;
+        this.promise = context;
         latch.countDown();
     }
 
-    public void failed(Throwable x)
+    @Override
+    public void failed(T context, Throwable x)
     {
+        this.promise = context;
         this.failure = x;
         latch.countDown();
     }
