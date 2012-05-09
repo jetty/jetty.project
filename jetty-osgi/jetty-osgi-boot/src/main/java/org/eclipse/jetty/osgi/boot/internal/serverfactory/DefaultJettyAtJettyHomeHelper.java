@@ -34,7 +34,7 @@ import org.osgi.framework.BundleContext;
 /**
  * Called by the {@link JettyBootstrapActivator} during the starting of the
  * bundle. If the system property 'jetty.home' is defined and points to a
- * folder, then setup the corresponding jetty server and starts it.
+ * folder, then setup the corresponding jetty server.
  */
 public class DefaultJettyAtJettyHomeHelper
 {
@@ -80,18 +80,19 @@ public class DefaultJettyAtJettyHomeHelper
 
     /**
      * Called by the JettyBootStrapActivator. If the system property jetty.home
-     * is defined and points to a folder, deploys the corresponding jetty
+     * is defined and points to a folder, creates a corresponding jetty
      * server.
      * <p>
      * If the system property jetty.home.bundle is defined and points to a
-     * bundle. Look for the configuration of jetty inside that bundle and
-     * deploys the corresponding bundle.
+     * bundle, look for the configuration of jetty inside that bundle.
      * </p>
      * <p>
      * In both cases reads the system property 'jetty.etc.config.urls' to locate
-     * the configuration files for the deployed jetty. It is a comma spearate
+     * the configuration files for the deployed jetty. It is a comma separated
      * list of URLs or relative paths inside the bundle or folder to the config
-     * files. If underfined it defaults to 'etc/jetty.xml'.
+     * files. If undefined it defaults to 'etc/jetty.xml'. In the case of the jetty.home.bundle,
+     * if no etc/jetty.xml file is found in the bundle, it will look for 
+     * /jettyhome/etc/jetty-osgi-default.xml
      * </p>
      * <p>
      * In both cases the system properties jetty.host, jetty.port and
@@ -115,7 +116,7 @@ public class DefaultJettyAtJettyHomeHelper
             }
             if (jettyHomeBundleSysProp != null)
             {
-                LOG.warn("Both the jetty.home property and the jetty.home.bundle property are defined." + " jetty.home.bundle is not taken into account.");
+                LOG.warn("Both jetty.home and jetty.home.bundle property defined: jetty.home.bundle ignored.");
             }
             jettyHome = new File(jettyHomeSysProp);
             if (!jettyHome.exists() || !jettyHome.isDirectory())
@@ -144,12 +145,12 @@ public class DefaultJettyAtJettyHomeHelper
         }
         if (jettyHome == null && jettyHomeBundle == null)
         {
-            LOG.warn("No default jetty started.");
+            LOG.warn("No default jetty created.");
             return;
         }
 
         Server server = new Server();
-        Dictionary properties = new Hashtable();
+        Dictionary<String,String> properties = new Hashtable<String,String>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
 
         String configURLs = jettyHome != null ? getJettyConfigurationURLs(jettyHome) : getJettyConfigurationURLs(jettyHomeBundle);
@@ -164,6 +165,7 @@ public class DefaultJettyAtJettyHomeHelper
         setProperty(properties, SYS_PROP_JETTY_PORT, System.getProperty(SYS_PROP_JETTY_PORT));
         setProperty(properties, SYS_PROP_JETTY_PORT_SSL, System.getProperty(SYS_PROP_JETTY_PORT_SSL));
 
+        //register the Server instance as an OSGi service.
         bundleContext.registerService(Server.class.getName(), server, properties);
         // hookNestedConnectorToBridgeServlet(server);
 
@@ -236,7 +238,7 @@ public class DefaultJettyAtJettyHomeHelper
                 if ((enUrls == null || !enUrls.hasMoreElements()) && etcFile.endsWith("etc/jetty.xml"))
                 {
                     enUrls = BundleFileLocatorHelper.DEFAULT.findEntries(configurationBundle, "/jettyhome/etc/jetty-osgi-default.xml");
-                    System.err.println("Configuring jetty with the default embedded configuration:" + "bundle: "
+                    LOG.debug("Configuring jetty with the default embedded configuration:" + "bundle: "
                                        + configurationBundle.getSymbolicName()
                                        + " config: /jettyhome/etc/jetty-osgi-default.xml");
                 }
@@ -265,7 +267,7 @@ public class DefaultJettyAtJettyHomeHelper
         buffer.append(value);
     }
 
-    private static void setProperty(Dictionary properties, String key, String value)
+    private static void setProperty(Dictionary<String,String> properties, String key, String value)
     {
         if (value != null)
         {

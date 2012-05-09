@@ -213,7 +213,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                                 defaultWebXmlPath = webapp.getDefaultsDescriptor();
                         }
                     }
-                    String war = (String) sr.getProperty("war");
+                    String war = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_WAR);
                     try
                     {
                         IWebBundleDeployerHelper deployerHelper = getWebBundleDeployerHelp(sr);

@@ -237,19 +237,20 @@ public class NestedConnectorListener extends AbstractLifeCycleListener
                     for (Class p : m.getParameterTypes())
                     {
                         Class ap = argType[i];
-                        if (p.getName().equals(ap.getName()) && !p.equals(ap)) { throw new IllegalStateException(
-                                                                                                                 "The method \"" + m.toGenericString()
-                                                                                                                 + "\" was found. but the parameter class "
-                                                                                                                 + p.getName()
-                                                                                                                 + " is not the same "
-                                                                                                                 + " inside OSGi classloader ("
-                                                                                                                 + ap.getClassLoader()
-                                                                                                                 + ") and inside the "
-                                                                                                                 + cl.getName()
-                                                                                                                 + " classloader ("
-                                                                                                                 + p.getClassLoader()
-                                                                                                                 + ")."
-                                                                                                                 + " Are the ExtensionBundles correctly defined?");
+                        if (p.getName().equals(ap.getName()) && !p.equals(ap)) 
+                        { 
+                            throw new IllegalStateException("The method \"" + m.toGenericString()
+                                                            + "\" was found. but the parameter class "
+                                                            + p.getName()
+                                                            + " is not the same "
+                                                            + " inside OSGi classloader ("
+                                                            + ap.getClassLoader()
+                                                            + ") and inside the "
+                                                            + cl.getName()
+                                                            + " classloader ("
+                                                            + p.getClassLoader()
+                                                            + ")."
+                                                            + " Are the ExtensionBundles correctly defined?");
 
                         }
                     }

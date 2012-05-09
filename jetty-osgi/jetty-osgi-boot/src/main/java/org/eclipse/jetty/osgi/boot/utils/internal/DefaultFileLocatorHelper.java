@@ -300,8 +300,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             {
                 URLConnection conn = url.openConnection();
                 conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-                if (BUNDLE_URL_CONNECTION_getLocalURL == null && conn.getClass().getName()
-                        .equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+                if (BUNDLE_URL_CONNECTION_getLocalURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
                 {
                     BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
                     BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
@@ -337,8 +336,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             {
                 URLConnection conn = url.openConnection();
                 conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
-                if (BUNDLE_URL_CONNECTION_getFileURL == null && conn.getClass().getName()
-                        .equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+                if (BUNDLE_URL_CONNECTION_getFileURL == null && conn.getClass().getName().equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
                 {
                     BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
                     BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);

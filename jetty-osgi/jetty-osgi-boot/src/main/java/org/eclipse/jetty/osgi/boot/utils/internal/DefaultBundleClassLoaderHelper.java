@@ -14,8 +14,6 @@ package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.List;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
@@ -56,8 +54,6 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                 isFelix = false;
             }
         }
-        // System.err.println("isEquinox=" + isEquinox);
-        // System.err.println("isFelix=" + isFelix);
     }
 
     /**
@@ -110,16 +106,15 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         {
             if (Equinox_BundleHost_getBundleLoader_method == null)
             {
-                Equinox_BundleHost_getBundleLoader_method = bundle.getClass().getClassLoader().loadClass("org.eclipse.osgi.framework.internal.core.BundleHost")
-                .getDeclaredMethod("getBundleLoader", new Class[] {});
+                Equinox_BundleHost_getBundleLoader_method = 
+                    bundle.getClass().getClassLoader().loadClass("org.eclipse.osgi.framework.internal.core.BundleHost").getDeclaredMethod("getBundleLoader", new Class[] {});
                 Equinox_BundleHost_getBundleLoader_method.setAccessible(true);
             }
             Object bundleLoader = Equinox_BundleHost_getBundleLoader_method.invoke(bundle, new Object[] {});
             if (Equinox_BundleLoader_createClassLoader_method == null && bundleLoader != null)
             {
-                Equinox_BundleLoader_createClassLoader_method = bundleLoader.getClass().getClassLoader()
-                .loadClass("org.eclipse.osgi.internal.loader.BundleLoader")
-                .getDeclaredMethod("createClassLoader", new Class[] {});
+                Equinox_BundleLoader_createClassLoader_method = 
+                    bundleLoader.getClass().getClassLoader().loadClass("org.eclipse.osgi.internal.loader.BundleLoader").getDeclaredMethod("createClassLoader", new Class[] {});
                 Equinox_BundleLoader_createClassLoader_method.setAccessible(true);
             }
             return (ClassLoader) Equinox_BundleLoader_createClassLoader_method.invoke(bundleLoader, new Object[] {});
@@ -144,8 +139,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             // and return the private field m_classLoader of ModuleImpl
             if (Felix_BundleImpl_m_modules_field == null)
             {
-                Felix_BundleImpl_m_modules_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl")
-                .getDeclaredField("m_modules");
+                Felix_BundleImpl_m_modules_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl").getDeclaredField("m_modules");
                 Felix_BundleImpl_m_modules_field.setAccessible(true);
             }
 
@@ -165,8 +159,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 
             if (Felix_ModuleImpl_m_classLoader_field == null && currentModuleImpl != null)
             {
-                Felix_ModuleImpl_m_classLoader_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.ModuleImpl")
-                .getDeclaredField("m_classLoader");
+                Felix_ModuleImpl_m_classLoader_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.ModuleImpl").getDeclaredField("m_classLoader");
                 Felix_ModuleImpl_m_classLoader_field.setAccessible(true);
             }
             // first make sure that the classloader is ready:
@@ -181,14 +174,10 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                 // this call will do that.
                 bundle.loadClass("java.lang.Object");
                 cl = (ClassLoader) Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
-                // System.err.println("Got the bundle class loader of felix_: "
-                // + cl);
                 return cl;
             }
             else
             {
-                // System.err.println("Got the bundle class loader of felix: " +
-                // cl);
                 return cl;
             }
         }

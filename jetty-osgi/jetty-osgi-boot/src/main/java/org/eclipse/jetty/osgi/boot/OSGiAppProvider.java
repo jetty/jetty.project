@@ -150,7 +150,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     }
 
     /**
-     * Default OSGiAppProvider consutructed when none are defined in the
+     * Default OSGiAppProvider constructed when none are defined in the
      * jetty.xml configuration.
      */
     public OSGiAppProvider()
@@ -160,7 +160,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     }
 
     /**
-     * Default OSGiAppProvider consutructed when none are defined in the
+     * Default OSGiAppProvider constructed when none are defined in the
      * jetty.xml configuration.
      * 
      * @param contextsDir
@@ -186,14 +186,15 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             // we don't support this situation at this point.
             // once the WebAppRegistrationHelper is refactored, the code
             // that creates the ContextHandler will actually be here.
-            throw new IllegalStateException("The App must be passed the " + "instance of the ContextHandler when it is construsted");
+            throw new IllegalStateException("The App must be passed the " + "instance of the ContextHandler when it is constructed");
         }
         if (_configurationClasses != null && wah instanceof WebAppContext)
         {
             ((WebAppContext) wah).setConfigurationClasses(_configurationClasses);
         }
 
-        if (_defaultsDescriptor != null) ((WebAppContext) wah).setDefaultsDescriptor(_defaultsDescriptor);
+        if (_defaultsDescriptor != null)
+            ((WebAppContext) wah).setDefaultsDescriptor(_defaultsDescriptor);
         return app.getContextHandler();
     }
 
@@ -203,7 +204,6 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
-        // _manager=deploymentManager;
         super.setDeploymentManager(deploymentManager);
     }
 
@@ -289,8 +289,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         }
     }
 
-    // //copied from WebAppProvider as the parameters are identical.
-    // //only removed the parameer related to extractWars.
+
     /* ------------------------------------------------------------ */
     /**
      * Get the parentLoaderPriority.
@@ -578,7 +577,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     /**
      * Returns a bundle according to its location. In the version 1.6 of
      * org.osgi.framework, BundleContext.getBundle(String) is what we want.
-     * However to support older versions of OSGi. We use our own local refrence
+     * However to support older versions of OSGi. We use our own local reference
      * mechanism.
      * 
      * @param location
@@ -615,7 +614,8 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
                 return null;
             }
             if (start && b.getHeaders().get(Constants.FRAGMENT_HOST) == null)
-            {// not a fragment, try to start it. if the framework has finished
+            {
+                // not a fragment, try to start it. if the framework has finished
                 // auto-starting.
                 if (!PackageAdminServiceTracker.INSTANCE.frameworkHasCompletedAutostarts())
                 {

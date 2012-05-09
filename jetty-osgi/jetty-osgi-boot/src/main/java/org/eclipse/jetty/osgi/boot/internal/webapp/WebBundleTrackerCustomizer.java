@@ -146,7 +146,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
         String warFolderRelativePath = (String) dic.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
         if (warFolderRelativePath != null)
         {
-            String contextPath = getWebContextPath(bundle, dic, false);// (String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+            String contextPath = getWebContextPath(bundle, dic, false);
             if (contextPath == null || !contextPath.startsWith("/"))
             {
                 LOG.warn("The manifest header '" + OSGiWebappConstants.JETTY_WAR_FOLDER_PATH
@@ -167,8 +167,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
             catch (Throwable e)
             {
                 LOG.warn("Starting the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
-                return true;// maybe it did not work maybe it did. safer to
-                // track this bundle.
+                return true;// maybe it did not work maybe it did. safer to track this bundle.
             }
         }
         else if (dic.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH) != null)
@@ -200,10 +199,9 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
             // (draft) of the spec: just a couple of posts on the
             // world-wide-web.
             URL rfc66Webxml = bundle.getEntry("/WEB-INF/web.xml");
-            if (rfc66Webxml == null && dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) == null) { return false;// no
-            // webapp
-            // in
-            // here
+            if (rfc66Webxml == null && dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) == null)
+            { 
+                return false;// no webapp in here
             }
             // this is risky: should we make sure that there is no classes and
             // jars directly available
@@ -222,8 +220,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
             catch (Throwable e)
             {
                 LOG.warn(e);
-                return true;// maybe it did not work maybe it did. safer to
-                // track this bundle.
+                return true;// maybe it did not work maybe it did. safer to track this bundle.
             }
         }
     }

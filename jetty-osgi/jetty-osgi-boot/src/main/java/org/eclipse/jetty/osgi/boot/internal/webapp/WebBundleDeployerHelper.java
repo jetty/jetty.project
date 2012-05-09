@@ -167,10 +167,10 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      */
     public WebAppContext registerWebapplication(Bundle bundle, String webappFolderPath, String contextPath, String extraClasspath,
                                                 String overrideBundleInstallLocation, String requireTldBundle, String webXmlPath, String defaultWebXmlPath,
-                                                WebAppContext webAppContext) throws Exception
-                                                {
-        File bundleInstall = overrideBundleInstallLocation == null ? BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle) : new File(
-                                                                                                                                            overrideBundleInstallLocation);
+                                                WebAppContext webAppContext)
+    throws Exception
+   {
+        File bundleInstall = overrideBundleInstallLocation == null ? BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle) : new File(overrideBundleInstallLocation);
         File webapp = null;
         URL baseWebappInstallURL = null;
 
@@ -197,18 +197,19 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         {
             webapp = bundleInstall;
         }
-        if (baseWebappInstallURL == null && (webapp == null || !webapp.exists())) { throw new IllegalArgumentException(
-                                                                                                                       "Unable to locate " + webappFolderPath
-                                                                                                                       + " inside "
-                                                                                                                       + (bundleInstall != null ? bundleInstall.getAbsolutePath() : "unlocated bundle '" + bundle.getSymbolicName()
-                                                                                                                                                + "'")); }
+        if (baseWebappInstallURL == null && (webapp == null || !webapp.exists()))
+        { 
+            throw new IllegalArgumentException("Unable to locate " + webappFolderPath
+                                               + " inside "
+                                               + (bundleInstall != null ? bundleInstall.getAbsolutePath() : "unlocated bundle '" + bundle.getSymbolicName()+ "'"));
+        }
         if (baseWebappInstallURL == null && webapp != null)
         {
             baseWebappInstallURL = webapp.toURI().toURL();
         }
         return registerWebapplication(bundle, webappFolderPath, baseWebappInstallURL, contextPath, extraClasspath, bundleInstall, requireTldBundle, webXmlPath,
                                       defaultWebXmlPath, webAppContext);
-                                                }
+    }
 
     /*
      * (non-Javadoc)
@@ -221,9 +222,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      */
     private WebAppContext registerWebapplication(Bundle contributor, String pathInBundleToWebApp, URL baseWebappInstallURL, String contextPath,
                                                  String extraClasspath, File bundleInstall, String requireTldBundle, String webXmlPath,
-                                                 String defaultWebXmlPath, WebAppContext context) throws Exception
-                                                 {
-
+                                                 String defaultWebXmlPath, WebAppContext context)
+    throws Exception
+    {
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         String[] oldServerClasses = null;
 
@@ -341,8 +342,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             }
             Thread.currentThread().setContextClassLoader(contextCl);
         }
-
-                                                 }
+    }
 
     /*
      * (non-Javadoc)
@@ -351,7 +351,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#
      * unregister(org.eclipse.jetty.server.handler.ContextHandler)
      */
-    public void unregister(ContextHandler contextHandler) throws Exception
+    public void unregister(ContextHandler contextHandler) 
+    throws Exception
     {
         _wrapper.getOSGiAppProvider().removeContext(contextHandler);
     }
@@ -365,8 +366,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * java.lang.String, java.lang.String)
      */
     public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath, String extraClasspath, String overrideBundleInstallLocation,
-                                          String requireTldBundle, ContextHandler handler) throws Exception
-                                          {
+                                          String requireTldBundle, ContextHandler handler) 
+    throws Exception
+    {
         File contextsHome = _wrapper.getOSGiAppProvider().getContextXmlDirAsFile();
         if (contextsHome != null)
         {
@@ -404,7 +406,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                                                + contributor.getSymbolicName()
                                                + (overrideBundleInstallLocation != null ? " using the install location " + overrideBundleInstallLocation : ""));
         }
-                                          }
+    }
 
     /**
      * This type of registration relies on jetty's complete context xml file.
@@ -417,8 +419,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @throws Exception
      */
     private ContextHandler registerContext(Bundle contributor, String pathInBundle, File contextFile, String extraClasspath,
-                                           String overrideBundleInstallLocation, String requireTldBundle, ContextHandler handler) throws Exception
-                                           {
+                                           String overrideBundleInstallLocation, String requireTldBundle, ContextHandler handler) 
+    throws Exception
+    {
         InputStream contextFileInputStream = null;
         try
         {
@@ -429,7 +432,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         {
             IO.close(contextFileInputStream);
         }
-                                           }
+    }
 
     /**
      * @param contributor
@@ -439,8 +442,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @throws Exception
      */
     private ContextHandler registerContext(Bundle contributor, String pathInsideBundle, InputStream contextFileInputStream, String extraClasspath,
-                                           String overrideBundleInstallLocation, String requireTldBundle, ContextHandler handler) throws Exception
-                                           {
+                                           String overrideBundleInstallLocation, String requireTldBundle, ContextHandler handler) 
+    throws Exception
+    {
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         String[] oldServerClasses = null;
         WebAppContext webAppContext = null;
@@ -485,7 +489,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             Thread.currentThread().setContextClassLoader(contextCl);
         }
 
-                                           }
+    }
 
     /**
      * Applies the properties of WebAppDeployer as defined in jetty.xml.
@@ -493,7 +497,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @see {WebAppDeployer#scan} around the comment
      *      <code>// configure it</code>
      */
-    protected void configureWebAppContext(ContextHandler wah, Bundle contributor, String requireTldBundle) throws IOException
+    protected void configureWebAppContext(ContextHandler wah, Bundle contributor, String requireTldBundle) 
+    throws IOException
     {
         // rfc66
         wah.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT, contributor.getBundleContext());
@@ -649,7 +654,6 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                 }
             }
         }
-
     }
 
     /**
@@ -778,7 +782,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @param classInBundle
      * @throws Exception
      */
-    protected void configureWebappClassLoader(Bundle contributor, ContextHandler context, OSGiWebappClassLoader webappClassLoader, String requireTldBundle) throws Exception
+    protected void configureWebappClassLoader(Bundle contributor, ContextHandler context, OSGiWebappClassLoader webappClassLoader, String requireTldBundle)
+    throws Exception
     {
         if (context instanceof WebAppContext)
         {
@@ -798,7 +803,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
     /**
      * No matter what the type of webapp, we create a WebappClassLoader.
      */
-    protected OSGiWebappClassLoader createWebappClassLoader(Bundle contributor) throws Exception
+    protected OSGiWebappClassLoader createWebappClassLoader(Bundle contributor)
+    throws Exception
     {
         // we use a temporary WebAppContext object.
         // if this is a real webapp we will set it on it a bit later: once we
@@ -808,7 +814,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         return webappClassLoader;
     }
 
-    protected void applyMetaInfContextXml(Bundle bundle, ContextHandler contextHandler) throws Exception
+    protected void applyMetaInfContextXml(Bundle bundle, ContextHandler contextHandler)
+    throws Exception
     {
         if (bundle == null) return;
         if (contextHandler == null) return;
@@ -857,7 +864,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         }
     }
 
-    private String getPathsToRequiredBundles(ContextHandler context, Bundle bundle, String requireTldBundle) throws Exception
+    private String getPathsToRequiredBundles(ContextHandler context, Bundle bundle, String requireTldBundle)
+    throws Exception
     {
         if (requireTldBundle == null) return null;
 
@@ -893,5 +901,4 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 
         return (PackageAdmin) serviceTracker.getService();
     }
-
 }

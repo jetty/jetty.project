@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * Helper to create a URL class-loader with the jars inside
@@ -52,9 +51,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * be required for some cases. For example jaspers' TldLocationsCache (replaced
  * by TldScanner for servlet-3.0). <br/>
  * Also all the dependencies of those libraries must be resolvable directly from
- * the JettyBooStrapper bundle as it is set as the parent classloader. For
+ * the JettyBootstrapActivator bundle as it is set as the parent classloader. For
  * example: if atomikos is placed in lib/ext it will work if and only if
- * JettyBootStrapper import the necessary packages from javax.naming*,
+ * JettyBootstrapActivator import the necessary packages from javax.naming*,
  * javax.transaction*, javax.mail* etc Most of the common cases of javax are
  * added as optional import packages into jetty bootstrapper plugin. When there
  * are not covered: please make a request or create a fragment or register a
@@ -147,7 +146,8 @@ public class LibExtClassLoaderHelper
      *         extra jars to insert, then just return the parentClassLoader.
      * @throws MalformedURLException
      */
-    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars, List<URL> otherJarsOrFolder, Server server, ClassLoader parentClassLoader) throws MalformedURLException
+    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars, List<URL> otherJarsOrFolder, Server server, ClassLoader parentClassLoader) 
+    throws MalformedURLException
     {
         if (jarsContainerOrJars == null && otherJarsOrFolder == null) { return parentClassLoader; }
         List<URL> urls = new ArrayList<URL>();
@@ -168,7 +168,8 @@ public class LibExtClassLoaderHelper
                             // cheap to tolerate folders so let's do it.
                             URL url = f.toURI().toURL();
                             if (f.isFile())
-                            {// is this necessary anyways?
+                            {
+                                // is this necessary anyways?
                                 url = new URL("jar:" + url.toString() + "!/");
                             }
                             urls.add(url);
