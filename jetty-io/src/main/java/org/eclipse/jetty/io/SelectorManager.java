@@ -487,6 +487,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                         else if (change instanceof ChangeTask)
                         {
+                            LOG.warn("DO WE NEED THIS????");
                             ((Runnable)change).run();
                         }
                         else if (change instanceof Runnable)

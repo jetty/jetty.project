@@ -247,26 +247,26 @@ public class SelectChannelConnector extends AbstractHttpConnector
         }
 
         @Override
-        protected void endPointClosed(SelectChannelEndPoint endpoint)
+        protected void endPointClosed(AsyncEndPoint endpoint)
         {
             SelectChannelConnector.this.endPointClosed(endpoint);
         }
 
         @Override
-        protected void endPointOpened(SelectChannelEndPoint endpoint)
+        protected void endPointOpened(AsyncEndPoint endpoint)
         {
             // TODO handle max connections and low resources
             connectionOpened(endpoint.getAsyncConnection());
         }
 
         @Override
-        protected void endPointUpgraded(SelectChannelEndPoint endpoint, AsyncConnection oldConnection)
+        protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
         {            
             connectionUpgraded(oldConnection,endpoint.getAsyncConnection());
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
+        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {            
             return SelectChannelConnector.this.newConnection(channel,endpoint);
         }
