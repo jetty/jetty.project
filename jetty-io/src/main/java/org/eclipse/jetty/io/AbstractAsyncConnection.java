@@ -5,7 +5,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-public abstract class AbstractAsyncConnection
+public abstract class AbstractAsyncConnection implements AsyncConnection
 {
     private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
     private final AsyncEndPoint _endp;
@@ -17,14 +17,29 @@ public abstract class AbstractAsyncConnection
     }
 
     public abstract void onReadable();
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.AsyncConnection#onClose()
+     */
+    @Override
     public abstract void onClose();
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.AsyncConnection#getEndPoint()
+     */
+    @Override
     public AsyncEndPoint getEndPoint()
     {
         return _endp;
     }
 
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.AsyncConnection#onIdleExpired(long)
+     */
+    @Override
     public void onIdleExpired(long idleForMs)
     {
         LOG.debug("onIdleExpired {}ms {} {}",idleForMs,this,_endp);

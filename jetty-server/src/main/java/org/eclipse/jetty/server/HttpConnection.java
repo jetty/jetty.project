@@ -22,13 +22,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.DispatchingIOFuture;
 import org.eclipse.jetty.io.DoneIOFuture;
 import org.eclipse.jetty.io.EofException;
@@ -47,14 +48,16 @@ public class HttpConnection extends AbstractAsyncConnection
 
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
+    private final Lock _lock = new ReentrantLock();
     private final Server _server;
     private final Connector _connector;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
-    private final Lock _lock = new ReentrantLock();
+    private final ByteBufferPool _bufferPool;
     
     private IOFuture _writeFuture;
+    
 
     ByteBuffer _requestBuffer=null;
     ByteBuffer _responseHeader=null;
@@ -82,6 +85,8 @@ public class HttpConnection extends AbstractAsyncConnection
     {
         super(endpoint);
         _connector = connector;
+        _bufferPool=_connector.getBufferPool();
+        
         _server = server;
         
         _channel = new HttpOverHttpChannel(server);
@@ -132,16 +137,16 @@ public class HttpConnection extends AbstractAsyncConnection
         _generator.reset();
         _channel.reset();
         if (_requestBuffer!=null)
-            _connector.getResponseBuffers().returnBuffer(_requestBuffer);
+            _bufferPool.release(_requestBuffer);
         _requestBuffer=null;
         if (_responseHeader!=null)
-            _connector.getResponseBuffers().returnBuffer(_responseHeader);
+            _bufferPool.release(_responseHeader);
         _responseHeader=null;
         if (_responseBuffer!=null)
-            _connector.getResponseBuffers().returnBuffer(_responseBuffer);
+            _bufferPool.release(_responseBuffer);
         _responseBuffer=null;
         if (_chunk!=null)
-            _connector.getResponseBuffers().returnBuffer(_chunk);
+            _bufferPool.release(_chunk);
         _chunk=null;
     }
 
@@ -168,7 +173,7 @@ public class HttpConnection extends AbstractAsyncConnection
     @Override
     public void onReadable()
     {
-        AbstractAsyncConnection connection = this;
+        AsyncConnection connection = this;
         boolean progress=true;
 
         try
@@ -184,8 +189,8 @@ public class HttpConnection extends AbstractAsyncConnection
                     // We will need a buffer to read into
                     if (_requestBuffer==null)
                         _requestBuffer=_parser.isInContent()
-                        ?_connector.getRequestBuffers().getBuffer()
-                                :_connector.getRequestBuffers().getHeader();   
+                        ?_bufferPool.acquire(_connector.getRequestBufferSize(),false)
+                        :_bufferPool.acquire(_connector.getRequestHeaderSize(),false);
                     
                     // If we parse to an event, call the connection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
@@ -216,7 +221,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     // Return empty request buffer if all has been consumed
                     if (_requestBuffer!=null && !_requestBuffer.hasRemaining() && _channel.available()==0)
                     {
-                        _connector.getRequestBuffers().returnBuffer(_requestBuffer);
+                        _bufferPool.release(_requestBuffer);
                         _requestBuffer=null;
                     }
                         
@@ -226,7 +231,7 @@ public class HttpConnection extends AbstractAsyncConnection
                         // look for a switched connection instance?
                         if (_channel.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            AbstractAsyncConnection switched=(AbstractAsyncConnection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
+                            AsyncConnection switched=(AsyncConnection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
                                 connection=switched;
                         }
@@ -291,11 +296,11 @@ public class HttpConnection extends AbstractAsyncConnection
                 switch(result)
                 {
                     case NEED_HEADER:
-                        _responseHeader=_connector.getResponseBuffers().getHeader();
+                        _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                         break;
 
                     case NEED_BUFFER:
-                        _responseBuffer=_connector.getResponseBuffers().getBuffer();
+                        _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
                         break;
 
                     case NEED_CHUNK:
@@ -377,16 +382,16 @@ public class HttpConnection extends AbstractAsyncConnection
                 switch(result)
                 {
                     case NEED_HEADER:
-                        _responseHeader=_connector.getResponseBuffers().getHeader();
+                        _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                         break;
 
                     case NEED_BUFFER:
-                        _responseBuffer=_connector.getResponseBuffers().getBuffer();
+                        _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
                         break;
 
                     case NEED_CHUNK:
                         _responseHeader=null;
-                        _chunk=_connector.getResponseBuffers().getBuffer(HttpGenerator.CHUNK_SIZE);
+                        _chunk=_bufferPool.acquire(HttpGenerator.CHUNK_SIZE,false);
                         break;
 
                     case FLUSH:
@@ -436,14 +441,14 @@ public class HttpConnection extends AbstractAsyncConnection
             if (BufferUtil.hasContent(b1))
             {
                 if (BufferUtil.hasContent(b2))
-                    return _endp.write(b0,b1,b2);
-                return _endp.write(b0,b1);
+                    return getEndPoint().write(b0,b1,b2);
+                return getEndPoint().write(b0,b1);
             }
             else
             {
                 if (BufferUtil.hasContent(b2))
-                    return _endp.write(b0,b2);
-                return _endp.write(b0);
+                    return getEndPoint().write(b0,b2);
+                return getEndPoint().write(b0);
             }
         }
         else
@@ -451,13 +456,13 @@ public class HttpConnection extends AbstractAsyncConnection
             if (BufferUtil.hasContent(b1))
             {
                 if (BufferUtil.hasContent(b2))
-                    return _endp.write(b1,b2);
-                return _endp.write(b1);
+                    return getEndPoint().write(b1,b2);
+                return getEndPoint().write(b1);
             }
             else
             {
                 if (BufferUtil.hasContent(b2))
-                    return _endp.write(b2);
+                    return getEndPoint().write(b2);
                 return DoneIOFuture.COMPLETE;
             }
         }
@@ -627,7 +632,7 @@ public class HttpConnection extends AbstractAsyncConnection
         protected void blockForContent() throws IOException
         {
             // While progress and the connection has not changed
-            while (_endp.isOpen())
+            while (getEndPoint().isOpen())
             {
                 try
                 {
@@ -636,7 +641,7 @@ public class HttpConnection extends AbstractAsyncConnection
 
                     // We will need a buffer to read into
                     if (_requestBuffer==null)
-                        _requestBuffer=_connector.getRequestBuffers().getBuffer();   
+                        _requestBuffer=_bufferPool.acquire(_connector.getRequestBufferSize(),false);
 
                     // If we parse to an event, return
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
@@ -656,7 +661,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     // Return empty request buffer
                     if (_requestBuffer!=null && !_requestBuffer.hasRemaining() && _channel.available()==0)
                     {
-                        _connector.getRequestBuffers().returnBuffer(_requestBuffer);
+                        _bufferPool.release(_requestBuffer);
                         _requestBuffer=null;
                     }
                 }

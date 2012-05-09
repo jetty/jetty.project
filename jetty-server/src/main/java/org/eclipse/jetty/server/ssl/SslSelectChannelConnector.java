@@ -23,9 +23,6 @@ import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.Buffers.Type;
-import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.SslConnection;

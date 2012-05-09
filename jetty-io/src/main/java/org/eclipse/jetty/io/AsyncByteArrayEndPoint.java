@@ -18,7 +18,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private final Lock _lock = new ReentrantLock();
     private volatile boolean _idlecheck;
 
-    private volatile AbstractAsyncConnection _connection;
+    private volatile AsyncConnection _connection;
 
     private DispatchingIOFuture _readFuture;
     private DispatchingIOFuture _writeFuture;
@@ -26,7 +26,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private ByteBuffer[] _writeBuffers;
 
 
-    public AbstractAsyncConnection getAsyncConnection()
+    public AsyncConnection getAsyncConnection()
     {
         return _connection;
     }
@@ -36,7 +36,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
         new Thread(task).start();
     }
 
-    public void setAsyncConnection(AbstractAsyncConnection connection)
+    public void setAsyncConnection(AsyncConnection connection)
     {
         _connection=connection;
     }

@@ -20,10 +20,10 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 
 /**

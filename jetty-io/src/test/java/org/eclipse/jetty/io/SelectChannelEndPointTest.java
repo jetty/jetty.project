@@ -53,12 +53,12 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        protected void endPointUpgraded(SelectChannelEndPoint endpoint, AbstractAsyncConnection oldConnection)
+        protected void endPointUpgraded(SelectChannelEndPoint endpoint, AsyncConnection oldConnection)
         {
         }
 
         @Override
-        public AbstractAsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
+        public AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel,endpoint);
         }
@@ -101,7 +101,7 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(),_connector.socket().getLocalPort());
     }
 
-    protected AbstractAsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
         AbstractAsyncConnection connection = new TestConnection(endpoint);
         connection.scheduleOnReadable();

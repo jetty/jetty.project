@@ -17,14 +17,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.sql.Connection;
-import java.util.List;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
@@ -45,7 +41,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.util.ArrayQueue;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

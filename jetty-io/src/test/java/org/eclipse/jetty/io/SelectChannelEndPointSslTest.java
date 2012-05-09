@@ -41,13 +41,13 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     }
 
     @Override
-    protected AbstractAsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
         SSLEngine engine = __sslCtxFactory.newSslEngine();
         engine.setUseClientMode(false);
         SslConnection connection = new SslConnection(engine,endpoint);
 
-        AbstractAsyncConnection delegate = super.newConnection(channel,connection.getAppEndPoint());
+        AsyncConnection delegate = super.newConnection(channel,connection.getAppEndPoint());
         connection.setAppConnection(delegate);
         return connection;
     }

@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 public class StandardByteBufferPool implements ByteBufferPool
 {
     private final ConcurrentMap<Integer, Queue<ByteBuffer>> directBuffers = new ConcurrentHashMap<>();
@@ -51,11 +53,10 @@ public class StandardByteBufferPool implements ByteBufferPool
         if (result == null)
         {
             int capacity = bucket * factor;
-            result = direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
+            result = direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
         }
-
-        result.clear();
-        result.limit(size);
+        else
+            BufferUtil.clear(result);
 
         return result;
     }

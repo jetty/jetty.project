@@ -8,9 +8,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;

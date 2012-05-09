@@ -14,11 +14,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import javax.servlet.ServletInputStream;
-
-import org.eclipse.jetty.util.BufferUtil;
 
 
 public class HttpInput extends ServletInputStream

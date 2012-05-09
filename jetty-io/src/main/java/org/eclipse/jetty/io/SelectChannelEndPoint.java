@@ -55,7 +55,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private boolean _open;
 
     private volatile boolean _idlecheck;
-    private volatile AbstractAsyncConnection _connection;
+    private volatile AsyncConnection _connection;
 
     private ByteBuffer[] _writeBuffers;
 
@@ -73,7 +73,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    public AbstractAsyncConnection getAsyncConnection()
+    public AsyncConnection getAsyncConnection()
     {
         return _connection;
     }
@@ -94,9 +94,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    public void setAsyncConnection(AbstractAsyncConnection connection)
+    public void setAsyncConnection(AsyncConnection connection)
     {
-        AbstractAsyncConnection old = getAsyncConnection();
+        AsyncConnection old = getAsyncConnection();
         _connection = connection;
         if (old != null && old != connection)
             _manager.endPointUpgraded(this,old);

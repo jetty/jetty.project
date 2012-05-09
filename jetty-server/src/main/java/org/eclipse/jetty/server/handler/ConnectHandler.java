@@ -21,7 +21,6 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;

@@ -52,7 +52,7 @@ public class SslConnection extends AbstractAsyncConnection
 
     private final SSLEngine _engine;
     private final SSLSession _session;
-    private AbstractAsyncConnection _appConnection;
+    private AsyncConnection _appConnection;
     private final AppEndPoint _appEndPoint;
     private int _allocations;
     private SslBuffers _buffers;
@@ -120,9 +120,8 @@ public class SslConnection extends AbstractAsyncConnection
         _appEndPoint = newAppEndPoint();
     }
 
-
     /* ------------------------------------------------------------ */
-    public void setAppConnection(AbstractAsyncConnection connection)
+    public void setAppConnection(AsyncConnection connection)
     {
         _appConnection=connection;
     }

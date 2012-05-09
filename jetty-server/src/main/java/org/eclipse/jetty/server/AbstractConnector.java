@@ -14,21 +14,16 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletRequest;
 
-import org.eclipse.jetty.http.HttpBuffers;
-import org.eclipse.jetty.http.HttpBuffersImpl;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.Buffers.Type;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -52,7 +47,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  *
  *
  */
-public abstract class AbstractConnector extends AggregateLifeCycle implements HttpBuffers, Connector, Dumpable
+public abstract class AbstractConnector extends AggregateLifeCycle implements Connector, Dumpable
 {
     private static final Logger LOG = Log.getLogger(AbstractConnector.class);
 
@@ -96,14 +91,12 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /** duration of a connection */
     private final SampleStatistic _connectionDurationStats = new SampleStatistic();
 
-    protected final HttpBuffersImpl _buffers = new HttpBuffersImpl();
 
     /* ------------------------------------------------------------ */
     /**
      */
     public AbstractConnector()
     {
-        addBean(_buffers);
     }
 
     /* ------------------------------------------------------------ */
@@ -774,114 +767,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     public void setForwardedSslSessionIdHeader(String forwardedSslSessionId)
     {
         _forwardedSslSessionIdHeader = forwardedSslSessionId;
-    }
-
-    @Override
-    public int getRequestBufferSize()
-    {
-        return _buffers.getRequestBufferSize();
-    }
-
-    @Override
-    public void setRequestBufferSize(int requestBufferSize)
-    {
-        _buffers.setRequestBufferSize(requestBufferSize);
-    }
-
-    @Override
-    public int getRequestHeaderSize()
-    {
-        return _buffers.getRequestHeaderSize();
-    }
-
-    @Override
-    public void setRequestHeaderSize(int requestHeaderSize)
-    {
-        _buffers.setRequestHeaderSize(requestHeaderSize);
-    }
-
-    @Override
-    public int getResponseBufferSize()
-    {
-        return _buffers.getResponseBufferSize();
-    }
-
-    @Override
-    public void setResponseBufferSize(int responseBufferSize)
-    {
-        _buffers.setResponseBufferSize(responseBufferSize);
-    }
-
-    @Override
-    public int getResponseHeaderSize()
-    {
-        return _buffers.getResponseHeaderSize();
-    }
-
-    @Override
-    public void setResponseHeaderSize(int responseHeaderSize)
-    {
-        _buffers.setResponseHeaderSize(responseHeaderSize);
-    }
-
-    @Override
-    public Type getRequestBufferType()
-    {
-        return _buffers.getRequestBufferType();
-    }
-
-    @Override
-    public Type getRequestHeaderType()
-    {
-        return _buffers.getRequestHeaderType();
-    }
-
-    @Override
-    public Type getResponseBufferType()
-    {
-        return _buffers.getResponseBufferType();
-    }
-
-    @Override
-    public Type getResponseHeaderType()
-    {
-        return _buffers.getResponseHeaderType();
-    }
-
-    @Override
-    public void setRequestBuffers(Buffers requestBuffers)
-    {
-        _buffers.setRequestBuffers(requestBuffers);
-    }
-
-    @Override
-    public void setResponseBuffers(Buffers responseBuffers)
-    {
-        _buffers.setResponseBuffers(responseBuffers);
-    }
-
-    @Override
-    public Buffers getRequestBuffers()
-    {
-        return _buffers.getRequestBuffers();
-    }
-
-    @Override
-    public Buffers getResponseBuffers()
-    {
-        return _buffers.getResponseBuffers();
-    }
-
-    @Override
-    public void setMaxBuffers(int maxBuffers)
-    {
-        _buffers.setMaxBuffers(maxBuffers);
-    }
-
-    @Override
-    public int getMaxBuffers()
-    {
-        return _buffers.getMaxBuffers();
     }
 
     /* ------------------------------------------------------------ */

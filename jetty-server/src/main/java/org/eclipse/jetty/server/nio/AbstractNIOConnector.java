@@ -16,7 +16,6 @@
  */
 package org.eclipse.jetty.server.nio;
 
-import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.server.AbstractConnector;
 
 public abstract class AbstractNIOConnector extends AbstractConnector implements NIOConnector

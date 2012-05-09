@@ -15,10 +15,8 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 /** HTTP Connector.
  * Implementations of this interface provide connectors for the HTTP protocol.
@@ -60,77 +58,6 @@ public interface Connector extends LifeCycle
     
     /* ------------------------------------------------------------ */
     Server getServer();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the request header buffer size in bytes.
-     */
-    int getRequestHeaderSize();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the size of the buffer to be used for request headers.
-     * @param size The size in bytes.
-     */
-    void setRequestHeaderSize(int size);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the response header buffer size in bytes.
-     */
-    int getResponseHeaderSize();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the size of the buffer to be used for request headers.
-     * @param size The size in bytes.
-     */
-    void setResponseHeaderSize(int size);
-    
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return factory for request buffers
-     */
-    Buffers getRequestBuffers();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return factory for response buffers
-     */
-    Buffers getResponseBuffers();
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the requestBufferSize.
-     */
-    int getRequestBufferSize();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the size of the content buffer for receiving requests. 
-     * These buffers are only used for active connections that have
-     * requests with bodies that will not fit within the header buffer.
-     * @param requestBufferSize The requestBufferSize to set.
-     */
-    void setRequestBufferSize(int requestBufferSize);
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the responseBufferSize.
-     */
-    int getResponseBufferSize();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the size of the content buffer for sending responses. 
-     * These buffers are only used for active connections that are sending 
-     * responses with bodies that will not fit within the header buffer.
-     * @param responseBufferSize The responseBufferSize to set.
-     */
-    void setResponseBufferSize(int responseBufferSize);
-    
 
     /* ------------------------------------------------------------ */
     /**
