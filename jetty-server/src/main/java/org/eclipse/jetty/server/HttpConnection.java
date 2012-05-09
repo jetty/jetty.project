@@ -50,7 +50,7 @@ public class HttpConnection extends AbstractAsyncConnection
 
     private final Lock _lock = new ReentrantLock();
     private final Server _server;
-    private final Connector _connector;
+    private final HttpConnector _connector;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
@@ -81,11 +81,11 @@ public class HttpConnection extends AbstractAsyncConnection
     /** Constructor
      *
      */
-    public HttpConnection(Connector connector, AsyncEndPoint endpoint, Server server)
+    public HttpConnection(HttpConnector connector, AsyncEndPoint endpoint, Server server)
     {
         super(endpoint);
         _connector = connector;
-        _bufferPool=_connector.getBufferPool();
+        _bufferPool=_connector.getByteBufferPool();
         
         _server = server;
         
@@ -611,7 +611,7 @@ public class HttpConnection extends AbstractAsyncConnection
         }
         
         @Override
-        public Connector getConnector()
+        public HttpConnector getHttpConnector()
         {
             return _connector;
         }

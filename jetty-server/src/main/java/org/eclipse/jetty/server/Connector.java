@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.LifeCycle;
 
@@ -28,12 +29,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * will set itself as both the ThreadPool and the Handler.  Note that a connector
  * can be used without a Server if a thread pool and handler are directly provided.
  * 
- * 
- * 
- */
-/**
- * @author gregw
- *
  */
 public interface Connector extends LifeCycle
 { 
@@ -54,70 +49,10 @@ public interface Connector extends LifeCycle
     void close() throws IOException;
 
     /* ------------------------------------------------------------ */
-    void setServer(Server server);
-    
-    /* ------------------------------------------------------------ */
     Server getServer();
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return The port to use when redirecting a request if a data constraint of integral is 
-     * required. See {@link org.eclipse.jetty.util.security.Constraint#getDataConstraint()}
-     */
-    int getIntegralPort();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The schema to use when redirecting a request if a data constraint of integral is 
-     * required. See {@link org.eclipse.jetty.util.security.Constraint#getDataConstraint()}
-     */
-    String getIntegralScheme();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param request A request
-     * @return true if the request is integral. This normally means the https schema has been used.
-     */
-    boolean isIntegral(Request request);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The port to use when redirecting a request if a data constraint of confidential is 
-     * required. See {@link org.eclipse.jetty.util.security.Constraint#getDataConstraint()}
-     */
-    int getConfidentialPort();
-    
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The schema to use when redirecting a request if a data constraint of confidential is 
-     * required. See {@link org.eclipse.jetty.util.security.Constraint#getDataConstraint()}
-     */
-    String getConfidentialScheme();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param request A request
-     * @return true if the request is confidential. This normally means the https schema has been used.
-     */
-    boolean isConfidential(Request request);
-
-    /* ------------------------------------------------------------ */
-    /** Customize a request for an endpoint.
-     * Called on every request to allow customization of the request for
-     * the particular endpoint (eg security properties from a SSL connection).
-     * @param request
-     * @throws IOException
-     */
-    void customize(Request request) throws IOException;
-
-    /* ------------------------------------------------------------ */
-    /** Persist an endpoint.
-     * Called after every request if the connection is to remain open.
-     * @param endpoint
-     * @throws IOException
-     */
-    void persist(EndPoint endpoint) throws IOException;
+    ByteBufferPool getByteBufferPool();    
     
     /* ------------------------------------------------------------ */
     /**
@@ -125,21 +60,6 @@ public interface Connector extends LifeCycle
      * this connector will bind, or null for all interfaces.
      */
     String getHost();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the hostname of the interface to bind to.
-     * @param hostname The hostname representing the interface to which 
-     * this connector will bind, or null for all interfaces.
-     */
-    void setHost(String hostname);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param port The port fto listen of for connections or 0 if any available
-     * port may be used.
-     */
-    void setPort(int port);
     
     /* ------------------------------------------------------------ */
     /**
@@ -161,124 +81,144 @@ public interface Connector extends LifeCycle
      */
     int getMaxIdleTime();
     
-    /**
-     * @param ms Max Idle time for connections in milliseconds
-     */
-    void setMaxIdleTime(int ms);
-    
     
     /* ------------------------------------------------------------ */
     /**
      * @return the underlying socket, channel, buffer etc. for the connector.
      */
     Object getConnection();
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return true if names resolution should be done.
-     */
-    boolean getResolveNames();
-    
-    
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Get the number of requests handled by this connector
-     * since last call of statsReset(). If setStatsOn(false) then this
-     * is undefined.
-     */
-    public int getRequests();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the connectionsDurationTotal.
-     */
-    public long getConnectionsDurationTotal();
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Number of connections accepted by the server since
-     * statsReset() called. Undefined if setStatsOn(false).
-     */
-    public int getConnections() ;
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Number of connections currently open that were opened
-     * since statsReset() called. Undefined if setStatsOn(false).
-     */
-    public int getConnectionsOpen() ;
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Maximum number of connections opened simultaneously
-     * since statsReset() called. Undefined if setStatsOn(false).
-     */
-    public int getConnectionsOpenMax() ;
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Maximum duration in milliseconds of an open connection
-     * since statsReset() called. Undefined if setStatsOn(false).
-     */
-    public long getConnectionsDurationMax();
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Mean duration in milliseconds of open connections
-     * since statsReset() called. Undefined if setStatsOn(false).
-     */
-    public double getConnectionsDurationMean() ;
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Standard deviation of duration in milliseconds of
-     * open connections since statsReset() called. Undefined if
-     * setStatsOn(false).
-     */
-    public double getConnectionsDurationStdDev() ;
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Mean number of requests per connection
-     * since statsReset() called. Undefined if setStatsOn(false).
-     */
-    public double getConnectionsRequestsMean() ;
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Standard Deviation of number of requests per connection
-     * since statsReset() called. Undefined if setStatsOn(false).
-     */
-    public double getConnectionsRequestsStdDev() ;
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Maximum number of requests per connection
-     * since statsReset() called. Undefined if setStatsOn(false).
-     */
-    public int getConnectionsRequestsMax();
-
-    /* ------------------------------------------------------------ */
-    /** Reset statistics.
-     */
-    public void statsReset();
     
     /* ------------------------------------------------------------ */
-    public void setStatsOn(boolean on);
-    
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return True if statistics collection is turned on.
-     */
-    public boolean getStatsOn();
-    
-    /* ------------------------------------------------------------ */
-    /** 
-     * @return Timestamp stats were started at.
-     */
-    public long getStatsOnMs();
-    
+    Statistics getStatistics();
 
+    
+    interface Statistics extends LifeCycle
+    {
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return True if statistics collection is turned on.
+         */
+        boolean getStatsOn();
+        
+        /* ------------------------------------------------------------ */
+        /** Reset statistics.
+         */
+        void statsReset();
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @return Get the number of messages received by this connector
+         * since last call of statsReset(). If setStatsOn(false) then this
+         * is undefined.
+         */
+        public int getMessagesIn();
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @return Get the number of messages sent by this connector
+         * since last call of statsReset(). If setStatsOn(false) then this
+         * is undefined.
+         */
+        public int getMessagesOut();
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @return Get the number of bytes received by this connector
+         * since last call of statsReset(). If setStatsOn(false) then this
+         * is undefined.
+         */
+        public int getBytesIn();
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @return Get the number of bytes sent by this connector
+         * since last call of statsReset(). If setStatsOn(false) then this
+         * is undefined.
+         */
+        public int getBytesOut();
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @return Returns the connectionsDurationTotal.
+         */
+        public long getConnectionsDurationTotal();
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Number of connections accepted by the server since
+         * statsReset() called. Undefined if setStatsOn(false).
+         */
+        public int getConnections() ;
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Number of connections currently open that were opened
+         * since statsReset() called. Undefined if setStatsOn(false).
+         */
+        public int getConnectionsOpen() ;
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Maximum number of connections opened simultaneously
+         * since statsReset() called. Undefined if setStatsOn(false).
+         */
+        public int getConnectionsOpenMax() ;
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Maximum duration in milliseconds of an open connection
+         * since statsReset() called. Undefined if setStatsOn(false).
+         */
+        public long getConnectionsDurationMax();
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Mean duration in milliseconds of open connections
+         * since statsReset() called. Undefined if setStatsOn(false).
+         */
+        public double getConnectionsDurationMean() ;
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Standard deviation of duration in milliseconds of
+         * open connections since statsReset() called. Undefined if
+         * setStatsOn(false).
+         */
+        public double getConnectionsDurationStdDev() ;
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Mean number of messages received per connection
+         * since statsReset() called. Undefined if setStatsOn(false).
+         */
+        public double getConnectionsMessagesInMean() ;
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Standard Deviation of number of messages received per connection
+         * since statsReset() called. Undefined if setStatsOn(false).
+         */
+        public double getConnectionsMessagesInStdDev() ;
+
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Maximum number of messages received per connection
+         * since statsReset() called. Undefined if setStatsOn(false).
+         */
+        public int getConnectionsMessagesInMax();
+        
+        /* ------------------------------------------------------------ */
+        /** 
+         * @return Timestamp stats were started at.
+         */
+        public long getStatsOnMs();
+
+        void connectionOpened();
+
+        void connectionUpgraded(long duration, int requests, int requests2);
+
+        void connectionClosed(long duration, int requests, int requests2);
+
+    }
 }

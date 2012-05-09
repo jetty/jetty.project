@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.SelectSet;
+import org.eclipse.jetty.server.AbstractHttpConnector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -56,7 +57,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  *
  * @org.apache.xbean.XBean element="nioConnector" description="Creates an NIO based socket connector"
  */
-public class SelectChannelConnector extends AbstractNIOConnector
+public class SelectChannelConnector extends AbstractHttpConnector
 {
     protected ServerSocketChannel _acceptChannel;
     private int _lowResourcesConnections;
@@ -198,32 +199,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return the lowResourcesMaxIdleTime
-     */
-    @Override
-    public int getLowResourcesMaxIdleTime()
-    {
-        return _lowResourcesMaxIdleTime;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the period in ms that a connection is allowed to be idle when this there are more
-     * than {@link #getLowResourcesConnections()} connections.  This allows the server to rapidly close idle connections
-     * in order to gracefully handle high load situations.
-     * @param lowResourcesMaxIdleTime the period in ms that a connection is allowed to be idle when resources are low.
-     * @see #setMaxIdleTime(int)
-     */
-    @Override
-    public void setLowResourcesMaxIdleTime(int lowResourcesMaxIdleTime)
-    {
-        _lowResourcesMaxIdleTime=lowResourcesMaxIdleTime;
-        super.setLowResourcesMaxIdleTime(lowResourcesMaxIdleTime);
-    }
-
-
-    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.server.AbstractConnector#doStart()
      */
@@ -232,8 +207,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     {
         _manager.setSelectSets(getAcceptors());
         _manager.setMaxIdleTime(getMaxIdleTime());
-        _manager.setLowResourcesConnections(getLowResourcesConnections());
-        _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
 
         super.doStart();
     }
@@ -249,7 +222,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------------------------- */
     protected void endPointClosed(AsyncEndPoint endpoint)
     {
-        connectionClosed(endpoint.getSelectableConnection());
+        connectionClosed(endpoint.getAsyncConnection());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -283,13 +256,13 @@ public class SelectChannelConnector extends AbstractNIOConnector
         protected void endPointOpened(SelectChannelEndPoint endpoint)
         {
             // TODO handle max connections and low resources
-            connectionOpened(endpoint.getSelectableConnection());
+            connectionOpened(endpoint.getAsyncConnection());
         }
 
         @Override
         protected void endPointUpgraded(SelectChannelEndPoint endpoint, AsyncConnection oldConnection)
         {            
-            connectionUpgraded(oldConnection,endpoint.getSelectableConnection());
+            connectionUpgraded(oldConnection,endpoint.getAsyncConnection());
         }
 
         @Override

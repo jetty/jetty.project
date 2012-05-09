@@ -418,7 +418,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     @Override
                     public void completed(Stream pushStream)
                     {
-                        Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), connection, pushStrategy, pushStream);
+                        Synchronous pushConnection = new Synchronous(getHttpConnector(), getEndPoint(), getServer(), connection, pushStrategy, pushStream);
                         pushConnection.beginRequest(pushHeaders, true);
                     }
                 });

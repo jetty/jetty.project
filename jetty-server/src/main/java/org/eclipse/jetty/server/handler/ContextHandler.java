@@ -878,7 +878,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         // Check the connector
         if (_connectors != null && _connectors.size() > 0)
         {
-            String connector = HttpChannel.getCurrentHttpChannel().getConnector().getName();
+            String connector = HttpChannel.getCurrentHttpChannel().getHttpConnector().getName();
             if (connector == null || !_connectors.contains(connector))
                 return false;
         }

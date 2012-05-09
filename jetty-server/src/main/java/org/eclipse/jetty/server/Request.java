@@ -1370,7 +1370,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isSecure()
     {
-        return _channel.getConnector().isConfidential(this);
+        return _channel.getHttpConnector().isConfidential(this);
     }
 
     /* ------------------------------------------------------------ */

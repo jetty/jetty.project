@@ -341,7 +341,7 @@ public abstract class HttpChannel
                     if (_async.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
-                        getConnector().customize(_request);
+                        getHttpConnector().customize(_request);
                         server.handle(this);
                     }
                     else
@@ -837,9 +837,8 @@ public abstract class HttpChannel
         }
     }
     
-    
 
-    public abstract Connector getConnector();
+    public abstract HttpConnector getHttpConnector();
 
     public abstract long getMaxIdleTime();
     

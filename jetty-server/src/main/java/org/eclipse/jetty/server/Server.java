@@ -94,7 +94,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         setServer(this);
 
-        Connector connector=new SelectChannelConnector();
+        SelectChannelConnector connector=new SelectChannelConnector();
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
     }
@@ -107,7 +107,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         setServer(this);
 
-        Connector connector=new SelectChannelConnector();
+        SelectChannelConnector connector=new SelectChannelConnector();
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
         setConnectors(new Connector[]{connector});
@@ -180,7 +180,11 @@ public class Server extends HandlerWrapper implements Attributes
         if (connectors!=null)
         {
             for (int i=0;i<connectors.length;i++)
-                connectors[i].setServer(this);
+            {
+                // TODO review
+                if (connectors[i] instanceof AbstractConnector)
+                    ((AbstractConnector)connectors[i]).setServer(this);
+            }
         }
 
         _container.update(this, _connectors, connectors, "connector");
@@ -474,18 +478,6 @@ public class Server extends HandlerWrapper implements Attributes
         _maxCookieVersion = maxCookieVersion;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Add a LifeCycle object to be started/stopped
-     * along with the Server.
-     * @deprecated Use {@link #addBean(Object)}
-     * @param c
-     */
-    @Deprecated
-    public void addLifeCycle (LifeCycle c)
-    {
-        addBean(c);
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -507,17 +499,6 @@ public class Server extends HandlerWrapper implements Attributes
         return false;
     }
 
-    /**
-     * Remove a LifeCycle object to be started/stopped
-     * along with the Server
-     * @deprecated Use {@link #removeBean(Object)}
-     */
-    @Deprecated
-    public void removeLifeCycle (LifeCycle c)
-    {
-        removeBean(c);
-    }
-
     /* ------------------------------------------------------------ */
     /**
      * Remove an associated bean.
@@ -537,8 +518,12 @@ public class Server extends HandlerWrapper implements Attributes
     /*
      * @see org.eclipse.util.AttributesMap#clearAttributes()
      */
+    @Override
     public void clearAttributes()
     {
+        Enumeration names = _attributes.getAttributeNames();
+        while (names.hasMoreElements())
+            removeBean(_attributes.getAttribute((String)names.nextElement()));
         _attributes.clearAttributes();
     }
 
@@ -546,6 +531,7 @@ public class Server extends HandlerWrapper implements Attributes
     /*
      * @see org.eclipse.util.AttributesMap#getAttribute(java.lang.String)
      */
+    @Override
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
@@ -555,6 +541,7 @@ public class Server extends HandlerWrapper implements Attributes
     /*
      * @see org.eclipse.util.AttributesMap#getAttributeNames()
      */
+    @Override
     public Enumeration getAttributeNames()
     {
         return AttributesMap.getAttributeNamesCopy(_attributes);
@@ -564,8 +551,12 @@ public class Server extends HandlerWrapper implements Attributes
     /*
      * @see org.eclipse.util.AttributesMap#removeAttribute(java.lang.String)
      */
+    @Override
     public void removeAttribute(String name)
     {
+        Object bean=_attributes.getAttribute(name);
+        if (bean!=null)
+            removeBean(bean);
         _attributes.removeAttribute(name);
     }
 
@@ -573,8 +564,10 @@ public class Server extends HandlerWrapper implements Attributes
     /*
      * @see org.eclipse.util.AttributesMap#setAttribute(java.lang.String, java.lang.Object)
      */
+    @Override
     public void setAttribute(String name, Object attribute)
     {
+        addBean(attribute);
         _attributes.setAttribute(name, attribute);
     }
 
@@ -617,7 +610,6 @@ public class Server extends HandlerWrapper implements Attributes
         dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),TypeUtil.asList(_connectors));
     }
 
-
     /* ------------------------------------------------------------ */
     public boolean isUncheckedPrintWriter()
     {
@@ -629,7 +621,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _uncheckedPrintWriter=unchecked;
     }
-
 
     /* ------------------------------------------------------------ */
     /* A handler that can be gracefully shutdown.
