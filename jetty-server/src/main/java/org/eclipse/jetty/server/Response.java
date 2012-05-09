@@ -18,7 +18,6 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -179,7 +178,7 @@ public class Response implements HttpServletResponse
             path = (path == null?"":path);
             int port=uri.getPort();
             if (port<0)
-                port = HttpScheme.HTTPS.toString().equalsIgnoreCase(uri.getScheme())?443:80;
+                port = HttpScheme.HTTPS.asString().equalsIgnoreCase(uri.getScheme())?443:80;
             if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
                 request.getServerPort()!=port ||
                 !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts

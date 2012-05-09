@@ -76,7 +76,7 @@ public class HttpURI
     {
         _charset = URIUtil.__CHARSET;
     }
-    
+
     public HttpURI(Charset charset)
     {
         _charset = charset;
@@ -118,7 +118,7 @@ public class HttpURI
         parse2(b,0,b.length);
         _rawString=raw;
     }
-    
+
     public void parseConnect(String raw)
     {
         byte[] b = StringUtil.getBytes(raw);
@@ -510,14 +510,14 @@ public class HttpURI
                 _raw[_scheme+1]=='t' &&
                 _raw[_scheme+2]=='t' &&
                 _raw[_scheme+3]=='p' )
-            return HttpScheme.HTTP.toString();
+            return HttpScheme.HTTP.asString();
         if (l==6 &&
                 _raw[_scheme]=='h' &&
                 _raw[_scheme+1]=='t' &&
                 _raw[_scheme+2]=='t' &&
                 _raw[_scheme+3]=='p' &&
                 _raw[_scheme+4]=='s' )
-            return HttpScheme.HTTPS.toString();
+            return HttpScheme.HTTPS.asString();
 
         return new String(_raw,_scheme,_authority-_scheme-1,_charset);
     }

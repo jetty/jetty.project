@@ -33,7 +33,7 @@ public enum HttpScheme
     static
     {
         for (HttpScheme version : HttpScheme.values())
-            CACHE.put(version.toString(),version);
+            CACHE.put(version.asString(),version);
     }
 
     private final String _string;
@@ -47,22 +47,27 @@ public enum HttpScheme
     }
 
     /* ------------------------------------------------------------ */
-    public ByteBuffer toBuffer()
+    public ByteBuffer asByteBuffer()
     {
         return _buffer.asReadOnlyBuffer();
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean is(String s)
     {
-        return _string.equalsIgnoreCase(s);    
+        return _string.equalsIgnoreCase(s);
     }
-    
+
+    public String asString()
+    {
+        return _string;
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return _string;
     }
-    
+
 }

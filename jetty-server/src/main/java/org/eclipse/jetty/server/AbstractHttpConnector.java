@@ -2,7 +2,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -13,9 +12,9 @@ import org.eclipse.jetty.io.ByteBufferPool;
 
 public abstract class AbstractHttpConnector extends AbstractConnector implements HttpConnector
 {
-    private String _integralScheme = HttpScheme.HTTPS.toString();
+    private String _integralScheme = HttpScheme.HTTPS.asString();
     private int _integralPort = 0;
-    private String _confidentialScheme = HttpScheme.HTTPS.toString();
+    private String _confidentialScheme = HttpScheme.HTTPS.asString();
     private int _confidentialPort = 0;
     private boolean _forwarded;
     private String _hostHeader;
@@ -26,14 +25,14 @@ public abstract class AbstractHttpConnector extends AbstractConnector implements
     private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
     private String _forwardedCipherSuiteHeader;
     private String _forwardedSslSessionIdHeader;
-    
+
     private int _requestHeaderSize;
     private int _requestBufferSize;
     private int _responseHeaderSize;
     private int _responseBufferSize;
-    
+
     private ByteBufferPool _byteBufferPool;
-    
+
     @Override
     public int getRequestHeaderSize()
     {
@@ -115,7 +114,7 @@ public abstract class AbstractHttpConnector extends AbstractConnector implements
             if(ssl_session_id!=null)
             {
                 request.setAttribute("javax.servlet.request.ssl_session_id", ssl_session_id);
-                request.setScheme(HttpScheme.HTTPS.toString());
+                request.setScheme(HttpScheme.HTTPS.asString());
             }
         }
 
@@ -148,7 +147,7 @@ public abstract class AbstractHttpConnector extends AbstractConnector implements
         }
 
         if (forwardedFor != null)
-        {            
+        {
             request.setRemoteAddr(new InetSocketAddress(forwardedFor,request.getRemotePort()));
         }
 
@@ -455,6 +454,6 @@ public abstract class AbstractHttpConnector extends AbstractConnector implements
     {
         _forwardedSslSessionIdHeader = forwardedSslSessionId;
     }
-    
+
 
 }
