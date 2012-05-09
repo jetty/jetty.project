@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
-public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPool, Executor, Dumpable
+public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPool, Dumpable
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
 

@@ -30,11 +30,9 @@ import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.DispatchingIOFuture;
-import org.eclipse.jetty.io.DoneIOFuture;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.IOFuture;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout.Task;
@@ -55,10 +53,9 @@ public class HttpConnection extends AbstractAsyncConnection
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
     private final ByteBufferPool _bufferPool;
-    
-    private IOFuture _writeFuture;
-    
+        
 
+    FutureCallback<Void> _writeFuture;
     ByteBuffer _requestBuffer=null;
     ByteBuffer _responseHeader=null;
     ByteBuffer _chunk=null;
@@ -307,7 +304,7 @@ public class HttpConnection extends AbstractAsyncConnection
                         throw new IllegalStateException("!chunk when content length known");
 
                     case FLUSH:
-                        write(_responseHeader,_chunk,_responseBuffer).block();
+                        write(_responseHeader,_chunk,_responseBuffer).get();
                         break;
 
                     case FLUSH_CONTENT:
@@ -331,7 +328,7 @@ public class HttpConnection extends AbstractAsyncConnection
         catch(ExecutionException e)
         {
             LOG.debug(e);
-            DispatchingIOFuture.rethrow(e);
+            FutureCallback.rethrow(e);
         }
         finally
         {
@@ -357,7 +354,7 @@ public class HttpConnection extends AbstractAsyncConnection
             {
                 // block if the last write is not complete
                 if (_writeFuture!=null && !_writeFuture.isDone())
-                    _writeFuture.block();
+                    _writeFuture.get();
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("{}: generate({},{},{},{},{})@{}",
@@ -396,13 +393,13 @@ public class HttpConnection extends AbstractAsyncConnection
 
                     case FLUSH:
                         if (hasContent)
-                            write(_responseHeader,_chunk,_responseBuffer).block();
+                            write(_responseHeader,_chunk,_responseBuffer).get();
                         else
                             _writeFuture=write(_responseHeader,_chunk,_responseBuffer);
                         break;
 
                     case FLUSH_CONTENT:
-                        write(_responseHeader,_chunk,content).block();
+                        write(_responseHeader,_chunk,content).get();
                         break;
 
                     case SHUTDOWN_OUT:
@@ -434,21 +431,24 @@ public class HttpConnection extends AbstractAsyncConnection
         return (int)(preparedAfter-preparedBefore);
     }
 
-    private IOFuture write(ByteBuffer b0,ByteBuffer b1,ByteBuffer b2)
+    private FutureCallback<Void> write(ByteBuffer b0,ByteBuffer b1,ByteBuffer b2)
     {
+        FutureCallback<Void> fcb=new FutureCallback<>();
         if (BufferUtil.hasContent(b0))
         {
             if (BufferUtil.hasContent(b1))
             {
                 if (BufferUtil.hasContent(b2))
-                    return getEndPoint().write(b0,b1,b2);
-                return getEndPoint().write(b0,b1);
+                    getEndPoint().write(null,fcb,b0,b1,b2);
+                else
+                    getEndPoint().write(null,fcb,b0,b1);
             }
             else
             {
                 if (BufferUtil.hasContent(b2))
-                    return getEndPoint().write(b0,b2);
-                return getEndPoint().write(b0);
+                    getEndPoint().write(null,fcb,b0,b2);
+                else
+                    getEndPoint().write(null,fcb,b0);
             }
         }
         else
@@ -456,16 +456,19 @@ public class HttpConnection extends AbstractAsyncConnection
             if (BufferUtil.hasContent(b1))
             {
                 if (BufferUtil.hasContent(b2))
-                    return getEndPoint().write(b1,b2);
-                return getEndPoint().write(b1);
+                    getEndPoint().write(null,fcb,b1,b2);
+                else
+                    getEndPoint().write(null,fcb,b1);
             }
             else
             {
                 if (BufferUtil.hasContent(b2))
-                    return getEndPoint().write(b2);
-                return DoneIOFuture.COMPLETE;
+                    getEndPoint().write(null,fcb,b2);
+                else
+                    fcb.completed(null);
             }
         }
+        return fcb;
     }
 
     /* ------------------------------------------------------------ */
@@ -637,7 +640,9 @@ public class HttpConnection extends AbstractAsyncConnection
                 try
                 {
                     // Wait until we can read
-                    getEndPoint().readable().block();
+                    FutureCallback<Void> block=new FutureCallback<>();
+                    getEndPoint().readable(null,block);
+                    block.get();
 
                     // We will need a buffer to read into
                     if (_requestBuffer==null)
@@ -654,7 +659,7 @@ public class HttpConnection extends AbstractAsyncConnection
                 catch (ExecutionException e)
                 {
                     LOG.debug(e);
-                    DispatchingIOFuture.rethrow(e);
+                    FutureCallback.rethrow(e);
                 }
                 finally
                 {

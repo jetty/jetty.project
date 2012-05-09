@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -20,9 +22,13 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * 
  *
  */
-public interface ThreadPool
+public interface ThreadPool extends Executor
 {
     /* ------------------------------------------------------------ */
+    /** 
+     * @deprecated use {@link Executor#execute(Runnable)}
+     */
+    @Deprecated
     public abstract boolean dispatch(Runnable job);
 
     /* ------------------------------------------------------------ */

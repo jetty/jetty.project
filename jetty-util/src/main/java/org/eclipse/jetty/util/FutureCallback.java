@@ -1,5 +1,6 @@
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.util;
 
+import java.io.IOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -8,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.Callback;
 
 public class FutureCallback<C> implements Future<C>,Callback<C>
 {
@@ -98,4 +98,15 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
         throw new ExecutionException(_cause);
     }
 
+    public static void rethrow(ExecutionException e) throws IOException
+    {
+        Throwable cause=e.getCause();
+        if (cause instanceof IOException)
+            throw (IOException)cause;
+        if (cause instanceof Error)
+            throw (Error)cause;
+        if (cause instanceof RuntimeException)
+            throw (RuntimeException)cause;
+        throw new RuntimeException(cause);
+    }
 }
