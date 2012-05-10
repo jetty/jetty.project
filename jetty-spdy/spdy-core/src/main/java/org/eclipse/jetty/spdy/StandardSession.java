@@ -154,8 +154,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             int streamId = streamIds.getAndAdd(2);
             SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), synInfo.getHeaders());
             IStream stream = createStream(synStream, listener, true);
-            control(stream, synStream, timeout, unit, handler, stream);
+            generateAndEnqueueControlFrame(stream, synStream, timeout, unit, handler, stream);
         }
+        flush();
     }
 
     @Override
@@ -725,6 +726,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context)
     {
+        generateAndEnqueueControlFrame(stream,frame,timeout,unit,handler,context);
+        flush();
+    }
+
+    private <C> void generateAndEnqueueControlFrame(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context)
+    {
         try
         {
             if (stream != null)
@@ -751,8 +758,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 else
                     append(frameBytes);
             }
-
-            flush();
         }
         catch (Throwable x)
         {
