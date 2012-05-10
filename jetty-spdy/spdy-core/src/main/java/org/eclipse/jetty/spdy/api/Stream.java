@@ -80,7 +80,7 @@ public interface Stream
      * @return the priority of this stream
      */
     public byte getPriority();
-    
+
     /**
      * @return the session this stream is associated to
      */
@@ -89,18 +89,18 @@ public interface Stream
     /**
      * <p>Initiate a unidirectional spdy pushstream associated to this stream asynchronously<p>
      * <p>Callers may use the returned future to get the pushstream once it got created</p>
-     * 
+     *
      * @param synInfo the metadata to send on stream creation
      * @return a future containing the stream once it got established
      * @see #syn(SynInfo, long, TimeUnit, Handler)
      */
     public Future<Stream> syn(SynInfo synInfo);
-    
+
     /**
      * <p>Initiate a unidirectional spdy pushstream associated to this stream asynchronously<p>
      * <p>Callers may pass a non-null completion handler to be notified of when the
      * pushstream has been established.</p>
-     * 
+     *
      * @param synInfo the metadata to send on stream creation
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
@@ -108,7 +108,7 @@ public interface Stream
      * @see #syn(SynInfo)
      */
     public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler);
-    
+
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>
      * <p>Callers may use the returned future to wait for the reply to be actually sent.</p>
@@ -189,12 +189,12 @@ public interface Stream
      * @return whether this stream is unidirectional or not
      */
     public boolean isUnidirectional();
-    
+
     /**
      * @return whether this stream has been reset
      */
     public boolean isReset();
-    
+
     /**
      * @return whether this stream has been closed by both parties
      * @see #isHalfClosed()
@@ -203,8 +203,7 @@ public interface Stream
 
     /**
      * @return whether this stream has been closed by one party only
-     * @see #isClosed()     * @param timeout     the timeout for the stream creation
-     * @param unit        the timeout's unit
+     * @see #isClosed()
      */
     public boolean isHalfClosed();
 
@@ -229,15 +228,15 @@ public interface Stream
      * @see #setAttribute(String, Object)
      */
     public Object removeAttribute(String key);
-    
+
     /**
      * @return the associated parent stream or null if this is not an associated stream
      */
     public Stream getAssociatedStream();
-    
+
     /**
      * @return associated child streams or an empty set if no associated streams exist
      */
     public Set<Stream> getPushedStreams();
-    
+
 }

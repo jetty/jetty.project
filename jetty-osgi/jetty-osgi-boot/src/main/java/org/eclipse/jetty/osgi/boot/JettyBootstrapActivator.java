@@ -115,7 +115,7 @@ public class JettyBootstrapActivator implements BundleActivator
         // and that will configure and start the jetty server.
         context.addServiceListener(_jettyContextHandlerTracker, "(objectclass=" + ContextHandler.class.getName() + ")");
 
-        // see if we shoult start a default jetty instance right now.
+        // Create a default jetty instance right now.
         DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
 
         // now ready to support the Extender pattern:
@@ -215,7 +215,7 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         checkBundleActivated();
         WebAppContext contextHandler = new WebAppContext();
-        Dictionary dic = new Hashtable();
+        Dictionary<String,String> dic = new Hashtable<String,String>();
         dic.put(OSGiWebappConstants.SERVICE_PROP_WAR, webappFolderPath);
         dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH, contextPath);
         String requireTldBundle = (String) contributor.getHeaders().get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);

@@ -15,7 +15,6 @@ package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Dictionary;
@@ -45,8 +44,9 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.xml.sax.SAXParseException;
 
 /**
- * Exposes a Jetty Server to be managed by an OSGi ManagedServiceFactory
- * Configure and start it. Can also be used from the ManagedServiceFactory
+ * ServerInstanceWrapper
+ * 
+ *  Configures a jetty Server instance. Can also be used from the ManagedServiceFactory
  */
 public class ServerInstanceWrapper
 {
@@ -143,7 +143,7 @@ public class ServerInstanceWrapper
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
-            // passing this bundle's classloader as the context classlaoder
+            // passing this bundle's classloader as the context classloader
             // makes sure there is access to all the jetty's bundles
             ClassLoader libExtClassLoader = null;
             String sharedURLs = (String) props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
@@ -185,9 +185,8 @@ public class ServerInstanceWrapper
         {
             Thread.currentThread().setContextClassLoader(contextCl);
         }
-        
-        
     }
+    
 
     public void stop()
     {
@@ -212,14 +211,14 @@ public class ServerInstanceWrapper
      * /META-INF/*.tld it may contain. We place the bundles that we know contain
      * such tag-libraries. Please note that it will work if and only if the
      * bundle is a jar (!) Currently we just hardcode the bundle that contains
-     * the jstl implemenation.
+     * the jstl implementation.
      * 
      * A workaround when the tld cannot be parsed with this method is to copy
      * and paste it inside the WEB-INF of the webapplication where it is used.
      * 
      * Support only 2 types of packaging for the bundle: - the bundle is a jar
      * (recommended for runtime.) - the bundle is a folder and contain jars in
-     * the root and/or in the lib folder (nice for PDE developement situations)
+     * the root and/or in the lib folder (nice for PDE development situations)
      * Unsupported: the bundle is a jar that embeds more jars.
      * 
      * @return
@@ -249,6 +248,8 @@ public class ServerInstanceWrapper
         List<URL> jettyConfigurations = jettyConfigurationUrls != null ? extractResources(jettyConfigurationUrls) : null;
         if (jettyConfigurations == null || jettyConfigurations.isEmpty()) { return; }
         Map<String, Object> id_map = new HashMap<String, Object>();
+        
+        //TODO need to put in the id of the server being configured
         id_map.put("Server", server);
         Map<String, String> properties = new HashMap<String, String>();
         Enumeration<Object> en = props.keys();
@@ -304,12 +305,11 @@ public class ServerInstanceWrapper
     }
 
     /**
-     * Must be called after the server is configured.
+     * Must be called after the server is configured. 
      * 
-     * Locate the actual instance of the ContextDeployer and WebAppDeployer that
-     * was created when configuring the server through jetty.xml. If there is no
-     * such thing it won't be possible to deploy webapps from a context and we
-     * throw IllegalStateExceptions.
+     * It is assumed the server has already been configured with the ContextHandlerCollection structure.
+     * 
+     * The server must have an instance of OSGiAppProvider. If one is not provided, it is created.
      */
     private void init()
     {
@@ -363,9 +363,12 @@ public class ServerInstanceWrapper
         if (jettyContextsHome != null)
         {
             File contextsHome = new File(jettyContextsHome);
-            if (!contextsHome.exists() || !contextsHome.isDirectory()) { throw new IllegalArgumentException(
-                                                                                                            "the ${jetty.osgi.contexts.home} '" + jettyContextsHome
-                                                                                                            + " must exist and be a folder"); }
+            if (!contextsHome.exists() || !contextsHome.isDirectory())
+            { 
+                throw new IllegalArgumentException("the ${jetty.osgi.contexts.home} '" 
+                                                   + jettyContextsHome
+                                                   + " must exist and be a folder"); 
+            }
             return contextsHome;
         }
         return new File(jettyHome, "/contexts");

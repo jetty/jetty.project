@@ -74,6 +74,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", path);
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -117,6 +118,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", uri);
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -157,6 +159,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "HEAD");
         headers.put("url", path);
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -206,6 +209,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "POST");
         headers.put("url", path);
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -251,6 +255,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "POST");
         headers.put("url", path);
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -299,6 +304,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "POST");
         headers.put("url", path);
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -344,6 +350,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -394,6 +401,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -449,6 +457,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
@@ -508,6 +517,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -565,6 +575,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -622,6 +633,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -684,6 +696,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -741,6 +754,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -782,6 +796,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -828,6 +843,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -874,6 +890,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
@@ -939,6 +956,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "GET");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -1015,6 +1033,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "POST");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
@@ -1077,6 +1096,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "POST");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
@@ -1149,6 +1169,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         headers.put("method", "POST");
         headers.put("url", "/foo");
         headers.put("version", "HTTP/1.1");
+        headers.put("scheme", "http");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch responseLatch = new CountDownLatch(2);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
