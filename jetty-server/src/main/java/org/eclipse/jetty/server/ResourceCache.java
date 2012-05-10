@@ -350,6 +350,7 @@ public class ResourceCache
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return "ResourceCache["+_parent+","+_factory+"]@"+hashCode();
@@ -378,7 +379,7 @@ public class ResourceCache
             _key=pathInContext;
             _resource=resource;
 
-            _contentType=_mimeTypes.getMimeByExtension(_resource.toString());
+            _contentType=BufferUtil.toBuffer(_mimeTypes.getMimeByExtension(_resource.toString()));
             boolean exists=resource.exists();
             _lastModified=exists?resource.lastModified():-1;
             _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(HttpFields.formatDate(_lastModified));
@@ -409,6 +410,7 @@ public class ResourceCache
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public Resource getResource()
         {
             return _resource;
@@ -438,24 +440,28 @@ public class ResourceCache
         }
 
         /* ------------------------------------------------------------ */
-        public ByteBuffer getLastModified()
+        @Override
+        public String getLastModified()
         {
-            return _lastModifiedBytes;
+            return BufferUtil.toString(_lastModifiedBytes);
         }
 
         /* ------------------------------------------------------------ */
-        public ByteBuffer getContentType()
+        @Override
+        public String getContentType()
         {
-            return _contentType;
+            return BufferUtil.toString(_contentType);
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void release()
         {
             // don't release while cached. Release when invalidated.
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public ByteBuffer getIndirectBuffer()
         {
             ByteBuffer buffer = _indirectBuffer.get();
@@ -477,6 +483,7 @@ public class ResourceCache
         
 
         /* ------------------------------------------------------------ */
+        @Override
         public ByteBuffer getDirectBuffer()
         {
             ByteBuffer buffer = _directBuffer.get();
@@ -497,12 +504,14 @@ public class ResourceCache
         }
         
         /* ------------------------------------------------------------ */
+        @Override
         public long getContentLength()
         {
             return _length;
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public InputStream getInputStream() throws IOException
         {
             ByteBuffer indirect = getIndirectBuffer();

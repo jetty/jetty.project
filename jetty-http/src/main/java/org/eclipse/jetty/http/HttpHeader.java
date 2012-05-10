@@ -152,6 +152,12 @@ public enum HttpHeader
     {
         return _string.equalsIgnoreCase(s);    
     }
+
+    /* ------------------------------------------------------------ */
+    public String asString()
+    {
+        return _string;
+    }
     
     /* ------------------------------------------------------------ */
     @Override

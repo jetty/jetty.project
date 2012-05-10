@@ -115,6 +115,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override
     public void onSelected()
     {
+        boolean can_read;
+        boolean can_write;
+        
         synchronized (_lock)
         {
             _selected = true;
@@ -122,21 +125,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             {
                 // If there is no key, then do nothing
                 if (_key == null || !_key.isValid())
-                {
-                    // TODO wake ups?
                     return;
-                }
 
-                // TODO do we need to test interest here ???
-                boolean can_read = (_key.isReadable() && (_key.interestOps() & SelectionKey.OP_READ) == SelectionKey.OP_READ);
-                boolean can_write = (_key.isWritable() && (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE);
+                can_read = (_key.isReadable() && (_key.interestOps() & SelectionKey.OP_READ) == SelectionKey.OP_READ);
+                can_write = (_key.isWritable() && (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE);
                 _interestOps = 0;
-
-                if (can_read)
-                    readCompleted();
-                if (can_write)
-                    completeWrite();
-
             }
             finally
             {
@@ -144,6 +137,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 _selected = false;
             }
         }
+        if (can_read)
+            readCompleted();
+        if (can_write)
+            completeWrite();
     }
 
     /* ------------------------------------------------------------ */
@@ -212,8 +209,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             Object ctx=_readContext;
             _readCallback=null;
             _readContext=null;
-            System.err.printf("ReadComplete %s %s%n",ctx,cb);
-            cb.completed(ctx); // TODO after lock released?
+            cb.completed(ctx);
         }
     }
     
@@ -227,8 +223,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             _writeCallback=null;
             _writeContext=null;
             _writeBuffers=null;
-            System.err.printf("writeComplete %s %s%n",ctx,cb);
-            cb.completed(ctx); // TODO after lock released?
+            cb.completed(ctx); 
         }
     }
     
@@ -241,8 +236,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             Object ctx=_readContext;
             _readCallback=null;
             _readContext=null;
-            System.err.printf("ReadFail %s %s%n",ctx,cb);
-            cb.failed(ctx,cause); // TODO after lock released?
+            cb.failed(ctx,cause);
         }
     }
     
@@ -255,8 +249,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             Object ctx=_writeContext;
             _writeCallback=null;
             _writeContext=null;
-            System.err.printf("writeFailed %s %s%n",ctx,cb);
-            cb.failed(ctx,cause); // TODO after lock released?
+            cb.failed(ctx,cause);
         }
     }
 

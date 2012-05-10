@@ -18,6 +18,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,9 +30,11 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -59,7 +62,7 @@ public class ResourceHandler extends HandlerWrapper
     Resource _stylesheet;
     String[] _welcomeFiles={"index.html"};
     MimeTypes _mimeTypes = new MimeTypes();
-    ByteArrayBuffer _cacheControl;
+    String _cacheControl;
     boolean _aliases;
     boolean _directory;
 
@@ -254,7 +257,7 @@ public class ResourceHandler extends HandlerWrapper
      */
     public void setCacheControl(String cacheControl)
     {
-        _cacheControl=cacheControl==null?null:new ByteArrayBuffer(cacheControl);
+        _cacheControl=cacheControl;
     }
 
     /* ------------------------------------------------------------ */
@@ -293,11 +296,11 @@ public class ResourceHandler extends HandlerWrapper
     {
         String servletPath;
         String pathInfo;
-        Boolean included = request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI) != null;
+        Boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         if (included != null && included.booleanValue())
         {
-            servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
-            pathInfo = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+            servletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
  
             if (servletPath == null && pathInfo == null)
             {
@@ -345,6 +348,7 @@ public class ResourceHandler extends HandlerWrapper
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (baseRequest.isHandled())
@@ -414,7 +418,7 @@ public class ResourceHandler extends HandlerWrapper
         long last_modified=resource.lastModified();
         if (last_modified>0)
         {
-            long if_modified=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE);
+            long if_modified=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
             if (if_modified>0 && last_modified/1000<=if_modified/1000)
             {
                 response.setStatus(HttpStatus.NOT_MODIFIED_304);
@@ -422,13 +426,13 @@ public class ResourceHandler extends HandlerWrapper
             }
         }
 
-        ByteBuffer mime=_mimeTypes.getMimeByExtension(resource.toString());
+        String mime=_mimeTypes.getMimeByExtension(resource.toString());
         if (mime==null)
             mime=_mimeTypes.getMimeByExtension(request.getPathInfo());
 
         // set the headers
         doResponseHeaders(response,resource,mime!=null?mime.toString():null);
-        response.setDateHeader(HttpHeader.LAST_MODIFIED,last_modified);
+        response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),last_modified);
         if(skipContentBody)
             return;
         // Send the content
@@ -437,12 +441,13 @@ public class ResourceHandler extends HandlerWrapper
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
 
         // See if a short direct method can be used?
-        if (out instanceof AbstractHttpConnection.Output)
+        /* TODO file mapped buffers
+        if (out instanceof HttpOutput)
         {
             // TODO file mapped buffers
-            ((AbstractHttpConnection.Output)out).sendContent(resource.getInputStream());
+            ((HttpOutput)out).send(resource.getInputStream());
         }
-        else
+        else*/
         {
             // Write content normally
             resource.writeTo(out,0,resource.length());
@@ -483,18 +488,18 @@ public class ResourceHandler extends HandlerWrapper
             HttpFields fields = ((Response)response).getHttpFields();
 
             if (length>0)
-                fields.putLongField(HttpHeader.CONTENT_LENGTH_BUFFER,length);
+                fields.putLongField(HttpHeader.CONTENT_LENGTH,length);
 
             if (_cacheControl!=null)
-                fields.put(HttpHeader.CACHE_CONTROL_BUFFER,_cacheControl);
+                fields.put(HttpHeader.CACHE_CONTROL,_cacheControl);
         }
         else
         {
             if (length>0)
-                response.setHeader(HttpHeader.CONTENT_LENGTH,Long.toString(length));
+                response.setHeader(HttpHeader.CONTENT_LENGTH.asString(),Long.toString(length));
 
             if (_cacheControl!=null)
-                response.setHeader(HttpHeader.CACHE_CONTROL,_cacheControl.toString());
+                response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl.toString());
         }
 
     }

@@ -592,7 +592,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             }
             else if ("/close".equals(uri))
             {
-                request.getConnection().getEndPoint().close();
+                request.getHttpChannel().getEndPoint().close();
             }
             else
             {

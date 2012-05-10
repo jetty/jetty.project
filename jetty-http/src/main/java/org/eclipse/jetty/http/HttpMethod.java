@@ -60,8 +60,20 @@ public enum HttpMethod
     }
 
     /* ------------------------------------------------------------ */
-    public ByteBuffer toBuffer()
+    public boolean is(String s)
+    {
+        return toString().equalsIgnoreCase(s);    
+    }
+    
+    /* ------------------------------------------------------------ */
+    public ByteBuffer asBuffer()
     {
         return _buffer.asReadOnlyBuffer();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String asString()
+    {
+        return toString();
     }
 }

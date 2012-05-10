@@ -102,8 +102,6 @@ public class ByteArrayEndPointTest
         
         assertEquals(5,endp.flush(data));
         assertEquals("data.",BufferUtil.toString(endp.takeOutput()));
-        
-        
     }
     
     

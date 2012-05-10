@@ -14,12 +14,15 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,6 +37,7 @@ public class LocalConnector extends AbstractConnector
         setMaxIdleTime(30000);
     }
 
+    @Override
     public Object getConnection()
     {
         return this;
@@ -46,11 +50,11 @@ public class LocalConnector extends AbstractConnector
 
     public String getResponses(String requests, boolean keepOpen) throws Exception
     {
-        ByteArrayBuffer result = getResponses(new ByteArrayBuffer(requests, StringUtil.__ISO_8859_1), keepOpen);
-        return result==null?null:result.toString(StringUtil.__ISO_8859_1);
+        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StringUtil.__UTF8_CHARSET), keepOpen);
+        return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
     }
 
-    public ByteArrayBuffer getResponses(ByteArrayBuffer requestsBuffer, boolean keepOpen) throws Exception
+    public ByteBuffer getResponses(ByteBuffer requestsBuffer, boolean keepOpen) throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
         Request request = new Request(requestsBuffer, keepOpen, latch);
@@ -63,7 +67,7 @@ public class LocalConnector extends AbstractConnector
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
         Request request = _requests.take();
-        getThreadPool().dispatch(request);
+        findExecutor().execute(request);
     }
 
     public void open() throws IOException
@@ -81,18 +85,19 @@ public class LocalConnector extends AbstractConnector
 
     public void executeRequest(String rawRequest) throws IOException
     {
-        Request request = new Request(new ByteArrayBuffer(rawRequest, "UTF-8"), true, null);
+        Request request = new Request(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET),true,null);
+                
         _requests.add(request);
     }
 
     private class Request implements Runnable
     {
-        private final ByteArrayBuffer _requestsBuffer;
+        private final ByteBuffer _requestsBuffer;
         private final boolean _keepOpen;
         private final CountDownLatch _latch;
-        private volatile ByteArrayBuffer _responsesBuffer;
+        private volatile ByteBuffer _responsesBuffer;
 
-        private Request(ByteArrayBuffer requestsBuffer, boolean keepOpen, CountDownLatch latch)
+        private Request(ByteBuffer requestsBuffer, boolean keepOpen, CountDownLatch latch)
         {
             _requestsBuffer = requestsBuffer;
             _keepOpen = keepOpen;
@@ -101,6 +106,7 @@ public class LocalConnector extends AbstractConnector
 
         public void run()
         {
+            /*
             try
             {
                 ByteArrayEndPoint endPoint = new ByteArrayEndPoint(_requestsBuffer.asArray(), 1024)
@@ -159,9 +165,10 @@ public class LocalConnector extends AbstractConnector
                 if (_latch != null)
                     _latch.countDown();
             }
+            */
         }
 
-        public ByteArrayBuffer getResponsesBuffer()
+        public ByteBuffer getResponsesBuffer()
         {
             return _responsesBuffer;
         }

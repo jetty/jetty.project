@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 
 /* ------------------------------------------------------------ */
@@ -42,18 +43,19 @@ public class ErrorHandler extends AbstractHandler
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        AbstractHttpConnection connection = AbstractHttpConnection.getCurrentHttpChannel();
-        connection.getRequest().setHandled(true);
+        baseRequest.setHandled(true);
         String method = request.getMethod();
         if(!method.equals(HttpMethod.GET) && !method.equals(HttpMethod.POST) && !method.equals(HttpMethod.HEAD))
             return;
-        response.setContentType(MimeTypes.TEXT_HTML_8859_1);    
+        response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());    
         if (_cacheControl!=null)
-            response.setHeader(HttpHeader.CACHE_CONTROL, _cacheControl);
+            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
         ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(4096);
-        handleErrorPage(request, writer, connection.getResponse().getStatus(), connection.getResponse().getReason());
+        String reason=(response instanceof Response)?((Response)response).getReason():null; // TODO
+        handleErrorPage(request, writer, response.getStatus(), reason);
         writer.flush();
         response.setContentLength(writer.size());
         writer.writeTo(response.getOutputStream());

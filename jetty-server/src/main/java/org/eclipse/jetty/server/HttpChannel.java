@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -71,7 +72,7 @@ public abstract class HttpChannel
     private int _requests;
 
     private final Server _server;
-    private final EndPoint _endp;
+    private final AsyncConnection _connection;
     private final HttpURI _uri;
 
     private final HttpFields _requestFields;
@@ -107,10 +108,10 @@ public abstract class HttpChannel
     /** Constructor
      *
      */
-    public HttpChannel(Server server,EndPoint endp)
+    public HttpChannel(Server server,AsyncConnection connection)
     {
         _server = server;
-        _endp = endp;
+        _connection = connection;
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
@@ -145,6 +146,7 @@ public abstract class HttpChannel
     {
         return _server;
     }
+    
     
     /* ------------------------------------------------------------ */
     public AsyncContinuation getAsyncContinuation()
@@ -189,15 +191,21 @@ public abstract class HttpChannel
     }
 
     /* ------------------------------------------------------------ */
+    public AsyncConnection getConnection()
+    {
+        return _connection;
+    }
+    
+    /* ------------------------------------------------------------ */
     public InetSocketAddress getLocalAddress()
     {
-        return _endp.getLocalAddress();
+        return _connection.getEndPoint().getLocalAddress();
     }
 
     /* ------------------------------------------------------------ */
     public InetSocketAddress getRemoteAddress()
     {
-        return _endp.getRemoteAddress();
+        return _connection.getEndPoint().getRemoteAddress();
     }
     
     /* ------------------------------------------------------------ */

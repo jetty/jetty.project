@@ -99,7 +99,7 @@ public abstract class AbstractHttpConnector extends AbstractConnector implements
     /* ------------------------------------------------------------ */
     protected void checkForwardedHeaders(Request request) throws IOException
     {
-        HttpFields httpFields = request.getConnection().getRequestFields();
+        HttpFields httpFields = request.getHttpChannel().getRequestFields();
 
         // Do SSL first
         if (getForwardedCipherSuiteHeader()!=null)

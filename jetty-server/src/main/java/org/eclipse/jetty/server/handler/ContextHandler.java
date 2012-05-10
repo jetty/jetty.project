@@ -1744,10 +1744,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         {
             if (_mimeTypes == null)
                 return null;
-            ByteBuffer mime = _mimeTypes.getMimeByExtension(file);
-            if (mime != null)
-                return mime.toString();
-            return null;
+            return _mimeTypes.getMimeByExtension(file);
         }
 
         /* ------------------------------------------------------------ */

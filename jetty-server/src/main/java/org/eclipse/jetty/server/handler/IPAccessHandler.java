@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IPAddressMap;
 import org.eclipse.jetty.util.log.Log;
@@ -178,14 +180,14 @@ public class IPAccessHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
-        AbstractHttpConnection connection = baseRequest.getConnection();
-        if (connection!=null)
+        HttpChannel channel = baseRequest.getHttpChannel();
+        if (channel!=null)
         {
-            EndPoint endp=connection.getEndPoint();
+            EndPoint endp=channel.getConnection().getEndPoint();
             if (endp!=null)
             {
-                String addr = endp.getRemoteAddr();
-                if (addr!=null && !isAddrUriAllowed(addr,baseRequest.getPathInfo()))
+                InetSocketAddress address = endp.getRemoteAddress();
+                if (address!=null && !isAddrUriAllowed(address.getHostString(),baseRequest.getPathInfo()))
                 {
                     response.sendError(HttpStatus.FORBIDDEN_403);
                     baseRequest.setHandled(true);

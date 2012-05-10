@@ -172,12 +172,6 @@ public class Request implements HttpServletRequest
         _fields=_channel.getRequestFields();
         _async.setConnection(channel);
     }
-
-    /* ------------------------------------------------------------ */
-    public HttpChannel getHttpChannel()
-    {
-        return _channel;
-    }
     
     /* ------------------------------------------------------------ */
     public void addEventListener(final EventListener listener)
@@ -398,7 +392,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the connection.
      */
-    public HttpChannel getConnection()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }

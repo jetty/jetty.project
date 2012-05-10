@@ -79,7 +79,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
             HTTPSPDYAsyncEndPoint asyncEndPoint = new HTTPSPDYAsyncEndPoint(endPoint, stream);
             ServerHTTPSPDYAsyncConnection connection = new ServerHTTPSPDYAsyncConnection(connector,
-                    asyncEndPoint, connector.getServer(), (SPDYAsyncConnection)endPoint.getConnection(),
+                    asyncEndPoint, connector.getServer(), (SPDYAsyncConnection)endPoint.getHttpChannel(),
                     pushStrategy, stream);
             asyncEndPoint.setConnection(connection);
             stream.setAttribute(CONNECTION_ATTRIBUTE, connection);

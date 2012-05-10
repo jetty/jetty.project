@@ -19,6 +19,7 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.AsyncConnection;
@@ -240,10 +241,9 @@ public class SelectChannelConnector extends AbstractHttpConnector
         @Override
         public boolean dispatch(Runnable task)
         {
-            ThreadPool pool=getThreadPool();
-            if (pool==null)
-                pool=getServer().getThreadPool();
-            return pool.dispatch(task);
+            Executor executor = findExecutor();
+            executor.execute(task);
+            return true;
         }
 
         @Override

@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
@@ -42,7 +43,7 @@ public class ConnectHandler extends HandlerWrapper
     private static final Logger LOG = Log.getLogger(ConnectHandler.class);
 
     private final Logger _logger = Log.getLogger(getClass().getName());
-    private final SelectorManager _selectorManager = new Manager();
+    // TODO private final SelectorManager _selectorManager = new Manager();
     private volatile int _connectTimeout = 5000;
     private volatile int _writeTimeout = 30000;
     private volatile ThreadPool _threadPool;
@@ -109,7 +110,7 @@ public class ConnectHandler extends HandlerWrapper
     {
         super.setServer(server);
 
-        server.getContainer().update(this, null, _selectorManager, "selectManager");
+        // TODO server.getContainer().update(this, null, _selectorManager, "selectManager");
 
         if (_privateThreadPool)
             server.getContainer().update(this, null, _privateThreadPool, "threadpool", true);
@@ -149,13 +150,13 @@ public class ConnectHandler extends HandlerWrapper
         if (_threadPool instanceof LifeCycle && !((LifeCycle)_threadPool).isRunning())
             ((LifeCycle)_threadPool).start();
 
-        _selectorManager.start();
+        // TODO _selectorManager.start();
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        _selectorManager.stop();
+        // TODO _selectorManager.stop();
 
         ThreadPool threadPool = _threadPool;
         if (_privateThreadPool && _threadPool != null && threadPool instanceof LifeCycle)
@@ -167,7 +168,7 @@ public class ConnectHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (HttpMethod.CONNECT.equalsIgnoreCase(request.getMethod()))
+        if (HttpMethod.CONNECT.is(request.getMethod()))
         {
             _logger.debug("CONNECT request for {}", request.getRequestURI());
             try
@@ -228,6 +229,8 @@ public class ConnectHandler extends HandlerWrapper
         // 1. when this unread data is written and the server replies before the clientToProxy
         // connection is installed (it is only installed after returning from this method)
         // 2. when the client sends data before this unread data has been written.
+        
+        /* TODO
         AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentHttpChannel();
         ByteBuffer headerBuffer = ((HttpParser)httpConnection.getParser()).getHeaderBuffer();
         ByteBuffer bodyBuffer = ((HttpParser)httpConnection.getParser()).getBodyBuffer();
@@ -264,8 +267,10 @@ public class ConnectHandler extends HandlerWrapper
         response.getOutputStream().close();
 
         upgradeConnection(request, response, clientToProxy);
+        */
     }
 
+    /* TODO
     private ClientToProxyConnection prepareConnections(ConcurrentMap<String, Object> context, SocketChannel channel, ByteBuffer buffer)
     {
         AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentHttpChannel();
@@ -274,7 +279,9 @@ public class ConnectHandler extends HandlerWrapper
         clientToProxy.setConnection(proxyToServer);
         proxyToServer.setConnection(clientToProxy);
         return clientToProxy;
+        return null;
     }
+        */ 
 
     /**
      * <p>Handles the authentication before setting up the tunnel to the remote server.</p>
@@ -292,6 +299,7 @@ public class ConnectHandler extends HandlerWrapper
         return true;
     }
 
+    /* TODO
     protected ClientToProxyConnection newClientToProxyConnection(ConcurrentMap<String, Object> context, SocketChannel channel, EndPoint endPoint, long timeStamp)
     {
         return new ClientToProxyConnection(context, channel, endPoint, timeStamp);
@@ -301,6 +309,7 @@ public class ConnectHandler extends HandlerWrapper
     {
         return new ProxyToServerConnection(context, buffer);
     }
+    */
 
     private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
     {
@@ -358,11 +367,13 @@ public class ConnectHandler extends HandlerWrapper
         _logger.debug("Upgraded connection to {}", connection);
     }
 
+    /* TODO
     private void register(SocketChannel channel, ProxyToServerConnection proxyToServer) throws IOException
     {
         _selectorManager.register(channel, proxyToServer);
         proxyToServer.waitReady(_connectTimeout);
     }
+    */
 
     /**
      * <p>Reads (with non-blocking semantic) into the given {@code buffer} from the given {@code endPoint}.</p>
@@ -390,6 +401,7 @@ public class ConnectHandler extends HandlerWrapper
      */
     protected int write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
+        /* TODO
         if (buffer == null)
             return 0;
 
@@ -413,8 +425,11 @@ public class ConnectHandler extends HandlerWrapper
         }
         _logger.debug("Written {}/{} bytes {}", builder, length, endPoint);
         return length;
+        */
+        return -1;
     }
 
+    /* TODO
     private class Manager extends SelectorManager
     {
         @Override
@@ -955,9 +970,11 @@ public class ConnectHandler extends HandlerWrapper
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpThis(out);
+        /* TODO
         if (_privateThreadPool)
             dump(out, indent, Arrays.asList(_threadPool, _selectorManager), TypeUtil.asList(getHandlers()), getBeans());
         else
             dump(out, indent, Arrays.asList(_selectorManager), TypeUtil.asList(getHandlers()), getBeans());
+            */
     }
 }

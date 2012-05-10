@@ -70,7 +70,7 @@ public class MimeTypes
         }
 
         /* ------------------------------------------------------------ */
-        public ByteBuffer toBuffer()
+        public ByteBuffer asBuffer()
         {
             return _buffer.asReadOnlyBuffer();
         }
@@ -86,6 +86,12 @@ public class MimeTypes
         {
             return _string.equalsIgnoreCase(s);    
         }
+
+        /* ------------------------------------------------------------ */
+        public String asString()
+        {
+            return _string;
+        }
         
         /* ------------------------------------------------------------ */
         @Override
@@ -99,22 +105,21 @@ public class MimeTypes
     private static final Logger LOG = Log.getLogger(MimeTypes.class);
     public  final static StringMap<MimeTypes.Type> CACHE= new StringMap<MimeTypes.Type>(true);
     private final static StringMap<ByteBuffer> TYPES= new StringMap<ByteBuffer>(true);
-    private final static Map<String,ByteBuffer> __dftMimeMap = new HashMap<String,ByteBuffer>();
+    private final static Map<String,String> __dftMimeMap = new HashMap<String,String>();
     private final static Map<String,String> __encodings = new HashMap<String,String>();
 
     static
     {
-
         for (MimeTypes.Type type : MimeTypes.Type.values())
         {
             CACHE.put(type.toString(),type);
-            TYPES.put(type.toString(),type.toBuffer());
+            TYPES.put(type.toString(),type.asBuffer());
 
             int charset=type.toString().indexOf(";charset=");
             if (charset>0)
             {
                 CACHE.put(type.toString().replace(";charset=","; charset="),type);
-                TYPES.put(type.toString().replace(";charset=","; charset="),type.toBuffer());
+                TYPES.put(type.toString().replace(";charset=","; charset="),type.asBuffer());
             }
         }
 
@@ -150,13 +155,11 @@ public class MimeTypes
             LOG.warn(e.toString());
             LOG.debug(e);
         }
-
-
     }
 
 
     /* ------------------------------------------------------------ */
-    private final Map<String,ByteBuffer> _mimeMap=new HashMap<String,ByteBuffer>();
+    private final Map<String,String> _mimeMap=new HashMap<String,String>();
 
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -166,7 +169,7 @@ public class MimeTypes
     }
 
     /* ------------------------------------------------------------ */
-    public synchronized Map<String,ByteBuffer> getMimeMap()
+    public synchronized Map<String,String> getMimeMap()
     {
         return _mimeMap;
     }
@@ -191,9 +194,9 @@ public class MimeTypes
      * @return MIME type matching the longest dot extension of the
      * file name.
      */
-    public ByteBuffer getMimeByExtension(String filename)
+    public String getMimeByExtension(String filename)
     {
-        ByteBuffer type=null;
+        String type=null;
 
         if (filename!=null)
         {
@@ -235,13 +238,13 @@ public class MimeTypes
     }
 
     /* ------------------------------------------------------------ */
-    private static ByteBuffer normalizeMimeType(String type)
+    private static String normalizeMimeType(String type)
     {
         MimeTypes.Type t =CACHE.get(type);
         if (t!=null)
-            return t.toBuffer();
+            return t.asString();
 
-        return BufferUtil.toBuffer(StringUtil.asciiToLowerCase(type));
+        return StringUtil.asciiToLowerCase(type);
     }
 
     /* ------------------------------------------------------------ */

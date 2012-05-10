@@ -1,8 +1,10 @@
 package org.eclipse.jetty.io;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExecutorCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -11,21 +13,40 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
 {
     private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
     private final AsyncEndPoint _endp;
-    private final ReadCallback _readCallback = new ReadCallback();
+    private final Callback<Void> _readCallback;
     private final AtomicBoolean _readInterested = new AtomicBoolean();
 
-    public AbstractAsyncConnection(AsyncEndPoint endp)
+    /* ------------------------------------------------------------ */
+    public AbstractAsyncConnection(AsyncEndPoint endp,Executor executor)
     {
         _endp=endp;
-    }
+        _readCallback= new ExecutorCallback<Void>(executor)
+        {
+            @Override
+            protected void onCompleted(Void context)
+            {
+                if (_readInterested.compareAndSet(true,false))
+                    onReadable();
+            }
 
+            @Override
+            protected void onFailed(Void context, Throwable x)
+            {
+                onReadFail(x);
+            }       
+        };
+    }
+    
+    /* ------------------------------------------------------------ */
     public abstract void onReadable();
 
+    /* ------------------------------------------------------------ */
     @Override
     public void onOpen()
     {
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public void onClose()
     {
@@ -74,47 +95,5 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     public String toString()
     {
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class ReadCallback implements Callback<Void>
-    {
-        @Override
-        public void completed(Void context)
-        {
-            if (_readInterested.compareAndSet(true,false))
-            {
-                new Thread(new Runnable()
-                {
-                    public void run()
-                    {
-                        onReadable();
-                    }
-                }).start();
-            }
-        }
-
-        @Override
-        public void failed(Void context, final Throwable x)
-        {
-            if (_readInterested.compareAndSet(true,false))
-            {
-                new Thread(new Runnable()
-                {
-                    public void run()
-                    {
-                        onReadFail(x);
-                    }
-                }).start();
-            }
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x",getClass().getSimpleName(),hashCode());
-        }
     }
 }

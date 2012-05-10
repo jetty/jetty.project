@@ -132,7 +132,7 @@ public class Dispatcher implements RequestDispatcher
         try
         {
             baseRequest.setDispatcherType(DispatcherType.INCLUDE);
-            baseRequest.getConnection().include();
+            baseRequest.getHttpChannel().include();
             if (_named!=null)
                 _contextHandler.handle(_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             else 
@@ -183,7 +183,7 @@ public class Dispatcher implements RequestDispatcher
         finally
         {
             baseRequest.setAttributes(old_attr);
-            baseRequest.getConnection().included();
+            baseRequest.getHttpChannel().included();
             baseRequest.setParameters(old_params);
             baseRequest.setDispatcherType(old_type);
         }

@@ -12,6 +12,7 @@ import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -45,7 +46,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     {
         SSLEngine engine = __sslCtxFactory.newSslEngine();
         engine.setUseClientMode(false);
-        SslConnection connection = new SslConnection(engine,endpoint);
+        SslConnection connection = new SslConnection(engine,endpoint,_threadPool);
 
         AsyncConnection delegate = super.newConnection(channel,connection.getAppEndPoint());
         connection.getAppEndPoint().setAsyncConnection(delegate);

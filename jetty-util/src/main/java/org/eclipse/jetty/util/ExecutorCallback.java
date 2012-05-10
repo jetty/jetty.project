@@ -5,6 +5,17 @@ import java.util.concurrent.Executor;
 
 public class ExecutorCallback<C> implements Callback<C>
 {
+    private final static Integer ZERO = new Integer(0);
+    private final static ThreadLocal<Integer> __calls = new ThreadLocal<Integer>()
+            {
+                @Override
+                protected Integer initialValue()
+                {
+                    return ZERO;
+                }
+            };
+    
+    private final int _maxRecursion;
     private final Executor _executor;
     private final Runnable _onNullContextCompleted = new Runnable()
     {
@@ -14,24 +25,55 @@ public class ExecutorCallback<C> implements Callback<C>
     
     public ExecutorCallback(Executor executor)
     {
+        this(executor,4);
+    }
+    
+    public ExecutorCallback(Executor executor,int maxRecursion)
+    {
         _executor=executor;
+        _maxRecursion=maxRecursion;
     }
     
     @Override
     public void completed(final C context)
-    {   
-        if (execute())
+    {    
+        // Should we execute?
+        if (!execute())
         {
-            _executor.execute(context==null?
-                    _onNullContextCompleted:
-                        new Runnable()
+            // Do we have a recursion limit?
+            if (_maxRecursion<=0)
             {
-                @Override
-                public void run() { onCompleted(context);}
-            });
+                // No, so just call it directly
+                onCompleted(context);
+                return;
+            }
+            else
+            {
+                // Has this thread exceeded the recursion limit
+                Integer calls=__calls.get();
+                if (calls<_maxRecursion)
+                {
+                    // No, so increment recursion count, call, then decrement
+                    try
+                    {
+                        __calls.set(calls+1);
+                        onCompleted(context);
+                        return;
+                    }
+                    finally
+                    {
+                        __calls.set(calls);
+                    }
+                }
+            }
         }
-        else
-            onCompleted(context);
+
+        // fallen through to here so execute
+        _executor.execute(context==null?_onNullContextCompleted:new Runnable()
+        {
+            @Override
+            public void run() { onCompleted(context);}
+        });
     }
 
     protected void onCompleted(C context)
@@ -42,6 +84,7 @@ public class ExecutorCallback<C> implements Callback<C>
     @Override
     public void failed(final C context, final Throwable x)
     {   
+        // Always execute failure
         _executor.execute(new Runnable()
         {
             @Override

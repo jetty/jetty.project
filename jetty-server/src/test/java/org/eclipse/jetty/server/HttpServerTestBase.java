@@ -983,7 +983,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            _endp=baseRequest.getConnection().getEndPoint();
+            _endp=baseRequest.getHttpChannel().getEndPoint();
             response.setHeader("test","value");
             response.setStatus(200);
             response.setContentType("text/plain");

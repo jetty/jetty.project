@@ -1097,7 +1097,14 @@ public class Response implements HttpServletResponse
     {
         return _fields;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public long getContentCount()
+    {
+        // TODO
+        return -1;
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

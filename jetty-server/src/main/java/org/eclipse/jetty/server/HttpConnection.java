@@ -80,7 +80,7 @@ public class HttpConnection extends AbstractAsyncConnection
      */
     public HttpConnection(HttpConnector connector, AsyncEndPoint endpoint, Server server)
     {
-        super(endpoint);
+        super(endpoint,connector.getServer().getThreadPool());
         _connector = connector;
         _bufferPool=_connector.getByteBufferPool();
         
@@ -486,7 +486,7 @@ public class HttpConnection extends AbstractAsyncConnection
     {
         private HttpOverHttpChannel(Server server)
         {
-            super(server,getEndPoint());
+            super(server,HttpConnection.this);
         }
 
         @Override

@@ -46,10 +46,10 @@ public class MimeTypesTest
     private void assertMimeTypeByExtension(String expectedMimeType, String filename)
     {
         MimeTypes mimetypes = new MimeTypes();
-        ByteBuffer contentType = mimetypes.getMimeByExtension(filename);
+        String contentType = mimetypes.getMimeByExtension(filename);
         String prefix = "MimeTypes.getMimeByExtension(" + filename + ")";
         assertNotNull(prefix,contentType);
-        assertEquals(prefix,expectedMimeType,BufferUtil.toString(contentType));
+        assertEquals(prefix,expectedMimeType,contentType);
     }
     
     @Test

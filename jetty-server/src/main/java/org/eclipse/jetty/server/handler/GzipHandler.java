@@ -210,7 +210,7 @@ public class GzipHandler extends HandlerWrapper
         {
             String ae = request.getHeader("accept-encoding");
             if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
-                    && !HttpMethod.HEAD.equalsIgnoreCase(request.getMethod()))
+                    && !HttpMethod.HEAD.is(request.getMethod()))
             {
                 if (_excluded!=null)
                 {

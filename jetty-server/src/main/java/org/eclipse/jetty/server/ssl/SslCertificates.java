@@ -85,7 +85,7 @@ public class SslCertificates
      */
     public static void customize(SSLSession sslSession, EndPoint endpoint, Request request) throws IOException
     {
-        request.setScheme(HttpScheme.HTTPS);
+        request.setScheme(HttpScheme.HTTPS.asString());
 
         try
         {

@@ -65,8 +65,9 @@ public class DebugHandler extends HandlerWrapper
         String ex=null;
         try
         {
-            final String d=_date.now();
-            final int ms=_date.lastMs();
+            long now=System.currentTimeMillis();
+            final String d=_date.format(now);
+            final int ms=(int)(now%1000);
             
             if (retry)
                 _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" RETRY");
@@ -99,8 +100,9 @@ public class DebugHandler extends HandlerWrapper
         finally
         {
             thread.setName(old_name);
-            final String d=_date.now();
-            final int ms=_date.lastMs();
+            long now=System.currentTimeMillis();
+            final String d=_date.format(now);
+            final int ms=(int)(now%1000);
             suspend=baseRequest.getAsyncContinuation().isSuspended();
             if (suspend)
             {
@@ -110,7 +112,7 @@ public class DebugHandler extends HandlerWrapper
             else
                 _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" "+base_response.getStatus()+
 		        (ex==null?"":("/"+ex))+
-		        " "+base_response.getContentType()+" "+base_response.getContentCount());
+		        " "+base_response.getContentType());
         }
     }
 

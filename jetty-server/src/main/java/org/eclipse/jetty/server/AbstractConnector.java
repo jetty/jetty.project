@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletRequest;
@@ -24,6 +25,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector.Statistics;
@@ -53,13 +55,14 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     private String _name;
 
     private Server _server;
-    private ThreadPool _threadPool;
+    private Executor _executor;
     private String _host;
     private int _port = 0;
     private int _acceptQueueSize = 0;
     private int _acceptors = 1;
     private int _acceptorPriorityOffset = 0;
     private boolean _reuseAddress = true;
+    private ByteBufferPool _byteBufferPool;
 
     private final Statistics _stats = new ConnectionStatistics();
     
@@ -99,22 +102,40 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     }
 
     /* ------------------------------------------------------------ */
-    public ThreadPool getThreadPool()
+    public Executor findExecutor()
     {
-        return _threadPool;
+        if (_executor==null && getServer()!=null)
+            return getServer().getThreadPool();
+        return _executor;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public Executor getExecutor()
+    {
+        return _executor;
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the ThreadPool.
-     * The threadpool passed is added via {@link #addBean(Object)} so that
-     * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
-     * @param threadPool the threadPool to set
-     */
-    public void setThreadPool(ThreadPool pool)
+    public void setExecutor(Executor executor)
     {
-        removeBean(_threadPool);
-        _threadPool = pool;
-        addBean(_threadPool);
+        removeBean(_executor);
+        _executor=executor;
+        addBean(_executor);
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _byteBufferPool;
+    }
+
+    public void setByteBufferPool(ByteBufferPool byteBufferPool)
+    {
+        removeBean(byteBufferPool);
+        _byteBufferPool = byteBufferPool;
+        addBean(_byteBufferPool);
     }
 
     /* ------------------------------------------------------------ */
@@ -251,12 +272,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         // open listener port
         open();
 
-        if (_threadPool == null)
-        {
-            _threadPool = _server.getThreadPool();
-            addBean(_threadPool,false);
-        }
-
         super.doStart();
 
         // Start selector thread
@@ -265,10 +280,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             _acceptorThreads = new Thread[getAcceptors()];
 
             for (int i = 0; i < _acceptorThreads.length; i++)
-                if (!_threadPool.dispatch(new Acceptor(i)))
-                    throw new IllegalStateException("!accepting");
-            if (_threadPool.isLowOnThreads())
-                LOG.warn("insufficient threads configured for {}",this);
+                findExecutor().execute(new Acceptor(i));
         }
 
         LOG.info("Started {}",this);

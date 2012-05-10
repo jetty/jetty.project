@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -51,6 +52,9 @@ public interface Connector extends LifeCycle
     /* ------------------------------------------------------------ */
     Server getServer();
 
+    /* ------------------------------------------------------------ */
+    Executor getExecutor();    
+    
     /* ------------------------------------------------------------ */
     ByteBufferPool getByteBufferPool();    
     

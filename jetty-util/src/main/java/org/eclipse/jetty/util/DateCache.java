@@ -251,8 +251,13 @@ public class DateCache
         
         return tick._string;
     }
-
-
+    
+    /* ------------------------------------------------------------ */
+    public String now()
+    {
+        return _tick._string;
+    }
+    
     /* ------------------------------------------------------------ */
     private void formatNow()
     {

@@ -22,6 +22,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -40,7 +41,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public class SslSelectChannelConnector extends SelectChannelConnector implements SslConnector
 {
     private final SslContextFactory _sslContextFactory;
-    private Buffers _sslBuffers;
 
     /* ------------------------------------------------------------ */
     public SslSelectChannelConnector()
@@ -59,7 +59,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     {
         _sslContextFactory = sslContextFactory;
         addBean(_sslContextFactory);
-        setUseDirectBuffers(false);
         setSoLingerTime(30000);
     }
 
@@ -90,11 +89,12 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      *                HttpRequest to be customised.
      */
     @Override
-    public void customize(EndPoint endpoint, Request request) throws IOException
+    public void customize(Request request) throws IOException
     {
-        request.setScheme(HttpScheme.HTTPS);
-        super.customize(endpoint,request);
+        request.setScheme(HttpScheme.HTTPS.asString());
+        super.customize(request);
 
+        EndPoint endpoint = request.getHttpChannel().getConnection().getEndPoint();
         SslConnection.AppEndPoint sslEndpoint=(SslConnection.AppEndPoint)endpoint;
         SSLEngine sslEngine=sslEndpoint.getSslEngine();
         SSLSession sslSession=sslEngine.getSession();
@@ -546,7 +546,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
             SSLEngine engine = createSSLEngine(channel);
             SslConnection connection = newSslConnection(endpoint, engine);
             AsyncConnection delegate = newPlainConnection(channel, connection.getAppEndPoint());
-            connection.getAppEndPoint().setConnection(delegate);
+            connection.getAppEndPoint().setAsyncConnection(delegate);
             connection.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
             return connection;
         }
@@ -563,7 +563,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     protected SslConnection newSslConnection(AsyncEndPoint endpoint, SSLEngine engine)
     {
-        return new SslConnection(engine, endpoint);
+        return new SslConnection(engine, endpoint,findExecutor());
     }
 
     /* ------------------------------------------------------------ */
@@ -607,12 +607,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
         SSLSession sslSession = sslEngine.getSession();
 
-        _sslBuffers = BuffersFactory.newBuffers(
-                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,sslSession.getApplicationBufferSize(),
-                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,sslSession.getApplicationBufferSize(),
-                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,getMaxBuffers()
-        );
-
         if (getRequestHeaderSize()<sslSession.getApplicationBufferSize())
             setRequestHeaderSize(sslSession.getApplicationBufferSize());
         if (getRequestBufferSize()<sslSession.getApplicationBufferSize())
@@ -628,16 +622,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected void doStop() throws Exception
     {
-        _sslBuffers=null;
         super.doStop();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return SSL buffers
-     */
-    public Buffers getSslBuffers()
-    {
-        return _sslBuffers;
-    }
 }

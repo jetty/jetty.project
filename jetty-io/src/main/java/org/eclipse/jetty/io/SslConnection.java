@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -101,19 +102,18 @@ public class SslConnection extends AbstractAsyncConnection
             _outNet=BufferUtil.allocateDirect(packetSize);
             _inApp=BufferUtil.allocate(appSize);
         }
-
     }
 
     /* ------------------------------------------------------------ */
-    public SslConnection(SSLEngine engine,AsyncEndPoint endp)
+    public SslConnection(SSLEngine engine,AsyncEndPoint endp,Executor executor)
     {
-        this(engine,endp,System.currentTimeMillis());
+        this(engine,endp,System.currentTimeMillis(),executor);
     }
 
     /* ------------------------------------------------------------ */
-    public SslConnection(SSLEngine engine,AsyncEndPoint endp, long timeStamp)
+    public SslConnection(SSLEngine engine,AsyncEndPoint endp, long timeStamp,Executor executor)
     {
-        super(endp);
+        super(endp, executor);
         _engine=engine;
         _session=_engine.getSession();
         _endp=endp;
