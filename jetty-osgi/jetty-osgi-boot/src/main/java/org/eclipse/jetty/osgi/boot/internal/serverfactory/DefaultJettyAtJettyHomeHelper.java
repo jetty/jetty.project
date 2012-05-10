@@ -77,6 +77,16 @@ public class DefaultJettyAtJettyHomeHelper
      * configuration.
      */
     public static final String SYS_PROP_JETTY_PORT_SSL = "jetty.port.ssl";
+    
+    /**
+     * Set of config files to apply to a jetty Server instance if none are supplied by SYS_PROP_JETTY_ETC_FILES
+     */
+    public static final String DEFAULT_JETTY_ETC_FILES = "jetty.xml,jetty-selector.xml,jetty-deployer.xml";
+    
+    /**
+     * Default location within bundle of a jetty home dir.
+     */
+    public static final String DEFAULT_JETTYHOME = "/jettyhome";
 
     /**
      * Called by the JettyBootStrapActivator. If the system property jetty.home
@@ -216,8 +226,9 @@ public class DefaultJettyAtJettyHomeHelper
      */
     private static String getJettyConfigurationURLs(Bundle configurationBundle)
     {
-        String jettyetc = System.getProperty(SYS_PROP_JETTY_ETC_FILES, "etc/jetty.xml");
-        StringTokenizer tokenizer = new StringTokenizer(jettyetc, ";,", false);
+        String files = System.getProperty(SYS_PROP_JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
+       
+        StringTokenizer tokenizer = new StringTokenizer(files, ";,", false);
         StringBuilder res = new StringBuilder();
 
         while (tokenizer.hasMoreTokens())
@@ -225,22 +236,25 @@ public class DefaultJettyAtJettyHomeHelper
             String etcFile = tokenizer.nextToken().trim();
             if (etcFile.startsWith("/") || etcFile.indexOf(":") != -1)
             {
+                //file path is absolute
                 appendToCommaSeparatedList(res, etcFile);
             }
             else
             {
+                //relative file path
                 Enumeration<URL> enUrls = BundleFileLocatorHelper.DEFAULT.findEntries(configurationBundle, etcFile);
 
                 // default for org.eclipse.osgi.boot where we look inside
                 // jettyhome for the default embedded configuration.
                 // default inside jettyhome. this way fragments to the bundle
                 // can define their own configuration.
-                if ((enUrls == null || !enUrls.hasMoreElements()) && etcFile.endsWith("etc/jetty.xml"))
+                if ((enUrls == null || !enUrls.hasMoreElements()))
                 {
-                    enUrls = BundleFileLocatorHelper.DEFAULT.findEntries(configurationBundle, "/jettyhome/etc/jetty-osgi-default.xml");
-                    LOG.debug("Configuring jetty with the default embedded configuration:" + "bundle: "
+                    String tmp = DEFAULT_JETTYHOME+"/etc/"+etcFile;
+                    enUrls = BundleFileLocatorHelper.DEFAULT.findEntries(configurationBundle, tmp);
+                    LOG.info("Configuring jetty with the default embedded configuration:" + "bundle: "
                                        + configurationBundle.getSymbolicName()
-                                       + " config: /jettyhome/etc/jetty-osgi-default.xml");
+                                       + " config: "+tmp);
                 }
                 if (enUrls == null || !enUrls.hasMoreElements())
                 {
