@@ -552,20 +552,22 @@ public class Main
             CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             final Process process = pbuilder.start();
-            
-            try
+
+            copyInThread(process.getErrorStream(),System.err);
+            copyInThread(process.getInputStream(),System.out);
+            copyInThread(System.in,process.getOutputStream());
+            monitor.setProcess(process);
+            Runtime.getRuntime().addShutdownHook(new Thread()
             {
-                copyInThread(process.getErrorStream(),System.err);
-                copyInThread(process.getInputStream(),System.out);
-                copyInThread(System.in,process.getOutputStream());
-                monitor.setProcess(process);
-                process.waitFor();
-            }
-            finally
-            {
-                Config.debug("Destroying " + process);
-                process.destroy();
-            }
+                @Override
+                public void run()
+                {
+                    Config.debug("Destroying " + process);
+                    process.destroy();
+                }
+            });
+
+            process.waitFor();
             return;
         }
 
