@@ -59,4 +59,7 @@ public interface AsyncEndPoint extends EndPoint
     AsyncConnection getAsyncConnection();
 
     void setAsyncConnection(AsyncConnection connection);
+    
+    void onClose();
+    
 }

@@ -19,6 +19,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 
+@Ignore
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 {
     static SslContextFactory __sslCtxFactory=new SslContextFactory();

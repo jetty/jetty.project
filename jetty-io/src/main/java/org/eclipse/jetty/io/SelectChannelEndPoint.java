@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -41,11 +42,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
 
-    private Callback _readCallback;
-    private Object _readContext;
-    private Callback _writeCallback;
-    private Object _writeContext;
-
     private SelectionKey _key;
 
     private boolean _selected;
@@ -60,7 +56,26 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     private volatile boolean _idlecheck;
     private volatile AsyncConnection _connection;
 
-    private ByteBuffer[] _writeBuffers;
+    private final ReadInterest _readInterest = new ReadInterest()
+    {
+        @Override
+        protected boolean makeInterested()
+        {
+            _interestOps=_interestOps | SelectionKey.OP_READ;
+            updateKey();
+            return false;
+        }
+    };
+    
+    private final WriteFlusher _writeFlusher = new WriteFlusher(this)
+    {
+        @Override
+        protected void scheduleCompleteWrite()
+        {
+            _interestOps = _interestOps | SelectionKey.OP_WRITE;
+            updateKey();
+        }
+    };
 
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime) throws IOException
@@ -138,9 +153,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             }
         }
         if (can_read)
-            readCompleted();
+            _readInterest.completed();
         if (can_write)
-            completeWrite();
+            _writeFlusher.completeWrite();
     }
 
     /* ------------------------------------------------------------ */
@@ -175,7 +190,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     {
         synchronized (_lock)
         {
-            if (_idlecheck || _readCallback!=null || _writeCallback!=null)
+            if (_idlecheck || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
                 long idleTimestamp = getIdleTimestamp();
                 long max_idle_time = getMaxIdleTime();
@@ -192,66 +207,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                             _connection.onIdleExpired(idleForMs);
                         
                         TimeoutException timeout = new TimeoutException();
-                        readFailed(timeout);
-                        writeFailed(timeout);
+                        _readInterest.failed(timeout);
+                        _writeFlusher.failWrite(timeout);
                     }
                 }
             }
         }
     }
     
-    /* ------------------------------------------------------------ */
-    private void readCompleted()
-    {
-        if (_readCallback!=null)
-        {
-            Callback cb=_readCallback;
-            Object ctx=_readContext;
-            _readCallback=null;
-            _readContext=null;
-            cb.completed(ctx);
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    private void writeCompleted()
-    {
-        if (_writeCallback!=null)
-        {
-            Callback cb=_writeCallback;
-            Object ctx=_writeContext;
-            _writeCallback=null;
-            _writeContext=null;
-            _writeBuffers=null;
-            cb.completed(ctx); 
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    private void readFailed(Throwable cause)
-    {
-        if (_readCallback!=null)
-        {
-            Callback cb=_readCallback;
-            Object ctx=_readContext;
-            _readCallback=null;
-            _readContext=null;
-            cb.failed(ctx,cause);
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    private void writeFailed(Throwable cause)
-    {
-        if (_writeCallback!=null)
-        {
-            Callback cb=_writeCallback;
-            Object ctx=_writeContext;
-            _writeCallback=null;
-            _writeContext=null;
-            cb.failed(ctx,cause);
-        }
-    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -267,80 +230,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override    
     public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
     {
-        synchronized (_lock)
-        {
-            if (_readCallback != null)
-                throw new IllegalStateException("previous read not complete");
-            _readContext=context;
-            _readCallback=callback;
-            _interestOps=_interestOps | SelectionKey.OP_READ;
-            updateKey();
-        }
+        _readInterest.readable(context,callback);
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
     {
-        synchronized (_lock)
-        {
-            try
-            {
-                if (_writeCallback!=null)
-                    throw new IllegalStateException("previous write not complete");
-
-                flush(buffers);
-
-                // Are we complete?
-                for (ByteBuffer b : buffers)
-                {
-                    if (b.hasRemaining())
-                    {
-                        _writeBuffers=buffers;
-                        _writeContext=context;
-                        _writeCallback=callback;
-                        _interestOps = _interestOps | SelectionKey.OP_WRITE;
-                        updateKey();
-                        return;
-                    }
-                }
-                
-                callback.completed(context);
-            }
-            catch (IOException e)
-            {
-                callback.failed(context,e);
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    private void completeWrite()
-    {
-        if (_writeBuffers==null)
-            return;
-        
-        try
-        {
-            flush(_writeBuffers);
-
-            // Are we complete?
-            for (ByteBuffer b : _writeBuffers)
-            {
-                if (b.hasRemaining())
-                {
-                    _interestOps = _interestOps | SelectionKey.OP_WRITE;
-                    return;
-                }
-            }
-            // we are complete and ready
-            writeCompleted();
-        }
-        catch (IOException e)
-        {
-            writeFailed(e);
-        }
-
+        _writeFlusher.write(context,callback,buffers);
     }
 
     /* ------------------------------------------------------------ */
@@ -359,7 +256,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
      */
     private void updateKey()
     {
-        synchronized (this)
+        synchronized (_lock)
         {
             if (!_selected)
             {
@@ -466,19 +363,18 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override
     public void close()
     {
-        synchronized (_lock)
-        {
-            try
-            {
-                super.close();
-            }
-            finally
-            {
-                updateKey();
-            }
-        }
+        super.close();
+        updateKey();
     }
-
+    
+    /* ------------------------------------------------------------ */
+    @Override 
+    public void onClose()
+    {
+        _writeFlusher.close();
+        _readInterest.close();
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -508,7 +404,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         }
 
         return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",hashCode(),getRemoteAddress(),getLocalAddress(),isOpen(),
-                isInputShutdown(),isOutputShutdown(),_interestOps,keyString,_readCallback,_writeCallback,getAsyncConnection());
+                isInputShutdown(),isOutputShutdown(),_interestOps,keyString,_readInterest,_writeFlusher,getAsyncConnection());
     }
 
     /* ------------------------------------------------------------ */

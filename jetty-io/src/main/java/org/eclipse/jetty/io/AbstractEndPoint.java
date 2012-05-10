@@ -64,6 +64,11 @@ public abstract class AbstractEndPoint implements EndPoint
     }
     
     /* ------------------------------------------------------------ */
+    public void onClose()
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
