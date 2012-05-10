@@ -37,8 +37,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
-    private final Object _lock = this;
-
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
 
@@ -59,7 +57,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
-        protected boolean makeInterested()
+        protected boolean readIsPossible()
         {
             _interestOps=_interestOps | SelectionKey.OP_READ;
             updateKey();
@@ -133,7 +131,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         boolean can_read;
         boolean can_write;
         
-        synchronized (_lock)
+        synchronized (this)
         {
             _selected = true;
             try
@@ -153,7 +151,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             }
         }
         if (can_read)
-            _readInterest.completed();
+            _readInterest.readable();
         if (can_write)
             _writeFlusher.completeWrite();
     }
@@ -188,7 +186,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override
     public void checkForIdleOrReadWriteTimeout(long now)
     {
-        synchronized (_lock)
+        synchronized (this)
         {
             if (_idlecheck || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
@@ -208,7 +206,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                         
                         TimeoutException timeout = new TimeoutException();
                         _readInterest.failed(timeout);
-                        _writeFlusher.failWrite(timeout);
+                        _writeFlusher.failed(timeout);
                     }
                 }
             }
@@ -256,7 +254,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
      */
     private void updateKey()
     {
-        synchronized (_lock)
+        synchronized (this)
         {
             if (!_selected)
             {
@@ -290,7 +288,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override
     public void doUpdateKey()
     {
-        synchronized (_lock)
+        synchronized (this)
         {
             _changing = false;
             if (getChannel().isOpen())

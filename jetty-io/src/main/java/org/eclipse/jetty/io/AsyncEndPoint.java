@@ -2,6 +2,8 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.CompletionHandler;
+import java.nio.channels.ReadPendingException;
+import java.nio.channels.WritePendingException;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.Callback;
@@ -23,9 +25,9 @@ public interface AsyncEndPoint extends EndPoint
      * This method schedules a callback operations when a call to {@link #fill(ByteBuffer)} will return data or EOF.
      * @param context Context to return via the callback
      * @param callback The callback to call when an error occurs or we are readable.
-     * @throws IllegalStateException if another read operation is concurrent.
+     * @throws ReadPendingException if another read operation is concurrent.
      */
-    <C> void readable(C context, Callback<C> callback) throws IllegalStateException;
+    <C> void readable(C context, Callback<C> callback) throws ReadPendingException;
 
     /* ------------------------------------------------------------ */
     /** Asynchronous write operation.
@@ -35,9 +37,9 @@ public interface AsyncEndPoint extends EndPoint
      * @param context Context to return via the callback
      * @param callback The callback to call when an error occurs or we are readable.
      * @param buffers One or more {@link ByteBuffer}s that will be flushed.
-     * @throws IllegalStateException if another write operation is concurrent.
+     * @throws WritePendingException if another write operation is concurrent.
      */
-    <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException;
+    <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException;
 
     /* ------------------------------------------------------------ */
     /** Set if the endpoint should be checked for idleness

@@ -1,5 +1,6 @@
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
 import java.util.concurrent.TimeoutException;
@@ -7,7 +8,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.Callback;
 
-public class ReadInterest
+
+/* ------------------------------------------------------------ */
+/** 
+ * A Utility class to help implement {@link AsyncEndPoint#readable(Object, Callback)}
+ * by keeping and calling the context and callback objects.
+ */
+public abstract class ReadInterest
 {
     private final AtomicBoolean _interested = new AtomicBoolean(false);
     private volatile Callback _readCallback;
@@ -25,13 +32,20 @@ public class ReadInterest
             throw new ReadPendingException();
         _readContext=context;
         _readCallback=callback;
-        if (makeInterested())
-            completed();
+        try
+        {
+            if (readIsPossible())
+                readable();
+        }
+        catch(IOException e)
+        {
+            failed(e);
+        }
     }
 
    
     /* ------------------------------------------------------------ */
-    public void completed()
+    public void readable()
     {
         if (_interested.compareAndSet(true,false))
         {
@@ -76,9 +90,6 @@ public class ReadInterest
     }
     
     /* ------------------------------------------------------------ */
-    protected boolean makeInterested()
-    {
-        throw new IllegalStateException("Unimplemented");
-    }
+    abstract protected boolean readIsPossible() throws IOException;
     
 }

@@ -144,9 +144,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public String takeOutputString()
     {
-        String s=BufferUtil.toString(_out,StringUtil.__UTF8_CHARSET);
-        BufferUtil.clear(_out);
-        return s;
+        ByteBuffer buffer=takeOutput();
+        return BufferUtil.toString(buffer,StringUtil.__UTF8_CHARSET);
     }
 
     /* ------------------------------------------------------------ */
