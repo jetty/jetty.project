@@ -46,7 +46,7 @@ import org.xml.sax.SAXParseException;
 /**
  * ServerInstanceWrapper
  * 
- *  Configures a jetty Server instance. Can also be used from the ManagedServiceFactory
+ *  Configures and starts a jetty Server instance. 
  */
 public class ServerInstanceWrapper
 {
