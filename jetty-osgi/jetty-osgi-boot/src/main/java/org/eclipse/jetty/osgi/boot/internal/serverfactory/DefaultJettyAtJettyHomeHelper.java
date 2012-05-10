@@ -81,7 +81,7 @@ public class DefaultJettyAtJettyHomeHelper
     /**
      * Set of config files to apply to a jetty Server instance if none are supplied by SYS_PROP_JETTY_ETC_FILES
      */
-    public static final String DEFAULT_JETTY_ETC_FILES = "jetty-osgi-default.xml,jetty-osgi-selector-default.xml,jetty-osgi-deployer-default.xml";
+    public static final String DEFAULT_JETTY_ETC_FILES = "jetty.xml,jetty-selector.xml,jetty-deployer.xml";
     
     /**
      * Default location within bundle of a jetty home dir.
@@ -227,7 +227,7 @@ public class DefaultJettyAtJettyHomeHelper
     private static String getJettyConfigurationURLs(Bundle configurationBundle)
     {
         String files = System.getProperty(SYS_PROP_JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
-        
+       
         StringTokenizer tokenizer = new StringTokenizer(files, ";,", false);
         StringBuilder res = new StringBuilder();
 
@@ -248,7 +248,7 @@ public class DefaultJettyAtJettyHomeHelper
                 // jettyhome for the default embedded configuration.
                 // default inside jettyhome. this way fragments to the bundle
                 // can define their own configuration.
-                if ((enUrls == null || !enUrls.hasMoreElements()) && etcFile.endsWith("-default.xml"))
+                if ((enUrls == null || !enUrls.hasMoreElements()))
                 {
                     String tmp = DEFAULT_JETTYHOME+"/etc/"+etcFile;
                     enUrls = BundleFileLocatorHelper.DEFAULT.findEntries(configurationBundle, tmp);

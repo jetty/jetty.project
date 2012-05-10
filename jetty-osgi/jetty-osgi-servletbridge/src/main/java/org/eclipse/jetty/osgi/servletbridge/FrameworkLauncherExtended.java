@@ -292,9 +292,9 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             if (etcJettyXml == null)
             {
                 etcJettyXml = "etc/jetty.xml";
-                if (new File(jettyHome, "etc/jetty-osgi-nested.xml").exists())
+                if (new File(jettyHome, "etc/jetty-nested.xml").exists())
                 {
-                    etcJettyXml += ",etc/jetty-osgi-nested.xml";
+                    etcJettyXml += ",etc/jetty-nested.xml";
                 }
                 System.setProperty("jetty.etc.config.urls", etcJettyXml);
                 props.setProperty("jetty.etc.config.urls", etcJettyXml);
