@@ -925,7 +925,7 @@ public class HttpParser
     @Override
     public String toString()
     {
-        return String.format("%s{s=%d,c=%d}",
+        return String.format("%s{s=%s,c=%d}",
                 getClass().getSimpleName(),
                 _state,
                 _contentLength);

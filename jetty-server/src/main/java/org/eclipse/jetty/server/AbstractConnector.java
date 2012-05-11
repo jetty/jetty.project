@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.server.Connector.Statistics;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -62,7 +63,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     private int _acceptors = 1;
     private int _acceptorPriorityOffset = 0;
     private boolean _reuseAddress = true;
-    private ByteBufferPool _byteBufferPool;
+    private ByteBufferPool _byteBufferPool=new StandardByteBufferPool(); // TODO should this be server wide? or a thread local one?
 
     private final Statistics _stats = new ConnectionStatistics();
     
@@ -399,7 +400,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             try
             {
                 current.setPriority(old_priority - _acceptorPriorityOffset);
-                while (isRunning() && getConnection() != null)
+                while (isRunning() && getTransport() != null)
                 {
                     try
                     {
@@ -453,11 +454,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _name = name;
     }
 
-    
-    
     /* ------------------------------------------------------------ */
     protected void connectionOpened(AsyncConnection connection)
     {
+        connection.onOpen();
         _stats.connectionOpened();
     }
 

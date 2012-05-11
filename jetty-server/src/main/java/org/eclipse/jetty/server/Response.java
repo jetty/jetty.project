@@ -50,7 +50,7 @@ public class Response implements HttpServletResponse
 {
     private static final Logger LOG = Log.getLogger(Response.class);
 
-    public enum Output {NONE,STREAM,WRITER}
+    public enum OutputState {NONE,STREAM,WRITER}
 
     /**
      * If a header name starts with this string,  the header (stripped of the prefix)
@@ -73,7 +73,7 @@ public class Response implements HttpServletResponse
     private MimeTypes.Type _mimeType;
     private String _characterEncoding;
     private String _contentType;
-    private Output _outputState;
+    private OutputState _outputState=OutputState.NONE;
     private PrintWriter _writer;
     private long _contentLength=-1;
 
@@ -103,7 +103,7 @@ public class Response implements HttpServletResponse
         _characterEncoding=null;
         _contentType=null;
         _writer=null;
-        _outputState=Output.NONE;
+        _outputState=OutputState.NONE;
         _contentLength=-1;
     }
 
@@ -304,7 +304,7 @@ public class Response implements HttpServletResponse
         setHeader(HttpHeader.CONTENT_TYPE,null);
         setHeader(HttpHeader.CONTENT_LENGTH,null);
 
-        _outputState=Output.NONE;
+        _outputState=OutputState.NONE;
         setStatus(code,message);
 
         if (message==null)
@@ -717,24 +717,24 @@ public class Response implements HttpServletResponse
     @Override
     public ServletOutputStream getOutputStream() throws IOException
     {
-        if (_outputState==Output.WRITER)
+        if (_outputState==OutputState.WRITER)
             throw new IllegalStateException("WRITER");
 
         ServletOutputStream out = _channel.getOutputStream();
-        _outputState=Output.STREAM;
+        _outputState=OutputState.STREAM;
         return out;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isWriting()
     {
-        return _outputState==Output.WRITER;
+        return _outputState==OutputState.WRITER;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isOutputing()
     {
-        return _outputState!=Output.NONE;
+        return _outputState!=OutputState.NONE;
     }
 
     /* ------------------------------------------------------------ */
@@ -744,7 +744,7 @@ public class Response implements HttpServletResponse
     @Override
     public PrintWriter getWriter() throws IOException
     {
-        if (_outputState==Output.STREAM)
+        if (_outputState==OutputState.STREAM)
             throw new IllegalStateException("STREAM");
 
         /* if there is no writer yet */
@@ -764,7 +764,7 @@ public class Response implements HttpServletResponse
             /* construct Writer using correct encoding */
             _writer = _channel.getPrintWriter(encoding);
         }
-        _outputState=Output.WRITER;
+        _outputState=OutputState.WRITER;
         return _writer;
     }
 
@@ -842,7 +842,7 @@ public class Response implements HttpServletResponse
         if (_channel.isIncluding())
                 return;
 
-        if (_outputState==Output.NONE && !isCommitted())
+        if (_outputState==OutputState.NONE && !isCommitted())
         {
             if (encoding==null)
             {
@@ -992,7 +992,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
 
         _writer=null;
-        _outputState=Output.NONE;
+        _outputState=OutputState.NONE;
     }
 
     /* ------------------------------------------------------------ */
@@ -1038,7 +1038,7 @@ public class Response implements HttpServletResponse
         _locale = locale;
         _fields.put(HttpHeader.CONTENT_LANGUAGE,locale.toString().replace('_','-'));
 
-        if (_outputState!=Output.NONE )
+        if (_outputState!=OutputState.NONE )
             return;
 
         if (_channel.getRequest().getContext()==null)

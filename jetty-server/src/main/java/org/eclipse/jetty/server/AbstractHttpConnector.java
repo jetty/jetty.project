@@ -26,12 +26,10 @@ public abstract class AbstractHttpConnector extends AbstractConnector implements
     private String _forwardedCipherSuiteHeader;
     private String _forwardedSslSessionIdHeader;
 
-    private int _requestHeaderSize;
-    private int _requestBufferSize;
-    private int _responseHeaderSize;
-    private int _responseBufferSize;
-
-    private ByteBufferPool _byteBufferPool;
+    private int _requestHeaderSize=6*1024;;
+    private int _requestBufferSize=16*1024;
+    private int _responseHeaderSize=6*1024;
+    private int _responseBufferSize=16*1024;
 
     @Override
     public int getRequestHeaderSize()
@@ -75,17 +73,6 @@ public abstract class AbstractHttpConnector extends AbstractConnector implements
     public void setResponseBufferSize(int responseBufferSize)
     {
         _responseBufferSize = responseBufferSize;
-    }
-
-    @Override
-    public ByteBufferPool getByteBufferPool()
-    {
-        return _byteBufferPool;
-    }
-
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
-    {
-        _byteBufferPool = byteBufferPool;
     }
 
     /* ------------------------------------------------------------ */

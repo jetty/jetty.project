@@ -61,8 +61,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 public class SelectChannelConnector extends AbstractHttpConnector
 {
     protected ServerSocketChannel _acceptChannel;
-    private int _lowResourcesConnections;
-    private int _lowResourcesMaxIdleTime;
     private int _localPort=-1;
 
     private final SelectorManager _manager = new ConnectorSelectorManager();
@@ -100,6 +98,7 @@ public class SelectChannelConnector extends AbstractHttpConnector
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void close() throws IOException
     {
         synchronized(this)
@@ -130,12 +129,14 @@ public class SelectChannelConnector extends AbstractHttpConnector
     }
 
     /* ------------------------------------------------------------ */
-    public synchronized Object getConnection()
+    @Override
+    public synchronized Object getTransport()
     {
         return _acceptChannel;
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public int getLocalPort()
     {
         synchronized(this)
@@ -145,6 +146,7 @@ public class SelectChannelConnector extends AbstractHttpConnector
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void open() throws IOException
     {
         synchronized(this)
@@ -176,27 +178,6 @@ public class SelectChannelConnector extends AbstractHttpConnector
     {
         _manager.setMaxIdleTime(maxIdleTime);
         super.setMaxIdleTime(maxIdleTime);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the lowResourcesConnections
-     */
-    public int getLowResourcesConnections()
-    {
-        return _lowResourcesConnections;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the number of connections, which if exceeded places this manager in low resources state.
-     * This is not an exact measure as the connection count is averaged over the select sets.
-     * @param lowResourcesConnections the number of connections
-     * @see #setLowResourcesMaxIdleTime(int)
-     */
-    public void setLowResourcesConnections(int lowResourcesConnections)
-    {
-        _lowResourcesConnections=lowResourcesConnections;
     }
 
     /* ------------------------------------------------------------ */

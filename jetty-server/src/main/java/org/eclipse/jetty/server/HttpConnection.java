@@ -83,6 +83,8 @@ public class HttpConnection extends AbstractAsyncConnection
         super(endpoint,connector.getServer().getThreadPool());
         _connector = connector;
         _bufferPool=_connector.getByteBufferPool();
+        if (_bufferPool==null)
+            new Throwable().printStackTrace();
         
         _server = server;
         
@@ -90,7 +92,16 @@ public class HttpConnection extends AbstractAsyncConnection
        
         _parser = new HttpParser(_channel.getRequestHandler());
         _generator = new HttpGenerator();
-        
+        LOG.debug("New HTTP Connection {}",this);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void onOpen()
+    {
+        LOG.debug("Opened HTTP Connection {}",this);
+        super.onOpen();
+        scheduleOnReadable();
     }
 
     /* ------------------------------------------------------------ */
@@ -172,6 +183,7 @@ public class HttpConnection extends AbstractAsyncConnection
     {
         AsyncConnection connection = this;
         boolean progress=true;
+        boolean suspended=false;
 
         try
         {
@@ -188,6 +200,9 @@ public class HttpConnection extends AbstractAsyncConnection
                         _requestBuffer=_parser.isInContent()
                         ?_bufferPool.acquire(_connector.getRequestBufferSize(),false)
                         :_bufferPool.acquire(_connector.getRequestHeaderSize(),false);
+                        
+                    int filled=getEndPoint().fill(_requestBuffer);
+                    System.err.println("filled="+filled+" to "+BufferUtil.toDetailString(_requestBuffer)+" from "+getEndPoint());
                     
                     // If we parse to an event, call the connection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
@@ -243,6 +258,7 @@ public class HttpConnection extends AbstractAsyncConnection
                         // exit the while loop by setting progress to false
                         LOG.debug("suspended {}",this);
                         progress=false;
+                        suspended=true;
                     }
                 }
             }
@@ -254,10 +270,10 @@ public class HttpConnection extends AbstractAsyncConnection
         finally
         {
             setCurrentConnection(null);
-
+            if (!getEndPoint().isInputShutdown() && !suspended)
+                scheduleOnReadable();
         }
     }
-
 
     /* ------------------------------------------------------------ */
     private void send(HttpGenerator.ResponseInfo info, ByteBuffer content) throws IOException
@@ -348,8 +364,14 @@ public class HttpConnection extends AbstractAsyncConnection
             preparedBefore=_generator.getContentPrepared();
             
             if (_generator.isComplete())
+            {
+                /* TODO ??
+                if (Action.COMPLETE==action)
+                    return 0;
+                    */
                 throw new EofException();
-
+            }
+            
             do
             {
                 // block if the last write is not complete

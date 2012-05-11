@@ -90,7 +90,7 @@ public interface Connector extends LifeCycle
     /**
      * @return the underlying socket, channel, buffer etc. for the connector.
      */
-    Object getConnection();
+    Object getTransport();
 
     
     /* ------------------------------------------------------------ */

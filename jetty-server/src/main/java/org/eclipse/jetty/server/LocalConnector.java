@@ -38,7 +38,7 @@ public class LocalConnector extends AbstractConnector
     }
 
     @Override
-    public Object getConnection()
+    public Object getTransport()
     {
         return this;
     }
