@@ -18,6 +18,8 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -26,6 +28,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
@@ -33,6 +36,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
@@ -67,6 +71,7 @@ public class Response implements HttpServletResponse
 
     private final HttpChannel _channel;
     private final HttpFields _fields;
+    private final AtomicBoolean _committed = new AtomicBoolean(false);
     private int _status=SC_OK;
     private String _reason;
     private Locale _locale;
@@ -105,6 +110,7 @@ public class Response implements HttpServletResponse
         _writer=null;
         _outputState=OutputState.NONE;
         _contentLength=-1;
+        _committed.set(false);
     }
 
     /* ------------------------------------------------------------ */
@@ -412,7 +418,7 @@ public class Response implements HttpServletResponse
     public void sendProcessing() throws IOException
     {
         if (_channel.isExpecting102Processing() && !isCommitted())
-            _channel.send1xx(HttpStatus.PROCESSING_102);
+            _channel.commit(HttpGenerator.PROGRESS_102_INFO,null);
     }
 
     /* ------------------------------------------------------------ */
@@ -1014,7 +1020,16 @@ public class Response implements HttpServletResponse
 
         _channel.resetBuffer();
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public ResponseInfo commit()
+    {
+        if (!_committed.compareAndSet(false,true))
+            throw new IllegalStateException();
+        
+        return new ResponseInfo(_channel.getRequest().getHttpVersion(),_fields,getLongContentLength(),getStatus(),getReason(),_channel.getRequest().isHead());
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#isCommitted()
@@ -1022,7 +1037,7 @@ public class Response implements HttpServletResponse
     @Override
     public boolean isCommitted()
     {
-        return _channel.isResponseCommitted();
+        return _committed.get();
     }
 
     /* ------------------------------------------------------------ */

@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Timer;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -42,6 +44,8 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -101,7 +105,6 @@ public abstract class HttpChannel
 
     
     private final RequestHandler _handler = new RequestHandler();
-    private final HttpGenerator.ResponseInfo _info = new Info();
     
 
     /* ------------------------------------------------------------ */
@@ -120,17 +123,17 @@ public abstract class HttpChannel
         _async = _request.getAsyncContinuation();
     }
    
+    public interface EventHandler extends HttpParser.RequestHandler
+    {
+        ResponseInfo commit();
+    }
+    
     /* ------------------------------------------------------------ */
-    public HttpParser.RequestHandler getRequestHandler()
+    public EventHandler getEventHandler()
     {
         return _handler;
     }
 
-    /* ------------------------------------------------------------ */
-    public HttpGenerator.ResponseInfo getResponseInfo()
-    {
-        return _info;
-    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -227,10 +230,9 @@ public abstract class HttpChannel
             // is content missing?
             if (available()==0)
             {
-                if (isResponseCommitted())
+                if (_response.isCommitted())
                     throw new IllegalStateException("Committed before 100 Continues");
-
-                send1xx(HttpStatus.CONTINUE_100);
+                commit(HttpGenerator.CONTINUE_100_INFO,null);
             }
             _expect100Continue=false;
         }
@@ -427,6 +429,21 @@ public abstract class HttpChannel
         }
     }
 
+    /* ------------------------------------------------------------ */
+    protected void sendError(final int status, final String reason, String content, boolean close) throws IOException
+    {
+        if (_response.isCommitted())
+            throw new IllegalStateException("Committed");
+        
+        _response.setStatus(status,reason);
+        if (close)
+            _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
+        ByteBuffer buffer=BufferUtil.toBuffer(content,StringUtil.__UTF8_CHARSET);
+        _response.setContentLength(buffer.remaining());
+        
+        HttpGenerator.ResponseInfo info = _handler.commit();
+        commit(info,buffer); 
+    }
 
     /* ------------------------------------------------------------ */
     public boolean isIncluding()
@@ -536,49 +553,7 @@ public abstract class HttpChannel
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private final class Info implements HttpGenerator.ResponseInfo
-    {
-        @Override
-        public HttpVersion getHttpVersion()
-        {
-            return getRequest().getHttpVersion();
-        }
-
-        @Override
-        public HttpFields getHttpFields()
-        {
-            return _responseFields;
-        }
-
-        @Override
-        public long getContentLength()
-        {
-            return _response.getLongContentLength();
-        }
-
-        @Override
-        public boolean isHead()
-        {
-            return getRequest().isHead();
-        }
-
-        @Override
-        public int getStatus()
-        {
-            return _response.getStatus();
-        }
-
-        @Override
-        public String getReason()
-        {
-            return _response.getReason();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class RequestHandler implements HttpParser.RequestHandler
+    private class RequestHandler implements EventHandler
     {
         @Override
         public boolean startRequest(String method, String uri, String version) throws IOException
@@ -759,6 +734,12 @@ public abstract class HttpChannel
             return true;
         }
 
+        @Override
+        public ResponseInfo commit()
+        {
+            return _response.commit();
+        }
+
     }
 
 
@@ -832,7 +813,7 @@ public abstract class HttpChannel
             // Process content.
             if (content instanceof ByteBuffer)
             {
-                send((ByteBuffer)content);
+                commit(_handler.commit(),(ByteBuffer)content);
             }
             else if (content instanceof InputStream)
             {
@@ -840,43 +821,30 @@ public abstract class HttpChannel
             }
             else
                 throw new IllegalArgumentException("unknown content type?");
-
-
         }
     }
     
-
     public abstract HttpConnector getHttpConnector();
-
-    public abstract long getMaxIdleTime();
-    
-    public abstract void asyncDispatch();
-    
-    public abstract void scheduleTimeout(Task timeout, long timeoutMs);
-
-    public abstract void cancelTimeout(Task timeout);
 
     protected abstract void blockForContent() throws IOException;
     
+    protected abstract void contentConsumed();
+    
     protected abstract int write(ByteBuffer content) throws IOException;
-    
-    protected abstract void send(ByteBuffer content) throws IOException;
-        
-    protected abstract void sendError(int status, String reason, String content, boolean close)  throws IOException;
-    
-    protected abstract void send1xx(int processing102);
+                
+    protected abstract void commit(ResponseInfo info, ByteBuffer content) throws IOException;
     
     protected abstract int getContentBufferSize();
 
     protected abstract void increaseContentBufferSize(int size);
 
     protected abstract void resetBuffer();
-
-    protected abstract boolean isResponseCommitted();
     
     protected abstract void flushResponse() throws IOException;
 
     protected abstract void completeResponse() throws IOException;
+
+    public abstract Timer getTimer();
     
 
 }

@@ -25,41 +25,23 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * HttpGenerator. Builds HTTP Messages.
  *
- *
- *
  */
 public class HttpGenerator
 {
     private static final Logger LOG = Log.getLogger(HttpGenerator.class);
 
+    public static final ResponseInfo CONTINUE_100_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,100,null,false);
+    public static final ResponseInfo PROGRESS_102_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,102,null,false);
+    
+    
     // states
-
     public enum Action { FLUSH, COMPLETE, PREPARE };
     public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, END };
-    public enum Result { NEED_CHUNK,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
+    public enum Result { NEED_CHUNK,NEED_COMMIT,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
     
     // other statics
     public static final int CHUNK_SIZE = 12;
     
-    public interface Info
-    {
-        HttpVersion getHttpVersion();
-        HttpFields getHttpFields();
-        long getContentLength();
-    }
-    
-    public interface RequestInfo extends Info
-    {
-        String getMethod();
-        String getURI();
-    }
-    
-    public interface ResponseInfo extends Info
-    {
-        int getStatus();
-        String getReason();
-        boolean isHead();
-    }
     
     private State _state = State.START;
     private EndOfContent _content = EndOfContent.UNKNOWN_CONTENT;
@@ -186,7 +168,7 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public Result generate(Info _info, ByteBuffer header, ByteBuffer chunk, ByteBuffer buffer, ByteBuffer content, Action action)
+    public Result generate(Info info, ByteBuffer header, ByteBuffer chunk, ByteBuffer buffer, ByteBuffer content, Action action)
     {
         Result result = Result.OK;
         if (_state==State.END)
@@ -198,10 +180,10 @@ public class HttpGenerator
         if (BufferUtil.hasContent(content))
         {
             // Do we have too much content?
-            if (_content==EndOfContent.CONTENT_LENGTH && _info.getContentLength()>=0 && content.remaining()>(_info.getContentLength()-_contentPrepared))
+            if (_content==EndOfContent.CONTENT_LENGTH && info!=null && info.getContentLength()>=0 && content.remaining()>(info.getContentLength()-_contentPrepared))
             {
-                LOG.warn("Content truncated. Info.getContentLength()=="+_info.getContentLength()+" prepared="+_contentPrepared+" content="+content.remaining(),new Throwable());
-                content.limit(content.position()+(int)(_info.getContentLength()-_contentPrepared));
+                LOG.warn("Content truncated. Info.getContentLength()=="+info.getContentLength()+" prepared="+_contentPrepared+" content="+content.remaining(),new Throwable());
+                content.limit(content.position()+(int)(info.getContentLength()-_contentPrepared));
             }
 
             // Can we do a direct flush
@@ -288,27 +270,30 @@ public class HttpGenerator
                 case COMMITTING:
                 case COMMITTING_COMPLETING:
                 {
-                    if (_info instanceof RequestInfo)
+                    if (info==null)
+                        return Result.NEED_COMMIT;
+                    
+                    if (info instanceof RequestInfo)
                     {
                         if (header==null || header.capacity()<=CHUNK_SIZE)
-                            return Result.NEED_HEADER;
+                            return Result.NEED_COMMIT;
 
-                        if(_info.getHttpVersion()==HttpVersion.HTTP_0_9)
+                        if(info.getHttpVersion()==HttpVersion.HTTP_0_9)
                         {
                             _noContent=true;
-                            generateRequestLine((RequestInfo)_info,header);
+                            generateRequestLine((RequestInfo)info,header);
                             _state = State.END;
                             return Result.OK;
                         }
                         _persistent=true;
-                        generateRequestLine((RequestInfo)_info,header);
+                        generateRequestLine((RequestInfo)info,header);
                     }
                     else
                     {
                         // Responses
 
                         // Do we need a response header?
-                        if (_info.getHttpVersion() == HttpVersion.HTTP_0_9)
+                        if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
                         {
                             _persistent = false;
                             _content=EndOfContent.EOF_CONTENT;
@@ -320,16 +305,16 @@ public class HttpGenerator
 
                         // yes we need a response header
                         if (header==null || header.capacity()<=CHUNK_SIZE)
-                            return Result.NEED_HEADER;
+                            return Result.NEED_COMMIT;
 
                         // Are we persistent by default?
                         if (_persistent==null)
-                            _persistent=(_info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
+                            _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
-                        generateResponseLine(((ResponseInfo)_info),header);
+                        generateResponseLine(((ResponseInfo)info),header);
 
                         // Handle 1xx
-                        int status=((ResponseInfo)_info).getStatus();
+                        int status=((ResponseInfo)info).getStatus();
                         if (status>=100 && status<200 )
                         {
                             _noContent=true;
@@ -348,7 +333,7 @@ public class HttpGenerator
                     }
 
                     boolean completing=action==Action.COMPLETE||_state==State.COMMITTING_COMPLETING;
-                    generateHeaders(_info,header,content,completing);
+                    generateHeaders(info,header,content,completing);
                     _state = completing?State.COMPLETING:State.COMMITTED;
 
                     // handle result
@@ -469,7 +454,7 @@ public class HttpGenerator
     {
         header.put(StringUtil.getBytes(request.getMethod()));
         header.put((byte)' ');
-        header.put(StringUtil.getBytes(request.getURI()));
+        header.put(StringUtil.getBytes(request.getUri()));
         switch(request.getHttpVersion())
         {
             case HTTP_1_0:
@@ -824,9 +809,7 @@ public class HttpGenerator
 
         // end the header.
         header.put(HttpTokens.CRLF);
-
     }
-
 
     /* ------------------------------------------------------------------------------- */
     public static byte[] getReasonBuffer(int code)
@@ -903,4 +886,87 @@ public class HttpGenerator
         }
     }
 
+    public static class Info
+    {
+        final HttpVersion _httpVersion;
+        final HttpFields _httpFields;
+        final long _contentLength;
+        
+        public Info(HttpVersion httpVersion, HttpFields httpFields, long contentLength)
+        {
+            _httpVersion = httpVersion;
+            _httpFields = httpFields;
+            _contentLength = contentLength;
+        }
+        
+        public HttpVersion getHttpVersion()
+        {
+            return _httpVersion;
+        }
+        public HttpFields getHttpFields()
+        {
+            return _httpFields;
+        }
+        public long getContentLength()
+        {
+            return _contentLength;
+        }
+    }
+    
+    public static class RequestInfo extends Info
+    {
+        private final String _method;
+        private final String _uri;
+        
+        public RequestInfo(HttpVersion httpVersion, HttpFields httpFields, long contentLength, String method, String uri)
+        {
+            super(httpVersion,httpFields,contentLength);
+            _method = method;
+            _uri = uri;
+        }
+        
+        public String getMethod()
+        {
+            return _method;
+        }
+        
+        public String getUri()
+        {
+            return _uri;
+        }
+        
+    }
+    
+    public static class ResponseInfo extends Info
+    {
+        private final int _status;
+        private final String _reason;
+        private final boolean _head;
+                
+        public ResponseInfo(HttpVersion httpVersion, HttpFields httpFields, long contentLength, int status, String reason, boolean head)
+        {
+            super(httpVersion,httpFields,contentLength);
+            _status = status;
+            _reason = reason;
+            _head = head;
+        }
+        
+        boolean isInformational()
+        {
+            return _status>=100 && _status<200;
+        }
+        
+        public int getStatus()
+        {
+            return _status;
+        }
+        public String getReason()
+        {
+            return _reason;
+        }
+        public boolean isHead()
+        {
+            return _head;
+        }
+    }
 }

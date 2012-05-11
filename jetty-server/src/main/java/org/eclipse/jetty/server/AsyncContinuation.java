@@ -15,7 +15,10 @@ package org.eclipse.jetty.server;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
+import javax.management.timer.TimerMBean;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -74,7 +77,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     };
     
     /* ------------------------------------------------------------ */
-    protected HttpChannel _connection;
+    protected HttpChannel _channel;
     private List<AsyncListener> _lastAsyncListeners;
     private List<AsyncListener> _asyncListeners;
     private List<ContinuationListener> _continuationListeners;
@@ -102,7 +105,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized(this)
         {
-            _connection=connection;
+            _channel=connection;
         }
     }
 
@@ -679,19 +682,23 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected void scheduleDispatch()
     {
-        _connection.asyncDispatch();
+        // _channel.asyncDispatch();
     }
 
     /* ------------------------------------------------------------ */
     protected void scheduleTimeout()
     {
-        _connection.scheduleTimeout(_event._timeout,_timeoutMs);
+        Timer timer = _channel.getTimer();
+        timer.schedule(_event._timeout,_timeoutMs);
+        
     }
 
     /* ------------------------------------------------------------ */
     protected void cancelTimeout()
     {
-        _connection.cancelTimeout(_event._timeout);
+        AsyncEventState event=_event;
+        if (event!=null)
+            event._timeout.cancel();
     }
 
     /* ------------------------------------------------------------ */
@@ -779,7 +786,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     public Request getBaseRequest()
     {
-        return _connection.getRequest();
+        return _channel.getRequest();
     }
     
     /* ------------------------------------------------------------ */
@@ -787,7 +794,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         if (_event!=null)
             return _event.getSuppliedRequest();
-        return _connection.getRequest();
+        return _channel.getRequest();
     }
 
     /* ------------------------------------------------------------ */
@@ -795,7 +802,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         if (_responseWrapped && _event!=null && _event.getSuppliedResponse()!=null)
             return _event.getSuppliedResponse();
-        return _connection.getResponse();
+        return _channel.getResponse();
     }
 
     /* ------------------------------------------------------------ */
@@ -804,7 +811,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
         final AsyncEventState event=_event;
         if (event!=null)
         {
-            _connection.getServer().getThreadPool().dispatch(new Runnable()
+            _channel.getServer().getThreadPool().dispatch(new Runnable()
             {
                 public void run()
                 {
@@ -819,7 +826,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            return (_event!=null && _event.getSuppliedRequest()==_connection.getRequest() && _event.getSuppliedResponse()==_connection.getResponse());
+            return (_event!=null && _event.getSuppliedRequest()==_channel.getRequest() && _event.getSuppliedResponse()==_channel.getResponse());
         }
     }
 
@@ -875,12 +882,12 @@ public class AsyncContinuation implements AsyncContext, Continuation
         if (response instanceof ServletResponseWrapper)
         {
             _responseWrapped=true;
-            AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),response);       
+            AsyncContinuation.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),response);       
         }
         else
         {
             _responseWrapped=false;
-            AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
+            AsyncContinuation.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
         }
     }
 
@@ -892,7 +899,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         _responseWrapped=false;
         _continuation=true;
-        AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
+        AsyncContinuation.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
     }
 
     /* ------------------------------------------------------------ */
@@ -903,7 +910,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         if (_responseWrapped && _event!=null && _event.getSuppliedResponse()!=null)
             return _event.getSuppliedResponse();
-        return _connection.getResponse();
+        return _channel.getResponse();
     }
 
     /* ------------------------------------------------------------ */
@@ -912,7 +919,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
      */
     public Object getAttribute(String name)
     {
-        return _connection.getRequest().getAttribute(name);
+        return _channel.getRequest().getAttribute(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -921,7 +928,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
      */
     public void removeAttribute(String name)
     {
-        _connection.getRequest().removeAttribute(name);
+        _channel.getRequest().removeAttribute(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -930,7 +937,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
      */
     public void setAttribute(String name, Object attribute)
     {
-        _connection.getRequest().setAttribute(name,attribute);
+        _channel.getRequest().setAttribute(name,attribute);
     }
 
     /* ------------------------------------------------------------ */
@@ -951,29 +958,23 @@ public class AsyncContinuation implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class AsyncTimeout extends Timeout.Task implements Runnable
+    public class AsyncTimeout extends TimerTask
     {
-            @Override
-            public void expired()
-            {
-                AsyncContinuation.this.expired();
-            }
-
-            @Override
-            public void run()
-            {
-                AsyncContinuation.this.expired();
-            }
+        @Override
+        public void run()
+        {
+            AsyncContinuation.this.expired();
+        }
     }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public class AsyncEventState extends AsyncEvent
     {
+        private final TimerTask _timeout=  new AsyncTimeout();
         private final ServletContext _suspendedContext;
         private ServletContext _dispatchContext;
         private String _path;
-        private Timeout.Task _timeout=  new AsyncTimeout();
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {

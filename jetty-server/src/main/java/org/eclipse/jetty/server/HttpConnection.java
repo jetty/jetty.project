@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Timer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.Action;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -53,8 +55,8 @@ public class HttpConnection extends AbstractAsyncConnection
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
     private final ByteBufferPool _bufferPool;
-        
-
+    
+    private ResponseInfo _info;
     FutureCallback<Void> _writeFuture;
     ByteBuffer _requestBuffer=null;
     ByteBuffer _responseHeader=null;
@@ -88,9 +90,9 @@ public class HttpConnection extends AbstractAsyncConnection
         
         _server = server;
         
-        _channel = new HttpOverHttpChannel(server);
+        _channel = new HttpChannelOverHttp(server);
        
-        _parser = new HttpParser(_channel.getRequestHandler());
+        _parser = new HttpParser(_channel.getEventHandler());
         _generator = new HttpGenerator();
         LOG.debug("New HTTP Connection {}",this);
     }
@@ -276,13 +278,13 @@ public class HttpConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    private void send(HttpGenerator.ResponseInfo info, ByteBuffer content) throws IOException
+    private void generateComplete(ByteBuffer content) throws IOException
     {
         _lock.lock();
         try
         {
             if (_generator.isCommitted() || BufferUtil.hasContent(_responseBuffer))
-                throw new IllegalStateException("!send after append");
+                throw new IllegalStateException("!empty");
             if (_generator.isComplete())
                 throw new EofException();
 
@@ -296,7 +298,7 @@ public class HttpConnection extends AbstractAsyncConnection
                             BufferUtil.toSummaryString(content),
                             _generator.getState());
 
-                HttpGenerator.Result result=_generator.generate(info,_responseHeader,null,_responseBuffer,content,Action.COMPLETE);
+                HttpGenerator.Result result=_generator.generate(_info,_responseHeader,null,_responseBuffer,content,Action.COMPLETE);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{}: {} ({},{},{})@{}",
                             this,
@@ -308,7 +310,9 @@ public class HttpConnection extends AbstractAsyncConnection
 
                 switch(result)
                 {
-                    case NEED_HEADER:
+                    case NEED_COMMIT:
+                        if (_info==null)
+                            _info=_channel.getEventHandler().commit();
                         _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                         break;
 
@@ -353,7 +357,7 @@ public class HttpConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    private int generate(HttpGenerator.ResponseInfo info, ByteBuffer content, Action action) throws IOException
+    private int generate(ByteBuffer content, Action action) throws IOException
     {
         boolean hasContent=BufferUtil.hasContent(content);
         long preparedBefore=0;
@@ -365,10 +369,8 @@ public class HttpConnection extends AbstractAsyncConnection
             
             if (_generator.isComplete())
             {
-                /* TODO ??
                 if (Action.COMPLETE==action)
                     return 0;
-                    */
                 throw new EofException();
             }
             
@@ -387,7 +389,7 @@ public class HttpConnection extends AbstractAsyncConnection
                             BufferUtil.toSummaryString(content),
                             action,_generator.getState());
 
-                HttpGenerator.Result result=_generator.generate(info,_responseHeader,_chunk,_responseBuffer,content,action);
+                HttpGenerator.Result result=_generator.generate(_info,_responseHeader,_chunk,_responseBuffer,content,action);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{}: {} ({},{},{},{},{})@{}",
                             this,
@@ -400,7 +402,9 @@ public class HttpConnection extends AbstractAsyncConnection
 
                 switch(result)
                 {
-                    case NEED_HEADER:
+                    case NEED_COMMIT:
+                        if (_info==null)
+                            _info=_channel.getEventHandler().commit();
                         _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                         break;
 
@@ -504,125 +508,41 @@ public class HttpConnection extends AbstractAsyncConnection
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private class HttpOverHttpChannel extends HttpChannel
+    private class HttpChannelOverHttp extends HttpChannel
     {
-        private HttpOverHttpChannel(Server server)
+        private HttpChannelOverHttp(Server server)
         {
             super(server,HttpConnection.this);
-        }
-
-        @Override
-        public long getMaxIdleTime()
-        {
-            return getEndPoint().getMaxIdleTime();
-        }
-
-        @Override
-        public void asyncDispatch()
-        {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void scheduleTimeout(Task timeout, long timeoutMs)
-        {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void cancelTimeout(Task timeout)
-        {
-            // TODO Auto-generated method stub
-            
         }
         
         @Override
         protected int write(ByteBuffer content) throws IOException
         {
-            return HttpConnection.this.generate(getResponseInfo(),content,Action.PREPARE);
-        }
-        
-        @Override
-        protected void send(ByteBuffer content) throws IOException
-        {
-             HttpConnection.this.send(getResponseInfo(),content);
-        }
-        
-        @Override
-        protected void sendError(final int status, final String reason, String content, boolean close) throws IOException
-        {
-            if (_generator.isCommitted())
-                throw new IllegalStateException("Committed");
-            
-            HttpGenerator.ResponseInfo response =new HttpGenerator.ResponseInfo()
-            {
-                @Override
-                public HttpVersion getHttpVersion()
-                {
-                    return HttpVersion.HTTP_1_1;
-                }
-                @Override
-                public HttpFields getHttpFields()
-                {
-                    return getResponseFields();
-                }
-                @Override
-                public long getContentLength()
-                {
-                    return -1;
-                }
-                @Override
-                public boolean isHead()
-                {
-                    return getRequest().isHead();
-                }
-                @Override
-                public int getStatus()
-                {
-                    return status;
-                }
-                @Override
-                public String getReason()
-                {
-                    return reason;
-                }
-            };
-            
-            if (close)
-                _generator.setPersistent(false);
-            
-            HttpConnection.this.send(response,BufferUtil.toBuffer(content));
-          
-            
-        }
-        
-        @Override
-        protected void send1xx(int processing102)
-        {
-            // TODO Auto-generated method stub
-            
+            return HttpConnection.this.generate(content,Action.PREPARE);
         }
         
         @Override
         protected void resetBuffer()
         {
-            // TODO Auto-generated method stub
-            
+            if (_responseBuffer!=null)
+                BufferUtil.clear(_responseBuffer);
         }
-        
-        @Override
-        protected boolean isResponseCommitted()
-        {
-            return _generator.isCommitted();
-        }
-        
         
         @Override
         protected void increaseContentBufferSize(int size)
         {
-            // TODO Auto-generated method stub
+            if (_responseBuffer!=null && _responseBuffer.capacity()>=size)
+                return;
+            if (_responseBuffer==null && _connector.getResponseBufferSize()>=size)
+                return;
+
+            ByteBuffer r=_bufferPool.acquire(size,false);
+            if (_responseBuffer!=null)
+            {
+                BufferUtil.append(_responseBuffer,r);
+                _bufferPool.release(_responseBuffer);
+            }
+            _responseBuffer=r;
         }
         
         @Override
@@ -644,13 +564,13 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         protected void flushResponse() throws IOException
         {
-            HttpConnection.this.generate(getResponseInfo(),null,Action.FLUSH);
+            HttpConnection.this.generate(null,Action.FLUSH);
         }
         
         @Override
         protected void completeResponse() throws IOException
         {
-            HttpConnection.this.generate(getResponseInfo(),null,Action.COMPLETE);
+            HttpConnection.this.generate(null,Action.COMPLETE);
         }
 
         @Override
@@ -693,6 +613,28 @@ public class HttpConnection extends AbstractAsyncConnection
                     }
                 }
             }
+        }
+
+        @Override
+        protected void contentConsumed()
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
+        {
+            _info=info;
+            HttpConnection.this.generateComplete(content);
+            
+        }
+
+        @Override
+        public Timer getTimer()
+        {
+            // TODO Auto-generated method stub
+            return null;
         }
 
     };
