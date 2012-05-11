@@ -14,27 +14,16 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicLong;
 
-import javax.servlet.ServletRequest;
-
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.StandardByteBufferPool;
-import org.eclipse.jetty.server.Connector.Statistics;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
  * Abstract Connector implementation. This abstract implementation of the Connector interface provides:
@@ -66,7 +55,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     private ByteBufferPool _byteBufferPool=new StandardByteBufferPool(); // TODO should this be server wide? or a thread local one?
 
     private final Statistics _stats = new ConnectionStatistics();
-    
+
     protected int _maxIdleTime = 200000;
     protected int _soLingerTime = -1;
 
@@ -109,7 +98,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             return getServer().getThreadPool();
         return _executor;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public Executor getExecutor()
@@ -124,7 +113,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _executor=executor;
         addBean(_executor);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public ByteBufferPool getByteBufferPool()
@@ -406,18 +395,9 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
                     {
                         accept(_acceptor);
                     }
-                    catch (EofException e)
+                    catch (IOException | InterruptedException e)
                     {
                         LOG.ignore(e);
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    catch (InterruptedException x)
-                    {
-                        // Connector has been stopped
-                        LOG.ignore(x);
                     }
                     catch (Throwable e)
                     {
@@ -457,6 +437,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /* ------------------------------------------------------------ */
     protected void connectionOpened(AsyncConnection connection)
     {
+        // TODO: should we dispatch the call to onOpen() to another thread ?
         connection.onOpen();
         _stats.connectionOpened();
     }
@@ -472,34 +453,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /* ------------------------------------------------------------ */
     protected void connectionClosed(AsyncConnection connection)
     {
-        
+        // TODO: should we dispatch the call to onClose() to another thread ?
+        connection.onClose();
+
         long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
+        // TODO: remove casts to HttpConnection
         int requests = (connection instanceof HttpConnection)?((HttpConnection)connection).getHttpChannel().getRequests():0;
-        
         _stats.connectionClosed(duration,requests,requests);
-        
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the acceptorPriority
-     */
-    public int getAcceptorPriorityOffset()
-    {
-        return _acceptorPriorityOffset;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the priority offset of the acceptor threads. The priority is adjusted by this amount (default 0) to either favour the acceptance of new threads and
-     * newly active connections or to favour the handling of already dispatched connections.
-     *
-     * @param offset
-     *            the amount to alter the priority of the acceptor threads.
-     */
-    public void setAcceptorPriorityOffset(int offset)
-    {
-        _acceptorPriorityOffset = offset;
     }
 
     /* ------------------------------------------------------------ */
@@ -519,18 +479,5 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
-    }
-
-
-    /* ------------------------------------------------------------ */
-    void updateNotEqual(AtomicLong valueHolder, long compare, long value)
-    {
-        long oldValue = valueHolder.get();
-        while (compare != oldValue)
-        {
-            if (valueHolder.compareAndSet(oldValue,value))
-                break;
-            oldValue = valueHolder.get();
-        }
     }
 }

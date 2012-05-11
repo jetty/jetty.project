@@ -14,13 +14,13 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.Channel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ClosedSelectorException;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,19 +29,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.Name;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Timeout;
-import org.eclipse.jetty.util.thread.Timeout.Task;
 
 
-/* ------------------------------------------------------------ */
 /**
  * The Selector Manager manages and number of SelectSets to allow
  * NIO scheduling to scale to large numbers of connections.
@@ -49,44 +48,32 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
-    public static final Logger LOG=Log.getLogger(SelectorManager.class);
+    public static final Logger LOG = Log.getLogger(SelectorManager.class);
 
-    private static final int __MONITOR_PERIOD=Integer.getInteger("org.eclipse.jetty.io.nio.MONITOR_PERIOD",1000).intValue();
-    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",100000).intValue();
-    private static final int __BUSY_PAUSE=Integer.getInteger("org.eclipse.jetty.io.nio.BUSY_PAUSE",50).intValue();
-    private static final int __IDLE_TICK=Integer.getInteger("org.eclipse.jetty.io.nio.IDLE_TICK",400).intValue();
-
+    private final Executor _executor;
+    private final SelectSet[] _selectSets;
     private int _maxIdleTime;
-    private int _lowResourcesMaxIdleTime;
-    private long _lowResourcesConnections;
-    private SelectSet[] _selectSet;
-    private int _selectSets=1;
-    private volatile int _set=0;
-    private boolean _deferringInterestedOps0=true;
-    private int _selectorPriorityDelta=0;
+    private long _selectSetIndex;
 
-    /* ------------------------------------------------------------ */
+    protected SelectorManager(Executor executor)
+    {
+        this(executor, 1);
+    }
+
+    protected SelectorManager(@Name("executor") Executor executor, @Name("selectSets") int selectSets)
+    {
+        this._executor = executor;
+        this._selectSets = new SelectSet[selectSets];
+    }
+
     /**
-     * @param maxIdleTime The maximum period in milli seconds that a connection may be idle before it is closed.
-     * @see #setLowResourcesMaxIdleTime(long)
+     * @param maxIdleTime The maximum period in milliseconds that a connection may be idle before it is closed.
      */
     public void setMaxIdleTime(long maxIdleTime)
     {
         _maxIdleTime=(int)maxIdleTime;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @param selectSets number of select sets to create
-     */
-    public void setSelectSets(int selectSets)
-    {
-        long lrc = _lowResourcesConnections * _selectSets;
-        _selectSets=selectSets;
-        _lowResourcesConnections=lrc/_selectSets;
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * @return the max idle time
      */
@@ -95,830 +82,407 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         return _maxIdleTime;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the number of select sets in use
      */
     public int getSelectSets()
     {
-        return _selectSets;
+        return _selectSets.length;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @param i
-     * @return The select set
-     */
-    public SelectSet getSelectSet(int i)
-    {
-        return _selectSet[i];
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Register a channel
-     * @param channel
-     * @param att Attached Object
-     */
-    public void register(SocketChannel channel, Object att)
+    private SelectSet chooseSelectSet()
     {
         // The ++ increment here is not atomic, but it does not matter.
         // so long as the value changes sometimes, then connections will
         // be distributed over the available sets.
-
-        int s=_set++;
-        if (s<0)
-            s=-s;
-        s=s%_selectSets;
-        SelectSet[] sets=_selectSet;
-        if (sets!=null)
-        {
-            SelectSet set=sets[s];
-            set.addChange(channel,att);
-            set.wakeup();
-        }
+        long s = _selectSetIndex++;
+        int index = (int)(s % getSelectSets());
+        return _selectSets[index];
     }
 
-
-    /* ------------------------------------------------------------ */
-    /** Register a channel
-     * @param channel
-     */
-    public void register(SocketChannel channel)
-    {
-        // The ++ increment here is not atomic, but it does not matter.
-        // so long as the value changes sometimes, then connections will
-        // be distributed over the available sets.
-
-        int s=_set++;
-        if (s<0)
-            s=-s;
-        s=s%_selectSets;
-        SelectSet[] sets=_selectSet;
-        if (sets!=null)
-        {
-            SelectSet set=sets[s];
-            set.addChange(channel);
-            set.wakeup();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Register a {@link ServerSocketChannel}
-     * @param acceptChannel
-     */
-    public void register(ServerSocketChannel acceptChannel)
-    {
-        int s=_set++;
-        if (s<0)
-            s=-s;
-        s=s%_selectSets;
-        SelectSet set=_selectSet[s];
-        set.addChange(acceptChannel);
-        set.wakeup();
-    }
-
-    /* ------------------------------------------------------------ */
     /**
-     * @return delta The value to add to the selector thread priority.
+     * Registers a channel
+     * @param channel the channel to register
+     * @param attachment Attached Object
      */
-    public int getSelectorPriorityDelta()
+    public void connect(SocketChannel channel, Object attachment)
     {
-        return _selectorPriorityDelta;
+        SelectSet set = chooseSelectSet();
+        set.submit(set.new Connect(channel, attachment));
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the selector thread priorty delta.
-     * @param delta The value to add to the selector thread priority.
-     */
-    public void setSelectorPriorityDelta(int delta)
-    {
-        _selectorPriorityDelta=delta;
-    }
-
-
-    /* ------------------------------------------------------------ */
     /**
-     * @return the lowResourcesConnections
+     * Registers a channel
+     * @param channel the channel to register
      */
-    public long getLowResourcesConnections()
+    public void accept(final SocketChannel channel)
     {
-        return _lowResourcesConnections*_selectSets;
+        final SelectSet set = chooseSelectSet();
+        set.submit(set.new Accept(channel));
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the number of connections, which if exceeded places this manager in low resources state.
-     * This is not an exact measure as the connection count is averaged over the select sets.
-     * @param lowResourcesConnections the number of connections
-     * @see #setLowResourcesMaxIdleTime(long)
-     */
-    public void setLowResourcesConnections(long lowResourcesConnections)
+    private void execute(Runnable task)
     {
-        _lowResourcesConnections=(lowResourcesConnections+_selectSets-1)/_selectSets;
+        _executor.execute(task);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the lowResourcesMaxIdleTime
-     */
-    public long getLowResourcesMaxIdleTime()
-    {
-        return _lowResourcesMaxIdleTime;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param lowResourcesMaxIdleTime the period in ms that a connection is allowed to be idle when this SelectSet has more connections than {@link #getLowResourcesConnections()}
-     * @see #setMaxIdleTime(long)
-     */
-    public void setLowResourcesMaxIdleTime(long lowResourcesMaxIdleTime)
-    {
-        _lowResourcesMaxIdleTime=(int)lowResourcesMaxIdleTime;
-    }
-
-
-    /* ------------------------------------------------------------------------------- */
-    public abstract boolean dispatch(Runnable task);
-
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see org.eclipse.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
-        _selectSet = new SelectSet[_selectSets];
-        for (int i=0;i<_selectSet.length;i++)
-            _selectSet[i]= new SelectSet(i);
-
         super.doStart();
-
-        // start a thread to Select
-        for (int i=0;i<getSelectSets();i++)
+        for (int i=0;i< _selectSets.length;i++)
         {
-            final int id=i;
-            boolean selecting=dispatch(new Runnable()
-            {
-                public void run()
-                {
-                    String name=Thread.currentThread().getName();
-                    int priority=Thread.currentThread().getPriority();
-                    try
-                    {
-                        SelectSet[] sets=_selectSet;
-                        if (sets==null)
-                            return;
-                        SelectSet set=sets[id];
-
-                        Thread.currentThread().setName(name+" Selector"+id);
-                        if (getSelectorPriorityDelta()!=0)
-                            Thread.currentThread().setPriority(Thread.currentThread().getPriority()+getSelectorPriorityDelta());
-                        LOG.debug("Starting {} on {}",Thread.currentThread(),this);
-                        while (isRunning())
-                        {
-                            try
-                            {
-                                set.doSelect();
-                            }
-                            catch(IOException e)
-                            {
-                                LOG.ignore(e);
-                            }
-                            catch(Exception e)
-                            {
-                                LOG.warn(e);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        LOG.debug("Stopped {} on {}",Thread.currentThread(),this);
-                        Thread.currentThread().setName(name);
-                        if (getSelectorPriorityDelta()!=0)
-                            Thread.currentThread().setPriority(priority);
-                    }
-                }
-
-            });
-
-            if (!selecting)
-                throw new IllegalStateException("!Selecting");
+            SelectSet selectSet = newSelectSet(i);
+            _selectSets[i] = selectSet;
+            selectSet.start();
+            execute(selectSet);
+            execute(new Expirer());
         }
     }
 
+    protected SelectSet newSelectSet(int id)
+    {
+        return new SelectSet(id);
+    }
 
-    /* ------------------------------------------------------------------------------- */
     @Override
     protected void doStop() throws Exception
     {
-        SelectSet[] sets= _selectSet;
-        _selectSet=null;
-        if (sets!=null)
-        {
-            for (SelectSet set : sets)
-            {
-                if (set!=null)
-                    set.stop();
-            }
-        }
+        for (SelectSet set : _selectSets)
+            set.stop();
         super.doStop();
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param endpoint
-     */
-    protected abstract void endPointClosed(AsyncEndPoint endpoint);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param endpoint
+     * @param endpoint the endPoint being opened
      */
     protected abstract void endPointOpened(AsyncEndPoint endpoint);
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @param endpoint the endPoint being closed
+     */
+    protected abstract void endPointClosed(AsyncEndPoint endpoint);
+
+    /**
+     * @param endpoint the endPoint being upgraded
+     * @param oldConnection the previous connection
+     */
     protected abstract void endPointUpgraded(AsyncEndPoint endpoint,AsyncConnection oldConnection);
 
-    /* ------------------------------------------------------------------------------- */
+    /**
+     * @param channel the socket channel
+     * @param endpoint the endPoint
+     * @param attachment the attachment
+     * @return a new connection
+     */
     public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment);
 
-    /* ------------------------------------------------------------ */
     /**
      * Create a new end point
-     * @param channel
-     * @param selectSet
+     * @param channel the socket channel
+     * @param selectSet the select set the channel is registered to
      * @param sKey the selection key
      * @return the new endpoint {@link SelectChannelEndPoint}
-     * @throws IOException
+     * @throws IOException if the endPoint cannot be created
      */
     protected abstract SelectableAsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
 
-    /* ------------------------------------------------------------------------------- */
-    protected void connectionFailed(SocketChannel channel,Throwable ex,Object attachment)
+    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
     {
-        LOG.warn(ex+","+channel+","+attachment);
-        LOG.debug(ex);
+        LOG.warn(String.format("%s - %s", channel, attachment), ex);
     }
 
-    /* ------------------------------------------------------------ */
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
     }
 
-    /* ------------------------------------------------------------ */
     public void dump(Appendable out, String indent) throws IOException
     {
         AggregateLifeCycle.dumpObject(out,this);
-        AggregateLifeCycle.dump(out,indent,TypeUtil.asList(_selectSet));
+        AggregateLifeCycle.dump(out, indent, TypeUtil.asList(_selectSets));
     }
 
-
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    public class SelectSet implements Dumpable
+    private class Expirer implements Runnable
     {
-        private final int _setID;
-        private final Timeout _timeout;
+        @Override
+        public void run()
+        {
+            while (isRunning())
+            {
+                for (SelectSet selectSet : _selectSets)
+                    selectSet.timeoutCheck();
+                sleep(1000);
+            }
+        }
 
-        private final ConcurrentLinkedQueue<Object> _changes = new ConcurrentLinkedQueue<Object>();
+        private void sleep(long delay)
+        {
+            try
+            {
+                Thread.sleep(delay);
+            }
+            catch (InterruptedException x)
+            {
+                LOG.ignore(x);
+            }
+        }
+    }
 
-        private volatile Selector _selector;
-
-        private volatile Thread _selecting;
-        private int _busySelects;
-        private long _monitorNext;
-        private boolean _pausing;
-        private boolean _paused;
-        private volatile long _idleTick;
+    public class SelectSet extends AbstractLifeCycle implements Runnable, Dumpable
+    {
+        private final ConcurrentLinkedQueue<Runnable> _changes = new ConcurrentLinkedQueue<>();
         private ConcurrentMap<AsyncEndPoint,Object> _endPoints = new ConcurrentHashMap<>();
+        private final int _id;
+        private Selector _selector;
+        private Thread _thread;
+        private boolean needsWakeup = true;
 
-        /* ------------------------------------------------------------ */
-        SelectSet(int acceptorID) throws Exception
+        protected SelectSet(int id)
         {
-            _setID=acceptorID;
+            _id = id;
+        }
 
-            _idleTick = System.currentTimeMillis();
-            _timeout = new Timeout(this);
-            _timeout.setDuration(0L);
-
-            // create a selector;
+        @Override
+        protected void doStart() throws Exception
+        {
+            super.doStart();
             _selector = Selector.open();
-            _monitorNext=System.currentTimeMillis()+__MONITOR_PERIOD;
         }
 
-        /* ------------------------------------------------------------ */
-        public void addChange(Object change)
+        @Override
+        protected void doStop() throws Exception
         {
-            _changes.add(change);
+            Stop task = new Stop();
+            submit(task);
+            task.await(getStopTimeout(), TimeUnit.MILLISECONDS);
         }
 
-        /* ------------------------------------------------------------ */
-        public void addChange(SelectableChannel channel, Object att)
+        public boolean submit(Runnable change)
         {
-            if (att==null)
-                addChange(channel);
-            else if (att instanceof EndPoint)
-                addChange(att);
+            if (Thread.currentThread() != _thread)
+            {
+                _changes.add(change);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Queued change {}", change);
+                boolean wakeup = needsWakeup;
+                if (wakeup)
+                    wakeup();
+                return false;
+            }
             else
-                addChange(new ChannelAndAttachment(channel,att));
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Submitted change {}", change);
+                runChanges();
+                runChange(change);
+                return true;
+            }
         }
 
-        /* ------------------------------------------------------------ */
+        private void runChanges()
+        {
+            Runnable change;
+            while ((change = _changes.poll()) != null)
+            {
+                runChange(change);
+            }
+        }
+
+        protected void runChange(Runnable change)
+        {
+            LOG.debug("Running change {}", change);
+            change.run();
+        }
+
+        @Override
+        public void run()
+        {
+            _thread = Thread.currentThread();
+            String name = _thread.getName();
+            try
+            {
+                _thread.setName(name + " Selector" + _id);
+                LOG.debug("Starting {} on {}", _thread, this);
+                while (isRunning())
+                {
+                    try
+                    {
+                        doSelect();
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn(e);
+                    }
+                }
+                processChanges();
+            }
+            finally
+            {
+                LOG.debug("Stopped {} on {}", _thread, this);
+                _thread.setName(name);
+            }
+        }
+
         /**
-         * Select and dispatch tasks found from changes and the selector.
+         * Select and execute tasks found from changes and the selector.
          *
          * @throws IOException
          */
         public void doSelect() throws IOException
         {
+            boolean debug = LOG.isDebugEnabled();
             try
             {
-                _selecting=Thread.currentThread();
-                final Selector selector=_selector;
-                // Stopped concurrently ?
-                if (selector == null)
-                    return;
+                processChanges();
 
-                // Make any key changes required
-                Object change;
-                int changes=_changes.size();
-                while (changes-->0 && (change=_changes.poll())!=null)
+                if (debug)
+                    LOG.debug("Selector loop waiting on select");
+                int selected = _selector.select();
+                if (debug)
+                    LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
+
+                needsWakeup = false;
+
+                Set<SelectionKey> selectedKeys = _selector.selectedKeys();
+                for (SelectionKey key: selectedKeys)
                 {
-                    Channel ch=null;
-
-                    try
-                    {
-                        if (change instanceof EndPoint)
-                        {
-                            // Update the operations for a key.
-                            SelectableAsyncEndPoint endpoint = (SelectableAsyncEndPoint)change;
-                            ch=endpoint.getChannel();
-                            endpoint.doUpdateKey();
-                        }
-                        else if (change instanceof ChannelAndAttachment)
-                        {
-                            // finish accepting/connecting this connection
-                            final ChannelAndAttachment asc = (ChannelAndAttachment)change;
-                            final SelectableChannel channel=asc._channel;
-                            ch=channel;
-                            final Object att = asc._attachment;
-
-                            if ((channel instanceof SocketChannel) && ((SocketChannel)channel).isConnected())
-                            {
-                                SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
-                                AsyncEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
-                                key.attach(endpoint);
-                            }
-                            else if (channel.isOpen())
-                            {
-                                channel.register(selector,SelectionKey.OP_CONNECT,att);
-                            }
-                        }
-                        else if (change instanceof SocketChannel)
-                        {
-                            // Newly registered channel
-                            final SocketChannel channel=(SocketChannel)change;
-                            ch=channel;
-                            SelectionKey key = channel.register(selector,SelectionKey.OP_READ,null);
-                            AsyncEndPoint endpoint = createEndPoint(channel,key);
-                            key.attach(endpoint);
-                        }
-                        else if (change instanceof ChangeTask)
-                        {
-                            LOG.warn("DO WE NEED THIS????");
-                            ((Runnable)change).run();
-                        }
-                        else if (change instanceof Runnable)
-                        {
-                            dispatch((Runnable)change);
-                        }
-                        else
-                            throw new IllegalArgumentException(change.toString());
-                    }
-                    catch (CancelledKeyException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    catch (Throwable e)
-                    {
-                        if (isRunning())
-                            LOG.warn(e);
-                        else
-                            LOG.debug(e);
-
-                        try
-                        {
-                            if (ch!=null)
-                                ch.close();
-                        }
-                        catch(IOException e2)
-                        {
-                            LOG.debug(e2);
-                        }
-                    }
-                }
-
-
-                // Do and instant select to see if any connections can be handled.
-                int selected=selector.selectNow();
-
-                long now=System.currentTimeMillis();
-
-                // if no immediate things to do
-                if (selected==0 && selector.selectedKeys().isEmpty())
-                {
-                    // If we are in pausing mode
-                    if (_pausing)
-                    {
-                        try
-                        {
-                            Thread.sleep(__BUSY_PAUSE); // pause to reduce impact of  busy loop
-                        }
-                        catch(InterruptedException e)
-                        {
-                            LOG.ignore(e);
-                        }
-                        now=System.currentTimeMillis();
-                    }
-
-                    // workout how long to wait in select
-                    _timeout.setNow(now);
-                    long to_next_timeout=_timeout.getTimeToNext();
-
-                    long wait = _changes.size()==0?__IDLE_TICK:0L;
-                    if (wait > 0 && to_next_timeout >= 0 && wait > to_next_timeout)
-                        wait = to_next_timeout;
-
-                    // If we should wait with a select
-                    if (wait>0)
-                    {
-                        long before=now;
-                        selector.select(wait);
-                        now = System.currentTimeMillis();
-                        _timeout.setNow(now);
-
-                        // If we are monitoring for busy selector
-                        // and this select did not wait more than 1ms
-                        if (__MONITOR_PERIOD>0 && now-before <=1)
-                        {
-                            // count this as a busy select and if there have been too many this monitor cycle
-                            if (++_busySelects>__MAX_SELECTS)
-                            {
-                                // Start injecting pauses
-                                _pausing=true;
-
-                                // if this is the first pause
-                                if (!_paused)
-                                {
-                                    // Log and dump some status
-                                    _paused=true;
-                                    LOG.warn("Selector {} is too busy, pausing!",this);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // have we been destroyed while sleeping
-                if (_selector==null || !selector.isOpen())
-                    return;
-
-                // Look for things to do
-                for (SelectionKey key: selector.selectedKeys())
-                {
-                    SocketChannel channel=null;
-
                     try
                     {
                         if (!key.isValid())
                         {
-                            key.cancel();
-                            SelectableAsyncEndPoint endpoint = (SelectableAsyncEndPoint)key.attachment();
-                            if (endpoint != null)
-                                endpoint.doUpdateKey();
+                            if (debug)
+                                LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
                             continue;
                         }
 
-                        Object att = key.attachment();
-                        if (att instanceof SelectableAsyncEndPoint)
-                        {
-                            if (key.isReadable()||key.isWritable())
-                                ((SelectableAsyncEndPoint)att).onSelected();
-                        }
-                        else if (key.isConnectable())
-                        {
-                            // Complete a connection of a registered channel
-                            channel = (SocketChannel)key.channel();
-                            boolean connected=false;
-                            try
-                            {
-                                connected=channel.finishConnect();
-                            }
-                            catch(Exception e)
-                            {
-                                connectionFailed(channel,e,att);
-                            }
-                            finally
-                            {
-                                if (connected)
-                                {
-                                    key.interestOps(SelectionKey.OP_READ);
-                                    AsyncEndPoint endpoint = createEndPoint(channel, key);
-                                    key.attach(endpoint);
-                                    // TODO: remove the cast
-                                    ((SelectableAsyncEndPoint)endpoint).onSelected();
-                                }
-                                else
-                                {
-                                    key.cancel();
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Wrap readable registered channel in an endpoint
-                            channel = (SocketChannel)key.channel();
-                            AsyncEndPoint endpoint = createEndPoint(channel, key);
-                            key.attach(endpoint);
-                            if (key.isReadable())
-                            {
-                                // TODO: remove the cast
-                                ((SelectableAsyncEndPoint)endpoint).onSelected();
-                            }
-                        }
-                        key = null;
+                        processKey(key);
                     }
-                    catch (CancelledKeyException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    catch (Exception e)
+                    catch (Exception x)
                     {
                         if (isRunning())
-                            LOG.warn(e);
+                            LOG.warn(x);
                         else
-                            LOG.ignore(e);
+                            LOG.debug(x);
 
-                        try
-                        {
-                            if (channel!=null)
-                                channel.close();
-                        }
-                        catch(IOException e2)
-                        {
-                            LOG.debug(e2);
-                        }
-
-                        if (key != null && !(key.channel() instanceof ServerSocketChannel) && key.isValid())
-                            key.cancel();
+                        execute(new Close(key));
                     }
                 }
 
                 // Everything always handled
-                selector.selectedKeys().clear();
-
-                now=System.currentTimeMillis();
-                _timeout.setNow(now);
-                Task task = _timeout.expired();
-                while (task!=null)
-                {
-                    if (task instanceof Runnable)
-                        dispatch((Runnable)task);
-                    task = _timeout.expired();
-                }
-
-                // Idle tick
-                if (now-_idleTick>__IDLE_TICK)
-                {
-                    _idleTick=now;
-
-                    final long idle_now=((_lowResourcesConnections>0 && selector.keys().size()>_lowResourcesConnections))
-                        ?(now+_maxIdleTime-_lowResourcesMaxIdleTime)
-                        :now;
-
-                    dispatch(new Runnable()
-                    {
-                        public void run()
-                        {
-                            for (AsyncEndPoint endp:_endPoints.keySet())
-                            {
-                                // TODO: remove the cast
-                                ((SelectableAsyncEndPoint)endp).checkForIdleOrReadWriteTimeout(idle_now);
-                            }
-                        }
-                        public String toString() {return "Idle-"+super.toString();}
-                    });
-
-                }
-
-                // Reset busy select monitor counts
-                if (__MONITOR_PERIOD>0 && now>_monitorNext)
-                {
-                    _busySelects=0;
-                    _pausing=false;
-                    _monitorNext=now+__MONITOR_PERIOD;
-
-                }
+                selectedKeys.clear();
             }
-            catch (ClosedSelectorException e)
+            catch (ClosedSelectorException x)
             {
                 if (isRunning())
-                    LOG.warn(e);
+                    LOG.warn(x);
                 else
-                    LOG.ignore(e);
-            }
-            catch (CancelledKeyException e)
-            {
-                LOG.ignore(e);
-            }
-            finally
-            {
-                _selecting=null;
+                    LOG.ignore(x);
             }
         }
 
+        private void processChanges()
+        {
+            runChanges();
 
-        /* ------------------------------------------------------------ */
-        private void renewSelector()
+            // If tasks are submitted between these 2 statements, they will not
+            // wakeup the selector, therefore below we run again the tasks
+
+            needsWakeup = true;
+
+            // Run again the tasks to avoid the race condition where a task is
+            // submitted but will not wake up the selector
+            runChanges();
+        }
+
+        private void processKey(SelectionKey key) throws IOException
         {
             try
             {
-                synchronized (this)
+                Object att = key.attachment();
+                if (att instanceof SelectableAsyncEndPoint)
                 {
-                    Selector selector=_selector;
-                    if (selector==null)
-                        return;
-                    final Selector new_selector = Selector.open();
-                    for (SelectionKey k: selector.keys())
+                    if (key.isReadable() || key.isWritable())
+                        ((SelectableAsyncEndPoint)att).onSelected();
+                }
+                else if (key.isConnectable())
+                {
+                    // Complete a connection of a registered channel
+                    SocketChannel channel = (SocketChannel)key.channel();
+                    try
                     {
-                        if (!k.isValid() || k.interestOps()==0)
-                            continue;
-
-                        final SelectableChannel channel = k.channel();
-                        final Object attachment = k.attachment();
-
-                        if (attachment==null)
-                            addChange(channel);
+                        boolean connected = channel.finishConnect();
+                        if (connected)
+                        {
+                            AsyncEndPoint endpoint = createEndPoint(channel, key);
+                            key.attach(endpoint);
+                        }
                         else
-                            addChange(channel,attachment);
+                        {
+                            throw new ConnectException();
+                        }
                     }
-                    _selector.close();
-                    _selector=new_selector;
+                    catch (Exception x)
+                    {
+                        connectionFailed(channel, x, att);
+                        key.cancel();
+                    }
+                }
+                else
+                {
+                    throw new IllegalStateException();
                 }
             }
-            catch(IOException e)
+            catch (CancelledKeyException x)
             {
-                throw new RuntimeException("recreating selector",e);
+                LOG.debug("Ignoring cancelled key for channel", key.channel());
             }
         }
 
-        /* ------------------------------------------------------------ */
         public SelectorManager getManager()
         {
             return SelectorManager.this;
         }
 
-        /* ------------------------------------------------------------ */
-        public long getNow()
-        {
-            return _timeout.getNow();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @param task The task to timeout. If it implements Runnable, then
-         * expired will be called from a dispatched thread.
-         *
-         * @param timeoutMs
-         */
-        public void scheduleTimeout(Timeout.Task task, long timeoutMs)
-        {
-            if (!(task instanceof Runnable))
-                throw new IllegalArgumentException("!Runnable");
-            _timeout.schedule(task, timeoutMs);
-        }
-
-        /* ------------------------------------------------------------ */
-        public void cancelTimeout(Timeout.Task task)
-        {
-            task.cancel();
-        }
-
-        /* ------------------------------------------------------------ */
         public void wakeup()
         {
-            try
-            {
-                Selector selector = _selector;
-                if (selector!=null)
-                    selector.wakeup();
-            }
-            catch(Exception e)
-            {
-                addChange(new ChangeTask()
-                {
-                    public void run()
-                    {
-                        renewSelector();
-                    }
-                });
-
-                renewSelector();
-            }
+            _selector.wakeup();
         }
 
-        /* ------------------------------------------------------------ */
         private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
         {
             AsyncEndPoint endp = newEndPoint(channel, this, sKey);
-            LOG.debug("created {}",endp);
+            _endPoints.put(endp, this);
+            LOG.debug("Created {}", endp);
             endPointOpened(endp);
-            _endPoints.put(endp,this);
             return endp;
         }
 
-        /* ------------------------------------------------------------ */
+
         public void destroyEndPoint(SelectableAsyncEndPoint endp)
         {
-            LOG.debug("destroyEndPoint {}",endp);
+            LOG.debug("Destroyed {}", endp);
             _endPoints.remove(endp);
-            AsyncConnection connection=endp.getAsyncConnection();
-            endp.onClose();
-            if (connection!=null)
-                connection.onClose();
             endPointClosed(endp);
         }
 
-        /* ------------------------------------------------------------ */
+        // TODO: remove
         Selector getSelector()
         {
             return _selector;
         }
 
-        /* ------------------------------------------------------------ */
-        void stop() throws Exception
-        {
-            // Spin for a while waiting for selector to complete
-            // to avoid unneccessary closed channel exceptions
-            try
-            {
-                for (int i=0;i<100 && _selecting!=null;i++)
-                {
-                    wakeup();
-                    Thread.sleep(10);
-                }
-            }
-            catch(Exception e)
-            {
-                LOG.ignore(e);
-            }
-
-            // close endpoints and selector
-            synchronized (this)
-            {
-                Selector selector=_selector;
-                for (SelectionKey key:selector.keys())
-                {
-                    if (key==null)
-                        continue;
-                    Object att=key.attachment();
-                    if (att instanceof EndPoint)
-                    {
-                        EndPoint endpoint = (EndPoint)att;
-                        endpoint.close();
-                    }
-                }
-
-
-                _timeout.cancelAll();
-                try
-                {
-                    selector=_selector;
-                    if (selector != null)
-                        selector.close();
-                }
-                catch (IOException e)
-                {
-                    LOG.ignore(e);
-                }
-                _selector=null;
-            }
-        }
-
-        /* ------------------------------------------------------------ */
         public String dump()
         {
             return AggregateLifeCycle.dump(this);
         }
 
-        /* ------------------------------------------------------------ */
+
         public void dump(Appendable out, String indent) throws IOException
         {
-            out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_setID)).append("\n");
+            out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_id)).append("\n");
 
-            Thread selecting = _selecting;
+            Thread selecting = _thread;
 
             Object where = "not selecting";
             StackTraceElement[] trace =selecting==null?null:selecting.getStackTrace();
@@ -935,35 +499,19 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             Selector selector=_selector;
             if (selector!=null)
             {
-                final ArrayList<Object> dump = new ArrayList<Object>(selector.keys().size()*2);
+                final ArrayList<Object> dump = new ArrayList<>(selector.keys().size()*2);
                 dump.add(where);
 
-                final CountDownLatch latch = new CountDownLatch(1);
-
-                addChange(new ChangeTask()
-                {
-                    public void run()
-                    {
-                        dumpKeyState(dump);
-                        latch.countDown();
-                    }
-                });
-
-                try
-                {
-                    latch.await(5,TimeUnit.SECONDS);
-                }
-                catch(InterruptedException e)
-                {
-                    LOG.ignore(e);
-                }
+                DumpKeys dumpKeys = new DumpKeys(dump);
+                submit(dumpKeys);
+                dumpKeys.await(5, TimeUnit.SECONDS);
 
                 AggregateLifeCycle.dump(out,indent,dump);
             }
         }
 
-        /* ------------------------------------------------------------ */
-        public void dumpKeyState(List<Object> dumpto)
+
+        public void dumpKeysState(List<Object> dumpto)
         {
             Selector selector=_selector;
             Set<SelectionKey> keys = selector.keys();
@@ -977,7 +525,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
 
-        /* ------------------------------------------------------------ */
         public String toString()
         {
             Selector selector=_selector;
@@ -986,40 +533,165 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     selector != null && selector.isOpen() ? selector.keys().size() : -1,
                     selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
         }
-    }
 
-    /* ------------------------------------------------------------ */
-    private static class ChannelAndAttachment
-    {
-        final SelectableChannel _channel;
-        final Object _attachment;
-
-        public ChannelAndAttachment(SelectableChannel channel, Object attachment)
+        private void timeoutCheck()
         {
-            super();
-            _channel = channel;
-            _attachment = attachment;
+            long now = System.currentTimeMillis();
+            for (AsyncEndPoint endPoint : _endPoints.keySet())
+            {
+                // TODO: remove the cast
+                ((SelectableAsyncEndPoint)endPoint).checkForIdleOrReadWriteTimeout(now);
+            }
+        }
+
+        private class DumpKeys implements Runnable
+        {
+            private final CountDownLatch latch = new CountDownLatch(1);
+            private final List<Object> _dumps;
+
+            private DumpKeys(List<Object> dumps)
+            {
+                this._dumps = dumps;
+            }
+
+            @Override
+            public void run()
+            {
+                dumpKeysState(_dumps);
+                latch.countDown();
+            }
+
+            public boolean await(long timeout, TimeUnit unit)
+            {
+                try
+                {
+                    return latch.await(timeout, unit);
+                }
+                catch (InterruptedException x)
+                {
+                    return false;
+                }
+            }
+        }
+
+        private class Accept implements Runnable
+        {
+            private final SocketChannel _channel;
+
+            public Accept(SocketChannel channel)
+            {
+                this._channel = channel;
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    SelectionKey key = _channel.register(_selector, 0, null);
+                    AsyncEndPoint endpoint = createEndPoint(_channel, key);
+                    key.attach(endpoint);
+                }
+                catch (IOException x)
+                {
+                    LOG.debug(x);
+                }
+            }
+        }
+
+        private class Connect implements Runnable
+        {
+            private final SocketChannel channel;
+            private final Object attachment;
+
+            public Connect(SocketChannel channel, Object attachment)
+            {
+                this.channel = channel;
+                this.attachment = attachment;
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    channel.register(_selector, SelectionKey.OP_CONNECT, attachment);
+                }
+                catch (ClosedChannelException x)
+                {
+                    LOG.debug(x);
+                }
+            }
+        }
+
+        private class Close implements Runnable
+        {
+            private final SelectionKey key;
+
+            private Close(SelectionKey key)
+            {
+                this.key = key;
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    key.channel().close();
+                }
+                catch (IOException x)
+                {
+                    LOG.ignore(x);
+                }
+            }
+        }
+
+        private class Stop implements Runnable
+        {
+            private final CountDownLatch latch = new CountDownLatch(1);
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    for (SelectionKey key : _selector.keys())
+                    {
+                        Object attachment = key.attachment();
+                        if (attachment instanceof EndPoint)
+                        {
+                            EndPoint endpoint = (EndPoint)attachment;
+                            endpoint.close();
+                        }
+                    }
+
+                    _selector.close();
+                }
+                catch (IOException x)
+                {
+                    LOG.ignore(x);
+                }
+                finally
+                {
+                    latch.countDown();
+                }
+            }
+
+            public boolean await(long timeout, TimeUnit unit)
+            {
+                try
+                {
+                    return latch.await(timeout, unit);
+                }
+                catch (InterruptedException x)
+                {
+                    return false;
+                }
+            }
         }
     }
 
-    /* ------------------------------------------------------------ */
-    public boolean isDeferringInterestedOps0()
-    {
-        return _deferringInterestedOps0;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setDeferringInterestedOps0(boolean deferringInterestedOps0)
-    {
-        _deferringInterestedOps0 = deferringInterestedOps0;
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private interface ChangeTask extends Runnable
-    {}
 
     // TODO review this interface
     public interface SelectableAsyncEndPoint extends AsyncEndPoint
@@ -1032,4 +704,5 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         void checkForIdleOrReadWriteTimeout(long idle_now);
     }
+
 }

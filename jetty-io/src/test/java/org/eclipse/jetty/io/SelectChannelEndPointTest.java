@@ -36,14 +36,8 @@ public class SelectChannelEndPointTest
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     private int maxIdleTimeout = 600000; // TODO: use smaller value
-    protected SelectorManager _manager = new SelectorManager()
+    protected SelectorManager _manager = new SelectorManager(_threadPool)
     {
-        @Override
-        public boolean dispatch(Runnable task)
-        {
-            return _threadPool.dispatch(task);
-        }
-
         @Override
         protected void endPointClosed(AsyncEndPoint endpoint)
         {
@@ -244,7 +238,7 @@ public class SelectChannelEndPointTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
-        _manager.register(server);
+        _manager.accept(server);
 
         // Write client to server
         client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
@@ -290,9 +284,7 @@ public class SelectChannelEndPointTest
             if (++i == 10)
                 Assert.fail();
         }
-
     }
-
 
     @Test
     public void testShutdown() throws Exception
@@ -304,7 +296,7 @@ public class SelectChannelEndPointTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
-        _manager.register(server);
+        _manager.accept(server);
 
         // Write client to server
         client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
@@ -357,7 +349,7 @@ public class SelectChannelEndPointTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
-        _manager.register(server);
+        _manager.accept(server);
 
         OutputStream clientOutputStream = client.getOutputStream();
         InputStream clientInputStream = client.getInputStream();
@@ -411,7 +403,7 @@ public class SelectChannelEndPointTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
-        _manager.register(server);
+        _manager.accept(server);
 
         // Write client to server
         client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
@@ -459,7 +451,7 @@ public class SelectChannelEndPointTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
-        _manager.register(server);
+        _manager.accept(server);
 
         // Write client to server
         clientOutputStream.write("HelloWorld".getBytes("UTF-8"));
@@ -515,7 +507,7 @@ public class SelectChannelEndPointTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
-        _manager.register(server);
+        _manager.accept(server);
         int writes = 100000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
@@ -602,7 +594,7 @@ public class SelectChannelEndPointTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
-        _manager.register(server);
+        _manager.accept(server);
 
         // Write client to server
         _writeCount=10000;

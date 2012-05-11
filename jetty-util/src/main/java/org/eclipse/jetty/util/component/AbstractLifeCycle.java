@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.util.component;
@@ -20,8 +20,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Basic implementation of the life cycle interface for components.
- * 
- * 
+ *
+ *
  */
 public abstract class AbstractLifeCycle implements LifeCycle
 {
@@ -32,12 +32,12 @@ public abstract class AbstractLifeCycle implements LifeCycle
     public static final String STARTED="STARTED";
     public static final String STOPPING="STOPPING";
     public static final String RUNNING="RUNNING";
-    
+
+    private final CopyOnWriteArrayList<LifeCycle.Listener> _listeners=new CopyOnWriteArrayList<LifeCycle.Listener>();
     private final Object _lock = new Object();
     private final int __FAILED = -1, __STOPPED = 0, __STARTING = 1, __STARTED = 2, __STOPPING = 3;
     private volatile int _state = __STOPPED;
-    
-    protected final CopyOnWriteArrayList<LifeCycle.Listener> _listeners=new CopyOnWriteArrayList<LifeCycle.Listener>();
+    private long _stopTimeout = 10000;
 
     protected void doStart() throws Exception
     {
@@ -59,12 +59,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
                 doStart();
                 setStarted();
             }
-            catch (Exception e)
-            {
-                setFailed(e);
-                throw e;
-            }
-            catch (Error e)
+            catch (Throwable e)
             {
                 setFailed(e);
                 throw e;
@@ -84,12 +79,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
                 doStop();
                 setStopped();
             }
-            catch (Exception e)
-            {
-                setFailed(e);
-                throw e;
-            }
-            catch (Error e)
+            catch (Throwable e)
             {
                 setFailed(e);
                 throw e;
@@ -100,7 +90,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     public boolean isRunning()
     {
         final int state = _state;
-        
+
         return state == __STARTED || state == __STARTING;
     }
 
@@ -138,7 +128,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     {
         _listeners.remove(listener);
     }
-    
+
     public String getState()
     {
         switch(_state)
@@ -151,7 +141,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
         return null;
     }
-    
+
     public static String getState(LifeCycle lc)
     {
         if (lc.isStarting()) return STARTING;
@@ -199,6 +189,16 @@ public abstract class AbstractLifeCycle implements LifeCycle
         LOG.warn(FAILED+" " + this+": "+th,th);
         for (Listener listener : _listeners)
             listener.lifeCycleFailure(this,th);
+    }
+
+    public long getStopTimeout()
+    {
+        return _stopTimeout;
+    }
+
+    public void setStopTimeout(long stopTimeout)
+    {
+        this._stopTimeout = stopTimeout;
     }
 
     public static abstract class AbstractLifeCycleListener implements LifeCycle.Listener

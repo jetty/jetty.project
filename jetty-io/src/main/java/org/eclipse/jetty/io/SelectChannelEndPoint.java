@@ -15,25 +15,21 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.io.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------ */
 /**
  * An Endpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorManager.SelectableAsyncEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, SelectorManager.SelectableAsyncEndPoint
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
@@ -48,7 +44,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     /** The desired value for {@link SelectionKey#interestOps()} */
     private int _interestOps;
 
-    /** true if {@link SelectSet#destroyEndPoint(SelectChannelEndPoint)} has not been called */
+    /** true if {@link SelectSet#destroyEndPoint(SelectorManager.SelectableAsyncEndPoint)} has not been called */
     private boolean _open;
 
     private volatile boolean _idlecheck;
@@ -64,7 +60,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             return false;
         }
     };
-    
+
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
@@ -123,14 +119,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     /* ------------------------------------------------------------ */
     /**
      * Called by selectSet to schedule handling
-     * 
+     *
      */
     @Override
     public void onSelected()
     {
         boolean can_read;
         boolean can_write;
-        
+
         synchronized (this)
         {
             _selected = true;
@@ -146,7 +142,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             }
             finally
             {
-                doUpdateKey();
+                _selectSet.submit(this);
                 _selected = false;
             }
         }
@@ -154,18 +150,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             _readInterest.readable();
         if (can_write)
             _writeFlusher.completeWrite();
-    }
-
-    /* ------------------------------------------------------------ */
-    public void cancelTimeout(Task task)
-    {
-        getSelectSet().cancelTimeout(task);
-    }
-
-    /* ------------------------------------------------------------ */
-    public void scheduleTimeout(Task task, long timeoutMs)
-    {
-        getSelectSet().scheduleTimeout(task,timeoutMs);
     }
 
     /* ------------------------------------------------------------ */
@@ -200,10 +184,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     if (idleForMs > max_idle_time)
                     {
                         notIdle();
-                        
+
                         if (_idlecheck)
                             _connection.onIdleExpired(idleForMs);
-                        
+
                         TimeoutException timeout = new TimeoutException();
                         _readInterest.failed(timeout);
                         _writeFlusher.failed(timeout);
@@ -212,7 +196,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             }
         }
     }
-    
+
 
     /* ------------------------------------------------------------ */
     @Override
@@ -225,12 +209,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     }
 
     /* ------------------------------------------------------------ */
-    @Override    
+    @Override
     public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
     {
         _readInterest.readable(context,callback);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
@@ -274,11 +258,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 if (_interestOps != current_ops && !_changing)
                 {
                     _changing = true;
-                    _selectSet.addChange(this);
-                    _selectSet.wakeup();
+                    _selectSet.submit(this);
                 }
             }
         }
+    }
+
+    @Override
+    public void run()
+    {
+        doUpdateKey();
     }
 
     /* ------------------------------------------------------------ */
@@ -364,15 +353,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         super.close();
         updateKey();
     }
-    
+
     /* ------------------------------------------------------------ */
-    @Override 
+    @Override
     public void onClose()
     {
         _writeFlusher.close();
         _readInterest.close();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

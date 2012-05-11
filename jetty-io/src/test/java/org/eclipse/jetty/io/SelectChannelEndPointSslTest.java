@@ -82,7 +82,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
-        _manager.register(server);
+        _manager.accept(server);
 
         SSLEngine engine = __sslCtxFactory.newSslEngine();
         engine.setUseClientMode(true);

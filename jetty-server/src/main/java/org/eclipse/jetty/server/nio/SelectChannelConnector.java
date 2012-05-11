@@ -30,7 +30,6 @@ import org.eclipse.jetty.io.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.AbstractHttpConnector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 /* ------------------------------------------------------------------------------- */
 /**
@@ -60,10 +59,9 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class SelectChannelConnector extends AbstractHttpConnector
 {
+    private SelectorManager _manager;
     protected ServerSocketChannel _acceptChannel;
     private int _localPort=-1;
-
-    private final SelectorManager _manager = new ConnectorSelectorManager();
 
     /* ------------------------------------------------------------------------------- */
     /**
@@ -93,7 +91,7 @@ public class SelectChannelConnector extends AbstractHttpConnector
             channel.configureBlocking(false);
             Socket socket = channel.socket();
             configure(socket);
-            _manager.register(channel);
+            _manager.accept(channel);
         }
     }
 
@@ -187,10 +185,10 @@ public class SelectChannelConnector extends AbstractHttpConnector
     @Override
     protected void doStart() throws Exception
     {
-        _manager.setSelectSets(getAcceptors());
-        _manager.setMaxIdleTime(getMaxIdleTime());
-
         super.doStart();
+        _manager = new ConnectorSelectorManager(findExecutor(), getAcceptors());
+        _manager.setMaxIdleTime(getMaxIdleTime());
+        _manager.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -204,6 +202,7 @@ public class SelectChannelConnector extends AbstractHttpConnector
     /* ------------------------------------------------------------------------------- */
     protected void endPointClosed(AsyncEndPoint endpoint)
     {
+        endpoint.onClose();
         connectionClosed(endpoint.getAsyncConnection());
     }
 
@@ -219,12 +218,9 @@ public class SelectChannelConnector extends AbstractHttpConnector
     /* ------------------------------------------------------------ */
     private final class ConnectorSelectorManager extends SelectorManager
     {
-        @Override
-        public boolean dispatch(Runnable task)
+        private ConnectorSelectorManager(Executor executor, int selectSets)
         {
-            Executor executor = findExecutor();
-            executor.execute(task);
-            return true;
+            super(executor, selectSets);
         }
 
         @Override
@@ -242,22 +238,20 @@ public class SelectChannelConnector extends AbstractHttpConnector
 
         @Override
         protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
-        {            
+        {
             connectionUpgraded(oldConnection,endpoint.getAsyncConnection());
         }
 
         @Override
         public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
-        {            
+        {
             return SelectChannelConnector.this.newConnection(channel,endpoint);
         }
 
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey sKey) throws IOException
-        {            
+        {
             return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
         }
-        
-        
     }
 }

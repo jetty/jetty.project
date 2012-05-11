@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
@@ -104,7 +103,7 @@ public class SPDYClient
         SessionPromise result = new SessionPromise(this, listener);
 
         channel.connect(address);
-        factory.selector.register(channel, result);
+        factory.selector.connect(channel, result);
 
         return result;
     }
@@ -209,7 +208,7 @@ public class SPDYClient
             if (sslContextFactory != null)
                 addBean(sslContextFactory);
 
-            selector = new ClientSelectorManager();
+            selector = new ClientSelectorManager(threadPool);
             addBean(selector);
 
             factories.put("spdy/2", new ClientSPDYAsyncConnectionFactory());
@@ -267,18 +266,9 @@ public class SPDYClient
 
         private class ClientSelectorManager extends SelectorManager
         {
-            @Override
-            public boolean dispatch(Runnable task)
+            private ClientSelectorManager(Executor executor)
             {
-                try
-                {
-                    threadPool.execute(task);
-                    return true;
-                }
-                catch (RejectedExecutionException x)
-                {
-                    return false;
-                }
+                super(executor);
             }
 
             @Override
@@ -326,7 +316,7 @@ public class SPDYClient
                         final AtomicReference<AsyncEndPoint> sslEndPointRef = new AtomicReference<>();
                         final AtomicReference<Object> attachmentRef = new AtomicReference<>(attachment);
                         SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
-                        SslConnection sslConnection = new SslConnection(engine, endPoint)
+                        SslConnection sslConnection = new SslConnection(bufferPool, threadPool, endPoint, engine)
                         {
                             @Override
                             public void onClose()
