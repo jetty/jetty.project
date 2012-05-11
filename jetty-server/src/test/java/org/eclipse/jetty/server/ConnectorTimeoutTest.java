@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,18 +20,21 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.SslConnection;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
@@ -149,8 +148,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // Get the server side endpoint
         EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
-        if (endp instanceof SslConnection.AppEndPoint)
-            endp=((SslConnection.AppEndPoint)endp).getEndpoint();
+        if (endp instanceof SslConnection.ApplicationEndPoint)
+            endp=((SslConnection.ApplicationEndPoint)endp).getEndpoint();
 
         // read the response
         String result=IO.toString(is);

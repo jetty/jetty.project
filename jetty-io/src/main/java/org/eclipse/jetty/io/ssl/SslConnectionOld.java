@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -25,6 +25,12 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
+import org.eclipse.jetty.io.AbstractAsyncConnection;
+import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -39,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
  * it's source/sink of encrypted data.   It then provides {@link #getAppEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  */
-public class SslConnection extends AbstractAsyncConnection
+public class SslConnectionOld extends AbstractAsyncConnection
 {
     static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.ssl");
 
@@ -102,16 +108,17 @@ public class SslConnection extends AbstractAsyncConnection
             _outNet=BufferUtil.allocateDirect(packetSize);
             _inApp=BufferUtil.allocate(appSize);
         }
+
     }
 
     /* ------------------------------------------------------------ */
-    public SslConnection(SSLEngine engine,AsyncEndPoint endp,Executor executor)
+    public SslConnectionOld(SSLEngine engine,AsyncEndPoint endp,Executor executor)
     {
         this(engine,endp,System.currentTimeMillis(),executor);
     }
 
     /* ------------------------------------------------------------ */
-    public SslConnection(SSLEngine engine,AsyncEndPoint endp, long timeStamp,Executor executor)
+    public SslConnectionOld(SSLEngine engine,AsyncEndPoint endp, long timeStamp,Executor executor)
     {
         super(endp, executor);
         _engine=engine;

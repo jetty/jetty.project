@@ -10,9 +10,9 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLSocket;
 
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -22,7 +22,8 @@ import org.junit.Test;
 @Ignore
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 {
-    static SslContextFactory __sslCtxFactory=new SslContextFactory();
+    private static SslContextFactory __sslCtxFactory=new SslContextFactory();
+    private static ByteBufferPool __byteBufferPool = new StandardByteBufferPool();
 
     @BeforeClass
     public static void initSslEngine() throws Exception
@@ -47,11 +48,11 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     {
         SSLEngine engine = __sslCtxFactory.newSslEngine();
         engine.setUseClientMode(false);
-        SslConnection connection = new SslConnection(engine,endpoint,_threadPool);
+        SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
 
-        AsyncConnection delegate = super.newConnection(channel,connection.getAppEndPoint());
-        connection.getAppEndPoint().setAsyncConnection(delegate);
-        return connection;
+        AsyncConnection appConnection = super.newConnection(channel,sslConnection.getAppEndPoint());
+        sslConnection.getAppEndPoint().setAsyncConnection(appConnection);
+        return sslConnection;
     }
 
     @Test
@@ -172,8 +173,6 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
         Assert.assertEquals("HelloWorld",reply);
 
-        SslConnection.LOG.info("javax.net.ssl.SSLException: Inbound closed before... Expected as next line!");
-        if (debug) System.err.println("\nSudden Death");
         client.socket().shutdownOutput();
 
         filled=client.read(sslIn);

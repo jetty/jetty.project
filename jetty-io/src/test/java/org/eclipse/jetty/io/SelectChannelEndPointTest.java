@@ -35,6 +35,7 @@ public class SelectChannelEndPointTest
     protected volatile AsyncEndPoint _lastEndp;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
+    private int maxIdleTimeout = 600000; // TODO: use smaller value
     protected SelectorManager _manager = new SelectorManager()
     {
         @Override
@@ -51,6 +52,7 @@ public class SelectChannelEndPointTest
         @Override
         protected void endPointOpened(AsyncEndPoint endpoint)
         {
+            endpoint.getAsyncConnection().onOpen();
         }
 
         @Override
@@ -67,7 +69,7 @@ public class SelectChannelEndPointTest
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,2000);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,maxIdleTimeout);
             endp.setAsyncConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
             _lastEndp=endp;
             return endp;
@@ -104,9 +106,7 @@ public class SelectChannelEndPointTest
 
     protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
-        AbstractAsyncConnection connection = new TestConnection(endpoint);
-        connection.scheduleOnReadable();
-        return connection;
+        return new TestConnection(endpoint);
     }
 
     public class TestConnection extends AbstractAsyncConnection
@@ -118,6 +118,12 @@ public class SelectChannelEndPointTest
         public TestConnection(AsyncEndPoint endp)
         {
             super(endp,_threadPool);
+        }
+
+        @Override
+        public void onOpen()
+        {
+            scheduleOnReadable();
         }
 
         @Override
@@ -233,7 +239,7 @@ public class SelectChannelEndPointTest
     {
         Socket client = newClient();
 
-        client.setSoTimeout(60000);
+        client.setSoTimeout(600000); // TODO: restore to smaller value
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
@@ -356,7 +362,7 @@ public class SelectChannelEndPointTest
         OutputStream clientOutputStream = client.getOutputStream();
         InputStream clientInputStream = client.getInputStream();
 
-        int specifiedTimeout = SslConnection.LOG.isDebugEnabled()?2000:400;
+        int specifiedTimeout = 2000;
         client.setSoTimeout(specifiedTimeout);
 
         // Write 8 and cause block waiting for 10

@@ -15,18 +15,15 @@ package org.eclipse.jetty.server.ssl;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.SslConnection;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -51,7 +48,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------ */
     /** Construct with explicit SslContextFactory.
-     * The SslContextFactory passed is added via {@link #addBean(Object)} so that 
+     * The SslContextFactory passed is added via {@link #addBean(Object)} so that
      * it's lifecycle may be managed with {@link AggregateLifeCycle}.
      * @param sslContextFactory
      */
@@ -82,9 +79,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * </li>
      * </ul>
      *
-     * @param endpoint
-     *                The Socket the request arrived on. This should be a
-     *                {@link SocketEndPoint} wrapping a {@link SSLSocket}.
      * @param request
      *                HttpRequest to be customised.
      */
@@ -94,12 +88,9 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         request.setScheme(HttpScheme.HTTPS.asString());
         super.customize(request);
 
-        EndPoint endpoint = request.getHttpChannel().getConnection().getEndPoint();
-        SslConnection.AppEndPoint sslEndpoint=(SslConnection.AppEndPoint)endpoint;
-        SSLEngine sslEngine=sslEndpoint.getSslEngine();
-        SSLSession sslSession=sslEngine.getSession();
-
-        SslCertificates.customize(sslSession,endpoint,request);
+        SslConnection sslConnection = (SslConnection)request.getHttpChannel().getConnection();
+        SSLEngine sslEngine=sslConnection.getSSLEngine();
+        SslCertificates.customize(sslEngine,request);
     }
 
     /* ------------------------------------------------------------ */
@@ -563,7 +554,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     protected SslConnection newSslConnection(AsyncEndPoint endpoint, SSLEngine engine)
     {
-        return new SslConnection(engine, endpoint,findExecutor());
+        return new SslConnection(getByteBufferPool(), findExecutor(), endpoint, engine);
     }
 
     /* ------------------------------------------------------------ */
@@ -624,5 +615,4 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     {
         super.doStop();
     }
-
 }

@@ -76,14 +76,14 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         else
             _endp.shutdownOutput();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void scheduleOnReadable()
     {
         if (_readInterested.compareAndSet(false,true))
             getEndPoint().readable(null,_readCallback);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void onReadFail(Throwable cause)
     {

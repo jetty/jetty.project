@@ -53,15 +53,29 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
         BufferUtil.clear(buffer);
         read(buffer);
         bufferPool.release(buffer);
+        scheduleOnReadable();
     }
 
     protected void read(ByteBuffer buffer)
     {
         AsyncEndPoint endPoint = getEndPoint();
-        int filled = fill(endPoint, buffer);
-        if (filled < 0)
-            close(false);
-        parser.parse(buffer);
+        while (true)
+        {
+            int filled = fill(endPoint, buffer);
+            if (filled == 0)
+            {
+                break;
+            }
+            else if (filled < 0)
+            {
+                close(false);
+                break;
+            }
+            else
+            {
+                parser.parse(buffer);
+            }
+        }
     }
 
     private int fill(AsyncEndPoint endPoint, ByteBuffer buffer)

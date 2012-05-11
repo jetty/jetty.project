@@ -3,13 +3,11 @@ package org.eclipse.jetty.server.ssl;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
-
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -55,7 +53,7 @@ public class SslCertificates
             return null;
         }
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -76,16 +74,14 @@ public class SslCertificates
      * client, the next is the one used to authenticate the first, and so on.
      * </li>
      * </ul>
-     * 
-     * @param endpoint
-     *                The Socket the request arrived on. This should be a
-     *                {@link SocketEndPoint} wrapping a {@link SSLSocket}.
+     *
      * @param request
      *                HttpRequest to be customised.
      */
-    public static void customize(SSLSession sslSession, EndPoint endpoint, Request request) throws IOException
+    public static void customize(SSLEngine sslEngine, Request request) throws IOException
     {
         request.setScheme(HttpScheme.HTTPS.asString());
+        SSLSession sslSession = sslEngine.getSession();
 
         try
         {
@@ -153,7 +149,7 @@ public class SslCertificates
         {
             return _keySize;
         }
-        
+
         String getIdStr()
         {
             return _idStr;
