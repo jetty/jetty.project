@@ -23,11 +23,13 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.junit.matchers.JUnitMatchers.either;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpGenerator.Action;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
 
@@ -70,7 +72,6 @@ public class HttpGeneratorServerTest
             return true;
         }
 
-
         @Override
         public boolean parsedHeader(HttpHeader header, String name, String value) throws IOException
         {
@@ -87,91 +88,11 @@ public class HttpGeneratorServerTest
             _reason=reason;
             return false;
         }
-
-
     }
     
-    class Info implements HttpGenerator.ResponseInfo
+
+    private static class TR 
     {
-        long _contentLength=-1;
-        HttpFields _fields = new HttpFields();
-        boolean _head=false;
-        String _reason;
-        int _status;
-        HttpVersion _version=HttpVersion.HTTP_1_1;
-        
-        
-        public Info(int status)
-        {
-            _status=status;
-        }
-
-        @Override
-        public long getContentLength()
-        {
-            return _contentLength;
-        }
-
-        @Override
-        public HttpFields getHttpFields()
-        {
-            return _fields;
-        }
-
-        @Override
-        public HttpVersion getHttpVersion()
-        {
-            return _version;
-        }
-
-        @Override
-        public String getReason()
-        {
-            return _reason;
-        }
-
-        @Override
-        public int getStatus()
-        {
-            return _status;
-        }
-
-        @Override
-        public boolean isHead()
-        {
-            return _head;
-        }
-
-        public void setContentLength(long contentLength)
-        {
-            _contentLength = contentLength;
-        }
-
-        public void setHead(boolean head)
-        {
-            _head = head;
-        }
-
-        public void setReason(String reason)
-        {
-            _reason = reason;
-        }
-
-        public void setStatus(int status)
-        {
-            _status = status;
-        }
-
-        public void setHttpVersion(HttpVersion version)
-        {
-            _version = version;
-        }
-        
-    }
-
-    private static class TR implements HttpGenerator.ResponseInfo
-    {
-        private HttpVersion _version;
         private HttpFields _fields=new HttpFields();
         private final String _body;
         private final int _code;
@@ -181,7 +102,6 @@ public class HttpGeneratorServerTest
         private final boolean _head;
         String _other;
         String _te;
-        String _reason;
 
         private TR(int code,String contentType, int contentLength ,String content,boolean head)
         {
@@ -193,49 +113,12 @@ public class HttpGeneratorServerTest
             _head=head;
         }
 
-        @Override
-        public HttpVersion getHttpVersion()
-        {
-            return _version;
-        }
 
-        @Override
-        public HttpFields getHttpFields()
-        {
-            return _fields;
-        }
-
-        @Override
-        public boolean isHead()
-        {
-            return _head;
-        }
-
-        @Override
-        public long getContentLength()
-        {
-            return _contentLength;
-        }
-
-        @Override
-        public int getStatus()
-        {
-            return _code;
-        }
-
-        @Override
-        public String getReason()
-        {
-            return _reason;
-        }
-
-        private String build(HttpGenerator.Info info, int version,HttpGenerator gen,String reason, String connection, String te, int nchunks) throws Exception
+        private String build(int version,HttpGenerator gen,String reason, String connection, String te, int nchunks) throws Exception
         {
             String response="";
             _connection=connection;
             _te=te;
-            _version=HttpVersion.fromVersion(version);
-            _reason=reason;
             
             if (_contentType!=null)
                 _fields.put("Content-Type",_contentType);
@@ -267,7 +150,7 @@ public class HttpGeneratorServerTest
             ByteBuffer header=null;
             ByteBuffer chunk=null;
             ByteBuffer buffer=null;
-            
+            HttpGenerator.Info info=null;
 
             while(!gen.isComplete())
             {
@@ -300,7 +183,8 @@ public class HttpGeneratorServerTest
 
                 switch(result)
                 {
-                    case NEED_HEADER:
+                    case NEED_COMMIT:
+                        info=new HttpGenerator.ResponseInfo(HttpVersion.fromVersion(version),_fields,_contentLength,_code,reason,_head);
                         header=BufferUtil.allocate(2048);
                         break;
 
@@ -361,6 +245,11 @@ public class HttpGeneratorServerTest
         public String toString()
         {
             return "["+_code+","+_contentType+","+_contentLength+","+(_body==null?"null":"content")+"]";
+        }
+
+        public HttpFields getHttpFields()
+        {
+            return _fields;
         }
     }
 
@@ -426,7 +315,7 @@ public class HttpGeneratorServerTest
                         gen.reset();
                         tr[r].getHttpFields().clear();
 
-                        String response=tr[r].build(tr[r],v,gen,"OK\r\nTest",connect[c],null,chunks);
+                        String response=tr[r].build(v,gen,"OK\r\nTest",connect[c],null,chunks);
 
                         System.err.println("---\n"+t+"\n"+response+(gen.isPersistent()?"...":"==="));
 
@@ -467,26 +356,26 @@ public class HttpGeneratorServerTest
                             assertTrue(t,tr[r]._body==null);
                         else
                             assertThat(t,tr[r]._contentLength,either(equalTo(_content.length())).or(equalTo(-1)));
-
                     }
                 }
             }
         }
     }
+    
     @Test
     public void testResponseNoContent() throws Exception
     {
         ByteBuffer header=BufferUtil.allocate(8096);
         
-        Info info=new Info(200);
         HttpGenerator gen = new HttpGenerator();
 
-        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
-
         HttpGenerator.Result
-        result=gen.generate(info,null,null,null,null,Action.COMPLETE);
+        result=gen.generate(null,null,null,null,null,Action.COMPLETE);
         assertEquals(HttpGenerator.State.COMMITTING_COMPLETING,gen.getState());
-        assertEquals(HttpGenerator.Result.NEED_HEADER,result);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),-1,200,null,false);
+        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
 
         result=gen.generate(info,header,null,null,null,null);
         assertEquals(HttpGenerator.Result.FLUSH,result);
@@ -501,8 +390,8 @@ public class HttpGeneratorServerTest
         assertThat(head,containsString("HTTP/1.1 200 OK"));
         assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
         assertThat(head,containsString("Content-Length: 0"));
-
     }
+    
     @Test
     public void testResponseWithChunkedContent() throws Exception
     {
@@ -511,28 +400,28 @@ public class HttpGeneratorServerTest
         ByteBuffer buffer=BufferUtil.allocate(16);
         ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
-        Info info=new Info(200);
         HttpGenerator gen = new HttpGenerator();
-        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
 
         HttpGenerator.Result
 
-        result=gen.generate(info,null,null,null,content0,null);
+        result=gen.generate(null,null,null,null,content0,null);
         assertEquals(HttpGenerator.Result.NEED_BUFFER,result);
         assertEquals(HttpGenerator.State.START,gen.getState());
 
-        result=gen.generate(info,null,null,buffer,content0,null);
+        result=gen.generate(null,null,null,buffer,content0,null);
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.START,gen.getState());
         assertEquals("Hello World! ",BufferUtil.toString(buffer));
         assertEquals(0,content0.remaining());
 
-        result=gen.generate(info,null,null,buffer,content1,null);
-        assertEquals(HttpGenerator.Result.NEED_HEADER,result);
+        result=gen.generate(null,null,null,buffer,content1,null);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
         assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
         assertEquals("Hello World! The",BufferUtil.toString(buffer));
         assertEquals(43,content1.remaining());
 
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),-1,200,null,false);
+        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
         result=gen.generate(info,header,null,buffer,content1,null);
         assertEquals(HttpGenerator.Result.FLUSH,result);
         assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
@@ -616,30 +505,29 @@ public class HttpGeneratorServerTest
         ByteBuffer buffer=BufferUtil.allocate(16);
         ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
-        Info info=new Info(200);
         HttpGenerator gen = new HttpGenerator();
-        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
-        info.getHttpFields().add("Content-Length","59");
-        info.setContentLength(59);
 
         HttpGenerator.Result
 
-        result=gen.generate(info,null,null,null,content0,null);
+        result=gen.generate(null,null,null,null,content0,null);
         assertEquals(HttpGenerator.Result.NEED_BUFFER,result);
         assertEquals(HttpGenerator.State.START,gen.getState());
 
-        result=gen.generate(info,null,null,buffer,content0,null);
+        result=gen.generate(null,null,null,buffer,content0,null);
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.START,gen.getState());
         assertEquals("Hello World! ",BufferUtil.toString(buffer));
         assertEquals(0,content0.remaining());
 
-        result=gen.generate(info,null,null,buffer,content1,null);
-        assertEquals(HttpGenerator.Result.NEED_HEADER,result);
+        result=gen.generate(null,null,null,buffer,content1,null);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
         assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
         assertEquals("Hello World! The",BufferUtil.toString(buffer));
         assertEquals(43,content1.remaining());
 
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),59,200,null,false);
+        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
+        info.getHttpFields().add("Content-Length","59");
         result=gen.generate(info,header,null,buffer,content1,null);
         assertEquals(HttpGenerator.Result.FLUSH,result);
         assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
@@ -703,20 +591,19 @@ public class HttpGeneratorServerTest
         ByteBuffer header=BufferUtil.allocate(4096);
         ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
-        Info info=new Info(200);
         HttpGenerator gen = new HttpGenerator();
         gen.setLargeContent(8);
-
-        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
-        info.getHttpFields().add("Content-Length","59");
-        info.setContentLength(59);
-
+        
         HttpGenerator.Result
 
-        result=gen.generate(info,null,null,null,content0,null);
-        assertEquals(HttpGenerator.Result.NEED_HEADER,result);
+        result=gen.generate(null,null,null,null,content0,null);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
         assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
 
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),59,200,null,false);
+        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
+        info.getHttpFields().add("Content-Length","59");
+        
         result=gen.generate(info,header,null,null,content0,null);
         assertEquals(HttpGenerator.Result.FLUSH_CONTENT,result);
         assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
@@ -758,18 +645,17 @@ public class HttpGeneratorServerTest
         ByteBuffer header=BufferUtil.allocate(4096);
         ByteBuffer content0=BufferUtil.toBuffer("Hello Cruel World! ");
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
-        Info info=new Info(200);
         HttpGenerator gen = new HttpGenerator();
         gen.setLargeContent(8);
 
-        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
-
         HttpGenerator.Result
 
-        result=gen.generate(info,null,null,null,content0,null);
-        assertEquals(HttpGenerator.Result.NEED_HEADER,result);
+        result=gen.generate(null,null,null,null,content0,null);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
         assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
 
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),-1,200,null,false);
+        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
         result=gen.generate(info,header,null,null,content0,null);
         assertEquals(HttpGenerator.Result.FLUSH_CONTENT,result);
         assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
@@ -826,32 +712,32 @@ public class HttpGeneratorServerTest
         ByteBuffer buffer=BufferUtil.allocate(8096);
         ByteBuffer content=BufferUtil.toBuffer("Hello World");
         ByteBuffer content1=BufferUtil.toBuffer(". The quick brown fox jumped over the lazy dog.");
-        Info info=new Info(200);
         HttpGenerator gen = new HttpGenerator();
-        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
 
         HttpGenerator.Result
 
-        result=gen.generate(info,null,null,null,content,null);
+        result=gen.generate(null,null,null,null,content,null);
         assertEquals(HttpGenerator.Result.NEED_BUFFER,result);
         assertEquals(HttpGenerator.State.START,gen.getState());
 
-        result=gen.generate(info,null,null,buffer,content,null);
+        result=gen.generate(null,null,null,buffer,content,null);
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.START,gen.getState());
         assertEquals("Hello World",BufferUtil.toString(buffer));
         assertTrue(BufferUtil.isEmpty(content));
 
-        result=gen.generate(info,null,null,buffer,content1,null);
+        result=gen.generate(null,null,null,buffer,content1,null);
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.START,gen.getState());
         assertEquals("Hello World. The quick brown fox jumped over the lazy dog.",BufferUtil.toString(buffer));
         assertTrue(BufferUtil.isEmpty(content1));
 
-        result=gen.generate(info,null,null,buffer,null,Action.COMPLETE);
-        assertEquals(HttpGenerator.Result.NEED_HEADER,result);
+        result=gen.generate(null,null,null,buffer,null,Action.COMPLETE);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
         assertEquals(HttpGenerator.State.COMMITTING_COMPLETING,gen.getState());
 
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),-1,200,null,false);
+        info.getHttpFields().add("Last-Modified",HttpFields.__01Jan1970);
         result=gen.generate(info,header,null,buffer,null,null);
         assertEquals(HttpGenerator.Result.FLUSH,result);
         assertEquals(HttpGenerator.State.COMPLETING,gen.getState());

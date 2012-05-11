@@ -158,6 +158,7 @@ public class HttpConnection extends AbstractAsyncConnection
         if (_chunk!=null)
             _bufferPool.release(_chunk);
         _chunk=null;
+        _info=null;
     }
 
     
