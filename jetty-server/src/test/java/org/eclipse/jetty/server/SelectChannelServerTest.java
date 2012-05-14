@@ -12,7 +12,6 @@
 // ========================================================================
 
 package org.eclipse.jetty.server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.BeforeClass;
 
 /**
@@ -23,7 +22,7 @@ public class SelectChannelServerTest extends HttpServerTestBase
     @BeforeClass
     public static void init() throws Exception
     {
-        startServer(new SelectChannelConnector());
+        startServer(new ChannelHttpConnector());
     }
 
     @Override

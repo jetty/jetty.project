@@ -20,7 +20,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.io.SelectorManager.SelectSet;
+import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -33,7 +33,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
-    private final SelectorManager.SelectSet _selectSet;
+    private final SelectorManager.ManagedSelector _selectSet;
     private final SelectorManager _manager;
 
     private SelectionKey _key;
@@ -44,7 +44,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /** The desired value for {@link SelectionKey#interestOps()} */
     private int _interestOps;
 
-    /** true if {@link SelectSet#destroyEndPoint(SelectorManager.SelectableAsyncEndPoint)} has not been called */
+    /** true if {@link ManagedSelector#destroyEndPoint(SelectorManager.SelectableAsyncEndPoint)} has not been called */
     private boolean _open;
 
     private volatile boolean _idlecheck;
@@ -72,7 +72,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     };
 
     /* ------------------------------------------------------------ */
-    public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime) throws IOException
+    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, int maxIdleTime) throws IOException
     {
         super(channel);
         _manager = selectSet.getManager();
@@ -203,17 +203,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
     }
 
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public int fill(ByteBuffer buffer) throws IOException
-    {
-        int fill = super.fill(buffer);
-        if (fill > 0)
-            notIdle();
-        return fill;
-    }
-
     /* ------------------------------------------------------------ */
     @Override
     public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
@@ -226,16 +215,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
     {
         _writeFlusher.write(context,callback,buffers);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public int flush(ByteBuffer... buffers) throws IOException
-    {
-        int l = super.flush(buffers);
-        if (l > 0)
-            notIdle();
-        return l;
     }
 
     /* ------------------------------------------------------------ */
@@ -401,7 +380,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     }
 
     /* ------------------------------------------------------------ */
-    public SelectSet getSelectSet()
+    public ManagedSelector getSelectSet()
     {
         return _selectSet;
     }

@@ -24,8 +24,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.Connector.NetConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
@@ -88,26 +88,26 @@ public class Server extends HandlerWrapper implements Attributes
 
     /* ------------------------------------------------------------ */
     /** Convenience constructor
-     * Creates server and a {@link SelectChannelConnector} at the passed port.
+     * Creates server and a {@link ChannelHttpConnector} at the passed port.
      */
     public Server(int port)
     {
         setServer(this);
 
-        SelectChannelConnector connector=new SelectChannelConnector();
+        ChannelHttpConnector connector=new ChannelHttpConnector();
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
     }
 
     /* ------------------------------------------------------------ */
     /** Convenience constructor
-     * Creates server and a {@link SelectChannelConnector} at the passed address.
+     * Creates server and a {@link ChannelHttpConnector} at the passed address.
      */
     public Server(InetSocketAddress addr)
     {
         setServer(this);
 
-        SelectChannelConnector connector=new SelectChannelConnector();
+        ChannelHttpConnector connector=new ChannelHttpConnector();
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
         setConnectors(new Connector[]{connector});
@@ -305,7 +305,8 @@ public class Server extends HandlerWrapper implements Attributes
                 for (int i=_connectors.length;i-->0;)
                 {
                     LOG.info("Graceful shutdown {}",_connectors[i]);
-                    try{_connectors[i].close();}catch(Throwable e){mex.add(e);}
+                    if (_connectors[i] instanceof NetConnector)
+                    ((NetConnector)_connectors[i]).close();
                 }
             }
 

@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -48,7 +47,7 @@ public class StressTest
 
     private static QueuedThreadPool _threads;
     private static Server _server;
-    private static SelectChannelConnector _connector;
+    private static ChannelHttpConnector _connector;
     private static final AtomicInteger _handled=new AtomicInteger(0);
     private static final ConcurrentLinkedQueue[] _latencies= {
             new ConcurrentLinkedQueue<Long>(),
@@ -90,7 +89,7 @@ public class StressTest
         _server = new Server();
         _server.setThreadPool(_threads);
 
-        _connector = new SelectChannelConnector();
+        _connector = new ChannelHttpConnector();
         _connector.setAcceptors(1);
         _connector.setAcceptQueueSize(5000);
         _connector.setMaxIdleTime(30000);
@@ -223,7 +222,7 @@ public class StressTest
                     {
                         System.err.println("STALLED!!!");
                         System.err.println(_server.getThreadPool().toString());
-                        ((SelectChannelConnector)(_server.getConnectors()[0])).dump();
+                        ((ChannelHttpConnector)(_server.getConnectors()[0])).dump();
                         Thread.sleep(5000);
                         System.exit(1);
                     }

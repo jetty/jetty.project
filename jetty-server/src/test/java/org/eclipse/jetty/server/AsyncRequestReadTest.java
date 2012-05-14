@@ -32,7 +32,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.AfterClass;
@@ -52,7 +51,7 @@ public class AsyncRequestReadTest
     public static void startServer() throws Exception
     {
         server = new Server();
-        connector = new SelectChannelConnector();
+        connector = new ChannelHttpConnector();
         connector.setMaxIdleTime(10000);
         server.addConnector(connector);
         server.setHandler(new EmptyHandler());

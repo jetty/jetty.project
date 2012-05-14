@@ -104,9 +104,7 @@ public class ErrorHandler extends AbstractHandler
         writeErrorPageMessage(request,writer,code,message,uri);
         if (showStacks)
             writeErrorPageStacks(request,writer);
-        writer.write("<hr /><i><small>Powered by Jetty://</small></i>");
-        for (int i= 0; i < 20; i++)
-            writer.write("<br/>                                                \n");
+        writer.write("<hr><i><small>Powered by Jetty://</small></i><hr/>\n");
     }
 
     /* ------------------------------------------------------------ */

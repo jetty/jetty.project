@@ -28,9 +28,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.AfterClass;
@@ -57,7 +57,7 @@ public class AbstractConnectorTest
         _connect = new CyclicBarrier(2);
 
         _server = new Server();
-        _connector = new SelectChannelConnector()
+        _connector = new ChannelHttpConnector()
         {
             public void connectionClosed(AsyncConnection connection)
             {

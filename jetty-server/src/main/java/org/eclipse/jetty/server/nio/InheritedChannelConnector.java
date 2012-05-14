@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.channels.Channel;
 import java.nio.channels.ServerSocketChannel;
 
+import org.eclipse.jetty.server.ChannelHttpConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -36,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * @author athena
  */
-public class InheritedChannelConnector extends SelectChannelConnector
+public class InheritedChannelConnector extends ChannelHttpConnector
 {
     private static final Logger LOG = Log.getLogger(InheritedChannelConnector.class);
 

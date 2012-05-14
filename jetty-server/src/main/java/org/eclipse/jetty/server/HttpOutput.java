@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 
 import javax.servlet.ServletOutputStream;
 
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
 /** Output.
@@ -103,7 +104,7 @@ public class HttpOutput extends ServletOutputStream
     public void write(byte[] b, int off, int len) throws IOException
     {
         if (_closed)
-            throw new IOException("Closed");
+            throw new EofException();
 
         _written+=_channel.write(ByteBuffer.wrap(b,off,len));
         _channel.getResponse().checkAllContentWritten(_written);

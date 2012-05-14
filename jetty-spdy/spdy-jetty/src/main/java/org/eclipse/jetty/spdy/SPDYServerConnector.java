@@ -39,7 +39,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ChannelHttpConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
-public class SPDYServerConnector extends SelectChannelConnector
+public class SPDYServerConnector extends ChannelHttpConnector
 {
     private static final Logger logger = Log.getLogger(SPDYServerConnector.class);
 

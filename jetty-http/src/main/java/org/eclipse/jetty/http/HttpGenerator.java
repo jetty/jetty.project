@@ -892,7 +892,7 @@ public class HttpGenerator
         final HttpFields _httpFields;
         final long _contentLength;
         
-        public Info(HttpVersion httpVersion, HttpFields httpFields, long contentLength)
+        private Info(HttpVersion httpVersion, HttpFields httpFields, long contentLength)
         {
             _httpVersion = httpVersion;
             _httpFields = httpFields;
@@ -935,6 +935,11 @@ public class HttpGenerator
             return _uri;
         }
         
+        @Override 
+        public String toString()
+        {
+            return String.format("RequestInfo{%s %s %s,%d}",_method,_uri,_httpVersion,_contentLength);
+        }
     }
     
     public static class ResponseInfo extends Info
@@ -960,13 +965,21 @@ public class HttpGenerator
         {
             return _status;
         }
+        
         public String getReason()
         {
             return _reason;
         }
+        
         public boolean isHead()
         {
             return _head;
+        }
+        
+        @Override 
+        public String toString()
+        {
+            return String.format("ResponseInfo{%s %s %s,%d,%b}",_httpVersion,_status,_reason,_contentLength,_head);
         }
     }
 }

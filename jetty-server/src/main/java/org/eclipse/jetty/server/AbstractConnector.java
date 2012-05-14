@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.Name;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -42,14 +43,14 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 {
     static final Logger LOG = Log.getLogger(AbstractConnector.class);
 
-    private String _name;
+    private final Thread[] _acceptors;
 
+    private String _name;
     private Server _server;
     private Executor _executor;
     private String _host;
     private int _port = 0;
     private int _acceptQueueSize = 0;
-    private int _acceptors = 1;
     private int _acceptorPriorityOffset = 0;
     private boolean _reuseAddress = true;
     private ByteBufferPool _byteBufferPool=new StandardByteBufferPool(); // TODO should this be server wide? or a thread local one?
@@ -59,7 +60,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     protected int _maxIdleTime = 200000;
     protected int _soLingerTime = -1;
 
-    private transient Thread[] _acceptorThreads;
 
 
     /* ------------------------------------------------------------ */
@@ -67,6 +67,17 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
      */
     public AbstractConnector()
     {
+        this(Math.max(1,(Runtime.getRuntime().availableProcessors())/4));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public AbstractConnector(@Name("acceptors") int acceptors)
+    {
+        if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
+            LOG.warn("Acceptors should be <=2*availableProcessors: " + this);
+        _acceptors=new Thread[acceptors];
     }
 
     /* ------------------------------------------------------------ */
@@ -120,7 +131,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     {
         return _byteBufferPool;
     }
-
+    
+    /* ------------------------------------------------------------ */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
         removeBean(byteBufferPool);
@@ -129,17 +141,15 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     */
     public void setHost(String host)
     {
-        _host = host;
+        if (this instanceof NetConnector)
+            _host = host;
+        else
+            throw new UnsupportedOperationException();
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     */
-    @Override
     public String getHost()
     {
         return _host;
@@ -148,16 +158,34 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /* ------------------------------------------------------------ */
     public void setPort(int port)
     {
-        _port = port;
+        if (this instanceof NetConnector)
+            _port = port;
+        else
+            throw new UnsupportedOperationException();
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public int getPort()
     {
         return _port;
     }
 
+    /* ------------------------------------------------------------ */
+    public void open() throws IOException
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void close() throws IOException
+    {
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getLocalPort()
+    {
+        return -1;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the maxIdleTime.
@@ -227,20 +255,9 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
      */
     public int getAcceptors()
     {
-        return _acceptors;
+        return _acceptors.length;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @param acceptors
-     *            The number of acceptor threads to set.
-     */
-    public void setAcceptors(int acceptors)
-    {
-        if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
-            LOG.warn("Acceptors should be <=2*availableProcessors: " + this);
-        _acceptors = acceptors;
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -259,17 +276,20 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         if (_server == null)
             throw new IllegalStateException("No server");
 
+        if (_name==null)
+            _name = (getHost() == null?"0.0.0.0":getHost()) + ":" + getPort();
+        
         // open listener port
         open();
+        
+        _name=_name+"/"+getLocalPort();
 
         super.doStart();
 
         // Start selector thread
         synchronized (this)
         {
-            _acceptorThreads = new Thread[getAcceptors()];
-
-            for (int i = 0; i < _acceptorThreads.length; i++)
+            for (int i = 0; i < _acceptors.length; i++)
                 findExecutor().execute(new Acceptor(i));
         }
 
@@ -291,34 +311,23 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
         super.doStop();
 
-        Thread[] acceptors;
-        synchronized (this)
+        for (Thread thread : _acceptors)
         {
-            acceptors = _acceptorThreads;
-            _acceptorThreads = null;
+            if (thread != null)
+                thread.interrupt();
         }
-        if (acceptors != null)
-        {
-            for (Thread thread : acceptors)
-            {
-                if (thread != null)
-                    thread.interrupt();
-            }
-        }
+        
+        int i=_name.lastIndexOf("/");
+        if (i>0)
+            _name=_name.substring(0,i);
     }
 
     /* ------------------------------------------------------------ */
     public void join() throws InterruptedException
     {
-        Thread[] threads;
-        synchronized(this)
-        {
-            threads=_acceptorThreads;
-        }
-        if (threads != null)
-            for (Thread thread : threads)
-                if (thread != null)
-                    thread.join();
+        for (Thread thread : _acceptors)
+            if (thread != null)
+                thread.join();
     }
 
     /* ------------------------------------------------------------ */
@@ -340,12 +349,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
     /* ------------------------------------------------------------ */
     protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
-
-    /* ------------------------------------------------------------ */
-    public void stopAccept(int acceptorID) throws Exception
-    {
-    }
-
 
     /* ------------------------------------------------------------ */
     @Override
@@ -377,11 +380,11 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             String name;
             synchronized (AbstractConnector.this)
             {
-                if (_acceptorThreads == null)
+                if (!isRunning())
                     return;
 
-                _acceptorThreads[_acceptor] = current;
-                name = _acceptorThreads[_acceptor].getName();
+                _acceptors[_acceptor] = current;
+                name = _acceptors[_acceptor].getName();
                 current.setName(name + " Acceptor" + _acceptor + " " + AbstractConnector.this);
             }
             int old_priority = current.getPriority();
@@ -412,8 +415,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
                 synchronized (AbstractConnector.this)
                 {
-                    if (_acceptorThreads != null)
-                        _acceptorThreads[_acceptor] = null;
+                    _acceptors[_acceptor] = null;
                 }
             }
         }
@@ -423,8 +425,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     @Override
     public String getName()
     {
-        if (_name == null)
-            _name = (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort());
         return _name;
     }
 

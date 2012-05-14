@@ -39,13 +39,13 @@ import org.junit.Test;
 public class RFC2616Test
 {
     private Server server;
-    private LocalConnector connector;
+    private LocalHttpConnector connector;
 
     @Before
     public void init() throws Exception
     {
         server = new Server();
-        connector = new LocalConnector();
+        connector = new LocalHttpConnector();
         server.addConnector(connector);
 
         ContextHandler vcontext=new ContextHandler();
@@ -764,7 +764,7 @@ public class RFC2616Test
         }
     }
 
-    private void checkContentRange(LocalConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange, String expectedData)
+    private void checkContentRange(LocalHttpConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange, String expectedData)
     {
         try
         {

@@ -25,13 +25,14 @@ import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.server.ChannelHttpConnector;
 
 /**
- * <p>A specialized version of {@link SelectChannelConnector} that supports {@link NetworkTrafficListener}s.</p>
+ * <p>A specialized version of {@link ChannelHttpConnector} that supports {@link NetworkTrafficListener}s.</p>
  * <p>{@link NetworkTrafficListener}s can be added and removed dynamically before and after this connector has
  * been started without causing {@link ConcurrentModificationException}s.</p>
  */
-public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
+public class NetworkTrafficSelectChannelConnector extends ChannelHttpConnector
 {
     private final List<NetworkTrafficListener> listeners = new CopyOnWriteArrayList<NetworkTrafficListener>();
 
@@ -52,7 +53,7 @@ public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
     }
 
     @Override
-    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key) throws IOException
+    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey key) throws IOException
     {
         NetworkTrafficSelectChannelEndPoint endPoint = new NetworkTrafficSelectChannelEndPoint(channel, selectSet, key, _maxIdleTime, listeners);
         endPoint.setAsyncConnection(selectSet.getManager().newConnection(channel,endPoint, key.attachment()));

@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;

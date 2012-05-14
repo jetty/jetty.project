@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;
@@ -32,7 +31,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
     @BeforeClass
     public static void init() throws Exception
     {
-        SelectChannelConnector connector = new SelectChannelConnector();
+        ChannelHttpConnector connector = new ChannelHttpConnector();
         connector.setMaxIdleTime(MAX_IDLE_TIME); // 250 msec max idle
         startServer(connector);
     }
@@ -94,7 +93,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 
     private String getResponse(String request) throws UnsupportedEncodingException, IOException, InterruptedException
     {
-        SelectChannelConnector connector = (SelectChannelConnector)_connector;
+        ChannelHttpConnector connector = (ChannelHttpConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
         socket.setSoTimeout(10 * MAX_IDLE_TIME);
         socket.getOutputStream().write(request.getBytes("UTF-8"));

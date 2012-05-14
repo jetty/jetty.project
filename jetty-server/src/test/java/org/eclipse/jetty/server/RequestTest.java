@@ -53,14 +53,14 @@ import org.junit.Test;
 public class RequestTest
 {
     private Server _server;
-    private LocalConnector _connector;
+    private LocalHttpConnector _connector;
     private RequestHandler _handler;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalConnector();
+        _connector = new LocalHttpConnector();
         _connector.setRequestHeaderSize(512);
         _connector.setRequestBufferSize(1024);
         _connector.setResponseHeaderSize(512);

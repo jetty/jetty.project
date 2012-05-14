@@ -93,7 +93,7 @@ public class CheckReverseProxyHeadersTest
     private void testRequest(String headers, RequestValidator requestValidator) throws Exception
     {
         Server server = new Server();
-        LocalConnector connector = new LocalConnector();
+        LocalHttpConnector connector = new LocalHttpConnector();
 
         // Activate reverse proxy headers checking
         connector.setForwarded(true);

@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.management.timer.TimerMBean;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
 /** Implementation of Continuation and AsyncContext interfaces

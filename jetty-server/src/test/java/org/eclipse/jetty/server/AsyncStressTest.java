@@ -32,7 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
@@ -48,7 +47,7 @@ public class AsyncStressTest
 
     protected Server _server = new Server();
     protected SuspendHandler _handler = new SuspendHandler();
-    protected SelectChannelConnector _connector;
+    protected ChannelHttpConnector _connector;
     protected InetAddress _addr;
     protected int _port;
     protected Random _random = new Random();
@@ -68,7 +67,7 @@ public class AsyncStressTest
     {
         _threads.setMaxThreads(50);
         _server.setThreadPool(_threads);
-        _connector = new SelectChannelConnector();
+        _connector = new ChannelHttpConnector();
         _connector.setMaxIdleTime(120000);
         _server.setConnectors(new Connector[]{ _connector });
         _server.setHandler(_handler);

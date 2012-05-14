@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
 import org.junit.Test;
 
@@ -18,7 +17,7 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
     @Override
     protected Connector initConnector()
     {
-        return new SelectChannelConnector(){
+        return new ChannelHttpConnector(){
 
             @Override
             public void customize(EndPoint endpoint, Request request) throws IOException
@@ -33,7 +32,7 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
     @Override
     protected String getResponse(String request) throws Exception
     {
-        SelectChannelConnector connector = (SelectChannelConnector)_connector;
+        ChannelHttpConnector connector = (ChannelHttpConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
         socket.getOutputStream().write(request.getBytes("UTF-8"));
         return IO.toString(socket.getInputStream());

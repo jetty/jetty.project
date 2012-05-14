@@ -3,6 +3,7 @@ package org.eclipse.jetty.server.ssl;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;

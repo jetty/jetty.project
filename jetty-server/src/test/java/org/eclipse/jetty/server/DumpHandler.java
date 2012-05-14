@@ -205,27 +205,28 @@ public class DumpHandler extends AbstractHandler
             writer.write(e.toString());
         }
         
-        
-        writer.write("</pre>");
-        writer.write("</html>");
+        writer.write("</pre>\n");
+        writer.write("</html>\n");
+        writer.flush();
         
         // commit now
-        writer.flush();
         response.setContentLength(buf.size()+1000);
+        response.addHeader("Before-Flush",response.isCommitted()?"Committed???":"Not Committed");
+        buf.writeTo(out);
+        out.flush();
+        response.addHeader("After-Flush","These headers should not be seen in the response!!!");
+        response.addHeader("After-Flush",response.isCommitted()?"Committed":"Not Committed?");
 
+        // write remaining content after commit
         try
         {
-            buf.writeTo(out);
-
             buf.reset();
             writer.flush();
-            for (int pad=998-buf.size();pad-->0;)
+            for (int pad=998;pad-->0;)
                 writer.write(" ");
-            writer.write("\015\012");
+            writer.write("\r\n");
             writer.flush();
             buf.writeTo(out);
-
-            response.setHeader("IgnoreMe","ignored");
         }
         catch(Exception e)
         {

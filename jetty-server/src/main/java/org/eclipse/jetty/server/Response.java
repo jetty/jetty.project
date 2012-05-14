@@ -29,6 +29,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
@@ -372,9 +372,6 @@ public class Response implements HttpServletResponse
                 writer.write(message);
                 writer.write("</pre>");
                 writer.write("</p>\n<hr /><i><small>Powered by Jetty://</small></i>");
-
-                for (int i= 0; i < 20; i++)
-                    writer.write("\n                                                ");
                 writer.write("\n</body>\n</html>\n");
 
                 writer.flush();
@@ -898,7 +895,7 @@ public class Response implements HttpServletResponse
         {
             _contentType=contentType;
             _mimeType=MimeTypes.CACHE.get(contentType);
-            String charset=_mimeType==null?MimeTypes.getCharsetFromContentType(contentType):_mimeType.getCharset().toString();
+            String charset=(_mimeType!=null && _mimeType.getCharset()!=null)?_mimeType.getCharset().toString():null;
 
             if (charset!=null)
                 _characterEncoding=charset;

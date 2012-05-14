@@ -272,7 +272,7 @@ public class SPDYClient
             }
 
             @Override
-            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
+            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
                 SessionPromise attachment = (SessionPromise)key.attachment();
 

@@ -37,6 +37,7 @@ import javax.servlet.http.HttpSessionContext;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -55,13 +56,13 @@ import org.junit.Test;
 public class ResponseTest
 {
     private Server server;
-    private LocalConnector connector;
+    private LocalHttpConnector connector;
     
     @Before
     public void init() throws Exception
     {
         server = new Server();
-        connector = new LocalConnector();
+        connector = new LocalHttpConnector();
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
         server.start();

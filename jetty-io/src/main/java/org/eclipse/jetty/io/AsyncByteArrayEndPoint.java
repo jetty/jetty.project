@@ -15,7 +15,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEndPoint
 {
-    private static final int TICK=500;
+    private static final int TICK=Integer.getInteger("org.eclipse.jetty.io.AsyncByteArrayEndPoint.TICK",100);
     public static final Logger LOG=Log.getLogger(AsyncByteArrayEndPoint.class);
     private static final Timer _timer = new Timer(true);
     private boolean _checkForIdle;

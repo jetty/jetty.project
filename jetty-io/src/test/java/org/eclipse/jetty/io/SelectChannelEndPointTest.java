@@ -36,8 +36,20 @@ public class SelectChannelEndPointTest
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     private int maxIdleTimeout = 600000; // TODO: use smaller value
-    protected SelectorManager _manager = new SelectorManager(_threadPool)
+    protected SelectorManager _manager = new SelectorManager()
     {
+        @Override
+        protected int getMaxIdleTime()
+        {
+            return maxIdleTimeout;
+        }
+        
+        @Override
+        protected void execute(Runnable task)
+        {
+            _threadPool.execute(task);
+        }
+
         @Override
         protected void endPointClosed(AsyncEndPoint endpoint)
         {
@@ -61,9 +73,9 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,maxIdleTimeout);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,getMaxIdleTime());
             endp.setAsyncConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
             _lastEndp=endp;
             return endp;

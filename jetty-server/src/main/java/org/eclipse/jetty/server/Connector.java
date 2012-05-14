@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /** HTTP Connector.
@@ -40,18 +39,11 @@ public interface Connector extends LifeCycle
     String getName();
     
     /* ------------------------------------------------------------ */
-    /**
-     * Opens the connector 
-     * @throws IOException
-     */
-    void open() throws IOException;
-
-    /* ------------------------------------------------------------ */
-    void close() throws IOException;
-
-    /* ------------------------------------------------------------ */
     Server getServer();
 
+    /* ------------------------------------------------------------ */
+    Executor findExecutor();    
+    
     /* ------------------------------------------------------------ */
     Executor getExecutor();    
     
@@ -60,42 +52,52 @@ public interface Connector extends LifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @return The hostname representing the interface to which 
-     * this connector will bind, or null for all interfaces.
-     */
-    String getHost();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The configured port for the connector or 0 if any available
-     * port may be used.
-     */
-    int getPort();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The actual port the connector is listening on or
-     * -1 if it has not been opened, or -2 if it has been closed.
-     */
-    int getLocalPort();
-    
-    /* ------------------------------------------------------------ */
-    /**
      * @return Max Idle time for connections in milliseconds
      */
     int getMaxIdleTime();
-    
     
     /* ------------------------------------------------------------ */
     /**
      * @return the underlying socket, channel, buffer etc. for the connector.
      */
     Object getTransport();
-
     
     /* ------------------------------------------------------------ */
     Statistics getStatistics();
 
+    interface NetConnector extends Connector
+    {
+        /* ------------------------------------------------------------ */
+        /**
+         * Opens the connector 
+         * @throws IOException
+         */
+        void open() throws IOException;
+
+        /* ------------------------------------------------------------ */
+        void close();
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @return The hostname representing the interface to which 
+         * this connector will bind, or null for all interfaces.
+         */
+        String getHost();
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @return The configured port for the connector or 0 if any available
+         * port may be used.
+         */
+        int getPort();
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @return The actual port the connector is listening on or
+         * -1 if it has not been opened, or -2 if it has been closed.
+         */
+        int getLocalPort();
+    }
     
     interface Statistics extends LifeCycle
     {

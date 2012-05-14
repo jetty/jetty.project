@@ -50,37 +50,26 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 {
     public static final Logger LOG = Log.getLogger(SelectorManager.class);
 
-    private final Executor _executor;
-    private final SelectSet[] _selectSets;
-    private int _maxIdleTime;
+    private final ManagedSelector[] _selectSets;
     private long _selectSetIndex;
 
-    protected SelectorManager(Executor executor)
+    protected SelectorManager()
     {
-        this(executor, 1);
+        this((Runtime.getRuntime().availableProcessors()+1)/2);
     }
 
-    protected SelectorManager(@Name("executor") Executor executor, @Name("selectSets") int selectSets)
+    protected SelectorManager(@Name("selectors") int selectors)
     {
-        this._executor = executor;
-        this._selectSets = new SelectSet[selectSets];
+        this._selectSets = new ManagedSelector[selectors];
     }
 
-    /**
-     * @param maxIdleTime The maximum period in milliseconds that a connection may be idle before it is closed.
-     */
-    public void setMaxIdleTime(long maxIdleTime)
-    {
-        _maxIdleTime=(int)maxIdleTime;
-    }
 
     /**
      * @return the max idle time
      */
-    public long getMaxIdleTime()
-    {
-        return _maxIdleTime;
-    }
+    protected abstract int getMaxIdleTime();
+    
+    protected abstract void execute(Runnable task);
 
     /**
      * @return the number of select sets in use
@@ -90,7 +79,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         return _selectSets.length;
     }
 
-    private SelectSet chooseSelectSet()
+    private ManagedSelector chooseSelectSet()
     {
         // The ++ increment here is not atomic, but it does not matter.
         // so long as the value changes sometimes, then connections will
@@ -107,7 +96,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void connect(SocketChannel channel, Object attachment)
     {
-        SelectSet set = chooseSelectSet();
+        ManagedSelector set = chooseSelectSet();
         set.submit(set.new Connect(channel, attachment));
     }
 
@@ -117,13 +106,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void accept(final SocketChannel channel)
     {
-        final SelectSet set = chooseSelectSet();
+        final ManagedSelector set = chooseSelectSet();
         set.submit(set.new Accept(channel));
-    }
-
-    private void execute(Runnable task)
-    {
-        _executor.execute(task);
     }
 
     @Override
@@ -132,7 +116,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         super.doStart();
         for (int i=0;i< _selectSets.length;i++)
         {
-            SelectSet selectSet = newSelectSet(i);
+            ManagedSelector selectSet = newSelectSet(i);
             _selectSets[i] = selectSet;
             selectSet.start();
             execute(selectSet);
@@ -140,15 +124,15 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
     }
 
-    protected SelectSet newSelectSet(int id)
+    protected ManagedSelector newSelectSet(int id)
     {
-        return new SelectSet(id);
+        return new ManagedSelector(id);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        for (SelectSet set : _selectSets)
+        for (ManagedSelector set : _selectSets)
             set.stop();
         super.doStop();
     }
@@ -185,7 +169,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @return the new endpoint {@link SelectChannelEndPoint}
      * @throws IOException if the endPoint cannot be created
      */
-    protected abstract SelectableAsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
+    protected abstract SelectableAsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey sKey) throws IOException;
 
     protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
     {
@@ -210,7 +194,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             while (isRunning())
             {
-                for (SelectSet selectSet : _selectSets)
+                for (ManagedSelector selectSet : _selectSets)
                     selectSet.timeoutCheck();
                 sleep(1000);
             }
@@ -229,7 +213,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
     }
 
-    public class SelectSet extends AbstractLifeCycle implements Runnable, Dumpable
+    public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
         private final ConcurrentLinkedQueue<Runnable> _changes = new ConcurrentLinkedQueue<>();
         private ConcurrentMap<AsyncEndPoint,Object> _endPoints = new ConcurrentHashMap<>();
@@ -238,7 +222,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private Thread _thread;
         private boolean needsWakeup = true;
 
-        protected SelectSet(int id)
+        protected ManagedSelector(int id)
         {
             _id = id;
         }

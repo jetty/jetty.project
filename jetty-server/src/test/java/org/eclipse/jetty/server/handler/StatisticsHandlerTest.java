@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
@@ -41,7 +41,7 @@ import org.junit.Test;
 public class StatisticsHandlerTest
 {
     private Server _server;
-    private LocalConnector _connector;
+    private LocalHttpConnector _connector;
     private LatchHandler _latchHandler;
     private StatisticsHandler _statsHandler;
 
@@ -50,7 +50,7 @@ public class StatisticsHandlerTest
     {
         _server = new Server();
 
-        _connector = new LocalConnector();
+        _connector = new LocalHttpConnector();
         _server.addConnector(_connector);
         _connector.setStatsOn(true);
 

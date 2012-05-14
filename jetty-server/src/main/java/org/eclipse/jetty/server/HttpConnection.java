@@ -21,13 +21,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -37,13 +35,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /**
  */
 public class HttpConnection extends AbstractAsyncConnection
 {
-
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
@@ -57,7 +53,6 @@ public class HttpConnection extends AbstractAsyncConnection
     private final ByteBufferPool _bufferPool;
     
     private ResponseInfo _info;
-    FutureCallback<Void> _writeFuture;
     ByteBuffer _requestBuffer=null;
     ByteBuffer _responseHeader=null;
     ByteBuffer _chunk=null;
@@ -82,7 +77,8 @@ public class HttpConnection extends AbstractAsyncConnection
      */
     public HttpConnection(HttpConnector connector, AsyncEndPoint endpoint, Server server)
     {
-        super(endpoint,connector.getServer().getThreadPool());
+        super(endpoint,connector.findExecutor());
+        
         _connector = connector;
         _bufferPool=_connector.getByteBufferPool();
         if (_bufferPool==null)
@@ -205,7 +201,7 @@ public class HttpConnection extends AbstractAsyncConnection
                         :_bufferPool.acquire(_connector.getRequestHeaderSize(),false);
                         
                     int filled=getEndPoint().fill(_requestBuffer);
-                    System.err.println("filled="+filled+" to "+BufferUtil.toDetailString(_requestBuffer)+" from "+getEndPoint());
+                    LOG.debug("{} filled {}",this,filled);
                     
                     // If we parse to an event, call the connection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
@@ -289,7 +285,7 @@ public class HttpConnection extends AbstractAsyncConnection
             if (_generator.isComplete())
                 throw new EofException();
 
-            do
+            loop: while (true)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{}: send({},{},{})@{}",
@@ -329,18 +325,17 @@ public class HttpConnection extends AbstractAsyncConnection
                         break;
 
                     case FLUSH_CONTENT:
-                        _writeFuture=write(_responseHeader,_chunk,content);
-                        return;
+                        write(_responseHeader,_chunk,content);
+                        break loop;
 
                     case SHUTDOWN_OUT:
                         getEndPoint().shutdownOutput();
-                        break;
+                        break loop;
 
                     case OK:
-                        break;
+                        break loop;
                 }
             }
-            while(BufferUtil.hasContent(content));
         }
         catch(InterruptedException e)
         {
@@ -360,14 +355,11 @@ public class HttpConnection extends AbstractAsyncConnection
     /* ------------------------------------------------------------ */
     private int generate(ByteBuffer content, Action action) throws IOException
     {
-        boolean hasContent=BufferUtil.hasContent(content);
-        long preparedBefore=0;
-        long preparedAfter;
+        long prepared_before=0;
+        long prepared_after;
         _lock.lock();
         try
         {
-            preparedBefore=_generator.getContentPrepared();
-            
             if (_generator.isComplete())
             {
                 if (Action.COMPLETE==action)
@@ -375,12 +367,9 @@ public class HttpConnection extends AbstractAsyncConnection
                 throw new EofException();
             }
             
-            do
+            prepared_before=_generator.getContentPrepared();
+            loop: while (true)
             {
-                // block if the last write is not complete
-                if (_writeFuture!=null && !_writeFuture.isDone())
-                    _writeFuture.get();
-
                 if (LOG.isDebugEnabled())
                     LOG.debug("{}: generate({},{},{},{},{})@{}",
                             this,
@@ -407,23 +396,20 @@ public class HttpConnection extends AbstractAsyncConnection
                         if (_info==null)
                             _info=_channel.getEventHandler().commit();
                         _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
-                        break;
+                        continue;
 
                     case NEED_BUFFER:
                         _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
-                        break;
+                        continue;
 
                     case NEED_CHUNK:
                         _responseHeader=null;
                         _chunk=_bufferPool.acquire(HttpGenerator.CHUNK_SIZE,false);
-                        break;
+                        continue;
 
                     case FLUSH:
-                        if (hasContent)
-                            write(_responseHeader,_chunk,_responseBuffer).get();
-                        else
-                            _writeFuture=write(_responseHeader,_chunk,_responseBuffer);
-                        break;
+                        write(_responseHeader,_chunk,_responseBuffer).get();
+                        continue;
 
                     case FLUSH_CONTENT:
                         write(_responseHeader,_chunk,content).get();
@@ -431,13 +417,13 @@ public class HttpConnection extends AbstractAsyncConnection
 
                     case SHUTDOWN_OUT:
                         getEndPoint().shutdownOutput();
-                        break;
+                        break loop;
 
                     case OK:
-                        break;
+                        if (!BufferUtil.hasContent(content))
+                        break loop;
                 }
             }
-            while(BufferUtil.hasContent(content));
         }
         catch(InterruptedException e)
         {
@@ -452,14 +438,15 @@ public class HttpConnection extends AbstractAsyncConnection
         }
         finally
         {
-            preparedAfter=_generator.getContentPrepared();
+            prepared_after=_generator.getContentPrepared();
             _lock.unlock();
         }
-        return (int)(preparedAfter-preparedBefore);
+        return (int)(prepared_after-prepared_before);
     }
 
     private FutureCallback<Void> write(ByteBuffer b0,ByteBuffer b1,ByteBuffer b2)
     {
+        // TODO use a recycled FutureCallback ????
         FutureCallback<Void> fcb=new FutureCallback<>();
         if (BufferUtil.hasContent(b0))
         {

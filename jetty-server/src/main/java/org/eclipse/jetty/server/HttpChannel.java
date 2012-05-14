@@ -39,7 +39,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
@@ -50,7 +49,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /**
  *
@@ -391,7 +389,8 @@ public abstract class HttpChannel
                     LOG.warn(String.valueOf(_uri),e);
                     error=true;
                     _request.setHandled(true);
-                    sendError(info==null?400:500, null, null, true);
+                    if (!_response.isCommitted())
+                        sendError(info==null?400:500, null, null, true);
                 }
                 finally
                 {

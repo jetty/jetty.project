@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public class ContextHandlerCollectionTest
     public void testVirtualHostNormalization() throws Exception
     {
         Server server = new Server();
-        LocalConnector connector = new LocalConnector();
+        LocalHttpConnector connector = new LocalHttpConnector();
         server.setConnectors(new Connector[]
         { connector });
 
@@ -93,7 +93,7 @@ public class ContextHandlerCollectionTest
     public void testVirtualHostWildcard() throws Exception
     {
         Server server = new Server();
-        LocalConnector connector = new LocalConnector();
+        LocalHttpConnector connector = new LocalHttpConnector();
         server.setConnectors(new Connector[] { connector });
 
         ContextHandler context = new ContextHandler("/");
@@ -133,7 +133,7 @@ public class ContextHandlerCollectionTest
 
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
     {
-        LocalConnector connector = (LocalConnector)server.getConnectors()[0];
+        LocalHttpConnector connector = (LocalHttpConnector)server.getConnectors()[0];
         ContextHandlerCollection handlerCollection = (ContextHandlerCollection)server.getHandler();
         ContextHandler context = (ContextHandler)handlerCollection.getHandlers()[0];
         IsHandledHandler handler = (IsHandledHandler)context.getHandler();

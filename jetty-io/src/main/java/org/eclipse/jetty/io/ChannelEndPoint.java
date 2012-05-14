@@ -122,9 +122,11 @@ public class ChannelEndPoint extends AbstractEndPoint
         {
             int filled = _channel.read(buffer);
 
-            if (filled==-1)
+            if (filled>0)
+                notIdle();
+            else if (filled==-1)
                 shutdownInput();
-
+            
             return filled;
         }
         catch(IOException e)
@@ -142,11 +144,11 @@ public class ChannelEndPoint extends AbstractEndPoint
     @Override
     public int flush(ByteBuffer... buffers) throws IOException
     {
-        int len=0;
+        int flushed=0;
         if (buffers.length==1)
-            len=_channel.write(buffers[0]);
+            flushed=_channel.write(buffers[0]);
         else if (buffers.length>1 && _channel instanceof GatheringByteChannel)
-            len= (int)((GatheringByteChannel)_channel).write(buffers,0,buffers.length);
+            flushed= (int)((GatheringByteChannel)_channel).write(buffers,0,buffers.length);
         else
         {
             for (ByteBuffer b : buffers)
@@ -155,13 +157,15 @@ public class ChannelEndPoint extends AbstractEndPoint
                 {
                     int l=_channel.write(b);
                     if (l>0)
-                        len+=l;
+                        flushed+=l;
                     else
                         break;
                 }
             }
         }
-        return len;
+        if (flushed>0)
+            notIdle();
+        return flushed;
     }
 
     public ByteChannel getChannel()
