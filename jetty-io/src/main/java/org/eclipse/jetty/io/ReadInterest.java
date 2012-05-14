@@ -17,8 +17,8 @@ import org.eclipse.jetty.util.Callback;
 public abstract class ReadInterest
 {
     private final AtomicBoolean _interested = new AtomicBoolean(false);
-    private volatile Callback _readCallback;
-    private Object _readContext;
+    private volatile Callback _callback;
+    private Object _context;
 
     /* ------------------------------------------------------------ */
     protected ReadInterest()
@@ -30,8 +30,8 @@ public abstract class ReadInterest
     {
         if (!_interested.compareAndSet(false,true))
             throw new ReadPendingException();
-        _readContext=context;
-        _readCallback=callback;
+        _context=context;
+        _callback=callback;
         try
         {
             if (readIsPossible())
@@ -49,10 +49,10 @@ public abstract class ReadInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback callback=_readCallback;
-            Object context=_readContext;
-            _readCallback=null;
-            _readContext=null;
+            Callback callback=_callback;
+            Object context=_context;
+            _callback=null;
+            _context=null;
             callback.completed(context);
         }
     }
@@ -68,10 +68,10 @@ public abstract class ReadInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback callback=_readCallback;
-            Object context=_readContext;
-            _readCallback=null;
-            _readContext=null;
+            Callback callback=_callback;
+            Object context=_context;
+            _callback=null;
+            _context=null;
             callback.failed(context,cause);
         }
     }
@@ -81,15 +81,22 @@ public abstract class ReadInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback callback=_readCallback;
-            Object context=_readContext;
-            _readCallback=null;
-            _readContext=null;
+            Callback callback=_callback;
+            Object context=_context;
+            _callback=null;
+            _context=null;
             callback.failed(context,new ClosedChannelException());
         }
     }
     
     /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return String.format("ReadInterest@%x{%b,%s,%s}",hashCode(),_interested.get(),_callback,_context);
+    }
+    
+    /* ------------------------------------------------------------ */
     abstract protected boolean readIsPossible() throws IOException;
+    
     
 }

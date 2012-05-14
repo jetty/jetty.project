@@ -3,7 +3,7 @@ package org.eclipse.jetty.util;
 import java.util.concurrent.Executor;
 
 
-public class ExecutorCallback<C> implements Callback<C>
+public abstract class ExecutorCallback<C> implements Callback<C>
 {
     private final static Integer ZERO = new Integer(0);
     private final static ThreadLocal<Integer> __calls = new ThreadLocal<Integer>()
@@ -76,9 +76,7 @@ public class ExecutorCallback<C> implements Callback<C>
         });
     }
 
-    protected void onCompleted(C context)
-    {
-    }
+    protected abstract void onCompleted(C context);
     
    
     @Override

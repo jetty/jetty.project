@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class LocalConnector extends AbstractConnector
+public class LocalConnector extends AbstractHttpConnector
 {
     private static final Logger LOG = Log.getLogger(LocalConnector.class);
     private final BlockingQueue<Request> _requests = new LinkedBlockingQueue<Request>();

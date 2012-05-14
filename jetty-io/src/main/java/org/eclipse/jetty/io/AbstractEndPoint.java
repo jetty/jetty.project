@@ -9,7 +9,7 @@ public abstract class AbstractEndPoint implements EndPoint
     private final InetSocketAddress _local;
     private final InetSocketAddress _remote;
     private volatile int _maxIdleTime;    
-    private volatile long _idleTimestamp;
+    private volatile long _idleTimestamp=System.currentTimeMillis();
 
     
     protected AbstractEndPoint(InetSocketAddress local,InetSocketAddress remote)

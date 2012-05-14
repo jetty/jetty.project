@@ -12,13 +12,24 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class FutureCallback<C> implements Future<C>,Callback<C>
 {
+    // TODO investigate use of a phasor
     private enum State {NOT_DONE,DOING,DONE};
     private final AtomicReference<State> _state=new AtomicReference<>(State.NOT_DONE);
-    private final CountDownLatch _done= new CountDownLatch(1);
+    private CountDownLatch _done= new CountDownLatch(1);
     private Throwable _cause;
     private C _context;
     private boolean _completed;
     
+    private void recycle()
+    {
+        // TODO make this public?
+        if (!isDone())
+            throw new IllegalStateException();
+        _cause=null;
+        _context=null;
+        _completed=false;
+        _done=new CountDownLatch(1);
+    }
     
     @Override
     public void completed(C context)
@@ -109,4 +120,11 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
             throw (RuntimeException)cause;
         throw new RuntimeException(cause);
     }
+    
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return String.format("FutureCallback@%x{%s,%b,%s}",hashCode(),_state,_completed,_context);
+    }
+    
 }

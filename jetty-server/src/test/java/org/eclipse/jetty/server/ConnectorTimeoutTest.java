@@ -123,7 +123,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    endpoint.exchange(baseRequest.getHttpChannel().getEndPoint());
+                    endpoint.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
                 }
                 catch(Exception e)
                 {}
@@ -196,7 +196,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    endpoint.exchange(baseRequest.getHttpChannel().getEndPoint());
+                    endpoint.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
                 }
                 catch(Exception e)
                 {}

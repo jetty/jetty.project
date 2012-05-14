@@ -1,6 +1,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Timer;
@@ -14,10 +15,13 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEndPoint
 {
+    private static final int TICK=500;
     public static final Logger LOG=Log.getLogger(AsyncByteArrayEndPoint.class);
-    private static final Timer _timer = new Timer();
+    private static final Timer _timer = new Timer(true);
     private boolean _checkForIdle;
     private AsyncConnection _connection;
+
+    private final TimerTask _task=new TimeoutTask(this);
     
     private final ReadInterest _readInterest = new ReadInterest()
     {
@@ -37,6 +41,10 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
         {            
         }
     };
+    
+    {
+        _timer.schedule(_task,TICK,TICK);
+    }
     
     public AsyncByteArrayEndPoint()
     {
@@ -99,23 +107,6 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     public void setCheckForIdle(boolean check)
     {
         _checkForIdle=check;
-        
-        
-        if (check)
-        {
-            final TimerTask task=new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    checkForIdleOrReadWriteTimeout(System.currentTimeMillis());
-                    if (_checkForIdle)
-                        _timer.schedule(this,1000);
-                }
-            };
-            
-            _timer.schedule(task,1000);
-        }
     }
 
     @Override
@@ -153,7 +144,13 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
                         notIdle();
                         
                         if (_checkForIdle)
-                            _connection.onIdleExpired(idleForMs);
+                        {   
+                            AsyncConnection connection=_connection;
+                            if (connection==null)
+                                close();
+                            else
+                                connection.onIdleExpired(idleForMs);
+                        }
                         
                         TimeoutException timeout = new TimeoutException();
                         _readInterest.failed(timeout);
@@ -167,8 +164,28 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     @Override
     public void onClose()
     {
-        setCheckForIdle(false);
+        _task.cancel();
         super.onClose();
     }
+
+    private static class TimeoutTask extends TimerTask
+    {
+        final WeakReference<AsyncByteArrayEndPoint> _endp;
+        
+        TimeoutTask(AsyncByteArrayEndPoint endp)
+        {
+            _endp=new WeakReference<AsyncByteArrayEndPoint>(endp);
+        }
+        
+        @Override
+        public void run()
+        {
+            AsyncByteArrayEndPoint endp = _endp.get();
+            if (endp==null)
+                cancel();
+            else
+                endp.checkForIdleOrReadWriteTimeout(System.currentTimeMillis());
+        }
+    };
     
 }

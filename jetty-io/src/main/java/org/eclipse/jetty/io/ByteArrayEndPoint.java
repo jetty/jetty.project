@@ -246,7 +246,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             shutdownInput();
         if (_ishut)
             return -1;
-        return BufferUtil.append(_in,buffer);
+        int filled=BufferUtil.append(_in,buffer);
+        if (filled>0)
+            notIdle();
+        return filled;
     }
 
     /* ------------------------------------------------------------ */
@@ -261,7 +264,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         if (_oshut)
             throw new IOException("OSHUT");
 
-        int len=0;
+        int flushed=0;
 
         for (ByteBuffer b : buffers)
         {
@@ -278,13 +281,15 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                     }
                 }
 
-                len+=BufferUtil.append(b,_out);
+                flushed+=BufferUtil.append(b,_out);
 
                 if (BufferUtil.hasContent(b))
                     break;
             }
         }
-        return len;
+        if (flushed>0)
+            notIdle();
+        return flushed;
     }
 
     /* ------------------------------------------------------------ */

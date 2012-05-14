@@ -942,7 +942,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
-            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             OutputStream os=client.getOutputStream();
             InputStream is=client.getInputStream();
 
@@ -970,7 +970,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
 
             if (!client.isClosed())
                 client.close();
@@ -983,7 +983,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            _endp=baseRequest.getHttpChannel().getEndPoint();
+            _endp=baseRequest.getHttpChannel().getConnection().getEndPoint();
             response.setHeader("test","value");
             response.setStatus(200);
             response.setContentType("text/plain");

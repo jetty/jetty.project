@@ -26,9 +26,9 @@ abstract public class WriteFlusher
     private final AtomicBoolean _writing = new AtomicBoolean(false);
     private final EndPoint _endp;
     
-    private ByteBuffer[] _writeBuffers;
-    private Object _writeContext;
-    private Callback _writeCallback;
+    private ByteBuffer[] _buffers;
+    private Object _context;
+    private Callback _callback;
     
     protected WriteFlusher(EndPoint endp)
     {
@@ -49,9 +49,9 @@ abstract public class WriteFlusher
             {
                 if (b.hasRemaining())
                 {
-                    _writeBuffers=buffers;
-                    _writeContext=context;
-                    _writeCallback=callback;
+                    _buffers=buffers;
+                    _context=context;
+                    _callback=callback;
                     scheduleCompleteWrite();
                     _writing.set(true); // Needed as memory barrier
                     return;
@@ -111,11 +111,11 @@ abstract public class WriteFlusher
 
         try
         {
-            _writeBuffers=compact(_writeBuffers);
-            _endp.flush(_writeBuffers);
+            _buffers=compact(_buffers);
+            _endp.flush(_buffers);
 
             // Are we complete?
-            for (ByteBuffer b : _writeBuffers)
+            for (ByteBuffer b : _buffers)
             {
                 if (b.hasRemaining())
                 {
@@ -125,21 +125,21 @@ abstract public class WriteFlusher
             }
             
             // we are complete and ready
-            Callback callback=_writeCallback;
-            Object context=_writeContext;
-            _writeBuffers=null;
-            _writeCallback=null;
-            _writeContext=null;
+            Callback callback=_callback;
+            Object context=_context;
+            _buffers=null;
+            _callback=null;
+            _context=null;
             if (!_writing.compareAndSet(true,false))
                 throw new ConcurrentModificationException();
             callback.completed(context);
         }
         catch (IOException e)
         {
-            Callback callback=_writeCallback;
-            Object context=_writeContext;
-            _writeBuffers=null;
-            _writeCallback=null;
+            Callback callback=_callback;
+            Object context=_context;
+            _buffers=null;
+            _callback=null;
             if (!_writing.compareAndSet(true,false))
                 throw new ConcurrentModificationException();
             callback.failed(context,e);
@@ -157,10 +157,10 @@ abstract public class WriteFlusher
     {
         if (!_writing.compareAndSet(true,false))
             return false;
-        Callback callback=_writeCallback;
-        Object context=_writeContext;
-        _writeBuffers=null;
-        _writeCallback=null;
+        Callback callback=_callback;
+        Object context=_context;
+        _buffers=null;
+        _callback=null;
         callback.failed(context,cause);
         return true;
     }
@@ -176,10 +176,10 @@ abstract public class WriteFlusher
     {
         if (!_writing.compareAndSet(true,false))
             return false;
-        Callback callback=_writeCallback;
-        Object context=_writeContext;
-        _writeBuffers=null;
-        _writeCallback=null;
+        Callback callback=_callback;
+        Object context=_context;
+        _buffers=null;
+        _callback=null;
         callback.failed(context,new ClosedChannelException());
         return true;
     }
@@ -189,5 +189,10 @@ abstract public class WriteFlusher
     {
         return _writing.get();
     }
-    
+
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return String.format("WriteFlusher@%x{%b,%s,%s}",hashCode(),_writing.get(),_callback,_context);
+    }
 }

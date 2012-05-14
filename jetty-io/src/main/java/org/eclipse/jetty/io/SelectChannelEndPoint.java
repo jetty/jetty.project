@@ -186,7 +186,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                         notIdle();
 
                         if (_idlecheck)
-                            _connection.onIdleExpired(idleForMs);
+                        {   
+                            AsyncConnection connection=_connection;
+                            if (connection==null)
+                                close();
+                            else
+                                connection.onIdleExpired(idleForMs);
+                        }
 
                         TimeoutException timeout = new TimeoutException();
                         _readInterest.failed(timeout);

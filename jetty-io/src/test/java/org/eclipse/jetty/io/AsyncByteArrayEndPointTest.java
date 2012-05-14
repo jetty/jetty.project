@@ -10,9 +10,11 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -103,6 +105,76 @@ public class AsyncByteArrayEndPointTest
         assertTrue(fcb.isDone());
         assertEquals("CTX",fcb.get());
         assertEquals(" more.",endp.getOutputString());
+    }
+
+    @Test
+    public void testIdle() throws Exception
+    {
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
+        endp.setMaxIdleTime(500);
+        endp.setInput("test");
+        endp.setGrowOutput(false);
+        endp.setOutput(BufferUtil.allocate(5));
+        
+        // no idle check
+        endp.setCheckForIdle(false);
+        assertTrue(endp.isOpen());
+        Thread.sleep(1000);
+        assertTrue(endp.isOpen());
+        
+        // normal read
+        ByteBuffer buffer = BufferUtil.allocate(1024);
+        FutureCallback<Void> fcb = new FutureCallback<>();
+        
+        endp.readable(null,fcb);
+        assertTrue(fcb.isDone());
+        assertEquals(null,fcb.get());
+        assertEquals(4,endp.fill(buffer));
+        assertEquals("test",BufferUtil.toString(buffer));
+        
+        // read timeout
+        fcb = new FutureCallback<>();
+        endp.readable(null,fcb);
+        long start=System.currentTimeMillis();
+        try
+        {
+            fcb.get();
+            fail();
+        }
+        catch(ExecutionException t)
+        {
+            assertThat(t.getCause(),Matchers.instanceOf(TimeoutException.class));
+        }
+        assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(100L));
+        assertTrue(endp.isOpen());
+
+        // write timeout
+        fcb = new FutureCallback<>();
+        start=System.currentTimeMillis();
+        
+        endp.write(null,fcb,BufferUtil.toBuffer("This is too long"));
+        try
+        {
+            fcb.get();
+            fail();
+        }
+        catch(ExecutionException t)
+        {
+            assertThat(t.getCause(),Matchers.instanceOf(TimeoutException.class));
+        }
+        assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(100L));
+        assertTrue(endp.isOpen());
+
+        // Still no idle close
+        Thread.sleep(1000);
+        assertTrue(endp.isOpen());
+        
+        // idle close
+        endp.setCheckForIdle(true);
+        Thread.sleep(1000);
+        assertFalse(endp.isOpen());
         
     }
+
+    
 }
