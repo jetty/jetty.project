@@ -25,10 +25,13 @@ import javax.servlet.jsp.JspFactory;
 import org.apache.jasper.Constants;
 import org.apache.jasper.compiler.Localizer;
 import org.apache.jasper.xmlparser.ParserUtils;
+import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.xml.sax.EntityResolver;
@@ -46,6 +49,8 @@ import org.xml.sax.SAXException;
  */
 public class WebappRegistrationCustomizerImpl implements WebappRegistrationCustomizer
 {
+    private static final Logger LOG = Log.getLogger(WebappRegistrationCustomizerImpl.class);
+    
 
     /**
      * Default name of a class that belongs to the jstl bundle. From that class
@@ -85,8 +90,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         }
         catch (Exception e)
         {
-            System.err.println("Unable to locate the JspServlet: jsp support unavailable.");
-            e.printStackTrace();
+            LOG.warn("Unable to locate the JspServlet: jsp support unavailable.", e);
             return;
         }
         try
@@ -106,8 +110,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         }
         catch (Exception e)
         {
-            System.err.println("Unable to set the JspFactory: jsp support incomplete.");
-            e.printStackTrace();
+            LOG.warn("Unable to set the JspFactory: jsp support incomplete.", e);
         }
     }
 
@@ -129,7 +132,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      * @return array of URLs
      * @throws Exception
      */
-    public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception
+    public URL[] getJarsWithTlds(DeploymentManager deployer, BundleFileLocatorHelper locatorHelper) throws Exception
     {
 
         HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();

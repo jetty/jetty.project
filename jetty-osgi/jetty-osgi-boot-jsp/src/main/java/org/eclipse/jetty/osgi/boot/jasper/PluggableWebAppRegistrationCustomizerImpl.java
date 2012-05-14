@@ -19,9 +19,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.regex.Pattern;
 
+import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
+import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.osgi.framework.Bundle;
@@ -56,10 +60,10 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
      * @param provider
      * @return
      */
-    private static Collection<String> getTldBundles(OSGiAppProvider provider)
+    private static Collection<String> getTldBundles(DeploymentManager deploymentManager)
     {
         String sysprop = System.getProperty(SYS_PROP_TLD_BUNDLES);
-        String att = (String) provider.getTldBundles();
+        String att = (String) deploymentManager.getContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN);
         if (sysprop == null && att == null) { return Collections.emptySet(); }
         if (att == null)
         {
@@ -83,9 +87,8 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
      * @return The location of the jars that contain tld files. Jasper will
      *         discover them.
      */
-    public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception
+    public URL[] getJarsWithTlds(DeploymentManager deploymentManager, BundleFileLocatorHelper locatorHelper) throws Exception
     {
-        List<URL> urls = new ArrayList<URL>();
         // naive way of finding those bundles.
         // lots of assumptions: for example we assume a single version of each
         // bundle that would contain tld files.
@@ -96,13 +99,24 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
         // and mirroring those in the MANIFEST.MF
 
         Bundle[] bundles = FrameworkUtil.getBundle(PluggableWebAppRegistrationCustomizerImpl.class).getBundleContext().getBundles();
-        Collection<String> tldbundles = getTldBundles(provider);
+        HashSet<URL> urls = new HashSet<URL>();
+        String tmp = System.getProperty(SYS_PROP_TLD_BUNDLES); //comma separated exact names
+        List<String> sysNames =   new ArrayList<String>();
+        if (tmp != null)
+        {
+            StringTokenizer tokenizer = new StringTokenizer(tmp, ", \n\r\t", false);
+            while (tokenizer.hasMoreTokens())
+                sysNames.add(tokenizer.nextToken());
+        }
+        tmp = (String) deploymentManager.getContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN); //bundle name patterns
+        Pattern pattern = (tmp==null? null : Pattern.compile(tmp));
         for (Bundle bundle : bundles)
         {
-            if (tldbundles.contains(bundle.getSymbolicName()))
-            {
+            if (sysNames.contains(bundle.getSymbolicName()))
                 registerTldBundle(locatorHelper, bundle, urls);
-            }
+           
+            if (pattern != null && pattern.matcher(bundle.getSymbolicName()).matches())
+                registerTldBundle(locatorHelper, bundle, urls);
         }
 
         return urls.toArray(new URL[urls.size()]);
@@ -134,7 +148,7 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
      * @param urls
      * @throws Exception
      */
-    private void registerTldBundle(BundleFileLocatorHelper locatorHelper, Bundle bundle, List<URL> urls) throws Exception
+    private void registerTldBundle(BundleFileLocatorHelper locatorHelper, Bundle bundle, Set<URL> urls) throws Exception
     {
         File jasperLocation = locatorHelper.getBundleInstallLocation(bundle);
         if (jasperLocation.isDirectory())

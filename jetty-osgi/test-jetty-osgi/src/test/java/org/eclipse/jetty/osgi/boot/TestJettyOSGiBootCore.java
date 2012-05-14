@@ -121,7 +121,7 @@ public class TestJettyOSGiBootCore
      * You will get a list of bundles installed by default
      * plus your testcase, wrapped into a bundle called pax-exam-probe
      */
-    @Test
+    //@Test
     public void testHttpService() throws Exception
     {
 //      ServletContextHandler sch = null;

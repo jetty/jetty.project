@@ -13,16 +13,25 @@
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Dictionary;
 
+import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * Support bundles that declare the webapp directly through headers in their
@@ -41,16 +50,28 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
  * <li>Jetty-ContextFilePath</li>
  * </ul>
  * </p>
- * And generate a jetty WebAppContext or another ContextHandler then registers
- * it as service. Kind of simpler than declarative services and their xml files.
- * Also avoid having the contributing bundle depend on jetty's package for
- * WebApp.
  * 
  * @author hmalphettes
  */
 public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
 {
     private static final Logger LOG = Log.getLogger(WebBundleTrackerCustomizer.class);
+    
+    public static Collection<WebappRegistrationCustomizer> JSP_REGISTRATION_HELPERS = new ArrayList<WebappRegistrationCustomizer>();
+    public static final String FILTER = "(&(objectclass=" + BundleWebAppProvider.class.getName() + ")"+
+                                          "("+OSGiServerConstants.MANAGED_JETTY_SERVER_NAME+"="+OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME+"))";
+
+    private ServiceTracker _serviceTracker;
+    
+    public WebBundleTrackerCustomizer ()
+    throws Exception
+    {
+        Bundle myBundle = FrameworkUtil.getBundle(this.getClass());
+        
+        //track all instances of deployers of webapps as bundles       
+        _serviceTracker = new ServiceTracker(myBundle.getBundleContext(), FrameworkUtil.createFilter(FILTER),null);
+        _serviceTracker.open();
+    }
 
     /**
      * A bundle is being added to the <code>BundleTracker</code>.
@@ -76,8 +97,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
     {
         if (bundle.getState() == Bundle.ACTIVE)
         {
-            boolean isWebBundle = register(bundle);
-            return isWebBundle ? bundle : null;
+           register(bundle);          
         }
         else if (bundle.getState() == Bundle.STOPPING)
         {
@@ -142,123 +162,25 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
      */
     private boolean register(Bundle bundle)
     {
-        Dictionary<?, ?> dic = bundle.getHeaders();
-        String warFolderRelativePath = (String) dic.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
-        if (warFolderRelativePath != null)
-        {
-            String contextPath = getWebContextPath(bundle, dic, false);
-            if (contextPath == null || !contextPath.startsWith("/"))
-            {
-                LOG.warn("The manifest header '" + OSGiWebappConstants.JETTY_WAR_FOLDER_PATH
-                         + ": "
-                         + warFolderRelativePath
-                         + "' in the bundle "
-                         + bundle.getSymbolicName()
-                         + " is not valid: there is no Web-ContextPath defined in the manifest.");
-                return false;
-            }
-            // create the corresponding service and publish it in the context of
-            // the contributor bundle.
-            try
-            {
-                JettyBootstrapActivator.registerWebapplication(bundle, warFolderRelativePath, contextPath);
-                return true;
-            }
-            catch (Throwable e)
-            {
-                LOG.warn("Starting the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
-                return true;// maybe it did not work maybe it did. safer to track this bundle.
-            }
-        }
-        else if (dic.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH) != null)
-        {
-            String contextFileRelativePath = (String) dic.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
-            if (contextFileRelativePath == null)
-            {
-                // nothing to register here.
-                return false;
-            }
-            // support for multiple webapps in the same bundle:
-            String[] pathes = contextFileRelativePath.split(",;");
-            for (String path : pathes)
-            {
-                try
-                {
-                    JettyBootstrapActivator.registerContext(bundle, path.trim());
-                }
-                catch (Throwable e)
-                {
-                    LOG.warn(e);
-                }
-            }
-            return true;
-        }
-        else
-        {
-            // support for OSGi-RFC66; disclaimer, no access to the actual
-            // (draft) of the spec: just a couple of posts on the
-            // world-wide-web.
-            URL rfc66Webxml = bundle.getEntry("/WEB-INF/web.xml");
-            if (rfc66Webxml == null && dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) == null)
-            { 
-                return false;// no webapp in here
-            }
-            // this is risky: should we make sure that there is no classes and
-            // jars directly available
-            // at the root of the of the bundle: otherwise they are accessible
-            // through the browser. we should enforce that the whole classpath
-            // is
-            // pointing to files and folders inside WEB-INF. We should
-            // filter-out
-            // META-INF too
-            String rfc66ContextPath = getWebContextPath(bundle, dic, rfc66Webxml == null);
-            try
-            {
-                JettyBootstrapActivator.registerWebapplication(bundle, ".", rfc66ContextPath);
-                return true;
-            }
-            catch (Throwable e)
-            {
-                LOG.warn(e);
-                return true;// maybe it did not work maybe it did. safer to track this bundle.
-            }
-        }
-    }
+        if (bundle == null)
+            return false;
+        
+        //It might be a webapp bundle
+        //If it is, it will be deployed to our default jetty Server instance.
+        //Get a reference to a jetty BundleWebAppProvider as an osgi service that can do the deployment
 
-    private String getWebContextPath(Bundle bundle, Dictionary<?, ?> dic, boolean webinfWebxmlExists)
-    {
-        String rfc66ContextPath = (String) dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
-        if (rfc66ContextPath == null)
-        {
-            if (!webinfWebxmlExists) { return null; }
-            // extract from the last token of the bundle's location:
-            // (really ?
-            // could consider processing the symbolic name as an alternative
-            // the location will often reflect the version.
-            // maybe this is relevant when the file is a war)
-            String location = bundle.getLocation();
-            String toks[] = location.replace('\\', '/').split("/");
-            rfc66ContextPath = toks[toks.length - 1];
-            // remove .jar, .war etc:
-            int lastDot = rfc66ContextPath.lastIndexOf('.');
-            if (lastDot != -1)
-            {
-                rfc66ContextPath = rfc66ContextPath.substring(0, lastDot);
-            }
-        }
-        if (!rfc66ContextPath.startsWith("/"))
-        {
-            rfc66ContextPath = "/" + rfc66ContextPath;
-        }
-        return rfc66ContextPath;
-    }
+       BundleWebAppProvider deployer = (BundleWebAppProvider)_serviceTracker.getService();
+       if (deployer != null)
+           return deployer.bundleAdded(bundle);   
+       return false;
 
+    }
+    
+    
     private void unregister(Bundle bundle)
     {
-        // nothing to do: when the bundle is stopped, each one of its service
-        // reference is also stopped and that is what we use to stop the
-        // corresponding
-        // webapps registered in that bundle.
+        BundleWebAppProvider deployer = (BundleWebAppProvider)_serviceTracker.getService();
+        if (deployer != null)
+            deployer.bundleRemoved(bundle);
     }
-
 }

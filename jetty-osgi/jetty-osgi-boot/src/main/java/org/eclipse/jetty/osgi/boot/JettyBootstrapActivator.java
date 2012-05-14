@@ -33,7 +33,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
-
+//mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot-jsp" ).versionAsInProject().start(),
 /**
  * Bootstrap jetty and publish a default Server instance as an OSGi service.
  * 
@@ -61,8 +61,6 @@ public class JettyBootstrapActivator implements BundleActivator
     }
 
     private ServiceRegistration _registeredServer;
-
-    private Server _server;
 
     private JettyContextHandlerServiceTracker _jettyContextHandlerTracker;
 
@@ -159,10 +157,6 @@ public class JettyBootstrapActivator implements BundleActivator
         }
         finally
         {
-            if (_server != null)
-            {
-                _server.stop();
-            }
             INSTANCE = null;
         }
     }

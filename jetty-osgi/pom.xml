@@ -25,6 +25,7 @@
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
     <module>jetty-osgi-equinoxtools</module>
+    <module>test-jetty-osgi-webapp</module>
     <module>test-jetty-osgi</module>
   </modules>
   <build>

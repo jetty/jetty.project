@@ -177,8 +177,6 @@ public class DefaultJettyAtJettyHomeHelper
 
         //register the Server instance as an OSGi service.
         bundleContext.registerService(Server.class.getName(), server, properties);
-        // hookNestedConnectorToBridgeServlet(server);
-
     }
 
     /**
@@ -226,6 +224,7 @@ public class DefaultJettyAtJettyHomeHelper
      */
     private static String getJettyConfigurationURLs(Bundle configurationBundle)
     {
+        System.err.println("GETTING JETTY PROPS FROM BUNDLE: "+configurationBundle.getSymbolicName());
         String files = System.getProperty(SYS_PROP_JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
        
         StringTokenizer tokenizer = new StringTokenizer(files, ";,", false);

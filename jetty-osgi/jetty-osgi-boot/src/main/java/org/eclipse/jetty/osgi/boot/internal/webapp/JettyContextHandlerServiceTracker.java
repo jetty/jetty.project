@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
@@ -34,6 +35,7 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * When a {@link ContextHandler} service is activated we look into it and if the
@@ -54,7 +56,11 @@ import org.osgi.framework.ServiceReference;
  */
 public class JettyContextHandlerServiceTracker implements ServiceListener
 {
-    private static Logger __logger = Log.getLogger(WebBundleDeployerHelper.class.getName());
+    private static Logger __logger = Log.getLogger(JettyContextHandlerServiceTracker.class.getName());
+    
+    public static final String FILTER = "(objectclass=" + BundleWebAppProvider.class.getName() + ")";
+    
+    
 
     /** New style: ability to manage multiple jetty instances */
     private final IManagedJettyServerRegistry _registry;
@@ -71,12 +77,21 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
     /** in charge of detecting changes in the osgi contexts home folder. */
     private Scanner _scanner;
 
+    
+    //track all instances of deployers of webapps as bundles       
+    ServiceTracker _serviceTracker;
+        
     /**
      * @param registry
      */
     public JettyContextHandlerServiceTracker(IManagedJettyServerRegistry registry) throws Exception
     {
         _registry = registry;
+        
+        //track all instances of deployers of webapps
+        Bundle myBundle = FrameworkUtil.getBundle(this.getClass());
+        _serviceTracker = new ServiceTracker(myBundle.getBundleContext(), FrameworkUtil.createFilter(FILTER),null);
+        _serviceTracker.open();
     }
 
     public void stop() throws Exception
@@ -127,13 +142,38 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                 reloadJettyContextHandler(filename, osgiContextHomeFolderCanonicalPath);
             }
         });
-
+    }
+    
+    public BundleWebAppProvider getDeployer(String managedServerName)
+    {
+        if (managedServerName == null)
+            managedServerName = OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME;
+        
+        ServiceReference sr = null;
+        ServiceReference[] references = _serviceTracker.getServiceReferences();
+        if (references != null)
+        {
+            for (ServiceReference ref:references)
+            {
+                String name = (String)ref.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+                if (managedServerName.equalsIgnoreCase(name))
+                    sr = ref;
+            }
+        }
+        
+        if (sr != null)
+            return (BundleWebAppProvider)_serviceTracker.getService(sr);
+        
+        return null;
     }
 
     /**
      * Receives notification that a service has had a lifecycle change.
      * 
      * @param ev The <code>ServiceEvent</code> object.
+     */
+    /** 
+     * @see org.osgi.framework.ServiceListener#serviceChanged(org.osgi.framework.ServiceEvent)
      */
     public void serviceChanged(ServiceEvent ev)
     {
@@ -143,7 +183,9 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
             case ServiceEvent.MODIFIED:
             case ServiceEvent.UNREGISTERING:
             {
-                ContextHandler ctxtHandler = unregisterInIndex(ev.getServiceReference());
+                //TODO unregister a ContextHandler, either with the BundleWebAppDeployer or with a BundleContextAppDeployer
+                
+               /*                ContextHandler ctxtHandler = unregisterInIndex(ev.getServiceReference());
                 if (ctxtHandler != null && !ctxtHandler.isStopped())
                 {
                     try
@@ -154,7 +196,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     {
                         __logger.warn(e);
                     }
-                }
+                }*/
             }
             if (ev.getType() == ServiceEvent.UNREGISTERING)
             {
@@ -175,7 +217,23 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     // is configured elsewhere.
                     return;
                 }
-                String contextFilePath = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH);
+                
+              //Get a jetty deployer targetted to the named server instance, or the default one if not named
+                if (contextHandler instanceof WebAppContext)
+                {
+                    WebAppContext webApp = (WebAppContext)contextHandler;
+                    
+                    String whichServer = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
+                    BundleWebAppProvider deployer = getDeployer(whichServer);
+                    deployer.serviceAdded(sr, webApp);
+                }
+                else
+                {
+                    //TODO get a reference to a jetty deployer that is happy to deploy plain ContextHandlers
+                }
+                
+                
+               /* String contextFilePath = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH);
                 if (contextHandler instanceof WebAppContext && contextFilePath == null)
                     // it could be a web-application that will in fact be configured
                     // via a context file.
@@ -274,8 +332,8 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     {
                         __logger.warn(e);
                     }
+                    */
                 }
-            }
             break;
         }
     }
@@ -375,10 +433,11 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
 
     private IWebBundleDeployerHelper getWebBundleDeployerHelp(ServiceReference sr)
     {
-        if (_registry == null) { return null; }
+        return null;
+      /*  if (_registry == null) { return null; }
         String managedServerName = (String) sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
         ServerInstanceWrapper wrapper = getServerInstanceWrapper(managedServerName);
-        return wrapper != null ? wrapper.getWebBundleDeployerHelp() : null;
+        return wrapper != null ? wrapper.getWebBundleDeployerHelp() : null;*/
     }
 
 }

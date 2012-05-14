@@ -14,6 +14,7 @@ package org.eclipse.jetty.osgi.boot.utils;
 
 import java.net.URL;
 
+import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 
 /**
@@ -49,6 +50,6 @@ public interface WebappRegistrationCustomizer
      * @return array of URLs
      * @throws Exception
      */
-    URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper fileLocator) throws Exception;
+    URL[] getJarsWithTlds(DeploymentManager manager, BundleFileLocatorHelper fileLocator) throws Exception;
 
 }

@@ -26,14 +26,14 @@ import java.util.StringTokenizer;
 
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
-import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
-import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleDeployerHelper;
+import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
-import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.IO;
@@ -78,9 +78,7 @@ public class ServerInstanceWrapper
 
     private DeploymentManager _deploymentManager;
 
-    private OSGiAppProvider _provider;
-
-    private WebBundleDeployerHelper _webBundleDeployerHelper;
+    private BundleWebAppProvider _provider;
 
     public ServerInstanceWrapper(String managedServerName)
     {
@@ -114,20 +112,11 @@ public class ServerInstanceWrapper
     /**
      * @return The app provider registered on this server.
      */
-    public OSGiAppProvider getOSGiAppProvider()
-    {
-        return _provider;
-    }
-
     public Server getServer()
     {
         return _server;
     }
 
-    public WebBundleDeployerHelper getWebBundleDeployerHelp()
-    {
-        return _webBundleDeployerHelper;
-    }
 
     /**
      * @return The collection of context handlers
@@ -151,6 +140,8 @@ public class ServerInstanceWrapper
             List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
             libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(shared, null, server, JettyBootstrapActivator.class.getClassLoader());
 
+            System.err.println("LibExtClassLoader = "+libExtClassLoader);
+            
             Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
             configure(server, props);
@@ -162,9 +153,11 @@ public class ServerInstanceWrapper
 
             URL[] jarsWithTlds = getJarsWithTlds();
             _commonParentClassLoaderForWebapps = jarsWithTlds == null ? libExtClassLoader : new TldLocatableURLClassloader(libExtClassLoader, jarsWithTlds);
+            
+            System.err.println("common classloader = "+_commonParentClassLoaderForWebapps);
 
             server.start();
-            _webBundleDeployerHelper = new WebBundleDeployerHelper(this);
+            //_webBundleDeployerHelper = new WebBundleDeployerHelper(this);
         }
         catch (Exception e)
         {
@@ -226,11 +219,19 @@ public class ServerInstanceWrapper
      */
     private URL[] getJarsWithTlds() throws Exception
     {
+        
+        //Jars that are added onto the equivalent of the container classpath are:
+        // jstl jars: identified by the class WhenTag (and the boot-bundle manifest imports the jstl packages
+        // bundles identified by System property org.eclipse.jetty.osgi.tldbundles
+        // bundle symbolic name patterns defined in the DeploymentManager
+        //
+        // Any bundles mentioned in the Require-TldBundle manifest header of the webapp bundle MUST ALSO HAVE Import-Bundle
+        // in order to get them onto the classpath of the webapp.
+        
         ArrayList<URL> res = new ArrayList<URL>();
-        WebBundleDeployerHelper.staticInit();// that is not looking great.
-        for (WebappRegistrationCustomizer regCustomizer : WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS)
+        for (WebappRegistrationCustomizer regCustomizer : WebBundleTrackerCustomizer.JSP_REGISTRATION_HELPERS)
         {
-            URL[] urls = regCustomizer.getJarsWithTlds(_provider, WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER);
+            URL[] urls = regCustomizer.getJarsWithTlds(_deploymentManager, BundleFileLocatorHelperFactory.getFactory().getHelper());
             for (URL url : urls)
             {
                 if (!res.contains(url)) res.add(url);
@@ -324,9 +325,11 @@ public class ServerInstanceWrapper
 
             for (AppProvider provider : _deploymentManager.getAppProviders())
             {
-                if (provider instanceof OSGiAppProvider)
+                //if (provider instanceof OSGiAppProvider)
+                if (provider instanceof BundleWebAppProvider)
                 {
-                    _provider = (OSGiAppProvider) provider;
+                    //_provider = (OSGiAppProvider) provider;
+                    _provider = (BundleWebAppProvider)provider;
                     break;
                 }
             }
@@ -335,10 +338,12 @@ public class ServerInstanceWrapper
                 // create it on the fly with reasonable default values.
                 try
                 {
-                    _provider = new OSGiAppProvider();
-                    _provider.setMonitoredDirResource(Resource.newResource(getDefaultOSGiContextsHome(new File(System.getProperty("jetty.home"))).toURI()));
+                    //_provider = new OSGiAppProvider();
+                    //_provider.setMonitoredDirResource(Resource.newResource(getDefaultOSGiContextsHome(new File(System.getProperty("jetty.home"))).toURI()));
+                    _provider = new BundleWebAppProvider(this);
+                    System.err.println("ADDED NEW BUNDLE WEBAPP PROVIDER");
                 }
-                catch (IOException e)
+                catch (Exception e)
                 {
                     LOG.warn(e);
                 }
@@ -374,10 +379,6 @@ public class ServerInstanceWrapper
         return new File(jettyHome, "/contexts");
     }
 
-    File getOSGiContextsHome()
-    {
-        return _provider.getContextXmlDirAsFile();
-    }
 
     /**
      * @return the urls in this string.
@@ -391,7 +392,7 @@ public class ServerInstanceWrapper
             String tok = tokenizer.nextToken();
             try
             {
-                urls.add(((DefaultFileLocatorHelper) WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER).getLocalURL(new URL(tok)));
+                urls.add(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(new URL(tok)));
             }
             catch (Throwable mfe)
             {
@@ -415,7 +416,7 @@ public class ServerInstanceWrapper
             try
             {
                 URL url = new URL(tok);
-                url = ((DefaultFileLocatorHelper) WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER).getFileURL(url);
+                url = BundleFileLocatorHelperFactory.getFactory().getHelper().getFileURL(url);
                 if (url.getProtocol().equals("file"))
                 {
                     Resource res = Resource.newResource(url);
