@@ -120,12 +120,13 @@ public class HttpParserTest
                 "GET / HTTP/1.0\015\012" +
                         "Host: localhost\015\012" +
                         "Header1: value1\015\012" +
-                        "Header2  :   value 2a  \015\012" +
+                        "Header 2  :   value 2a  \015\012" +
                         "                    value 2b  \015\012" +
                         "Header3: \015\012" +
                         "Header4 \015\012" +
                         "  value4\015\012" +
-                        "Server5: notServer\015\012" +
+                        "Server5 : notServer\015\012" +
+                        "Host Header: notHost\015\012" +
                 "\015\012");
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
@@ -138,7 +139,7 @@ public class HttpParserTest
         assertEquals("localhost", val[0]);
         assertEquals("Header1", hdr[1]);
         assertEquals("value1", val[1]);
-        assertEquals("Header2", hdr[2]);
+        assertEquals("Header 2", hdr[2]);
         assertEquals("value 2a value 2b", val[2]);
         assertEquals("Header3", hdr[3]);
         assertEquals(null, val[3]);
@@ -146,23 +147,25 @@ public class HttpParserTest
         assertEquals("value4", val[4]);
         assertEquals("Server5", hdr[5]);
         assertEquals("notServer", val[5]);
-        assertEquals(5, h);
+        assertEquals("Host Header", hdr[6]);
+        assertEquals("notHost", val[6]);
+        assertEquals(6, h);
     }
 
     @Test
     public void testSplitHeaderParse() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
-                "XXXXGET / HTTP/1.0\015\012" +
-                        "Host: localhost\015\012" +
-                        "Header1: value1\015\012" +
-                        "Header2  :   value 2a  \015\012" +
-                        "                    value 2b  \015\012" +
-                        "Header3: \015\012" +
-                        "Header4 \015\012" +
-                        "  value4\015\012" +
-                        "Server5: notServer\015\012" +
-                "\015\012ZZZZ");
+                "XXXXSPLIT / HTTP/1.0\015\012" +
+                    "Host: localhost\015\012" +
+                    "Header1: value1\015\012" +
+                    "Header2  :   value 2a  \015\012" +
+                    "                    value 2b  \015\012" +
+                    "Header3: \015\012" +
+                    "Header4 \015\012" +
+                    "  value4\015\012" +
+                    "Server5: notServer\015\012" +
+                    "\015\012ZZZZ");
         buffer.position(2);
         buffer.limit(buffer.capacity()-2);
         buffer=buffer.slice();
@@ -177,11 +180,15 @@ public class HttpParserTest
 
             if (!parser.parseNext(buffer))
             {
+                // consumed all
+                assertEquals(0,buffer.remaining());
+                
+                // parse the rest
                 buffer.limit(buffer.capacity()-2);
                 parser.parseNext(buffer);
             }
 
-            assertEquals("GET", f0);
+            assertEquals("SPLIT", f0);
             assertEquals("/", f1);
             assertEquals("HTTP/1.0", f2);
             assertEquals("Host", hdr[0]);
@@ -478,7 +485,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startRequest(String method, String uri, String version)
+        public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
         {
             request=true;
             h= -1;
@@ -486,7 +493,7 @@ public class HttpParserTest
             val= new String[9];
             f0= method;
             f1= uri;
-            f2= version;
+            f2= version==null?null:version.asString();
 
             fields=new HttpFields();
             messageCompleted = false;
@@ -530,10 +537,10 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startResponse(String version, int status, String reason)
+        public boolean startResponse(HttpVersion version, int status, String reason)
         {
             request=false;
-            f0 = version.toString();
+            f0 = version.asString();
             f1 = Integer.toString(status);
             f2 = reason==null?null:reason.toString();
 

@@ -23,7 +23,6 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.junit.matchers.JUnitMatchers.either;
 
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +80,7 @@ public class HttpGeneratorServerTest
         }
 
         @Override
-        public boolean startResponse(String version, int status, String reason) throws IOException
+        public boolean startResponse(HttpVersion version, int status, String reason) throws IOException
         {
             _version=version;
             _status=status;
@@ -273,7 +272,7 @@ public class HttpGeneratorServerTest
     private int _status;
 
     private final List<String> _val=new ArrayList<>();
-    private String _version;
+    private HttpVersion _version;
 
     private final TR[] tr =
         {
@@ -309,15 +308,15 @@ public class HttpGeneratorServerTest
                     for (int c=0;c<(v==11?connect.length:(connect.length-1));c++)
                     {
                         String t="v="+v+",chunks="+chunks+",connect="+connect[c]+",tr="+r+"="+tr[r];
-                        System.err.println("\n==========================================");
-                        System.err.println(t);
+                        // System.err.println("\n==========================================");
+                        // System.err.println(t);
 
                         gen.reset();
                         tr[r].getHttpFields().clear();
 
                         String response=tr[r].build(v,gen,"OK\r\nTest",connect[c],null,chunks);
 
-                        System.err.println("---\n"+t+"\n"+response+(gen.isPersistent()?"...":"==="));
+                        // System.err.println("---\n"+t+"\n"+response+(gen.isPersistent()?"...":"==="));
 
                         if (v==9)
                         {

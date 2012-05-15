@@ -200,8 +200,15 @@ public class HttpConnection extends AbstractAsyncConnection
                         ?_bufferPool.acquire(_connector.getRequestBufferSize(),false)
                         :_bufferPool.acquire(_connector.getRequestHeaderSize(),false);
                         
-                    int filled=getEndPoint().fill(_requestBuffer);
-                    LOG.debug("{} filled {}",this,filled);
+                    // Only fill if buffer is fully consumed
+                    if (BufferUtil.isEmpty(_requestBuffer))
+                    {
+                        // TODO this is still dangerous as a suspended request might have references
+                        // to the buffer still for unconsumed input.  We need a callback to say
+                        // all content is consumed and we can read again.
+                        int filled=getEndPoint().fill(_requestBuffer);
+                        LOG.debug("{} filled {}",this,filled);
+                    }
                     
                     // If we parse to an event, call the connection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
@@ -220,6 +227,9 @@ public class HttpConnection extends AbstractAsyncConnection
                                 getEndPoint().setCheckForIdle(true);
                         }
                     }
+                    else if (BufferUtil.hasContent(_requestBuffer))
+                        throw new IllegalStateException("parser should consume all content OR return true");
+                        
 
                 }
                 catch (HttpException e)
@@ -565,6 +575,7 @@ public class HttpConnection extends AbstractAsyncConnection
         protected void blockForContent() throws IOException
         {
             // While progress and the connection has not changed
+            boolean parsed_event=false;
             while (getEndPoint().isOpen())
             {
                 try
@@ -578,8 +589,13 @@ public class HttpConnection extends AbstractAsyncConnection
                     if (_requestBuffer==null)
                         _requestBuffer=_bufferPool.acquire(_connector.getRequestBufferSize(),false);
 
+                    int filled=getEndPoint().fill(_requestBuffer);
+                    LOG.debug("{} filled {}",this,filled);
+                    
                     // If we parse to an event, return
-                    if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
+                    while (BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
+                            parsed_event|=_parser.parseNext(_requestBuffer);
+                    if (parsed_event)
                         return;
                 }
                 catch (InterruptedException e)
@@ -601,13 +617,6 @@ public class HttpConnection extends AbstractAsyncConnection
                     }
                 }
             }
-        }
-
-        @Override
-        protected void contentConsumed()
-        {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override

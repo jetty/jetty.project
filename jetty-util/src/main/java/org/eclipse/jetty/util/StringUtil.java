@@ -88,7 +88,11 @@ public class StringUtil
      */
     public static String normalizeCharset(ByteBuffer b,int position,int length)
     {
-        String n=CHARSETS.get(b,position,length); 
+        ByteBuffer ro=b.asReadOnlyBuffer();
+        ro.limit(ro.capacity());
+        ro.position(position);
+        ro.limit(position+length);
+        String n=CHARSETS.get(ro); 
         if (n!=null)
             return n;
         ByteBuffer slice = b.slice();

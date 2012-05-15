@@ -297,6 +297,8 @@ public abstract class HttpChannel
         _responseFields.clear();
         _response.recycle();
         _uri.clear();
+        if (_out!=null)
+            _out.reset();
         synchronized (_inputQ)
         {
             _inputEOF=false;
@@ -437,8 +439,13 @@ public abstract class HttpChannel
         _response.setStatus(status,reason);
         if (close)
             _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
-        ByteBuffer buffer=BufferUtil.toBuffer(content,StringUtil.__UTF8_CHARSET);
-        _response.setContentLength(buffer.remaining());
+        
+        ByteBuffer buffer=null;
+        if (content!=null)
+        {
+            buffer=BufferUtil.toBuffer(content,StringUtil.__UTF8_CHARSET);
+            _response.setContentLength(buffer.remaining());
+        }
         
         HttpGenerator.ResponseInfo info = _handler.commit();
         commit(info,buffer); 
@@ -555,7 +562,7 @@ public abstract class HttpChannel
     private class RequestHandler implements EventHandler
     {
         @Override
-        public boolean startRequest(String method, String uri, String version) throws IOException
+        public boolean startRequest(HttpMethod httpMethod,String method, String uri, HttpVersion version) throws IOException
         {
             _host = false;
             _expect = false;
@@ -564,30 +571,18 @@ public abstract class HttpChannel
 
             if(_request.getTimeStamp()==0)
                 _request.setTimeStamp(System.currentTimeMillis());
-            HttpMethod m = HttpMethod.CACHE.get(method);
-            _request.setMethod(m,method);
+            _request.setMethod(httpMethod,method);
 
             try
             {
-                if (m==HttpMethod.CONNECT)
+                if (httpMethod==HttpMethod.CONNECT)
                     _uri.parseConnect(uri);
                 else
                     _uri.parse(uri);
 
                 _request.setUri(_uri);
-
-                if (version==null)
-                {
-                    _request.setHttpVersion(HttpVersion.HTTP_0_9);
-                    _version=HttpVersion.HTTP_0_9;
-                }
-                else
-                {
-                    _version= HttpVersion.CACHE.get(version);
-                    if (_version==null)
-                        throw new HttpException(HttpStatus.BAD_REQUEST_400,null);
-                    _request.setHttpVersion(_version);
-                }
+                _version=version==null?HttpVersion.HTTP_0_9:version;
+                _request.setHttpVersion(_version);
             }
             catch (Exception e)
             {
@@ -713,7 +708,10 @@ public abstract class HttpChannel
         @Override
         public boolean content(ByteBuffer ref) throws IOException
         {
-            _inputQ.add(ref);
+            synchronized (_inputQ.lock())
+            {
+                _inputQ.add(ref);  
+            }              
             return true;
         }
 
@@ -826,9 +824,7 @@ public abstract class HttpChannel
     public abstract HttpConnector getHttpConnector();
 
     protected abstract void blockForContent() throws IOException;
-    
-    protected abstract void contentConsumed();
-    
+        
     protected abstract int write(ByteBuffer content) throws IOException;
                 
     protected abstract void commit(ResponseInfo info, ByteBuffer content) throws IOException;

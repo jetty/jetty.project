@@ -64,6 +64,12 @@ public enum HttpHeaderValue
     }
 
     /* ------------------------------------------------------------ */
+    public String asString()
+    {
+        return _string;
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {

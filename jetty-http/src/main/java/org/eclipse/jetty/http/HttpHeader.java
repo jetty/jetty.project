@@ -14,6 +14,10 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -114,7 +118,72 @@ public enum HttpHeader
             if (header!=UNKNOWN)
                 CACHE.put(header.toString(),header);
     }
+    
+    /* ------------------------------------------------------------ */
+    private final static HttpHeader[] __hashed= new HttpHeader[4096]; 
+    private final static int __maxHashed;
+    static
+    {
+        // This hash function has been picked to have no collisions for 
+        // the known header values.  This allows a very quick lookup.
+        int max=0;
+        Map<Integer,HttpHeader> hashes=new HashMap<>();
+        for (HttpHeader header : HttpHeader.values())
+        {
+            String s=header.asString();
+            max=Math.max(max,s.length());
+            int h=0;
+            for (char c:s.toCharArray())
+                h = 31*h + ((c>='a')?(c-'a'+'A'):c);
+            int hash=h%__hashed.length;
+            if (hash<0)hash=-hash;
+            if (hashes.containsKey(hash))
+            {
+                // This should not happen with known headers.
+                System.err.println("Duplicate hash "+header+" "+hashes.get(hash));
+                System.exit(1);
+            }
+            hashes.put(hash,header);
+            __hashed[hash]=header;
+        }
+        __maxHashed=max;
+    }
 
+    public static HttpHeader lookAheadGet(byte[] bytes, int position, int limit)
+    {
+        int h=0;
+        byte b=0;
+        limit=Math.min(position+__maxHashed,limit);
+        for (int i=position;i<limit;i++)
+        {
+            b=bytes[i];
+            if (b==':'||b==' ')
+                break;
+            h= 31*h+ ((b>='a')?(b-'a'+'A'):b);
+        }
+        if (b!=':'&&b!=' ')
+            return null;
+
+        int hash=h%__hashed.length;
+        if (hash<0)hash=-hash;
+        HttpHeader header=__hashed[hash];
+        
+        if (header!=null)
+        {
+            String s=header.asString();
+            for (int i=s.length();i-->0;)
+            {
+                b=bytes[position+i];
+                char c=s.charAt(i);
+                if (c!=b && Character.toUpperCase(c)!=(b>='a'?(b-'a'+'A'):b))
+                    return null;
+            }
+        }
+        
+        return header;
+    }
+    
+    
     private final String _string;
     private final byte[] _bytes;
     private final byte[] _bytesColonSpace;

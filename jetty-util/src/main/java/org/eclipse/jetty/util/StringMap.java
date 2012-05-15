@@ -71,7 +71,6 @@ public class StringMap<O> extends AbstractMap<String,O>
                     s1=o1.toString();
                 String s2=(String)o2;
                 
-                
                 int n1 = s1==null?b1.remaining():s1.length();
                 int n2 = s2.length();
                 int min = Math.min(n1, n2);
@@ -79,7 +78,6 @@ public class StringMap<O> extends AbstractMap<String,O>
                     char c1 = s1==null?(char)b1.get(b1.position()+i):s1.charAt(i);
                     char c2 = s2.charAt(i);
                     if (c1 != c2) {
-                        
                         if (ignoreCase)
                         {
                             c1 = Character.toUpperCase(c1);
@@ -98,11 +96,8 @@ public class StringMap<O> extends AbstractMap<String,O>
                     }
                 }
                 return n1 - n2;
-                
             }
         });
-        
-        
     }
 
     /* ------------------------------------------------------------ */
@@ -138,16 +133,10 @@ public class StringMap<O> extends AbstractMap<String,O>
     }
     
     /* ------------------------------------------------------------ */
-    public O get(ByteBuffer buffer, int position, int length)
+    public O get(ByteBuffer buffer)
     {
-        ByteBuffer ro=buffer.asReadOnlyBuffer();
-        ro.limit(ro.capacity());
-        ro.position(position);
-        ro.limit(position+length);
-        return _map.get(ro);
+        return _map.get(buffer);
     }
-    
-    
     
     /* ------------------------------------------------------------ */
     @Override
@@ -155,7 +144,6 @@ public class StringMap<O> extends AbstractMap<String,O>
     {
         return _map.remove(key);
     }
-    
     
     /* ------------------------------------------------------------ */
     public O remove(String key)
