@@ -37,6 +37,8 @@ public class HttpInput extends ServletInputStream
     public int read() throws IOException
     {
         int len=_channel.read(_byte,0,1);
+        if (len>0)
+            System.err.println("READ "+_byte[0]);
         return len<0?len:_byte[0];
     }
     
@@ -47,7 +49,7 @@ public class HttpInput extends ServletInputStream
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        return _channel.read(_byte,0,1);
+        return _channel.read(b,off,len);
     }
 
     /* ------------------------------------------------------------ */

@@ -234,8 +234,15 @@ public class HttpConnection extends AbstractAsyncConnection
                 }
                 catch (HttpException e)
                 {
-                    progress=true;
+                    LOG.debug(e);
+                    progress=false;
                     _channel.sendError(e.getStatus(), e.getReason(), null, true);
+                }
+                catch (Exception e)
+                {
+                    LOG.debug(e);
+                    progress=false;
+                    _channel.sendError(500, e.toString(), e.toString(), true);
                 }
                 finally
                 {
@@ -272,9 +279,10 @@ public class HttpConnection extends AbstractAsyncConnection
                 }
             }
         }
-        catch(IOException e)
+        catch(Exception e)
         {
             LOG.warn(e); 
+            getEndPoint().close();
         }
         finally
         {
@@ -580,17 +588,23 @@ public class HttpConnection extends AbstractAsyncConnection
             {
                 try
                 {
-                    // Wait until we can read
-                    FutureCallback<Void> block=new FutureCallback<>();
-                    getEndPoint().readable(null,block);
-                    block.get();
+                    System.err.println("blockForContent: "+BufferUtil.toDetailString(_requestBuffer));
+                    
+                    // Do we have content ready to parse?
+                    if (BufferUtil.isEmpty(_requestBuffer))
+                    {
+                        // Wait until we can read
+                        FutureCallback<Void> block=new FutureCallback<>();
+                        getEndPoint().readable(null,block);
+                        block.get();
 
-                    // We will need a buffer to read into
-                    if (_requestBuffer==null)
-                        _requestBuffer=_bufferPool.acquire(_connector.getRequestBufferSize(),false);
+                        // We will need a buffer to read into
+                        if (_requestBuffer==null)
+                            _requestBuffer=_bufferPool.acquire(_connector.getRequestBufferSize(),false);
 
-                    int filled=getEndPoint().fill(_requestBuffer);
-                    LOG.debug("{} filled {}",this,filled);
+                        int filled=getEndPoint().fill(_requestBuffer);
+                        LOG.debug("{} filled {}",this,filled);
+                    }
                     
                     // If we parse to an event, return
                     while (BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())

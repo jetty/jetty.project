@@ -309,6 +309,8 @@ public abstract class HttpChannel
     /* ------------------------------------------------------------ */
     protected void handleRequest() throws IOException
     {
+        System.err.println("handleRequest");
+        
         boolean error = false;
 
         String threadName=null;
@@ -506,6 +508,7 @@ public abstract class HttpChannel
     {
         synchronized (_inputQ.lock())
         {
+            System.err.println("read "+len+" "+_inputQ);
             ByteBuffer content=null;            
             while(content==null)
             {
@@ -525,6 +528,8 @@ public abstract class HttpChannel
                     blockForContent();
                 }
             }
+            
+            System.err.println("reading "+len+" "+BufferUtil.toDetailString(content));
 
             int l=Math.min(len,content.remaining());
             content.get(b,off,l);
@@ -598,58 +603,60 @@ public abstract class HttpChannel
         @Override
         public boolean parsedHeader(HttpHeader header, String name, String value) throws IOException
         {
-            switch (header)
+            if (header!=null)
             {
-                case HOST:
-                    // TODO check if host matched a host in the URI.
-                    _host = true;
-                    break;
+                switch (header)
+                {
+                    case HOST:
+                        // TODO check if host matched a host in the URI.
+                        _host = true;
+                        break;
 
-                case EXPECT:
-                    HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                    switch(expect==null?HttpHeaderValue.UNKNOWN:expect)
-                    {
-                        case CONTINUE:
-                            _expect100Continue=true;
-                            break;
+                    case EXPECT:
+                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
+                        switch(expect==null?HttpHeaderValue.UNKNOWN:expect)
+                        {
+                            case CONTINUE:
+                                _expect100Continue=true;
+                                break;
 
-                        case PROCESSING:
-                            _expect102Processing=true;
-                            break;
+                            case PROCESSING:
+                                _expect102Processing=true;
+                                break;
 
-                        default:
-                            String[] values = value.toString().split(",");
-                            for  (int i=0;values!=null && i<values.length;i++)
-                            {
-                                expect=HttpHeaderValue.CACHE.get(values[i].trim());
-                                if (expect==null)
-                                    _expect=true;
-                                else
+                            default:
+                                String[] values = value.toString().split(",");
+                                for  (int i=0;values!=null && i<values.length;i++)
                                 {
-                                    switch(expect)
+                                    expect=HttpHeaderValue.CACHE.get(values[i].trim());
+                                    if (expect==null)
+                                        _expect=true;
+                                    else
                                     {
-                                        case CONTINUE:
-                                            _expect100Continue=true;
-                                            break;
-                                        case PROCESSING:
-                                            _expect102Processing=true;
-                                            break;
-                                        default:
-                                            _expect=true;
+                                        switch(expect)
+                                        {
+                                            case CONTINUE:
+                                                _expect100Continue=true;
+                                                break;
+                                            case PROCESSING:
+                                                _expect102Processing=true;
+                                                break;
+                                            default:
+                                                _expect=true;
+                                        }
                                     }
                                 }
-                            }
-                    }
-                    break;
+                        }
+                        break;
 
-                case CONTENT_TYPE:
-                    MimeTypes.Type mime=MimeTypes.CACHE.get(value);
-                    String charset=(mime==null)?MimeTypes.getCharsetFromContentType(value):mime.getCharset().toString();
-                    if (charset!=null)
-                        _request.setCharacterEncodingUnchecked(charset);
-                    break;
+                    case CONTENT_TYPE:
+                        MimeTypes.Type mime=MimeTypes.CACHE.get(value);
+                        String charset=(mime==null)?MimeTypes.getCharsetFromContentType(value):mime.getCharset().toString();
+                        if (charset!=null)
+                            _request.setCharacterEncodingUnchecked(charset);
+                        break;
+                }
             }
-
             _requestFields.add(name, value);
             return false;
         }
@@ -710,6 +717,7 @@ public abstract class HttpChannel
         {
             synchronized (_inputQ.lock())
             {
+                System.err.println("CONTENT "+BufferUtil.toDetailString(ref));
                 _inputQ.add(ref);  
             }              
             return true;
@@ -719,7 +727,9 @@ public abstract class HttpChannel
         public boolean messageComplete(long contentLength) throws IOException
         {
             synchronized (_inputQ.lock())
-            {
+            {                
+                System.err.println("MESSAGE EOF");
+
                 _inputEOF=true;
             }
             return true;
