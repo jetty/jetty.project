@@ -16,6 +16,7 @@ package org.eclipse.jetty.osgi.boot;
 
 import static org.ops4j.pax.exam.CoreOptions.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Inject;
@@ -65,10 +67,17 @@ public class TestJettyOSGiBootCore
      */
     public static List<Option> provisionCoreJetty()
     {
+        File base = MavenTestingUtils.getBasedir();
+        File src = new File (base, "src");
+        File tst = new File (src, "test");
+        File config = new File (tst, "config");
+        
         return Arrays.asList(options(
                 // get the jetty home config from the osgi boot bundle.
-                PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
+               // PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
+               
                 
+                PaxRunnerOptions.vmOptions("-Djetty.port=9876 -Djetty.home=" +  config.getAbsolutePath()),
                 // CoreOptions.equinox(),
                 
                 mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet" ).versionAsInProject().noStart(),
@@ -121,7 +130,7 @@ public class TestJettyOSGiBootCore
      * You will get a list of bundles installed by default
      * plus your testcase, wrapped into a bundle called pax-exam-probe
      */
-    //@Test
+    @Test
     public void testHttpService() throws Exception
     {
 //      ServletContextHandler sch = null;
@@ -132,7 +141,6 @@ public class TestJettyOSGiBootCore
         for( Bundle b : bundleContext.getBundles() )
         {
             bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-          System.err.println("got " + b.getSymbolicName());
         }
         Bundle osgiBoot = bundlesIndexedBySymbolicName.get("org.eclipse.jetty.osgi.boot");
         Assert.assertNotNull("Could not find the org.eclipse.jetty.osgi.boot bundle", osgiBoot);

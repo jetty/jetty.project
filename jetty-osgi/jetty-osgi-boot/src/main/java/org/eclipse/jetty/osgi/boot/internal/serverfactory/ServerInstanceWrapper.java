@@ -26,9 +26,11 @@ import java.util.StringTokenizer;
 
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.osgi.boot.BundleContextProvider;
 import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.osgi.boot.ServiceWebAppProvider;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
 import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
@@ -67,7 +69,7 @@ public class ServerInstanceWrapper
      */
     private Server _server;
 
-    private ContextHandlerCollection _ctxtHandler;
+    private ContextHandlerCollection _ctxtCollection;
 
     /**
      * This is the class loader that should be the parent classloader of any
@@ -77,8 +79,6 @@ public class ServerInstanceWrapper
     private ClassLoader _commonParentClassLoaderForWebapps;
 
     private DeploymentManager _deploymentManager;
-
-    private BundleWebAppProvider _provider;
 
     public ServerInstanceWrapper(String managedServerName)
     {
@@ -123,7 +123,7 @@ public class ServerInstanceWrapper
      */
     public ContextHandlerCollection getContextHandlerCollection()
     {
-        return _ctxtHandler;
+        return _ctxtCollection;
     }
 
     public void start(Server server, Dictionary props) throws Exception
@@ -258,7 +258,10 @@ public class ServerInstanceWrapper
         {
             Object key = en.nextElement();
             Object value = props.get(key);
-            properties.put(String.valueOf(key), String.valueOf(value));
+            String keyStr = String.valueOf(key);
+            String valStr = String.valueOf(value);
+            properties.put(keyStr, valStr);
+            server.setAttribute(keyStr, valStr);
         }
 
         for (URL jettyConfiguration : jettyConfigurations)
@@ -315,44 +318,75 @@ public class ServerInstanceWrapper
     private void init()
     {
         // Get the context handler
-        _ctxtHandler = (ContextHandlerCollection) _server.getChildHandlerByClass(ContextHandlerCollection.class);
+        _ctxtCollection = (ContextHandlerCollection) _server.getChildHandlerByClass(ContextHandlerCollection.class);
 
-        // get a deployerManager
+        if (_ctxtCollection == null) 
+            throw new IllegalStateException("ERROR: No ContextHandlerCollection configured in Server");
+        
+        List<String> providerClassNames = new ArrayList<String>();
+        
+        // get a deployerManager and some providers
         List<DeploymentManager> deployers = _server.getBeans(DeploymentManager.class);
         if (deployers != null && !deployers.isEmpty())
         {
             _deploymentManager = deployers.get(0);
-
+            
             for (AppProvider provider : _deploymentManager.getAppProviders())
             {
-                //if (provider instanceof OSGiAppProvider)
-                if (provider instanceof BundleWebAppProvider)
-                {
-                    //_provider = (OSGiAppProvider) provider;
-                    _provider = (BundleWebAppProvider)provider;
-                    break;
-                }
+               providerClassNames.add(provider.getClass().getName());
             }
-            if (_provider == null)
+        }
+        else
+        {
+            //add some kind of default
+            _deploymentManager = new DeploymentManager();
+            _deploymentManager.setContexts(_ctxtCollection);
+            _server.addBean(_deploymentManager);
+        }
+
+        if (!providerClassNames.contains(BundleWebAppProvider.class.getName()))
+        {
+            // create it on the fly with reasonable default values.
+            try
             {
-                // create it on the fly with reasonable default values.
-                try
-                {
-                    //_provider = new OSGiAppProvider();
-                    //_provider.setMonitoredDirResource(Resource.newResource(getDefaultOSGiContextsHome(new File(System.getProperty("jetty.home"))).toURI()));
-                    _provider = new BundleWebAppProvider(this);
-                    System.err.println("ADDED NEW BUNDLE WEBAPP PROVIDER");
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
-                _deploymentManager.addAppProvider(_provider);
+                BundleWebAppProvider webAppProvider = new BundleWebAppProvider(this);
+                _deploymentManager.addAppProvider(webAppProvider);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
             }
         }
 
-        if (_ctxtHandler == null || _provider == null) throw new IllegalStateException("ERROR: No ContextHandlerCollection or OSGiAppProvider configured");
+        if (!providerClassNames.contains(ServiceWebAppProvider.class.getName()))
+        {
+            // create it on the fly with reasonable default values.
+            try
+            {
+                ServiceWebAppProvider webAppProvider = new ServiceWebAppProvider(this);
+                _deploymentManager.addAppProvider(webAppProvider);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
 
+        if (!providerClassNames.contains(BundleContextProvider.class.getName()))
+        {
+            try
+            {
+                BundleContextProvider contextProvider = new BundleContextProvider(this);
+                _deploymentManager.addAppProvider(contextProvider);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+
+        }
+
+        //TODO add ServiceContextProvider
     }
 
     /**

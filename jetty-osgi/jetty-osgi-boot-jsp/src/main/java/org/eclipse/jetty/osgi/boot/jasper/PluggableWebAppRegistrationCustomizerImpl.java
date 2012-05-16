@@ -24,7 +24,6 @@ import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;

@@ -15,7 +15,7 @@ package org.eclipse.jetty.osgi.boot.utils;
 import java.net.URL;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
+
 
 /**
  * Fix various shortcomings with the way jasper parses the tld files.

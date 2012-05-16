@@ -19,6 +19,38 @@ package org.eclipse.jetty.osgi.boot;
  */
 public class OSGiServerConstants
 {
+    /**
+     * Usual system property used as the hostname for a typical jetty
+     * configuration.
+     */
+    public static final String JETTY_HOME = "jetty.home";
+
+    /**
+     * System property to point to a bundle that embeds a jetty configuration
+     * and that jetty configuration should be the default jetty server. First we
+     * look for jetty.home. If we don't find it then we look for this property.
+     */
+    public static final String JETTY_HOME_BUNDLE = "jetty.home.bundle";
+
+    /**
+     * Usual system property used as the hostname for a typical jetty
+     * configuration.
+     */
+    public static final String JETTY_HOST = "jetty.host";
+
+    /**
+     * Usual system property used as the port for http for a typical jetty
+     * configuration.
+     */
+    public static final String JETTY_PORT = "jetty.port";
+
+    /**
+     * Usual system property used as the port for https for a typical jetty
+     * configuration.
+     */
+    public static final String JETTY_PORT_SSL = "jetty.port.ssl";
+    
+    
     //for managed jetty instances, name of the configuration parameters
     /**
      * PID of the jetty servers's ManagedFactory

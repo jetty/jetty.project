@@ -24,6 +24,7 @@ import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
@@ -45,43 +46,14 @@ public class DefaultJettyAtJettyHomeHelper
      * used to configure jetty. By default the value is 'etc/jetty.xml' when the
      * path is relative the file is resolved relatively to jettyhome.
      */
-    public static final String SYS_PROP_JETTY_ETC_FILES = OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS;
+    public static final String JETTY_ETC_FILES = OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS;
 
-    /**
-     * Usual system property used as the hostname for a typical jetty
-     * configuration.
-     */
-    public static final String SYS_PROP_JETTY_HOME = "jetty.home";
 
-    /**
-     * System property to point to a bundle that embeds a jetty configuration
-     * and that jetty configuration should be the default jetty server. First we
-     * look for jetty.home. If we don't find it then we look for this property.
-     */
-    public static final String SYS_PROP_JETTY_HOME_BUNDLE = "jetty.home.bundle";
-
-    /**
-     * Usual system property used as the hostname for a typical jetty
-     * configuration.
-     */
-    public static final String SYS_PROP_JETTY_HOST = "jetty.host";
-
-    /**
-     * Usual system property used as the port for http for a typical jetty
-     * configuration.
-     */
-    public static final String SYS_PROP_JETTY_PORT = "jetty.port";
-
-    /**
-     * Usual system property used as the port for https for a typical jetty
-     * configuration.
-     */
-    public static final String SYS_PROP_JETTY_PORT_SSL = "jetty.port.ssl";
     
     /**
      * Set of config files to apply to a jetty Server instance if none are supplied by SYS_PROP_JETTY_ETC_FILES
      */
-    public static final String DEFAULT_JETTY_ETC_FILES = "jetty.xml,jetty-selector.xml,jetty-deployer.xml";
+    public static final String DEFAULT_JETTY_ETC_FILES = "etc/jetty.xml,etc/jetty-selector.xml,etc/jetty-deployer.xml";
     
     /**
      * Default location within bundle of a jetty home dir.
@@ -112,8 +84,8 @@ public class DefaultJettyAtJettyHomeHelper
      */
     public static void startJettyAtJettyHome(BundleContext bundleContext) throws Exception
     {
-        String jettyHomeSysProp = System.getProperty(SYS_PROP_JETTY_HOME);
-        String jettyHomeBundleSysProp = System.getProperty(SYS_PROP_JETTY_HOME_BUNDLE);
+        String jettyHomeSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME);
+        String jettyHomeBundleSysProp = System.getProperty(OSGiServerConstants.JETTY_HOME_BUNDLE);
         File jettyHome = null;
         Bundle jettyHomeBundle = null;
         if (jettyHomeSysProp != null)
@@ -138,6 +110,7 @@ public class DefaultJettyAtJettyHomeHelper
         else if (jettyHomeBundleSysProp != null)
         {
             jettyHomeBundleSysProp = resolvePropertyValue(jettyHomeBundleSysProp);
+            System.err.println("jetty home bundle sysprop = "+jettyHomeBundleSysProp);
             for (Bundle b : bundleContext.getBundles())
             {
                 if (b.getSymbolicName().equals(jettyHomeBundleSysProp))
@@ -170,10 +143,10 @@ public class DefaultJettyAtJettyHomeHelper
 
         // these properties usually are the ones passed to this type of
         // configuration.
-        setProperty(properties, SYS_PROP_JETTY_HOME, System.getProperty(SYS_PROP_JETTY_HOME));
-        setProperty(properties, SYS_PROP_JETTY_HOST, System.getProperty(SYS_PROP_JETTY_HOST));
-        setProperty(properties, SYS_PROP_JETTY_PORT, System.getProperty(SYS_PROP_JETTY_PORT));
-        setProperty(properties, SYS_PROP_JETTY_PORT_SSL, System.getProperty(SYS_PROP_JETTY_PORT_SSL));
+        setProperty(properties, OSGiServerConstants.JETTY_HOME, System.getProperty(OSGiServerConstants.JETTY_HOME));
+        setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST));
+        setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
+        setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
 
         //register the Server instance as an OSGi service.
         bundleContext.registerService(Server.class.getName(), server, properties);
@@ -190,7 +163,7 @@ public class DefaultJettyAtJettyHomeHelper
      */
     private static String getJettyConfigurationURLs(File jettyhome)
     {
-        String jettyetc = System.getProperty(SYS_PROP_JETTY_ETC_FILES, "etc/jetty.xml");
+        String jettyetc = System.getProperty(JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
         StringTokenizer tokenizer = new StringTokenizer(jettyetc, ";,", false);
         StringBuilder res = new StringBuilder();
         while (tokenizer.hasMoreTokens())
@@ -225,7 +198,7 @@ public class DefaultJettyAtJettyHomeHelper
     private static String getJettyConfigurationURLs(Bundle configurationBundle)
     {
         System.err.println("GETTING JETTY PROPS FROM BUNDLE: "+configurationBundle.getSymbolicName());
-        String files = System.getProperty(SYS_PROP_JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
+        String files = System.getProperty(JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
        
         StringTokenizer tokenizer = new StringTokenizer(files, ";,", false);
         StringBuilder res = new StringBuilder();
@@ -241,29 +214,35 @@ public class DefaultJettyAtJettyHomeHelper
             else
             {
                 //relative file path
-                Enumeration<URL> enUrls = BundleFileLocatorHelper.DEFAULT.findEntries(configurationBundle, etcFile);
-
+                System.err.println("Finding "+etcFile+" in bundle "+configurationBundle);
+                Enumeration<URL> enUrls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(configurationBundle, etcFile);
+                
+              
                 // default for org.eclipse.osgi.boot where we look inside
                 // jettyhome for the default embedded configuration.
                 // default inside jettyhome. this way fragments to the bundle
                 // can define their own configuration.
                 if ((enUrls == null || !enUrls.hasMoreElements()))
                 {
-                    String tmp = DEFAULT_JETTYHOME+"/etc/"+etcFile;
-                    enUrls = BundleFileLocatorHelper.DEFAULT.findEntries(configurationBundle, tmp);
-                    LOG.info("Configuring jetty with the default embedded configuration:" + "bundle: "
+                    String tmp = DEFAULT_JETTYHOME+etcFile;
+                    enUrls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(configurationBundle, tmp);                    
+                    LOG.info("Configuring jetty from bundle: "
                                        + configurationBundle.getSymbolicName()
-                                       + " config: "+tmp);
+                                       + " with "+tmp);
+                    
+                    System.err.println(configurationBundle.getEntry(tmp));
                 }
                 if (enUrls == null || !enUrls.hasMoreElements())
                 {
-                    LOG.warn("Unable to locate a jetty configuration file for " + etcFile);
+                    throw new IllegalStateException ("Unable to locate a jetty configuration file for " + etcFile);
                 }
                 if (enUrls != null)
                 {
                     while (enUrls.hasMoreElements())
                     {
-                        appendToCommaSeparatedList(res, enUrls.nextElement().toString());
+                        URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getFileURL(enUrls.nextElement());
+                        System.err.println("Got url: "+url +" from "+url.getClass().getName());
+                        appendToCommaSeparatedList(res, url.toString());
                     }
                 }
             }

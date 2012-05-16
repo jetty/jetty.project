@@ -27,7 +27,6 @@ import org.apache.jasper.compiler.Localizer;
 import org.apache.jasper.xmlparser.ParserUtils;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
-import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.util.log.Log;

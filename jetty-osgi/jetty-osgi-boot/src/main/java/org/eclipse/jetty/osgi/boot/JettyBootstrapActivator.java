@@ -33,7 +33,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
-//mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot-jsp" ).versionAsInProject().start(),
+
 /**
  * Bootstrap jetty and publish a default Server instance as an OSGi service.
  * 
@@ -89,12 +89,12 @@ public class JettyBootstrapActivator implements BundleActivator
         // should activate.
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
-        // track Server instances that we should support as deployment targets
+        // track jetty Server instances that we should support as deployment targets
         _jettyServerServiceTracker = new JettyServerServiceTracker();
         context.addServiceListener(_jettyServerServiceTracker, "(objectclass=" + Server.class.getName() + ")");
 
         // track ContextHandler class instances and deploy them to one of the known Servers
-        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(_jettyServerServiceTracker);
+        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker();
         context.addServiceListener(_jettyContextHandlerTracker, "(objectclass=" + ContextHandler.class.getName() + ")");
 
         // Create a default jetty instance right now.

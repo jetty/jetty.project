@@ -12,17 +12,12 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Dictionary;
 
+import org.eclipse.jetty.osgi.boot.BundleProvider;
 import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
-import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,22 +29,8 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * Support bundles that declare the webapp directly through headers in their
+ * Support bundles that declare a webpp or context directly through headers in their
  * manifest.
- * <p>
- * Those headers will define a new WebApplication:
- * <ul>
- * <li>Web-ContextPath</li>
- * <li>Jetty-WarFolderPath</li>
- * </ul>
- * </p>
- * <p>
- * Those headers will define a new app started via a jetty-context or a list of
- * them. ',' column is the separator between the various context files.
- * <ul>
- * <li>Jetty-ContextFilePath</li>
- * </ul>
- * </p>
  * 
  * @author hmalphettes
  */
@@ -58,21 +39,28 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
     private static final Logger LOG = Log.getLogger(WebBundleTrackerCustomizer.class);
     
     public static Collection<WebappRegistrationCustomizer> JSP_REGISTRATION_HELPERS = new ArrayList<WebappRegistrationCustomizer>();
-    public static final String FILTER = "(&(objectclass=" + BundleWebAppProvider.class.getName() + ")"+
+    public static final String FILTER = "(&(objectclass=" + BundleProvider.class.getName() + ")"+
                                           "("+OSGiServerConstants.MANAGED_JETTY_SERVER_NAME+"="+OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME+"))";
 
     private ServiceTracker _serviceTracker;
     
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @throws Exception
+     */
     public WebBundleTrackerCustomizer ()
     throws Exception
     {
         Bundle myBundle = FrameworkUtil.getBundle(this.getClass());
         
-        //track all instances of deployers of webapps as bundles       
+        //track all instances of deployers of webapps/contexts as bundles       
         _serviceTracker = new ServiceTracker(myBundle.getBundleContext(), FrameworkUtil.createFilter(FILTER),null);
         _serviceTracker.open();
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * A bundle is being added to the <code>BundleTracker</code>.
      * 
@@ -111,6 +99,8 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
         return null;
     }
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * A bundle tracked by the <code>BundleTracker</code> has been modified.
      * 
@@ -138,6 +128,8 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
         }
     }
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * A bundle tracked by the <code>BundleTracker</code> has been removed.
      * 
@@ -156,6 +148,8 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
         unregister(bundle);
     }
 
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param bundle
      * @return true if this bundle in indeed a web-bundle.
@@ -164,23 +158,45 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
     {
         if (bundle == null)
             return false;
-        
-        //It might be a webapp bundle
-        //If it is, it will be deployed to our default jetty Server instance.
-        //Get a reference to a jetty BundleWebAppProvider as an osgi service that can do the deployment
 
-       BundleWebAppProvider deployer = (BundleWebAppProvider)_serviceTracker.getService();
-       if (deployer != null)
-           return deployer.bundleAdded(bundle);   
-       return false;
+        //It might be a bundle that we can deploy to our default jetty server instance
+        boolean deployed = false;
+        Object[] deployers = _serviceTracker.getServices();
+        if (deployers != null)
+        {
+            System.err.println("FOUND "+deployers.length+" FOR "+bundle.getSymbolicName());
+            int i=0;
+            while (!deployed && i<deployers.length)
+            {
+                
+                BundleProvider p = (BundleProvider)deployers[i];
+                System.err.println("Trying deployer "+p);
+                deployed = p.bundleAdded(bundle);
+                i++;
+                System.err.println("Deployer "+p+" returned "+deployed);
+            }
+        }
+        else
+            System.err.println("NO DEPLOYER FOUND FOR "+bundle.getSymbolicName());
 
+        return deployed;
     }
-    
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param bundle
+     */
     private void unregister(Bundle bundle)
-    {
-        BundleWebAppProvider deployer = (BundleWebAppProvider)_serviceTracker.getService();
-        if (deployer != null)
-            deployer.bundleRemoved(bundle);
+    { 
+        Object[] deployers = _serviceTracker.getServices();
+        boolean undeployed = false;
+        if (deployers != null)
+        {
+            int i=0;
+            while (!undeployed && i<deployers.length)
+            {
+                undeployed = ((BundleProvider)deployers[i++]).bundleRemoved(bundle);
+            }
+        }
     }
 }

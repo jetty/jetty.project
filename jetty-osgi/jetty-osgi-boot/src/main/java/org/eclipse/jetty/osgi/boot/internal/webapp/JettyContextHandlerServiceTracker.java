@@ -14,13 +14,18 @@ package org.eclipse.jetty.osgi.boot.internal.webapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.boot.ServiceProvider;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
@@ -58,15 +63,8 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
 {
     private static Logger __logger = Log.getLogger(JettyContextHandlerServiceTracker.class.getName());
     
-    public static final String FILTER = "(objectclass=" + BundleWebAppProvider.class.getName() + ")";
+    public static final String FILTER = "(objectclass=" + ServiceProvider.class.getName() + ")";
     
-    
-
-    /** New style: ability to manage multiple jetty instances */
-    private final IManagedJettyServerRegistry _registry;
-
-    /** The context-handler to deactivate indexed by context handler */
-    private Map<ServiceReference, ContextHandler> _indexByServiceReference = new HashMap<ServiceReference, ContextHandler>();
 
     /**
      * The index is the bundle-symbolic-name/path/to/context/file when there is
@@ -84,10 +82,8 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
     /**
      * @param registry
      */
-    public JettyContextHandlerServiceTracker(IManagedJettyServerRegistry registry) throws Exception
+    public JettyContextHandlerServiceTracker() throws Exception
     {
-        _registry = registry;
-        
         //track all instances of deployers of webapps
         Bundle myBundle = FrameworkUtil.getBundle(this.getClass());
         _serviceTracker = new ServiceTracker(myBundle.getBundleContext(), FrameworkUtil.createFilter(FILTER),null);
@@ -144,12 +140,13 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
         });
     }
     
-    public BundleWebAppProvider getDeployer(String managedServerName)
+    public Map<ServiceReference, ServiceProvider> getDeployers(String managedServerName)
     {
         if (managedServerName == null)
             managedServerName = OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME;
         
-        ServiceReference sr = null;
+        Map<ServiceReference, ServiceProvider> candidates = new HashMap<ServiceReference, ServiceProvider>();
+        
         ServiceReference[] references = _serviceTracker.getServiceReferences();
         if (references != null)
         {
@@ -157,14 +154,14 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
             {
                 String name = (String)ref.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
                 if (managedServerName.equalsIgnoreCase(name))
-                    sr = ref;
+                {
+                    ServiceProvider candidate = (ServiceProvider)_serviceTracker.getService(ref);
+                    if (candidate != null)
+                        candidates.put(ref, candidate);
+                }
             }
         }
-        
-        if (sr != null)
-            return (BundleWebAppProvider)_serviceTracker.getService(sr);
-        
-        return null;
+       return candidates;
     }
 
     /**
@@ -183,20 +180,23 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
             case ServiceEvent.MODIFIED:
             case ServiceEvent.UNREGISTERING:
             {
-                //TODO unregister a ContextHandler, either with the BundleWebAppDeployer or with a BundleContextAppDeployer
+                BundleContext context = FrameworkUtil.getBundle(JettyBootstrapActivator.class).getBundleContext();
+                ContextHandler contextHandler = (ContextHandler) context.getService(sr);
+              
                 
-               /*                ContextHandler ctxtHandler = unregisterInIndex(ev.getServiceReference());
-                if (ctxtHandler != null && !ctxtHandler.isStopped())
+                //Get a jetty deployer targetted to the named server instance, or the default one if not named
+                String serverName = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
+                Map<ServiceReference, ServiceProvider> candidates = getDeployers(serverName);
+                if (candidates != null)
                 {
-                    try
+                    boolean removed = false;
+                    Iterator<Entry<ServiceReference, ServiceProvider>> itor = candidates.entrySet().iterator();
+                    while (!removed && itor.hasNext())
                     {
-                        getWebBundleDeployerHelp(sr).unregister(ctxtHandler);
+                        Entry<ServiceReference, ServiceProvider> e = itor.next();
+                        removed = e.getValue().serviceRemoved(sr, contextHandler);
                     }
-                    catch (Exception e)
-                    {
-                        __logger.warn(e);
-                    }
-                }*/
+                }
             }
             if (ev.getType() == ServiceEvent.UNREGISTERING)
             {
@@ -209,166 +209,42 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
             }
             case ServiceEvent.REGISTERED:
             {
+                System.err.println("New Service registered that could be webapp/context");
                 Bundle contributor = sr.getBundle();
                 BundleContext context = FrameworkUtil.getBundle(JettyBootstrapActivator.class).getBundleContext();
                 ContextHandler contextHandler = (ContextHandler) context.getService(sr);
                 if (contextHandler.getServer() != null)
                 {
                     // is configured elsewhere.
+                    System.err.println("Already configured");
                     return;
                 }
-                
-              //Get a jetty deployer targetted to the named server instance, or the default one if not named
-                if (contextHandler instanceof WebAppContext)
-                {
-                    WebAppContext webApp = (WebAppContext)contextHandler;
-                    
-                    String whichServer = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
-                    BundleWebAppProvider deployer = getDeployer(whichServer);
-                    deployer.serviceAdded(sr, webApp);
-                }
-                else
-                {
-                    //TODO get a reference to a jetty deployer that is happy to deploy plain ContextHandlers
-                }
-                
-                
-               /* String contextFilePath = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH);
-                if (contextHandler instanceof WebAppContext && contextFilePath == null)
-                    // it could be a web-application that will in fact be configured
-                    // via a context file.
-                    // that case is identified by the fact that the contextFilePath
-                    // is not null
-                    // in that case we must use the register context methods.
-                {
-                    WebAppContext webapp = (WebAppContext) contextHandler;
-                    String contextPath = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH);
-                    if (contextPath == null)
-                    {
-                        contextPath = webapp.getContextPath();
-                    }
-                    String webXmlPath = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_WEB_XML_PATH);
-                    if (webXmlPath == null)
-                    {
-                        webXmlPath = webapp.getDescriptor();
-                    }
-                    String defaultWebXmlPath = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_DEFAULT_WEB_XML_PATH);
-                    if (defaultWebXmlPath == null)
-                    {
-                        String jettyHome = System.getProperty(DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME);
-                        if (jettyHome != null)
-                        {
-                            File etc = new File(jettyHome, "etc");
-                            if (etc.exists() && etc.isDirectory())
-                            {
-                                File webDefault = new File(etc, "webdefault.xml");
-                                if (webDefault.exists())
-                                    defaultWebXmlPath = webDefault.getAbsolutePath();
-                                else
-                                    defaultWebXmlPath = webapp.getDefaultsDescriptor();
-                            }
-                            else
-                                defaultWebXmlPath = webapp.getDefaultsDescriptor();
-                        }
-                    }
-                    String war = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_WAR);
-                    try
-                    {
-                        IWebBundleDeployerHelper deployerHelper = getWebBundleDeployerHelp(sr);
-                        if (deployerHelper == null)
-                        {
 
-                        }
-                        else
-                        {
-                            WebAppContext handler = deployerHelper.registerWebapplication(contributor,
-                                                                                          war,
-                                                                                          contextPath,
-                                                                                          (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH),
-                                                                                          (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE),
-                                                                                          (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_REQUIRE_TLD_BUNDLE),
-                                                                                          webXmlPath, defaultWebXmlPath, webapp);
-                            if (handler != null)
-                            {
-                                registerInIndex(handler, sr);
-                            }
-                        }
-                    }
-                    catch (Throwable e)
-                    {
-                        __logger.warn(e);
-                    }
-                }
-                else
+                System.err.println("Service registered from bundle: "+contributor.getSymbolicName());
+                System.err.println("war="+sr.getProperty("war"));
+                
+                //Get a jetty deployer targetted to the named server instance, or the default one if not named
+                String serverName = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
+                Map<ServiceReference, ServiceProvider> candidates = getDeployers(serverName);
+                if (candidates != null)
                 {
-                    // consider this just an empty skeleton:
-                    if (contextFilePath == null) { throw new IllegalArgumentException("the property contextFilePath is required"); }
-                    try
+                    System.err.println("Got some candidates");
+                    boolean added = false;
+                    Iterator<Entry<ServiceReference, ServiceProvider>> itor = candidates.entrySet().iterator();
+                    while (!added && itor.hasNext())
                     {
-                        IWebBundleDeployerHelper deployerHelper = getWebBundleDeployerHelp(sr);
-                        if (deployerHelper == null)
-                        {
-                            // more warnings?
-                        }
-                        else
-                        {
-                            if (Boolean.TRUE.toString().equals(sr.getProperty(IWebBundleDeployerHelper.INTERNAL_SERVICE_PROP_UNKNOWN_CONTEXT_HANDLER_TYPE)))
-                            {
-                                contextHandler = null;
-                            }
-                            ContextHandler handler = deployerHelper.registerContext(contributor,
-                                                                                    contextFilePath,
-                                                                                    (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH),
-                                                                                    (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE),
-                                                                                    (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_REQUIRE_TLD_BUNDLE),
-                                                                                    contextHandler);
-                            if (handler != null)
-                            {
-                                registerInIndex(handler, sr);
-                            }
-                        }
+                        Entry<ServiceReference, ServiceProvider> e = itor.next();
+                        System.err.println("Trying ServiceProvider "+e.getValue());
+                        added = e.getValue().serviceAdded(sr, contextHandler);
                     }
-                    catch (Throwable e)
-                    {
-                        __logger.warn(e);
-                    }
-                    */
                 }
-            break;
+                break;
+            }
         }
     }
 
-    private void registerInIndex(ContextHandler handler, ServiceReference sr)
-    {
-        _indexByServiceReference.put(sr, handler);
-        String key = getSymbolicNameAndContextFileKey(sr);
-        if (key != null)
-        {
-            _indexByContextFile.put(key, sr);
-        }
-    }
+  
 
-    /**
-     * Returns the ContextHandler to stop.
-     * 
-     * @param reg
-     * @return the ContextHandler to stop.
-     */
-    private ContextHandler unregisterInIndex(ServiceReference sr)
-    {
-        ContextHandler handler = _indexByServiceReference.remove(sr);
-        String key = getSymbolicNameAndContextFileKey(sr);
-        if (key != null)
-        {
-            _indexByContextFile.remove(key);
-        }
-        if (handler == null)
-        {
-            // a warning?
-            return null;
-        }
-        return handler;
-    }
 
     /**
      * @param sr
@@ -414,30 +290,4 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
         }
         return canFilename.substring(osgiContextHomeFolderCanonicalPath.length()).replace('\\', '/');
     }
-
-    /**
-     * @return The server on which this webapp is meant to be deployed
-     */
-    private ServerInstanceWrapper getServerInstanceWrapper(String managedServerName)
-    {
-        if (_registry == null) { return null; }
-        if (managedServerName == null)
-        {
-            managedServerName = OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME;
-        }
-        ServerInstanceWrapper wrapper = _registry.getServerInstanceWrapper(managedServerName);
-        // System.err.println("Returning " + managedServerName + "  = " +
-        // wrapper);
-        return wrapper;
-    }
-
-    private IWebBundleDeployerHelper getWebBundleDeployerHelp(ServiceReference sr)
-    {
-        return null;
-      /*  if (_registry == null) { return null; }
-        String managedServerName = (String) sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-        ServerInstanceWrapper wrapper = getServerInstanceWrapper(managedServerName);
-        return wrapper != null ? wrapper.getWebBundleDeployerHelp() : null;*/
-    }
-
 }
