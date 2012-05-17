@@ -40,7 +40,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -70,26 +69,27 @@ public abstract class HttpChannel
         __currentChannel.set(channel);
     }
     
-    private int _requests;
+    
 
     private final Server _server;
     private final AsyncConnection _connection;
     private final HttpURI _uri;
 
+    private final ChannelEventHandler _handler = new ChannelEventHandler();
+    private final HttpChannelState _state;
+    
     private final HttpFields _requestFields;
     private final Request _request;
-    private final AsyncContinuation _state;
+    private final HttpInput _in;
 
     private final HttpFields _responseFields;
     private final Response _response;
-    
-
-    private final HttpInput _in;
     private final Output _out;
-    private volatile HttpWriter _writer;
-    private volatile PrintWriter _printWriter;
+    private HttpWriter _writer;
+    private PrintWriter _printWriter;
 
-    int _include;
+    private int _requests;
+    private int _include;
 
     private HttpVersion _version = HttpVersion.HTTP_1_1;
 
@@ -97,11 +97,8 @@ public abstract class HttpChannel
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     private boolean _host = false;
-
     
-    private final RequestHandler _handler = new RequestHandler();
     
-
     /* ------------------------------------------------------------ */
     /** Constructor
      *
@@ -113,16 +110,17 @@ public abstract class HttpChannel
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
+        _state = new HttpChannelState(this);
         _request = new Request(this);
         _response = new Response(this);
-        _state = _request.getAsyncContinuation();
         _in=input;
         _out=new Output();
     }
-   
-    public interface EventHandler extends HttpParser.RequestHandler
+    
+    /* ------------------------------------------------------------ */
+    public HttpChannelState getState()
     {
-        ResponseInfo commit();
+        return _state;
     }
     
     /* ------------------------------------------------------------ */
@@ -153,11 +151,6 @@ public abstract class HttpChannel
     }
     
     
-    /* ------------------------------------------------------------ */
-    public AsyncContinuation getAsyncContinuation()
-    {
-        return _state;
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -302,7 +295,7 @@ public abstract class HttpChannel
     }
 
     /* ------------------------------------------------------------ */
-    protected void handleRequest() throws IOException
+    protected void handleRequest()
     {
         LOG.debug("{} handleRequest",this);
 
@@ -397,9 +390,16 @@ public abstract class HttpChannel
                 }
 
                 if (!_response.isCommitted() && !_request.isHandled())
-                    _response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                    sendError(HttpServletResponse.SC_NOT_FOUND,null,null,false);
 
-                _response.complete();
+                try
+                {
+                    _response.complete();
+                }
+                catch(IOException e)
+                {
+                    LOG.debug(e);
+                }
                 _request.setHandled(true);
                 completed();
             }
@@ -498,7 +498,7 @@ public abstract class HttpChannel
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private class RequestHandler implements EventHandler
+    private class ChannelEventHandler implements EventHandler
     {
         @Override
         public boolean startRequest(HttpMethod httpMethod,String method, String uri, HttpVersion version)
@@ -772,7 +772,17 @@ public abstract class HttpChannel
 
     protected abstract void completed();
     
+    protected abstract void execute(Runnable task);
+    
     public abstract Timer getTimer();
+    
+
+
+    /* ------------------------------------------------------------ */
+    public interface EventHandler extends HttpParser.RequestHandler
+    {
+        ResponseInfo commit();
+    }
     
 
 }

@@ -119,7 +119,7 @@ public class Request implements HttpServletRequest
 
     private final HttpChannel _channel;
     private HttpFields _fields;
-    private final AsyncContinuation _async = new AsyncContinuation();
+    private final HttpChannelState _async;
 
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
@@ -169,8 +169,8 @@ public class Request implements HttpServletRequest
     public Request(HttpChannel channel)
     {
         _channel = channel;
+        _async=channel.getState();
         _fields=_channel.getRequestFields();
-        _async.setConnection(channel);
     }
     
     /* ------------------------------------------------------------ */
@@ -311,7 +311,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public AsyncContinuation getAsyncContinuation()
+    public HttpChannelState getAsyncContinuation()
     {
         return _async;
     }

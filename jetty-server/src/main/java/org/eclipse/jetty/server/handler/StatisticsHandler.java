@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.server.AsyncContinuation;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -53,7 +53,7 @@ public class StatisticsHandler extends HandlerWrapper
     {
         public void onComplete(Continuation continuation)
         {
-            final Request request = ((AsyncContinuation)continuation).getBaseRequest();
+            final Request request = ((HttpChannelState)continuation).getBaseRequest();
             final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
             
             _requestStats.decrement();
@@ -100,7 +100,7 @@ public class StatisticsHandler extends HandlerWrapper
         _dispatchedStats.increment();
 
         final long start;
-        AsyncContinuation continuation = request.getAsyncContinuation();
+        HttpChannelState continuation = request.getAsyncContinuation();
         if (continuation.isInitial())
         {
             // new request

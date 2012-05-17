@@ -21,6 +21,7 @@ import java.util.TimerTask;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -39,9 +40,9 @@ import org.eclipse.jetty.util.log.Logger;
 /** Implementation of Continuation and AsyncContext interfaces
  * 
  */
-public class AsyncContinuation implements AsyncContext, Continuation
+public class HttpChannelState implements AsyncContext, Continuation
 {
-    private static final Logger LOG = Log.getLogger(AsyncContinuation.class);
+    private static final Logger LOG = Log.getLogger(HttpChannelState.class);
 
     private final static long DEFAULT_TIMEOUT=30000L;
     
@@ -76,7 +77,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     };
     
     /* ------------------------------------------------------------ */
-    protected HttpChannel _channel;
+    private final HttpChannel _channel;
     private List<AsyncListener> _lastAsyncListeners;
     private List<AsyncListener> _asyncListeners;
     private List<ContinuationListener> _continuationListeners;
@@ -92,8 +93,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
     private volatile boolean _continuation;
     
     /* ------------------------------------------------------------ */
-    protected AsyncContinuation()
+    protected HttpChannelState(HttpChannel channel)
     {
+        _channel=channel;
         _state=State.IDLE;
         _initial=true;
     }
@@ -105,15 +107,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
     
     /* ------------------------------------------------------------ */
-    protected void setConnection(final HttpChannel connection)
-    {
-        synchronized(this)
-        {
-            _channel=connection;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
+    @Override
     public void addListener(AsyncListener listener)
     {
         synchronized(this)
@@ -125,6 +119,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void addListener(AsyncListener listener,ServletRequest request, ServletResponse response)
     {
         synchronized(this)
@@ -137,6 +132,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void addContinuationListener(ContinuationListener listener)
     {
         synchronized(this)
@@ -148,6 +144,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setTimeout(long ms)
     {
         synchronized(this)
@@ -157,6 +154,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     } 
 
     /* ------------------------------------------------------------ */
+    @Override
     public long getTimeout()
     {
         synchronized(this)
@@ -176,13 +174,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
    
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.continuation.Continuation#keepWrappers()
-     */
-
-    /* ------------------------------------------------------------ */
-    /**
      * @see org.eclipse.jetty.continuation.Continuation#isResponseWrapped()
      */
+    @Override
     public boolean isResponseWrapped()
     {
         return _responseWrapped;
@@ -192,6 +186,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#isInitial()
      */
+    @Override
     public boolean isInitial()
     {
         synchronized(this)
@@ -204,6 +199,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#isSuspended()
      */
+    @Override
     public boolean isSuspended()
     {
         synchronized(this)
@@ -385,7 +381,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 }
             }
         }
-        
     }
 
     /* ------------------------------------------------------------ */
@@ -442,6 +437,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void dispatch()
     {
         boolean dispatch=false;
@@ -549,6 +545,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#complete()
      */
+    @Override
     public void complete()
     {
         // just like resume, except don't set _resumed=true;
@@ -583,6 +580,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException 
     {
         try
@@ -630,8 +628,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 {
                     if (ex!=null)
                     {
-                        _event.getSuppliedRequest().setAttribute(Dispatcher.ERROR_EXCEPTION,ex);
-                        _event.getSuppliedRequest().setAttribute(Dispatcher.ERROR_MESSAGE,ex.getMessage());
+                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,ex);
+                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,ex.getMessage());
                         listener.onError(_event);
                     }
                     else
@@ -695,7 +693,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected void scheduleDispatch()
     {
-        // _channel.asyncDispatch();
+        _channel.execute(_handleRequest);
     }
 
     /* ------------------------------------------------------------ */
@@ -782,6 +780,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void dispatch(ServletContext context, String path)
     {
         _event._dispatchContext=context;
@@ -790,6 +789,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void dispatch(String path)
     {
         _event._path=path;
@@ -803,6 +803,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public ServletRequest getRequest()
     {
         if (_event!=null)
@@ -811,6 +812,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public ServletResponse getResponse()
     {
         if (_responseWrapped && _event!=null && _event.getSuppliedResponse()!=null)
@@ -819,13 +821,15 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void start(final Runnable run)
     {
         final AsyncEventState event=_event;
         if (event!=null)
         {
-            _channel.getServer().getThreadPool().dispatch(new Runnable()
+            _channel.execute(new Runnable()
             {
+                @Override
                 public void run()
                 {
                     ((Context)event.getServletContext()).getContextHandler().handle(run);
@@ -835,6 +839,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean hasOriginalRequestAndResponse()
     {
         synchronized (this)
@@ -857,6 +862,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see Continuation#isResumed()
      */
+    @Override
     public boolean isResumed()
     {
         synchronized (this)
@@ -868,6 +874,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see Continuation#isExpired()
      */
+    @Override
     public boolean isExpired()
     {
         synchronized (this)
@@ -880,6 +887,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see Continuation#resume()
      */
+    @Override
     public void resume()
     {
         dispatch();
@@ -889,18 +897,19 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see Continuation#suspend()
      */
+    @Override
     public void suspend(ServletResponse response)
     {
         _continuation=true;
         if (response instanceof ServletResponseWrapper)
         {
             _responseWrapped=true;
-            AsyncContinuation.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),response);       
+            HttpChannelState.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),response);       
         }
         else
         {
             _responseWrapped=false;
-            AsyncContinuation.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
+            HttpChannelState.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
         }
     }
 
@@ -908,17 +917,19 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see Continuation#suspend()
      */
+    @Override
     public void suspend()
     {
         _responseWrapped=false;
         _continuation=true;
-        AsyncContinuation.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
+        HttpChannelState.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
      */
+    @Override
     public ServletResponse getServletResponse()
     {
         if (_responseWrapped && _event!=null && _event.getSuppliedResponse()!=null)
@@ -930,6 +941,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
      */
+    @Override
     public Object getAttribute(String name)
     {
         return _channel.getRequest().getAttribute(name);
@@ -939,6 +951,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
      */
+    @Override
     public void removeAttribute(String name)
     {
         _channel.getRequest().removeAttribute(name);
@@ -948,6 +961,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
      */
+    @Override
     public void setAttribute(String name, Object attribute)
     {
         _channel.getRequest().setAttribute(name,attribute);
@@ -957,6 +971,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#undispatch()
      */
+    @Override
     public void undispatch()
     {
         if (isSuspended())
@@ -976,7 +991,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
         @Override
         public void run()
         {
-            AsyncContinuation.this.expired();
+            HttpChannelState.this.expired();
         }
     }
 
@@ -991,7 +1006,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
-            super(AsyncContinuation.this, request,response);
+            super(HttpChannelState.this, request,response);
             _suspendedContext=context;
         }
         
@@ -1015,4 +1030,13 @@ public class AsyncContinuation implements AsyncContext, Continuation
             return _path;
         }
     }
+    
+    private final Runnable _handleRequest = new Runnable()
+    {
+        @Override
+        public void run() 
+        {
+            _channel.handleRequest();
+        }
+    };
 }

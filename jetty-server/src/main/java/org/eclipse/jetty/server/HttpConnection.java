@@ -527,8 +527,13 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         public Timer getTimer()
         {
-            // TODO Auto-generated method stub
-            return null;
+            return _connector.getTimer();
+        }
+
+        @Override
+        protected void execute(Runnable task)
+        {
+            _connector.findExecutor().execute(task);
         }
 
         private FutureCallback<Void> write(ByteBuffer b0,ByteBuffer b1,ByteBuffer b2)

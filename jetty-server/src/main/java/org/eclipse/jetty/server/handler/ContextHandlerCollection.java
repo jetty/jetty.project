@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.AsyncContinuation;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
@@ -179,7 +179,7 @@ public class ContextHandlerCollection extends HandlerCollection
         if (handlers==null || handlers.length==0)
 	    return;
 	
-	AsyncContinuation async = baseRequest.getAsyncContinuation();
+	HttpChannelState async = baseRequest.getAsyncContinuation();
 	if (async.isAsync())
 	{
 	    ContextHandler context=async.getContextHandler();

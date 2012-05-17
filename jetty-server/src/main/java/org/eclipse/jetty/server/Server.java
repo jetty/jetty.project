@@ -364,8 +364,8 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void handleAsync(HttpChannel connection) throws IOException, ServletException
     {
-        final AsyncContinuation async = connection.getRequest().getAsyncContinuation();
-        final AsyncContinuation.AsyncEventState state = async.getAsyncEventState();
+        final HttpChannelState async = connection.getRequest().getAsyncContinuation();
+        final HttpChannelState.AsyncEventState state = async.getAsyncEventState();
 
         final Request baseRequest=connection.getRequest();
         final String path=state.getPath();

@@ -2,6 +2,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Timer;
 
 import javax.servlet.ServletRequest;
 
@@ -18,6 +19,7 @@ public abstract class HttpConnector extends AbstractConnector
     private int _confidentialPort = 0;
     private boolean _forwarded;
     private String _hostHeader;
+    private Timer _timer = new Timer(true);
 
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
     private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
@@ -41,7 +43,29 @@ public abstract class HttpConnector extends AbstractConnector
     {
         super(acceptors);
     }
+    
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        _timer=new Timer("Timer-"+getName(),true);
+    }
 
+    @Override
+    protected void doStop() throws Exception
+    {
+        _timer.cancel();
+        _timer=null;
+        super.doStop();
+    }
+
+
+    public Timer getTimer()
+    {
+        return _timer;
+    }
+    
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
