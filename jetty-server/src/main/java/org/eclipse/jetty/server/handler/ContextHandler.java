@@ -54,7 +54,6 @@ import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
@@ -1053,7 +1052,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
 
             if (DispatcherType.REQUEST.equals(dispatch) && isProtectedTarget(target))
-                throw new HttpException(HttpServletResponse.SC_NOT_FOUND);
+            {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                baseRequest.setHandled(true);
+                return;
+            }
 
             // start manual inline of nextHandle(target,baseRequest,request,response);
             // noinspection ConstantIfStatement
@@ -1064,12 +1067,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             else if (_handler != null)
                 _handler.handle(target,baseRequest,request,response);
             // end manual inline
-        }
-        catch (HttpException e)
-        {
-            LOG.debug(e);
-            baseRequest.setHandled(true);
-            response.sendError(e.getStatus(),e.getReason());
         }
         finally
         {

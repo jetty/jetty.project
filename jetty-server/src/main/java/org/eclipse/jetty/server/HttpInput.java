@@ -168,7 +168,7 @@ public abstract class HttpInput extends ServletInputStream
     {   
     }
     
-    public boolean content(ByteBuffer ref) throws IOException
+    public boolean content(ByteBuffer ref)
     {
         synchronized (_inputQ.lock())
         {

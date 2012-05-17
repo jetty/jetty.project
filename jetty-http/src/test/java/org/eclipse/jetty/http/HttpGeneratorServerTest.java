@@ -43,7 +43,7 @@ public class HttpGeneratorServerTest
     private class Handler implements HttpParser.ResponseHandler
     {
         @Override
-        public boolean content(ByteBuffer ref) throws IOException
+        public boolean content(ByteBuffer ref)
         {
             if (_content==null)
                 _content="";
@@ -59,20 +59,20 @@ public class HttpGeneratorServerTest
         }
 
         @Override
-        public boolean headerComplete(boolean hasBody,boolean persistent) throws IOException
+        public boolean headerComplete(boolean hasBody,boolean persistent)
         {
             _content= null;
             return false;
         }
 
         @Override
-        public boolean messageComplete(long contentLength) throws IOException
+        public boolean messageComplete(long contentLength)
         {
             return true;
         }
 
         @Override
-        public boolean parsedHeader(HttpHeader header, String name, String value) throws IOException
+        public boolean parsedHeader(HttpHeader header, String name, String value)
         {
             _hdr.add(name);
             _val.add(value);
@@ -80,13 +80,20 @@ public class HttpGeneratorServerTest
         }
 
         @Override
-        public boolean startResponse(HttpVersion version, int status, String reason) throws IOException
+        public boolean startResponse(HttpVersion version, int status, String reason)
         {
             _version=version;
             _status=status;
             _reason=reason;
             return false;
         }
+
+        @Override
+        public void badMessage(String reason)
+        {
+            throw new IllegalStateException(reason);
+        }
+        
     }
     
 

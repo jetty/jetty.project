@@ -19,7 +19,6 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.AsyncConnection;

@@ -164,7 +164,9 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     Headers.Header version = headers.get("version");
 
                     if (method == null || uri == null || version == null)
+                    {
                         throw new HttpException(HttpStatus.BAD_REQUEST_400);
+                    }
 
                     String m = method.value();
                     String u = uri.value();

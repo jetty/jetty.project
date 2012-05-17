@@ -14,12 +14,15 @@
 package org.eclipse.jetty.http;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -456,6 +459,193 @@ public class HttpParserTest
 
     }
 
+    @Test
+    public void testNoURI() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET\015\012"
+                        + "Content-Length: 0\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals(null,f0);
+        assertEquals("No URI",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+
+
+    @Test
+    public void testNoURI2() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET \015\012"
+                        + "Content-Length: 0\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals(null,f0);
+        assertEquals("No URI",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+    
+    @Test
+    public void testUnknownReponseVersion() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "HPPT/7.7 200 OK\015\012"
+                        + "Content-Length: 0\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals(null,f0);
+        assertEquals("Unknown Version",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+    
+    @Test
+    public void testNoStatus() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "HTTP/1.1\015\012"
+                        + "Content-Length: 0\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals(null,f0);
+        assertEquals("No Status",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+    
+    @Test
+    public void testNoStatus2() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "HTTP/1.1 \015\012"
+                        + "Content-Length: 0\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals(null,f0);
+        assertEquals("No Status",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+    
+    @Test
+    public void testBadRequestVersion() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HPPT/7.7\015\012"
+                        + "Content-Length: 0\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals(null,f0);
+        assertEquals("Unknown Version",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+    
+    @Test
+    public void testBadContentLength0() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012"
+                        + "Content-Length: abc\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals("GET",f0);
+        assertEquals("Bad Content-Length",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+    
+    @Test
+    public void testBadContentLength1() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012"
+                        + "Content-Length: 9999999999999999999999999999999999999999999999\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals("GET",f0);
+        assertEquals("Bad Content-Length",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+    
+    @Test
+    public void testBadContentLength2() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012"
+                        + "Content-Length: 1.5\015\012"
+                        + "Connection: close\015\012"
+                        + "\015\012");
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+
+        parser.parseNext(buffer);
+        assertEquals("GET",f0);
+        assertEquals("Bad Content-Length",_bad);
+        assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+    }
+    
+    
+    @Before
+    public void init()
+    {
+        _bad=null;
+        _content=null;
+        f0=null;
+        f1=null;
+        f2=null;
+        hdr=null;
+        val=null;
+        h=0;
+    }
+    
+    private String _bad;
     private String _content;
     private String f0;
     private String f1;
@@ -534,6 +724,12 @@ public class HttpParserTest
             //System.err.println("messageComplete");
             messageCompleted = true;
             return true;
+        }
+
+        @Override
+        public void badMessage(String reason)
+        {
+            _bad=reason;
         }
 
         @Override

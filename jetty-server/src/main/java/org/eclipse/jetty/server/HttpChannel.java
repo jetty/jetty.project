@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -42,7 +41,6 @@ import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -342,8 +340,10 @@ public abstract class HttpChannel
                     _uri.getPort();
                     info=URIUtil.canonicalPath(_uri.getDecodedPath());
                     if (info==null && !_request.getMethod().equals(HttpMethod.CONNECT))
-                        throw new HttpException(400);
-                    _request.setPathInfo(info);
+                    {
+                        sendError(400,null,null,true);
+                        return;
+                    }
 
                     if (_out!=null)
                         _out.reopen();
@@ -370,13 +370,6 @@ public abstract class HttpChannel
                     LOG.debug(e);
                     error=true;
                     _request.setHandled(true);
-                }
-                catch (HttpException e)
-                {
-                    LOG.debug(e);
-                    error=true;
-                    _request.setHandled(true);
-                    _response.sendError(e.getStatus(), e.getReason());
                 }
                 catch (Throwable e)
                 {
@@ -426,24 +419,34 @@ public abstract class HttpChannel
     }
 
     /* ------------------------------------------------------------ */
-    protected void sendError(final int status, final String reason, String content, boolean close) throws IOException
+    protected boolean sendError(final int status, final String reason, String content, boolean close)
     {
         if (_response.isCommitted())
-            throw new IllegalStateException("Committed");
+            return false;
         
-        _response.setStatus(status,reason);
-        if (close)
-            _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
-        
-        ByteBuffer buffer=null;
-        if (content!=null)
+        try
         {
-            buffer=BufferUtil.toBuffer(content,StringUtil.__UTF8_CHARSET);
-            _response.setContentLength(buffer.remaining());
+            _response.setStatus(status,reason);
+            if (close)
+                _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
+
+            ByteBuffer buffer=null;
+            if (content!=null)
+            {
+                buffer=BufferUtil.toBuffer(content,StringUtil.__UTF8_CHARSET);
+                _response.setContentLength(buffer.remaining());
+            }
+
+            HttpGenerator.ResponseInfo info = _handler.commit();
+            commit(info,buffer);
+            
+            return true;
         }
-        
-        HttpGenerator.ResponseInfo info = _handler.commit();
-        commit(info,buffer); 
+        catch(Exception e)
+        {
+            LOG.debug("failed to sendError {} {}",status, reason, e);
+        }
+        return false;
     }
 
     /* ------------------------------------------------------------ */
@@ -509,7 +512,7 @@ public abstract class HttpChannel
     private class RequestHandler implements EventHandler
     {
         @Override
-        public boolean startRequest(HttpMethod httpMethod,String method, String uri, HttpVersion version) throws IOException
+        public boolean startRequest(HttpMethod httpMethod,String method, String uri, HttpVersion version)
         {
             _host = false;
             _expect = false;
@@ -520,30 +523,20 @@ public abstract class HttpChannel
                 _request.setTimeStamp(System.currentTimeMillis());
             _request.setMethod(httpMethod,method);
 
-            try
-            {
-                if (httpMethod==HttpMethod.CONNECT)
-                    _uri.parseConnect(uri);
-                else
-                    _uri.parse(uri);
+            if (httpMethod==HttpMethod.CONNECT)
+                _uri.parseConnect(uri);
+            else
+                _uri.parse(uri);
 
-                _request.setUri(_uri);
-                _version=version==null?HttpVersion.HTTP_0_9:version;
-                _request.setHttpVersion(_version);
-            }
-            catch (Exception e)
-            {
-                LOG.debug(e);
-                if (e instanceof HttpException)
-                    throw (HttpException)e;
-                throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
-            }
-            
+            _request.setUri(_uri);
+            _version=version==null?HttpVersion.HTTP_0_9:version;
+            _request.setHttpVersion(_version);
+                
             return false;
         }
 
         @Override
-        public boolean parsedHeader(HttpHeader header, String name, String value) throws IOException
+        public boolean parsedHeader(HttpHeader header, String name, String value)
         {
             if (value==null)
                 return false;
@@ -606,7 +599,7 @@ public abstract class HttpChannel
         }
 
         @Override
-        public boolean headerComplete(boolean hasBody,boolean persistent) throws IOException
+        public boolean headerComplete(boolean hasBody,boolean persistent)
         {
             _requests++;
             switch (_version)
@@ -657,14 +650,14 @@ public abstract class HttpChannel
         }
         
         @Override
-        public boolean content(ByteBuffer ref) throws IOException
+        public boolean content(ByteBuffer ref)
         {
             _in.content(ref);
             return true;
         }
 
         @Override
-        public boolean messageComplete(long contentLength) throws IOException
+        public boolean messageComplete(long contentLength)
         {
             _in.shutdownInput();
             return true;
@@ -680,6 +673,12 @@ public abstract class HttpChannel
         public ResponseInfo commit()
         {
             return _response.commit();
+        }
+
+        @Override
+        public void badMessage(String reason)
+        {
+            sendError(HttpStatus.BAD_REQUEST_400,reason,null,true);
         }
 
     }

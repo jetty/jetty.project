@@ -281,7 +281,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     /* Parse a request or response line
      */
-    private boolean parseLine(ByteBuffer buffer) throws IOException
+    private boolean parseLine(ByteBuffer buffer)
     {
         boolean return_from_parse=false;
         
@@ -311,7 +311,8 @@ public class HttpParser
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
-                        throw new HttpException(HttpStatus.BAD_REQUEST_400);
+                        badMessage(buffer, "No URI");
+                        return true;
                     }
                     else
                         _string.append((char)ch);
@@ -323,13 +324,17 @@ public class HttpParser
                         String version=takeString();
                         _version=HttpVersion.CACHE.get(version);
                         if (_version==null)
-                            throw new HttpException(HttpStatus.BAD_REQUEST_400);
+                        {
+                            badMessage(buffer, "Unknown Version");
+                            return true;
+                        }
                         _persistent=HttpVersion.HTTP_1_1==_version;
                         _state=State.SPACE1;            
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
-                        throw new HttpException(HttpStatus.BAD_REQUEST_400);
+                        badMessage(buffer, "No Status");
+                        return true;
                     }
                     else
                         _string.append((char)ch);
@@ -352,7 +357,8 @@ public class HttpParser
                     }
                     else if (ch < HttpTokens.SPACE)
                     {
-                        throw new HttpException(HttpStatus.BAD_REQUEST_400);
+                        badMessage(buffer, _requestHandler!=null?"No URI":"No Status");
+                        return true;
                     }
                     break;
 
@@ -455,7 +461,10 @@ public class HttpParser
                         String version = takeString();
                         _version=HttpVersion.CACHE.get(version);
                         if (_version==null)
-                            throw new HttpException(HttpStatus.BAD_REQUEST_400);
+                        {
+                            badMessage(buffer, "Unknown Version");
+                            return true;
+                        }
                         
                         _eol=ch;
                         _persistent=HttpVersion.HTTP_1_1==_version;
@@ -499,7 +508,7 @@ public class HttpParser
     /*
      * Parse the message headers and return true if the handler has signaled for a return
      */
-    private boolean parseHeaders(ByteBuffer buffer) throws IOException
+    private boolean parseHeaders(ByteBuffer buffer)
     {
         boolean return_from_parse=false;
 
@@ -552,7 +561,8 @@ public class HttpParser
                                                 catch(NumberFormatException e)
                                                 {
                                                     LOG.ignore(e);
-                                                    throw new HttpException(HttpStatus.BAD_REQUEST_400);
+                                                    badMessage(buffer, "Bad Content-Length");
+                                                    return true;
                                                 }
                                                 if (_contentLength <= 0)
                                                     _endOfContent=EndOfContent.NO_CONTENT;
@@ -569,7 +579,10 @@ public class HttpParser
                                                 if (_valueString.endsWith(HttpHeaderValue.CHUNKED.toString()))
                                                     _endOfContent=EndOfContent.CHUNKED_CONTENT;
                                                 else if (_valueString.indexOf(HttpHeaderValue.CHUNKED.toString()) >= 0)
-                                                    throw new HttpException(400,null);
+                                                {
+                                                    badMessage(buffer, "Bad chunking");
+                                                    return true;
+                                                }
                                             }
                                             break;
 
@@ -852,9 +865,6 @@ public class HttpParser
      */
     public boolean parseNext(ByteBuffer buffer) throws IOException
     {
-        int start=-1;
-        State startState=null;
-
         try
         {
             // process end states
@@ -1056,22 +1066,21 @@ public class HttpParser
 
             return false;
         }
-        catch(HttpException e)
+        catch(Exception e)
         {
-            _persistent=false;
-            _state=State.SEEKING_EOF;
-            throw e;
+            LOG.debug(e);
+            _handler.badMessage(e.toString());
+            return true;
         }
-        finally
-        {
-            if (start>=0)
-            {
-                _string.setLength(0);
-                buffer.position(start);
-                _state=startState;
-            }
-
-        }
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    private void badMessage(ByteBuffer buffer, String reason)
+    {
+        BufferUtil.clear(buffer);
+        _persistent=false;
+        _state=State.SEEKING_EOF;
+        _handler.badMessage(reason);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1142,11 +1151,11 @@ public class HttpParser
      */
     public interface HttpHandler
     {
-        public boolean content(ByteBuffer ref) throws IOException;
+        public boolean content(ByteBuffer ref);
 
-        public boolean headerComplete(boolean hasBody,boolean persistent) throws IOException;
+        public boolean headerComplete(boolean hasBody,boolean persistent);
 
-        public boolean messageComplete(long contentLength) throws IOException;
+        public boolean messageComplete(long contentLength);
 
         /**
          * This is the method called by parser when a HTTP Header name and value is found
@@ -1154,11 +1163,12 @@ public class HttpParser
          * @param name The String value of the header name
          * @param value The String value of the header
          * @return
-         * @throws IOException
          */
-        public boolean parsedHeader(HttpHeader header, String name, String value) throws IOException;
+        public boolean parsedHeader(HttpHeader header, String name, String value);
 
         public boolean earlyEOF();
+        
+        public void badMessage(String reason);
     }
 
     public interface RequestHandler extends HttpHandler
@@ -1166,8 +1176,7 @@ public class HttpParser
         /**
          * This is the method called by parser when the HTTP request line is parsed
          */
-        public abstract boolean startRequest(HttpMethod method, String methodString, String uri, HttpVersion version)
-                throws IOException;
+        public abstract boolean startRequest(HttpMethod method, String methodString, String uri, HttpVersion version);
     }
 
     public interface ResponseHandler extends HttpHandler
@@ -1175,8 +1184,7 @@ public class HttpParser
         /**
          * This is the method called by parser when the HTTP request line is parsed
          */
-        public abstract boolean startResponse(HttpVersion version, int status, String reason)
-                throws IOException;
+        public abstract boolean startResponse(HttpVersion version, int status, String reason);
     }
 
 

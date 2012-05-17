@@ -1055,15 +1055,8 @@ public class Request implements HttpServletRequest
                         }
                         catch (NumberFormatException e)
                         {
-                            try
-                            {
-                                if (_channel != null)
-                                    _channel.sendError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null,true);
-                            }
-                            catch (IOException e1)
-                            {
-                                throw new RuntimeException(e1);
-                            }
+                            if (_channel != null)
+                                _channel.sendError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null,true);
                         }
                         return _serverName;
                 }
