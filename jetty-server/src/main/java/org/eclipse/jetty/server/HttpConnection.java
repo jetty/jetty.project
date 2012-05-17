@@ -20,6 +20,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import javax.print.attribute.standard.MediaSize.ISO;
+
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.Action;
@@ -44,13 +46,14 @@ public class HttpConnection extends AbstractAsyncConnection
 
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
-    private final Lock _lock = new ReentrantLock();
+    private final Object _lock = this;
     private final Server _server;
     private final HttpConnector _connector;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
     private final ByteBufferPool _bufferPool;
+    private final HttpInput _httpInput;
     
     private ResponseInfo _info;
     ByteBuffer _requestBuffer=null;
@@ -85,21 +88,14 @@ public class HttpConnection extends AbstractAsyncConnection
             new Throwable().printStackTrace();
         
         _server = server;
-        
+
+        _httpInput = new HttpHttpInput();
         _channel = new HttpChannelOverHttp(server);
        
         _parser = new HttpParser(_channel.getEventHandler());
         _generator = new HttpGenerator();
+        
         LOG.debug("New HTTP Connection {}",this);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onOpen()
-    {
-        LOG.debug("Opened HTTP Connection {}",this);
-        super.onOpen();
-        scheduleOnReadable();
     }
 
     /* ------------------------------------------------------------ */
@@ -142,6 +138,7 @@ public class HttpConnection extends AbstractAsyncConnection
         _parser.reset();
         _generator.reset();
         _channel.reset();
+        _httpInput.recycle();
         if (_requestBuffer!=null)
             _bufferPool.release(_requestBuffer);
         _requestBuffer=null;
@@ -175,332 +172,110 @@ public class HttpConnection extends AbstractAsyncConnection
                 _parser);
     }
 
-
     /* ------------------------------------------------------------ */
     @Override
-    public void onReadable()
+    public void onOpen()
     {
-        AsyncConnection connection = this;
-        boolean progress=true;
-        boolean suspended=false;
-
+        LOG.debug("Opened HTTP Connection {}",this);
+        super.onOpen();
+        scheduleOnReadable();
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void releaseRequestBuffer()
+    {
+        if (_requestBuffer!=null && !_requestBuffer.hasRemaining())
+        {
+            _bufferPool.release(_requestBuffer);
+            _requestBuffer=null;
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * {@link #scheduleOnReadable()}
+     * @see org.eclipse.jetty.io.AbstractAsyncConnection#onReadable()
+     */
+    @Override
+    public void onReadable()
+    {        
+        LOG.debug("{} onReadable {}",this,_channel.isIdle());
+        
+        // This method is normally called as callback passed to 
+        // EndPoint.readable() by scheduleOnReadable.    However, it can also be called
+        // by HttpChannel.completed() if there is unconsumed data in the _requestBuffer, as a result of 
+        // resuming a suspending a request when there is a pipelined request already read into the buffer.
+        //
+        // This method will fill data and parse it until either: EOF is filled; 0 bytes are filled; 
+        // the HttpChannel becomes !idle; or the connection has been changed
         try
         {
             setCurrentConnection(this);
-
-            // While progress and the connection has not changed
-            while (progress && connection==this)
+            
+            while (true)
             {
-                progress=false;
-                try
+                // Fill the request buffer with data only if it is totally empty.
+                if (BufferUtil.isEmpty(_requestBuffer))
                 {
-                    // We will need a buffer to read into
                     if (_requestBuffer==null)
-                        _requestBuffer=_parser.isInContent()
-                        ?_bufferPool.acquire(_connector.getRequestBufferSize(),false)
-                        :_bufferPool.acquire(_connector.getRequestHeaderSize(),false);
-                        
-                    // Only fill if buffer is fully consumed
-                    if (BufferUtil.isEmpty(_requestBuffer))
+                        _requestBuffer=_bufferPool.acquire(_connector.getRequestHeaderSize(),false);
+           
+                    int filled=getEndPoint().fill(_requestBuffer);
+                    
+                    LOG.debug("{} filled {}",this,filled);
+                    
+                    // TODO protect against large/infinite headers as denial of service
+                    
+                    // If we failed to fill
+                    if (filled<=0)
                     {
-                        // TODO this is still dangerous as a suspended request might have references
-                        // to the buffer still for unconsumed input.  We need a callback to say
-                        // all content is consumed and we can read again.
-                        int filled=getEndPoint().fill(_requestBuffer);
-                        LOG.debug("{} filled {}",this,filled);
+                        if (filled==0)
+                            scheduleOnReadable();
+                        else
+                            _parser.inputShutdown();
+
+                        // buffer must be empty and the channel must be idle, so we can release.
+                        releaseRequestBuffer();
+                        return;
+                    }
+                }
+
+                // Parse the buffer
+                if (_parser.parseNext(_requestBuffer))
+                {
+                    // The parser returned true, which indicates the channel is ready 
+                    // to handle a request. Call the channel and this will either handle the 
+                    // request/response to completion OR if the request suspends, the channel
+                    // will be left in !idle state so our outer loop will exit.
+                    _channel.handleRequest();
+                    
+                    // Return if the channel is still processing the request
+                    if (!_channel.isIdle())
+                    {
+                        // release buffer if all input has been consumed
+                        if (_httpInput.available()==0)
+                            releaseRequestBuffer();
+                        return;
                     }
                     
-                    // If we parse to an event, call the connection
-                    if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
+                    // return if the connection has been changed
+                    if (getEndPoint().getAsyncConnection()!=null)
                     {
-                        // don't check for idle while dispatched (unless blocking IO is done).
-                        getEndPoint().setCheckForIdle(false);
-                        try
-                        {
-                            _channel.handleRequest();
-                        }
-                        finally
-                        {
-                            // If we are not suspended
-                            if (!_channel.getRequest().getAsyncContinuation().isAsyncStarted())
-                                // reenable idle checking unless request is suspended
-                                getEndPoint().setCheckForIdle(true);
-                        }
-                    }
-                    else if (BufferUtil.hasContent(_requestBuffer))
-                        throw new IllegalStateException("parser should consume all content OR return true");
-                        
-
-                }
-                catch (HttpException e)
-                {
-                    LOG.debug(e);
-                    progress=false;
-                    _channel.sendError(e.getStatus(), e.getReason(), null, true);
-                }
-                catch (Exception e)
-                {
-                    LOG.debug(e);
-                    progress=false;
-                    _channel.sendError(500, e.toString(), e.toString(), true);
-                }
-                finally
-                {
-                    // Return empty request buffer if all has been consumed
-                    if (_requestBuffer!=null && !_requestBuffer.hasRemaining() && _channel.available()==0)
-                    {
-                        _bufferPool.release(_requestBuffer);
-                        _requestBuffer=null;
-                    }
-                        
-                    //  Is this request/response round complete and are fully flushed?
-                    if (_parser.isComplete() && _generator.isComplete())
-                    {
-                        // look for a switched connection instance?
-                        if (_channel.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
-                        {
-                            AsyncConnection switched=(AsyncConnection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
-                            if (switched!=null)
-                                connection=switched;
-                        }
-
-                        // Reset the parser/generator
-                        reset();
-                        progress=true;
-                    }
-                    else if (_channel.getRequest().getAsyncContinuation().isAsyncStarted())
-                    {
-                        // The request is suspended, so even though progress has been made,
-                        // exit the while loop by setting progress to false
-                        LOG.debug("suspended {}",this);
-                        progress=false;
-                        suspended=true;
+                        getEndPoint().getAsyncConnection().onOpen();
+                        return;
                     }
                 }
             }
         }
         catch(Exception e)
         {
-            LOG.warn(e); 
+            LOG.warn(e);
             getEndPoint().close();
         }
         finally
-        {
+        {   
             setCurrentConnection(null);
-            if (!getEndPoint().isInputShutdown() && !suspended)
-                scheduleOnReadable();
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    private void generateComplete(ByteBuffer content) throws IOException
-    {
-        _lock.lock();
-        try
-        {
-            if (_generator.isCommitted() || BufferUtil.hasContent(_responseBuffer))
-                throw new IllegalStateException("!empty");
-            if (_generator.isComplete())
-                throw new EofException();
-
-            loop: while (true)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}: send({},{},{})@{}",
-                            this,
-                            BufferUtil.toSummaryString(_responseHeader),
-                            BufferUtil.toSummaryString(_responseBuffer),
-                            BufferUtil.toSummaryString(content),
-                            _generator.getState());
-
-                HttpGenerator.Result result=_generator.generate(_info,_responseHeader,null,_responseBuffer,content,Action.COMPLETE);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}: {} ({},{},{})@{}",
-                            this,
-                            result,
-                            BufferUtil.toSummaryString(_responseHeader),
-                            BufferUtil.toSummaryString(_responseBuffer),
-                            BufferUtil.toSummaryString(content),
-                            _generator.getState());
-
-                switch(result)
-                {
-                    case NEED_COMMIT:
-                        if (_info==null)
-                            _info=_channel.getEventHandler().commit();
-                        _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
-                        break;
-
-                    case NEED_BUFFER:
-                        _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
-                        break;
-
-                    case NEED_CHUNK:
-                        throw new IllegalStateException("!chunk when content length known");
-
-                    case FLUSH:
-                        write(_responseHeader,_chunk,_responseBuffer).get();
-                        break;
-
-                    case FLUSH_CONTENT:
-                        write(_responseHeader,_chunk,content);
-                        break loop;
-
-                    case SHUTDOWN_OUT:
-                        getEndPoint().shutdownOutput();
-                        break loop;
-
-                    case OK:
-                        break loop;
-                }
-            }
-        }
-        catch(InterruptedException e)
-        {
-            LOG.debug(e);
-        }
-        catch(ExecutionException e)
-        {
-            LOG.debug(e);
-            FutureCallback.rethrow(e);
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    private int generate(ByteBuffer content, Action action) throws IOException
-    {
-        long prepared_before=0;
-        long prepared_after;
-        _lock.lock();
-        try
-        {
-            if (_generator.isComplete())
-            {
-                if (Action.COMPLETE==action)
-                    return 0;
-                throw new EofException();
-            }
-            
-            prepared_before=_generator.getContentPrepared();
-            loop: while (true)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}: generate({},{},{},{},{})@{}",
-                            this,
-                            BufferUtil.toSummaryString(_responseHeader),
-                            BufferUtil.toSummaryString(_chunk),
-                            BufferUtil.toSummaryString(_responseBuffer),
-                            BufferUtil.toSummaryString(content),
-                            action,_generator.getState());
-
-                HttpGenerator.Result result=_generator.generate(_info,_responseHeader,_chunk,_responseBuffer,content,action);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}: {} ({},{},{},{},{})@{}",
-                            this,
-                            result,
-                            BufferUtil.toSummaryString(_responseHeader),
-                            BufferUtil.toSummaryString(_chunk),
-                            BufferUtil.toSummaryString(_responseBuffer),
-                            BufferUtil.toSummaryString(content),
-                            action,_generator.getState());
-
-                switch(result)
-                {
-                    case NEED_COMMIT:
-                        if (_info==null)
-                            _info=_channel.getEventHandler().commit();
-                        _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
-                        continue;
-
-                    case NEED_BUFFER:
-                        _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
-                        continue;
-
-                    case NEED_CHUNK:
-                        _responseHeader=null;
-                        _chunk=_bufferPool.acquire(HttpGenerator.CHUNK_SIZE,false);
-                        continue;
-
-                    case FLUSH:
-                        write(_responseHeader,_chunk,_responseBuffer).get();
-                        continue;
-
-                    case FLUSH_CONTENT:
-                        write(_responseHeader,_chunk,content).get();
-                        break;
-
-                    case SHUTDOWN_OUT:
-                        getEndPoint().shutdownOutput();
-                        break loop;
-
-                    case OK:
-                        if (!BufferUtil.hasContent(content))
-                        break loop;
-                }
-            }
-        }
-        catch(InterruptedException e)
-        {
-            LOG.debug(e);
-        }
-        catch(ExecutionException e)
-        {
-            LOG.debug(e);
-            if (e.getCause() instanceof IOException)
-                throw (IOException)e.getCause();
-            throw new RuntimeException(e);
-        }
-        finally
-        {
-            prepared_after=_generator.getContentPrepared();
-            _lock.unlock();
-        }
-        return (int)(prepared_after-prepared_before);
-    }
-
-    private FutureCallback<Void> write(ByteBuffer b0,ByteBuffer b1,ByteBuffer b2)
-    {
-        // TODO use a recycled FutureCallback ????
-        FutureCallback<Void> fcb=new FutureCallback<>();
-        if (BufferUtil.hasContent(b0))
-        {
-            if (BufferUtil.hasContent(b1))
-            {
-                if (BufferUtil.hasContent(b2))
-                    getEndPoint().write(null,fcb,b0,b1,b2);
-                else
-                    getEndPoint().write(null,fcb,b0,b1);
-            }
-            else
-            {
-                if (BufferUtil.hasContent(b2))
-                    getEndPoint().write(null,fcb,b0,b2);
-                else
-                    getEndPoint().write(null,fcb,b0);
-            }
-        }
-        else
-        {
-            if (BufferUtil.hasContent(b1))
-            {
-                if (BufferUtil.hasContent(b2))
-                    getEndPoint().write(null,fcb,b1,b2);
-                else
-                    getEndPoint().write(null,fcb,b1);
-            }
-            else
-            {
-                if (BufferUtil.hasContent(b2))
-                    getEndPoint().write(null,fcb,b2);
-                else
-                    fcb.completed(null);
-            }
-        }
-        return fcb;
     }
 
     /* ------------------------------------------------------------ */
@@ -518,13 +293,13 @@ public class HttpConnection extends AbstractAsyncConnection
     {
         private HttpChannelOverHttp(Server server)
         {
-            super(server,HttpConnection.this);
+            super(server,HttpConnection.this,_httpInput);
         }
         
         @Override
         protected int write(ByteBuffer content) throws IOException
         {
-            return HttpConnection.this.generate(content,Action.PREPARE);
+            return generate(content,Action.PREPARE);
         }
         
         @Override
@@ -570,32 +345,266 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         protected void flushResponse() throws IOException
         {
-            HttpConnection.this.generate(null,Action.FLUSH);
+            generate(null,Action.FLUSH);
         }
         
         @Override
         protected void completeResponse() throws IOException
         {
-            HttpConnection.this.generate(null,Action.COMPLETE);
+            generate(null,Action.COMPLETE);
+        }
+        
+        @Override
+        protected void completed()
+        {
+            LOG.debug("{} completed",this);
+            HttpConnection.this.reset();
+            
+            // if there is a pipelined request and onReadable has returned
+            if (_requestBuffer!=null && getCurrentConnection()==null)
+                onReadable();
+            else if (_parser.isIdle())
+                scheduleOnReadable();
+            else if (!getEndPoint().isOutputShutdown() && _parser.getState()==HttpParser.State.SEEKING_EOF)
+            {
+                // TODO This is a catch all indicating some protocol handling failure
+                // Currently needed for requests saying they are HTTP/2.0.
+                // This should be removed once better error handling is in place
+                LOG.warn("Endpoint output not shutdown when seeking EOF");
+                getEndPoint().close(); 
+            }
         }
 
-        @Override
-        protected void blockForContent() throws IOException
+        /* ------------------------------------------------------------ */
+        private int generate(ByteBuffer content, Action action) throws IOException
         {
-            // While progress and the connection has not changed
-            boolean parsed_event=false;
-            while (getEndPoint().isOpen())
+            long prepared_before=0;
+            long prepared_after;
+            synchronized(_lock)
             {
                 try
                 {
-                    System.err.println("blockForContent: "+BufferUtil.toDetailString(_requestBuffer));
-                    
+                    if (_generator.isComplete())
+                    {
+                        if (Action.COMPLETE==action)
+                            return 0;
+                        throw new EofException();
+                    }
+
+                    prepared_before=_generator.getContentPrepared();
+                    loop: while (true)
+                    {
+                        HttpGenerator.Result result=_generator.generate(_info,_responseHeader,_chunk,_responseBuffer,content,action);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} generate: {} ({},{},{})@{}",
+                                    this,
+                                    result,
+                                    BufferUtil.toSummaryString(_responseHeader),
+                                    BufferUtil.toSummaryString(_responseBuffer),
+                                    BufferUtil.toSummaryString(content),
+                                    _generator.getState());
+                        
+                        switch(result)
+                        {
+                            case NEED_COMMIT:
+                                if (_info==null)
+                                    _info=_channel.getEventHandler().commit();
+                                _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
+                                continue;
+
+                            case NEED_BUFFER:
+                                _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
+                                continue;
+
+                            case NEED_CHUNK:
+                                _responseHeader=null;
+                                _chunk=_bufferPool.acquire(HttpGenerator.CHUNK_SIZE,false);
+                                continue;
+
+                            case FLUSH:
+                                write(_responseHeader,_chunk,_responseBuffer).get();
+                                continue;
+
+                            case FLUSH_CONTENT:
+                                write(_responseHeader,_chunk,content).get();
+                                break;
+
+                            case SHUTDOWN_OUT:
+                                getEndPoint().shutdownOutput();
+                                break loop;
+
+                            case OK:
+                                if (!BufferUtil.hasContent(content))
+                                    break loop;
+                        }
+                    }
+                }
+                catch(InterruptedException e)
+                {
+                    LOG.debug(e);
+                }
+                catch(ExecutionException e)
+                {
+                    LOG.debug(e);
+                    if (e.getCause() instanceof IOException)
+                        throw (IOException)e.getCause();
+                    throw new RuntimeException(e);
+                }
+                finally
+                {
+                    prepared_after=_generator.getContentPrepared();
+                }
+            }
+            return (int)(prepared_after-prepared_before);
+        }
+
+        @Override
+        protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
+        {
+            _info=info;
+            
+            // TODO review the locks with a mind that other threads may read and write
+            synchronized (_lock)
+            {
+                try
+                {
+                    if (_generator.isCommitted() || BufferUtil.hasContent(_responseBuffer))
+                        throw new IllegalStateException("!empty");
+                    if (_generator.isComplete())
+                        throw new EofException();
+
+                    loop: while (true)
+                    {
+                        HttpGenerator.Result result=_generator.generate(_info,_responseHeader,null,_responseBuffer,content,Action.COMPLETE);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} commit: {} ({},{},{})@{}",
+                                    this,
+                                    result,
+                                    BufferUtil.toSummaryString(_responseHeader),
+                                    BufferUtil.toSummaryString(_responseBuffer),
+                                    BufferUtil.toSummaryString(content),
+                                    _generator.getState());
+
+                        switch(result)
+                        {
+                            case NEED_COMMIT:
+                                if (_info==null)
+                                    _info=_channel.getEventHandler().commit();
+                                _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
+                                break;
+
+                            case NEED_BUFFER:
+                                _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
+                                break;
+
+                            case NEED_CHUNK:
+                                throw new IllegalStateException("!chunk when content length known");
+
+                            case FLUSH:
+                                write(_responseHeader,_chunk,_responseBuffer).get();
+                                break;
+
+                            case FLUSH_CONTENT:
+                                // TODO need a proper call back to complete.
+                                write(_responseHeader,_chunk,content);
+                                break loop;
+
+                            case SHUTDOWN_OUT:
+                                getEndPoint().shutdownOutput();
+                                break loop;
+
+                            case OK:
+                                break loop;
+                        }
+                    }
+                }
+                catch(InterruptedException e)
+                {
+                    LOG.debug(e);
+                }
+                catch(ExecutionException e)
+                {
+                    LOG.debug(e);
+                    FutureCallback.rethrow(e);
+                }
+            }
+            
+        }
+
+        @Override
+        public Timer getTimer()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        private FutureCallback<Void> write(ByteBuffer b0,ByteBuffer b1,ByteBuffer b2)
+        {
+            FutureCallback<Void> fcb=new FutureCallback<>();
+            if (BufferUtil.hasContent(b0))
+            {
+                if (BufferUtil.hasContent(b1))
+                {
+                    if (BufferUtil.hasContent(b2))
+                        getEndPoint().write(null,fcb,b0,b1,b2);
+                    else
+                        getEndPoint().write(null,fcb,b0,b1);
+                }
+                else
+                {
+                    if (BufferUtil.hasContent(b2))
+                        getEndPoint().write(null,fcb,b0,b2);
+                    else
+                        getEndPoint().write(null,fcb,b0);
+                }
+            }
+            else
+            {
+                if (BufferUtil.hasContent(b1))
+                {
+                    if (BufferUtil.hasContent(b2))
+                        getEndPoint().write(null,fcb,b1,b2);
+                    else
+                        getEndPoint().write(null,fcb,b1);
+                }
+                else
+                {
+                    if (BufferUtil.hasContent(b2))
+                        getEndPoint().write(null,fcb,b2);
+                    else
+                        fcb.completed(null);
+                }
+            }
+            return fcb;
+        }
+
+    };
+    
+    private class HttpHttpInput extends HttpInput
+    {
+        @Override
+        protected void blockForContent() throws IOException
+        {
+            /* We extend the blockForContent method to replace the
+            default implementation of a blocking queue with an implementation
+            that uses the calling thread to block on a readable callback and
+            then to do the parsing before before attempting the read.
+            */
+            
+            
+            // While progress and the connection has not changed
+            boolean parsed_event=false;
+            while (!getEndPoint().isInputShutdown())
+            {
+                try
+                {                    
                     // Do we have content ready to parse?
                     if (BufferUtil.isEmpty(_requestBuffer))
                     {
                         // Wait until we can read
                         FutureCallback<Void> block=new FutureCallback<>();
                         getEndPoint().readable(null,block);
+                        LOG.debug("{} block readable on {}",this,block);
                         block.get();
 
                         // We will need a buffer to read into
@@ -603,7 +612,9 @@ public class HttpConnection extends AbstractAsyncConnection
                             _requestBuffer=_bufferPool.acquire(_connector.getRequestBufferSize(),false);
 
                         int filled=getEndPoint().fill(_requestBuffer);
-                        LOG.debug("{} filled {}",this,filled);
+                        LOG.debug("{} block filled {}",this,filled);
+                        if (filled<0)
+                            _parser.inputShutdown();
                     }
                     
                     // If we parse to an event, return
@@ -621,32 +632,39 @@ public class HttpConnection extends AbstractAsyncConnection
                     LOG.debug(e);
                     FutureCallback.rethrow(e);
                 }
-                finally
-                {
-                    // Return empty request buffer
-                    if (_requestBuffer!=null && !_requestBuffer.hasRemaining() && _channel.available()==0)
-                    {
-                        _bufferPool.release(_requestBuffer);
-                        _requestBuffer=null;
-                    }
-                }
             }
         }
 
+        
         @Override
-        protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
+        protected void onContentQueued(ByteBuffer ref)
         {
-            _info=info;
-            HttpConnection.this.generateComplete(content);
-            
+            /* This callback could be used to tell the connection
+             * that the request did contain content and thus the request
+             * buffer needs to be held until a call to #onAllContentConsumed
+             * 
+             * However it turns out that nothing is needed here because either a
+             * request will have content, in which case the request buffer will be
+             * released by a call to onAllContentConsumed; or it will not have content.
+             * If it does not have content, either it will complete quickly and the 
+             * buffers will be released in completed() or it will be suspended and 
+             * onReadable() contains explicit handling to release if it is suspended.
+             * 
+             * We extend this method anyway, to turn off the notify done by the 
+             * default implementation as this is not needed by our implementation
+             * of blockForContent
+             */
         }
 
-        @Override
-        public Timer getTimer()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
 
-    };
+        @Override
+        protected void onAllContentConsumed()
+        {
+            /* This callback tells the connection that all content that has
+             * been parsed has been consumed. Thus the request buffer may be
+             * released if it is empty.
+             */
+            releaseRequestBuffer();
+        }
+    }
 }

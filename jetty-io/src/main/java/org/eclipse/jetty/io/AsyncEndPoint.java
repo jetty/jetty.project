@@ -95,16 +95,6 @@ public interface AsyncEndPoint extends EndPoint
     <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException;
 
     /* ------------------------------------------------------------ */
-    /** Set if the endpoint should be checked for idleness
-     */
-    void setCheckForIdle(boolean check);
-
-    /* ------------------------------------------------------------ */
-    /** Get if the endpoint should be checked for idleness
-     */
-    boolean isCheckForIdle();
-
-    /* ------------------------------------------------------------ */
     /**
      * @return Timestamp in ms since epoch of when the last data was
      * filled or flushed from this endpoint.

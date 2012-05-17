@@ -84,10 +84,8 @@ public abstract class HttpChannel
     private final HttpFields _responseFields;
     private final Response _response;
     
-    private final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
-    private boolean _inputEOF;
 
-    private volatile ServletInputStream _in;
+    private final HttpInput _in;
     private volatile Output _out;
     private volatile HttpWriter _writer;
     private volatile PrintWriter _printWriter;
@@ -109,7 +107,7 @@ public abstract class HttpChannel
     /** Constructor
      *
      */
-    public HttpChannel(Server server,AsyncConnection connection)
+    public HttpChannel(Server server,AsyncConnection connection,HttpInput input)
     {
         _server = server;
         _connection = connection;
@@ -119,6 +117,7 @@ public abstract class HttpChannel
         _request = new Request(this);
         _response = new Response(this);
         _async = _request.getAsyncContinuation();
+        _in=input;
     }
    
     public interface EventHandler extends HttpParser.RequestHandler
@@ -132,6 +131,11 @@ public abstract class HttpChannel
         return _handler;
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean isIdle()
+    {
+        return _async.isIdle();
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -226,7 +230,7 @@ public abstract class HttpChannel
         if (_expect100Continue)
         {
             // is content missing?
-            if (available()==0)
+            if (_in.available()==0)
             {
                 if (_response.isCommitted())
                     throw new IllegalStateException("Committed before 100 Continues");
@@ -235,8 +239,6 @@ public abstract class HttpChannel
             _expect100Continue=false;
         }
 
-        if (_in == null)
-            _in = new HttpInput(HttpChannel.this);
         return _in;
     }
 
@@ -299,11 +301,7 @@ public abstract class HttpChannel
         _uri.clear();
         if (_out!=null)
             _out.reset();
-        synchronized (_inputQ)
-        {
-            _inputEOF=false;
-            _inputQ.clear();
-        }
+        _in.recycle(); // TODO done here or in connection?
     }
 
     /* ------------------------------------------------------------ */
@@ -366,14 +364,7 @@ public abstract class HttpChannel
                 {
                     LOG.ignore(e);
                 }
-                catch (EofException e)
-                {
-                    async_exception=e;
-                    LOG.debug(e);
-                    error=true;
-                    _request.setHandled(true);
-                }
-                catch (RuntimeIOException e)
+                catch (EofException | RuntimeIOException e)
                 {
                     async_exception=e;
                     LOG.debug(e);
@@ -426,8 +417,10 @@ public abstract class HttpChannel
                 if (!error && !_response.isCommitted() && !_request.isHandled())
                     _response.sendError(HttpServletResponse.SC_NOT_FOUND);
 
+                // TODO - this is not correct. complete can get called too often.
                 _response.complete();
                 _request.setHandled(true);
+                completed();
             }
         }
     }
@@ -499,66 +492,15 @@ public abstract class HttpChannel
     {
         return _expect102Processing;
     }
-
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see java.io.InputStream#read(byte[], int, int)
-     */
-    public int read(byte[] b, int off, int len) throws IOException
-    {
-        synchronized (_inputQ.lock())
-        {
-            System.err.println("read "+len+" "+_inputQ);
-            ByteBuffer content=null;            
-            while(content==null)
-            {
-                content=_inputQ.peekUnsafe();
-                while (content!=null && !content.hasRemaining())
-                {
-                    _inputQ.pollUnsafe();
-                    content=_inputQ.peekUnsafe();
-                }
-
-                if (content==null)
-                {
-                    // check for EOF
-                    if (_inputEOF)
-                        return -1;
-                    
-                    blockForContent();
-                }
-            }
-            
-            System.err.println("reading "+len+" "+BufferUtil.toDetailString(content));
-
-            int l=Math.min(len,content.remaining());
-            content.get(b,off,l);
-            return l;
-        }
-        
-    }
-
-    /* ------------------------------------------------------------ */
-    public int available() throws IOException
-    {
-        synchronized (_inputQ.lock())
-        {
-            ByteBuffer content=_inputQ.peekUnsafe();
-            if (content==null)
-                return 0;
-
-            return content.remaining();
-        }
-        
-    }
     
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
-        return String.format("%s r=%d",
+        return String.format("%s{r=%d,a=%s}",
                 super.toString(),
-                _requests);
+                _requests,
+                _async.getState());
     }
 
     /* ------------------------------------------------------------ */
@@ -603,6 +545,8 @@ public abstract class HttpChannel
         @Override
         public boolean parsedHeader(HttpHeader header, String name, String value) throws IOException
         {
+            if (value==null)
+                return false;
             if (header!=null)
             {
                 switch (header)
@@ -715,30 +659,21 @@ public abstract class HttpChannel
         @Override
         public boolean content(ByteBuffer ref) throws IOException
         {
-            synchronized (_inputQ.lock())
-            {
-                System.err.println("CONTENT "+BufferUtil.toDetailString(ref));
-                _inputQ.add(ref);  
-            }              
+            _in.content(ref);
             return true;
         }
 
         @Override
         public boolean messageComplete(long contentLength) throws IOException
         {
-            synchronized (_inputQ.lock())
-            {                
-                System.err.println("MESSAGE EOF");
-
-                _inputEOF=true;
-            }
+            _in.shutdownInput();
             return true;
         }
 
         @Override
         public boolean earlyEOF()
         {
-            return true;
+            return false;
         }
 
         @Override
@@ -832,8 +767,6 @@ public abstract class HttpChannel
     }
     
     public abstract HttpConnector getHttpConnector();
-
-    protected abstract void blockForContent() throws IOException;
         
     protected abstract int write(ByteBuffer content) throws IOException;
                 
@@ -849,6 +782,8 @@ public abstract class HttpChannel
 
     protected abstract void completeResponse() throws IOException;
 
+    protected abstract void completed();
+    
     public abstract Timer getTimer();
     
 

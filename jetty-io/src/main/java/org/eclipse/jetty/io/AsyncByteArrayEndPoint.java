@@ -18,7 +18,6 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private static final int TICK=Integer.getInteger("org.eclipse.jetty.io.AsyncByteArrayEndPoint.TICK",100);
     public static final Logger LOG=Log.getLogger(AsyncByteArrayEndPoint.class);
     private static final Timer _timer = new Timer(true);
-    private boolean _checkForIdle;
     private AsyncConnection _connection;
 
     private final TimerTask _task=new TimeoutTask(this);
@@ -104,18 +103,6 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     }
 
     @Override
-    public void setCheckForIdle(boolean check)
-    {
-        _checkForIdle=check;
-    }
-
-    @Override
-    public boolean isCheckForIdle()
-    {
-        return _checkForIdle;
-    }
-
-    @Override
     public AsyncConnection getAsyncConnection()
     {
         return _connection;
@@ -126,11 +113,12 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     {
         _connection=connection;
     }
-    public void checkForIdleOrReadWriteTimeout(long now)
+    
+    public void checkReadWriteTimeout(long now)
     {
         synchronized (this)
         {
-            if (_checkForIdle || _readInterest.isInterested() || _writeFlusher.isWriting())
+            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
                 long idleTimestamp = getIdleTimestamp();
                 long max_idle_time = getMaxIdleTime();
@@ -141,18 +129,11 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
 
                     if (idleForMs > max_idle_time)
                     {
+                        if (isOutputShutdown())
+                            close();
                         notIdle();
                         
-                        if (_checkForIdle)
-                        {   
-                            AsyncConnection connection=_connection;
-                            if (connection==null)
-                                close();
-                            else
-                                connection.onIdleExpired(idleForMs);
-                        }
-                        
-                        TimeoutException timeout = new TimeoutException();
+                        TimeoutException timeout = new TimeoutException("idle "+idleForMs+"ms");
                         _readInterest.failed(timeout);
                         _writeFlusher.failed(timeout);
                     }
@@ -184,7 +165,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
             if (endp==null)
                 cancel();
             else
-                endp.checkForIdleOrReadWriteTimeout(System.currentTimeMillis());
+                endp.checkReadWriteTimeout(System.currentTimeMillis());
         }
     };
     

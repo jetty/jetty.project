@@ -1075,7 +1075,7 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public boolean onEOF() throws IOException
+    public boolean inputShutdown() throws IOException
     {
         _persistent=false;
 

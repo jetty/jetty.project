@@ -139,7 +139,6 @@ public class SelectChannelEndPointTest
             try
             {
                 _last=System.currentTimeMillis();
-                _endp.setCheckForIdle(false);
                 boolean progress=true;
                 while(progress)
                 {
@@ -211,24 +210,8 @@ public class SelectChannelEndPointTest
             finally
             {
                 if (_endp.isOpen())
-                {
-                    _endp.setCheckForIdle(true);
                     scheduleOnReadable();
-                }
             }
-        }
-
-        @Override
-        public void onIdleExpired(long idleForMs)
-        {
-            /*
-            System.err.println("IDLE "+idleForMs);
-            System.err.println("last "+(System.currentTimeMillis()-_last));
-            System.err.println("ENDP "+_endp);
-            System.err.println("tran "+_endp.getTransport());
-            System.err.println();
-            */
-            super.onIdleExpired(idleForMs);
         }
 
         @Override

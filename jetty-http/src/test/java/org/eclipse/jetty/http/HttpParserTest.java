@@ -284,7 +284,7 @@ public class HttpParserTest
 
         parser.reset();
         parser.parseNext(buffer);
-        parser.onEOF();
+        parser.inputShutdown();
         assertEquals("PUT", f0);
         assertEquals("/doodle", f1);
         assertEquals("HTTP/1.0", f2);
@@ -359,7 +359,7 @@ public class HttpParserTest
         parser.setPersistent(true);
         parser.reset();
         parser.parseNext(buffer);
-        parser.onEOF();
+        parser.inputShutdown();
         assertEquals("HTTP/1.1", f0);
         assertEquals("200", f1);
         assertEquals("Correct", f2);

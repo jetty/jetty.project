@@ -61,7 +61,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
     // UNCOMPLETED                                                                        COMPLETED
     // COMPLETED
 
-    public enum State { 
+    public enum State 
+    { 
         IDLE,         // Idle request
         DISPATCHED,   // Request dispatched to filter/servlet
         ASYNCSTARTED, // Suspend called, but not yet returned to container
@@ -87,8 +88,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     private boolean _expired;
     private volatile boolean _responseWrapped;
     private long _timeoutMs=DEFAULT_TIMEOUT;
-    private AsyncEventState _event;
-    private volatile long _expireAt;    
+    private AsyncEventState _event;   
     private volatile boolean _continuation;
     
     /* ------------------------------------------------------------ */
@@ -98,6 +98,12 @@ public class AsyncContinuation implements AsyncContext, Continuation
         _initial=true;
     }
 
+    /* ------------------------------------------------------------ */
+    public State getState()
+    {
+        return _state;
+    }
+    
     /* ------------------------------------------------------------ */
     protected void setConnection(final HttpChannel connection)
     {
@@ -213,6 +219,15 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 default:
                     return false;   
             }
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isIdle()
+    {
+        synchronized(this)
+        {
+            return _state==State.IDLE;
         }
     }
     
@@ -398,7 +413,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 case ASYNCSTARTED:
                     _initial=false;
                     _state=State.ASYNCWAIT;
-                    scheduleTimeout(); // could block and change state.
+                    scheduleTimeout(); 
                     if (_state==State.ASYNCWAIT)
                         return true;
                     else if (_state==State.COMPLETING)

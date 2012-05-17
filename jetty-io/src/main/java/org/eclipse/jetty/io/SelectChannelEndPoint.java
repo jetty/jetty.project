@@ -47,7 +47,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /** true if {@link ManagedSelector#destroyEndPoint(SelectorManager.SelectableAsyncEndPoint)} has not been called */
     private boolean _open;
 
-    private volatile boolean _idlecheck;
     private volatile AsyncConnection _connection;
 
     private final ReadInterest _readInterest = new ReadInterest()
@@ -81,7 +80,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         _key = key;
 
         setMaxIdleTime(maxIdleTime);
-        setCheckForIdle(true);
     }
 
     /* ------------------------------------------------------------ */
@@ -154,25 +152,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
     /* ------------------------------------------------------------ */
     @Override
-    public void setCheckForIdle(boolean check)
-    {
-        _idlecheck = check;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isCheckForIdle()
-    {
-        return _idlecheck;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void checkForIdleOrReadWriteTimeout(long now)
+    public void checkReadWriteTimeout(long now)
     {
         synchronized (this)
-        {
-            if (_idlecheck || _readInterest.isInterested() || _writeFlusher.isWriting())
+        {            
+            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
                 long idleTimestamp = getIdleTimestamp();
                 long max_idle_time = getMaxIdleTime();
@@ -183,18 +167,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
                     if (idleForMs > max_idle_time)
                     {
+                        if (isOutputShutdown())
+                            close();
                         notIdle();
 
-                        if (_idlecheck)
-                        {   
-                            AsyncConnection connection=_connection;
-                            if (connection==null)
-                                close();
-                            else
-                                connection.onIdleExpired(idleForMs);
-                        }
-
-                        TimeoutException timeout = new TimeoutException();
+                        TimeoutException timeout = new TimeoutException("idle "+idleForMs+"ms");
                         _readInterest.failed(timeout);
                         _writeFlusher.failed(timeout);
                     }

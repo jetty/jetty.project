@@ -194,8 +194,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             while (isRunning())
             {
-                for (ManagedSelector selectSet : _selectSets)
-                    selectSet.timeoutCheck();
+                for (ManagedSelector selector : _selectSets)
+                    if (selector!=null)
+                        selector.timeoutCheck();
                 sleep(1000);
             }
         }
@@ -216,7 +217,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
         private final ConcurrentLinkedQueue<Runnable> _changes = new ConcurrentLinkedQueue<>();
-        private ConcurrentMap<AsyncEndPoint,Object> _endPoints = new ConcurrentHashMap<>();
+        private ConcurrentMap<SelectableAsyncEndPoint,Object> _endPoints = new ConcurrentHashMap<>();
         private final int _id;
         private Selector _selector;
         private Thread _thread;
@@ -435,7 +436,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
         {
-            AsyncEndPoint endp = newEndPoint(channel, this, sKey);
+            SelectableAsyncEndPoint endp = newEndPoint(channel, this, sKey);
             _endPoints.put(endp, this);
             LOG.debug("Created {}", endp);
             endPointOpened(endp);
@@ -521,11 +522,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private void timeoutCheck()
         {
             long now = System.currentTimeMillis();
-            for (AsyncEndPoint endPoint : _endPoints.keySet())
-            {
-                // TODO: remove the cast
-                ((SelectableAsyncEndPoint)endPoint).checkForIdleOrReadWriteTimeout(now);
-            }
+            for (SelectableAsyncEndPoint endPoint : _endPoints.keySet())
+                endPoint.checkReadWriteTimeout(now);
         }
 
         private class DumpKeys implements Runnable
@@ -686,7 +684,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         void doUpdateKey();
 
-        void checkForIdleOrReadWriteTimeout(long idle_now);
+        void checkReadWriteTimeout(long idle_now);
     }
 
 }

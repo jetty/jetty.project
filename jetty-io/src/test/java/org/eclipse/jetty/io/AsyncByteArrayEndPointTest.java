@@ -117,7 +117,6 @@ public class AsyncByteArrayEndPointTest
         endp.setOutput(BufferUtil.allocate(5));
         
         // no idle check
-        endp.setCheckForIdle(false);
         assertTrue(endp.isOpen());
         Thread.sleep(1000);
         assertTrue(endp.isOpen());
@@ -169,8 +168,10 @@ public class AsyncByteArrayEndPointTest
         Thread.sleep(1000);
         assertTrue(endp.isOpen());
         
+        // shutdown out
+        endp.shutdownOutput();
+        
         // idle close
-        endp.setCheckForIdle(true);
         Thread.sleep(1000);
         assertFalse(endp.isOpen());
         

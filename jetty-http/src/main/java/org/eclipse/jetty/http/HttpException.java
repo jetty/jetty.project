@@ -23,15 +23,13 @@ public class HttpException extends IOException
     /* ------------------------------------------------------------ */
     public HttpException(int status)
     {
-        _status=status;
-        _reason=null;
+        this(status,null,null);
     }
 
     /* ------------------------------------------------------------ */
     public HttpException(int status,String reason)
     {
-        _status=status;
-        _reason=reason;
+        this(status,reason,null);
     }
 
     /* ------------------------------------------------------------ */
@@ -39,7 +37,8 @@ public class HttpException extends IOException
     {
         _status=status;
         _reason=reason;
-        initCause(rootCause);
+        if (rootCause!=null)
+            initCause(rootCause);
     }
 
     /* ------------------------------------------------------------ */

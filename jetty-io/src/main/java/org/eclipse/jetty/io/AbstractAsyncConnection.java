@@ -31,7 +31,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
 
             @Override
             protected void onFailed(Void context, Throwable x)
-            {
+            {   
                 onReadFail(x);
             }       
         };
@@ -62,21 +62,6 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         return _endp;
     }
 
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.io.AsyncConnection#onIdleExpired(long)
-     */
-    @Override
-    public void onIdleExpired(long idleForMs)
-    {
-        LOG.debug("onIdleExpired {}ms {} {}",idleForMs,this,_endp);
-        if (_endp.isOutputShutdown())
-            _endp.close();
-        else
-            _endp.shutdownOutput();
-    }
-
     /* ------------------------------------------------------------ */
     public void scheduleOnReadable()
     {
@@ -87,7 +72,14 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     /* ------------------------------------------------------------ */
     public void onReadFail(Throwable cause)
     {
-        LOG.debug("read failed: "+cause);
+        LOG.debug("{} onReadFailed {}",this,cause);
+        if (_endp.isOpen())
+        {
+            if (_endp.isOutputShutdown())
+                _endp.close();
+            else
+                _endp.shutdownOutput();
+        }
     }
 
     /* ------------------------------------------------------------ */

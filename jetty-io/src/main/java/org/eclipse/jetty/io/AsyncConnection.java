@@ -2,12 +2,7 @@ package org.eclipse.jetty.io;
 
 public interface AsyncConnection
 {
-
-    void onClose();
-
     void onOpen();
-
+    void onClose();
     AsyncEndPoint getEndPoint();
-
-    void onIdleExpired(long idleForMs);
 }

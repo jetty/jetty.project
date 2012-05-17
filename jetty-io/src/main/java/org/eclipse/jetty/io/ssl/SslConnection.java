@@ -576,18 +576,6 @@ public class SslConnection extends AbstractAsyncConnection
         }
 
         @Override
-        public void setCheckForIdle(boolean check)
-        {
-            getEndPoint().setCheckForIdle(check);
-        }
-
-        @Override
-        public boolean isCheckForIdle()
-        {
-            return getEndPoint().isCheckForIdle();
-        }
-
-        @Override
         public AsyncConnection getAsyncConnection()
         {
             return connection;
