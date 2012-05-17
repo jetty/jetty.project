@@ -30,6 +30,7 @@ import org.eclipse.jetty.osgi.boot.BundleContextProvider;
 import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.osgi.boot.ServiceContextProvider;
 import org.eclipse.jetty.osgi.boot.ServiceWebAppProvider;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
 import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
@@ -79,17 +80,22 @@ public class ServerInstanceWrapper
     private ClassLoader _commonParentClassLoaderForWebapps;
 
     private DeploymentManager _deploymentManager;
-
+    
+    
+    /* ------------------------------------------------------------ */
     public ServerInstanceWrapper(String managedServerName)
     {
         _managedServerName = managedServerName;
     }
 
+    /* ------------------------------------------------------------ */ 
     public String getManagedServerName()
     {
         return _managedServerName;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * The classloader that should be the parent classloader for each webapp
      * deployed on this server.
@@ -100,7 +106,9 @@ public class ServerInstanceWrapper
     {
         return _commonParentClassLoaderForWebapps;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * @return The deployment manager registered on this server.
      */
@@ -108,7 +116,9 @@ public class ServerInstanceWrapper
     {
         return _deploymentManager;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * @return The app provider registered on this server.
      */
@@ -117,7 +127,7 @@ public class ServerInstanceWrapper
         return _server;
     }
 
-
+    /* ------------------------------------------------------------ */
     /**
      * @return The collection of context handlers
      */
@@ -125,7 +135,9 @@ public class ServerInstanceWrapper
     {
         return _ctxtCollection;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     public void start(Server server, Dictionary props) throws Exception
     {
         _server = server;
@@ -140,7 +152,7 @@ public class ServerInstanceWrapper
             List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
             libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(shared, null, server, JettyBootstrapActivator.class.getClassLoader());
 
-            System.err.println("LibExtClassLoader = "+libExtClassLoader);
+            if (LOG.isDebugEnabled()) LOG.debug("LibExtClassLoader = "+libExtClassLoader);
             
             Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
@@ -148,16 +160,12 @@ public class ServerInstanceWrapper
 
             init();
 
-            // now that we have an app provider we can call the registration
-            // customizer.
-
             URL[] jarsWithTlds = getJarsWithTlds();
             _commonParentClassLoaderForWebapps = jarsWithTlds == null ? libExtClassLoader : new TldLocatableURLClassloader(libExtClassLoader, jarsWithTlds);
             
-            System.err.println("common classloader = "+_commonParentClassLoaderForWebapps);
+            if (LOG.isDebugEnabled()) LOG.debug("common classloader = "+_commonParentClassLoaderForWebapps);
 
             server.start();
-            //_webBundleDeployerHelper = new WebBundleDeployerHelper(this);
         }
         catch (Exception e)
         {
@@ -180,7 +188,7 @@ public class ServerInstanceWrapper
         }
     }
     
-
+    /* ------------------------------------------------------------ */
     public void stop()
     {
         try
@@ -195,7 +203,9 @@ public class ServerInstanceWrapper
             LOG.warn(e);
         }
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      * TODO: right now only the jetty-jsp bundle is scanned for common taglibs.
      * Should support a way to plug more bundles that contain taglibs.
@@ -242,7 +252,9 @@ public class ServerInstanceWrapper
         else
             return null;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     private void configure(Server server, Dictionary props) throws Exception
     {
         String jettyConfigurationUrls = (String) props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
@@ -250,8 +262,10 @@ public class ServerInstanceWrapper
         if (jettyConfigurations == null || jettyConfigurations.isEmpty()) { return; }
         Map<String, Object> id_map = new HashMap<String, Object>();
         
-        //TODO need to put in the id of the server being configured
+        //Put in a mapping for the id "Server" and the name of the server as the instance being configured
         id_map.put("Server", server);
+        id_map.put((String)props.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME), server);
+        
         Map<String, String> properties = new HashMap<String, String>();
         Enumeration<Object> en = props.keys();
         while (en.hasMoreElements())
@@ -383,10 +397,20 @@ public class ServerInstanceWrapper
             {
                 LOG.warn(e);
             }
-
         }
 
-        //TODO add ServiceContextProvider
+        if (!providerClassNames.contains(ServiceContextProvider.class.getName()))
+        {
+            try
+            {
+                ServiceContextProvider contextProvider = new ServiceContextProvider(this);
+                _deploymentManager.addAppProvider(contextProvider);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
     }
 
     /**

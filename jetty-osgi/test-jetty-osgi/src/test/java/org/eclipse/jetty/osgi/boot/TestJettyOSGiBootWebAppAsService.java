@@ -42,6 +42,12 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
+ * TestJettyOSGiBootWebAppAsService
+ * 
+ * Tests deployment of a WebAppContext as an osgi Service.
+ * 
+ * Tests the ServiceWebAppProvider.
+ * 
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the httpservice web-bundle.
  * Then make sure we can deploy an OSGi service on the top of this.
  */

@@ -60,7 +60,6 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
         
         
         WebAppContext webApp = (WebAppContext)context;
-        System.err.println("Casting to webapp");
         Dictionary properties = new Hashtable<String,String>();
         
         String contextPath = (String)serviceRef.getProperty(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);

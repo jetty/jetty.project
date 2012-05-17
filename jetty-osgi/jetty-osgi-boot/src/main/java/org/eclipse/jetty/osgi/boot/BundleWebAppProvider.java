@@ -35,7 +35,7 @@ import org.osgi.framework.ServiceRegistration;
  */
 public class BundleWebAppProvider extends AbstractWebAppProvider implements BundleProvider
 {     
-    private static final Logger LOG = Log.getLogger(BundleWebAppProvider.class);
+    private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
     
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.

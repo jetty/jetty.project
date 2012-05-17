@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.jetty.osgi.boot.BundleProvider;
-import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.util.log.Log;
@@ -29,8 +28,15 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
+ * WebBundleTrackerCustomizer
+ * 
+ * 
  * Support bundles that declare a webpp or context directly through headers in their
- * manifest.
+ * manifest. They will be deployed to the default jetty Server instance.
+ * 
+ * If you wish to deploy a context or webapp to a different jetty Server instance,
+ * register your context/webapp as an osgi service, and set the property OSGiServerConstants.MANAGED_JETTY_SERVER_NAME
+ * with the name of the Server instance you wish to depoy to.
  * 
  * @author hmalphettes
  */
@@ -164,20 +170,15 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
         Object[] deployers = _serviceTracker.getServices();
         if (deployers != null)
         {
-            System.err.println("FOUND "+deployers.length+" FOR "+bundle.getSymbolicName());
             int i=0;
             while (!deployed && i<deployers.length)
             {
                 
                 BundleProvider p = (BundleProvider)deployers[i];
-                System.err.println("Trying deployer "+p);
                 deployed = p.bundleAdded(bundle);
                 i++;
-                System.err.println("Deployer "+p+" returned "+deployed);
             }
         }
-        else
-            System.err.println("NO DEPLOYER FOUND FOR "+bundle.getSymbolicName());
 
         return deployed;
     }

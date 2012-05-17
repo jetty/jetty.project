@@ -52,6 +52,13 @@ import org.osgi.service.http.HttpService;
 
 
 /**
+ * TestJettyOSGiBootCore
+ * 
+ * Tests deploying a bundle (org.eclipse.jetty.osgi.httpservice) that contains a context xml file
+ * that starts up the equinox http servlet. 
+ * 
+ * This tests the BundleContextProvider.
+ * 
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the httpservice web-bundle.
  * Then make sure we can deploy an OSGi service on the top of this.
  */

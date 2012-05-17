@@ -1,3 +1,15 @@
+// ========================================================================
+// Copyright (c) 2012 Intalio, Inc.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
 package org.eclipse.jetty.osgi.boot;
 
 
@@ -33,6 +45,11 @@ import org.osgi.service.packageadmin.PackageAdmin;
 
 
 
+/**
+ * AbstractWebAppProvider
+ *
+ *
+ */
 public abstract class AbstractWebAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
@@ -165,6 +182,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         public void configureWebApp() 
         throws Exception
         {           
+            
+            //TODO turn this around and let any context.xml file get applied first, and have the properties override
             _webApp.setContextPath(_contextPath);
 
             String overrideBundleInstallLocation = (String)_properties.get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
@@ -332,6 +351,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                
                 Thread.currentThread().setContextClassLoader(_webApp.getClassLoader());
 
+                //TODO replace this with getting the InputStream so we don't cache in URL
                 // find if there is a META-INF/context.xml file
                 URL contextXmlUrl = _bundle.getEntry("/META-INF/jetty-webapp-context.xml");
                 if (contextXmlUrl == null) return;
@@ -363,7 +383,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         }
     }
    
-    
+    /* ------------------------------------------------------------ */
     public AbstractWebAppProvider (ServerInstanceWrapper wrapper)
     {
         _serverWrapper = wrapper;

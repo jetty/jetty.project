@@ -43,42 +43,29 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * When a {@link ContextHandler} service is activated we look into it and if the
- * corresponding webapp is actually not configured then we go and register it.
- * <p>
- * The idea is to always go through this class when we deploy a new webapp on
- * jetty.
- * </p>
- * <p>
- * We are exposing each web-application as an OSGi service. This lets us update
- * the webapps and stop/start them directly at the OSGi layer. It also give us
- * many ways to declare those services: Declarative Services for example. <br/>
- * It is a bit different from the way the HttpService works where we would have
- * a WebappService and we woud register a webapp onto it. <br/>
- * It does not go against RFC-66 nor does it prevent us from supporting the
- * WebappContainer semantics.
- * </p>
+ * JettyContextHandlerServiceTracker
+ * 
+ * When a {@link ContextHandler} is activated as an osgi service we find a jetty deployer
+ * for it. The ContextHandler could be either a WebAppContext or any other derivative of 
+ * ContextHandler.
+ * 
+ * ContextHandlers and WebApps can also be deployed into jetty without creating them as
+ * osgi services. Instead, they can be deployed via manifest headers inside bundles. See
+ * {@link WebBundleTrackerCustomizer}.
  */
 public class JettyContextHandlerServiceTracker implements ServiceListener
 {
-    private static Logger __logger = Log.getLogger(JettyContextHandlerServiceTracker.class.getName());
+    private static Logger LOG = Log.getLogger(JettyContextHandlerServiceTracker.class);
     
     public static final String FILTER = "(objectclass=" + ServiceProvider.class.getName() + ")";
-    
-
-    /**
-     * The index is the bundle-symbolic-name/path/to/context/file when there is
-     * such thing
-     */
-    private Map<String, ServiceReference> _indexByContextFile = new HashMap<String, ServiceReference>();
-
-    /** in charge of detecting changes in the osgi contexts home folder. */
-    private Scanner _scanner;
 
     
     //track all instances of deployers of webapps as bundles       
     ServiceTracker _serviceTracker;
-        
+    
+    
+     
+    /* ------------------------------------------------------------ */
     /**
      * @param registry
      */
@@ -90,56 +77,13 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
         _serviceTracker.open();
     }
 
-    public void stop() throws Exception
-    {
-        if (_scanner != null)
-        {
-            _scanner.stop();
-        }
-        // the class that created the server is also in charge of stopping it.
-        // nothing to stop in the WebappRegistrationHelper
 
-    }
-
+   
+    /* ------------------------------------------------------------ */
     /**
-     * @param contextHome Parent folder where the context files can override the
-     *            context files defined in the web bundles: equivalent to the
-     *            contexts folder in a traditional jetty installation. when
-     *            null, just do nothing.
+     * @param managedServerName
+     * @return
      */
-    protected void setupContextHomeScanner(File contextHome) throws IOException
-    {
-        if (contextHome == null) { return; }
-        final String osgiContextHomeFolderCanonicalPath = contextHome.getCanonicalPath();
-        _scanner = new Scanner();
-        _scanner.setRecursive(true);
-        _scanner.setReportExistingFilesOnStartup(false);
-        _scanner.addListener(new Scanner.DiscreteListener()
-        {
-            public void fileAdded(String filename) throws Exception
-            {
-                // adding a file does not create a new app,
-                // it just reloads it with the new custom file.
-                // well, if the file does not define a context handler,
-                // then in fact it does remove it.
-                reloadJettyContextHandler(filename, osgiContextHomeFolderCanonicalPath);
-            }
-
-            public void fileChanged(String filename) throws Exception
-            {
-                reloadJettyContextHandler(filename, osgiContextHomeFolderCanonicalPath);
-            }
-
-            public void fileRemoved(String filename) throws Exception
-            {
-                // removing a file does not remove the app:
-                // it just goes back to the default embedded in the bundle.
-                // well, if there was no default then it does remove it.
-                reloadJettyContextHandler(filename, osgiContextHomeFolderCanonicalPath);
-            }
-        });
-    }
-    
     public Map<ServiceReference, ServiceProvider> getDeployers(String managedServerName)
     {
         if (managedServerName == null)
@@ -164,6 +108,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
        return candidates;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Receives notification that a service has had a lifecycle change.
      * 
@@ -209,85 +154,32 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
             }
             case ServiceEvent.REGISTERED:
             {
-                System.err.println("New Service registered that could be webapp/context");
                 Bundle contributor = sr.getBundle();
                 BundleContext context = FrameworkUtil.getBundle(JettyBootstrapActivator.class).getBundleContext();
                 ContextHandler contextHandler = (ContextHandler) context.getService(sr);
                 if (contextHandler.getServer() != null)
                 {
                     // is configured elsewhere.
-                    System.err.println("Already configured");
                     return;
                 }
-
-                System.err.println("Service registered from bundle: "+contributor.getSymbolicName());
-                System.err.println("war="+sr.getProperty("war"));
                 
                 //Get a jetty deployer targetted to the named server instance, or the default one if not named
                 String serverName = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
                 Map<ServiceReference, ServiceProvider> candidates = getDeployers(serverName);
                 if (candidates != null)
                 {
-                    System.err.println("Got some candidates");
                     boolean added = false;
                     Iterator<Entry<ServiceReference, ServiceProvider>> itor = candidates.entrySet().iterator();
                     while (!added && itor.hasNext())
                     {
                         Entry<ServiceReference, ServiceProvider> e = itor.next();
-                        System.err.println("Trying ServiceProvider "+e.getValue());
                         added = e.getValue().serviceAdded(sr, contextHandler);
+                        if (added && LOG.isDebugEnabled())
+                            LOG.debug("Provider "+e.getValue()+" deployed "+contextHandler);
                     }
                 }
                 break;
             }
         }
-    }
-
-  
-
-
-    /**
-     * @param sr
-     * @return The key for a context file within the osgi contexts home folder.
-     */
-    private String getSymbolicNameAndContextFileKey(ServiceReference sr)
-    {
-        String contextFilePath = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH);
-        if (contextFilePath != null) { return sr.getBundle().getSymbolicName() + "/" + contextFilePath; }
-        return null;
-    }
-
-    /**
-     * Called by the scanner when one of the context files is changed.
-     * 
-     * @param contextFileFully
-     */
-    public void reloadJettyContextHandler(String canonicalNameOfFileChanged, String osgiContextHomeFolderCanonicalPath)
-    {
-        String key = getNormalizedRelativePath(canonicalNameOfFileChanged, osgiContextHomeFolderCanonicalPath);
-        if (key == null) { return; }
-        ServiceReference sr = _indexByContextFile.get(key);
-        if (sr == null)
-        {
-            // nothing to do?
-            return;
-        }
-        serviceChanged(new ServiceEvent(ServiceEvent.MODIFIED, sr));
-    }
-
-    /**
-     * @param canFilename
-     * @return
-     */
-    private String getNormalizedRelativePath(String canFilename, String osgiContextHomeFolderCanonicalPath)
-    {
-        if (!canFilename.startsWith(osgiContextHomeFolderCanonicalPath))
-        {
-            // why are we here: this does not look like a child of the osgi
-            // contexts home.
-            // warning?
-            return null;
-        }
-        return canFilename.substring(osgiContextHomeFolderCanonicalPath.length()).replace('\\', '/');
     }
 }

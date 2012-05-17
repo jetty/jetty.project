@@ -123,7 +123,6 @@ public class JettyBootstrapActivator implements BundleActivator
             }
             if (_jettyContextHandlerTracker != null)
             {
-                _jettyContextHandlerTracker.stop();
                 context.removeServiceListener(_jettyContextHandlerTracker);
                 _jettyContextHandlerTracker = null;
             }

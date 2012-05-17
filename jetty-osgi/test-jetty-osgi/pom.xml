@@ -142,6 +142,15 @@
       <scope>runtime</scope>
     </dependency>
 
+ <!-- test osgi contexthandler  service -->
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>test-jetty-osgi-context</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+
 
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
