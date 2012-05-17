@@ -128,7 +128,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             }
             
             //Set the base resource of the ContextHandler, if not already set, can also be overridden by the context xml file
-            if (_contextHandler.getBaseResource() == null)
+            if (_contextHandler != null && _contextHandler.getBaseResource() == null)
             {
                 _contextHandler.setBaseResource(rootResource);
             }
