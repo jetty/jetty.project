@@ -69,6 +69,12 @@ public class HttpOutput extends ServletOutputStream
     }
     
     /* ------------------------------------------------------------ */
+    public void reopen()
+    {
+        _closed=false;
+    }
+    
+    /* ------------------------------------------------------------ */
     /*
      * @see java.io.OutputStream#close()
      */
@@ -84,12 +90,6 @@ public class HttpOutput extends ServletOutputStream
     public boolean isClosed()
     {
         return _closed;
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void reopen()
-    {
-        _closed=false;
     }
     
     /* ------------------------------------------------------------ */

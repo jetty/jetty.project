@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Timer;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletResponse;
 
@@ -77,14 +78,14 @@ public abstract class HttpChannel
 
     private final HttpFields _requestFields;
     private final Request _request;
-    private final AsyncContinuation _async;
+    private final AsyncContinuation _state;
 
     private final HttpFields _responseFields;
     private final Response _response;
     
 
     private final HttpInput _in;
-    private volatile Output _out;
+    private final Output _out;
     private volatile HttpWriter _writer;
     private volatile PrintWriter _printWriter;
 
@@ -114,8 +115,9 @@ public abstract class HttpChannel
         _responseFields = new HttpFields(server.getMaxCookieVersion());
         _request = new Request(this);
         _response = new Response(this);
-        _async = _request.getAsyncContinuation();
+        _state = _request.getAsyncContinuation();
         _in=input;
+        _out=new Output();
     }
    
     public interface EventHandler extends HttpParser.RequestHandler
@@ -132,7 +134,7 @@ public abstract class HttpChannel
     /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
-        return _async.isIdle();
+        return _state.isIdle();
     }
     
     /* ------------------------------------------------------------ */
@@ -154,7 +156,7 @@ public abstract class HttpChannel
     /* ------------------------------------------------------------ */
     public AsyncContinuation getAsyncContinuation()
     {
-        return _async;
+        return _state;
     }
 
     /* ------------------------------------------------------------ */
@@ -247,8 +249,6 @@ public abstract class HttpChannel
      */
     public HttpOutput getOutputStream()
     {
-        if (_out == null)
-            _out = new Output();
         return _out;
     }
 
@@ -297,103 +297,92 @@ public abstract class HttpChannel
         _responseFields.clear();
         _response.recycle();
         _uri.clear();
-        if (_out!=null)
-            _out.reset();
+        _out.reset();
         _in.recycle(); // TODO done here or in connection?
     }
 
     /* ------------------------------------------------------------ */
     protected void handleRequest() throws IOException
     {
-        System.err.println("handleRequest");
-        
-        boolean error = false;
+        LOG.debug("{} handleRequest",this);
 
         String threadName=null;
+        if (LOG.isDebugEnabled())
+        {
+            threadName=Thread.currentThread().getName();
+            Thread.currentThread().setName(threadName+" - "+_uri);
+        }
+
         Throwable async_exception=null;
+        
+        __currentChannel.set(this);
         try
         {
-            if (LOG.isDebugEnabled())
-            {
-                threadName=Thread.currentThread().getName();
-                Thread.currentThread().setName(threadName+" - "+_uri);
-            }
-
-
             // Loop here to handle async request redispatches.
             // The loop is controlled by the call to async.unhandle in the
-            // finally block below.  If call is from a non-blocking connector,
-            // then the unhandle will return false only if an async dispatch has
-            // already happened when unhandle is called.   For a blocking connector,
-            // the wait for the asynchronous dispatch or timeout actually happens
-            // within the call to unhandle().
+            // finally block below.  Unhandle will return false only if an async dispatch has
+            // already happened when unhandle is called. 
+            boolean handling=_state.handling();
 
-            final Server server=_server;
-            boolean handling=_async.handling() && server!=null && server.isRunning();
-            while (handling)
+            while(handling && getServer().isRunning())
             {
-                _request.setHandled(false);
-
-                String info=null;
                 try
                 {
-                    _uri.getPort();
-                    info=URIUtil.canonicalPath(_uri.getDecodedPath());
-                    if (info==null && !_request.getMethod().equals(HttpMethod.CONNECT))
-                    {
-                        sendError(400,null,null,true);
-                        return;
-                    }
+                    _request.setHandled(false);
+                    _out.reopen();
+                    
 
-                    if (_out!=null)
-                        _out.reopen();
-
-                    if (_async.isInitial())
+                    if (_state.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
                         getHttpConnector().customize(_request);
-                        server.handle(this);
+                        getServer().handle(this);
                     }
                     else
                     {
                         _request.setDispatcherType(DispatcherType.ASYNC);
-                        server.handleAsync(this);
+                        getServer().handleAsync(this);
                     }
+                   
                 }
                 catch (ContinuationThrowable e)
                 {
                     LOG.ignore(e);
                 }
-                catch (EofException | RuntimeIOException e)
+                catch (ServletException e)
                 {
-                    async_exception=e;
+                    // TODO
+                }
+                catch (EofException e)
+                {
                     LOG.debug(e);
-                    error=true;
+                    async_exception=e;
                     _request.setHandled(true);
                 }
                 catch (Throwable e)
                 {
-                    async_exception=e;
                     LOG.warn(String.valueOf(_uri),e);
-                    error=true;
+                    async_exception=e;
                     _request.setHandled(true);
-                    if (!_response.isCommitted())
-                        sendError(info==null?400:500, null, null, true);
+                    sendError(500, null, e.toString(), true);
                 }
                 finally
                 {
-                    handling = !_async.unhandle() && server.isRunning() && _server!=null;
+                    handling = !_state.unhandle();
                 }
             }
+            
         }
         finally
         {
+            __currentChannel.set(null);
             if (threadName!=null)
                 Thread.currentThread().setName(threadName);
+            
 
-            if (_async.isUncompleted())
+            if (_state.isUncompleted())
             {
-                _async.doComplete(async_exception);
+                _state.doComplete(async_exception);
 
                 if (_expect100Continue)
                 {
@@ -407,17 +396,18 @@ public abstract class HttpChannel
                         _response.addHeader(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
                 }
 
-                if (!error && !_response.isCommitted() && !_request.isHandled())
+                if (!_response.isCommitted() && !_request.isHandled())
                     _response.sendError(HttpServletResponse.SC_NOT_FOUND);
 
-                // TODO - this is not correct. complete can get called too often.
                 _response.complete();
                 _request.setHandled(true);
                 completed();
             }
+
         }
     }
 
+    
     /* ------------------------------------------------------------ */
     protected boolean sendError(final int status, final String reason, String content, boolean close)
     {
@@ -465,8 +455,7 @@ public abstract class HttpChannel
     public void included()
     {
         _include--;
-        if (_out!=null)
-            _out.reopen();
+        _out.reopen();
     }
     
     /* ------------------------------------------------------------ */
@@ -503,7 +492,7 @@ public abstract class HttpChannel
         return String.format("%s{r=%d,a=%s}",
                 super.toString(),
                 _requests,
-                _async.getState());
+                _state.getState());
     }
 
     /* ------------------------------------------------------------ */
