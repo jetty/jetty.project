@@ -357,7 +357,7 @@ public abstract class HttpChannel
                     LOG.warn(String.valueOf(_uri),e);
                     async_exception=e;
                     _request.setHandled(true);
-                    sendError(500, null, e.toString(), true);
+                    commitError(500, null, e.toString());
                 }
                 finally
                 {
@@ -389,11 +389,10 @@ public abstract class HttpChannel
                         _response.addHeader(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
                 }
 
-                if (!_response.isCommitted() && !_request.isHandled())
-                    sendError(HttpServletResponse.SC_NOT_FOUND,null,null,false);
-
                 try
                 {
+                    if (!_response.isCommitted() && !_request.isHandled())
+                        _response.sendError(404);
                     _response.complete();
                 }
                 catch(IOException e)
@@ -409,16 +408,17 @@ public abstract class HttpChannel
 
     
     /* ------------------------------------------------------------ */
-    protected boolean sendError(final int status, final String reason, String content, boolean close)
+    protected boolean commitError(final int status, final String reason, String content)
     {
+        LOG.debug("{} sendError {} {}",this,status,reason);
+        
         if (_response.isCommitted())
             return false;
         
         try
         {
             _response.setStatus(status,reason);
-            if (close)
-                _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
+            _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
 
             ByteBuffer buffer=null;
             if (content!=null)
@@ -435,6 +435,12 @@ public abstract class HttpChannel
         catch(Exception e)
         {
             LOG.debug("failed to sendError {} {}",status, reason, e);
+        }
+        finally
+        {
+            if (_state.isIdle())
+                _state.complete();
+            _in.shutdownInput();
         }
         return false;
     }
@@ -613,21 +619,13 @@ public abstract class HttpChannel
 
                     if (!_host)
                     {
-                        LOG.debug("!host {}",this);
-                        _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        _in.shutdownInput();
-                        sendError(HttpStatus.BAD_REQUEST_400,"No Host Header",null,true);
-                        _state.complete();
+                        commitError(HttpStatus.BAD_REQUEST_400,"No Host Header",null);
                         return true;
                     }
 
                     if (_expect)
                     {
-                        LOG.debug("!expectation {}",this);
-                        _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        _in.shutdownInput();
-                        sendError(HttpStatus.EXPECTATION_FAILED_417,null,null,true);
-                        _state.complete();
+                        commitError(HttpStatus.EXPECTATION_FAILED_417,null,null);
                         return true;
                     }
 
@@ -666,9 +664,7 @@ public abstract class HttpChannel
         @Override
         public void badMessage(String reason)
         {
-            _in.shutdownInput();
-            sendError(HttpStatus.BAD_REQUEST_400,reason,null,true);
-            _state.complete();
+            commitError(HttpStatus.BAD_REQUEST_400,reason,null);
         }
 
         @Override

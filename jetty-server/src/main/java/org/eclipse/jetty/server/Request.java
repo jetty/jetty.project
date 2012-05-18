@@ -1056,7 +1056,7 @@ public class Request implements HttpServletRequest
                         catch (NumberFormatException e)
                         {
                             if (_channel != null)
-                                _channel.sendError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null,true);
+                                _channel.commitError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null);
                         }
                         return _serverName;
                 }
