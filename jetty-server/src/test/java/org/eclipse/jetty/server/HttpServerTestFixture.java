@@ -77,6 +77,7 @@ public class HttpServerTestFixture
             musthavecontent=false;
         }
         
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -92,15 +93,16 @@ public class HttpServerTestFixture
 
             int count=0;
             BufferedReader reader=request.getReader();
+                        
             if (request.getContentLength()!=0)
             {
-                String line;
-                
-                while ((line=reader.readLine())!=null)
+                String line=reader.readLine();
+                while (line!=null)
                 {
                     writer.print(line);
                     writer.print("\n");
                     count+=line.length();
+                    line=reader.readLine();
                 }
             }
             
@@ -111,7 +113,7 @@ public class HttpServerTestFixture
 
                 writer.println("No content");
             }
-
+            
             // just to be difficult
             reader.close();
             writer.close();

@@ -869,9 +869,12 @@ public class HttpParser
         {
             // process end states
             if (_state == State.END)
+                // TODO should we consume white space here?
                 return false;
+            
             if (_state == State.CONTENT && _contentPosition == _contentLength)
             {
+                // TODO  why is this not  _state=_persistent?State.END:State.SEEKING_EOF;
                 _state=State.END;
                 if(_handler.messageComplete(_contentPosition))
                     return true;
@@ -1068,7 +1071,7 @@ public class HttpParser
         }
         catch(Exception e)
         {
-            LOG.debug(e);
+            LOG.warn(e);
             _handler.badMessage(e.toString());
             return true;
         }
@@ -1118,7 +1121,8 @@ public class HttpParser
     public void reset()
     {
         // reset state
-        _state=_persistent?State.START:_state==State.END?State.END:State.SEEKING_EOF;
+        // TODO why is this not _state=_persistent?State.START:(_state=State.SEEKING_EOF);
+        _state=_persistent?State.START:(_state==State.END?State.END:State.SEEKING_EOF);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentPosition=0;
         _responseStatus=0;

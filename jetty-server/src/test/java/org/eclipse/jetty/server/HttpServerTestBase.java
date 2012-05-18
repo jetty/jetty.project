@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.HttpServerTestFixture.EchoHandler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -171,6 +172,36 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+    @Test
+    public void testTrailingContent() throws Exception
+    {
+        configureServer(new EchoHandler());
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+
+            os.write(("GET /R2 HTTP/1.1\015\012"+
+                    "Host: localhost\015\012"+
+                    "Content-Length: 5\015\012"+
+                    "Content-Type: text/plain\015\012"+
+                    "Connection: close\015\012"+
+                    "\015\012"+
+                    "ABCDE\015\012"+
+                    "\015\012"
+                    ).getBytes());
+            os.flush();
+
+            // Read the response.
+            String response=readResponse(client);
+            assertTrue (response.indexOf("200")>0);
+        }
+        finally
+        {
+            client.close();
+        }
+    }
     /*
      * Feed the server fragmentary headers and see how it copes with it.
      */
@@ -676,14 +707,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 LineNumberReader in = new LineNumberReader(new InputStreamReader(client.getInputStream()));
 
                 String line = in.readLine();
-                System.err.println(line);
                 int count=0;
                 while (line!=null)
                 {
                     if ("HTTP/1.1 200 OK".equals(line))
                         count++;
                     line = in.readLine();
-                    System.err.println(line);
                 }
                 assertEquals(pipeline,count);
             }
@@ -819,8 +848,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 ).getBytes("iso-8859-1"));
 
+            
             String in = IO.toString(is);
-
+            
             int index=in.indexOf("123456789");
             assertTrue(index>0);
             index=in.indexOf("123456789",index+1);
@@ -944,7 +974,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            // ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             OutputStream os=client.getOutputStream();
             InputStream is=client.getInputStream();
 
@@ -955,6 +985,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\r\n"
             ).getBytes());
             os.flush();
+
 
             client.setSoTimeout(2000);
             String in = IO.toString(is);
@@ -972,7 +1003,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            // ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
 
             if (!client.isClosed())
                 client.close();

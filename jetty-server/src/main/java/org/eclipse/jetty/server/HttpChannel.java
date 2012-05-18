@@ -342,15 +342,19 @@ public abstract class HttpChannel
                 {
                     LOG.ignore(e);
                 }
-                catch (ServletException e)
-                {
-                    // TODO
-                }
                 catch (EofException e)
                 {
                     LOG.debug(e);
                     async_exception=e;
                     _request.setHandled(true);
+                }
+                catch (ServletException e)
+                {
+                    LOG.warn(String.valueOf(_uri),e.toString());
+                    LOG.debug(String.valueOf(_uri),e);
+                    async_exception=e;
+                    _request.setHandled(true);
+                    commitError(500, null, e.toString());
                 }
                 catch (Throwable e)
                 {
@@ -364,14 +368,12 @@ public abstract class HttpChannel
                     handling = !_state.unhandle();
                 }
             }
-            
         }
         finally
         {
             __currentChannel.set(null);
             if (threadName!=null)
                 Thread.currentThread().setName(threadName);
-            
 
             if (_state.isUncompleted())
             {
@@ -397,16 +399,14 @@ public abstract class HttpChannel
                 }
                 catch(IOException e)
                 {
-                    LOG.debug(e);
+                    LOG.warn(e);
                 }
                 _request.setHandled(true);
                 completed();
             }
-
         }
     }
 
-    
     /* ------------------------------------------------------------ */
     protected boolean commitError(final int status, final String reason, String content)
     {
@@ -583,7 +583,7 @@ public abstract class HttpChannel
 
                     case CONTENT_TYPE:
                         MimeTypes.Type mime=MimeTypes.CACHE.get(value);
-                        String charset=(mime==null)?MimeTypes.getCharsetFromContentType(value):mime.getCharset().toString();
+                        String charset=(mime==null||mime.getCharset()==null)?MimeTypes.getCharsetFromContentType(value):mime.getCharset().toString();
                         if (charset!=null)
                             _request.setCharacterEncodingUnchecked(charset);
                         break;
@@ -643,6 +643,10 @@ public abstract class HttpChannel
         @Override
         public boolean content(ByteBuffer ref)
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{} content {}",this,BufferUtil.toDetailString(ref));
+            }
             _in.content(ref);
             return true;
         }

@@ -87,6 +87,7 @@ public class HttpConnection extends AbstractAsyncConnection
        
         _parser = new HttpParser(_channel.getEventHandler());
         _generator = new HttpGenerator();
+        _generator.setSendServerVersion(_server.getSendServerVersion());
         
         LOG.debug("New HTTP Connection {}",this);
     }
@@ -132,15 +133,21 @@ public class HttpConnection extends AbstractAsyncConnection
         _generator.reset();
         _channel.reset();
         _httpInput.recycle();
-        if (_requestBuffer!=null)
+        if (_requestBuffer!=null && !_requestBuffer.hasRemaining())
+        {
             _bufferPool.release(_requestBuffer);
-        _requestBuffer=null;
-        if (_responseHeader!=null)
+            _requestBuffer=null;
+        }
+        if (_responseHeader!=null && !_responseHeader.hasRemaining())
+        {
             _bufferPool.release(_responseHeader);
-        _responseHeader=null;
-        if (_responseBuffer!=null)
+            _responseHeader=null;
+        }
+        if (_responseBuffer!=null && !_responseBuffer.hasRemaining())
+        {    
             _bufferPool.release(_responseBuffer);
-        _responseBuffer=null;
+            _responseBuffer=null;
+        }
         if (_chunk!=null)
             _bufferPool.release(_chunk);
         _chunk=null;
@@ -252,11 +259,16 @@ public class HttpConnection extends AbstractAsyncConnection
                     }
                     
                     // return if the connection has been changed
-                    if (getEndPoint().getAsyncConnection()!=null)
+                    if (getEndPoint().getAsyncConnection()!=this)
                     {
                         getEndPoint().getAsyncConnection().onOpen();
                         return;
                     }
+                } 
+                else if (BufferUtil.hasContent(_requestBuffer))
+                {
+                    LOG.warn("STATE MACHINE FAILURE??? {} {}",_parser,BufferUtil.toDetailString(_requestBuffer));
+                    BufferUtil.clear(_requestBuffer);
                 }
             }
         }
@@ -347,27 +359,53 @@ public class HttpConnection extends AbstractAsyncConnection
             generate(null,Action.COMPLETE);
         }
         
+        
+        @Override
+        protected boolean commitError(int status, String reason, String content)
+        {
+            if (!super.commitError(status,reason,content))
+            {
+                // We could not send the error, so a sudden close of the connection will at least tell
+                // the client something is wrong
+                getEndPoint().close();
+                return false;
+            }
+            return true;
+        }
+
         @Override
         protected void completed()
         {
-            LOG.debug("{} completed",this);
+            LOG.debug(BufferUtil.toDetailString(_requestBuffer));
             HttpConnection.this.reset();
             
-            // if there is a pipelined request and onReadable has returned
-            if (_requestBuffer!=null && getCurrentConnection()==null)
-                execute(new Runnable() 
-                {
-                   @Override public void run() {onReadable();} 
-                });
-            else if (_parser.isIdle())
-                scheduleOnReadable();
-            else if (!getEndPoint().isOutputShutdown() && _parser.getState()==HttpParser.State.SEEKING_EOF)
+            // if the onReadable method is not executing
+            if (getCurrentConnection()==null)
             {
-                // TODO This is a catch all indicating some protocol handling failure
-                // Currently needed for requests saying they are HTTP/2.0.
-                // This should be removed once better error handling is in place
-                LOG.warn("Endpoint output not shutdown when seeking EOF");
-                getEndPoint().close(); 
+                // TODO is there a race here?
+                
+                if (_parser.isIdle())
+                {
+                    // it wants to eat more
+                    if (_requestBuffer==null)
+                        scheduleOnReadable();
+                    else
+                    {
+                        LOG.debug("{} pipelined",this);
+                        execute(new Runnable() 
+                        {
+                           @Override public void run() {onReadable();} 
+                        });
+                    }
+                }
+                else if (!getEndPoint().isOutputShutdown() && _parser.getState()==HttpParser.State.SEEKING_EOF)
+                {
+                    // TODO This is a catch all indicating some protocol handling failure
+                    // Currently needed for requests saying they are HTTP/2.0.
+                    // This should be removed once better error handling is in place
+                    LOG.warn("Endpoint output not shutdown when seeking EOF");
+                    getEndPoint().close(); 
+                }   
             }
         }
 
@@ -421,8 +459,10 @@ public class HttpConnection extends AbstractAsyncConnection
                             case FLUSH:
                                 if (_info.isHead())
                                 {
-                                    BufferUtil.clear(_chunk);
-                                    BufferUtil.clear(_responseBuffer);
+                                    if (_chunk!=null)
+                                        BufferUtil.clear(_chunk);
+                                    if (_responseBuffer!=null)
+                                        BufferUtil.clear(_responseBuffer);
                                 }
                                 write(_responseHeader,_chunk,_responseBuffer).get();
                                 continue;
@@ -430,8 +470,10 @@ public class HttpConnection extends AbstractAsyncConnection
                             case FLUSH_CONTENT:
                                 if (_info.isHead())
                                 {
-                                    BufferUtil.clear(_chunk);
-                                    BufferUtil.clear(content);
+                                    if (_chunk!=null)
+                                        BufferUtil.clear(_chunk);
+                                    if (_responseBuffer!=null)
+                                        BufferUtil.clear(content);
                                 }
                                 write(_responseHeader,_chunk,content).get();
                                 break;
@@ -512,8 +554,10 @@ public class HttpConnection extends AbstractAsyncConnection
                             case FLUSH:
                                 if (_info.isHead())
                                 {
-                                    BufferUtil.clear(_chunk);
-                                    BufferUtil.clear(_responseBuffer);
+                                    if (_chunk!=null)
+                                        BufferUtil.clear(_chunk);
+                                    if (_responseBuffer!=null)
+                                        BufferUtil.clear(_responseBuffer);
                                 }
                                 write(_responseHeader,_chunk,_responseBuffer).get();
                                 break;
@@ -521,8 +565,10 @@ public class HttpConnection extends AbstractAsyncConnection
                             case FLUSH_CONTENT:
                                 if (_info.isHead())
                                 {
-                                    BufferUtil.clear(_chunk);
-                                    BufferUtil.clear(content);
+                                    if (_chunk!=null)
+                                        BufferUtil.clear(_chunk);
+                                    if (_responseBuffer!=null)
+                                        BufferUtil.clear(content);
                                 }
                                 // TODO need a proper call back to complete.
                                 write(_responseHeader,_chunk,content);
@@ -614,11 +660,10 @@ public class HttpConnection extends AbstractAsyncConnection
             that uses the calling thread to block on a readable callback and
             then to do the parsing before before attempting the read.
             */
-            
-            
+                        
             // While progress and the connection has not changed
-            boolean parsed_event=false;
-            while (!getEndPoint().isInputShutdown())
+            boolean parsed_event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
+            while (!parsed_event && !getEndPoint().isInputShutdown())
             {
                 try
                 {                    

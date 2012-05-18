@@ -176,7 +176,7 @@ public abstract class HttpInput extends ServletInputStream
     public void shutdownInput()
     {
         synchronized (_inputQ.lock())
-        {                
+        {             
             _inputEOF=true;
         }
     }

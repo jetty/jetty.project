@@ -57,17 +57,18 @@ abstract public class WriteFlusher
                     return;
                 }
             }
-
-            if (!_writing.compareAndSet(true,false))
-                throw new ConcurrentModificationException();
-            callback.completed(context);
         }
         catch (IOException e)
         {
             if (!_writing.compareAndSet(true,false))
-                throw new ConcurrentModificationException();
+                throw new ConcurrentModificationException(e);
             callback.failed(context,e);
+            return;
         }
+
+        if (!_writing.compareAndSet(true,false))
+            throw new ConcurrentModificationException();
+        callback.completed(context);
     }
     
     /* ------------------------------------------------------------ */
