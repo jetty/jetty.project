@@ -347,6 +347,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /* ------------------------------------------------------------ */
     public boolean dispatch(Runnable job)
     {
+        LOG.debug("{} dispatched {}",this,job);
         if (isRunning())
         {
             final int jobQ = _jobs.size();
@@ -363,7 +364,6 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                 return true;
             }
         }
-        LOG.debug("Dispatched {} to stopped {}",job,this);
         return false;
     }
 

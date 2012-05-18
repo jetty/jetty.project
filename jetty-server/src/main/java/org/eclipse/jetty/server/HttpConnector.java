@@ -44,7 +44,6 @@ public abstract class HttpConnector extends AbstractConnector
         super(acceptors);
     }
     
-    
     @Override
     protected void doStart() throws Exception
     {

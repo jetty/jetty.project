@@ -28,7 +28,7 @@ public class HttpServerTestFixture
     protected static final String HOST="localhost";
     
     protected static Server _server;
-    protected static Connector _connector;
+    protected static Connector.NetConnector _connector;
     protected String _scheme="http";
 
     protected Socket newSocket(String host,int port) throws Exception
@@ -40,7 +40,7 @@ public class HttpServerTestFixture
         return socket;
     }
     
-    protected static void startServer(Connector connector) throws Exception
+    protected static void startServer(Connector.NetConnector connector) throws Exception
     {
         _server = new Server();
         _connector = connector;

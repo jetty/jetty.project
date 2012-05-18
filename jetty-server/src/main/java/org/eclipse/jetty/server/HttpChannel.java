@@ -615,7 +615,9 @@ public abstract class HttpChannel
                     {
                         LOG.debug("!host {}",this);
                         _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        sendError(HttpStatus.BAD_REQUEST_400,null,null,true);
+                        _in.shutdownInput();
+                        sendError(HttpStatus.BAD_REQUEST_400,"No Host Header",null,true);
+                        _state.complete();
                         return true;
                     }
 
@@ -623,7 +625,9 @@ public abstract class HttpChannel
                     {
                         LOG.debug("!expectation {}",this);
                         _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                        _in.shutdownInput();
                         sendError(HttpStatus.EXPECTATION_FAILED_417,null,null,true);
+                        _state.complete();
                         return true;
                     }
 
@@ -655,7 +659,16 @@ public abstract class HttpChannel
         @Override
         public boolean earlyEOF()
         {
+            _in.shutdownInput();
             return false;
+        }
+
+        @Override
+        public void badMessage(String reason)
+        {
+            _in.shutdownInput();
+            sendError(HttpStatus.BAD_REQUEST_400,reason,null,true);
+            _state.complete();
         }
 
         @Override
@@ -663,13 +676,6 @@ public abstract class HttpChannel
         {
             return _response.commit();
         }
-
-        @Override
-        public void badMessage(String reason)
-        {
-            sendError(HttpStatus.BAD_REQUEST_400,reason,null,true);
-        }
-
     }
 
 

@@ -355,7 +355,10 @@ public class HttpConnection extends AbstractAsyncConnection
             
             // if there is a pipelined request and onReadable has returned
             if (_requestBuffer!=null && getCurrentConnection()==null)
-                onReadable();
+                execute(new Runnable() 
+                {
+                   @Override public void run() {onReadable();} 
+                });
             else if (_parser.isIdle())
                 scheduleOnReadable();
             else if (!getEndPoint().isOutputShutdown() && _parser.getState()==HttpParser.State.SEEKING_EOF)
@@ -402,6 +405,7 @@ public class HttpConnection extends AbstractAsyncConnection
                             case NEED_COMMIT:
                                 if (_info==null)
                                     _info=_channel.getEventHandler().commit();
+                                LOG.debug("{} Gcommit {}",this,_info);
                                 _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                                 continue;
 
@@ -415,10 +419,20 @@ public class HttpConnection extends AbstractAsyncConnection
                                 continue;
 
                             case FLUSH:
+                                if (_info.isHead())
+                                {
+                                    BufferUtil.clear(_chunk);
+                                    BufferUtil.clear(_responseBuffer);
+                                }
                                 write(_responseHeader,_chunk,_responseBuffer).get();
                                 continue;
 
                             case FLUSH_CONTENT:
+                                if (_info.isHead())
+                                {
+                                    BufferUtil.clear(_chunk);
+                                    BufferUtil.clear(content);
+                                }
                                 write(_responseHeader,_chunk,content).get();
                                 break;
 
@@ -453,8 +467,10 @@ public class HttpConnection extends AbstractAsyncConnection
 
         @Override
         protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
-        {
+        {            
             _info=info;
+
+            LOG.debug("{} commit {}",this,_info);
             
             // TODO review the locks with a mind that other threads may read and write
             synchronized (_lock)
@@ -494,10 +510,20 @@ public class HttpConnection extends AbstractAsyncConnection
                                 throw new IllegalStateException("!chunk when content length known");
 
                             case FLUSH:
+                                if (_info.isHead())
+                                {
+                                    BufferUtil.clear(_chunk);
+                                    BufferUtil.clear(_responseBuffer);
+                                }
                                 write(_responseHeader,_chunk,_responseBuffer).get();
                                 break;
 
                             case FLUSH_CONTENT:
+                                if (_info.isHead())
+                                {
+                                    BufferUtil.clear(_chunk);
+                                    BufferUtil.clear(content);
+                                }
                                 // TODO need a proper call back to complete.
                                 write(_responseHeader,_chunk,content);
                                 break loop;

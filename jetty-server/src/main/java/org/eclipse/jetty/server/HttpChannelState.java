@@ -51,7 +51,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     // STATES:
     //               handling()    suspend()     unhandle()    resume()       complete()  doComplete()
     //                             startAsync()                dispatch()   
-    // IDLE          DISPATCHED      
+    // IDLE          DISPATCHED                                               COMPLETING
     // DISPATCHED                  ASYNCSTARTED  UNCOMPLETED
     // ASYNCSTARTED                              ASYNCWAIT     REDISPATCHING  COMPLETING
     // REDISPATCHING                             REDISPATCHED  
@@ -558,6 +558,7 @@ public class HttpChannelState implements AsyncContext, Continuation
                 case REDISPATCHED:
                     throw new IllegalStateException(this.getStatusString());
 
+                case IDLE:
                 case ASYNCSTARTED:
                     _state=State.COMPLETING;
                     return;

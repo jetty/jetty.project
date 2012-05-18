@@ -19,6 +19,9 @@
  */
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -34,7 +37,9 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -137,16 +142,15 @@ public class HttpConnectionTest
                 "Host: localhost\015\012"+
                 "\015\012");
         
-        assertTrue(responsePOST.startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
-        assertTrue(responsePOST.length()>responseHEAD.length());
+        assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
+        assertThat(responsePOST.length(),greaterThan(responseHEAD.length()));
         
         responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "\015\012");
-        
-        assertTrue(responsePOST.startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
-        assertTrue(responsePOST.length()>responseHEAD.length());
 
+        assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
+        assertThat(responsePOST.length(),greaterThan(responseHEAD.length()));
     }
 
     @Test
@@ -563,33 +567,13 @@ public class HttpConnectionTest
 
     private int checkContains(String s,int offset,String c)
     {
-        int o=s.indexOf(c,offset);
-        if (o<offset)
-        {
-            System.err.println("FAILED");
-            System.err.println("'"+c+"' not in:");
-            System.err.println(s.substring(offset));
-            System.err.flush();
-            System.out.println("--\n"+s);
-            System.out.flush();
-            assertTrue(false);
-        }
-        return o;
+        Assert.assertThat(s.substring(offset),Matchers.containsString(c));
+        return s.indexOf(c,offset);
     }
 
     private void checkNotContained(String s,int offset,String c)
     {
-        int o=s.indexOf(c,offset);
-        if (o>=offset)
-        {
-            System.err.println("FAILED");
-            System.err.println("'"+c+"' IS in:");
-            System.err.println(s.substring(offset));
-            System.err.flush();
-            System.out.println("--\n"+s);
-            System.out.flush();
-            assertTrue(false);
-        }
+        Assert.assertThat(s.substring(offset),Matchers.not(Matchers.containsString(c)));
     }
 }
 

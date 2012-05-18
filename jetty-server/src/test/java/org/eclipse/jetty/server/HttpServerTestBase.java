@@ -676,12 +676,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 LineNumberReader in = new LineNumberReader(new InputStreamReader(client.getInputStream()));
 
                 String line = in.readLine();
+                System.err.println(line);
                 int count=0;
                 while (line!=null)
                 {
                     if ("HTTP/1.1 200 OK".equals(line))
                         count++;
                     line = in.readLine();
+                    System.err.println(line);
                 }
                 assertEquals(pipeline,count);
             }

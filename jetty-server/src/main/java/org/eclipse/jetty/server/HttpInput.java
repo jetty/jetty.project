@@ -73,8 +73,6 @@ public abstract class HttpInput extends ServletInputStream
     public int read() throws IOException
     {
         int len=read(_oneByte,0,1);
-        if (len>0)
-            System.err.println("READ "+_oneByte[0]);
         return len<0?len:_oneByte[0];
     }
 
@@ -101,7 +99,6 @@ public abstract class HttpInput extends ServletInputStream
     {
         synchronized (_inputQ.lock())
         {
-            System.err.println("read "+len+" "+_inputQ);
             ByteBuffer content=null;            
             while(content==null)
             {
@@ -125,8 +122,6 @@ public abstract class HttpInput extends ServletInputStream
                 }
             }
             
-            System.err.println("reading "+len+" "+BufferUtil.toDetailString(content));
-
             int l=Math.min(len,content.remaining());
             content.get(b,off,l);
             return l;
@@ -172,7 +167,6 @@ public abstract class HttpInput extends ServletInputStream
     {
         synchronized (_inputQ.lock())
         {
-            System.err.println("CONTENT "+BufferUtil.toDetailString(ref));
             _inputQ.add(ref);
             onContentQueued(ref);
         }              
@@ -183,8 +177,6 @@ public abstract class HttpInput extends ServletInputStream
     {
         synchronized (_inputQ.lock())
         {                
-            System.err.println("MESSAGE EOF");
-
             _inputEOF=true;
         }
     }
