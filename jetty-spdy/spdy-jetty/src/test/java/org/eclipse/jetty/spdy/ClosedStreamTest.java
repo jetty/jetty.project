@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -180,6 +181,7 @@ public class ClosedStreamTest extends AbstractTest
         final CountDownLatch serverReplySentLatch = new CountDownLatch(1);
         final CountDownLatch clientReplyReceivedLatch = new CountDownLatch(1);
         final CountDownLatch serverDataReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch goAwayReceivedLatch = new CountDownLatch(1);
 
         InetSocketAddress startServer = startServer(new ServerSessionFrameListener.Adapter()
         {
@@ -206,6 +208,11 @@ public class ClosedStreamTest extends AbstractTest
                     }
                 };
             }
+            @Override
+            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            {
+                goAwayReceivedLatch.countDown();
+            }
         });
 
         final Generator generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory().newCompressor());
@@ -214,6 +221,7 @@ public class ClosedStreamTest extends AbstractTest
 
         final SocketChannel socketChannel = SocketChannel.open(startServer);
         socketChannel.write(synData);
+        assertThat("synData is fully written", synData.hasRemaining(), is(false));
 
         assertThat("server: syn reply is sent",serverReplySentLatch.await(5,TimeUnit.SECONDS),is(true));
 
@@ -263,6 +271,8 @@ public class ClosedStreamTest extends AbstractTest
         socketChannel.write(buffer);
         Assert.assertThat(buffer.hasRemaining(), is(false));
 
+        assertThat("GoAway frame is received by server", goAwayReceivedLatch.await(5,TimeUnit.SECONDS), is(true));
+        
         socketChannel.close();
     }
 }
