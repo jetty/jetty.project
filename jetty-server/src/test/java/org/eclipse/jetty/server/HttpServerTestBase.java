@@ -107,6 +107,36 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
 
 
+    /*
+     * Feed a full header method
+     */
+    @Test
+    public void testFull() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+
+            byte[] buffer = new byte[64*1024];
+            Arrays.fill(buffer,(byte)'A');
+            
+            os.write(buffer);
+            os.flush();
+
+            // Read the response.
+            String response=readResponse(client);
+
+            Assert.assertTrue(response.contains("HTTP/1.1 413 FULL head"));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
 
 
     /*

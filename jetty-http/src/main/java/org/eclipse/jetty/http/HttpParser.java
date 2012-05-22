@@ -1020,7 +1020,8 @@ public class HttpParser implements Parser
             // Are we full?
             if (_buffer.space() == 0)
             {
-                LOG.warn("Full {}",_buffer.toDetailString());
+                LOG.warn("HttpParser Full for {} ",_endp);
+                _buffer.clear();
                 throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL "+(_buffer==_body?"body":"head"));
             }
 
