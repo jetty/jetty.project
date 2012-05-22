@@ -46,7 +46,7 @@ public class HttpConnection extends AbstractAsyncConnection
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
     private final ByteBufferPool _bufferPool;
-    private final HttpInput _httpInput;
+    private final HttpHttpInput _httpInput;
     
     private ResponseInfo _info;
     ByteBuffer _requestBuffer=null;
@@ -129,7 +129,11 @@ public class HttpConnection extends AbstractAsyncConnection
     /* ------------------------------------------------------------ */
     public void reset()
     {
-        _parser.reset();
+        if (_generator.isPersistent())
+            _parser.reset();
+        else
+            _parser.close();
+        
         _generator.reset();
         _channel.reset();
         _httpInput.recycle();
@@ -247,10 +251,10 @@ public class HttpConnection extends AbstractAsyncConnection
                     // to handle a request. Call the channel and this will either handle the 
                     // request/response to completion OR if the request suspends, the channel
                     // will be left in !idle state so our outer loop will exit.
-                    _channel.handleRequest();
+                    _channel.process();
                     
                     // Return if the channel is still processing the request
-                    if (!_channel.isIdle())
+                    if (_channel.isSuspended())
                     {
                         // release buffer if all input has been consumed
                         if (_httpInput.available()==0)
@@ -265,11 +269,6 @@ public class HttpConnection extends AbstractAsyncConnection
                         return;
                     }
                 } 
-                else if (BufferUtil.hasContent(_requestBuffer))
-                {
-                    LOG.warn("STATE MACHINE FAILURE??? {} {}",_parser,BufferUtil.toDetailString(_requestBuffer));
-                    BufferUtil.clear(_requestBuffer);
-                }
             }
         }
         catch(Exception e)
@@ -367,7 +366,15 @@ public class HttpConnection extends AbstractAsyncConnection
             {
                 // We could not send the error, so a sudden close of the connection will at least tell
                 // the client something is wrong
+
                 getEndPoint().close();
+                
+                if (BufferUtil.hasContent(_responseBuffer))
+                {
+                    BufferUtil.clear(_responseBuffer);
+                    releaseRequestBuffer();
+                }
+                _generator.abort();
                 return false;
             }
             return true;
@@ -376,7 +383,15 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         protected void completed()
         {
-            LOG.debug(BufferUtil.toDetailString(_requestBuffer));
+            LOG.debug("{} completed");
+            
+            // parser should be either complete or can be completed with single call
+            if (!_parser.isComplete())
+            {
+                // TODO make this much more efficient
+                _httpInput.consumeAll();
+            }
+                
             HttpConnection.this.reset();
             
             // if the onReadable method is not executing
@@ -384,7 +399,7 @@ public class HttpConnection extends AbstractAsyncConnection
             {
                 // TODO is there a race here?
                 
-                if (_parser.isIdle())
+                if (_parser.isStart())
                 {
                     // it wants to eat more
                     if (_requestBuffer==null)
@@ -398,7 +413,7 @@ public class HttpConnection extends AbstractAsyncConnection
                         });
                     }
                 }
-                else if (!getEndPoint().isOutputShutdown() && _parser.getState()==HttpParser.State.SEEKING_EOF)
+                else if (!getEndPoint().isOutputShutdown() && _parser.isState(HttpParser.State.CLOSED))
                 {
                     // TODO This is a catch all indicating some protocol handling failure
                     // Currently needed for requests saying they are HTTP/2.0.
@@ -700,6 +715,27 @@ public class HttpConnection extends AbstractAsyncConnection
                 {
                     LOG.debug(e);
                     FutureCallback.rethrow(e);
+                }
+            }
+        }
+
+        protected void consumeAll()
+        {
+            while (true)
+            {
+                synchronized (_inputQ)
+                {
+                    _inputQ.clear();
+                }
+                if (_parser.isComplete())
+                    return;
+                try
+                {
+                    blockForContent();
+                }
+                catch(IOException e)
+                {
+                    LOG.warn(e);
                 }
             }
         }

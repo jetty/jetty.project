@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Assert;
@@ -30,6 +31,31 @@ import org.junit.Test;
  */
 public class HttpParserTest
 {
+
+    /* ------------------------------------------------------------------------------- */
+    /**
+     * Parse until {@link #END END} state.
+     * If the parser is already in the END state, then it is {@link #reset reset} and re-parsed.
+     * @param parser TODO
+     * @throws IllegalStateException If the buffers have already been partially parsed.
+     */
+    public static void parseAll(HttpParser parser, ByteBuffer buffer)
+    {
+        if (parser.isState(State.END))
+            parser.reset();
+        if (!parser.isState(State.START))
+            throw new IllegalStateException("!START");
+
+        // continue parsing
+        while (!parser.isState(State.END) && buffer.hasRemaining())
+        {
+            int remaining=buffer.remaining();
+            parser.parseNext(buffer);
+            if (remaining==buffer.remaining())
+                break;
+        }
+    }
+    
     @Test
     public void testLineParse0() throws Exception
     {
@@ -37,11 +63,11 @@ public class HttpParserTest
 
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
-        parser.parseAll(buffer);
-        assertEquals("POST", f0);
-        assertEquals("/foo", f1);
-        assertEquals("HTTP/1.0", f2);
-        assertEquals(-1, h);
+        parseAll(parser,buffer);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/foo", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(-1, _h);
     }
 
     @Test
@@ -49,14 +75,14 @@ public class HttpParserTest
     {
         ByteBuffer buffer= BufferUtil.toBuffer("GET /999\015\012");
 
-        f2= null;
+        _versionOrReason= null;
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
-        parser.parseAll(buffer);
-        assertEquals("GET", f0);
-        assertEquals("/999", f1);
-        assertEquals(null, f2);
-        assertEquals(-1, h);
+        parseAll(parser,buffer);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/999", _uriOrStatus);
+        assertEquals(null, _versionOrReason);
+        assertEquals(-1, _h);
     }
 
     @Test
@@ -64,14 +90,14 @@ public class HttpParserTest
     {
         ByteBuffer buffer= BufferUtil.toBuffer("POST /222  \015\012");
 
-        f2= null;
+        _versionOrReason= null;
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
-        parser.parseAll(buffer);
-        assertEquals("POST", f0);
-        assertEquals("/222", f1);
-        assertEquals(null, f2);
-        assertEquals(-1, h);
+        parseAll(parser,buffer);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/222", _uriOrStatus);
+        assertEquals(null, _versionOrReason);
+        assertEquals(-1, _h);
     }
 
     @Test
@@ -81,11 +107,11 @@ public class HttpParserTest
 
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
-        parser.parseAll(buffer);
-        assertEquals("POST", f0);
-        assertEquals("/fo\u0690", f1);
-        assertEquals("HTTP/1.0", f2);
-        assertEquals(-1, h);
+        parseAll(parser,buffer);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/fo\u0690", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(-1, _h);
     }
 
     @Test
@@ -95,11 +121,11 @@ public class HttpParserTest
 
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
-        parser.parseAll(buffer);
-        assertEquals("POST", f0);
-        assertEquals("/foo?param=\u0690", f1);
-        assertEquals("HTTP/1.0", f2);
-        assertEquals(-1, h);
+        parseAll(parser,buffer);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/foo?param=\u0690", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(-1, _h);
     }
 
     @Test
@@ -108,12 +134,12 @@ public class HttpParserTest
         ByteBuffer buffer= BufferUtil.toBuffer("CONNECT 192.168.1.2:80 HTTP/1.1\015\012" + "\015\012");
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
-        parser.parseAll(buffer);
+        parseAll(parser,buffer);
         assertTrue(handler.request);
-        assertEquals("CONNECT", f0);
-        assertEquals("192.168.1.2:80", f1);
-        assertEquals("HTTP/1.1", f2);
-        assertEquals(-1, h);
+        assertEquals("CONNECT", _methodOrVersion);
+        assertEquals("192.168.1.2:80", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals(-1, _h);
     }
 
     @Test
@@ -133,26 +159,26 @@ public class HttpParserTest
                 "\015\012");
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
-        parser.parseAll(buffer);
+        parseAll(parser,buffer);
 
-        assertEquals("GET", f0);
-        assertEquals("/", f1);
-        assertEquals("HTTP/1.0", f2);
-        assertEquals("Host", hdr[0]);
-        assertEquals("localhost", val[0]);
-        assertEquals("Header1", hdr[1]);
-        assertEquals("value1", val[1]);
-        assertEquals("Header 2", hdr[2]);
-        assertEquals("value 2a value 2b", val[2]);
-        assertEquals("Header3", hdr[3]);
-        assertEquals(null, val[3]);
-        assertEquals("Header4", hdr[4]);
-        assertEquals("value4", val[4]);
-        assertEquals("Server5", hdr[5]);
-        assertEquals("notServer", val[5]);
-        assertEquals("Host Header", hdr[6]);
-        assertEquals("notHost", val[6]);
-        assertEquals(6, h);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Header1", _hdr[1]);
+        assertEquals("value1", _val[1]);
+        assertEquals("Header 2", _hdr[2]);
+        assertEquals("value 2a value 2b", _val[2]);
+        assertEquals("Header3", _hdr[3]);
+        assertEquals(null, _val[3]);
+        assertEquals("Header4", _hdr[4]);
+        assertEquals("value4", _val[4]);
+        assertEquals("Server5", _hdr[5]);
+        assertEquals("notServer", _val[5]);
+        assertEquals("Host Header", _hdr[6]);
+        assertEquals("notHost", _val[6]);
+        assertEquals(6, _h);
     }
 
     @Test
@@ -191,22 +217,22 @@ public class HttpParserTest
                 parser.parseNext(buffer);
             }
 
-            assertEquals("SPLIT", f0);
-            assertEquals("/", f1);
-            assertEquals("HTTP/1.0", f2);
-            assertEquals("Host", hdr[0]);
-            assertEquals("localhost", val[0]);
-            assertEquals("Header1", hdr[1]);
-            assertEquals("value1", val[1]);
-            assertEquals("Header2", hdr[2]);
-            assertEquals("value 2a value 2b", val[2]);
-            assertEquals("Header3", hdr[3]);
-            assertEquals(null, val[3]);
-            assertEquals("Header4", hdr[4]);
-            assertEquals("value4", val[4]);
-            assertEquals("Server5", hdr[5]);
-            assertEquals("notServer", val[5]);
-            assertEquals(5, h);
+            assertEquals("SPLIT", _methodOrVersion);
+            assertEquals("/", _uriOrStatus);
+            assertEquals("HTTP/1.0", _versionOrReason);
+            assertEquals("Host", _hdr[0]);
+            assertEquals("localhost", _val[0]);
+            assertEquals("Header1", _hdr[1]);
+            assertEquals("value1", _val[1]);
+            assertEquals("Header2", _hdr[2]);
+            assertEquals("value 2a value 2b", _val[2]);
+            assertEquals("Header3", _hdr[3]);
+            assertEquals(null, _val[3]);
+            assertEquals("Header4", _hdr[4]);
+            assertEquals("value4", _val[4]);
+            assertEquals("Server5", _hdr[5]);
+            assertEquals("notServer", _val[5]);
+            assertEquals(5, _h);
         }
     }
 
@@ -226,14 +252,14 @@ public class HttpParserTest
                         + "0\015\012");
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
-        parser.parseAll(buffer);
+        parseAll(parser,buffer);
 
-        assertEquals("GET", f0);
-        assertEquals("/chunk", f1);
-        assertEquals("HTTP/1.0", f2);
-        assertEquals(1, h);
-        assertEquals("Header1", hdr[0]);
-        assertEquals("value1", val[0]);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/chunk", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(1, _h);
+        assertEquals("Header1", _hdr[0]);
+        assertEquals("value1", _val[0]);
         assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
     }
 
@@ -241,7 +267,7 @@ public class HttpParserTest
     public void testMultiParse() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
-                "GET /mp HTTP/1.0\015\012"
+                          "GET /mp HTTP/1.0\015\012"
                         + "Connection: Keep-Alive\015\012"
                         + "Header1: value1\015\012"
                         + "Transfer-Encoding: chunked\015\012"
@@ -251,11 +277,15 @@ public class HttpParserTest
                         + "1a\015\012"
                         + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\015\012"
                         + "0\015\012"
+                        
+                        + "\015\012"
+                        
                         + "POST /foo HTTP/1.0\015\012"
                         + "Connection: Keep-Alive\015\012"
                         + "Header2: value2\015\012"
                         + "Content-Length: 0\015\012"
                         + "\015\012"
+                        
                         + "PUT /doodle HTTP/1.0\015\012"
                         + "Connection: close\015\012"
                         + "Header3: value3\015\012"
@@ -267,33 +297,35 @@ public class HttpParserTest
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
         parser.parseNext(buffer);
-        assertEquals("GET", f0);
-        assertEquals("/mp", f1);
-        assertEquals("HTTP/1.0", f2);
-        assertEquals(2, h);
-        assertEquals("Header1", hdr[1]);
-        assertEquals("value1", val[1]);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/mp", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(2, _h);
+        assertEquals("Header1", _hdr[1]);
+        assertEquals("value1", _val[1]);
         assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
 
         parser.reset();
+        init();
         parser.parseNext(buffer);
-        assertEquals("POST", f0);
-        assertEquals("/foo", f1);
-        assertEquals("HTTP/1.0", f2);
-        assertEquals(2, h);
-        assertEquals("Header2", hdr[1]);
-        assertEquals("value2", val[1]);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/foo", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(2, _h);
+        assertEquals("Header2", _hdr[1]);
+        assertEquals("value2", _val[1]);
         assertEquals(null, _content);
 
         parser.reset();
+        init();
         parser.parseNext(buffer);
         parser.inputShutdown();
-        assertEquals("PUT", f0);
-        assertEquals("/doodle", f1);
-        assertEquals("HTTP/1.0", f2);
-        assertEquals(2, h);
-        assertEquals("Header3", hdr[1]);
-        assertEquals("value3", val[1]);
+        assertEquals("PUT", _methodOrVersion);
+        assertEquals("/doodle", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(2, _h);
+        assertEquals("Header3", _hdr[1]);
+        assertEquals("value3", _val[1]);
         assertEquals("0123456789", _content);
     }
 
@@ -310,12 +342,12 @@ public class HttpParserTest
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
         parser.parseNext(buffer);
-        assertEquals("HTTP/1.1", f0);
-        assertEquals("200", f1);
-        assertEquals("Correct", f2);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("200", _uriOrStatus);
+        assertEquals("Correct", _versionOrReason);
         assertEquals(10,_content.length());
-        assertTrue(headerCompleted);
-        assertTrue(messageCompleted);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
     @Test
@@ -329,20 +361,21 @@ public class HttpParserTest
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
         parser.parseNext(buffer);
-        assertEquals("HTTP/1.1", f0);
-        assertEquals("304", f1);
-        assertEquals("Not-Modified", f2);
-        assertTrue(headerCompleted);
-        assertTrue(messageCompleted);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("304", _uriOrStatus);
+        assertEquals("Not-Modified", _versionOrReason);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
     @Test
     public void testResponseParse2() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
-                "HTTP/1.1 204 No-Content\015\012"
+                          "HTTP/1.1 204 No-Content\015\012"
                         + "Header: value\015\012"
                         + "\015\012"
+                        
                         + "HTTP/1.1 200 Correct\015\012"
                         + "Content-Length: 10\015\012"
                         + "Content-Type: text/plain\015\012"
@@ -352,23 +385,23 @@ public class HttpParserTest
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
         parser.parseNext(buffer);
-        assertEquals("HTTP/1.1", f0);
-        assertEquals("204", f1);
-        assertEquals("No-Content", f2);
-        assertTrue(headerCompleted);
-        assertTrue(messageCompleted);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("204", _uriOrStatus);
+        assertEquals("No-Content", _versionOrReason);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
 
-
-        parser.setPersistent(true);
         parser.reset();
+        init();
+        
         parser.parseNext(buffer);
         parser.inputShutdown();
-        assertEquals("HTTP/1.1", f0);
-        assertEquals("200", f1);
-        assertEquals("Correct", f2);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("200", _uriOrStatus);
+        assertEquals("Correct", _versionOrReason);
         assertEquals(_content.length(), 10);
-        assertTrue(headerCompleted);
-        assertTrue(messageCompleted);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
 
@@ -385,12 +418,12 @@ public class HttpParserTest
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
         parser.parseNext(buffer);
-        assertEquals("HTTP/1.1", f0);
-        assertEquals("200", f1);
-        assertEquals(null, f2);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("200", _uriOrStatus);
+        assertEquals(null, _versionOrReason);
         assertEquals(_content.length(), 10);
-        assertTrue(headerCompleted);
-        assertTrue(messageCompleted);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
     @Test
@@ -406,12 +439,12 @@ public class HttpParserTest
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
         parser.parseNext(buffer);
-        assertEquals("HTTP/1.1", f0);
-        assertEquals("200", f1);
-        assertEquals(null, f2);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("200", _uriOrStatus);
+        assertEquals(null, _versionOrReason);
         assertEquals(_content.length(), 10);
-        assertTrue(headerCompleted);
-        assertTrue(messageCompleted);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
     @Test
@@ -425,12 +458,12 @@ public class HttpParserTest
         Handler handler = new Handler();
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
         parser.parseNext(buffer);
-        assertEquals("HTTP/1.1", f0);
-        assertEquals("304", f1);
-        assertEquals("found", f2);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("304", _uriOrStatus);
+        assertEquals("found", _versionOrReason);
         assertEquals(null,_content);
-        assertTrue(headerCompleted);
-        assertTrue(messageCompleted);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
     @Test
@@ -449,12 +482,12 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals("HTTP/1.1", f0);
-        assertEquals("200", f1);
-        assertEquals("OK", f2);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals("200", _uriOrStatus);
+        assertEquals("OK", _versionOrReason);
         assertEquals(null,_content);
-        assertTrue(headerCompleted);
-        assertTrue(messageCompleted);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
 
 
     }
@@ -472,10 +505,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals(null,f0);
+        assertEquals(null,_methodOrVersion);
         assertEquals("No URI",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
 
 
@@ -492,10 +525,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals(null,f0);
+        assertEquals(null,_methodOrVersion);
         assertEquals("No URI",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
     
     @Test
@@ -511,10 +544,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals(null,f0);
+        assertEquals(null,_methodOrVersion);
         assertEquals("Unknown Version",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
     
     @Test
@@ -530,10 +563,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals(null,f0);
+        assertEquals(null,_methodOrVersion);
         assertEquals("No Status",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
     
     @Test
@@ -549,10 +582,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals(null,f0);
+        assertEquals(null,_methodOrVersion);
         assertEquals("No Status",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
     
     @Test
@@ -568,10 +601,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.ResponseHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals(null,f0);
+        assertEquals(null,_methodOrVersion);
         assertEquals("Unknown Version",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
     
     @Test
@@ -587,10 +620,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals("GET",f0);
+        assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
     
     @Test
@@ -606,10 +639,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals("GET",f0);
+        assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
     
     @Test
@@ -625,10 +658,10 @@ public class HttpParserTest
         HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
 
         parser.parseNext(buffer);
-        assertEquals("GET",f0);
+        assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.SEEKING_EOF,parser.getState());
+        assertEquals(HttpParser.State.END,parser.getState());
     }
     
     
@@ -637,25 +670,27 @@ public class HttpParserTest
     {
         _bad=null;
         _content=null;
-        f0=null;
-        f1=null;
-        f2=null;
-        hdr=null;
-        val=null;
-        h=0;
+        _methodOrVersion=null;
+        _uriOrStatus=null;
+        _versionOrReason=null;
+        _hdr=null;
+        _val=null;
+        _h=0;
+        _headerCompleted=false;
+        _messageCompleted=false;
     }
     
     private String _bad;
     private String _content;
-    private String f0;
-    private String f1;
-    private String f2;
-    private String[] hdr;
-    private String[] val;
-    private int h;
+    private String _methodOrVersion;
+    private String _uriOrStatus;
+    private String _versionOrReason;
+    private String[] _hdr;
+    private String[] _val;
+    private int _h;
 
-    private boolean headerCompleted;
-    private boolean messageCompleted;
+    private boolean _headerCompleted;
+    private boolean _messageCompleted;
 
     private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler
     {
@@ -678,16 +713,16 @@ public class HttpParserTest
         public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
         {
             request=true;
-            h= -1;
-            hdr= new String[9];
-            val= new String[9];
-            f0= method;
-            f1= uri;
-            f2= version==null?null:version.asString();
+            _h= -1;
+            _hdr= new String[9];
+            _val= new String[9];
+            _methodOrVersion= method;
+            _uriOrStatus= uri;
+            _versionOrReason= version==null?null:version.asString();
 
             fields=new HttpFields();
-            messageCompleted = false;
-            headerCompleted = false;
+            _messageCompleted = false;
+            _headerCompleted = false;
             return false;
         }
 
@@ -695,8 +730,8 @@ public class HttpParserTest
         public boolean parsedHeader(HttpHeader header, String name, String value)
         {
             //System.err.println("header "+name+": "+value);
-            hdr[++h]= name;
-            val[h]= value;
+            _hdr[++_h]= name;
+            _val[_h]= value;
             return false;
         }
 
@@ -714,7 +749,7 @@ public class HttpParserTest
                 throw new IllegalStateException();
             }
 
-            headerCompleted = true;
+            _headerCompleted = true;
             return false;
         }
 
@@ -722,7 +757,7 @@ public class HttpParserTest
         public boolean messageComplete(long contentLength)
         {
             //System.err.println("messageComplete");
-            messageCompleted = true;
+            _messageCompleted = true;
             return true;
         }
 
@@ -736,16 +771,16 @@ public class HttpParserTest
         public boolean startResponse(HttpVersion version, int status, String reason)
         {
             request=false;
-            f0 = version.asString();
-            f1 = Integer.toString(status);
-            f2 = reason==null?null:reason.toString();
+            _methodOrVersion = version.asString();
+            _uriOrStatus = Integer.toString(status);
+            _versionOrReason = reason==null?null:reason.toString();
 
             fields=new HttpFields();
-            hdr= new String[9];
-            val= new String[9];
+            _hdr= new String[9];
+            _val= new String[9];
 
-            messageCompleted = false;
-            headerCompleted = false;
+            _messageCompleted = false;
+            _headerCompleted = false;
             return false;
         }
 

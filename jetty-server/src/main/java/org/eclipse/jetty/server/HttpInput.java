@@ -38,8 +38,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public abstract class HttpInput extends ServletInputStream
 {
     protected final byte[] _oneByte=new byte[1];
-
-    private final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
+    protected final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
     private ByteBuffer _content;
     private boolean _inputEOF;
     

@@ -1247,7 +1247,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public void testUnreadInput () throws Exception
     {
         configureServer(new NoopHandler());
-        final int REQS=5;
+        final int REQS=2;
+        char[] fill = new char[65*1024];
+        Arrays.fill(fill,'.');
         String content="This is a loooooooooooooooooooooooooooooooooo"+
         "ooooooooooooooooooooooooooooooooooooooooooooo"+
         "ooooooooooooooooooooooooooooooooooooooooooooo"+
@@ -1258,7 +1260,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         "ooooooooooooooooooooooooooooooooooooooooooooo"+
         "ooooooooooooooooooooooooooooooooooooooooooooo"+
         "oooooooooooonnnnnnnnnnnnnnnnggggggggg content"+
-        new String(new char[65*1024]);
+        new String(fill);
         final byte[] bytes = content.getBytes();
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -1276,7 +1278,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         out.write(("Content-Length: "+bytes.length+"\r\n" + "\r\n").getBytes(StringUtil.__ISO_8859_1));
                         out.write(bytes,0,bytes.length);
                     }
-                    out.write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(StringUtil.__ISO_8859_1));
+                    out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StringUtil.__ISO_8859_1));
                     out.flush();
                 }
                 catch(Exception e)

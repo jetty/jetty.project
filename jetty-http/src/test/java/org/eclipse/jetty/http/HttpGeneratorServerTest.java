@@ -336,16 +336,7 @@ public class HttpGeneratorServerTest
                         parser=new HttpParser(handler);
                         parser.setHeadResponse(tr[r]._head);
 
-                        try
-                        {
-                            parser.parseNext(BufferUtil.toBuffer(response));
-                        }
-                        catch(IOException e)
-                        {
-                            if (tr[r]._body!=null)
-                                throw new Exception(t,e);
-                            continue;
-                        }
+                        parser.parseNext(BufferUtil.toBuffer(response));
 
                         if (tr[r]._body!=null)
                             assertEquals(t,tr[r]._body, this._content);

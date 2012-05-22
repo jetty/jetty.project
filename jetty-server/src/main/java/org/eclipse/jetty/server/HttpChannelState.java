@@ -59,7 +59,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     // REDISPATCH    REDISPATCHED
     // REDISPATCHED                ASYNCSTARTED  UNCOMPLETED
     // COMPLETING    UNCOMPLETED                 UNCOMPLETED
-    // UNCOMPLETED                                                                        COMPLETED
+    // UNCOMPLETED   UNCOMPLETED                                                          COMPLETED
     // COMPLETED
 
     public enum State 
@@ -287,7 +287,7 @@ public class HttpChannelState implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /**
-     * @return false if the handling of the request should not proceed
+     * @return true if the handling of the request should proceed
      */
     protected boolean handling()
     {
@@ -316,6 +316,7 @@ public class HttpChannelState implements AsyncContext, Continuation
                     _state=State.UNCOMPLETED;
                     return false;
 
+                case UNCOMPLETED:
                 case ASYNCWAIT:
                     return false;
                     
@@ -355,9 +356,9 @@ public class HttpChannelState implements AsyncContext, Continuation
                     }
 
                     _state=State.ASYNCSTARTED;
-                    List<AsyncListener> recycle=_lastAsyncListeners;
+                    List<AsyncListener> listeners=_lastAsyncListeners;
                     _lastAsyncListeners=_asyncListeners;
-                    _asyncListeners=recycle;
+                    _asyncListeners=listeners;
                     if (_asyncListeners!=null)
                         _asyncListeners.clear();
                     break;
@@ -383,6 +384,18 @@ public class HttpChannelState implements AsyncContext, Continuation
         }
     }
 
+    /* ------------------------------------------------------------ */
+    protected void error(Throwable th)
+    {
+        synchronized (this)
+        {
+            // TODO should we change state here?
+            
+            if (_event!=null)
+                _event._cause=th;
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Signal that the HttpConnection has finished handling the request.
@@ -600,7 +613,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#complete()
      */
-    protected void doComplete(Throwable ex)
+    protected void doComplete()
     {
         final List<ContinuationListener> cListeners;
         final List<AsyncListener> aListeners;
@@ -627,10 +640,10 @@ public class HttpChannelState implements AsyncContext, Continuation
             {
                 try
                 {
-                    if (ex!=null)
+                    if (_event!=null && _event._cause!=null)
                     {
-                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,ex);
-                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,ex.getMessage());
+                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION,_event._cause);
+                        _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_MESSAGE,_event._cause.getMessage());
                         listener.onError(_event);
                     }
                     else
@@ -678,6 +691,8 @@ public class HttpChannelState implements AsyncContext, Continuation
             cancelTimeout();
             _timeoutMs=DEFAULT_TIMEOUT;
             _continuationListeners=null;
+            if (_event!=null)
+                _event._cause=null;
         }
     }    
     
@@ -1004,6 +1019,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         private final ServletContext _suspendedContext;
         private ServletContext _dispatchContext;
         private String _path;
+        private Throwable _cause;
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
@@ -1037,7 +1053,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         @Override
         public void run() 
         {
-            _channel.handleRequest();
+            _channel.process();
         }
     };
 }

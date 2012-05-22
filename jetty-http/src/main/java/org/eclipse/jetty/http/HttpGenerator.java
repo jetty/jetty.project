@@ -168,6 +168,14 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
+    public void abort()
+    {
+        _persistent=false;
+        _state=State.END;
+        _content=null;
+    }
+
+    /* ------------------------------------------------------------ */
     public Result generate(Info info, ByteBuffer header, ByteBuffer chunk, ByteBuffer buffer, ByteBuffer content, Action action)
     {
         Result result = Result.OK;

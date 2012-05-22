@@ -12,14 +12,8 @@
 // ========================================================================
 
 package org.eclipse.jetty.server;
-import static org.junit.Assert.assertTrue;
 
-import java.io.OutputStream;
-import java.net.Socket;
-
-import org.eclipse.jetty.server.HttpServerTestFixture.EchoHandler;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * HttpServer Tester.
@@ -33,17 +27,16 @@ public class SelectChannelServerTest extends HttpServerTestBase
     }
 
     @Override
-    public void testCommittedError() throws Exception
+    public void testRequest1() throws Exception
     {
-        super.testCommittedError();
+        super.testRequest1();
     }
     
     @Override
-    public void testFragmentedChunk() throws Exception
+    public void testUnreadInput() throws Exception
     {
-        super.testFragmentedChunk();
+        super.testUnreadInput();
     }
-    
 
 
 }

@@ -90,7 +90,7 @@ public abstract class HttpChannel
 
     private int _requests;
     private int _include;
-
+    
     private HttpVersion _version = HttpVersion.HTTP_1_1;
 
     private boolean _expect = false;
@@ -285,6 +285,9 @@ public abstract class HttpChannel
     /* ------------------------------------------------------------ */
     public void reset()
     {
+        _expect=false;
+        _expect100Continue=false;
+        _expect102Processing=false;
         _requestFields.clear();
         _request.recycle();
         _responseFields.clear();
@@ -295,9 +298,9 @@ public abstract class HttpChannel
     }
 
     /* ------------------------------------------------------------ */
-    protected void handleRequest()
+    protected void process()
     {
-        LOG.debug("{} handleRequest",this);
+        LOG.debug("{} process",this);
 
         String threadName=null;
         if (LOG.isDebugEnabled())
@@ -306,8 +309,6 @@ public abstract class HttpChannel
             Thread.currentThread().setName(threadName+" - "+_uri);
         }
 
-        Throwable async_exception=null;
-        
         __currentChannel.set(this);
         try
         {
@@ -324,7 +325,6 @@ public abstract class HttpChannel
                     _request.setHandled(false);
                     _out.reopen();
                     
-
                     if (_state.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
@@ -345,21 +345,21 @@ public abstract class HttpChannel
                 catch (EofException e)
                 {
                     LOG.debug(e);
-                    async_exception=e;
+                    _state.error(e);
                     _request.setHandled(true);
                 }
                 catch (ServletException e)
                 {
                     LOG.warn(String.valueOf(_uri),e.toString());
                     LOG.debug(String.valueOf(_uri),e);
-                    async_exception=e;
+                    _state.error(e);
                     _request.setHandled(true);
                     commitError(500, null, e.toString());
                 }
                 catch (Throwable e)
                 {
                     LOG.warn(String.valueOf(_uri),e);
-                    async_exception=e;
+                    _state.error(e);
                     _request.setHandled(true);
                     commitError(500, null, e.toString());
                 }
@@ -377,22 +377,20 @@ public abstract class HttpChannel
 
             if (_state.isUncompleted())
             {
-                _state.doComplete(async_exception);
-
-                if (_expect100Continue)
-                {
-                    LOG.debug("100 continues not sent");
-                    // We didn't send 100 continues, but the latest interpretation
-                    // of the spec (see httpbis) is that the client will either
-                    // send the body anyway, or close.  So we no longer need to
-                    // do anything special here other than make the connection not persistent
-                    _expect100Continue = false;
-                    if (!_response.isCommitted())
-                        _response.addHeader(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
-                }
-
                 try
                 {
+                    if (_expect100Continue)
+                    {
+                        LOG.debug("100 continues not sent");
+                        // We didn't send 100 continues, but the latest interpretation
+                        // of the spec (see httpbis) is that the client will either
+                        // send the body anyway, or close.  So we no longer need to
+                        // do anything special here other than make the connection not persistent
+                        _expect100Continue = false;
+                        if (!_response.isCommitted())
+                            _response.addHeader(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
+                    }
+
                     if (!_response.isCommitted() && !_request.isHandled())
                         _response.sendError(404);
                     _response.complete();
@@ -401,8 +399,12 @@ public abstract class HttpChannel
                 {
                     LOG.warn(e);
                 }
-                _request.setHandled(true);
-                completed();
+                finally
+                {
+                    _state.doComplete();
+                    _request.setHandled(true);
+                    completed();
+                }
             }
         }
     }
@@ -633,7 +635,7 @@ public abstract class HttpChannel
                 default:
             }
 
-            // Either handle now or wait for first content
+            // Either handle now or wait for first content/message complete
             if (_expect100Continue)
                 return true;
             

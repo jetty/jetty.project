@@ -52,7 +52,7 @@ public class HttpParser
         CHUNK_SIZE,
         CHUNK_PARAMS,
         CHUNK,
-        SEEKING_EOF
+        CLOSED
     };
 
     private final HttpHandler _handler;
@@ -158,9 +158,15 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isIdle()
+    public boolean isStart()
     {
         return isState(State.START);
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isClosed()
+    {
+        return isState(State.CLOSED);
     }
 
     /* ------------------------------------------------------------ */
@@ -179,37 +185,6 @@ public class HttpParser
     public boolean isPersistent()
     {
         return _persistent;
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    public void setPersistent(boolean persistent)
-    {
-        _persistent = persistent;
-        if (!_persistent &&(_state==State.END || _state==State.START))
-            _state=State.SEEKING_EOF;
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    /**
-     * Parse until {@link #END END} state.
-     * If the parser is already in the END state, then it is {@link #reset reset} and re-parsed.
-     * @throws IllegalStateException If the buffers have already been partially parsed.
-     */
-    public void parseAll(ByteBuffer buffer) throws IOException
-    {
-        if (_state==State.END)
-            reset();
-        if (_state!=State.START)
-            throw new IllegalStateException("!START");
-
-        // continue parsing
-        while (_state != State.END && buffer.hasRemaining())
-        {
-            int remaining=buffer.remaining();
-            parseNext(buffer);
-            if (remaining==buffer.remaining())
-                break;
-        }
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -238,6 +213,7 @@ public class HttpParser
                 if (_version!=null)
                 {
                     buffer.position(buffer.position()+_version.asString().length()+1);
+                    _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
                     _state=State.SPACE1;
                     return;
                 }
@@ -328,7 +304,7 @@ public class HttpParser
                             badMessage(buffer, "Unknown Version");
                             return true;
                         }
-                        _persistent=HttpVersion.HTTP_1_1==_version;
+                        _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
                         _state=State.SPACE1;            
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
@@ -397,8 +373,8 @@ public class HttpParser
                         _utf8.reset();
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri,null);
                         _persistent=false;
-                        _state=State.SEEKING_EOF;
-                        return_from_parse|=_handler.headerComplete(false,false);
+                        _state=State.END;
+                        return_from_parse|=_handler.headerComplete(false,_persistent);
                         return_from_parse|=_handler.messageComplete(_contentPosition);
                     }
                     else
@@ -428,7 +404,7 @@ public class HttpParser
                                     _string.setLength(0);
                                     buffer.position(buffer.position()+_version.asString().length()-1);
                                     _eol=buffer.get();
-                                    _persistent=HttpVersion.HTTP_1_1==_version;
+                                    _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
                                     _state=State.HEADER;
                                     return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
                                 }
@@ -448,8 +424,8 @@ public class HttpParser
                             // HTTP/0.9
                             return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, null);
                             _persistent=false;
-                            _state=State.SEEKING_EOF;
-                            return_from_parse|=_handler.headerComplete(false,false);
+                            _state=State.END;
+                            return_from_parse|=_handler.headerComplete(false,_persistent);
                             return_from_parse|=_handler.messageComplete(_contentPosition);
                         }
                     }
@@ -467,7 +443,7 @@ public class HttpParser
                         }
                         
                         _eol=ch;
-                        _persistent=HttpVersion.HTTP_1_1==_version;
+                        _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
                         _state=State.HEADER;
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
                         continue;
@@ -649,7 +625,8 @@ public class HttpParser
                                 {
                                     case EOF_CONTENT:
                                         _state=State.EOF_CONTENT;
-                                        return_from_parse|=_handler.headerComplete(true,false); 
+                                        _persistent=false;
+                                        return_from_parse|=_handler.headerComplete(true,_persistent); 
                                         break;
 
                                     case CHUNKED_CONTENT:
@@ -659,7 +636,7 @@ public class HttpParser
 
                                     case NO_CONTENT:
                                         return_from_parse|=_handler.headerComplete(false,_persistent);
-                                        _state=_persistent||(_responseStatus>=100&&_responseStatus<200)?State.END:State.SEEKING_EOF;
+                                        _state=State.END;
                                         return_from_parse|=_handler.messageComplete(_contentPosition);
                                         break;
 
@@ -863,34 +840,41 @@ public class HttpParser
      * Parse until next Event.
      * @return True if an {@link RequestHandler} method was called and it returned true;
      */
-    public boolean parseNext(ByteBuffer buffer) throws IOException
+    public boolean parseNext(ByteBuffer buffer)
     {
         try
         {
-            // process end states
-            if (_state == State.END)
-                // TODO should we consume white space here?
-                return false;
+            // handle initial state
+            switch(_state)
+            {
+                case START:
+                    _version=null;
+                    _method=null;
+                    _methodString=null;
+                    _uri=null;
+                    _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+                    _header=null;
+                    quickStart(buffer);
+                    break;
+                    
+                case CONTENT:
+                    if (_contentPosition==_contentLength)
+                    {
+                        _state=State.END;
+                        if(_handler.messageComplete(_contentPosition))
+                            return true;
+                    }
+                    break;
+                    
+                case END:
+                    return false;
+                    
+                case CLOSED:
+                    BufferUtil.clear(buffer);
+                    return false;
+            }
             
-            if (_state == State.CONTENT && _contentPosition == _contentLength)
-            {
-                // TODO  why is this not  _state=_persistent?State.END:State.SEEKING_EOF;
-                _state=State.END;
-                if(_handler.messageComplete(_contentPosition))
-                    return true;
-            }
 
-            // Handle start
-            if (_state==State.START)
-            {
-                _version=null;
-                _method=null;
-                _methodString=null;
-                _uri=null;
-                _endOfContent=EndOfContent.UNKNOWN_CONTENT;
-                _header=null;
-                quickStart(buffer);
-            }
             
             // Request/response line
             if (_state.ordinal()<State.HEADER.ordinal())
@@ -904,7 +888,7 @@ public class HttpParser
             // Handle HEAD response
             if (_responseStatus>0 && _headResponse)
             {
-                _state=_persistent||(_responseStatus>=100&&_responseStatus<200)?State.END:State.SEEKING_EOF;
+                _state=State.END;
                 if (_handler.messageComplete(_contentLength))
                     return true;
             }
@@ -936,7 +920,7 @@ public class HttpParser
                         long remaining=_contentLength - _contentPosition;
                         if (remaining == 0)
                         {
-                            _state=_persistent?State.END:State.SEEKING_EOF;
+                            _state=State.END;
                             if (_handler.messageComplete(_contentPosition))
                                 return true;
                         }
@@ -960,7 +944,7 @@ public class HttpParser
 
                             if(_contentPosition == _contentLength)
                             {
-                                _state=_persistent?State.END:State.SEEKING_EOF;
+                                _state=State.END;
                                 if (_handler.messageComplete(_contentPosition))
                                     return true;
                             }
@@ -995,7 +979,7 @@ public class HttpParser
                             {
                                 if (_eol==HttpTokens.CARRIAGE_RETURN && buffer.hasRemaining() && buffer.get(buffer.position())==HttpTokens.LINE_FEED)
                                     _eol=buffer.get();
-                                _state=_persistent?State.END:State.SEEKING_EOF;
+                                _state=State.END;
                                 if (_handler.messageComplete(_contentPosition))
                                     return true;
                             }
@@ -1025,7 +1009,7 @@ public class HttpParser
                             {
                                 if (_eol==HttpTokens.CARRIAGE_RETURN && buffer.hasRemaining() && buffer.get(buffer.position())==HttpTokens.LINE_FEED)
                                     _eol=buffer.get();
-                                _state=_persistent?State.END:State.SEEKING_EOF;
+                                _state=State.END;
                                 if (_handler.messageComplete(_contentPosition))
                                     return true;
                             }
@@ -1058,12 +1042,6 @@ public class HttpParser
                         }
                         break;
                     }
-
-                    case SEEKING_EOF:
-                    {
-                        buffer.clear().limit(0);
-                        break;
-                    }
                 }
             }
 
@@ -1082,7 +1060,7 @@ public class HttpParser
     {
         BufferUtil.clear(buffer);
         _persistent=false;
-        _state=State.SEEKING_EOF;
+        _state=State.END;
         _handler.badMessage(reason);
     }
 
@@ -1095,8 +1073,6 @@ public class HttpParser
         switch(_state)
         {
             case END:
-            case SEEKING_EOF:
-                _state=State.END;
                 break;
 
             case EOF_CONTENT:
@@ -1111,18 +1087,26 @@ public class HttpParser
                 _handler.messageComplete(_contentPosition);
         }
 
-        if (!isComplete() && !isIdle())
+        if (!isComplete() && !isStart())
             throw new EofException();
 
         return true;
     }
 
     /* ------------------------------------------------------------------------------- */
+    public void close()
+    {
+        if (_state!=State.END)
+            throw new IllegalStateException(toString());
+        _persistent=false;
+        reset();
+    }
+    
+    /* ------------------------------------------------------------------------------- */
     public void reset()
     {
         // reset state
-        // TODO why is this not _state=_persistent?State.START:(_state=State.SEEKING_EOF);
-        _state=_persistent?State.START:(_state==State.END?State.END:State.SEEKING_EOF);
+        _state=_persistent?State.START:State.CLOSED;
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentPosition=0;
         _responseStatus=0;
@@ -1140,10 +1124,11 @@ public class HttpParser
     @Override
     public String toString()
     {
-        return String.format("%s{s=%s,c=%d}",
+        return String.format("%s{s=%s,c=%d,p=%b}",
                 getClass().getSimpleName(),
                 _state,
-                _contentLength);
+                _contentLength,
+                _persistent);
     }
 
     /* ------------------------------------------------------------ */
