@@ -125,7 +125,6 @@ public class HttpURI
         int i=offset;
         int e=offset+length;
         int state=AUTH;
-        int m=offset;
         _end=offset+length;
         _scheme=offset;
         _authority=offset;

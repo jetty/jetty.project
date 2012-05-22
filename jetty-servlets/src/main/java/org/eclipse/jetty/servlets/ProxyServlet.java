@@ -174,6 +174,16 @@ public class ProxyServlet implements Servlet
     }
 
     /**
+     * Create and return an HttpClientInstance
+     *
+     * @return HttpClient
+     */
+    protected HttpClient createHttpClientInstance()
+    {
+        return new HttpClient();
+    }
+
+    /**
      * Create and return an HttpClient based on ServletConfig
      *
      * By default this implementation will create an instance of the
@@ -185,7 +195,7 @@ public class ProxyServlet implements Servlet
      */
     protected HttpClient createHttpClient(ServletConfig config) throws Exception
     {
-        HttpClient client = new HttpClient();
+        HttpClient client = createHttpClientInstance();
         client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
 
         String t = config.getInitParameter("maxThreads");

@@ -1396,6 +1396,7 @@ public class Request implements HttpServletRequest
         if (_attributes != null)
             _attributes.clearAttributes();
         _characterEncoding = null;
+        _contextPath = null;
         if (_cookies != null)
             _cookies.reset();
         _cookiesExtracted = false;
@@ -1943,7 +1944,7 @@ public class Request implements HttpServletRequest
     public Part getPart(String name) throws IOException, ServletException
     {        
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            return null;
+            throw new ServletException("Content-Type != multipart/form-data");
 
         if (_multiPartInputStream == null)
         { 
@@ -1974,7 +1975,7 @@ public class Request implements HttpServletRequest
     public Collection<Part> getParts() throws IOException, ServletException
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            return Collections.emptyList();
+            throw new ServletException("Content-Type != multipart/form-data");
         
         if (_multiPartInputStream == null)
         {

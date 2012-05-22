@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -308,6 +309,16 @@ public class ResourceTest
         
         container = Resource.newResource(__userURL+"TestData");
         assertFalse(jarFileResource.isContainedIn(container));
+    }
+
+    /* ------------------------------------------------------------ */
+    @Test
+    public void testJarFileLastModified ()
+    throws Exception
+    {
+        String s = "jar:"+__userURL+"TestData/test.zip!/subdir/numbers";
+        Resource r = Resource.newResource(s);
+        assertEquals(971425252000L,r.lastModified()); // Known date value inside zip
     }
 
     /* ------------------------------------------------------------ */

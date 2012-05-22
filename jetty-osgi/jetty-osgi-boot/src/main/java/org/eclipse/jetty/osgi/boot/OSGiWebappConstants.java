@@ -59,7 +59,7 @@ public class OSGiWebappConstants
     /** web app context path */
     public static final String SERVICE_PROP_CONTEXT_PATH = "contextPath";
 
-    /** Path to the web application base folderr */
+    /** Path to the web application base folder */
     public static final String SERVICE_PROP_WAR = "war";
 
     /** Extra classpath */

@@ -82,7 +82,7 @@ public interface IStream extends Stream
     public void process(ControlFrame frame);
 
     /**
-     * <p>Processes the give data frame along with the given byte buffer,
+     * <p>Processes the given data frame along with the given byte buffer,
      * for example by updating the stream's state or by calling listeners.</p>
      *
      * @param frame the data frame to process
@@ -90,4 +90,26 @@ public interface IStream extends Stream
      * @see #process(ControlFrame)
      */
     public void process(DataFrame frame, ByteBuffer data);
+    
+    /**
+     * <p>Associate the given {@link IStream} to this {@link IStream}.</p>
+     * 
+     * @param stream the stream to associate with this stream
+     */
+    public void associate(IStream stream);
+    
+    /**
+     * <p>remove the given associated {@link IStream} from this stream</p>
+     * 
+     * @param stream the stream to be removed
+     */
+    public void disassociate(IStream stream);
+    
+    /**
+     * <p>Overrides Stream.getAssociatedStream() to return an instance of IStream instead of Stream
+     * 
+     * @see Stream#getAssociatedStream()
+     */
+    @Override
+    public IStream getAssociatedStream();
 }

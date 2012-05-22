@@ -55,7 +55,7 @@ import org.osgi.framework.ServiceReference;
 public class JettyContextHandlerServiceTracker implements ServiceListener
 {
     private static Logger __logger = Log.getLogger(WebBundleDeployerHelper.class.getName());
-    
+
     /** New style: ability to manage multiple jetty instances */
     private final IManagedJettyServerRegistry _registry;
 
@@ -213,7 +213,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                                 defaultWebXmlPath = webapp.getDefaultsDescriptor();
                         }
                     }
-                    String war = (String) sr.getProperty("war");
+                    String war = (String) sr.getProperty(OSGiWebappConstants.SERVICE_PROP_WAR);
                     try
                     {
                         IWebBundleDeployerHelper deployerHelper = getWebBundleDeployerHelp(sr);

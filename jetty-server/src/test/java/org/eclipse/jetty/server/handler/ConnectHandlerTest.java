@@ -1,8 +1,5 @@
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -12,7 +9,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -23,8 +19,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -355,6 +355,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndPOSTWithBigBody() throws Exception
     {
+        // Log.getLogger(ConnectHandler.class).setDebugEnabled(true);
         String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
@@ -375,7 +376,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
 
             StringBuilder body = new StringBuilder();
             String chunk = "0123456789ABCDEF";
-            for (int i = 0; i < 1024; ++i)
+            for (int i = 0; i < 1024 * 1024; ++i)
                 body.append(chunk);
 
             request = "" +
@@ -488,7 +489,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     {
     	// TODO needs to be further investigated
     	assumeTrue(!OS.IS_OSX);
-    	
+
         String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
@@ -527,7 +528,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     {
     	// TODO needs to be further investigated
     	assumeTrue(!OS.IS_OSX);
-    	
+
         String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +

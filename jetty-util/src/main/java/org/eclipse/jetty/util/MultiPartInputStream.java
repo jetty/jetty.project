@@ -83,7 +83,7 @@ public class MultiPartInputStream
         
         
         protected void open() 
-        throws FileNotFoundException, IOException
+        throws IOException
         {
             //We will either be writing to a file, if it has a filename on the content-disposition
             //and otherwise a byte-array-input-stream, OR if we exceed the getFileSizeThreshold, we
@@ -108,10 +108,10 @@ public class MultiPartInputStream
         
       
         protected void write (int b)
-        throws IOException, ServletException
+        throws IOException
         {      
             if (MultiPartInputStream.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartInputStream.this._config.getMaxFileSize())
-                throw new ServletException ("Multipart Mime part "+_name+" exceeds max filesize");
+                throw new IllegalStateException ("Multipart Mime part "+_name+" exceeds max filesize");
             
             if (MultiPartInputStream.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartInputStream.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
@@ -120,10 +120,10 @@ public class MultiPartInputStream
         }
         
         protected void write (byte[] bytes, int offset, int length) 
-        throws IOException, ServletException
+        throws IOException
         { 
             if (MultiPartInputStream.this._config.getMaxFileSize() > 0 && _size + length > MultiPartInputStream.this._config.getMaxFileSize())
-                throw new ServletException ("Multipart Mime part "+_name+" exceeds max filesize");
+                throw new IllegalStateException ("Multipart Mime part "+_name+" exceeds max filesize");
             
             if (MultiPartInputStream.this._config.getFileSizeThreshold() > 0 && _size + length > MultiPartInputStream.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
@@ -402,7 +402,7 @@ public class MultiPartInputStream
                 
                 total += bytes.length;
                 if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
-                    throw new ServletException ("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+                    throw new IllegalStateException ("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
                 
                 line=new String(bytes,"UTF-8");
 
@@ -513,7 +513,7 @@ public class MultiPartInputStream
                     {
                         total ++;
                         if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
-                            throw new ServletException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+                            throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
                         
                         state=-2;
                         // look for CR and/or LF

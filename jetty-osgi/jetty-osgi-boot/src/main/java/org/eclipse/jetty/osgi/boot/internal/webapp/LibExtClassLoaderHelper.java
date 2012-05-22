@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * Helper to create a URL class-loader with the jars inside
@@ -52,9 +51,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * be required for some cases. For example jaspers' TldLocationsCache (replaced
  * by TldScanner for servlet-3.0). <br/>
  * Also all the dependencies of those libraries must be resolvable directly from
- * the JettyBooStrapper bundle as it is set as the parent classloader. For
+ * the JettyBootstrapActivator bundle as it is set as the parent classloader. For
  * example: if atomikos is placed in lib/ext it will work if and only if
- * JettyBootStrapper import the necessary packages from javax.naming*,
+ * JettyBootstrapActivator import the necessary packages from javax.naming*,
  * javax.transaction*, javax.mail* etc Most of the common cases of javax are
  * added as optional import packages into jetty bootstrapper plugin. When there
  * are not covered: please make a request or create a fragment or register a
@@ -92,22 +91,18 @@ public class LibExtClassLoaderHelper
      *         is the JettyBootStrapper (an osgi classloader.
      * @throws MalformedURLException
      */
-    public static ClassLoader createLibEtcClassLoader(File jettyHome, Server server, 
-    		ClassLoader parentClassLoader) throws MalformedURLException
+    public static ClassLoader createLibEtcClassLoader(File jettyHome, Server server, ClassLoader parentClassLoader) throws MalformedURLException
     {
-    	if (jettyHome == null)
-    	{
-    		return parentClassLoader;
-    	}
+        if (jettyHome == null) { return parentClassLoader; }
         ArrayList<URL> urls = new ArrayList<URL>();
-        File jettyResources = new File(jettyHome,"resources");
+        File jettyResources = new File(jettyHome, "resources");
         if (jettyResources.exists())
         {
             // make sure it contains something else than README:
             Map<String, File> jettyResFiles = new HashMap<String, File>();
             for (File f : jettyResources.listFiles())
             {
-                jettyResFiles.put(f.getName(),f);
+                jettyResFiles.put(f.getName(), f);
                 if (f.getName().toLowerCase().startsWith("readme"))
                 {
                     continue;
@@ -120,9 +115,9 @@ public class LibExtClassLoaderHelper
                     }
                 }
             }
-            processFilesInResourcesFolder(jettyHome,jettyResFiles);
+            processFilesInResourcesFolder(jettyHome, jettyResFiles);
         }
-        File libExt = new File(jettyHome,"lib/ext");
+        File libExt = new File(jettyHome, "lib/ext");
         if (libExt.exists())
         {
             for (File f : libExt.listFiles())
@@ -140,55 +135,52 @@ public class LibExtClassLoaderHelper
             }
         }
 
-        return new URLClassLoader(urls.toArray(new URL[urls.size()]),parentClassLoader);
+        return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
     }
 
     /**
      * @param server
      * @return a url classloader with the jars of resources, lib/ext and the
      *         jars passed in the other argument. The parent classloader usually
-     *         is the JettyBootStrapper (an osgi classloader).
-     *         If there was no extra jars to insert, then just return the parentClassLoader.
+     *         is the JettyBootStrapper (an osgi classloader). If there was no
+     *         extra jars to insert, then just return the parentClassLoader.
      * @throws MalformedURLException
      */
-    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars,
-    		List<URL> otherJarsOrFolder, Server server, 
-    		ClassLoader parentClassLoader) throws MalformedURLException
+    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars, List<URL> otherJarsOrFolder, Server server, ClassLoader parentClassLoader) 
+    throws MalformedURLException
     {
-    	if (jarsContainerOrJars == null && otherJarsOrFolder == null)
-    	{
-    		return parentClassLoader;
-    	}
-    	List<URL> urls = new ArrayList<URL>();
-    	if (otherJarsOrFolder != null)
-    	{
-    		urls.addAll(otherJarsOrFolder);
-    	}
-    	if (jarsContainerOrJars != null)
-    	{
-	        for (File libExt : jarsContainerOrJars)
-	        {
-	        	if (libExt.isDirectory())
-	        	{
-		            for (File f : libExt.listFiles())
-		            {
-		                if (f.getName().endsWith(".jar"))
-		                {
-		                    // cheap to tolerate folders so let's do it.
-		                    URL url = f.toURI().toURL();
-		                    if (f.isFile())
-		                    {// is this necessary anyways?
-		                        url = new URL("jar:" + url.toString() + "!/");
-		                    }
-		                    urls.add(url);
-		                }
-		            }
-	        	}
-	        }
-    	}
-        return new URLClassLoader(urls.toArray(new URL[urls.size()]),parentClassLoader);
+        if (jarsContainerOrJars == null && otherJarsOrFolder == null) { return parentClassLoader; }
+        List<URL> urls = new ArrayList<URL>();
+        if (otherJarsOrFolder != null)
+        {
+            urls.addAll(otherJarsOrFolder);
+        }
+        if (jarsContainerOrJars != null)
+        {
+            for (File libExt : jarsContainerOrJars)
+            {
+                if (libExt.isDirectory())
+                {
+                    for (File f : libExt.listFiles())
+                    {
+                        if (f.getName().endsWith(".jar"))
+                        {
+                            // cheap to tolerate folders so let's do it.
+                            URL url = f.toURI().toURL();
+                            if (f.isFile())
+                            {
+                                // is this necessary anyways?
+                                url = new URL("jar:" + url.toString() + "!/");
+                            }
+                            urls.add(url);
+                        }
+                    }
+                }
+            }
+        }
+        return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
     }
-    
+
     /**
      * When we find files typically used for central logging configuration we do
      * what it takes in this method to do what the user expects. Without
@@ -207,7 +199,7 @@ public class LibExtClassLoaderHelper
     {
         for (IFilesInJettyHomeResourcesProcessor processor : registeredFilesInJettyHomeResourcesProcessors)
         {
-            processor.processFilesInResourcesFolder(jettyHome,childrenFiles);
+            processor.processFilesInResourcesFolder(jettyHome, childrenFiles);
         }
     }
 
