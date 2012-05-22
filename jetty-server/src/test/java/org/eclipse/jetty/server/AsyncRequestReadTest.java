@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -67,6 +68,7 @@ public class AsyncRequestReadTest
     }
     
     @Test
+    @Ignore
     public void test() throws Exception
     {
         final Socket socket =  new Socket("localhost",connector.getLocalPort());
@@ -104,6 +106,7 @@ public class AsyncRequestReadTest
     }
     
     @Test
+    @Ignore
     public void tests() throws Exception
     {
         runTest(64,4,4,20);
