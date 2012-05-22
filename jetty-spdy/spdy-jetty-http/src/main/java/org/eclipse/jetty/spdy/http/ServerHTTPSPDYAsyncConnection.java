@@ -393,7 +393,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     {
         if (!stream.isUnidirectional())
             stream.reply(replyInfo);
-        if (replyInfo.getHeaders().get("status").value().startsWith("200") && !stream.isClosed())
+        if (replyInfo.getHeaders().get("status").value().startsWith("200") && !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
         {
             // We have a 200 OK with some content to send
 
@@ -426,6 +426,13 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         }
     }
 
+    private boolean isIfModifiedSinceHeaderPresent()
+    {   
+        if (headers.get("if-modified-since") != null)
+            return true;
+        return false;
+    }   
+    
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
     {
         while (true)
