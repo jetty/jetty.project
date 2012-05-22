@@ -1,5 +1,8 @@
 package org.eclipse.jetty.spdy;
 
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -15,7 +18,6 @@ import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
-import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
@@ -23,7 +25,6 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
-import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.junit.Assert;
@@ -85,6 +86,7 @@ public class ProtocolViolationsTest extends AbstractTest
         byte[] bytes = new byte[1];
         ByteBuffer writeBuffer = generator.data(streamId, bytes.length, new BytesDataInfo(bytes, true));
         channel.write(writeBuffer);
+        assertThat("data is fully written", writeBuffer.hasRemaining(),is(false));
 
         readBuffer.clear();
         channel.read(readBuffer);
@@ -92,11 +94,8 @@ public class ProtocolViolationsTest extends AbstractTest
         Assert.assertEquals(ControlFrameType.RST_STREAM.getCode(), readBuffer.getShort(2));
         Assert.assertEquals(streamId, readBuffer.getInt(8));
 
-        writeBuffer = generator.control(new GoAwayFrame(SPDY.V2, 0, SessionStatus.OK.getCode()));
-        channel.write(writeBuffer);
-        channel.shutdownOutput();
-        channel.close();
-
+        session.goAway().get(5,TimeUnit.SECONDS);
+        
         server.close();
     }
 
@@ -129,7 +128,6 @@ public class ProtocolViolationsTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                System.out.println("ondata");
                 dataLatch.countDown();
             }
         });
@@ -144,21 +142,21 @@ public class ProtocolViolationsTest extends AbstractTest
 
         ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
         channel.write(writeBuffer);
+        assertThat("SynReply is fully written", writeBuffer.hasRemaining(), is(false));
 
         byte[] bytes = new byte[1];
         writeBuffer = generator.data(streamId, bytes.length, new BytesDataInfo(bytes, true));
         channel.write(writeBuffer);
+        assertThat("data is fully written", writeBuffer.hasRemaining(), is(false));
 
         // Write again to simulate the faulty condition
         writeBuffer.flip();
         channel.write(writeBuffer);
+        assertThat("data is fully written", writeBuffer.hasRemaining(), is(false));
 
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
-        writeBuffer = generator.control(new GoAwayFrame(SPDY.V2, 0, SessionStatus.OK.getCode()));
-        channel.write(writeBuffer);
-        channel.shutdownOutput();
-        channel.close();
+        session.goAway().get(5,TimeUnit.SECONDS);
 
         server.close();
     }
