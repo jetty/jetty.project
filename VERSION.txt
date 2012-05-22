@@ -1,3 +1,5 @@
+jetty-8.1.5-SNAPSHOT
+
 jetty-8.1.4.v20120522 - 22 May 2012
  + 367608 ignore the aysncrequestreadtest as it is known to fail and is waiting
    for a fix
