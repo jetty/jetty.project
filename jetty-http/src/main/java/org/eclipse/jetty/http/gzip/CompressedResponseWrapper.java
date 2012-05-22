@@ -124,7 +124,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     public void setStatus(int sc)
     {
         super.setStatus(sc);
-        if (sc<200 || sc==204 || sc==205 ||sc>=300)
+        if (sc<200 || sc==204 || sc==205 || sc>=300)
             noCompression();
     }
 
@@ -344,7 +344,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         else if (_writer!=null)
             throw new IllegalStateException("getWriter() called");
         
-        return (ServletOutputStream)_compressedStream;   
+        return _compressedStream;   
     }
 
     /* ------------------------------------------------------------ */
@@ -366,7 +366,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
             }
             
             _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minCompressSize);
-            _writer=newWriter((OutputStream)_compressedStream,getCharacterEncoding());
+            _writer=newWriter(_compressedStream,getCharacterEncoding());
         }
         return _writer;   
     }

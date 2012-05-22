@@ -114,7 +114,8 @@ public class Headers implements Iterable<Headers.Header>
      */
     public void put(Header header)
     {
-        headers.put(header.name().toLowerCase(), header);
+        if (header != null)
+            headers.put(header.name().toLowerCase(), header);
     }
 
     /**

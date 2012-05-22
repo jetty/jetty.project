@@ -22,6 +22,7 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -47,9 +48,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYAsyncConnection;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -62,6 +67,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     private final Queue<Runnable> tasks = new LinkedList<>();
     private final BlockingQueue<DataInfo> dataInfos = new LinkedBlockingQueue<>();
     private final SPDYAsyncConnection connection;
+    private final PushStrategy pushStrategy;
     private final Stream stream;
     private Headers headers; // No need for volatile, guarded by state
     private DataInfo dataInfo; // No need for volatile, guarded by state
@@ -69,10 +75,11 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     private volatile State state = State.INITIAL;
     private boolean dispatched; // Guarded by synchronization on tasks
 
-    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
+    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
     {
         super(connector, endPoint, server);
         this.connection = connection;
+        this.pushStrategy = pushStrategy;
         this.stream = stream;
         getParser().setPersistent(true);
     }
@@ -117,7 +124,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             {
                 dispatched = true;
                 logger.debug("Dispatching task {}", task);
-                getServer().getThreadPool().dispatch(new Runnable()
+                execute(new Runnable()
                 {
                     @Override
                     public void run()
@@ -131,6 +138,11 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 });
             }
         }
+    }
+
+    protected void execute(Runnable task)
+    {
+        getServer().getThreadPool().dispatch(task);
     }
 
     @Override
@@ -157,7 +169,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     String m = method.value();
                     String u = uri.value();
                     String v = version.value();
-                    logger.debug("HTTP > {} {} {}", new Object[]{m, u, v});
+                    logger.debug("HTTP > {} {} {}", m, u, v);
                     startRequest(new ByteArrayBuffer(m), new ByteArrayBuffer(u), new ByteArrayBuffer(v));
 
                     updateState(State.HEADERS);
@@ -245,10 +257,17 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     private void respond(Stream stream, int status)
     {
-        Headers headers = new Headers();
-        headers.put("status", String.valueOf(status));
-        headers.put("version", "HTTP/1.1");
-        stream.reply(new ReplyInfo(headers, true));
+        if (stream.isUnidirectional())
+        {
+            stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.INTERNAL_ERROR));
+        }
+        else
+        {
+            Headers headers = new Headers();
+            headers.put("status", String.valueOf(status));
+            headers.put("version", "HTTP/1.1");
+            stream.reply(new ReplyInfo(headers, true));
+        }
     }
 
     private void close(Stream stream)
@@ -267,7 +286,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         state = newState;
     }
 
-    public void beginRequest(final Headers headers)
+    public void beginRequest(final Headers headers, final boolean endRequest)
     {
         this.headers = headers.isEmpty() ? null : headers;
         post(new Runnable()
@@ -278,6 +297,8 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 if (!headers.isEmpty())
                     updateState(State.REQUEST);
                 handle();
+                if (endRequest)
+                    performEndRequest();
             }
         });
     }
@@ -337,15 +358,20 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         {
             public void run()
             {
-                if (state == State.HEADERS)
-                {
-                    updateState(State.HEADERS_COMPLETE);
-                    handle();
-                }
-                updateState(State.FINAL);
-                handle();
+                performEndRequest();
             }
         });
+    }
+
+    private void performEndRequest()
+    {
+        if (state == State.HEADERS)
+        {
+            updateState(State.HEADERS_COMPLETE);
+            handle();
+        }
+        updateState(State.FINAL);
+        handle();
     }
 
     public void async()
@@ -363,6 +389,50 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         });
     }
 
+    protected void reply(Stream stream, ReplyInfo replyInfo)
+    {
+        if (!stream.isUnidirectional())
+            stream.reply(replyInfo);
+        if (replyInfo.getHeaders().get("status").value().startsWith("200") && !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
+        {
+            // We have a 200 OK with some content to send
+
+            Headers.Header scheme = headers.get("scheme");
+            Headers.Header host = headers.get("host");
+            Headers.Header url = headers.get("url");
+            Set<String> pushResources = pushStrategy.apply(stream, this.headers, replyInfo.getHeaders());
+            String referrer = new StringBuilder(scheme.value()).append("://").append(host.value()).append(url.value()).toString();
+            for (String pushURL : pushResources)
+            {
+                final Headers pushHeaders = new Headers();
+                pushHeaders.put("method", "GET");
+                pushHeaders.put("url", pushURL);
+                pushHeaders.put("version", "HTTP/1.1");
+                pushHeaders.put(scheme);
+                pushHeaders.put(host);
+                pushHeaders.put("referer", referrer);
+                // Remember support for gzip encoding
+                pushHeaders.put(headers.get("accept-encoding"));
+                stream.syn(new SynInfo(pushHeaders, false), getMaxIdleTime(), TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
+                {
+                    @Override
+                    public void completed(Stream pushStream)
+                    {
+                        Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), connection, pushStrategy, pushStream);
+                        pushConnection.beginRequest(pushHeaders, true);
+                    }
+                });
+            }
+        }
+    }
+
+    private boolean isIfModifiedSinceHeaderPresent()
+    {   
+        if (headers.get("if-modified-since") != null)
+            return true;
+        return false;
+    }   
+    
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
     {
         while (true)
@@ -566,7 +636,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             // We have to query the HttpGenerator and its buffers to know
             // whether there is content buffered; if so, send the data frame
             Buffer content = getContentBuffer();
-            stream.reply(new ReplyInfo(headers, content == null));
+            reply(stream, new ReplyInfo(headers, content == null));
             if (content != null)
             {
                 closed = allContentAdded || isAllContentWritten();
@@ -672,6 +742,20 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 // Send the data frame
                 stream.data(new ByteBufferDataInfo(ZERO_BYTES, true));
             }
+        }
+    }
+
+    private static class Synchronous extends ServerHTTPSPDYAsyncConnection
+    {
+        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
+        {
+            super(connector, endPoint, server, connection, pushStrategy, stream);
+        }
+
+        @Override
+        protected void execute(Runnable task)
+        {
+            task.run();
         }
     }
 }

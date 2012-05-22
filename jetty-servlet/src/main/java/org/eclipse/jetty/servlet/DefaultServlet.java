@@ -734,9 +734,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         byte[] data=null;
         String base = URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH);
 
-        // handle ResourceCollection
-        if (_resourceBase instanceof ResourceCollection)
-            resource=_resourceBase.addPath(pathInContext);
+        //If the DefaultServlet has a resource base set, use it
+        if (_resourceBase != null)
+        {
+            // handle ResourceCollection
+            if (_resourceBase instanceof ResourceCollection)
+                resource=_resourceBase.addPath(pathInContext);
+        }
+        //Otherwise, try using the resource base of its enclosing context handler
         else if (_contextHandler.getBaseResource() instanceof ResourceCollection)
             resource=_contextHandler.getBaseResource().addPath(pathInContext);
 

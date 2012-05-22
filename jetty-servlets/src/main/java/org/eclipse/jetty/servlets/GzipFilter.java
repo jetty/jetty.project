@@ -67,17 +67,17 @@ import org.eclipse.jetty.util.log.Logger;
  * <PRE>
  * bufferSize                 The output buffer size. Defaults to 8192. Be careful as values <= 0 will lead to an 
  *                            {@link IllegalArgumentException}. 
- *                            @see java.util.zip.GZIPOutputStream#GZIPOutputStream(java.io.OutputStream, int)
- *                            @see java.util.zip.DeflaterOutputStream#DeflaterOutputStream(java.io.OutputStream, Deflater, int)
+ *                            See: {@link java.util.zip.GZIPOutputStream#GZIPOutputStream(java.io.OutputStream, int)}
+ *                            and: {@link java.util.zip.DeflaterOutputStream#DeflaterOutputStream(java.io.OutputStream, Deflater, int)}
  *                      
  * minGzipSize                Content will only be compressed if content length is either unknown or greater
  *                            than <code>minGzipSize</code>.
  *                      
  * deflateCompressionLevel    The compression level used for deflate compression. (0-9).
- *                            @see java.util.zip.Deflater#Deflater(int, boolean)
+ *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
  *                            
  * deflateNoWrap              The noWrap setting for deflate compression. Defaults to true. (true/false)
- *                            @see java.util.zip.Deflater#Deflater(int, boolean)
+ *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
  *
  * mimeTypes                  Comma separated list of mime types to compress. See description above.
  * 
