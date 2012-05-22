@@ -77,6 +77,7 @@ public class FormAuthenticator extends LoginAuthenticator
     private String _formLoginPage;
     private String _formLoginPath;
     private boolean _dispatch;
+    private boolean _alwaysSaveUri;
 
     public FormAuthenticator()
     {
@@ -91,6 +92,26 @@ public class FormAuthenticator extends LoginAuthenticator
         if (error!=null)
             setErrorPage(error);
         _dispatch=dispatch;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * If true, uris that cause a redirect to a login page will always
+     * be remembered. If false, only the first uri that leads to a login
+     * page redirect is remembered.
+     * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=379909
+     * @param alwaysSave
+     */
+    public void setAlwaysSaveUri (boolean alwaysSave)
+    {
+        _alwaysSaveUri = alwaysSave;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    public boolean getAlwaysSaveUri ()
+    {
+        return _alwaysSaveUri;
     }
     
     /* ------------------------------------------------------------ */
@@ -279,9 +300,9 @@ public class FormAuthenticator extends LoginAuthenticator
             // remember the current URI
             synchronized (session)
             {
-                // But only if it is not set already
-                if (session.getAttribute(__J_URI)==null)
-                {
+                // But only if it is not set already, or we save every uri that leads to a login form redirect
+                if (session.getAttribute(__J_URI)==null || _alwaysSaveUri)
+                {  
                     StringBuffer buf = request.getRequestURL();
                     if (request.getQueryString() != null)
                         buf.append("?").append(request.getQueryString());

@@ -268,6 +268,16 @@
 
   <security-constraint>
     <web-resource-collection>
+      <web-resource-name>Auth2</web-resource-name>
+      <url-pattern>/auth2/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>*</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <security-constraint>
+    <web-resource-collection>
       <web-resource-name>Any User</web-resource-name>
       <url-pattern>/dump/auth/*</url-pattern>
       <url-pattern>*.htm</url-pattern>
