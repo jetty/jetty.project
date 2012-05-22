@@ -2,8 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <!--version>7.5.0.v20110901</version-->
-    <version>7.5.2-SNAPSHOT</version>
+    <version>7.6.4-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -22,6 +21,7 @@
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

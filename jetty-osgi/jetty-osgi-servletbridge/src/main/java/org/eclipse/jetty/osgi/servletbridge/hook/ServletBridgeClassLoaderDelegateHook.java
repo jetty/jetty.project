@@ -27,80 +27,67 @@ import org.eclipse.osgi.framework.adaptor.ClassLoaderDelegateHook;
 import org.eclipse.osgi.internal.loader.BundleLoader;
 
 /**
- * With some complex osgi products, experience shows that using
- * a system bundle extension to pass certain packages from the bootstrapping
- * server to equinox fails.
- * The bundles keep loading javax.servlet.http from the javax.servlet bundle.
- * This class is in fact copied into the servletbridge.extensionbundle; it is not loaded by the webapp.
+ * With some complex osgi products, experience shows that using a system bundle
+ * extension to pass certain packages from the bootstrapping server to equinox
+ * fails. The bundles keep loading javax.servlet.http from the javax.servlet
+ * bundle. This class is in fact copied into the servletbridge.extensionbundle;
+ * it is not loaded by the webapp.
  */
 public class ServletBridgeClassLoaderDelegateHook implements ClassLoaderDelegateHook, HookConfigurator
 {
-	
-	private static Set<String> packagesInBootstrapClassLoader = new HashSet<String>();
-	static
-	{
-		packagesInBootstrapClassLoader.add("javax.servlet");
-		packagesInBootstrapClassLoader.add("javax.servlet.http");
-	}
 
-	public void addHooks(HookRegistry hookRegistry)
-	{
-		hookRegistry.addClassLoaderDelegateHook(this);
-	}
-	
-	public Class preFindClass(String name, BundleClassLoader classLoader,
-			BundleData data) throws ClassNotFoundException
-	{
-		String pkgName = BundleLoader.getPackageName(name);
-		if (packagesInBootstrapClassLoader.contains(pkgName))
-		{
-			return EclipseStarter.class.getClassLoader().loadClass(name);
-		}
-		return null;
-	}
-
-	public Class postFindClass(String name, BundleClassLoader classLoader,
-			BundleData data) throws ClassNotFoundException
-	{
-		return null;
-	}
-
-	public URL preFindResource(String name, BundleClassLoader classLoader,
-			BundleData data) throws FileNotFoundException
+    private static Set<String> packagesInBootstrapClassLoader = new HashSet<String>();
+    static
     {
-		return null;
-	}
+        packagesInBootstrapClassLoader.add("javax.servlet");
+        packagesInBootstrapClassLoader.add("javax.servlet.http");
+    }
 
-	public URL postFindResource(String name, BundleClassLoader classLoader,
-			BundleData data) throws FileNotFoundException
-	{
-		return null;
-	}
-
-	public Enumeration preFindResources(String name,
-			BundleClassLoader classLoader, BundleData data)
-			throws FileNotFoundException
+    public void addHooks(HookRegistry hookRegistry)
     {
-		return null;
-	}
+        hookRegistry.addClassLoaderDelegateHook(this);
+    }
 
-	public Enumeration postFindResources(String name,
-			BundleClassLoader classLoader, BundleData data)
-			throws FileNotFoundException
+    public Class preFindClass(String name, BundleClassLoader classLoader, BundleData data) throws ClassNotFoundException
     {
-		return null;
-	}
+        String pkgName = BundleLoader.getPackageName(name);
+        if (packagesInBootstrapClassLoader.contains(pkgName)) { return EclipseStarter.class.getClassLoader().loadClass(name); }
+        return null;
+    }
 
-	public String preFindLibrary(String name, BundleClassLoader classLoader,
-			BundleData data) throws FileNotFoundException
+    public Class postFindClass(String name, BundleClassLoader classLoader, BundleData data) throws ClassNotFoundException
     {
-		return null;
-	}
+        return null;
+    }
 
-	public String postFindLibrary(String name, BundleClassLoader classLoader,
-			BundleData data)
+    public URL preFindResource(String name, BundleClassLoader classLoader, BundleData data) throws FileNotFoundException
     {
-		return null;
-	}
-    
+        return null;
+    }
+
+    public URL postFindResource(String name, BundleClassLoader classLoader, BundleData data) throws FileNotFoundException
+    {
+        return null;
+    }
+
+    public Enumeration preFindResources(String name, BundleClassLoader classLoader, BundleData data) throws FileNotFoundException
+    {
+        return null;
+    }
+
+    public Enumeration postFindResources(String name, BundleClassLoader classLoader, BundleData data) throws FileNotFoundException
+    {
+        return null;
+    }
+
+    public String preFindLibrary(String name, BundleClassLoader classLoader, BundleData data) throws FileNotFoundException
+    {
+        return null;
+    }
+
+    public String postFindLibrary(String name, BundleClassLoader classLoader, BundleData data)
+    {
+        return null;
+    }
+
 }

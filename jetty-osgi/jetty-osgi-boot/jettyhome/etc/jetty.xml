@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!--                                                                 -->
+<!-- Documentation of this file format can be found at:              -->
+<!-- http://wiki.eclipse.org/Jetty/Reference/jetty.xml_syntax        -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!-- =========================================================== -->
+    <!-- Server Thread Pool                                          -->
+    <!-- =========================================================== -->
+    <Set name="ThreadPool">
+      <!-- Default queued blocking threadpool -->
+      <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+        <Set name="minThreads">10</Set>
+        <Set name="maxThreads">200</Set>
+        <Set name="detailedDump">false</Set>
+      </New>
+    </Set>
+
+
+    <!-- =========================================================== -->
+    <!-- Set handler Collection Structure                            --> 
+    <!-- =========================================================== -->
+    <Set name="handler">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+        <Set name="handlers">
+         <Array type="org.eclipse.jetty.server.Handler">
+           <Item>
+             <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+           </Item>
+           <Item>
+             <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+           </Item>
+           <Item>
+             <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
+           </Item>
+         </Array>
+        </Set>
+      </New>
+    </Set>
+
+
+    <!-- =========================================================== -->
+    <!-- extra options                                               -->
+    <!-- =========================================================== -->
+    <Set name="stopAtShutdown">true</Set>
+    <Set name="sendServerVersion">true</Set>
+    <Set name="sendDateHeader">true</Set>
+    <Set name="gracefulShutdown">1000</Set>
+    <Set name="dumpAfterStart">false</Set>
+    <Set name="dumpBeforeStop">false</Set>
+
+    
+    <!-- =========================================================== -->
+    <!-- jetty-jndi by default                                       -->
+    <!-- =========================================================== -->
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>java.naming.factory.initial</Arg>
+      <Arg><Property name="java.naming.factory.initial" default="org.eclipse.jetty.jndi.InitialContextFactory"/></Arg>
+    </Call>
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>java.naming.factory.url.pkgs</Arg>
+      <Arg><Property name="java.naming.factory.url.pkgs" default="org.eclipse.jetty.jndi"/></Arg>
+    </Call>
+
+</Configure>

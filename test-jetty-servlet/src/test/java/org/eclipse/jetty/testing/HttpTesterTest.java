@@ -50,7 +50,25 @@ public class HttpTesterTest extends TestCase
         assertEquals(200, tester.getStatus());
         assertEquals("22", tester.getHeader("Content-Length"));
         assertEquals("text/html",tester.getContentType());
-        System.err.println(tester.getContent());
     }
 
+    public void testSetCharset() throws Exception
+    {      
+        String content = "123456789\uA74A";
+        HttpTester tester = new HttpTester();
+        tester.setVersion("HTTP/1.0");
+        tester.setMethod("POST");
+        tester.setHeader("Content-type", "application/json; charset=iso-8859-1");
+        tester.setURI("/1/batch");
+        tester.setContent(content);
+        assertEquals("123456789?",tester.getContent());
+
+        tester.setHeader("Content-type", "application/json; charset=UTF-8");
+        tester.setContent(content);
+        assertEquals("123456789\uA74A",tester.getContent());
+  
+        String request=tester.generate();
+        assertTrue(request.startsWith("POST "));
+        assertTrue(request.trim().endsWith(content));
+    }
 }

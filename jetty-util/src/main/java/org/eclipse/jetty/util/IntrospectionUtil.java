@@ -139,11 +139,9 @@ public class IntrospectionUtil
     
     public static boolean checkParams (Class<?>[] formalParams, Class<?>[] actualParams, boolean strict)
     {
-        if (formalParams==null && actualParams==null)
-            return true;
-        if (formalParams==null && actualParams!=null)
-            return false;
-        if (formalParams!=null && actualParams==null)
+        if (formalParams==null)
+            return actualParams==null;
+        if (actualParams==null)
             return false;
 
         if (formalParams.length!=actualParams.length)
@@ -195,13 +193,11 @@ public class IntrospectionUtil
     
     public static boolean isTypeCompatible (Class<?> formalType, Class<?> actualType, boolean strict)
     {
-        if (formalType==null && actualType != null)
+        if (formalType==null)
+            return actualType==null;
+        if (actualType==null)
             return false;
-        if (formalType!=null && actualType==null)
-            return false;
-        if (formalType==null && actualType==null)
-            return true;
-       
+        
         if (strict)
             return formalType.equals(actualType);
         else

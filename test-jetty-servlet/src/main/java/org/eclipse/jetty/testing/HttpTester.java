@@ -444,7 +444,19 @@ public class HttpTester
      */
     public void setHeader(String name, String value)
     {
+        if (HttpHeaders.CONTENT_TYPE.equalsIgnoreCase(name))
+            setContentType(value);
+        else
         _fields.put(name,value);
+        
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setContentType(String value)
+    {
+        _contentType = MimeTypes.CACHE.lookup(value);
+        _charset = MimeTypes.getCharsetFromContentType(_contentType);
+        _fields.put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
     }
 
     /* ------------------------------------------------------------ */

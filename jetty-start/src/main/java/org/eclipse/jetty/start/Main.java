@@ -550,22 +550,25 @@ public class Main
         if (_exec)
         {
             CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
+            
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             final Process process = pbuilder.start();
+            Runtime.getRuntime().addShutdownHook(new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    Config.debug("Destroying " + process);
+                    process.destroy();
+                }
+            });
             
-            try
-            {
-                copyInThread(process.getErrorStream(),System.err);
-                copyInThread(process.getInputStream(),System.out);
-                copyInThread(System.in,process.getOutputStream());
-                monitor.setProcess(process);
-                process.waitFor();
-            }
-            finally
-            {
-                Config.debug("Destroying " + process);
-                process.destroy();
-            }
+            copyInThread(process.getErrorStream(),System.err);
+            copyInThread(process.getInputStream(),System.out);
+            copyInThread(System.in,process.getOutputStream());
+            monitor.setProcess(process);
+            process.waitFor();
+            
             return;
         }
 

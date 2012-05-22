@@ -561,7 +561,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     if (wait>0)
                     {
                         long before=now;
-                        selected=selector.select(wait);
+                        selector.select(wait);
                         now = System.currentTimeMillis();
                         _timeout.setNow(now);
 

@@ -260,7 +260,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     public void doNotCompress() throws IOException
     {
         if (_compressedOutputStream != null)
-            throw new IllegalStateException();
+            throw new IllegalStateException("Compressed output stream is already assigned.");
         if (_out == null || _bOut != null)
         {
             _doNotCompress = true;

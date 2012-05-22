@@ -34,7 +34,6 @@ public interface BundleFileLocatorHelper
     /** The default instance supports felix and equinox */
     public static BundleFileLocatorHelper DEFAULT = new DefaultFileLocatorHelper();
 
-
     /**
      * Works with equinox, felix, nuxeo and probably more. Not exactly in the
      * spirit of OSGi but quite necessary to support self-contained webapps and
@@ -43,8 +42,7 @@ public interface BundleFileLocatorHelper
      * Currently only works with bundles that are not jar.
      * </p>
      * 
-     * @param bundle
-     *            The bundle
+     * @param bundle The bundle
      * @return Its installation location as a file.
      * @throws Exception
      */
@@ -75,16 +73,15 @@ public interface BundleFileLocatorHelper
      *         embedded inside it.
      */
     public File[] locateJarsInsideBundle(Bundle bundle) throws Exception;
-    
-    
+
     /**
-	 * Helper method equivalent to Bundle#getEntry(String entryPath) except that
-	 * it searches for entries in the fragments by using the findEntries method.
-	 * 
-	 * @param bundle
-	 * @param entryPath
-	 * @return null or all the entries found for that path.
-	 */
-	public Enumeration<URL> findEntries(Bundle bundle, String entryPath);
+     * Helper method equivalent to Bundle#getEntry(String entryPath) except that
+     * it searches for entries in the fragments by using the findEntries method.
+     * 
+     * @param bundle
+     * @param entryPath
+     * @return null or all the entries found for that path.
+     */
+    public Enumeration<URL> findEntries(Bundle bundle, String entryPath);
 
 }

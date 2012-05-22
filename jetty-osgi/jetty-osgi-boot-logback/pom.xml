@@ -56,22 +56,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>process-resources</phase>
-            <configuration>
-              <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.3.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
-              </tasks>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
@@ -93,6 +77,40 @@
             <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <executions>
+              <execution>
+                  <id>bundle-manifest</id>
+                  <phase>process-classes</phase>
+                  <goals>
+                      <goal>manifest</goal>
+                  </goals>
+              </execution>
+          </executions>
+          <configuration>
+              <instructions>
+                <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot.logback;singleton:=true</Bundle-SymbolicName>
+                <Bundle-Name>Jetty-OSGi-Logback Integration</Bundle-Name>
+                <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
+                <Import-Package>
+ch.qos.logback.access.jetty;version="[0.9,1.1)";resolution:=optional,
+ch.qos.logback.access.jetty.v7;version="[0.9,1.1)";resolution:=optional,
+ch.qos.logback.*;version="[0.9,1.1)",
+org.osgi.framework.*,
+org.slf4j.*,
+*;resolution:=optional
+                </Import-Package>
+                <Export-Package>
+!org.eclipse.jetty.osgi.boot.logback.internal.*,
+org.eclipse.jetty.osgi.boot.logback.*;version="${parsedVersion.osgiVersion}"
+                </Export-Package>
+                <_nouses>true</_nouses>
+              </instructions>
+          </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

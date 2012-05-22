@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
+import org.eclipse.jetty.spdy.PushSynInfo;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -130,8 +131,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                     if (headersBlockParser.parse(streamId, version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
-                        // TODO: can it be both FIN and UNIDIRECTIONAL ?
-                        if (flags != 0 && flags != SynInfo.FLAG_CLOSE && flags != SynInfo.FLAG_UNIDIRECTIONAL)
+                        if (flags > (SynInfo.FLAG_CLOSE | PushSynInfo.FLAG_UNIDIRECTIONAL))
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.SYN_STREAM);
 
                         SynStreamFrame frame = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, new Headers(headers, true));

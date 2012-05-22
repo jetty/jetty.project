@@ -769,14 +769,15 @@ public class UrlEncoded extends MultiMap implements Cloneable
                                 {
                                     try
                                     {
-                                        ba[n++]=(byte)TypeUtil.parseInt(encoded,offset+i+1,2,16);
+                                        ba[n]=(byte)TypeUtil.parseInt(encoded,offset+i+1,2,16);
+                                        n++;
                                         i+=3;
                                     }
                                     catch(NumberFormatException nfe)
-                                    {                                        
-                                        ba[n-1] = (byte)'%';                                    
-                                        for(char next; ((next=encoded.charAt(++i+offset))!='%');)
-                                            ba[n++] = (byte)(next=='+' ? ' ' : next);
+                                    {   
+                                        LOG.ignore(nfe);
+                                        ba[n++] = (byte)'%';
+                                        i++;         
                                     }
                                 }
                                 else

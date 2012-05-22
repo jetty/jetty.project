@@ -162,7 +162,7 @@ public abstract class DataInfo
     /**
      * <p>Reads and consumes the content bytes of this {@link DataInfo} into the given {@link ByteBuffer}.</p>
      *
-     * @param output the {@link ByteBuffer} to copy to bytes into
+     * @param output the {@link ByteBuffer} to copy the bytes into
      * @return the number of bytes copied
      * @see #consume(int)
      */
