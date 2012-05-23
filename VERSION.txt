@@ -1,4 +1,33 @@
-jetty-7.6.4-SNAPSHOT
+jetty-7.6.5-SNAPSHOT
+
+jetty-7.6.4.v20120522 - 22 May 2012
+ + 367608 ignore the aysncrequestreadtest as it is known to fail and is waiting
+   for a fix
+ + 371853 Support bundleentry: protocol for webapp embedded as directory in
+   osgi bundle
+ + 373620 Add ch.qos.logback.access.jetty to the Import-Package for
+   jetty-osgi-boot-logback bundle
+ + 376152 apply context resources recursively
+ + 376801 Make JAAS login modules useable without jetty infrastructure
+ + 377391 Manifest updates to jetty-osgi-boot-logback
+ + 377492 NPE when deploying a Web Application Bundle with unresolved
+   Require-TldBundle
+ + 377550 set charset when content type is set
+ + 377587 ConnectHandler write will block on partial write
+ + 377610 New session not timed out if an old session is invalidated in scope
+   of same request
+ + 377709 Support for RequestParameterCallback missing
+ + 378242 Re-extract war on restart if incomplete extraction
+ + 378273 Remove default Bundle-Localization header
+ + 378487 Null out contextPath on Request.recycle
+ + 379015 Use factored jetty xml config files for defaults
+ + 379089 DefaultServlet ignores its resourceBase and uses context's
+   ResourceCollection when listing diretories
+ + 379194 ProxyServlet enhancement to enable easy creation of alternative
+   HttpClient implementations
+ + 380034 last modified times taken from JarEntry for JarFile resources
+ + 380212 Clear buffer if parsing fails due to full buffer
+ + 380222 JettyPolicyRuntimeTest failure
 
 jetty-7.6.3.v20120416 - 16 April 2012
  + 367172 Remove detection for slf4j NOPLogger
