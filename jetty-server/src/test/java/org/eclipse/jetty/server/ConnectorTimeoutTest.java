@@ -34,12 +34,13 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.Assert;
 import org.junit.Test;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
-    protected static final int MAX_IDLE_TIME=250;
+    protected static final int MAX_IDLE_TIME=500;
     private int sleepTime = MAX_IDLE_TIME + MAX_IDLE_TIME/5;
     private int minimumTestRuntime = MAX_IDLE_TIME-MAX_IDLE_TIME/5;
     private int maximumTestRuntime = MAX_IDLE_TIME*10;
@@ -114,7 +115,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     @Test
     public void testMaxIdleWithRequest10NoClientClose() throws Exception
-    {
+    {        
         final Exchanger<EndPoint> endpoint = new Exchanger<EndPoint>();
         configureServer(new HelloWorldHandler()
         {
@@ -150,8 +151,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // Get the server side endpoint
         EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
         if (endp instanceof SslConnection.ApplicationEndPoint)
-            endp=((SslConnection.ApplicationEndPoint)endp).getEndpoint();
-
+            endp=((SslConnection.ApplicationEndPoint)endp).getAsyncConnection().getEndPoint();
+        
         // read the response
         String result=IO.toString(is);
         Assert.assertThat("OK",result,containsString("200 OK"));
@@ -160,8 +161,77 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         assertEquals(-1, is.read());
 
         // wait for idle timeout
-        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
+        TimeUnit.MILLISECONDS.sleep(3*MAX_IDLE_TIME);
 
+
+        // further writes will get broken pipe or similar
+        try
+        {
+            for (int i=0;i<1000;i++)
+            {
+                os.write((
+                        "GET / HTTP/1.0\r\n"+
+                        "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                        "connection: keep-alive\r\n"+
+                "\r\n").getBytes("utf-8"));
+                os.flush();
+            }
+            Assert.fail("half close should have timed out");
+        }
+        catch(SocketException e)
+        {
+            // expected
+        }
+        // check the server side is closed
+        Assert.assertFalse(endp.isOpen());
+    }
+
+    @Test
+    public void testMaxIdleWithRequest10ClientIgnoresClose() throws Exception
+    {        
+        final Exchanger<EndPoint> endpoint = new Exchanger<EndPoint>();
+        configureServer(new HelloWorldHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+                    ServletException
+            {
+                try
+                {
+                    endpoint.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
+                }
+                catch(Exception e)
+                {}
+                super.handle(target,baseRequest,request,response);
+            }
+
+        });
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        client.setSoTimeout(10000);
+
+        assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        os.write((
+                "GET / HTTP/1.0\r\n"+
+                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "connection: close\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+
+        // Get the server side endpoint
+        EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
+        if (endp instanceof SslConnection.ApplicationEndPoint)
+            endp=((SslConnection.ApplicationEndPoint)endp).getAsyncConnection().getEndPoint();
+        
+        // read the response
+        String result=IO.toString(is);
+        Assert.assertThat("OK",result,containsString("200 OK"));
+
+        // check client reads EOF
+        assertEquals(-1, is.read());
 
         // further writes will get broken pipe or similar
         try
@@ -234,7 +304,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // check client reads EOF
         assertEquals(-1, is.read());
 
-        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
+        TimeUnit.MILLISECONDS.sleep(3*MAX_IDLE_TIME);
 
 
         // further writes will get broken pipe or similar

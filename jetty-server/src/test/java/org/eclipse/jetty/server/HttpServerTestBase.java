@@ -1014,6 +1014,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         public EndPoint _endp;
 
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             _endp=baseRequest.getHttpChannel().getConnection().getEndPoint();
@@ -1032,6 +1033,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         public Exchanger<Object> _ex = new Exchanger<Object>();
 
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);

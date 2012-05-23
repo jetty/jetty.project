@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpConnection extends AbstractAsyncConnection
 {
-    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+    public static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
@@ -273,13 +273,24 @@ public class HttpConnection extends AbstractAsyncConnection
         }
         catch(Exception e)
         {
-            LOG.warn(e);
+            if (_parser.isClosed())
+                LOG.debug(e);
+            else
+                LOG.warn(e);
             getEndPoint().close();
         }
         finally
         {   
             setCurrentConnection(null);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void onReadFail(Throwable cause)
+    {
+        // TODO Auto-generated method stub
+        super.onReadFail(cause);
     }
 
     /* ------------------------------------------------------------ */
@@ -383,15 +394,16 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         protected void completed()
         {
-            LOG.debug("{} completed");
+            // This is called by HttpChannel#process when it knows that it's handling of the request/response cycle 
+            // is complete.  This may be in the original thread dispatched to the connection that has called process from
+            // the connection#onReadable method, or it may be from a thread dispatched to call process as the result
+            // of a resumed suspended request.
+            // At this point the HttpChannel will have completed the generation of any response (although it might remain to
+            // be asynchronously flushed TBD), but it may not have consumed the entire 
             
-            // parser should be either complete or can be completed with single call
-            if (!_parser.isComplete())
-            {
-                // TODO make this much more efficient
-                _httpInput.consumeAll();
-            }
+            LOG.debug("{} completed");
                 
+            // Reset everything for the next cycle.
             HttpConnection.this.reset();
             
             // if the onReadable method is not executing
@@ -719,15 +731,16 @@ public class HttpConnection extends AbstractAsyncConnection
             }
         }
 
-        protected void consumeAll()
+        @Override
+        public void consumeAll()
         {
             while (true)
             {
-                synchronized (_inputQ)
+                synchronized (_inputQ.lock())
                 {
                     _inputQ.clear();
                 }
-                if (_parser.isComplete())
+                if (_parser.isComplete() || _parser.isClosed())
                     return;
                 try
                 {

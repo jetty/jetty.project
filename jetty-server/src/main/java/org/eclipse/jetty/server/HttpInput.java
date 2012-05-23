@@ -21,6 +21,8 @@ import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -37,6 +39,8 @@ import org.eclipse.jetty.util.BufferUtil;
  */
 public abstract class HttpInput extends ServletInputStream
 {
+    private static final Logger LOG = Log.getLogger(HttpInput.class);
+    
     protected final byte[] _oneByte=new byte[1];
     protected final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
     private ByteBuffer _content;
@@ -50,7 +54,7 @@ public abstract class HttpInput extends ServletInputStream
     /* ------------------------------------------------------------ */
     public void recycle()
     {
-        synchronized (_inputQ)
+        synchronized (_inputQ.lock())
         {
             _inputEOF=false;
             
@@ -177,6 +181,27 @@ public abstract class HttpInput extends ServletInputStream
         synchronized (_inputQ.lock())
         {             
             _inputEOF=true;
+        }
+    }
+    
+    public void consumeAll()
+    {
+        while (true)
+        {
+            synchronized (_inputQ.lock())
+            {
+                _inputQ.clear();
+            }
+            if (_inputEOF)
+                return;
+            try
+            {
+                blockForContent();
+            }
+            catch(IOException e)
+            {
+                LOG.warn(e);
+            }
         }
     }
 }

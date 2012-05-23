@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -870,7 +871,16 @@ public class HttpParser
                     return false;
                     
                 case CLOSED:
-                    BufferUtil.clear(buffer);
+                    int count=0;
+                    while (BufferUtil.hasContent(buffer))
+                    {
+                        byte b=buffer.get();
+                        if (!Character.isWhitespace((char)b) || count++>4)
+                        {
+                            BufferUtil.clear(buffer);
+                            throw new IOException("Illegal characters");
+                        }
+                    }
                     return false;
             }
             
@@ -1049,6 +1059,12 @@ public class HttpParser
         }
         catch(Exception e)
         {
+            if (isClosed())
+            {
+                LOG.debug(e);
+                throw new IllegalStateException(e);
+            }
+
             LOG.warn(e);
             _handler.badMessage(e.toString());
             return true;

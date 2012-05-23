@@ -332,7 +332,7 @@ public class StdErrLog extends AbstractLogger
 
             for (Logger log : Log.getLoggers().values())
             {
-                if (log instanceof StdErrLog)
+                if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
                     ((StdErrLog)log).setLevel(LEVEL_DEBUG);
             }
         }
@@ -342,7 +342,7 @@ public class StdErrLog extends AbstractLogger
             
             for (Logger log : Log.getLoggers().values())
             {
-                if (log instanceof StdErrLog)
+                if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
                     ((StdErrLog)log).setLevel(((StdErrLog)log)._configuredLevel);
             }
         }
@@ -573,6 +573,10 @@ public class StdErrLog extends AbstractLogger
         // Let Level come from configured Properties instead - sel.setLevel(_level);
         logger.setSource(_source);
         logger._stderr = this._stderr;
+        
+        // Force the child to have any programmatic configuration
+        if (_level!=_configuredLevel)
+            logger._level=_level;
 
         return logger;
     }

@@ -393,7 +393,13 @@ public abstract class HttpChannel
 
                     if (!_response.isCommitted() && !_request.isHandled())
                         _response.sendError(404);
+
+                    // Complete reading the request
+                    _in.consumeAll();
+                    
+                    // Complete generating the response
                     _response.complete();
+                    
                 }
                 catch(IOException e)
                 {
@@ -497,8 +503,9 @@ public abstract class HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s{r=%d,a=%s}",
-                super.toString(),
+        return String.format("%s@%x{r=%d,a=%s}",
+                getClass().getSimpleName(),
+                hashCode(),
                 _requests,
                 _state.getState());
     }
