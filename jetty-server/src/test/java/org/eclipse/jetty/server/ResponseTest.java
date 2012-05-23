@@ -33,7 +33,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSessionContext;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
@@ -78,7 +77,7 @@ public class ResponseTest
     @Test
     public void testContentType() throws Exception
     {
-        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        TestHttpChannel connection = new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = connection.getResponse();
 
         assertEquals(null,response.getContentType());
@@ -133,7 +132,7 @@ public class ResponseTest
     public void testLocale() throws Exception
     {
 
-        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        TestHttpChannel connection = new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer());
         Request request = connection.getRequest();
         Response response = connection.getResponse();
         ContextHandler context = new ContextHandler();
@@ -157,7 +156,7 @@ public class ResponseTest
     @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {
-        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        TestHttpChannel connection = new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer());
 
         Response response = connection.getResponse();
 
@@ -189,7 +188,7 @@ public class ResponseTest
     @Test
     public void testCharacterEncodingContentType() throws Exception
     {
-        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         response.setCharacterEncoding("utf-8");
         response.setContentType("foo/bar");
@@ -218,7 +217,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithCharacterEncoding() throws Exception
     {
-        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; charset=utf-8");
@@ -247,7 +246,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithOther() throws Exception
     {
-        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         response.setContentType("foo/bar; other=xyz");
         assertEquals("foo/bar; other=xyz",response.getContentType());
@@ -270,7 +269,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithCharacterEncodingAndOther() throws Exception
     {
-        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; charset=utf-8 other=xyz");
@@ -310,7 +309,7 @@ public class ResponseTest
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
         assertEquals("Database Error", response.getReason());
-        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL));
+        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
 
         response=newResponse();
 
@@ -323,14 +322,14 @@ public class ResponseTest
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
         assertEquals("Super Nanny", response.getReason());
-        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL));
+        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
     }
 
     @Test
     public void testEncodeRedirect()
         throws Exception
     {
-        AbstractHttpConnection connection=new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        TestHttpChannel connection=new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = new Response(connection);
         Request request = connection.getRequest();
         request.setServerName("myhost");
@@ -395,7 +394,7 @@ public class ResponseTest
         for (int i=1;i<tests.length;i++)
         {
             ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
-            AbstractHttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
+            TestHttpChannel connection=new TestHttpChannel(connector,out, connector.getServer());
             Response response = new Response(connection);
             Request request = connection.getRequest();
             request.setServerName("myhost");
@@ -423,7 +422,7 @@ public class ResponseTest
     @Test
     public void testSetBufferSize () throws Exception
     {
-        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
         response.setBufferSize(20*1024);
         response.getWriter().print("hello");
         try
@@ -487,7 +486,7 @@ public class ResponseTest
     @Test
     public void testAddCookie() throws Exception
     {
-        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         Cookie cookie=new Cookie("name","value");
         cookie.setDomain("domain");
@@ -507,9 +506,9 @@ public class ResponseTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         endPoint.setOutput(new ByteArrayBuffer(1024));
         endPoint.setGrowOutput(true);
-        AbstractHttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
+        TestHttpChannel connection=new TestHttpChannel(connector, endPoint, connector.getServer());
         connection.getGenerator().reset();
-        AbstractHttpConnection.setCurrentHttpChannel(connection);
+        TestHttpChannel.setCurrentHttpChannel(connection);
         Response response = connection.getResponse();
         connection.getRequest().setRequestURI("/test");
         return response;
@@ -609,24 +608,20 @@ public class ResponseTest
         }
     }
     
-    static class TestHttpConnection extends AbstractHttpConnection
+    static class TestHttpChannel extends HttpChannel
     {
         
-        public TestHttpConnection(Connector connector, EndPoint endpoint, Server server)
+        public TestHttpChannel(Connector connector, EndPoint endpoint, Server server)
         {
+            super(server,null,null);
             super(connector,endpoint,server);
         }
 
-        public TestHttpConnection(Connector connector, EndPoint endpoint, Server server, Parser parser, Generator generator, Request request)
+        public TestHttpChannel(Connector connector, EndPoint endpoint, Server server, Parser parser, Generator generator, Request request)
         {
             super(connector,endpoint,server,parser,generator,request);
         }
 
-        @Override
-        public AsyncConnection handle() throws IOException
-        {
-            return this;
-        }
         
     }
 }

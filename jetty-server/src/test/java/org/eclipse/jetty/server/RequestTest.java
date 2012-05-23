@@ -804,7 +804,7 @@ public class RequestTest
 
         String request="POST / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
-        "Content-Type: "+MimeTypes.FORM_ENCODED+"\r\n"+
+        "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
         "Content-Length: "+buf.length()+"\r\n"+
         "Connection: close\r\n"+
         "\r\n"+
@@ -832,7 +832,7 @@ public class RequestTest
         {
             ((Request)request).setHandled(true);
 
-            if (request.getContentLength()>0 && !MimeTypes.FORM_ENCODED.equals(request.getContentType()))
+            if (request.getContentLength()>0 && !MimeTypes.Type.FORM_ENCODED.asString().equals(request.getContentType()))
                 _content=IO.toString(request.getInputStream());
 
             if (_checker!=null && _checker.check(request,response))

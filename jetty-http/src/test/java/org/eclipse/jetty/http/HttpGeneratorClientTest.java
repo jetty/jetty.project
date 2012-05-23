@@ -52,7 +52,7 @@ public class HttpGeneratorClientTest
         HttpGenerator.Result
         result=gen.generate(null,null,null,null,null,Action.COMPLETE);
         assertEquals(HttpGenerator.State.COMMITTING_COMPLETING,gen.getState());
-        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.Result.NEED_INFO,result);
         Info info = new Info("GET","/index.html");
         info.getHttpFields().add("Host","something");
         info.getHttpFields().add("User-Agent","test");
@@ -105,7 +105,7 @@ public class HttpGeneratorClientTest
         assertTrue(BufferUtil.isEmpty(content1));
 
         result=gen.generate(null,null,null,buffer,null,Action.COMPLETE);
-        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.Result.NEED_INFO,result);
         assertEquals(HttpGenerator.State.COMMITTING_COMPLETING,gen.getState());
 
         Info info = new Info("POST","/index.html");
@@ -158,7 +158,7 @@ public class HttpGeneratorClientTest
         assertEquals(0,content0.remaining());
 
         result=gen.generate(null,null,null,buffer,content1,null);
-        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.Result.NEED_INFO,result);
         assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
         assertEquals("Hello World! The",BufferUtil.toString(buffer));
         assertEquals(43,content1.remaining());
@@ -257,7 +257,7 @@ public class HttpGeneratorClientTest
         HttpGenerator.Result
 
         result=gen.generate(null,null,null,null,content0,null);
-        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.Result.NEED_INFO,result);
         assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
 
         Info info = new Info("POST","/index.html");
@@ -338,7 +338,7 @@ public class HttpGeneratorClientTest
         assertEquals(0,content0.remaining());
 
         result=gen.generate(null,null,null,buffer,content1,null);
-        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.Result.NEED_INFO,result);
         assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
         assertEquals("Hello World! The",BufferUtil.toString(buffer));
         assertEquals(43,content1.remaining());
@@ -419,7 +419,7 @@ public class HttpGeneratorClientTest
         HttpGenerator.Result
 
         result=gen.generate(null,null,null,null,content0,null);
-        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.Result.NEED_INFO,result);
         assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
 
         Info info = new Info("POST","/index.html",59);

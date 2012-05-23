@@ -328,6 +328,7 @@ public abstract class HttpChannel
                     if (_state.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
+                        _request.setPathInfo(_uri.getPath());
                         getHttpConnector().customize(_request);
                         getServer().handle(this);
                     }

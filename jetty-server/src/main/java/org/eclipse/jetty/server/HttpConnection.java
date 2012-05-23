@@ -467,10 +467,15 @@ public class HttpConnection extends AbstractAsyncConnection
                         
                         switch(result)
                         {
-                            case NEED_COMMIT:
+                            case NEED_INFO:
                                 if (_info==null)
                                     _info=_channel.getEventHandler().commit();
                                 LOG.debug("{} Gcommit {}",this,_info);
+                                if (_responseHeader==null)
+                                    _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
+                                continue;
+                                
+                            case NEED_HEADER:
                                 _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                                 continue;
 
@@ -541,7 +546,6 @@ public class HttpConnection extends AbstractAsyncConnection
 
             LOG.debug("{} commit {}",this,_info);
             
-            // TODO review the locks with a mind that other threads may read and write
             synchronized (_lock)
             {
                 try
@@ -558,16 +562,20 @@ public class HttpConnection extends AbstractAsyncConnection
                             LOG.debug("{} commit: {} ({},{},{})@{}",
                                     this,
                                     result,
-                                    BufferUtil.toSummaryString(_responseHeader),
+                                    BufferUtil.toDetailString(_responseHeader),
                                     BufferUtil.toSummaryString(_responseBuffer),
                                     BufferUtil.toSummaryString(content),
                                     _generator.getState());
 
                         switch(result)
                         {
-                            case NEED_COMMIT:
-                                if (_info==null)
-                                    _info=_channel.getEventHandler().commit();
+                            case NEED_INFO:
+                                _info=_channel.getEventHandler().commit();
+                                if (_responseHeader==null)
+                                    _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
+                                break;
+                                
+                            case NEED_HEADER:
                                 _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                                 break;
 
@@ -606,6 +614,8 @@ public class HttpConnection extends AbstractAsyncConnection
                                 break loop;
 
                             case OK:
+                                if (_info!=null && _info.isInformational())
+                                    _info=null;
                                 break loop;
                         }
                     }
@@ -732,23 +742,44 @@ public class HttpConnection extends AbstractAsyncConnection
         }
 
         @Override
+        public int available()
+        {
+            int available=super.available();
+            if (available==0 && _parser.isInContent() && BufferUtil.hasContent(_requestBuffer))
+                return 1;
+            return available;
+        }
+
+        @Override
         public void consumeAll()
         {
-            while (true)
+            // Consume content only if the connection is persistent
+            if (!_generator.isPersistent())
             {
+                _parser.setState(HttpParser.State.CLOSED);
                 synchronized (_inputQ.lock())
                 {
                     _inputQ.clear();
                 }
-                if (_parser.isComplete() || _parser.isClosed())
-                    return;
-                try
+            }
+            else
+            {
+                while (true)
                 {
-                    blockForContent();
-                }
-                catch(IOException e)
-                {
-                    LOG.warn(e);
+                    synchronized (_inputQ.lock())
+                    {
+                        _inputQ.clear();
+                    }
+                    if (_parser.isComplete() || _parser.isClosed())
+                        return;
+                    try
+                    {
+                        blockForContent();
+                    }
+                    catch(IOException e)
+                    {
+                        LOG.warn(e);
+                    }
                 }
             }
         }

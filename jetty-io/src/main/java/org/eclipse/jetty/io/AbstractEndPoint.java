@@ -32,7 +32,7 @@ public abstract class AbstractEndPoint implements EndPoint
     }
 
     @Override
-    public void setMaxIdleTime(int timeMs) throws IOException
+    public void setMaxIdleTime(int timeMs)
     {
         _maxIdleTime=timeMs;
     }

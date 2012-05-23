@@ -939,7 +939,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     target = URIUtil.compactPath(target);
                 if (!checkContext(target,baseRequest,response))
                     return;
-
+                
                 if (target.length() > _contextPath.length())
                 {
                     if (_contextPath.length() > 1)

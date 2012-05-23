@@ -121,9 +121,8 @@ public interface EndPoint
     /* ------------------------------------------------------------ */
     /** Set the max idle time.
      * @param timeMs the max idle time in MS. Timeout <= 0 implies an infinite timeout
-     * @throws IOException if the timeout cannot be set.
      */
-    void setMaxIdleTime(int timeMs) throws IOException;
+    void setMaxIdleTime(int timeMs);
 
 
 

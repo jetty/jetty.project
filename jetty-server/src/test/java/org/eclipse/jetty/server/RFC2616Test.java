@@ -19,6 +19,8 @@
  */
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -29,7 +31,10 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.util.log.Log;
+import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,6 +51,7 @@ public class RFC2616Test
     {
         server = new Server();
         connector = new LocalHttpConnector();
+        connector.setMaxIdleTime(10000);
         server.addConnector(connector);
 
         ContextHandler vcontext=new ContextHandler();
@@ -102,66 +108,136 @@ public class RFC2616Test
     }
 
     @Test
-    public void test3_6()
+    public void test3_6_a() throws Exception
     {
         String response=null;
-        try
-        {
-            int offset=0;
+        int offset=0;
 
-            // Chunk last
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked,identity\n"+"Content-Type: text/plain\n"
-                    +"\015\012"+"5;\015\012"+"123\015\012\015\012"+"0;\015\012\015\012");
-            checkContains(response,offset,"HTTP/1.1 400 Bad","Chunked last");
+        // Chunk last
+        response=connector.getResponses(
+            "GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Transfer-Encoding: chunked,identity\n"+
+                "Content-Type: text/plain\n"+
+                "\015\012"+
+                "5;\015\012"+
+                "123\015\012\015\012"+
+            "0;\015\012\015\012");
+        checkContains(response,offset,"HTTP/1.1 400 Bad","Chunked last");
+    }
+    
+    @Test
+    public void test3_6_b() throws Exception
+    {
+        String response=null;
+        int offset=0;
 
-            // Chunked
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"+"\n"+"2;\n"
-                    +"12\n"+"3;\n"+"345\n"+"0;\n\n"+
+        // Chunked
+        response=connector.getResponses(
+            "GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Transfer-Encoding: chunked\n"+
+                "Content-Type: text/plain\n"+
+                "\n"+
+                "2;\n"+
+                "12\n"+
+                "3;\n"+
+                "345\n"+
+                "0;\n\n"+
 
-                    "GET /R2 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"+"\n"+"4;\n"+"6789\n"+"5;\n"+"abcde\n"
-                    +"0;\n\n"+
+                    "GET /R2 HTTP/1.1\n"+
+                    "Host: localhost\n"+
+                    "Transfer-Encoding: chunked\n"+
+                    "Content-Type: text/plain\n"+
+                    "\n"+
+                    "4;\n"+
+                    "6789\n"+
+                    "5;\n"+
+                    "abcde\n"+
+                    "0;\n\n"+
 
-                    "GET /R3 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-            offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking");
-            offset=checkContains(response,offset,"12345","3.6.1 Chunking");
-            offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking");
-            offset=checkContains(response,offset,"6789abcde","3.6.1 Chunking");
-            offset=checkContains(response,offset,"/R3","3.6.1 Chunking");
+                    "GET /R3 HTTP/1.1\n"+
+                    "Host: localhost\n"+
+                    "Connection: close\n"+
+            "\n");
+        offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking");
+        offset=checkContains(response,offset,"12345","3.6.1 Chunking");
+        offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking");
+        offset=checkContains(response,offset,"6789abcde","3.6.1 Chunking");
+        offset=checkContains(response,offset,"/R3","3.6.1 Chunking");
 
-            // Chunked
-            offset=0;
-            response=connector.getResponses("POST /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"+"\n"+"3;\n"
-                    +"fgh\n"+"3;\n"+"Ijk\n"+"0;\n\n"+
+    }
+    
+    @Test
+    public void test3_6_c() throws Exception
+    {
+        String response=null;
+        int offset=0;
 
-                    "POST /R2 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"+"\n"+"4;\n"+"lmno\n"+"5;\n"+"Pqrst\n"
-                    +"0;\n\n"+
+        response=connector.getResponses(
+            "POST /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Transfer-Encoding: chunked\n"+
+                "Content-Type: text/plain\n"+
+                "\n"+
+                "3;\n"+
+                "fgh\n"+
+                "3;\n"+
+                "Ijk\n"+
+                "0;\n\n"+
 
-                    "GET /R3 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-            checkNotContained(response,"HTTP/1.1 100","3.6.1 Chunking");
-            offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking");
-            offset=checkContains(response,offset,"fghIjk","3.6.1 Chunking");
-            offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking");
-            offset=checkContains(response,offset,"lmnoPqrst","3.6.1 Chunking");
-            offset=checkContains(response,offset,"/R3","3.6.1 Chunking");
+                    "POST /R2 HTTP/1.1\n"+
+                    "Host: localhost\n"+
+                    "Transfer-Encoding: chunked\n"+
+                    "Content-Type: text/plain\n"+
+                    "\n"+
+                    "4;\n"+
+                    "lmno\n"+
+                    "5;\n"+
+                    "Pqrst\n"+
+                    "0;\n\n"+
 
-            // Chunked and keep alive
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"
-                    +"Connection: keep-alive\n"+"\n"+"3;\n"+"123\n"+"3;\n"+"456\n"+"0;\n\n"+
+                    "GET /R3 HTTP/1.1\n"+
+                    "Host: localhost\n"+
+                    "Connection: close\n"+
+            "\n");
+        checkNotContained(response,"HTTP/1.1 100","3.6.1 Chunking");
+        offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking");
+        offset=checkContains(response,offset,"fghIjk","3.6.1 Chunking");
+        offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking");
+        offset=checkContains(response,offset,"lmnoPqrst","3.6.1 Chunking");
+        offset=checkContains(response,offset,"/R3","3.6.1 Chunking");
 
-                    "GET /R2 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-            offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking")+10;
-            offset=checkContains(response,offset,"123456","3.6.1 Chunking");
-            offset=checkContains(response,offset,"/R2","3.6.1 Chunking")+10;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            assertTrue(false);
-            if (response!=null)
-                System.err.println(response);
-        }
+    }
+    
+    @Test
+    public void test3_6_d() throws Exception
+    {
+        String response=null;
+        int offset=0;
+
+        // Chunked and keep alive
+        response=connector.getResponses(
+            "GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Transfer-Encoding: chunked\n"+
+                "Content-Type: text/plain\n"+
+                "Connection: keep-alive\n"+
+                "\n"+
+                "3;\n"+
+                "123\n"+
+                "3;\n"+
+                "456\n"+
+                "0;\n\n"+
+
+                "GET /R2 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Connection: close\n"+
+            "\n");
+        offset=checkContains(response,offset,"HTTP/1.1 200","3.6.1 Chunking")+10;
+        offset=checkContains(response,offset,"123456","3.6.1 Chunking");
+        offset=checkContains(response,offset,"/R2","3.6.1 Chunking")+10;
+
     }
 
     @Test
@@ -189,69 +265,111 @@ public class RFC2616Test
     }
 
     @Test
-    public void test4_4()
+    public void test4_4_2() throws Exception
     {
-        try
-        {
             String response;
             int offset=0;
 
             // 2
             // If _content length not used, second request will not be read.
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: identity\n"+"Content-Type: text/plain\n"
-                    +"Content-Length: 5\n"+"\n"+"123\015\012"+
+            response=connector.getResponses(
+                "GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Transfer-Encoding: identity\n"+
+                "Content-Type: text/plain\n"+
+                "Content-Length: 5\n"+
+                "\n"+
+                "123\015\012"+
 
-                    "GET /R2 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
+                "GET /R2 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Transfer-Encoding: other\n"+
+                "Connection: close\n"+
+                "\n");
             offset=checkContains(response,offset,"HTTP/1.1 200 OK","2. identity")+10;
             offset=checkContains(response,offset,"/R1","2. identity")+3;
             offset=checkContains(response,offset,"HTTP/1.1 200 OK","2. identity")+10;
             offset=checkContains(response,offset,"/R2","2. identity")+3;
-
-            // 3
-            // _content length is ignored, as chunking is used. If it is
-            // not ignored, the second request wont be seen.
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"
-                    +"Content-Length: 100\n"+"\n"+"3;\n"+"123\n"+"3;\n"+"456\n"+"0;\n"+"\n"+
-
-                    "GET /R2 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"Content-Type: text/plain\n"+"Content-Length: 6\n"+"\n"+"123456");
-            offset=checkContains(response,offset,"HTTP/1.1 200 OK","3. ignore c-l")+1;
-            offset=checkContains(response,offset,"/R1","3. ignore c-l")+1;
-            offset=checkContains(response,offset,"123456","3. ignore c-l")+1;
-            offset=checkContains(response,offset,"HTTP/1.1 200 OK","3. ignore c-l")+1;
-            offset=checkContains(response,offset,"/R2","3. _content-length")+1;
-            offset=checkContains(response,offset,"123456","3. _content-length")+1;
-
-            // No _content length
-            assertTrue("Skip 411 checks as IE breaks this rule",true);
-            // offset=0; connector.reopen();
-            // response=connector.getResponses("GET /R2 HTTP/1.1\n"+
-            // "Host: localhost\n"+
-            // "Content-Type: text/plain\n"+
-            // "Connection: close\n"+
-            // "\n"+
-            // "123456");
-            // offset=checkContains(response,offset,
-            // "HTTP/1.1 411 ","411 length required")+10;
-            // offset=0; connector.reopen();
-            // response=connector.getResponses("GET /R2 HTTP/1.0\n"+
-            // "Content-Type: text/plain\n"+
-            // "\n"+
-            // "123456");
-            // offset=checkContains(response,offset,
-            // "HTTP/1.0 411 ","411 length required")+10;
-
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            assertTrue(false);
-        }
     }
 
     @Test
-    public void test5_2() throws Exception
+    public void test4_4_3() throws Exception
+    {
+        String response;
+        int offset=0;
+        // 3
+        // _content length is ignored, as chunking is used. If it is
+        // not ignored, the second request wont be seen.
+        offset=0;
+        response=connector.getResponses(
+            "GET /R1 HTTP/1.1\n"+
+            "Host: localhost\n"+
+            "Transfer-Encoding: chunked\n"+
+            "Content-Type: text/plain\n"+
+            "Content-Length: 100\n"+
+            "\n"+
+            "3;\n"+
+            "123\n"+
+            "3;\n"+
+            "456\n"+
+            "0;\n"+
+            "\n"+
+
+            "GET /R2 HTTP/1.1\n"+
+            "Host: localhost\n"+
+            "Connection: close\n"+
+            "Content-Type: text/plain\n"+
+            "Content-Length: 6\n"+
+            "\n"+
+            "abcdef");
+        offset=checkContains(response,offset,"HTTP/1.1 200 OK","3. ignore c-l")+1;
+        offset=checkContains(response,offset,"/R1","3. ignore c-l")+1;
+        offset=checkContains(response,offset,"123456","3. ignore c-l")+1;
+        offset=checkContains(response,offset,"HTTP/1.1 200 OK","3. ignore c-l")+1;
+        offset=checkContains(response,offset,"/R2","3. _content-length")+1;
+        offset=checkContains(response,offset,"abcdef","3. _content-length")+1;
+    }
+
+    @Test
+    public void test4_4_4() throws Exception
+    {
+        // No _content length
+        assertTrue("Skip 411 checks as IE breaks this rule",true);
+        // offset=0; connector.reopen();
+        // response=connector.getResponses("GET /R2 HTTP/1.1\n"+
+        // "Host: localhost\n"+
+        // "Content-Type: text/plain\n"+
+        // "Connection: close\n"+
+        // "\n"+
+        // "123456");
+        // offset=checkContains(response,offset,
+        // "HTTP/1.1 411 ","411 length required")+10;
+        // offset=0; connector.reopen();
+        // response=connector.getResponses("GET /R2 HTTP/1.0\n"+
+        // "Content-Type: text/plain\n"+
+        // "\n"+
+        // "123456");
+        // offset=checkContains(response,offset,
+        // "HTTP/1.0 411 ","411 length required")+10;
+
+    }
+
+    @Test
+    public void test5_2_1() throws Exception
+    {
+        String response;
+        int offset=0;
+
+        // Default Host
+        offset=0;
+        response=connector.getResponses("GET http://VirtualHost:8888/path/R1 HTTP/1.1\n"+"Host: wronghost\n"+"\n");
+        offset=checkContains(response,offset,"HTTP/1.1 200","Default host")+1;
+        offset=checkContains(response,offset,"Virtual Dump","virtual host")+1;
+        offset=checkContains(response,offset,"pathInfo=/path/R1","Default host")+1;
+    }
+    
+    @Test
+    public void test5_2_2() throws Exception
     {
         String response;
         int offset=0;
@@ -259,10 +377,23 @@ public class RFC2616Test
         // Default Host
         offset=0;
         response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: localhost\n"+"\n");
-
         offset=checkContains(response,offset,"HTTP/1.1 200","Default host")+1;
         offset=checkContains(response,offset,"Dump HttpHandler","Default host")+1;
         offset=checkContains(response,offset,"pathInfo=/path/R1","Default host")+1;
+        
+        // Virtual Host
+        offset=0;
+        response=connector.getResponses("GET /path/R2 HTTP/1.1\n"+"Host: VirtualHost\n"+"\n");
+        offset=checkContains(response,offset,"HTTP/1.1 200","Default host")+1;
+        offset=checkContains(response,offset,"Virtual Dump","virtual host")+1;
+        offset=checkContains(response,offset,"pathInfo=/path/R2","Default host")+1;
+    }
+
+    @Test
+    public void test5_2() throws Exception
+    {
+        String response;
+        int offset=0;
 
         // Virtual Host
         offset=0;
@@ -319,38 +450,39 @@ public class RFC2616Test
     }
 
     @Test
-    public void test8_2() throws Exception
+    public void test10_4_18() throws Exception
     {
         String response;
         int offset=0;
-        // No Expect 100
-        offset=0;
-        response=connector.getResponses("GET /R1 HTTP/1.1\n"+
-                "Host: localhost\n"+
-                "Content-Type: text/plain\n"+
-                "Content-Length: 8\n"+
-                "\n",true);
-
-        assertTrue("8.2.3 no expect 100",response==null || response.length()==0);
-        response=connector.getResponses("GET /R1 HTTP/1.1\n"+
-                "Host: localhost\n"+
-                "Content-Type: text/plain\n"+
-                "Content-Length: 8\n"+
-                "\n"+
-                "AbCdEf\015\012",true);
-        offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 no expect 100")+1;
-        offset=checkContains(response,offset,"AbCdEf","8.2.3 no expect 100")+1;
-
+        
         // Expect Failure
         offset=0;
-        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Expect: unknown\n"+"Content-Type: text/plain\n"+"Content-Length: 8\n"
-                +"\n");
+        response=connector.getResponses(
+            "GET /R1 HTTP/1.1\n"+
+            "Host: localhost\n"+
+            "Expect: unknown\n"+
+            "Content-Type: text/plain\n"+
+            "Content-Length: 8\n"+
+            "\n");
         offset=checkContains(response,offset,"HTTP/1.1 417","8.2.3 expect failure")+1;
+    }
 
+    @Test
+    public void test8_2_3_dash5() throws Exception
+    {
+        String response;
+        int offset=0;
         // Expect with body
         offset=0;
-        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Expect: 100-continue\n"+"Content-Type: text/plain\n"
-                +"Content-Length: 8\n"+"Connection: close\n"+"\n"+"123456\015\012");
+        response=connector.getResponses(
+            "GET /R1 HTTP/1.1\n"+
+            "Host: localhost\n"+
+            "Expect: 100-continue\n"+
+            "Content-Type: text/plain\n"+
+            "Content-Length: 8\n"+
+            "Connection: close\n"+
+            "\n"+
+            "123456\015\012");     
         checkNotContained(response,offset,"HTTP/1.1 100 ","8.2.3 expect 100");
         offset=checkContains(response,offset,"HTTP/1.1 200 OK","8.2.3 expect with body")+1;
     }
@@ -358,23 +490,27 @@ public class RFC2616Test
     @Test
     public void test8_2_3() throws Exception
     {
-        String response;
         int offset=0;
         // Expect 100
-        response=connector.getResponses("GET /R1 HTTP/1.1\n"+
+        LocalHttpConnector.LocalEndPoint endp =connector.executeRequest("GET /R1 HTTP/1.1\n"+
                 "Host: localhost\n"+
                 "Connection: close\n"+
                 "Expect: 100-continue\n"+
                 "Content-Type: text/plain\n"+
                 "Content-Length: 8\n"+
-                "\n",true);
-        offset=checkContains(response,offset,"HTTP/1.1 100 ","8.2.3 expect 100")+1;
-        checkNotContained(response,offset,"HTTP/1.1 200","8.2.3 expect 100");
-        /* can't test this with localconnector.
-            response=connector.getResponses("654321\015\012");
-            offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 expect 100")+1;
-            offset=checkContains(response,offset,"654321","8.2.3 expect 100")+1;
-         */
+                "\n");
+        Thread.sleep(200);
+        String infomational= endp.takeOutputString();
+        offset=checkContains(infomational,offset,"HTTP/1.1 100 ","8.2.3 expect 100")+1;
+        checkNotContained(infomational,offset,"HTTP/1.1 200","8.2.3 expect 100");
+        
+        endp.addInput("654321\015\012");
+
+        Thread.sleep(200);
+        String response= endp.takeOutputString();
+        offset=0;
+        offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 expect 100")+1;
+        offset=checkContains(response,offset,"654321","8.2.3 expect 100")+1;        
     }
     
     @Test
@@ -390,7 +526,7 @@ public class RFC2616Test
                 "Expect: 100-continue\n"+
                 "Content-Type: text/plain\n"+
                 "Content-Length: 8\n"+
-                "\n",true);
+                "\n");
         checkNotContained(response,offset,"HTTP/1.1 100","8.2.3 expect 100");
         offset=checkContains(response,offset,"HTTP/1.1 401 ","8.2.3 expect 100")+1;
         offset=checkContains(response,offset,"Connection: close","8.2.3 expect 100")+1;
@@ -819,24 +955,16 @@ public class RFC2616Test
 
     private int checkContains(String s, int offset, String c, String test)
     {
-        int o=s.indexOf(c,offset);
-        if (o<offset)
-        {
-            System.err.println("FAILED: "+test);
-            System.err.println("'"+c+"' not in:");
-            System.err.println(s.substring(offset));
-            System.err.flush();
-            System.out.println("--\n"+s);
-            System.out.flush();
-            assertTrue(test,false);
-        }
-        return o;
+        // System.err.println("===");
+        // System.err.println(s);
+        // System.err.println("---");
+        Assert.assertThat(test,s.substring(offset),containsString(c));
+        return s.indexOf(c,offset);
     }
 
     private void checkNotContained(String s, int offset, String c, String test)
     {
-        int o=s.indexOf(c,offset);
-        assertTrue(test,o<offset);
+        Assert.assertThat(test,s.substring(offset),not(containsString(c)));
     }
 
     private void checkNotContained(String s, String c, String test)

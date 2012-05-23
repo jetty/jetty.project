@@ -371,7 +371,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     public void execute(Runnable job)
     {
         if (!dispatch(job))
-            throw new RejectedExecutionException();
+            throw new RejectedExecutionException(toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -500,15 +500,13 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
         AggregateLifeCycle.dumpObject(out,this);
         AggregateLifeCycle.dump(out,indent,dump);
-
     }
-
 
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
-        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+(_jobs==null?-1:_jobs.size())+"}";
+        return String.format("%s{%b,%d<=%d<=%d/%d,%d}",_name,isRunning(),getMinThreads(),getIdleThreads(),getThreads(),getMaxThreads(),(_jobs==null?-1:_jobs.size()));
     }
 
     /* ------------------------------------------------------------ */

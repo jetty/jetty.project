@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.omg.CORBA._PolicyStub;
 
 public class LocalHttpConnector extends HttpConnector
 {
@@ -52,19 +53,24 @@ public class LocalHttpConnector extends HttpConnector
 
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
-        int phase=_executor._phaser.getPhase();
+        LOG.debug("getResponses");
+        Phaser phaser=_executor._phaser;
+        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes 
         LocalEndPoint request = new LocalEndPoint();
         request.setInput(requestsBuffer);
         _connects.add(request);
-        _executor._phaser.awaitAdvance(phase);
+        phaser.awaitAdvance(phase);
         return request.takeOutput();
     }
 
-    public void executeRequest(String rawRequest)
+    public LocalEndPoint executeRequest(String rawRequest)
     {
+        Phaser phaser=_executor._phaser;
+        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes 
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
         _connects.add(endp);
+        return endp;
     }
     
     @Override
@@ -72,12 +78,10 @@ public class LocalHttpConnector extends HttpConnector
     {
         LOG.debug("accepting {}",acceptorID);
         LocalEndPoint endp = _connects.take();
-        _executor._phaser.register();
         HttpConnection connection=new HttpConnection(this,endp,getServer());
         endp.setAsyncConnection(connection);
-        LOG.debug("accepted {} {}",endp,connection);
         connection.onOpen();
-        _executor._phaser.arriveAndDeregister();
+        _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
     
     
@@ -109,7 +113,7 @@ public class LocalHttpConnector extends HttpConnector
             @Override
             protected boolean onAdvance(int phase, int registeredParties)
             {
-                return super.onAdvance(phase,registeredParties);
+                return false;
             }
             
         };
@@ -123,6 +127,7 @@ public class LocalHttpConnector extends HttpConnector
         public void execute(final Runnable task)
         {
             _phaser.register();
+            LOG.debug("{} execute {} {}",this,task,_phaser);
             _executor.execute(new Runnable()
             {
                 @Override
@@ -141,16 +146,25 @@ public class LocalHttpConnector extends HttpConnector
         }
     }
     
-    private class LocalEndPoint extends AsyncByteArrayEndPoint
+    public class LocalEndPoint extends AsyncByteArrayEndPoint
     {
         LocalEndPoint()
         {
             setGrowOutput(true);
+            setMaxIdleTime(LocalHttpConnector.this.getMaxIdleTime());
         }
         
         LocalEndPoint(CountDownLatch onCloseLatch)
         {
             this();
+        }
+        
+        public void addInput(String s)
+        {
+            // TODO this is a busy wait
+            while(getIn()==null || BufferUtil.hasContent(getIn()))
+                Thread.yield();
+            setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
         }
     }    
     

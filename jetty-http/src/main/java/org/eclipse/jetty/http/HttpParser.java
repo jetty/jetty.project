@@ -1112,8 +1112,8 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public void close()
     {
-        if (_state!=State.END)
-            throw new IllegalStateException(toString());
+        if (_state!=State.END && _state!=State.CLOSED)
+            LOG.warn("Closing {}",this);
         _persistent=false;
         reset();
     }
@@ -1134,6 +1134,8 @@ public class HttpParser
     {
         this._state=state;
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+        if (state==State.CLOSED)
+            _persistent=false;
     }
 
     /* ------------------------------------------------------------------------------- */

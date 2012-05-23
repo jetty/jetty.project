@@ -43,7 +43,6 @@ public abstract class ReadInterest
         }
     }
 
-   
     /* ------------------------------------------------------------ */
     public void readable()
     {

@@ -36,8 +36,8 @@ public class HttpGenerator
     
     // states
     public enum Action { FLUSH, COMPLETE, PREPARE };
-    public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, END };
-    public enum Result { NEED_CHUNK,NEED_COMMIT,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
+    public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, COMPLETING_1XX, END };
+    public enum Result { NEED_CHUNK,NEED_INFO,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
     
     // other statics
     public static final int CHUNK_SIZE = 12;
@@ -279,12 +279,12 @@ public class HttpGenerator
                 case COMMITTING_COMPLETING:
                 {
                     if (info==null)
-                        return Result.NEED_COMMIT;
+                        return Result.NEED_INFO;
                     
                     if (info instanceof RequestInfo)
                     {
                         if (header==null || header.capacity()<=CHUNK_SIZE)
-                            return Result.NEED_COMMIT;
+                            return Result.NEED_HEADER;
 
                         if(info.getHttpVersion()==HttpVersion.HTTP_0_9)
                         {
@@ -313,7 +313,7 @@ public class HttpGenerator
 
                         // yes we need a response header
                         if (header==null || header.capacity()<=CHUNK_SIZE)
-                            return Result.NEED_COMMIT;
+                            return Result.NEED_HEADER;
 
                         // Are we persistent by default?
                         if (_persistent==null)
@@ -330,8 +330,8 @@ public class HttpGenerator
                             if (status!=101 )
                             {
                                 header.put(HttpTokens.CRLF);
-                                _state = State.START;
-                                return Result.OK;
+                                _state=State.COMPLETING_1XX;
+                                return Result.FLUSH;
                             }
                         }
                         else if (status==204 || status==304)
@@ -419,6 +419,10 @@ public class HttpGenerator
 
                     return result;
 
+                case COMPLETING_1XX:
+                    reset();
+                    return Result.OK;
+                    
                 case END:
                     if (!_persistent)
                         result=Result.SHUTDOWN_OUT;
@@ -964,7 +968,7 @@ public class HttpGenerator
             _head = head;
         }
         
-        boolean isInformational()
+        public boolean isInformational()
         {
             return _status>=100 && _status<200;
         }
