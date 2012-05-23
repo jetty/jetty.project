@@ -109,7 +109,7 @@ public abstract class HttpChannel
         _connection = connection;
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
-        _responseFields = new HttpFields(server.getMaxCookieVersion());
+        _responseFields = new HttpFields();
         _state = new HttpChannelState(this);
         _request = new Request(this);
         _response = new Response(this);

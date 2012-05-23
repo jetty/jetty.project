@@ -44,7 +44,7 @@ import org.junit.Test;
 public class AsyncRequestReadTest
 {
     private static Server server;
-    private static Connector connector;
+    private static ChannelHttpConnector connector;
     private final static Exchanger<Long> __total=new Exchanger<Long>();
 
     @BeforeClass

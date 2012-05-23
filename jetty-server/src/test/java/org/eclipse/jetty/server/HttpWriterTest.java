@@ -5,84 +5,97 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Timer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class HttpWriterTest
 {
     private HttpWriter _writer;
-    private ByteArrayBuffer _bytes;
+    private ByteBuffer _bytes;
 
     @Before
     public void init() throws Exception
     {
-        _bytes = new ByteArrayBuffer(2048);
+        _bytes = BufferUtil.allocate(2048);
 
-        Buffers buffers = new SimpleBuffers(new ByteArrayBuffer(1024),new ByteArrayBuffer(1024));
-        ByteArrayEndPoint endp = new ByteArrayEndPoint();
-        AbstractGenerator generator =  new AbstractGenerator(buffers,endp)
+        HttpChannel channel = new HttpChannel(null,null,null)
         {
             @Override
-            public boolean isRequest()
+            public HttpConnector getHttpConnector()
             {
-                return false;
+                return null;
             }
 
             @Override
-            public boolean isResponse()
+            protected int write(ByteBuffer content) throws IOException
             {
-                return true;
+                return BufferUtil.append(content,_bytes);
             }
 
             @Override
-            public void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException
+            protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
             {
             }
 
             @Override
-            public int flushBuffer() throws IOException
+            protected int getContentBufferSize()
             {
                 return 0;
             }
 
             @Override
-            public int prepareUncheckedAddContent() throws IOException
+            protected void increaseContentBufferSize(int size)
             {
-                return 1024;
             }
 
-            public void addContent(ByteBuffer content, boolean last) throws IOException
-            {
-                _bytes.put(content);
-                content.clear();
-            }
-
-            public boolean addContent(byte b) throws IOException
-            {
-                return false;
-            }
-
-        };
-
-        AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,generator,null)
-        {
             @Override
-            public AsyncConnection handle() throws IOException
+            protected void resetBuffer()
+            {
+                BufferUtil.clear(_bytes);
+            }
+
+            @Override
+            protected void flushResponse() throws IOException
+            {
+            }
+
+            @Override
+            protected void completeResponse() throws IOException
+            {
+            }
+
+            @Override
+            protected void completed()
+            {
+            }
+
+            @Override
+            protected void execute(Runnable task)
+            {
+                task.run();
+            }
+
+            @Override
+            public Timer getTimer()
             {
                 return null;
             }
+            
         };
-        endp.setMaxIdleTime(60000);
    
-        HttpOutput httpOut = new HttpOutput(connection);
+        HttpOutput httpOut = new HttpOutput(channel);
         _writer = new HttpWriter(httpOut);
     }
 
@@ -91,7 +104,7 @@ public class HttpWriterTest
     {
         _writer.setCharacterEncoding(StringUtil.__UTF8);
         _writer.write("Now is the time");
-        assertArrayEquals("Now is the time".getBytes(StringUtil.__UTF8),_bytes.asArray());
+        assertArrayEquals("Now is the time".getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
     }
 
     @Test
@@ -99,7 +112,7 @@ public class HttpWriterTest
     {
         _writer.setCharacterEncoding(StringUtil.__UTF8);
         _writer.write("How now \uFF22rown cow");
-        assertArrayEquals("How now \uFF22rown cow".getBytes(StringUtil.__UTF8),_bytes.asArray());
+        assertArrayEquals("How now \uFF22rown cow".getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
     }
     
     @Test
@@ -108,12 +121,12 @@ public class HttpWriterTest
         _writer.setCharacterEncoding(StringUtil.__UTF8);
         String data="xxx\uD801\uDC00xxx";
         _writer.write(data);
-        assertEquals("787878F0909080787878",TypeUtil.toHexString(_bytes.asArray()));
-        assertArrayEquals(data.getBytes(StringUtil.__UTF8),_bytes.asArray());
-        assertEquals(3+4+3,_bytes.length());
+        assertEquals("787878F0909080787878",TypeUtil.toHexString(BufferUtil.toArray(_bytes)));
+        assertArrayEquals(data.getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
+        assertEquals(3+4+3,_bytes.remaining());
         
         Utf8StringBuilder buf = new Utf8StringBuilder();
-        buf.append(_bytes.asArray(),0,_bytes.length());
+        buf.append(BufferUtil.toArray(_bytes),0,_bytes.remaining());
         assertEquals(data,buf.toString());
         
     }
@@ -142,7 +155,7 @@ public class HttpWriterTest
 
         _writer.write(buf, 0, length);
 
-        assertEquals(sb.toString(),new String(_bytes.asArray(),StringUtil.__UTF8));
+        assertEquals(sb.toString(),new String(BufferUtil.toArray(_bytes),StringUtil.__UTF8));
     }
 
     @Test
@@ -150,46 +163,9 @@ public class HttpWriterTest
     {
         _writer.setCharacterEncoding(StringUtil.__ISO_8859_1);
         _writer.write("How now \uFF22rown cow");
-        assertEquals("How now ?rown cow",new String(_bytes.asArray(),StringUtil.__ISO_8859_1));
+        assertEquals("How now ?rown cow",new String(BufferUtil.toArray(_bytes),StringUtil.__ISO_8859_1));
     }
 
-    @Test
-    public void testOutput() throws Exception
-    {
-        ByteBuffer sb=new ByteArrayBuffer(1500);
-        ByteBuffer bb=new ByteArrayBuffer(8096);
-        HttpFields fields = new HttpFields();
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-
-        HttpGenerator hb = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
-
-        hb.setResponse(200,"OK");
-
-        AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,hb,null)
-        {
-            @Override
-            public AsyncConnection handle() throws IOException
-            {
-                return null;
-            }
-        };
-        endp.setMaxIdleTime(10000);
-        hb.setSendServerVersion(false);
-        HttpOutput output = new HttpOutput(connection);
-        HttpWriter writer = new HttpWriter(output);
-        writer.setCharacterEncoding(StringUtil.__UTF8);
-
-        char[] chars = new char[1024];
-        for (int i=0;i<chars.length;i++)
-            chars[i]=(char)('0'+(i%10));
-        chars[0]='\u0553';
-        writer.write(chars);
-
-        hb.completeHeader(fields,true);
-        hb.flush(10000);
-        String response = new String(endp.getOutput().asArray(),StringUtil.__UTF8);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK\r\nContent-Length: 1025\r\n\r\n\u05531234567890"));
-    }
 
     @Test
     public void testUTF16x2() throws Exception
@@ -208,10 +184,10 @@ public class HttpWriterTest
 
         myReportBytes(bytes);
         myReportBytes(baos.toByteArray());
-        myReportBytes(_bytes.asArray());
+        myReportBytes(BufferUtil.toArray(_bytes));
 
-        assertArrayEquals(bytes,_bytes.asArray());
-        assertArrayEquals(baos.toByteArray(),_bytes.asArray());
+        assertArrayEquals(bytes,BufferUtil.toArray(_bytes));
+        assertArrayEquals(baos.toByteArray(),BufferUtil.toArray(_bytes));
     }
 
     @Test
@@ -246,10 +222,10 @@ public class HttpWriterTest
 
         myReportBytes(bytes);
         myReportBytes(baos.toByteArray());
-        myReportBytes(_bytes.asArray());
+        myReportBytes(BufferUtil.toArray(_bytes));
 
-        assertArrayEquals(bytes,_bytes.asArray());
-        assertArrayEquals(baos.toByteArray(),_bytes.asArray());
+        assertArrayEquals(bytes,BufferUtil.toArray(_bytes));
+        assertArrayEquals(baos.toByteArray(),BufferUtil.toArray(_bytes));
     }
     
     @Test
@@ -284,10 +260,10 @@ public class HttpWriterTest
 
         myReportBytes(bytes);
         myReportBytes(baos.toByteArray());
-        myReportBytes(_bytes.asArray());
+        myReportBytes(BufferUtil.toArray(_bytes));
 
-        assertArrayEquals(bytes,_bytes.asArray());
-        assertArrayEquals(baos.toByteArray(),_bytes.asArray());
+        assertArrayEquals(bytes,BufferUtil.toArray(_bytes));
+        assertArrayEquals(baos.toByteArray(),BufferUtil.toArray(_bytes));
     }
 
     private void myReportBytes(byte[] bytes) throws Exception

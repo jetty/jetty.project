@@ -288,7 +288,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     private final ArrayList<Field> _fields = new ArrayList<Field>(20);
     private final StringMap<Field> _names = new StringMap<Field>(true);
-    private final int _maxCookieVersion;
 
     /* ------------------------------------------------------------ */
     /**
@@ -296,16 +295,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
      */
     public HttpFields()
     {
-        _maxCookieVersion=1;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Constructor.
-     */
-    public HttpFields(int maxCookieVersion)
-    {
-        _maxCookieVersion=maxCookieVersion;
     }
 
 
@@ -820,7 +809,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
             final boolean isHttpOnly,
             int version)
     {
-        String delim=_maxCookieVersion==0?"":__COOKIE_DELIM;
+        String delim=__COOKIE_DELIM;
 
         // Check arguments
         if (name == null || name.length() == 0)
@@ -835,23 +824,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         if (value != null && value.length() > 0)
             quoted|=QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);
 
-        // upgrade to version 1 cookies if quoted.
-        if (quoted&&version==0 && _maxCookieVersion>=1)
-            version=1;
-
-        if (version>_maxCookieVersion)
-            version=_maxCookieVersion;
-
-        if (version > 0)
-        {
-            buf.append(";Version=");
-            buf.append(version);
-            if (comment != null && comment.length() > 0)
-            {
-                buf.append(";Comment=");
-                QuotedStringTokenizer.quoteIfNeeded(buf, comment, delim);
-            }
-        }
+            
         if (path != null && path.length() > 0)
         {
             buf.append(";Path=");
@@ -875,21 +848,20 @@ public class HttpFields implements Iterable<HttpFields.Field>
             else
                 formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
 
-            if (version >0)
-            {
-                buf.append(";Max-Age=");
-                buf.append(maxAge);
-            }
-        }
-        else if (version > 0)
-        {
-            buf.append(";Discard");
+            buf.append(";Max-Age=");
+            buf.append(maxAge);
         }
 
         if (isSecure)
             buf.append(";Secure");
         if (isHttpOnly)
             buf.append(";HttpOnly");
+
+        if (comment != null && comment.length() > 0)
+        {
+            buf.append(";Comment=");
+            QuotedStringTokenizer.quoteIfNeeded(buf, comment, delim);
+        }
 
         name_value_params = buf.toString();
 

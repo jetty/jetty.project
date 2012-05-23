@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
@@ -26,7 +27,7 @@ import java.util.Set;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.matchers.JUnitMatchers;
+import org.hamcrest.Matchers;
 
 /**
  *
@@ -111,9 +112,9 @@ public class HttpFieldsTest
         buffer.flip();
         String out = BufferUtil.toString(buffer);
 
-        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE));
-        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED));
-        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP));
+        Assert.assertThat(out,Matchers.containsString(HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE));
+        Assert.assertThat(out,Matchers.containsString(HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED));
+        Assert.assertThat(out,Matchers.containsString(HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP));
 
 
 
@@ -251,10 +252,10 @@ public class HttpFieldsTest
         fields.clear();
         fields.addSetCookie("everything","wrong","wrong","wrong",0,"to be replaced",true,true,0);
         fields.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
+        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",fields.getStringField("Set-Cookie"));
         Enumeration<String> e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.getStringField("Expires"));
 
@@ -262,8 +263,8 @@ public class HttpFieldsTest
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
         String setCookie=fields.getStringField("Set-Cookie");
-        assertTrue(setCookie.startsWith("\"ev erything\"=\"va lue\";Version=1;Comment=\"co mment\";Path=\"pa th\";Domain=\"do main\";Expires="));
-        assertTrue(setCookie.endsWith("GMT;Max-Age=1;Secure;HttpOnly"));
+        assertThat(setCookie,Matchers.startsWith("\"ev erything\"=\"va lue\";Path=\"pa th\";Domain=\"do main\";Expires="));
+        assertThat(setCookie,Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
 
         fields.clear();
         fields.addSetCookie("name","value",null,null,-1,null,false,false,0);
@@ -272,7 +273,6 @@ public class HttpFieldsTest
         fields.clear();
         fields.addSetCookie("name","v a l u e",null,null,-1,null,false,false,0);
         setCookie=fields.getStringField("Set-Cookie");
-        assertEquals(17,setCookie.indexOf("Version=1"));
 
         fields.clear();
         fields.addSetCookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
@@ -292,10 +292,10 @@ public class HttpFieldsTest
         assertEquals("name=more;Domain=domain",e.nextElement());
         assertEquals("foo=bob;Domain=domain",e.nextElement());
 
-        fields=new HttpFields(0);
+        fields=new HttpFields();
         fields.addSetCookie("name","value==",null,null,-1,null,false,false,0);
         setCookie=fields.getStringField("Set-Cookie");
-        assertEquals("name=value==",setCookie);
+        assertEquals("name=\"value==\"",setCookie);
 
     }
 
