@@ -57,7 +57,7 @@ public class AbstractConnectorTest
         _connect = new CyclicBarrier(2);
 
         _server = new Server();
-        _connector = new ChannelHttpConnector()
+        _connector = new SelectChannelConnector()
         {
             public void connectionClosed(AsyncConnection connection)
             {

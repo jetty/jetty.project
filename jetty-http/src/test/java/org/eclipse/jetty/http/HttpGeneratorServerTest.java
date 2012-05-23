@@ -831,5 +831,4 @@ public class HttpGeneratorServerTest
 
         assertEquals(58,gen.getContentPrepared());
     }
-    
 }

@@ -57,8 +57,7 @@ public class LocalHttpConnectorTest
         response=response.substring(response.indexOf("</html>")+8);
         
         assertThat(response,containsString("HTTP/1.1 200 OK"));
-        assertThat(response,containsString("pathInfo=/R2"));
-        
+        assertThat(response,containsString("pathInfo=/R2"));   
     }
     
     @Test

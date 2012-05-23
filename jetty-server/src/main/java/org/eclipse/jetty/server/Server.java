@@ -88,26 +88,26 @@ public class Server extends HandlerWrapper implements Attributes
 
     /* ------------------------------------------------------------ */
     /** Convenience constructor
-     * Creates server and a {@link ChannelHttpConnector} at the passed port.
+     * Creates server and a {@link SelectChannelConnector} at the passed port.
      */
     public Server(int port)
     {
         setServer(this);
 
-        ChannelHttpConnector connector=new ChannelHttpConnector();
+        SelectChannelConnector connector=new SelectChannelConnector();
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
     }
 
     /* ------------------------------------------------------------ */
     /** Convenience constructor
-     * Creates server and a {@link ChannelHttpConnector} at the passed address.
+     * Creates server and a {@link SelectChannelConnector} at the passed address.
      */
     public Server(InetSocketAddress addr)
     {
         setServer(this);
 
-        ChannelHttpConnector connector=new ChannelHttpConnector();
+        SelectChannelConnector connector=new SelectChannelConnector();
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
         setConnectors(new Connector[]{connector});

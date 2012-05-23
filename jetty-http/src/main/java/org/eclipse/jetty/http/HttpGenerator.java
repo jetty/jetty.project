@@ -141,18 +141,18 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return A Boolean if persistence has been set, else null
-     */
-    public Boolean isPersistent()
+    public void setPersistent(boolean persistent)
     {
-        return _persistent;
+        _persistent=persistent;
     }
 
     /* ------------------------------------------------------------ */
-    public void setPersistent(boolean persistent)
+    /**
+     * @return true if known to be persistent
+     */
+    public boolean isPersistent()
     {
-        _persistent=new Boolean(persistent);
+        return Boolean.TRUE.equals(_persistent);
     }
 
     /* ------------------------------------------------------------ */
@@ -411,7 +411,7 @@ public class HttpGenerator
                             result=Result.FLUSH;
                         else
                         {
-                            if (!_persistent)
+                            if (!Boolean.TRUE.equals(_persistent))
                                 result=Result.SHUTDOWN_OUT;
                             _state=State.END;
                         }
@@ -424,7 +424,7 @@ public class HttpGenerator
                     return Result.OK;
                     
                 case END:
-                    if (!_persistent)
+                    if (!Boolean.TRUE.equals(_persistent))
                         result=Result.SHUTDOWN_OUT;
                     return Result.OK;
 
@@ -721,7 +721,7 @@ public class HttpGenerator
                 else
                 {
                     // No idea, so we must assume that a body is coming
-                    _content = (!_persistent || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? EndOfContent.EOF_CONTENT : EndOfContent.CHUNKED_CONTENT;
+                    _content = (!isPersistent() || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? EndOfContent.EOF_CONTENT : EndOfContent.CHUNKED_CONTENT;
                     if (_response!=null && _content==EndOfContent.EOF_CONTENT)
                     {
                         _content=EndOfContent.NO_CONTENT;
@@ -784,7 +784,7 @@ public class HttpGenerator
         // If this is a response, work out persistence
         if (_response!=null)
         {
-            if (!_persistent && (close || _info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal()))
+            if (!isPersistent() && (close || _info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal()))
             {
                 if (connection==null)
                     header.put(CONNECTION_CLOSE);

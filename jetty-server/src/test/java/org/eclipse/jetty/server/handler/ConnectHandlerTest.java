@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.ChannelHttpConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.BeforeClass;
@@ -34,7 +34,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @BeforeClass
     public static void init() throws Exception
     {
-        startServer(new ChannelHttpConnector(), new ServerHandler());
+        startServer(new SelectChannelConnector(), new ServerHandler());
         startProxy();
     }
 

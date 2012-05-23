@@ -25,14 +25,14 @@ import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.server.ChannelHttpConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 
 /**
- * <p>A specialized version of {@link ChannelHttpConnector} that supports {@link NetworkTrafficListener}s.</p>
+ * <p>A specialized version of {@link SelectChannelConnector} that supports {@link NetworkTrafficListener}s.</p>
  * <p>{@link NetworkTrafficListener}s can be added and removed dynamically before and after this connector has
  * been started without causing {@link ConcurrentModificationException}s.</p>
  */
-public class NetworkTrafficSelectChannelConnector extends ChannelHttpConnector
+public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
 {
     private final List<NetworkTrafficListener> listeners = new CopyOnWriteArrayList<NetworkTrafficListener>();
 

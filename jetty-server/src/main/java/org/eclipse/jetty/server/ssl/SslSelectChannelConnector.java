@@ -25,7 +25,7 @@ import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.server.ChannelHttpConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  *
  * @org.apache.xbean.XBean element="sslConnector" description="Creates an NIO ssl connector"
  */
-public class SslSelectChannelConnector extends ChannelHttpConnector implements SslConnector
+public class SslSelectChannelConnector extends SelectChannelConnector implements SslConnector
 {
     private final SslContextFactory _sslContextFactory;
 
@@ -585,7 +585,7 @@ public class SslSelectChannelConnector extends ChannelHttpConnector implements S
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.server.ChannelHttpConnector#doStart()
+     * @see org.eclipse.jetty.server.SelectChannelConnector#doStart()
      */
     @Override
     protected void doStart() throws Exception
@@ -609,7 +609,7 @@ public class SslSelectChannelConnector extends ChannelHttpConnector implements S
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.server.ChannelHttpConnector#doStop()
+     * @see org.eclipse.jetty.server.SelectChannelConnector#doStop()
      */
     @Override
     protected void doStop() throws Exception

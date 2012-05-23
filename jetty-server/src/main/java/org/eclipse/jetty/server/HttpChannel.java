@@ -149,8 +149,6 @@ public abstract class HttpChannel
     {
         return _server;
     }
-    
-    
 
     /* ------------------------------------------------------------ */
     /**
@@ -390,16 +388,18 @@ public abstract class HttpChannel
                         _expect100Continue = false;
                         if (!_response.isCommitted())
                             _response.addHeader(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
+                        else
+                            LOG.warn("Can't close non-100 response");
                     }
 
                     if (!_response.isCommitted() && !_request.isHandled())
                         _response.sendError(404);
 
-                    // Complete reading the request
-                    _in.consumeAll();
-                    
                     // Complete generating the response
                     _response.complete();
+                    
+                    // Complete reading the request
+                    _in.consumeAll();
                     
                 }
                 catch(IOException e)
@@ -544,7 +544,7 @@ public abstract class HttpChannel
         public boolean parsedHeader(HttpHeader header, String name, String value)
         {
             if (value==null)
-                return false;
+                value="";
             if (header!=null)
             {
                 switch (header)
@@ -684,6 +684,12 @@ public abstract class HttpChannel
         @Override
         public ResponseInfo commit()
         {
+            // If we are still expecting a 100, then this response must close
+            if (_expect100Continue)
+            {
+                _expect100Continue=false;
+                getResponseFields().put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
+            }
             return _response.commit();
         }
     }
@@ -774,6 +780,7 @@ public abstract class HttpChannel
         
     protected abstract int write(ByteBuffer content) throws IOException;
                 
+    /* Called by the channel or application to commit a specific response info */
     protected abstract void commit(ResponseInfo info, ByteBuffer content) throws IOException;
     
     protected abstract int getContentBufferSize();

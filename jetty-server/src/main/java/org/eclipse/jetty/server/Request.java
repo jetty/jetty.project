@@ -854,7 +854,8 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote=_remote;
         if (remote==null)
             remote=_channel.getRemoteAddress();
-        return remote==null?"":remote.getAddress().getHostAddress();
+        
+        return remote==null?"":remote.getHostString();
     }
 
     /* ------------------------------------------------------------ */

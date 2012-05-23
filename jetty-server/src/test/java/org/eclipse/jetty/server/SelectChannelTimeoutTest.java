@@ -31,7 +31,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
     @BeforeClass
     public static void init() throws Exception
     {
-        ChannelHttpConnector connector = new ChannelHttpConnector();
+        SelectChannelConnector connector = new SelectChannelConnector();
         connector.setMaxIdleTime(MAX_IDLE_TIME); // 250 msec max idle
         startServer(connector);
     }
@@ -93,7 +93,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 
     private String getResponse(String request) throws UnsupportedEncodingException, IOException, InterruptedException
     {
-        ChannelHttpConnector connector = (ChannelHttpConnector)_connector;
+        SelectChannelConnector connector = (SelectChannelConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
         socket.setSoTimeout(10 * MAX_IDLE_TIME);
         socket.getOutputStream().write(request.getBytes("UTF-8"));

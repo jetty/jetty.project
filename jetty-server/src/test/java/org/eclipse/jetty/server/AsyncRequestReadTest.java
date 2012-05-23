@@ -44,14 +44,14 @@ import org.junit.Test;
 public class AsyncRequestReadTest
 {
     private static Server server;
-    private static ChannelHttpConnector connector;
+    private static SelectChannelConnector connector;
     private final static Exchanger<Long> __total=new Exchanger<Long>();
 
     @BeforeClass
     public static void startServer() throws Exception
     {
         server = new Server();
-        connector = new ChannelHttpConnector();
+        connector = new SelectChannelConnector();
         connector.setMaxIdleTime(10000);
         server.addConnector(connector);
         server.setHandler(new EmptyHandler());

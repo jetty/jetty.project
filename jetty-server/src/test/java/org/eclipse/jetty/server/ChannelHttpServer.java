@@ -9,7 +9,7 @@ public class ChannelHttpServer
         System.setProperty("org.eclipse.jetty.LEVEL","DEBUG");
         Log.getRootLogger().setDebugEnabled(true);
         Server server = new Server();
-        ChannelHttpConnector connector = new ChannelHttpConnector();
+        SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(8080);
         server.addConnector(connector);
         server.setHandler(new DumpHandler());

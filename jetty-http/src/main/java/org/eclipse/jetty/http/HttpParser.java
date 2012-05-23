@@ -578,7 +578,8 @@ public class HttpParser
                                                 {
                                                     for (String v : _valueString.toString().split(","))
                                                     {
-                                                        switch(HttpHeaderValue.CACHE.get(v.trim()))
+                                                        HttpHeaderValue val=HttpHeaderValue.CACHE.get(v.trim());
+                                                        switch(val==null?HttpHeaderValue.UNKNOWN:val)
                                                         {
                                                             case CLOSE:
                                                                 _persistent=false;
@@ -877,8 +878,10 @@ public class HttpParser
                         byte b=buffer.get();
                         if (!Character.isWhitespace((char)b) || count++>4)
                         {
+                            buffer.position(buffer.position()-1);
+                            String chars = BufferUtil.toDetailString(buffer);
                             BufferUtil.clear(buffer);
-                            throw new IOException("Illegal characters");
+                            throw new IOException(this+" Illegal characters: "+chars);
                         }
                     }
                     return false;

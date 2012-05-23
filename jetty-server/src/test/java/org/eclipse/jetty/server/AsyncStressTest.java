@@ -47,7 +47,7 @@ public class AsyncStressTest
 
     protected Server _server = new Server();
     protected SuspendHandler _handler = new SuspendHandler();
-    protected ChannelHttpConnector _connector;
+    protected SelectChannelConnector _connector;
     protected InetAddress _addr;
     protected int _port;
     protected Random _random = new Random();
@@ -67,7 +67,7 @@ public class AsyncStressTest
     {
         _threads.setMaxThreads(50);
         _server.setThreadPool(_threads);
-        _connector = new ChannelHttpConnector();
+        _connector = new SelectChannelConnector();
         _connector.setMaxIdleTime(120000);
         _server.setConnectors(new Connector[]{ _connector });
         _server.setHandler(_handler);

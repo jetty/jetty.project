@@ -23,7 +23,7 @@ public class SelectChannelServerTest extends HttpServerTestBase
     @BeforeClass
     public static void init() throws Exception
     {
-        startServer(new ChannelHttpConnector());
+        startServer(new SelectChannelConnector());
     }
 
     @Override

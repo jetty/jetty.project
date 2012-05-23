@@ -17,7 +17,7 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
     @Override
     protected Connector initConnector()
     {
-        return new ChannelHttpConnector(){
+        return new SelectChannelConnector(){
 
             @Override
             public void customize(EndPoint endpoint, Request request) throws IOException
@@ -32,7 +32,7 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
     @Override
     protected String getResponse(String request) throws Exception
     {
-        ChannelHttpConnector connector = (ChannelHttpConnector)_connector;
+        SelectChannelConnector connector = (SelectChannelConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
         socket.getOutputStream().write(request.getBytes("UTF-8"));
         return IO.toString(socket.getInputStream());

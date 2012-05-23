@@ -251,6 +251,8 @@ public class HttpConnection extends AbstractAsyncConnection
                     // to handle a request. Call the channel and this will either handle the 
                     // request/response to completion OR if the request suspends, the channel
                     // will be left in !idle state so our outer loop will exit.
+                    if (!_parser.isPersistent())
+                        _generator.setPersistent(false);
                     _channel.process();
                     
                     // Return if the channel is still processing the request

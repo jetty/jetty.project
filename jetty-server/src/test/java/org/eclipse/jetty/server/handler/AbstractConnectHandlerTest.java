@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.server.ChannelHttpConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -41,7 +41,7 @@ public abstract class AbstractConnectHandlerTest
     protected static void startProxy() throws Exception
     {
         proxy = new Server();
-        proxyConnector = new ChannelHttpConnector();
+        proxyConnector = new SelectChannelConnector();
         proxy.addConnector(proxyConnector);
         proxy.setHandler(new ConnectHandler());
         proxy.start();

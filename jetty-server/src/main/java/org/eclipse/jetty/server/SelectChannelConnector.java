@@ -54,7 +54,7 @@ import org.eclipse.jetty.server.Connector.NetConnector;
  *
  * @org.apache.xbean.XBean element="nioConnector" description="Creates an NIO based socket connector"
  */
-public class ChannelHttpConnector extends HttpConnector implements NetConnector
+public class SelectChannelConnector extends HttpConnector implements NetConnector
 {
     private final SelectorManager _manager;
     protected ServerSocketChannel _acceptChannel;
@@ -65,14 +65,14 @@ public class ChannelHttpConnector extends HttpConnector implements NetConnector
      * Constructor.
      *
      */
-    public ChannelHttpConnector()
+    public SelectChannelConnector()
     {
         this(Math.max(1,(Runtime.getRuntime().availableProcessors())/4),
              Math.max(1,(Runtime.getRuntime().availableProcessors())/4));
     }
     
     /* ------------------------------------------------------------ */
-    public ChannelHttpConnector(int acceptors, int selectors)
+    public SelectChannelConnector(int acceptors, int selectors)
     {
         super(acceptors);
         _manager=new ConnectorSelectorManager(selectors);
@@ -202,7 +202,7 @@ public class ChannelHttpConnector extends HttpConnector implements NetConnector
     /* ------------------------------------------------------------ */
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
     {
-        SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key, ChannelHttpConnector.this._maxIdleTime);
+        SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
         endp.setAsyncConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
         return endp;
     }
@@ -217,7 +217,7 @@ public class ChannelHttpConnector extends HttpConnector implements NetConnector
     /* ------------------------------------------------------------------------------- */
     protected AsyncConnection newConnection(SocketChannel channel,final AsyncEndPoint endpoint)
     {
-        return new HttpConnection(ChannelHttpConnector.this,endpoint,getServer());
+        return new HttpConnection(SelectChannelConnector.this,endpoint,getServer());
     }
 
 
@@ -240,13 +240,13 @@ public class ChannelHttpConnector extends HttpConnector implements NetConnector
         @Override 
         protected int getMaxIdleTime()
         {
-            return ChannelHttpConnector.this.getMaxIdleTime();
+            return SelectChannelConnector.this.getMaxIdleTime();
         }
         
         @Override
         protected void endPointClosed(AsyncEndPoint endpoint)
         {
-            ChannelHttpConnector.this.endPointClosed(endpoint);
+            SelectChannelConnector.this.endPointClosed(endpoint);
         }
 
         @Override
@@ -265,13 +265,13 @@ public class ChannelHttpConnector extends HttpConnector implements NetConnector
         @Override
         public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
-            return ChannelHttpConnector.this.newConnection(channel,endpoint);
+            return SelectChannelConnector.this.newConnection(channel,endpoint);
         }
 
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey sKey) throws IOException
         {
-            return ChannelHttpConnector.this.newEndPoint(channel,selectSet,sKey);
+            return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
         }
     }
 }
