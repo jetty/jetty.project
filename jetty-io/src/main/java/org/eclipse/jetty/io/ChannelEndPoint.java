@@ -52,8 +52,9 @@ public class ChannelEndPoint extends AbstractEndPoint
         return _channel.isOpen();
     }
 
-    private void shutdownInput() throws IOException
+    protected void shutdownInput()
     {
+        LOG.debug("ishut {}", this);
         _ishut=true;
         if (_oshut)
             close();

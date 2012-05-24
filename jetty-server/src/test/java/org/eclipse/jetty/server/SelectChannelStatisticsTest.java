@@ -64,14 +64,14 @@ public class SelectChannelStatisticsTest
             @Override
             protected void endPointClosed(AsyncEndPoint endpoint)
             {
-                System.err.println("Endpoint closed "+endpoint);
+                //System.err.println("Endpoint closed "+endpoint);
                 super.endPointClosed(endpoint);
             }
 
             @Override
             public void connectionClosed(AsyncConnection connection)
             {
-                System.err.println("Connection closed "+connection);
+                //System.err.println("Connection closed "+connection);
                 super.connectionClosed(connection);
                 _closed.countDown();
             }
@@ -142,7 +142,6 @@ public class SelectChannelStatisticsTest
     @Test
     public void testSingleRequest() throws Exception
     {
-        Log.getRootLogger().setDebugEnabled(true);
         doInit(1);
 
         sendRequest(1, 1);
@@ -239,12 +238,10 @@ public class SelectChannelStatisticsTest
         {
             if (_socket[idx] != null)
             {
-                System.err.println("Closing "+_socket[idx]);
                 _socket[idx].close();
             }
         }
 
-        System.err.println("Close wait");
         _closed.await();
     }
 
@@ -261,7 +258,6 @@ public class SelectChannelStatisticsTest
 
         _connect.reset();
 
-        System.err.println("write to "+_socket[idx]);
         _out[idx].write("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
         _out[idx].flush();
 
@@ -272,11 +268,9 @@ public class SelectChannelStatisticsTest
         String line=_in[idx].readLine();
         while(line!=null)
         {
-            System.err.println(line);
             if ("Server response".equals(line))
                 break;
             line=_in[idx].readLine();
         }
-        System.err.println("done");
     }
 }

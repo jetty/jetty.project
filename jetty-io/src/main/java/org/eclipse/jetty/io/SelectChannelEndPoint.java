@@ -193,7 +193,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     {
         _writeFlusher.write(context,callback,buffers);
     }
-
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void shutdownInput()
+    {
+        super.shutdownInput();
+        updateKey();
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Updates selection key. This method schedules a call to doUpdateKey to do the keyChange

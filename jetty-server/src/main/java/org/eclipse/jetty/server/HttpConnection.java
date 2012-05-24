@@ -283,17 +283,14 @@ public class HttpConnection extends AbstractAsyncConnection
         }
         finally
         {   
+            // TODO this is wrong wrong wrong wrong!
+            if (_parser.isComplete()&&!_parser.isPersistent()&&getEndPoint().isOpen())
+                getEndPoint().shutdownOutput();
+            
             setCurrentConnection(null);
         }
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onReadFail(Throwable cause)
-    {
-        // TODO Auto-generated method stub
-        super.onReadFail(cause);
-    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -427,14 +424,15 @@ public class HttpConnection extends AbstractAsyncConnection
                         });
                     }
                 }
-                else if (!getEndPoint().isOutputShutdown() && _parser.isState(HttpParser.State.CLOSED))
+
+                if (_parser.isClosed()&&!getEndPoint().isOutputShutdown())
                 {
                     // TODO This is a catch all indicating some protocol handling failure
                     // Currently needed for requests saying they are HTTP/2.0.
                     // This should be removed once better error handling is in place
                     LOG.warn("Endpoint output not shutdown when seeking EOF");
-                    getEndPoint().close(); 
-                }   
+                    getEndPoint().shutdownOutput();
+                }
             }
         }
 

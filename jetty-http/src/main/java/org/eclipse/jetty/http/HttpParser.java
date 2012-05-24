@@ -1106,6 +1106,8 @@ public class HttpParser
                 _handler.messageComplete(_contentPosition);
         }
 
+        LOG.debug("shutdownInput {}",this);
+        
         if (!isComplete() && !isStart())
             throw new EofException();
 
