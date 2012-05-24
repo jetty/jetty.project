@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  * and {@link #onAllContentConsumed()} that can be implemented so that the 
  * creator of HttpInput will know when buffers are queued and dequeued.
  */
-public abstract class HttpInput extends ServletInputStream
+public class HttpInput extends ServletInputStream
 {
     private static final Logger LOG = Log.getLogger(HttpInput.class);
     

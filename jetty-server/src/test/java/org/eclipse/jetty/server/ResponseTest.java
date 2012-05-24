@@ -23,28 +23,35 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Timer;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionContext;
 
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.AbstractAsyncConnection;
+import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.HashedSession;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,31 +61,121 @@ import org.junit.Test;
  */
 public class ResponseTest
 {
-    private Server server;
-    private LocalHttpConnector connector;
+    private Server _server;
+    private LocalHttpConnector _connector;
+    private HttpChannel _channel;
     
     @Before
     public void init() throws Exception
     {
-        server = new Server();
-        connector = new LocalHttpConnector();
-        server.addConnector(connector);
-        server.setHandler(new DumpHandler());
-        server.start();
+        _server = new Server();
+        _connector = new LocalHttpConnector();
+        _server.addConnector(_connector);
+        _server.setHandler(new DumpHandler());
+        _server.start();
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
+        HttpInput input = new HttpInput();
+        AsyncConnection connection = new AbstractAsyncConnection(endp,null)
+        {
+            @Override
+            public void onReadable()
+            {                
+            }
+        };
+        
+        _channel = new HttpChannel(_server,connection,input)
+        {
+            @Override
+            protected int write(ByteBuffer content) throws IOException
+            {
+                int length=content.remaining();
+                content.clear();
+                return length;
+            }
+            
+            @Override
+            protected void resetBuffer()
+            {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            @Override
+            protected void increaseContentBufferSize(int size)
+            {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            @Override
+            public Timer getTimer()
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+            
+            @Override
+            public HttpConnector getHttpConnector()
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+            
+            @Override
+            protected int getContentBufferSize()
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+            
+            @Override
+            protected void flushResponse() throws IOException
+            {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            @Override
+            protected void execute(Runnable task)
+            {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            @Override
+            protected void completed()
+            {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            @Override
+            protected void completeResponse() throws IOException
+            {
+                // TODO Auto-generated method stub
+                
+            }
+            
+            @Override
+            protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
+            {
+                // TODO Auto-generated method stub
+                
+            }
+        };
     }
 
     @After
     public void destroy() throws Exception
     {
-        server.stop();
-        server.join();
+        _server.stop();
+        _server.join();
     }
 
     @Test
     public void testContentType() throws Exception
     {
-        TestHttpChannel connection = new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer());
-        Response response = connection.getResponse();
+        Response response = newResponse();
 
         assertEquals(null,response.getContentType());
 
@@ -131,15 +228,13 @@ public class ResponseTest
     @Test
     public void testLocale() throws Exception
     {
-
-        TestHttpChannel connection = new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer());
-        Request request = connection.getRequest();
-        Response response = connection.getResponse();
+        Response response = newResponse();
+        
         ContextHandler context = new ContextHandler();
         context.addLocaleEncoding(Locale.ENGLISH.toString(),"ISO-8859-1");
         context.addLocaleEncoding(Locale.ITALIAN.toString(),"ISO-8859-2");
-        request.setContext(context.getServletContext());
-
+        response.getHttpChannel().getRequest().setContext(context.getServletContext());
+        
         response.setLocale(java.util.Locale.ITALIAN);
         assertEquals(null,response.getContentType());
         response.setContentType("text/plain");
@@ -156,20 +251,17 @@ public class ResponseTest
     @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {
-        TestHttpChannel connection = new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer());
-
-        Response response = connection.getResponse();
-
+        Response response = newResponse();
 
         response.setContentType("foo/bar");
         response.setCharacterEncoding("utf-8");
-        assertEquals("foo/bar;charset=utf-8",response.getContentType());
+        assertEquals("foo/bar;charset=UTF-8",response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar;charset=utf-8",response.getContentType());
+        assertEquals("foo/bar;charset=UTF-8",response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=utf-8",response.getContentType());
+        assertEquals("foo2/bar2;charset=UTF-8",response.getContentType());
         response.setCharacterEncoding("ISO-8859-1");
-        assertEquals("foo2/bar2;charset=utf-8",response.getContentType());
+        assertEquals("foo2/bar2;charset=UTF-8",response.getContentType());
 
         response.recycle();
 
@@ -188,17 +280,16 @@ public class ResponseTest
     @Test
     public void testCharacterEncodingContentType() throws Exception
     {
-        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
-
+        Response response = newResponse();
         response.setCharacterEncoding("utf-8");
         response.setContentType("foo/bar");
-        assertEquals("foo/bar;charset=utf-8",response.getContentType());
+        assertEquals("foo/bar;charset=UTF-8",response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar;charset=utf-8",response.getContentType());
+        assertEquals("foo/bar;charset=UTF-8",response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=utf-8",response.getContentType());
+        assertEquals("foo2/bar2;charset=UTF-8",response.getContentType());
         response.setCharacterEncoding("ISO-8859-1");
-        assertEquals("foo2/bar2;charset=utf-8",response.getContentType());
+        assertEquals("foo2/bar2;charset=UTF-8",response.getContentType());
 
         response.recycle();
 
@@ -217,7 +308,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithCharacterEncoding() throws Exception
     {
-        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = newResponse();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; charset=utf-8");
@@ -225,17 +316,17 @@ public class ResponseTest
         response.getWriter();
         assertEquals("foo/bar; charset=utf-8",response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=utf-8",response.getContentType());
+        assertEquals("foo2/bar2;charset=UTF-8",response.getContentType());
         response.setCharacterEncoding("ISO-8859-1");
-        assertEquals("foo2/bar2;charset=utf-8",response.getContentType());
+        assertEquals("foo2/bar2;charset=UTF-8",response.getContentType());
 
         response.recycle();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("text/html; charset=utf-8");
-        assertEquals("text/html;charset=UTF-8",response.getContentType());
+        assertEquals("text/html; charset=utf-8",response.getContentType());
         response.getWriter();
-        assertEquals("text/html;charset=UTF-8",response.getContentType());
+        assertEquals("text/html; charset=utf-8",response.getContentType());
         response.setContentType("text/xml");
         assertEquals("text/xml;charset=UTF-8",response.getContentType());
         response.setCharacterEncoding("iso-8859-1");
@@ -246,7 +337,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithOther() throws Exception
     {
-        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = newResponse();
 
         response.setContentType("foo/bar; other=xyz");
         assertEquals("foo/bar; other=xyz",response.getContentType());
@@ -259,9 +350,9 @@ public class ResponseTest
 
         response.setCharacterEncoding("utf-8");
         response.setContentType("text/html; other=xyz");
-        assertEquals("text/html; other=xyz;charset=utf-8",response.getContentType());
+        assertEquals("text/html; other=xyz;charset=UTF-8",response.getContentType());
         response.getWriter();
-        assertEquals("text/html; other=xyz;charset=utf-8",response.getContentType());
+        assertEquals("text/html; other=xyz;charset=UTF-8",response.getContentType());
         response.setContentType("text/xml");
         assertEquals("text/xml;charset=UTF-8",response.getContentType());
     }
@@ -269,8 +360,8 @@ public class ResponseTest
     @Test
     public void testContentTypeWithCharacterEncodingAndOther() throws Exception
     {
-        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
-
+        Response response = newResponse();
+        
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; charset=utf-8 other=xyz");
         assertEquals("foo/bar; charset=utf-8 other=xyz",response.getContentType());
@@ -281,17 +372,17 @@ public class ResponseTest
 
         response.setCharacterEncoding("utf16");
         response.setContentType("text/html; other=xyz charset=utf-8");
-        assertEquals("text/html; other=xyz charset=utf-8",response.getContentType());
+        assertEquals("text/html; other=xyz charset=utf-8;charset=UTF-16",response.getContentType());
         response.getWriter();
-        assertEquals("text/html; other=xyz charset=utf-8",response.getContentType());
+        assertEquals("text/html; other=xyz charset=utf-8;charset=UTF-16",response.getContentType());
 
         response.recycle();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; other=pq charset=utf-8 other=xyz");
-        assertEquals("foo/bar; other=pq charset=utf-8 other=xyz",response.getContentType());
+        assertEquals("foo/bar; other=pq charset=utf-8 other=xyz;charset=UTF-16",response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar; other=pq charset=utf-8 other=xyz",response.getContentType());
+        assertEquals("foo/bar; other=pq charset=utf-8 other=xyz;charset=UTF-16",response.getContentType());
 
     }
 
@@ -329,9 +420,8 @@ public class ResponseTest
     public void testEncodeRedirect()
         throws Exception
     {
-        TestHttpChannel connection=new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer());
-        Response response = new Response(connection);
-        Request request = connection.getRequest();
+        Response response=newResponse();
+        Request request = response.getHttpChannel().getRequest();
         request.setServerName("myhost");
         request.setServerPort(8888);
         request.setContextPath("/path");
@@ -340,7 +430,7 @@ public class ResponseTest
 
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
-        AbstractSessionManager manager=new HashSessionManager();
+        HashSessionManager manager=new HashSessionManager();
         manager.setSessionIdManager(new HashSessionIdManager());
         request.setSessionManager(manager);
         request.setSession(new TestSession(manager,"12345"));
@@ -393,17 +483,16 @@ public class ResponseTest
         
         for (int i=1;i<tests.length;i++)
         {
-            ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
-            TestHttpChannel connection=new TestHttpChannel(connector,out, connector.getServer());
-            Response response = new Response(connection);
-            Request request = connection.getRequest();
+            Response response=newResponse();
+            Request request = response.getHttpChannel().getRequest();
+            
             request.setServerName("myhost");
             request.setServerPort(8888);
             request.setUri(new HttpURI("/path/info;param;jsessionid=12345?query=0&more=1#target"));
             request.setContextPath("/path");
             request.setRequestedSessionId("12345");
             request.setRequestedSessionIdFromCookie(i>0);
-            AbstractSessionManager manager=new HashSessionManager();
+            HashSessionManager manager=new HashSessionManager();
             manager.setSessionIdManager(new HashSessionIdManager());
             request.setSessionManager(manager);
             request.setSession(new TestSession(manager,"12345"));
@@ -411,10 +500,7 @@ public class ResponseTest
 
             response.sendRedirect(tests[i][0]);
 
-            String location = out.getOutput().toString();
-            int l=location.indexOf("Location: ");
-            int e=location.indexOf('\n',l);
-            location=location.substring(l+10,e).trim();
+            String location = response.getHeader("Location");
             assertEquals(tests[i][0],tests[i][1],location);
         }
     }
@@ -422,7 +508,7 @@ public class ResponseTest
     @Test
     public void testSetBufferSize () throws Exception
     {
-        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response=newResponse();
         response.setBufferSize(20*1024);
         response.getWriter().print("hello");
         try
@@ -439,12 +525,9 @@ public class ResponseTest
     @Test
     public void testHead() throws Exception
     {
-        Server server = new Server();
+        Server server = new Server(0);
         try
         {
-            SocketConnector socketConnector = new SocketConnector();
-            socketConnector.setPort(0);
-            server.addConnector(socketConnector);
             server.setHandler(new AbstractHandler()
             {
                 public void handle(String string, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -456,26 +539,36 @@ public class ResponseTest
                     w.println("Geht");
                     w.flush();
                     w.println("Doch");
+                    w.flush();
                     ((Request) request).setHandled(true);
                 }
             });
             server.start();
 
-            Socket socket = new Socket("localhost",socketConnector.getLocalPort());
+            Socket socket = new Socket("localhost",((Connector.NetConnector)server.getConnectors()[0]).getLocalPort());
             socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
             socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
             socket.getOutputStream().flush();
 
             LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
             String line = reader.readLine();
+            assertTrue(line!=null && line.startsWith("HTTP/1.1 200 OK"));
+            // look for blank line
             while (line!=null && line.length()>0)
                 line = reader.readLine();
 
-            while (line!=null && line.length()==0)
-                line = reader.readLine();
-
+            // Read the first line of the GET
+            line = reader.readLine();
             assertTrue(line!=null && line.startsWith("HTTP/1.1 200 OK"));
+            
+            String last=null;
+            while (line!=null)
+            {
+                last=line;
+                line = reader.readLine();
+            }
 
+            assertEquals("Doch",last);
         }
         finally
         {
@@ -486,7 +579,7 @@ public class ResponseTest
     @Test
     public void testAddCookie() throws Exception
     {
-        Response response = new Response(new TestHttpChannel(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = newResponse();
 
         Cookie cookie=new Cookie("name","value");
         cookie.setDomain("domain");
@@ -498,130 +591,21 @@ public class ResponseTest
         
         String set = response.getHttpFields().getStringField("Set-Cookie");
         
-        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly",set);
+        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment",set);
     }
 
     private Response newResponse()
     {
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        endPoint.setOutput(new ByteArrayBuffer(1024));
-        endPoint.setGrowOutput(true);
-        TestHttpChannel connection=new TestHttpChannel(connector, endPoint, connector.getServer());
-        connection.getGenerator().reset();
-        TestHttpChannel.setCurrentHttpChannel(connection);
-        Response response = connection.getResponse();
-        connection.getRequest().setRequestURI("/test");
+        Response response = new Response(_channel);
         return response;
     }
-
-    private class TestSession extends AbstractSession
-    {
-        public TestSession(AbstractSessionManager abstractSessionManager, String id)
-        {
-            super(abstractSessionManager, System.currentTimeMillis(),System.currentTimeMillis(), id);
-        }
-
-        public Object getAttribute(String name)
-        {
-            return null;
-        }
-
-        public Enumeration getAttributeNames()
-        {
-
-            return null;
-        }
-
-        public long getCreationTime()
-        {
-
-            return 0;
-        }
-
-        public String getId()
-        {
-            return "12345";
-        }
-
-        public long getLastAccessedTime()
-        {
-            return 0;
-        }
-
-        public int getMaxInactiveInterval()
-        {
-            return 0;
-        }
-
-        public ServletContext getServletContext()
-        {
-            return null;
-        }
-
-        public HttpSessionContext getSessionContext()
-        {
-            return null;
-        }
-
-        public Object getValue(String name)
-        {
-            return null;
-        }
-
-        public String[] getValueNames()
-        {
-            return null;
-        }
-
-        public void invalidate()
-        {
-        }
-
-        public boolean isNew()
-        {
-            return false;
-        }
-
-        public void putValue(String name, Object value)
-        {
-        }
-
-        public void removeAttribute(String name)
-        {
-        }
-
-        public void removeValue(String name)
-        {
-        }
-
-        public void setAttribute(String name, Object value)
-        {
-        }
-
-        public void setMaxInactiveInterval(int interval)
-        {
-        }
-
-        protected Map newAttributeMap()
-        {
-            return null;
-        }
-    }
     
-    static class TestHttpChannel extends HttpChannel
+    private static class TestSession extends HashedSession
     {
-        
-        public TestHttpChannel(Connector connector, EndPoint endpoint, Server server)
+        protected TestSession(HashSessionManager hashSessionManager, String id)
         {
-            super(server,null,null);
-            super(connector,endpoint,server);
+            super(hashSessionManager,0L,0L,id);
         }
-
-        public TestHttpChannel(Connector connector, EndPoint endpoint, Server server, Parser parser, Generator generator, Request request)
-        {
-            super(connector,endpoint,server,parser,generator,request);
-        }
-
-        
     }
+
 }

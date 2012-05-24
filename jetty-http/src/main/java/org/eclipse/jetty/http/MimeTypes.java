@@ -312,9 +312,14 @@ public class MimeTypes
         if (state==10)
             return StringUtil.normalizeCharset(value,start,i-start);
 
-        return __encodings.get(value);
+        return null;
     }
 
+    public static String inferCharsetFromContentType(String value)
+    {
+        return __encodings.get(value);
+    }
+    
     public static String getContentTypeWithoutCharset(String value)
     {
         int end=value.length();

@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
@@ -94,7 +95,12 @@ public class Response implements HttpServletResponse
         _fields=channel.getResponseFields();
     }
 
-
+    /* ------------------------------------------------------------ */
+    public HttpChannel getHttpChannel()
+    {
+        return _channel;
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#reset()
@@ -138,7 +144,7 @@ public class Response implements HttpServletResponse
             if (i>=0)
             {
                 http_only=true;
-                comment=comment.substring(i,i+HTTP_ONLY_COMMENT.length()).trim();
+                comment=comment.replace(HTTP_ONLY_COMMENT,"").trim();
                 if (comment.length()==0)
                     comment=null;
             }
@@ -758,6 +764,7 @@ public class Response implements HttpServletResponse
 
             if (encoding==null)
             {
+                encoding=MimeTypes.inferCharsetFromContentType(_contentType);
                 if (encoding==null)
                     encoding = StringUtil.__ISO_8859_1;
 
@@ -863,10 +870,10 @@ public class Response implements HttpServletResponse
             else
             {
                 // No, so just add this one to the mimetype
-                _characterEncoding=encoding;
+                _characterEncoding=StringUtil.normalizeCharset(encoding);
                 if (_contentType!=null)
                 {
-                    _contentType=MimeTypes.getContentTypeWithoutCharset(_contentType)+";charset="+encoding;
+                    _contentType=MimeTypes.getContentTypeWithoutCharset(_contentType)+";charset="+_characterEncoding;
                     _fields.put(HttpHeader.CONTENT_TYPE,_contentType);
                 }
             }
@@ -885,6 +892,9 @@ public class Response implements HttpServletResponse
 
         if (contentType==null)
         {
+            if (isWriting() && _characterEncoding!=null)
+                throw new IllegalSelectorException();
+            
             if (_locale==null)
                 _characterEncoding=null;
             _mimeType=null;
@@ -895,16 +905,33 @@ public class Response implements HttpServletResponse
         {
             _contentType=contentType;
             _mimeType=MimeTypes.CACHE.get(contentType);
-            String charset=(_mimeType!=null && _mimeType.getCharset()!=null)?_mimeType.getCharset().toString():null;
-
-            if (charset!=null)
-                _characterEncoding=charset;
-            else if (_characterEncoding!=null)
+            String charset;
+            if (_mimeType!=null && _mimeType.getCharset()!=null)
+                charset=_mimeType.getCharset().toString();
+            else
+                charset=MimeTypes.getCharsetFromContentType(contentType);
+            
+            if (charset==null)
             {
-                _contentType=contentType+";charset="+_characterEncoding;
-                _mimeType=null;
+                if (_characterEncoding!=null)
+                {
+                    _contentType=contentType+";charset="+_characterEncoding;
+                    _mimeType=null;
+                }
             }
-
+            else if (isWriting() && !charset.equals(_characterEncoding))
+            {
+                // too late to change the character encoding;
+                _mimeType=null;
+                _contentType=MimeTypes.getContentTypeWithoutCharset(_contentType);
+                if (_characterEncoding!=null)
+                    _contentType=_contentType+";charset="+_characterEncoding;
+            }
+            else
+            {
+                _characterEncoding=charset;
+            }
+            
             _fields.put(HttpHeader.CONTENT_TYPE,_contentType);
         }
     }
@@ -916,7 +943,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setBufferSize(int size)
     {
-        if (isCommitted())
+        if (isCommitted() || getContentCount()>0 )
             throw new IllegalStateException("Committed or content written");
         _channel.increaseContentBufferSize(size);
     }
@@ -1113,8 +1140,7 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     public long getContentCount()
     {
-        // TODO
-        return -1;
+        return _channel.getOutputStream().getWritten();
     }
     
     /* ------------------------------------------------------------ */
