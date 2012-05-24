@@ -283,12 +283,18 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
         if (idleTimestamp!=0 && _maxIdleTime>0)
         {
-            long idleForMs=now-idleTimestamp;
+            final long idleForMs=now-idleTimestamp;
 
             if (idleForMs>_maxIdleTime)
             {
-                onIdleExpired(idleForMs);
-                _idleTimestamp=now;
+                _manager.dispatch(new Runnable()
+                {
+                    public void run()
+                    {
+                        onIdleExpired(idleForMs);
+                        _idleTimestamp=System.currentTimeMillis();
+                    }
+                });
             }
         }
     }
