@@ -287,12 +287,20 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
             if (idleForMs>_maxIdleTime)
             {
+                // Don't idle out again until onIdleExpired task completes.
+                setCheckForIdle(false);
                 _manager.dispatch(new Runnable()
                 {
                     public void run()
                     {
-                        onIdleExpired(idleForMs);
-                        _idleTimestamp=System.currentTimeMillis();
+                        try
+                        {
+                            onIdleExpired(idleForMs);
+                        }
+                        finally
+                        {
+                            setCheckForIdle(true);
+                        }
                     }
                 });
             }

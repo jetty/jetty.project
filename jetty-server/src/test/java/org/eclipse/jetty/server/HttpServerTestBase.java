@@ -30,7 +30,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
 
@@ -129,7 +129,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the response.
             String response=readResponse(client);
 
-            Assert.assertTrue(response.contains("HTTP/1.1 413 FULL head"));
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
         }
         finally
         {
