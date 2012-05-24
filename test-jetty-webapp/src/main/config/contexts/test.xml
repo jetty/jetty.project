@@ -61,6 +61,11 @@ detected.
             -->
       </New>
     </Set>
+    <Set name="authenticator">
+      <New class="org.eclipse.jetty.security.authentication.FormAuthenticator">
+        <Set name="alwaysSaveUri">true</Set>
+      </New>
+    </Set>
     <Set name="checkWelcomeFiles">true</Set>
   </Get>
   
