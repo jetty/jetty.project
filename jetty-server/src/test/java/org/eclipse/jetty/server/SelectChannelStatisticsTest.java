@@ -29,18 +29,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class AbstractConnectorTest
+public class SelectChannelStatisticsTest
 {
-    private static final Logger LOG = Log.getLogger(AbstractConnectorTest.class);
+    private static final Logger LOG = Log.getLogger(SelectChannelStatisticsTest.class);
 
     private static Server _server;
     private static AbstractConnector _connector;
@@ -52,31 +54,40 @@ public class AbstractConnectorTest
     private BufferedReader[] _in;
 
     @BeforeClass
-    public static void init() throws Exception
+    public static void initClass() throws Exception
     {
         _connect = new CyclicBarrier(2);
 
         _server = new Server();
         _connector = new SelectChannelConnector()
         {
+            @Override
+            protected void endPointClosed(AsyncEndPoint endpoint)
+            {
+                System.err.println("Endpoint closed "+endpoint);
+                super.endPointClosed(endpoint);
+            }
+
+            @Override
             public void connectionClosed(AsyncConnection connection)
             {
+                System.err.println("Connection closed "+connection);
                 super.connectionClosed(connection);
                 _closed.countDown();
             }
 
         };
-        _connector.setStatsOn(true);
         _server.addConnector(_connector);
 
         HandlerWrapper wrapper = new HandlerWrapper()
         {
+            @Override
             public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
             {
                 try
                 {
                     _connect.await();
-                 }
+                }
                 catch (Exception ex)
                 {
                     LOG.debug(ex);
@@ -91,6 +102,7 @@ public class AbstractConnectorTest
 
         Handler handler = new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
@@ -116,33 +128,40 @@ public class AbstractConnectorTest
     }
 
     @Before
-    public void reset()
+    public void init() throws Exception
     {
-        _connector.statsReset();
+        _connector.getStatistics().start();
+    }
+    
+    @After
+    public void tini() throws Exception
+    {
+        _connector.getStatistics().stop();
     }
 
     @Test
     public void testSingleRequest() throws Exception
     {
+        Log.getRootLogger().setDebugEnabled(true);
         doInit(1);
 
         sendRequest(1, 1);
 
         doClose(1);
 
-        assertEquals(1, _connector.getConnections());
-        assertEquals(0, _connector.getConnectionsOpen());
-        assertEquals(1, _connector.getConnectionsOpenMax());
-        assertTrue(_connector.getConnectionsOpen() <= _connector.getConnectionsOpenMax());
+        assertEquals(1, _connector.getStatistics().getConnections());
+        assertEquals(0, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(1, _connector.getStatistics().getConnectionsOpenMax());
+        assertTrue(_connector.getStatistics().getConnectionsOpen() <= _connector.getStatistics().getConnectionsOpenMax());
 
-        assertTrue(_connector.getConnectionsDurationMean() > 0);
-        assertTrue(_connector.getConnectionsDurationMax() > 0);
-        assertTrue(_connector.getConnectionsDurationMean() <= _connector.getConnectionsDurationMax());
+        assertTrue(_connector.getStatistics().getConnectionsDurationMean() > 0);
+        assertTrue(_connector.getStatistics().getConnectionsDurationMax() > 0);
+        assertTrue(_connector.getStatistics().getConnectionsDurationMean() <= _connector.getStatistics().getConnectionsDurationMax());
 
-        assertEquals(1, _connector.getRequests());
-        assertEquals(1.0, _connector.getConnectionsRequestsMean(), 0.01);
-        assertEquals(1, _connector.getConnectionsRequestsMax());
-        assertTrue(_connector.getConnectionsRequestsMean() <= _connector.getConnectionsRequestsMax());
+        assertEquals(1, _connector.getStatistics().getMessagesIn());
+        assertEquals(1.0, _connector.getStatistics().getConnectionsMessagesInMean(), 0.01);
+        assertEquals(1, _connector.getStatistics().getConnectionsMessagesInMax());
+        assertTrue(_connector.getStatistics().getConnectionsMessagesInMean() <= _connector.getStatistics().getConnectionsMessagesInMax());
     }
 
     @Test
@@ -156,19 +175,19 @@ public class AbstractConnectorTest
 
         doClose(1);
 
-        assertEquals(1, _connector.getConnections());
-        assertEquals(0, _connector.getConnectionsOpen());
-        assertEquals(1, _connector.getConnectionsOpenMax());
-        assertTrue(_connector.getConnectionsOpen() <= _connector.getConnectionsOpenMax());
+        assertEquals(1, _connector.getStatistics().getConnections());
+        assertEquals(0, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(1, _connector.getStatistics().getConnectionsOpenMax());
+        assertTrue(_connector.getStatistics().getConnectionsOpen() <= _connector.getStatistics().getConnectionsOpenMax());
 
-        assertTrue(_connector.getConnectionsDurationMean() > 0);
-        assertTrue(_connector.getConnectionsDurationMax() > 0);
-        assertTrue(_connector.getConnectionsDurationMean() <= _connector.getConnectionsDurationMax());
+        assertTrue(_connector.getStatistics().getConnectionsDurationMean() > 0);
+        assertTrue(_connector.getStatistics().getConnectionsDurationMax() > 0);
+        assertTrue(_connector.getStatistics().getConnectionsDurationMean() <= _connector.getStatistics().getConnectionsDurationMax());
 
-        assertEquals(2, _connector.getRequests());
-        assertEquals(2.0, _connector.getConnectionsRequestsMean(), 0.01);
-        assertEquals(2, _connector.getConnectionsRequestsMax());
-        assertTrue(_connector.getConnectionsRequestsMean() <= _connector.getConnectionsRequestsMax());
+        assertEquals(2, _connector.getStatistics().getMessagesIn());
+        assertEquals(2.0, _connector.getStatistics().getConnectionsMessagesInMean(), 0.01);
+        assertEquals(2, _connector.getStatistics().getConnectionsMessagesInMax());
+        assertTrue(_connector.getStatistics().getConnectionsMessagesInMean() <= _connector.getStatistics().getConnectionsMessagesInMax());
     }
 
     @Test
@@ -190,19 +209,19 @@ public class AbstractConnectorTest
 
         doClose(3);
 
-        assertEquals(3, _connector.getConnections());
-        assertEquals(0, _connector.getConnectionsOpen());
-        assertEquals(3, _connector.getConnectionsOpenMax());
-        assertTrue(_connector.getConnectionsOpen() <= _connector.getConnectionsOpenMax());
+        assertEquals(3, _connector.getStatistics().getConnections());
+        assertEquals(0, _connector.getStatistics().getConnectionsOpen());
+        assertEquals(3, _connector.getStatistics().getConnectionsOpenMax());
+        assertTrue(_connector.getStatistics().getConnectionsOpen() <= _connector.getStatistics().getConnectionsOpenMax());
 
-        assertTrue(_connector.getConnectionsDurationMean() > 0);
-        assertTrue(_connector.getConnectionsDurationMax() > 0);
-        assertTrue(_connector.getConnectionsDurationMean() <= _connector.getConnectionsDurationMax());
+        assertTrue(_connector.getStatistics().getConnectionsDurationMean() > 0);
+        assertTrue(_connector.getStatistics().getConnectionsDurationMax() > 0);
+        assertTrue(_connector.getStatistics().getConnectionsDurationMean() <= _connector.getStatistics().getConnectionsDurationMax());
 
-        assertEquals(6, _connector.getRequests());
-        assertEquals(2.0, _connector.getConnectionsRequestsMean(), 0.01);
-        assertEquals(3, _connector.getConnectionsRequestsMax());
-        assertTrue(_connector.getConnectionsRequestsMean() <= _connector.getConnectionsRequestsMax());
+        assertEquals(6, _connector.getStatistics().getMessagesIn());
+        assertEquals(2.0, _connector.getStatistics().getConnectionsMessagesInMean(), 0.01);
+        assertEquals(3, _connector.getStatistics().getConnectionsMessagesInMax());
+        assertTrue(_connector.getStatistics().getConnectionsMessagesInMean() <= _connector.getStatistics().getConnectionsMessagesInMax());
     }
 
     protected void doInit(int count)
@@ -219,9 +238,13 @@ public class AbstractConnectorTest
         for (int idx=0; idx < count; idx++)
         {
             if (_socket[idx] != null)
+            {
+                System.err.println("Closing "+_socket[idx]);
                 _socket[idx].close();
+            }
         }
 
+        System.err.println("Close wait");
         _closed.await();
     }
 
@@ -238,16 +261,22 @@ public class AbstractConnectorTest
 
         _connect.reset();
 
+        System.err.println("write to "+_socket[idx]);
         _out[idx].write("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
         _out[idx].flush();
 
         _connect.await();
 
-        assertEquals(count, _connector.getConnectionsOpen());
+        assertEquals(count, _connector.getStatistics().getConnectionsOpen());
 
-        while(_in[idx].ready())
+        String line=_in[idx].readLine();
+        while(line!=null)
         {
-            _in[idx].readLine();
+            System.err.println(line);
+            if ("Server response".equals(line))
+                break;
+            line=_in[idx].readLine();
         }
+        System.err.println("done");
     }
 }
