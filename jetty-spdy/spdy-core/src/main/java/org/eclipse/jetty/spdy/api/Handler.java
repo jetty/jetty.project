@@ -28,16 +28,16 @@ public interface Handler<C>
      * <p>Callback invoked when the operation completes.</p>
      *
      * @param context the context
-     * @see #failed(Throwable)
+     * @see #failed(Object, Throwable)
      */
     public abstract void completed(C context);
 
     /**
      * <p>Callback invoked when the operation fails.</p>
-     *
+     * @param context the context
      * @param x the reason for the operation failure
      */
-    public void failed(Throwable x);
+    public void failed(C context, Throwable x);
 
     /**
      * <p>Empty implementation of {@link Handler}</p>
@@ -52,9 +52,8 @@ public interface Handler<C>
         }
 
         @Override
-        public void failed(Throwable x)
+        public void failed(C context, Throwable x)
         {
-            throw new SPDYException(x);
         }
     }
 }

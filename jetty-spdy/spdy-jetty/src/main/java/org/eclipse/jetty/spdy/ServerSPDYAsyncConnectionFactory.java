@@ -67,6 +67,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         endPoint.setConnection(connection);
 
         final StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator);
+        session.setFlowControlEnabled(connector.isFlowControlEnabled());
         parser.addListener(session);
         connection.setSession(session);
 

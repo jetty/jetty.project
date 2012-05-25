@@ -38,7 +38,6 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
-import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.RstStreamFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
@@ -145,14 +144,12 @@ public class ClosedStreamTest extends AbstractTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 replyReceivedLatch.countDown();
-                super.onReply(stream,replyInfo);
             }
 
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 clientReceivedDataLatch.countDown();
-                super.onData(stream,dataInfo);
             }
         }).get();
         assertThat("reply has been received by client",replyReceivedLatch.await(5,TimeUnit.SECONDS),is(true));
@@ -204,7 +201,6 @@ public class ClosedStreamTest extends AbstractTest
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         serverDataReceivedLatch.countDown();
-                        super.onData(stream,dataInfo);
                     }
                 };
             }
@@ -250,13 +246,6 @@ public class ClosedStreamTest extends AbstractTest
                 {
                     clientResetReceivedLatch.countDown();
                 }
-                super.onControlFrame(frame);
-            }
-
-            @Override
-            public void onDataFrame(DataFrame frame, ByteBuffer data)
-            {
-                super.onDataFrame(frame,data);
             }
         });
         ByteBuffer response = ByteBuffer.allocate(28);

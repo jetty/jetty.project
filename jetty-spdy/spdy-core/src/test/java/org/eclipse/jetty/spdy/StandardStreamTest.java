@@ -18,19 +18,26 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
+import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.junit.Test;
@@ -101,7 +108,7 @@ public class StandardStreamTest
         stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Handler.Adapter<Stream>()
         {
             @Override
-            public void failed(Throwable x)
+            public void failed(Stream stream, Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -109,4 +116,15 @@ public class StandardStreamTest
         assertThat("PushStream creation failed", failedLatch.getCount(), equalTo(0L));
     }
 
+    @SuppressWarnings("unchecked")
+    @Test(expected = IllegalStateException.class)
+    public void testSendDataOnHalfClosedStream() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,SynInfo.FLAG_CLOSE,1,0,(byte)0,null);
+        IStream stream = new StandardStream(synStreamFrame,session,8192,null);
+        stream.updateCloseState(synStreamFrame.isClose(),true);
+        assertThat("stream is half closed",stream.isHalfClosed(),is(true));
+        stream.data(new StringDataInfo("data on half closed stream",true));
+        verify(session,never()).data(any(IStream.class),any(DataInfo.class),anyInt(),any(TimeUnit.class),any(Handler.class),any(void.class));
+    }
 }
