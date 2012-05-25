@@ -173,7 +173,7 @@ public class HttpParser
     /* ------------------------------------------------------------ */
     public boolean isComplete()
     {
-        return isState(State.END);
+        return isState(State.END)||isState(State.CLOSED);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1084,7 +1084,7 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public boolean inputShutdown() throws IOException
+    public void inputShutdown()
     {
         _persistent=false;
 
@@ -1108,10 +1108,6 @@ public class HttpParser
 
         LOG.debug("shutdownInput {}",this);
         
-        if (!isComplete() && !isStart())
-            throw new EofException();
-
-        return true;
     }
 
     /* ------------------------------------------------------------------------------- */

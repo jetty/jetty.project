@@ -236,7 +236,14 @@ public class HttpConnection extends AbstractAsyncConnection
                         if (filled==0)
                             scheduleOnReadable();
                         else
+                        {
                             _parser.inputShutdown();
+                            // We were only filling if fully consumed, so if we have 
+                            // read -1 then we have nothing to parse and thus nothing that
+                            // will generate a response.  If we had a suspended request pending
+                            // a response or a request waiting in the buffer, we would not be here.
+                            getEndPoint().shutdownOutput();
+                        }
 
                         // buffer must be empty and the channel must be idle, so we can release.
                         releaseRequestBuffer();
@@ -283,10 +290,6 @@ public class HttpConnection extends AbstractAsyncConnection
         }
         finally
         {   
-            // TODO this is wrong wrong wrong wrong!
-            if (_parser.isComplete()&&!_parser.isPersistent()&&getEndPoint().isOpen())
-                getEndPoint().shutdownOutput();
-            
             setCurrentConnection(null);
         }
     }
