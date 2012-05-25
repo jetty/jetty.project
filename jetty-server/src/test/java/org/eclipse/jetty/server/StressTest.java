@@ -89,8 +89,7 @@ public class StressTest
         _server = new Server();
         _server.setThreadPool(_threads);
 
-        _connector = new SelectChannelConnector();
-        _connector.setAcceptors(1);
+        _connector = new SelectChannelConnector(1,1);
         _connector.setAcceptQueueSize(5000);
         _connector.setMaxIdleTime(30000);
         _server.addConnector(_connector);
@@ -123,6 +122,8 @@ public class StressTest
         assumeTrue(!OS.IS_OSX || Stress.isEnabled());
     	
         doThreads(10,10,false);
+        Thread.sleep(1000);
+        doThreads(100,20,false);
         if (Stress.isEnabled())
         {
             Thread.sleep(1000);
@@ -139,6 +140,8 @@ public class StressTest
         assumeTrue(!OS.IS_OSX || Stress.isEnabled());
     	
         doThreads(20,10,true);
+        Thread.sleep(1000);
+        doThreads(100,50,true);
         if (Stress.isEnabled())
         {
             Thread.sleep(1000);
@@ -281,22 +284,22 @@ public class StressTest
             System.out.println("           stage:\tbind\twrite\trecv\tdispatch\twrote\ttotal");
             for (int q=0;q<quantums;q++)
             {
-                System.out.print(q+"00<=latency<"+(q+1)+"00");
+                System.out.printf("%02d00<=l<%02d00",q,(q+1));
                 for (int i=0;i<_latencies.length;i++)
                     System.out.print("\t"+count[i][q]);
                 System.out.println();
             }
 
-            System.out.print("other            ");
+            System.out.print("other       ");
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+other[i]);
             System.out.println();
 
-            System.out.print("HANDLED          ");
+            System.out.print("HANDLED     ");
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+_handled.get());
             System.out.println();
-            System.out.print("TOTAL             ");
+            System.out.print("TOTAL       ");
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+length[i]);
             System.out.println();

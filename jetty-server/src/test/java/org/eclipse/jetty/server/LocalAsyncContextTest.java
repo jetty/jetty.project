@@ -23,7 +23,9 @@ import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,6 +46,9 @@ public class LocalAsyncContextTest
 
         _server.setHandler(session);
         _server.start();
+        
+        __completed.set(0);
+        __completed1.set(0);
     }
     
     protected Connector initConnector()
@@ -59,11 +64,9 @@ public class LocalAsyncContextTest
     }
 
     @Test
-    public void testSuspendResume() throws Exception
+    public void testSuspendTimeout() throws Exception
     {
         String response;
-        __completed.set(0);
-        __completed1.set(0);
         _handler.setRead(0);
         _handler.setSuspendFor(1000);
         _handler.setResumeAfter(-1);
@@ -72,19 +75,38 @@ public class LocalAsyncContextTest
         check(response,"TIMEOUT");
         assertEquals(1,__completed.get());
         assertEquals(1,__completed1.get());
+    }
 
+    @Test
+    public void testSuspendResume0() throws Exception
+    {
+        String response;
+        _handler.setRead(0);
         _handler.setSuspendFor(10000);
-
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
         response=process(null);
-        check(response,"DISPATCHED");
+        check(response,"STARTASYNC","DISPATCHED");
+    }
 
+    @Test
+    public void testSuspendResume100() throws Exception
+    {
+        String response;
+        _handler.setRead(0);
+        _handler.setSuspendFor(10000);
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         response=process(null);
-        check(response,"DISPATCHED");
+        check(response,"STARTASYNC","DISPATCHED");
+    }
 
+    @Test
+    public void testSuspendOther() throws Exception
+    {
+        String response;
+        _handler.setRead(0);
+        _handler.setSuspendFor(10000);
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         response=process(null);
@@ -162,15 +184,14 @@ public class LocalAsyncContextTest
 
     protected void check(String response,String... content)
     {
-        assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
         int i=0;
         for (String m:content)
         {
+            Assert.assertThat(response,Matchers.containsString(m));
             i=response.indexOf(m,i);
-            assertTrue(i>=0);
             i+=m.length();
         }
-        
     }
 
     private synchronized String process(String content) throws Exception
@@ -184,12 +205,18 @@ public class LocalAsyncContextTest
         else
             request+="Content-Length: "+content.length()+"\r\n" +"\r\n" + content;
 
-        return getResponse(request);
+        System.err.println("REQUEST:  "+request);
+        String response=getResponse(request);
+        System.err.println("RESPONSE: "+response);
+        return response;
     }
     
     protected String getResponse(String request) throws Exception
     {
-        return ((LocalHttpConnector)_connector).getResponses(request);
+        LocalHttpConnector connector=(LocalHttpConnector)_connector;
+        LocalHttpConnector.LocalEndPoint endp = connector.executeRequest(request);
+        endp.waitUntilClosed();
+        return endp.takeOutputString();
     }
 
 
@@ -203,18 +230,21 @@ public class LocalAsyncContextTest
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
+            System.err.println("onComplete");
             __completed.incrementAndGet();
         }
 
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
+            System.err.println("onError");
             __completed.incrementAndGet();
         }
 
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
+            System.err.println("onStartAsync");
             event.getSuppliedResponse().getOutputStream().println("startasync");
             event.getAsyncContext().addListener(this);
         }
@@ -222,6 +252,7 @@ public class LocalAsyncContextTest
         @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
+            System.err.println("onTimeout - dispatch!");
             event.getSuppliedRequest().setAttribute("TIMEOUT",Boolean.TRUE);
             event.getAsyncContext().dispatch();
         }

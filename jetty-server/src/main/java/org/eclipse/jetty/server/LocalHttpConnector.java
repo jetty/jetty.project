@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -45,12 +46,25 @@ public class LocalHttpConnector extends HttpConnector
         return this;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Sends requests and get's responses based on thread activity.
+     * Returns all the responses received once the thread activity has
+     * returned to the level it was before the requests.
+     * @param requests
+     * @return
+     * @throws Exception
+     */
     public String getResponses(String requests) throws Exception
     {
         ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StringUtil.__UTF8_CHARSET));
         return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
     }
 
+    /* ------------------------------------------------------------ */
+    /** Sends requests and get's responses based on thread activity.
+     * Returns all the responses received once the thread activity has
+     * returned to the level it was before the requests.
+     */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
         LOG.debug("getResponses");
@@ -63,6 +77,13 @@ public class LocalHttpConnector extends HttpConnector
         return request.takeOutput();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Execute a request and return the EndPoint through which 
+     * responses can be received.
+     * @param rawRequest
+     * @return
+     */
     public LocalEndPoint executeRequest(String rawRequest)
     {
         Phaser phaser=_executor._phaser;
@@ -148,6 +169,8 @@ public class LocalHttpConnector extends HttpConnector
     
     public class LocalEndPoint extends AsyncByteArrayEndPoint
     {
+        private CountDownLatch _closed = new CountDownLatch(1);
+        
         LocalEndPoint()
         {
             setGrowOutput(true);
@@ -165,6 +188,41 @@ public class LocalHttpConnector extends HttpConnector
             while(getIn()==null || BufferUtil.hasContent(getIn()))
                 Thread.yield();
             setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
+        }
+
+        @Override
+        public void onClose()
+        {
+            super.onClose();
+            _closed.countDown();
+        }
+        
+        @Override
+        public void shutdownOutput()
+        {
+            super.shutdownOutput();
+            close();
+        }
+
+        public void waitUntilClosed()
+        {
+            while (isOpen())
+            {
+                try
+                {
+                    if (!_closed.await(10,TimeUnit.SECONDS))
+                    {
+                        System.err.println("wait timeout:\n--");
+                        System.err.println(takeOutputString());
+                        System.err.println("==");
+                        break;
+                    }
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
         }
     }    
     

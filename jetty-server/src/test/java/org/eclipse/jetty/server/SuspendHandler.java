@@ -149,6 +149,7 @@ class SuspendHandler extends HandlerWrapper
 
 
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                System.err.println("STARTASYNC");
                 response.getOutputStream().println("STARTASYNC");
                 asyncContext.addListener(LocalAsyncContextTest.__asyncListener);
                 asyncContext.addListener(LocalAsyncContextTest.__asyncListener1);
@@ -165,6 +166,7 @@ class SuspendHandler extends HandlerWrapper
                             try
                             {
                                 Thread.sleep(_completeAfter);
+                                System.err.println("COMPLETED");
                                 response.getOutputStream().println("COMPLETED");
                                 response.setStatus(200);
                                 baseRequest.setHandled(true);
@@ -179,6 +181,7 @@ class SuspendHandler extends HandlerWrapper
                 }
                 else if (_completeAfter==0)
                 {
+                    System.err.println("COMPLETED0");
                     response.getOutputStream().println("COMPLETED");
                     response.setStatus(200);
                     baseRequest.setHandled(true);
@@ -212,13 +215,20 @@ class SuspendHandler extends HandlerWrapper
             else 
             {
                 if (request.getAttribute("TIMEOUT")!=null)
+                {
+                    System.err.println("TIMEOUT");
                     response.getOutputStream().println("TIMEOUT");
+                }
                 else
+                {
+                    System.err.println("DISPATCHED");
                     response.getOutputStream().println("DISPATCHED"); 
+                }
 
                 if (_suspendFor2>=0)
                 {
                     final AsyncContext asyncContext = baseRequest.startAsync();
+                    System.err.println("STARTASYNC2");
                     response.getOutputStream().println("STARTASYNC2");
                     if (_suspendFor2>0)
                         asyncContext.setTimeout(_suspendFor2);
@@ -233,6 +243,7 @@ class SuspendHandler extends HandlerWrapper
                                 try
                                 {
                                     Thread.sleep(_completeAfter2);
+                                    System.err.println("COMPLETED2");
                                     response.getOutputStream().println("COMPLETED2");
                                     response.setStatus(200);
                                     baseRequest.setHandled(true);
@@ -247,6 +258,7 @@ class SuspendHandler extends HandlerWrapper
                     }
                     else if (_completeAfter2==0)
                     {
+                        System.err.println("COMPLETED2==0");
                         response.getOutputStream().println("COMPLETED2");
                         response.setStatus(200);
                         baseRequest.setHandled(true);

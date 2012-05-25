@@ -373,7 +373,7 @@ public abstract class HttpChannel
             __currentChannel.set(null);
             if (threadName!=null)
                 Thread.currentThread().setName(threadName);
-
+            
             if (_state.isUncompleted())
             {
                 try
@@ -413,6 +413,8 @@ public abstract class HttpChannel
                     completed();
                 }
             }
+            
+            LOG.debug("{} !process",this);
         }
     }
 
