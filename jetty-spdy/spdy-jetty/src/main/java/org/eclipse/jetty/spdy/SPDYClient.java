@@ -64,6 +64,7 @@ public class SPDYClient
     private final Factory factory;
     private SocketAddress bindAddress;
     private long maxIdleTime = -1;
+    private boolean flowControlEnabled = true;
 
     protected SPDYClient(short version, Factory factory)
     {
@@ -116,6 +117,16 @@ public class SPDYClient
     public void setMaxIdleTime(long maxIdleTime)
     {
         this.maxIdleTime = maxIdleTime;
+    }
+
+    public boolean isFlowControlEnabled()
+    {
+        return flowControlEnabled;
+    }
+
+    public void setFlowControlEnabled(boolean flowControlEnabled)
+    {
+        this.flowControlEnabled = flowControlEnabled;
     }
 
     protected String selectProtocol(List<String> serverProtocols)
@@ -419,7 +430,8 @@ public class SPDYClient
         public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
         {
             SessionPromise sessionPromise = (SessionPromise)attachment;
-            Factory factory = sessionPromise.client.factory;
+            SPDYClient client = sessionPromise.client;
+            Factory factory = client.factory;
 
             CompressionFactory compressionFactory = new StandardCompressionFactory();
             Parser parser = new Parser(compressionFactory.newDecompressor());
@@ -428,7 +440,8 @@ public class SPDYClient
             SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, factory.bufferPool, parser, factory);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(sessionPromise.client.version, factory.bufferPool, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator);
+            StandardSession session = new StandardSession(client.version, factory.bufferPool, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator);
+            session.setFlowControlEnabled(client.isFlowControlEnabled());
             parser.addListener(session);
             sessionPromise.completed(session);
             connection.setSession(session);
