@@ -63,7 +63,7 @@ public class SPDYClient
     private final short version;
     private final Factory factory;
     private SocketAddress bindAddress;
-    private long maxIdleTime;
+    private long maxIdleTime = -1;
 
     protected SPDYClient(short version, Factory factory)
     {
