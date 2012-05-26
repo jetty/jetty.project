@@ -188,15 +188,6 @@ public class SPDYServerConnector extends SelectChannelConnector
             };
             endPoint.setConnection(sslConnection);
             final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-
-            // Instances of the ServerProvider inner class strong reference the
-            // SslEndPoint (via lexical scoping), which strong references the SSLEngine.
-            // Since NextProtoNego stores in a WeakHashMap the SSLEngine as key
-            // and this instance as value, we are in the situation where the value
-            // of a WeakHashMap refers indirectly to the key, which is bad because
-            // the entry will never be removed from the WeakHashMap.
-            // We use AtomicReferences to be captured via lexical scoping,
-            // and we null them out above when the connection is closed.
             NextProtoNego.put(engine, new NextProtoNego.ServerProvider()
             {
                 @Override
@@ -288,7 +279,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     {
         return flowControlEnabled;
     }
-    
+
     public void setFlowControlEnabled(boolean flowControl)
     {
         this.flowControlEnabled = flowControl;
