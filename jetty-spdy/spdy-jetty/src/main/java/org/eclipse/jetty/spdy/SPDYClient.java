@@ -38,7 +38,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -314,7 +313,7 @@ public class SPDYClient
             }
 
             @Override
-            public AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+            public AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint, final Object attachment)
             {
                 SessionPromise sessionPromise = (SessionPromise)attachment;
                 final SPDYClient client = sessionPromise.client;
@@ -323,22 +322,18 @@ public class SPDYClient
                 {
                     if (sslContextFactory != null)
                     {
-                        final AtomicReference<AsyncEndPoint> sslEndPointRef = new AtomicReference<>();
-                        final AtomicReference<Object> attachmentRef = new AtomicReference<>(attachment);
-                        SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
+                        final SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
                         SslConnection sslConnection = new SslConnection(engine, endPoint)
                         {
                             @Override
                             public void onClose()
                             {
-                                sslEndPointRef.set(null);
-                                attachmentRef.set(null);
+                                NextProtoNego.remove(engine);
                                 super.onClose();
                             }
                         };
                         endPoint.setConnection(sslConnection);
-                        AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-                        sslEndPointRef.set(sslEndPoint);
+                        final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
 
                         // Instances of the ClientProvider inner class strong reference the
                         // SslEndPoint (via lexical scoping), which strong references the SSLEngine.
@@ -361,8 +356,7 @@ public class SPDYClient
                             {
                                 // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
                                 ClientSPDYAsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
-                                AsyncEndPoint sslEndPoint = sslEndPointRef.get();
-                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachmentRef.get());
+                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
                                 sslEndPoint.setConnection(connection);
                             }
 
@@ -374,8 +368,7 @@ public class SPDYClient
                                     return null;
 
                                 AsyncConnectionFactory connectionFactory = client.getAsyncConnectionFactory(protocol);
-                                AsyncEndPoint sslEndPoint = sslEndPointRef.get();
-                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachmentRef.get());
+                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
                                 sslEndPoint.setConnection(connection);
                                 return protocol;
                             }

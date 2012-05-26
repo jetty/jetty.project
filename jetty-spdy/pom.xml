@@ -13,7 +13,7 @@
     <name>Jetty :: SPDY :: Parent</name>
 
     <properties>
-        <npn.version>1.0.0.v20120402</npn.version>
+        <npn.version>1.1.0.v20120525</npn.version>
     </properties>
 
     <modules>

@@ -29,7 +29,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -177,20 +176,18 @@ public class SPDYServerConnector extends SelectChannelConnector
     {
         if (sslContextFactory != null)
         {
-            SSLEngine engine = newSSLEngine(sslContextFactory, channel);
-            final AtomicReference<AsyncEndPoint> sslEndPointRef = new AtomicReference<>();
+            final SSLEngine engine = newSSLEngine(sslContextFactory, channel);
             SslConnection sslConnection = new SslConnection(engine, endPoint)
             {
                 @Override
                 public void onClose()
                 {
-                    sslEndPointRef.set(null);
+                    NextProtoNego.remove(engine);
                     super.onClose();
                 }
             };
             endPoint.setConnection(sslConnection);
-            AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-            sslEndPointRef.set(sslEndPoint);
+            final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
 
             // Instances of the ServerProvider inner class strong reference the
             // SslEndPoint (via lexical scoping), which strong references the SSLEngine.
@@ -206,7 +203,6 @@ public class SPDYServerConnector extends SelectChannelConnector
                 public void unsupported()
                 {
                     AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-                    AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
                     sslEndPoint.setConnection(connection);
                 }
@@ -221,7 +217,6 @@ public class SPDYServerConnector extends SelectChannelConnector
                 public void protocolSelected(String protocol)
                 {
                     AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory(protocol);
-                    AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
                     sslEndPoint.setConnection(connection);
                 }
