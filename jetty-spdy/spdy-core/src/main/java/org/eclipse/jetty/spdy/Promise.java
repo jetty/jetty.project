@@ -44,7 +44,8 @@ public class Promise<T> implements Handler<T>, Future<T>
         latch.countDown();
     }
 
-    public void failed(Throwable x)
+    @Override
+    public void failed(T context, Throwable x)
     {
         this.failure = x;
         latch.countDown();

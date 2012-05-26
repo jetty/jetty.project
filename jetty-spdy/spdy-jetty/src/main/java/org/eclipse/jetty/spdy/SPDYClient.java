@@ -398,7 +398,7 @@ public class SPDYClient
                 }
                 catch (RuntimeException x)
                 {
-                    sessionPromise.failed(x);
+                    sessionPromise.failed(null,x);
                     throw x;
                 }
             }

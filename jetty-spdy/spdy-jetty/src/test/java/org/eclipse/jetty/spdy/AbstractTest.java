@@ -53,9 +53,15 @@ public abstract class AbstractTest
 
     protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
     {
+        return startServer(listener,true);
+    }
+    
+    protected InetSocketAddress startServer(ServerSessionFrameListener listener, boolean flowControl) throws Exception
+    {
         if (connector == null)
             connector = newSPDYServerConnector(listener);
         connector.setPort(0);
+        connector.setFlowControlEnabled(flowControl);
         server = new Server();
         server.addConnector(connector);
         server.start();

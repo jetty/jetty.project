@@ -41,6 +41,7 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
         super(null, sslContextFactory);
         // Override the default connection factory for non-SSL connections
         defaultConnectionFactory = new ServerHTTPAsyncConnectionFactory(this);
+        setFlowControlEnabled(false);
     }
 
     @Override

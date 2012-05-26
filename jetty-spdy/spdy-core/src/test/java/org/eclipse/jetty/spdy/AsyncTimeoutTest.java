@@ -72,7 +72,7 @@ public class AsyncTimeoutTest
             }
 
             @Override
-            public void failed(Throwable x)
+            public void failed(Stream stream, Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -120,7 +120,7 @@ public class AsyncTimeoutTest
             }
 
             @Override
-            public void failed(Throwable x)
+            public void failed(Void context, Throwable x)
             {
                 failedLatch.countDown();
             }

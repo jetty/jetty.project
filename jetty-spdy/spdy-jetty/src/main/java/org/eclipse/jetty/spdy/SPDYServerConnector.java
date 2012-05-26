@@ -58,6 +58,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     private final ServerSessionFrameListener listener;
     private final SslContextFactory sslContextFactory;
     private AsyncConnectionFactory defaultConnectionFactory;
+    private volatile boolean flowControlEnabled = true;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
     {
@@ -286,5 +287,15 @@ public class SPDYServerConnector extends SelectChannelConnector
     protected Collection<Session> getSessions()
     {
         return Collections.unmodifiableCollection(sessions);
+    }
+
+    public boolean isFlowControlEnabled()
+    {
+        return flowControlEnabled;
+    }
+    
+    public void setFlowControlEnabled(boolean flowControl)
+    {
+        this.flowControlEnabled = flowControl;
     }
 }
