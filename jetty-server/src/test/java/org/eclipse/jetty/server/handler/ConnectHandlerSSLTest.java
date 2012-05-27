@@ -24,6 +24,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -55,7 +56,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     @Test
     public void testGETRequest() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -110,7 +111,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     @Test
     public void testPOSTRequests() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +

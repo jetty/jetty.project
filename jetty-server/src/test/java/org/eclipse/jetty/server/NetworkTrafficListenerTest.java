@@ -34,6 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
 import org.junit.Test;
 
@@ -121,14 +123,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(bytes.toString("UTF-8"));
+                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 incomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 outgoingLatch.countDown();
             }
         });
@@ -185,13 +187,13 @@ public class NetworkTrafficListenerTest
         {
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(bytes.toString("UTF-8"));
+                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 incomingLatch.countDown();
             }
 
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 outgoingLatch.countDown();
             }
         });
@@ -252,13 +254,13 @@ public class NetworkTrafficListenerTest
         {
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(bytes.toString("UTF-8"));
+                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 incomingLatch.countDown();
             }
 
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 outgoingLatch.countDown();
             }
         });
@@ -318,13 +320,13 @@ public class NetworkTrafficListenerTest
         {
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(bytes.toString("UTF-8"));
+                incomingData.set(BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 incomingLatch.countDown();
             }
 
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 outgoingLatch.countDown();
             }
         });
@@ -391,12 +393,12 @@ public class NetworkTrafficListenerTest
         {
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                incomingData.set(incomingData.get() + bytes.toString("UTF-8"));
+                incomingData.set(incomingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
             }
 
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
+                outgoingData.set(outgoingData.get() + BufferUtil.toString(bytes,StringUtil.__UTF8_CHARSET));
                 outgoingLatch.countDown();
             }
         });

@@ -18,6 +18,7 @@ import junit.framework.Assert;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.SimpleRequest;
@@ -33,7 +34,7 @@ import org.junit.Test;
 public class ResourceHandlerTest extends TestCase
 {
     private static Server _server;
-    private static Connector _connector;
+    private static SelectChannelConnector _connector;
     private static ContextHandler _contextHandler;
     private static ResourceHandler _resourceHandler;
  
@@ -42,7 +43,7 @@ public class ResourceHandlerTest extends TestCase
     public void setUp() throws Exception
     {
         _server = new Server();
-        _connector = new SocketConnector();
+        _connector = new SelectChannelConnector();
         _server.setConnectors(new Connector[] { _connector });
 
         _resourceHandler = new ResourceHandler();

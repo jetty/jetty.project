@@ -136,7 +136,7 @@ public abstract class AbstractConnectHandlerTest
 
     protected Socket newSocket() throws IOException
     {
-        Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
+        Socket socket = new Socket("localhost", ((Connector.NetConnector)proxyConnector).getLocalPort());
         socket.setSoTimeout(10000);
         return socket;
     }

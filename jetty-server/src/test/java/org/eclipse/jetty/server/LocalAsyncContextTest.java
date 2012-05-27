@@ -102,7 +102,7 @@ public class LocalAsyncContextTest
     }
 
     @Test
-    public void testSuspendOther() throws Exception
+    public void testSuspendComplete0() throws Exception
     {
         String response;
         _handler.setRead(0);
@@ -110,24 +110,53 @@ public class LocalAsyncContextTest
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         response=process(null);
-        check(response,"COMPLETED");
+        check(response,"STARTASYNC","COMPLETED");
+    }
 
+    @Test
+    public void testSuspendComplete200() throws Exception
+    {
+        String response;
+        _handler.setRead(0);
+        _handler.setSuspendFor(10000);
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(200);
         response=process(null);
-        check(response,"COMPLETED");
+        check(response,"STARTASYNC","COMPLETED");
 
+    }
+
+    @Test
+    public void testSuspendReadResume0() throws Exception
+    {
+        String response;
+        _handler.setSuspendFor(10000);
         _handler.setRead(-1);
-
         _handler.setResumeAfter(0);
+        _handler.setCompleteAfter(-1);
+        response=process("wibble");
+        check(response,"STARTASYNC","DISPATCHED");
+    }
+
+    @Test
+    public void testSuspendReadResume100() throws Exception
+    {
+        String response;
+        _handler.setSuspendFor(10000);
+        _handler.setRead(-1);
+        _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         response=process("wibble");
         check(response,"DISPATCHED");
 
-        _handler.setResumeAfter(100);
-        _handler.setCompleteAfter(-1);
-        check(response,"DISPATCHED");
+    }
 
+    @Test
+    public void testSuspendOther() throws Exception
+    {
+        String response;
+        _handler.setSuspendFor(10000);
+        _handler.setRead(-1);
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         response=process("wibble");
@@ -205,9 +234,9 @@ public class LocalAsyncContextTest
         else
             request+="Content-Length: "+content.length()+"\r\n" +"\r\n" + content;
 
-        System.err.println("REQUEST:  "+request);
+        //System.err.println("REQUEST:  "+request);
         String response=getResponse(request);
-        System.err.println("RESPONSE: "+response);
+        //System.err.println("RESPONSE: "+response);
         return response;
     }
     
@@ -230,21 +259,21 @@ public class LocalAsyncContextTest
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            System.err.println("onComplete");
+            //System.err.println("onComplete");
             __completed.incrementAndGet();
         }
 
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            System.err.println("onError");
+            //System.err.println("onError");
             __completed.incrementAndGet();
         }
 
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
-            System.err.println("onStartAsync");
+            //System.err.println("onStartAsync");
             event.getSuppliedResponse().getOutputStream().println("startasync");
             event.getAsyncContext().addListener(this);
         }
@@ -252,7 +281,7 @@ public class LocalAsyncContextTest
         @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
-            System.err.println("onTimeout - dispatch!");
+            //System.err.println("onTimeout - dispatch!");
             event.getSuppliedRequest().setAttribute("TIMEOUT",Boolean.TRUE);
             event.getAsyncContext().dispatch();
         }

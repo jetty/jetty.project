@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.OS;
@@ -41,7 +42,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECT() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -68,7 +69,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndGET() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -107,7 +108,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECT10AndGET() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.0\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -145,7 +146,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndGETPipelined() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -180,7 +181,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndMultipleGETs() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -221,7 +222,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndGETServerStop() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -267,7 +268,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndGETAndServerSideClose() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -304,7 +305,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndPOSTAndGET() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -355,7 +356,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndPOSTWithBigBody() throws Exception
     {
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -445,7 +446,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         });
         proxy.start();
 
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -489,7 +490,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     	// TODO needs to be further investigated
     	assumeTrue(!OS.IS_OSX);
     	
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -528,7 +529,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     	// TODO needs to be further investigated
     	assumeTrue(!OS.IS_OSX);
     	
-        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String hostPort = "localhost:" + ((Connector.NetConnector)serverConnector).getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
@@ -592,7 +593,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             }
             else if ("/close".equals(uri))
             {
-                request.getHttpChannel().getEndPoint().close();
+                request.getHttpChannel().getConnection().getEndPoint().close();
             }
             else
             {
