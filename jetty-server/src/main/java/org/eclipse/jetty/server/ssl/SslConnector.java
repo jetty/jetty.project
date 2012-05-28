@@ -17,7 +17,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 /** The interface for SSL connectors and their configuration methods.
  * 
  */
-public interface SslConnector extends Connector
+public interface SslConnector extends Connector.NetConnector
 {
     @Deprecated
     public static final String DEFAULT_KEYSTORE_ALGORITHM=(Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm"));

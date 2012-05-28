@@ -24,6 +24,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -74,7 +75,6 @@ public class SslRenegotiateTest
         try
         {
             String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-            connector.setPort(0);
             SslContextFactory cf = connector.getSslContextFactory();
             cf.setKeyStorePath(keystore);
             cf.setKeyStorePassword("storepwd");
@@ -113,7 +113,7 @@ public class SslRenegotiateTest
             doWrap();
             doUnwrap();
             _inAppB.flip();
-            String response=new IndirectNIOBuffer(_inAppB,true).toString();
+            String response=BufferUtil.toString(_inAppB);
             // System.err.println(response);
             assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
@@ -122,7 +122,7 @@ public class SslRenegotiateTest
                 _inAppB.clear();
                 doUnwrap();
                 _inAppB.flip();
-                response=new IndirectNIOBuffer(_inAppB,true).toString();
+                response=BufferUtil.toString(_inAppB);
             }
 
             assertTrue(response.indexOf("HELLO WORLD")>=0);
@@ -141,7 +141,7 @@ public class SslRenegotiateTest
                 doWrap();
                 doUnwrap();
                 _inAppB.flip();
-                response=new IndirectNIOBuffer(_inAppB,true).toString();
+                response=BufferUtil.toString(_inAppB);
                 assertTrue(response.startsWith("HTTP/1.1 200 OK"));
                 assertTrue(response.indexOf("HELLO WORLD")>0);
 

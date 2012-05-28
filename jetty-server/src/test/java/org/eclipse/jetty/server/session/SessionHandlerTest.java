@@ -53,7 +53,8 @@ public class SessionHandlerTest
             }
         };
 
-        Request baseRequest = new Request();
+        // TODO this probably wont work
+        Request baseRequest = new Request(null);
         baseRequest.setDispatcherType(DispatcherType.REQUEST);
         assertEquals(DispatcherType.REQUEST,baseRequest.getDispatcherType());
 
@@ -182,7 +183,8 @@ public class SessionHandlerTest
             }
         };
 
-        Request baseRequest = new Request();
+        // TODO this probably wont work
+        Request baseRequest = new Request(null);
         baseRequest.setDispatcherType(DispatcherType.REQUEST);
         assertEquals(DispatcherType.REQUEST,baseRequest.getDispatcherType());
 
