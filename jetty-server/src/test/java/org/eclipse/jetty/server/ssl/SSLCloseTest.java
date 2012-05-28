@@ -136,7 +136,7 @@ public class SSLCloseTest extends TestCase
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setHeader("test","value");
-                __endp=(AsyncEndPoint)baseRequest.getHttpChannel().getEndPoint();
+                __endp=baseRequest.getHttpChannel().getEndPoint();
                 
                 OutputStream out=response.getOutputStream();
 

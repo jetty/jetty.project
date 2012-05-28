@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.util.BufferUtil;
@@ -128,7 +129,13 @@ public abstract class HttpChannel
     {
         return _handler;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public AsyncEndPoint getEndPoint()
+    {
+        return getConnection().getEndPoint();
+    }
+    
     /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
@@ -808,6 +815,7 @@ public abstract class HttpChannel
     {
         ResponseInfo commit();
     }
+
     
 
 }

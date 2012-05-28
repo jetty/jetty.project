@@ -506,7 +506,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     @Override
     public String toString()
     {
-        return String.format("%s{%b,%d<=%d<=%d/%d,%d}",_name,isRunning(),getMinThreads(),getIdleThreads(),getThreads(),getMaxThreads(),(_jobs==null?-1:_jobs.size()));
+        return String.format("%s{%s,%d<=%d<=%d/%d,%d}",_name,getState(),getMinThreads(),getIdleThreads(),getThreads(),getMaxThreads(),(_jobs==null?-1:_jobs.size()));
     }
 
     /* ------------------------------------------------------------ */

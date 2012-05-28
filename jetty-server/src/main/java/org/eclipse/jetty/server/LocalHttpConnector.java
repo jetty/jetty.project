@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -34,12 +35,14 @@ public class LocalHttpConnector extends HttpConnector
     private static final Logger LOG = Log.getLogger(LocalHttpConnector.class);
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<LocalEndPoint>();
     private LocalExecutor _executor;
-    
+
+    /* ------------------------------------------------------------ */
     public LocalHttpConnector()
     {
         setMaxIdleTime(30000);
     }
-
+    
+    /* ------------------------------------------------------------ */
     @Override
     public Object getTransport()
     {
@@ -93,7 +96,8 @@ public class LocalHttpConnector extends HttpConnector
         _connects.add(endp);
         return endp;
     }
-    
+
+    /* ------------------------------------------------------------ */
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
@@ -101,11 +105,11 @@ public class LocalHttpConnector extends HttpConnector
         LocalEndPoint endp = _connects.take();
         HttpConnection connection=new HttpConnection(this,endp,getServer());
         endp.setAsyncConnection(connection);
-        connection.onOpen();
+        connectionOpened(connection);
         _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
     
-    
+    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
@@ -113,6 +117,7 @@ public class LocalHttpConnector extends HttpConnector
         _executor=new LocalExecutor(findExecutor());
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
@@ -120,12 +125,14 @@ public class LocalHttpConnector extends HttpConnector
         _executor=null;
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public Executor findExecutor()
     {
         return _executor==null?super.findExecutor():_executor;
     }
 
+    /* ------------------------------------------------------------ */
     class LocalExecutor implements Executor
     {
         Phaser _phaser=new Phaser()
@@ -166,22 +173,26 @@ public class LocalHttpConnector extends HttpConnector
             });
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
     public class LocalEndPoint extends AsyncByteArrayEndPoint
     {
         private CountDownLatch _closed = new CountDownLatch(1);
         
         LocalEndPoint()
         {
+            super(getTimer());
             setGrowOutput(true);
             setMaxIdleTime(LocalHttpConnector.this.getMaxIdleTime());
         }
-        
+
+        /* ------------------------------------------------------------ */
         LocalEndPoint(CountDownLatch onCloseLatch)
         {
             this();
         }
-        
+
+        /* ------------------------------------------------------------ */
         public void addInput(String s)
         {
             // TODO this is a busy wait
@@ -190,13 +201,16 @@ public class LocalHttpConnector extends HttpConnector
             setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
         }
 
+        /* ------------------------------------------------------------ */
         @Override
         public void onClose()
         {
             super.onClose();
+            connectionClosed(getAsyncConnection());
             _closed.countDown();
         }
-        
+
+        /* ------------------------------------------------------------ */
         @Override
         public void shutdownOutput()
         {
@@ -204,6 +218,7 @@ public class LocalHttpConnector extends HttpConnector
             close();
         }
 
+        /* ------------------------------------------------------------ */
         public void waitUntilClosed()
         {
             while (isOpen())
@@ -225,5 +240,4 @@ public class LocalHttpConnector extends HttpConnector
             }
         }
     }    
-    
 }

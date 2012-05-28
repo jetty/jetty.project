@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -48,7 +49,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class IPAccessHandlerTest
 {
     private static Server _server;
-    private static Connector _connector;
+    private static Connector.NetConnector _connector;
     private static IPAccessHandler _handler;
     
     private String _white;
@@ -62,7 +63,7 @@ public class IPAccessHandlerTest
         throws Exception
     {
         _server = new Server();
-        _connector = new SocketConnector();
+        _connector = new SelectChannelConnector();
         _server.setConnectors(new Connector[] { _connector });
 
         _handler = new IPAccessHandler();

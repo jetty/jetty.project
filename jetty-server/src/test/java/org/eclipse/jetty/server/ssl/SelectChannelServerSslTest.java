@@ -57,7 +57,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStore(keystorePath);
         cf.setTrustStorePassword("storepwd");
-        connector.setUseDirectBuffers(true);
         startServer(connector);
         
 

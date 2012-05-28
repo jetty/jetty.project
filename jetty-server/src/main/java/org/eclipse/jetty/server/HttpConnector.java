@@ -54,11 +54,11 @@ public abstract class HttpConnector extends AbstractConnector
     @Override
     protected void doStop() throws Exception
     {
-        _timer.cancel();
+        if (_timer!=null)
+            _timer.cancel();
         _timer=null;
         super.doStop();
     }
-
 
     public Timer getTimer()
     {

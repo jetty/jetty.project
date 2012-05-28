@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Timer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -20,10 +21,12 @@ import org.junit.Test;
 
 public class AsyncByteArrayEndPointTest
 {
+    private final Timer _timer = new Timer(true);
+    
     @Test
     public void testReadable() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
         endp.setInput("test input");
         
         ByteBuffer buffer = BufferUtil.allocate(1024);
@@ -82,7 +85,7 @@ public class AsyncByteArrayEndPointTest
     @Test
     public void testWrite() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint((byte[])null,15);
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer,(byte[])null,15);
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(10));
 
@@ -110,7 +113,7 @@ public class AsyncByteArrayEndPointTest
     @Test
     public void testIdle() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
         endp.setMaxIdleTime(500);
         endp.setInput("test");
         endp.setGrowOutput(false);

@@ -17,10 +17,10 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
 {
     private static final int TICK=Integer.getInteger("org.eclipse.jetty.io.AsyncByteArrayEndPoint.TICK",100);
     public static final Logger LOG=Log.getLogger(AsyncByteArrayEndPoint.class);
-    private static final Timer _timer = new Timer(true);
+    private final Timer _timer;
     private AsyncConnection _connection;
 
-    private final TimerTask _task=new TimeoutTask(this);
+    private final TimerTask _checkTimeout=new TimeoutTask(this);
     
     private final ReadInterest _readInterest = new ReadInterest()
     {
@@ -41,23 +41,25 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
         }
     };
     
-    {
-        _timer.schedule(_task,TICK,TICK);
-    }
-    
-    public AsyncByteArrayEndPoint()
+    public AsyncByteArrayEndPoint(Timer timer)
     {
         super();
+        _timer=timer;
+        _timer.schedule(_checkTimeout,TICK,TICK);
     }
 
-    public AsyncByteArrayEndPoint(byte[] input, int outputSize)
+    public AsyncByteArrayEndPoint(Timer timer, byte[] input, int outputSize)
     {
         super(input,outputSize);
+        _timer=timer;
+        _timer.schedule(_checkTimeout,TICK,TICK);
     }
 
-    public AsyncByteArrayEndPoint(String input, int outputSize)
+    public AsyncByteArrayEndPoint(Timer timer, String input, int outputSize)
     {
         super(input,outputSize);
+        _timer=timer;
+        _timer.schedule(_checkTimeout,TICK,TICK);
     }
 
     @Override
@@ -82,6 +84,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
         super.setOutput(out);
         _writeFlusher.completeWrite();
     }
+    
     @Override
     public void reset()
     {
@@ -145,7 +148,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     @Override
     public void onClose()
     {
-        _task.cancel();
+        _checkTimeout.cancel();
         super.onClose();
     }
 

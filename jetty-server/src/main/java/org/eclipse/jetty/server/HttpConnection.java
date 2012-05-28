@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.Action;
@@ -285,7 +286,7 @@ public class HttpConnection extends AbstractAsyncConnection
             if (_parser.isClosed())
                 LOG.debug(e);
             else
-                LOG.warn(e);
+                LOG.warn(this.toString(),e);
             getEndPoint().close();
         }
         finally
@@ -418,14 +419,29 @@ public class HttpConnection extends AbstractAsyncConnection
                     // it wants to eat more
                     if (_requestBuffer==null)
                         scheduleOnReadable();
-                    else
+                    else if (getConnector().isStarted())
                     {
                         LOG.debug("{} pipelined",this);
-                        execute(new Runnable() 
+                        
+                        // TODO avoid temporary runnable
+                        try
                         {
-                           @Override public void run() {onReadable();} 
-                        });
+                            execute(new Runnable() 
+                            {
+                                @Override public void run() {onReadable();} 
+                            });
+                        }
+                        catch(RejectedExecutionException e)
+                        {
+                            if (getConnector().isStarted())
+                                LOG.warn(e);
+                            else
+                                LOG.ignore(e);
+                            getEndPoint().close();
+                        }
                     }
+                    else
+                        getEndPoint().close();
                 }
 
                 if (_parser.isClosed()&&!getEndPoint().isOutputShutdown())

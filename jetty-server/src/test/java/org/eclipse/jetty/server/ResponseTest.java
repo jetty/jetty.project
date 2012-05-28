@@ -61,6 +61,7 @@ import org.junit.Test;
  */
 public class ResponseTest
 {
+    private Timer _timer;
     private Server _server;
     private LocalHttpConnector _connector;
     private HttpChannel _channel;
@@ -68,12 +69,13 @@ public class ResponseTest
     @Before
     public void init() throws Exception
     {
+        _timer=new Timer(true);
         _server = new Server();
         _connector = new LocalHttpConnector();
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
         _server.start();
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
         HttpInput input = new HttpInput();
         AsyncConnection connection = new AbstractAsyncConnection(endp,null)
         {
@@ -168,6 +170,7 @@ public class ResponseTest
     @After
     public void destroy() throws Exception
     {
+        _timer.cancel();
         _server.stop();
         _server.join();
     }

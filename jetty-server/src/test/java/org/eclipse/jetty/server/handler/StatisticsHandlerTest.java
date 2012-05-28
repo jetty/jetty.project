@@ -52,7 +52,7 @@ public class StatisticsHandlerTest
 
         _connector = new LocalHttpConnector();
         _server.addConnector(_connector);
-        _connector.setStatsOn(true);
+        _connector.getStatistics().start();
 
         _latchHandler = new LatchHandler();
         _statsHandler = new StatisticsHandler();
@@ -100,7 +100,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getConnectionsOpen());
+        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -136,7 +136,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(2, _connector.getConnectionsOpen());
+        assertEquals(2, _connector.getStatistics().getConnectionsOpen());
 
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -173,7 +173,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(4, _connector.getConnectionsOpen());
+        assertEquals(4, _connector.getStatistics().getConnectionsOpen());
 
         assertEquals(4, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
@@ -258,7 +258,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getConnectionsOpen());
+        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -297,7 +297,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getConnectionsOpen());
+        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -385,7 +385,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getConnectionsOpen());
+        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -505,7 +505,7 @@ public class StatisticsHandlerTest
 
         barrier[0].await();
 
-        assertEquals(1, _connector.getConnectionsOpen());
+        assertEquals(1, _connector.getStatistics().getConnectionsOpen());
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());

@@ -716,8 +716,8 @@ public class HttpChannelState implements AsyncContext, Continuation
     protected void scheduleTimeout()
     {
         Timer timer = _channel.getTimer();
-        timer.schedule(_event._timeout,_timeoutMs);
-        
+        if (timer!=null)
+            timer.schedule(_event._timeout,_timeoutMs);
     }
 
     /* ------------------------------------------------------------ */
