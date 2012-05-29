@@ -64,12 +64,22 @@ public class ReferrerPushStrategy implements PushStrategy
 
     public ReferrerPushStrategy()
     {
-        this(Arrays.asList(".*\\.css", ".*\\.js", ".*\\.png", ".*\\.jpg", ".*\\.gif"));
+        this(Arrays.asList(".*\\.css",".*\\.js",".*\\.png",".*\\.jpg",".*\\.gif"));
+    }
+
+    public ReferrerPushStrategy(String[] pushRegexps)
+    {
+        this(Arrays.asList(pushRegexps));
     }
 
     public ReferrerPushStrategy(List<String> pushRegexps)
     {
-        this(pushRegexps, Collections.<String>emptyList());
+        this(pushRegexps,Collections.<String> emptyList());
+    }
+
+    public ReferrerPushStrategy(String[] pushRegexps, String[] allowedPushOrigins)
+    {
+        this(Arrays.asList(pushRegexps),Arrays.asList(allowedPushOrigins));
     }
 
     public ReferrerPushStrategy(List<String> pushRegexps, List<String> allowedPushOrigins)
@@ -77,7 +87,7 @@ public class ReferrerPushStrategy implements PushStrategy
         for (String pushRegexp : pushRegexps)
             this.pushRegexps.add(Pattern.compile(pushRegexp));
         for (String allowedPushOrigin : allowedPushOrigins)
-            this.allowedPushOrigins.add(Pattern.compile(allowedPushOrigin.replace(".", "\\.").replace("*", ".*")));
+            this.allowedPushOrigins.add(Pattern.compile(allowedPushOrigin.replace(".","\\.").replace("*",".*")));
     }
 
     @Override

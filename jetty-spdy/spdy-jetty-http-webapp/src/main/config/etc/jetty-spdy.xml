@@ -11,9 +11,30 @@
         <Set name="protocol">TLSv1</Set>
     </New>
 
+    <!-- Uncomment to enable RefererPushStrategy -->
+    <!-- 
+    <New id="pushStrategy" class="org.eclipse.jetty.spdy.http.ReferrerPushStrategy">
+        <Arg>
+            <Array type="String">
+                <Item>.*\.css</Item>
+                <Item>.*\.js</Item>
+                <Item>.*\.png</Item>
+                <Item>.*\.jpg</Item>
+                <Item>.*\.gif</Item>
+            </Array>
+        </Arg>
+    </New>
+    -->
+
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">
+                <!-- Uncomment to enable RefererPushStrategy -->
+                <!-- 
+                <Arg>
+                    <Ref id="pushStrategy" />
+                </Arg>
+                -->
                 <Set name="Port">8080</Set>
             </New>
         </Arg>
@@ -24,6 +45,12 @@
                 <Arg>
                     <Ref id="sslContextFactory" />
                 </Arg>
+                <!-- Uncomment to enable RefererPushStrategy -->
+                <!-- 
+                <Arg>
+                    <Ref id="pushStrategy" />
+                </Arg>
+                -->
                 <Set name="Port">8443</Set>
             </New>
         </Arg>
