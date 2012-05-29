@@ -29,18 +29,29 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public class HTTPSPDYServerConnector extends SPDYServerConnector
 {
     private final AsyncConnectionFactory defaultConnectionFactory;
-    private final PushStrategy pushStrategy = new PushStrategy.None();
+    private final PushStrategy pushStrategy;
 
     public HTTPSPDYServerConnector()
     {
-        this(null);
+        this(new PushStrategy.None());
+    }
+
+    public HTTPSPDYServerConnector(PushStrategy pushStrategy)
+    {
+        this(null, pushStrategy);
     }
 
     public HTTPSPDYServerConnector(SslContextFactory sslContextFactory)
     {
+        this(sslContextFactory, new PushStrategy.None());
+    }
+
+    public HTTPSPDYServerConnector(SslContextFactory sslContextFactory, PushStrategy pushStrategy)
+    {
         super(null, sslContextFactory);
         // Override the default connection factory for non-SSL connections
         defaultConnectionFactory = new ServerHTTPAsyncConnectionFactory(this);
+        this.pushStrategy = pushStrategy;
         setFlowControlEnabled(false);
     }
 
@@ -89,4 +100,5 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
         }
         return super.isIntegral(request);
     }
+    
 }
