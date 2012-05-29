@@ -77,6 +77,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _accessed=accessed;
         _lastAccessed=accessed;
         _requests=1;
+        _maxIdleMs=_manager._dftMaxIdleSecs>0?_manager._dftMaxIdleSecs*1000L:-1;
         if (LOG.isDebugEnabled())
             LOG.debug("new session "+_nodeId+" "+_clusterId);
     }
