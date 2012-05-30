@@ -14,7 +14,8 @@
 package org.eclipse.jetty.xml;
 
 import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -25,13 +26,16 @@ import org.junit.Test;
 public class XmlConfigurationTest
 {
     protected String _configure="org/eclipse/jetty/xml/configure.xml";
+    
+    private static final String STRING_ARRAY_XML = "<Array type=\"String\"><Item type=\"String\">String1</Item><Item type=\"String\">String2</Item></Array>";
+    private static final String INT_ARRAY_XML = "<Array type=\"int\"><Item type=\"int\">1</Item><Item type=\"int\">2</Item></Array>";
 
     @Test
     public void testMortBay() throws Exception
     {
         URL url = XmlConfigurationTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/mortbay.xml");
         XmlConfiguration configuration = new XmlConfiguration(url);
-        Object o=configuration.configure();
+        configuration.configure();
     }
     
     @Test
@@ -185,6 +189,129 @@ public class XmlConfigurationTest
         configuration.configure(tc);
         assertEquals("Set String 3","SetValue",tc.testObject);
         assertEquals("Set Type 3",2,tc.testInt);
+    }
 
+    @Test
+    public void testListConstructorArg() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+                + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">"
+                + STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+        assertThat("tc.getList() returns not null",tc.getList(),not(nullValue()));
+        assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
+    }
+
+    @Test
+    public void testTwoArgumentListConstructorArg() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+                + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\">"
+                + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
+                + "<Arg type=\"ArrayList\">" + STRING_ARRAY_XML + "</Arg>"
+                + "</New></Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+        assertThat("tc.getList() returns not null",tc.getList(),not(nullValue()));
+        assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testListNotContainingArray() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+                + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">Some String</Arg></New></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        xmlConfiguration.configure(tc);
+    }
+
+    @Test
+    public void testSetConstructorArg() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+                + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">"
+                + STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getList() returns null as it's not configured yet",tc.getSet(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+        assertThat("tc.getList() returns not null",tc.getSet(),not(nullValue()));
+        assertThat("tc.getList() has two entries as specified in the xml",tc.getSet().size(),is(2));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testSetNotContainingArray() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
+                + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">Some String</Arg></New></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        xmlConfiguration.configure(tc);
+    }
+
+    @Test
+    public void testListSetterWithStringArray() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
+                + STRING_ARRAY_XML + "</Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+        assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
+    }
+
+    @Test
+    public void testListSetterWithPrimitiveArray() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
+                + INT_ARRAY_XML + "</Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+        assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testNotSupportedLinkedListSetter() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">"
+                + INT_ARRAY_XML + "</Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getSet() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+    }
+
+    @Test
+    public void testArrayListSetter() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"ArrayList\">"
+                + INT_ARRAY_XML + "</Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getSet() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+        assertThat("tc.getSet() has two entries as specified in the xml",tc.getList().size(),is(2));
+    }
+
+    @Test
+    public void testSetSetter() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
+                + STRING_ARRAY_XML + "</Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getSet() returns null as it's not configured yet",tc.getSet(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+        assertThat("tc.getSet() has two entries as specified in the xml",tc.getSet().size(),is(2));
+    }
+
+    @Test
+    public void testSetSetterWithPrimitiveArray() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
+                + INT_ARRAY_XML + "</Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        assertThat("tc.getSet() returns null as it's not configured yet",tc.getSet(),is(nullValue()));
+        xmlConfiguration.configure(tc);
+        assertThat("tc.getSet() has two entries as specified in the xml",tc.getSet().size(),is(2));
     }
 }
