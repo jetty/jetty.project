@@ -16,6 +16,7 @@ package org.eclipse.jetty.xml;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -25,15 +26,16 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -242,6 +244,7 @@ public class XmlConfiguration
     /**
      * @deprecated use {@link #getIdMap()}.put(...)
      */
+    @Deprecated
     public void setIdMap(Map<String, Object> map)
     {
         _idMap.clear();
@@ -252,6 +255,7 @@ public class XmlConfiguration
     /**
      * @deprecated use {@link #getProperties()}.putAll(...)
      */
+    @Deprecated
     public void setProperties(Map<String, String> map)
     {
         _propertyMap.clear();
@@ -311,7 +315,7 @@ public class XmlConfiguration
         public Object configure(Object obj) throws Exception
         {
             // Check the class of the object
-            Class<?> oClass = (Class<?>)nodeClass(_config);
+            Class<?> oClass = nodeClass(_config);
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader()==obj.getClass().getClassLoader())?"":"Object Class and type Class are from different loaders.";
@@ -324,7 +328,7 @@ public class XmlConfiguration
         /* ------------------------------------------------------------ */
         public Object configure() throws Exception
         {
-            Class<?> oClass = (Class<?>)nodeClass(_config);
+            Class<?> oClass = nodeClass(_config);
 
             String id = _config.getAttribute("id");
             Object obj = id == null?null:_idMap.get(id);
@@ -518,22 +522,14 @@ public class XmlConfiguration
                         LOG.ignore(e);
                     }
 
-                    // Can we convert to a collection
-                    if (paramTypes[0].isAssignableFrom(Collection.class) && value.getClass().isArray())
+                    Class<?> parameterClass = paramTypes[0];
+                    Collection<?> collection = tryToConvertObjectToCollection(parameterClass,value);
+                    if (collection != null)
                     {
                         try
                         {
-                            if (paramTypes[0].isAssignableFrom(Set.class))
-                                sets[s].invoke(obj,new Object[]
-                                { new HashSet<Object>(Arrays.asList((Object[])value)) });
-                            else
-                                sets[s].invoke(obj,new Object[]
-                                { Arrays.asList((Object[])value) });
+                            sets[s].invoke(obj,new Object[]{ collection });
                             return;
-                        }
-                        catch (IllegalArgumentException e)
-                        {
-                            LOG.ignore(e);
                         }
                         catch (IllegalAccessException e)
                         {
@@ -581,6 +577,45 @@ public class XmlConfiguration
 
             // No Joy
             throw new NoSuchMethodException(oClass + "." + name + "(" + vClass[0] + ")");
+        }
+
+        /**
+         * @return a collection if compareValueToClass is a Set or List. null if that's not the case or value can't be converted to a Collection
+         */
+        private Collection<?> tryToConvertObjectToCollection(Class<?> compareValueToClass, Object value)
+        {
+            Collection<?> collection = null;
+            if (value.getClass().isArray())
+            {
+                try
+                {
+                    if (compareValueToClass.isAssignableFrom(Set.class))
+                        collection = new HashSet<Object>(convertArrayToList(value));
+                    else
+                        collection = convertArrayToList(value);
+                }
+                catch (IllegalArgumentException e)
+                {
+                    LOG.ignore(e);
+                }
+            }
+            return collection;
+        }
+
+        private List<Object> convertArrayToList(Object value)
+        {
+            if (value.getClass().getComponentType().isPrimitive())
+                return convertPrimitiveArrayToList(value);
+            return Arrays.asList((Object[])value);
+        }
+
+        private List<Object> convertPrimitiveArrayToList(Object value)
+        {
+            int length = Array.getLength(value);
+            List<Object> list = new ArrayList<Object>(length);
+            for (int i = 0; i < length; i++)
+                list.add(Array.get(value,i));
+            return list;
         }
 
         /* ------------------------------------------------------------ */
@@ -1057,6 +1092,26 @@ public class XmlConfiguration
                 {
                     throw new InvocationTargetException(e);
                 }
+            }
+
+            if ("List".equals(type) || "java.util.List".equals(type))
+            {
+                if (value.getClass().isArray())
+                    return convertArrayToList(value);
+                else
+                    throw new IllegalStateException("Can't convert \"" + value + "\" to " + type + ". Only Array elements are supported");
+            }
+
+            if ("Set".equals(type) || "java.util.Set".equals(type))
+            {
+                if (value.getClass().isArray())
+                {
+                    Collection<?> set = tryToConvertObjectToCollection(Set.class,value);
+                    if (set != null)
+                        return set;
+                }
+                else
+                    throw new IllegalStateException("Can't convert \"" + value + "\" to " + type + ". Only Array elements are supported");
             }
 
             throw new IllegalStateException("Unknown type " + type);
