@@ -122,12 +122,11 @@ public class SslConnection extends AbstractAsyncConnection
     public void onReadable()
     {
         LOG.debug("{} onReadable",this);
-        
-        // We are hand shaking so could be either a reader or a writer
-        // that is interested.  So tell both either if they care
+
+        // wake up whoever is doing the fill or the flush so they can
+        // do all the filling, unwrapping ,wrapping and flushing
         if (_appEndPoint._readInterest.isInterested())
             _appEndPoint._readInterest.readable();
-        
         else if (_appEndPoint._writeFlusher.isWriting())
             _appEndPoint._writeFlusher.completeWrite();
     }
@@ -205,6 +204,9 @@ public class SslConnection extends AbstractAsyncConnection
             {
                 if (BufferUtil.hasContent(_appIn)||BufferUtil.hasContent(_netIn))
                     return true;
+
+                // TODO handle the case where we need to wrap some more.
+                
                 scheduleOnReadable();
                 return false;
             }       
@@ -215,9 +217,11 @@ public class SslConnection extends AbstractAsyncConnection
             @Override
             protected void scheduleCompleteWrite()
             {           
-                if (BufferUtil.isEmpty(_netOut))
+                if (BufferUtil.hasContent(_netOut))
+                    getEndPoint().write(null,_writeCallback,_netOut);
+                else
+                    // TODO handle the case where we need to unwrap some more.
                     throw new IllegalStateException();
-                getEndPoint().write(null,_writeCallback,_netOut);
             }
         };
         
@@ -330,6 +334,7 @@ public class SslConnection extends AbstractAsyncConnection
                                     continue;
 
                                 case NEED_WRAP:
+                                    // TODO maybe just do the wrap here ourselves?
                                     // we need to send some handshake data
                                     _fillWrap=true;
                                     flush(BufferUtil.EMPTY_BUFFER);
@@ -431,10 +436,11 @@ public class SslConnection extends AbstractAsyncConnection
                                     continue;
 
                                 case NEED_WRAP:
-                                    // Hey we just wrapped! Oh well we will wrap again when flush is called again
+                                    // Hey we just wrapped!
                                     continue;
 
                                 case NEED_UNWRAP:
+                                    // TODO maybe just do the unwrap here ourselves?
                                     // Were we were not called from fill and not reading anyway
                                     if ((appOuts.length!=1 || appOuts[0]!=BufferUtil.EMPTY_BUFFER) && !_readInterest.isInterested())
                                         fill(BufferUtil.EMPTY_BUFFER);
