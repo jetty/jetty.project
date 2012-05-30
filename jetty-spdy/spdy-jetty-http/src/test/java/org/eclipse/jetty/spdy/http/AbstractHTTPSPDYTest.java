@@ -67,14 +67,10 @@ public abstract class AbstractHTTPSPDYTest
     protected SPDYServerConnector newHTTPSPDYServerConnector()
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
-        return new HTTPSPDYServerConnector()
-        {
-            @Override
-            protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
-            {
-                return new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, new PushStrategy.None());
-            }
-        };
+        SPDYServerConnector connector = new HTTPSPDYServerConnector();
+        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new PushStrategy.None());
+        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+        return connector;
     }
 
     protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception

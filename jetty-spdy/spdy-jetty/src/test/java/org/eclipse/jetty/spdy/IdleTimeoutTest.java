@@ -20,7 +20,6 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -39,7 +38,6 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeout() throws Exception
     {
-        server = new Server();
         connector = newSPDYServerConnector(new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -49,13 +47,11 @@ public class IdleTimeoutTest extends AbstractTest
                 return null;
             }
         });
-        server.addConnector(connector);
         int maxIdleTime = 1000;
         connector.setMaxIdleTime(maxIdleTime);
-        server.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Session session = startClient(new InetSocketAddress("localhost", connector.getLocalPort()), new SessionFrameListener.Adapter()
+        Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
@@ -72,15 +68,12 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
-        server = new Server();
         connector = newSPDYServerConnector(null);
-        server.addConnector(connector);
         int maxIdleTime = 1000;
         connector.setMaxIdleTime(maxIdleTime);
-        server.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Session session = startClient(new InetSocketAddress("localhost", connector.getLocalPort()), new SessionFrameListener.Adapter()
+        Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
@@ -99,7 +92,6 @@ public class IdleTimeoutTest extends AbstractTest
     public void testServerNotEnforcingIdleTimeoutWithPendingStream() throws Exception
     {
         final int maxIdleTime = 1000;
-        server = new Server();
         connector = newSPDYServerConnector(new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -118,12 +110,10 @@ public class IdleTimeoutTest extends AbstractTest
                 }
             }
         });
-        server.addConnector(connector);
         connector.setMaxIdleTime(maxIdleTime);
-        server.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Session session = startClient(new InetSocketAddress("localhost", connector.getLocalPort()), new SessionFrameListener.Adapter()
+        Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)

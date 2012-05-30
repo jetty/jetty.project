@@ -27,6 +27,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
@@ -53,11 +54,12 @@ public class SPDYServerConnector extends SelectChannelConnector
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final ByteBufferPool bufferPool = new StandardByteBufferPool();
+    private final Executor executor = new LazyExecutor();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ServerSessionFrameListener listener;
     private final SslContextFactory sslContextFactory;
-    private AsyncConnectionFactory defaultConnectionFactory;
-    private volatile boolean flowControlEnabled = true;
+    private volatile AsyncConnectionFactory defaultConnectionFactory;
+    private volatile int initialWindowSize = 65536;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
     {
@@ -70,6 +72,9 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
+        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, bufferPool, executor, scheduler, listener);
+        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
+        putAsyncConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, bufferPool, executor, scheduler, listener));
     }
 
     public ByteBufferPool getByteBufferPool()
@@ -79,22 +84,17 @@ public class SPDYServerConnector extends SelectChannelConnector
 
     public Executor getExecutor()
     {
-        final ThreadPool threadPool = getThreadPool();
-        if (threadPool instanceof Executor)
-            return (Executor)threadPool;
-        return new Executor()
-        {
-            @Override
-            public void execute(Runnable command)
-            {
-                threadPool.dispatch(command);
-            }
-        };
+        return executor;
     }
 
     public ScheduledExecutorService getScheduler()
     {
         return scheduler;
+    }
+
+    public ServerSessionFrameListener getServerSessionFrameListener()
+    {
+        return listener;
     }
 
     public SslContextFactory getSslContextFactory()
@@ -106,8 +106,6 @@ public class SPDYServerConnector extends SelectChannelConnector
     protected void doStart() throws Exception
     {
         super.doStart();
-        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), scheduler, listener);
-        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
         logger.info("SPDY support is experimental. Please report feedback at jetty-dev@eclipse.org");
     }
 
@@ -166,9 +164,14 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
-    protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+    public AsyncConnectionFactory getDefaultAsyncConnectionFactory()
     {
         return defaultConnectionFactory;
+    }
+
+    public void setDefaultAsyncConnectionFactory(AsyncConnectionFactory defaultConnectionFactory)
+    {
+        this.defaultConnectionFactory = defaultConnectionFactory;
     }
 
     @Override
@@ -275,13 +278,25 @@ public class SPDYServerConnector extends SelectChannelConnector
         return Collections.unmodifiableCollection(sessions);
     }
 
-    public boolean isFlowControlEnabled()
+    public int getInitialWindowSize()
     {
-        return flowControlEnabled;
+        return initialWindowSize;
     }
 
-    public void setFlowControlEnabled(boolean flowControl)
+    public void setInitialWindowSize(int initialWindowSize)
     {
-        this.flowControlEnabled = flowControl;
+        this.initialWindowSize = initialWindowSize;
+    }
+
+    private class LazyExecutor implements Executor
+    {
+        @Override
+        public void execute(Runnable command)
+        {
+            ThreadPool threadPool = getThreadPool();
+            if (threadPool == null)
+                throw new RejectedExecutionException();
+            threadPool.dispatch(command);
+        }
     }
 }

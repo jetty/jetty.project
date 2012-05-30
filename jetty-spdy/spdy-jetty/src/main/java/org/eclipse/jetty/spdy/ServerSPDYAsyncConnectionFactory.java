@@ -57,17 +57,16 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         Parser parser = new Parser(compressionFactory.newDecompressor());
         Generator generator = new Generator(bufferPool, compressionFactory.newCompressor());
 
-        ServerSessionFrameListener listener = this.listener;
-        if (listener == null)
-            listener = newServerSessionFrameListener(endPoint, attachment);
-
         SPDYServerConnector connector = (SPDYServerConnector)attachment;
 
+        ServerSessionFrameListener listener = provideServerSessionFrameListener(endPoint, attachment);
         SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, bufferPool, parser, listener, connector);
         endPoint.setConnection(connection);
 
-        final StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator);
-        session.setFlowControlEnabled(connector.isFlowControlEnabled());
+        FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
+
+        StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator, flowControlStrategy);
+        session.setWindowSize(connector.getInitialWindowSize());
         parser.addListener(session);
         connection.setSession(session);
 
@@ -76,9 +75,14 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         return connection;
     }
 
-    protected ServerSessionFrameListener newServerSessionFrameListener(AsyncEndPoint endPoint, Object attachment)
+    protected ServerSessionFrameListener provideServerSessionFrameListener(AsyncEndPoint endPoint, Object attachment)
     {
         return listener;
+    }
+
+    protected FlowControlStrategy newFlowControlStrategy(short version)
+    {
+        return FlowControlStrategyFactory.newFlowControlStrategy(version);
     }
 
     private static class ServerSPDYAsyncConnection extends SPDYAsyncConnection

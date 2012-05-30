@@ -21,43 +21,39 @@ import java.io.IOException;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTPSPDYServerConnector extends SPDYServerConnector
 {
-    private final AsyncConnectionFactory defaultConnectionFactory;
-    private final PushStrategy pushStrategy = new PushStrategy.None();
-
     public HTTPSPDYServerConnector()
     {
-        this(null);
+        this(null, new PushStrategy.None());
+    }
+
+    public HTTPSPDYServerConnector(PushStrategy pushStrategy)
+    {
+        this(null, pushStrategy);
     }
 
     public HTTPSPDYServerConnector(SslContextFactory sslContextFactory)
     {
-        super(null, sslContextFactory);
-        // Override the default connection factory for non-SSL connections
-        defaultConnectionFactory = new ServerHTTPAsyncConnectionFactory(this);
-        setFlowControlEnabled(false);
+        this(sslContextFactory, new PushStrategy.None());
     }
 
-    @Override
-    protected void doStart() throws Exception
+    public HTTPSPDYServerConnector(SslContextFactory sslContextFactory, PushStrategy pushStrategy)
     {
-        super.doStart();
+        // We pass a null ServerSessionFrameListener because for
+        // HTTP over SPDY we need one that references the endPoint
+        super(null, sslContextFactory);
+        // Override the default connection factory for non-SSL connections to speak plain HTTP
+        setDefaultAsyncConnectionFactory(new ServerHTTPAsyncConnectionFactory(this));
+        // Add the "http/1.1" protocol for browsers that support NPN but not SPDY
+        putAsyncConnectionFactory("http/1.1", getDefaultAsyncConnectionFactory());
         // Override the "spdy/2" protocol by handling HTTP over SPDY
         putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
-        // Add the "http/1.1" protocol for browsers that do not support NPN
-        putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
-    }
-
-    @Override
-    protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
-    {
-        return defaultConnectionFactory;
+        // TODO: Override the "spdy/3" protocol to handle HTTP over SPDY
     }
 
     @Override

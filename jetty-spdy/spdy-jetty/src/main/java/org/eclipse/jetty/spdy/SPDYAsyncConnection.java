@@ -223,6 +223,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     @Override
     public void onIdleExpired(long idleForMs)
     {
+        logger.debug("Idle timeout expired for {}", getEndPoint());
         session.goAway();
     }
 

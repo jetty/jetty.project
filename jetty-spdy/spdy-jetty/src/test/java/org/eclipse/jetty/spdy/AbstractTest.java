@@ -53,15 +53,17 @@ public abstract class AbstractTest
 
     protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
     {
-        return startServer(listener,true);
+        return startServer(SPDY.V2, listener);
     }
-    
-    protected InetSocketAddress startServer(ServerSessionFrameListener listener, boolean flowControl) throws Exception
+
+    protected InetSocketAddress startServer(short version, ServerSessionFrameListener listener) throws Exception
     {
         if (connector == null)
             connector = newSPDYServerConnector(listener);
+        if (listener == null)
+            listener = connector.getServerSessionFrameListener();
+        connector.setDefaultAsyncConnectionFactory(new ServerSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), listener));
         connector.setPort(0);
-        connector.setFlowControlEnabled(flowControl);
         server = new Server();
         server.addConnector(connector);
         server.start();
@@ -75,6 +77,11 @@ public abstract class AbstractTest
 
     protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
     {
+        return startClient(SPDY.V2, socketAddress, listener);
+    }
+
+    protected Session startClient(short version, InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
+    {
         if (clientFactory == null)
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -82,7 +89,7 @@ public abstract class AbstractTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
-        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
+        return clientFactory.newSPDYClient(version).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
     }
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)

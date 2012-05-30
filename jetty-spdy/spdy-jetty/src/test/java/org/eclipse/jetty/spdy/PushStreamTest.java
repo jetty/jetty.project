@@ -16,12 +16,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -64,6 +58,12 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.spdy.parser.Parser.Listener;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class PushStreamTest extends AbstractTest
 {
@@ -342,14 +342,14 @@ public class PushStreamTest extends AbstractTest
         return bytes;
     }
 
-    
+
     @Test
     public void testClientResetsStreamAfterPushSynDoesPreventSendingDataFramesWithFlowControl() throws Exception
     {
         final boolean flowControl = true;
         testNoMoreFramesAreSentOnPushStreamAfterClientResetsThePushStream(flowControl);
     }
-    
+
     @Test
     public void testClientResetsStreamAfterPushSynDoesPreventSendingDataFramesWithoutFlowControl() throws Exception
     {
@@ -375,7 +375,7 @@ public class PushStreamTest extends AbstractTest
             {
                 new Thread(new Runnable()
                 {
-                    
+
                     @Override
                     public void run()
                     {
@@ -403,13 +403,13 @@ public class PushStreamTest extends AbstractTest
             {
                 resetReceivedLatch.countDown();
             }
-            
+
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
             {
                 goAwayReceivedLatch.countDown();
             }
-        }, flowControl);
+        }/*TODO, flowControl*/);
 
         final SocketChannel channel = SocketChannel.open(serverAddress);
         final Generator generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory.StandardCompressor());
@@ -422,7 +422,7 @@ public class PushStreamTest extends AbstractTest
         parser.addListener(new Listener.Adapter()
         {
             int bytesRead = 0;
-            
+
             @Override
             public void onControlFrame(ControlFrame frame)
             {
@@ -465,7 +465,7 @@ public class PushStreamTest extends AbstractTest
                 }
             }
         });
-        
+
         Thread reader = new Thread(new Runnable()
         {
             @Override
@@ -487,16 +487,16 @@ public class PushStreamTest extends AbstractTest
                     parser.parse(readBuffer);
                     readBuffer.clear();
                 }
-                
+
             }
         });
         reader.start();
         read = false;
-        
+
         assertThat("no unexpected exceptions occured", unexpectedExceptionOccured.get(), is(false));
         assertThat("not all dataframes have been received as the pushstream has been reset by the client.",allDataFramesReceivedLatch.await(streamId,TimeUnit.SECONDS),is(false));
 
-        
+
         ByteBuffer buffer = generator.control(new GoAwayFrame(version, streamId, SessionStatus.OK.getCode()));
         channel.write(buffer);
         Assert.assertThat(buffer.hasRemaining(), is(false));
@@ -519,7 +519,7 @@ public class PushStreamTest extends AbstractTest
                 stream.syn(new SynInfo(false));
                 return null;
             }
-        }, true),new SessionFrameListener.Adapter()
+        }),new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)

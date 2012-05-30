@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Handler;
@@ -93,13 +94,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private final AtomicBoolean goAwaySent = new AtomicBoolean();
     private final AtomicBoolean goAwayReceived = new AtomicBoolean();
     private final AtomicInteger lastStreamId = new AtomicInteger();
+    private final FlowControlStrategy flowControlStrategy;
     private boolean flushing;
     private boolean failed = false;
-    private volatile boolean flowControlEnabled = true;
-    private volatile int windowSize = 65536;
 
     public StandardSession(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler,
-            Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener, Generator generator)
+            Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener,
+            Generator generator, FlowControlStrategy flowControlStrategy)
     {
         this.version = version;
         this.bufferPool = bufferPool;
@@ -111,6 +112,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         this.pingIds = new AtomicInteger(initialStreamId);
         this.listener = listener;
         this.generator = generator;
+        this.flowControlStrategy = flowControlStrategy;
     }
 
     @Override
@@ -268,14 +270,14 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void onControlFrame(ControlFrame frame)
     {
-        notifyIdle(idleListener,false);
+        notifyIdle(idleListener, false);
         try
         {
-            logger.debug("Processing {}",frame);
+            logger.debug("Processing {}", frame);
 
             if (goAwaySent.get())
             {
-                logger.debug("Skipped processing of {}",frame);
+                logger.debug("Skipped processing of {}", frame);
                 return;
             }
 
@@ -334,7 +336,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
         finally
         {
-            notifyIdle(idleListener,true);
+            notifyIdle(idleListener, true);
         }
     }
 
@@ -344,11 +346,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         notifyIdle(idleListener, false);
         try
         {
-            logger.debug("Processing {}, {} data bytes",frame,data.remaining());
+            logger.debug("Processing {}, {} data bytes", frame, data.remaining());
 
             if (goAwaySent.get())
             {
-                logger.debug("Skipped processing of {}",frame);
+                logger.debug("Skipped processing of {}", frame);
                 return;
             }
 
@@ -356,18 +358,18 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             IStream stream = streams.get(streamId);
             if (stream == null)
             {
-                RstInfo rstInfo = new RstInfo(streamId,StreamStatus.INVALID_STREAM);
-                logger.debug("Unknown stream {}",rstInfo);
+                RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
+                logger.debug("Unknown stream {}", rstInfo);
                 rst(rstInfo);
             }
             else
             {
-                processData(stream,frame,data);
+                processData(stream, frame, data);
             }
         }
         finally
         {
-            notifyIdle(idleListener,true);
+            notifyIdle(idleListener, true);
         }
     }
 
@@ -377,9 +379,19 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             listener.onIdle(idle);
     }
 
-    private void processData(IStream stream, DataFrame frame, ByteBuffer data)
+    private void processData(final IStream stream, DataFrame frame, ByteBuffer data)
     {
-        stream.process(frame,data);
+        ByteBufferDataInfo dataInfo = new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress())
+        {
+            @Override
+            public void consume(int delta)
+            {
+                super.consume(delta);
+                flowControlStrategy.onDataConsumed(StandardSession.this, stream, this, delta);
+            }
+        };
+        flowControlStrategy.onDataReceived(this, stream, dataInfo);
+        stream.process(dataInfo);
         updateLastStreamId(stream);
         if (stream.isClosed())
             removeStream(stream);
@@ -455,7 +467,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private IStream newStream(SynStreamFrame frame)
     {
         IStream associatedStream = streams.get(frame.getAssociatedStreamId());
-        return new StandardStream(frame, this, windowSize, associatedStream);
+        IStream stream = new StandardStream(frame, this, associatedStream);
+        flowControlStrategy.onNewStream(this, stream);
+        return stream;
     }
 
     private void notifyStreamCreated(IStream stream)
@@ -550,15 +564,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         Settings.Setting windowSizeSetting = frame.getSettings().get(Settings.ID.INITIAL_WINDOW_SIZE);
         if (windowSizeSetting != null)
         {
-            int prevWindowSize = windowSize;
-            windowSize = windowSizeSetting.value();
-            for (IStream stream : streams.values())
-                stream.updateWindowSize(windowSize - prevWindowSize);
-            logger.debug("Updated window size to {}",windowSize);
+            int windowSize = windowSizeSetting.value();
+            setWindowSize(windowSize);
+            logger.debug("Updated session window size to {}", windowSize);
         }
-
-        SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(),frame.isClearPersisted());
-        notifyOnSettings(listener,settingsInfo);
+        SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
+        notifyOnSettings(listener, settingsInfo);
         flush();
     }
 
@@ -618,8 +629,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         int streamId = frame.getStreamId();
         IStream stream = streams.get(streamId);
-        if (stream != null)
-            stream.process(frame);
+        flowControlStrategy.onWindowUpdate(this, stream, frame.getWindowDelta());
+        flush();
     }
 
     protected void close()
@@ -993,6 +1004,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
+    public int getWindowSize()
+    {
+        return flowControlStrategy.getWindowSize(this);
+    }
+
+    public void setWindowSize(int initialWindowSize)
+    {
+        flowControlStrategy.setWindowSize(this, initialWindowSize);
+    }
+
     public interface FrameBytes extends Comparable<FrameBytes>
     {
         public IStream getStream();
@@ -1145,17 +1166,14 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             bufferPool.release(buffer);
             IStream stream = getStream();
-            boolean flowControlEnabled = StandardSession.this.flowControlEnabled;
-            if (flowControlEnabled)
-                stream.updateWindowSize(-size);
+            flowControlStrategy.updateWindow(StandardSession.this, stream, -size);
             if (dataInfo.available() > 0)
             {
                 // We have written a frame out of this DataInfo, but there is more to write.
                 // We need to keep the correct ordering of frames, to avoid that another
                 // DataInfo for the same stream is written before this one is finished.
                 prepend(this);
-                if (!flowControlEnabled)
-                    flush();
+                flush();
             }
             else
             {
@@ -1171,15 +1189,5 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             return String.format("DATA bytes @%x available=%d consumed=%d on %s",dataInfo.hashCode(),dataInfo.available(),dataInfo.consumed(),getStream());
         }
-    }
-    
-    public boolean isFlowControlEnabled()
-    {
-        return flowControlEnabled;
-    }
-    
-    public void setFlowControlEnabled(boolean flowControl)
-    {
-        this.flowControlEnabled = flowControl;
     }
 }

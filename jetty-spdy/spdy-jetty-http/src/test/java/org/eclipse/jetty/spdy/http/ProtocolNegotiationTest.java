@@ -27,7 +27,6 @@ import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -109,9 +108,8 @@ public class ProtocolNegotiationTest
             public String selectProtocol(List<String> strings)
             {
                 Assert.assertNotNull(strings);
-                Assert.assertEquals(1, strings.size());
-                String protocol = strings.get(0);
-                Assert.assertEquals("http/1.1", protocol);
+                String protocol = "http/1.1";
+                Assert.assertTrue(strings.contains(protocol));
                 return protocol;
             }
         });
@@ -166,11 +164,11 @@ public class ProtocolNegotiationTest
             public String selectProtocol(List<String> strings)
             {
                 Assert.assertNotNull(strings);
-                Assert.assertEquals(2, strings.size());
-                String spdyProtocol = strings.get(0);
-                Assert.assertEquals("spdy/2", spdyProtocol);
-                String httpProtocol = strings.get(1);
-                Assert.assertEquals("http/1.1", httpProtocol);
+                String spdyProtocol = "spdy/2";
+                Assert.assertTrue(strings.contains(spdyProtocol));
+                String httpProtocol = "http/1.1";
+                Assert.assertTrue(strings.contains(httpProtocol));
+                Assert.assertTrue(strings.indexOf(spdyProtocol) < strings.indexOf(httpProtocol));
                 return httpProtocol;
             }
         });
@@ -198,14 +196,9 @@ public class ProtocolNegotiationTest
     @Test
     public void testServerAdvertisingSPDYAndHTTPSpeaksDefaultProtocolWhenNPNMissing() throws Exception
     {
-        InetSocketAddress address = startServer(new SPDYServerConnector(null, newSslContextFactory())
-        {
-            @Override
-            protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
-            {
-                return new ServerHTTPAsyncConnectionFactory(connector);
-            }
-        });
+        SPDYServerConnector connector = new SPDYServerConnector(null, newSslContextFactory());
+        connector.setDefaultAsyncConnectionFactory(new ServerHTTPAsyncConnectionFactory(connector));
+        InetSocketAddress address = startServer(connector);
         connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector));
 
         SslContextFactory sslContextFactory = newSslContextFactory();

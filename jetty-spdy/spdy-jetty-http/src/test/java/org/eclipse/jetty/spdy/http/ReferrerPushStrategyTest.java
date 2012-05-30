@@ -30,17 +30,10 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     @Override
     protected SPDYServerConnector newHTTPSPDYServerConnector()
     {
-        return new HTTPSPDYServerConnector()
-        {
-            private final AsyncConnectionFactory defaultAsyncConnectionFactory =
-                    new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, new ReferrerPushStrategy());
-
-            @Override
-            protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
-            {
-                return defaultAsyncConnectionFactory;
-            }
-        };
+        SPDYServerConnector connector = super.newHTTPSPDYServerConnector();
+        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
+        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+        return connector;
     }
 
     @Test
@@ -363,7 +356,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         Assert.assertTrue(mainStreamLatch.await(5, TimeUnit.SECONDS));
         Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void testRequestWithIfModifiedSinceHeaderPreventsPush() throws Exception
     {
