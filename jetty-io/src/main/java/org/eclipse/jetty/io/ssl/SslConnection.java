@@ -15,11 +15,13 @@ package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AbstractAsyncConnection;
@@ -28,12 +30,17 @@ import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.ReadInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.omg.stub.java.rmi._Remote_Stub;
 
 /**
  * An AsyncConnection that acts as an interceptor between and EndPoint and another
@@ -45,295 +52,176 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SslConnection extends AbstractAsyncConnection
 {
-    private static final Logger logger = Log.getLogger(SslConnection.class);
-    private final ByteBufferPool byteBufferPool;
-    private final SSLEngine sslEngine;
-    private final SSLMachine sslMachine;
-    private final AsyncEndPoint appEndPoint;
-    private boolean direct = false;
-    private ReadState readState = ReadState.HANDSHAKING;
-    private WriteState writeState = WriteState.HANDSHAKING;
-    private ByteBuffer appInput;
-    private ByteBuffer netInput;
-    private ByteBuffer netOutput;
-    private Callback appReader;
-    private Object readContext;
+    private static final Logger LOG = Log.getLogger(SslConnection.class);
+    private final ByteBufferPool _bufferPool;
+    private final SSLEngine _sslEngine;
+    private final SslEndPoint _appEndPoint;
+    private final Executor _executor;
+    private ByteBuffer _appIn;
+    private ByteBuffer _netIn;
+    private ByteBuffer _netOut;
+    private final boolean _netDirect=false;
+    private final boolean _appDirect=false;
 
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, AsyncEndPoint endPoint, SSLEngine sslEngine)
     {
-        super(endPoint, executor);
-        this.byteBufferPool = byteBufferPool;
-        this.sslEngine = sslEngine;
-        this.sslMachine = new ConnectionSSLMachine(sslEngine);
-        this.appEndPoint = new ApplicationEndPoint();
+        super(endPoint, executor, true);
+        
+        _executor=executor;
+        this._bufferPool = byteBufferPool;
+        this._sslEngine = sslEngine;
+        this._appEndPoint = new SslEndPoint();
     }
 
     public SSLEngine getSSLEngine()
     {
-        return sslEngine;
+        return _sslEngine;
     }
 
+    public AsyncEndPoint getAppEndPoint()
+    {
+        return _appEndPoint;
+    }
+    
     @Override
     public void onOpen()
     {
         try
         {
             super.onOpen();
-            scheduleOnReadable();
-            sslEngine.beginHandshake();
+            
+            // Begin the handshake
+            _sslEngine.setUseClientMode(false);
+            _sslEngine.beginHandshake();
+            
+            LOG.debug("{} onopen",this);
+            
+            // Tell the app that we are open, even though we have
+            // not completed the handshake.  All handshaking will be
+            // done in calls to fill and flush, as it has to be with
+            // rehandshakes.  We dispatch here because it will probably
+            // result in a call to onReadable
+            _executor.execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    _appEndPoint.getAsyncConnection().onOpen();
+                }
+            });
         }
         catch (SSLException x)
         {
+            getEndPoint().close();
             throw new RuntimeIOException(x);
         }
     }
-
-    public AsyncEndPoint getAppEndPoint()
-    {
-        return appEndPoint;
-    }
-
-    private void updateReadState(ReadState newReadState)
-    {
-        ReadState oldReadState = readState;
-        switch (oldReadState)
-        {
-            case HANDSHAKING:
-            {
-                if (newReadState != ReadState.HANDSHAKEN)
-                    throw wrongReadStateUpdate(oldReadState, newReadState);
-                readState = newReadState;
-                break;
-            }
-            case HANDSHAKEN:
-            {
-                switch (newReadState)
-                {
-                    case IDLE:
-                    {
-                        if (BufferUtil.hasContent(netInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    case UNDERFLOW:
-                    {
-                        if (!BufferUtil.hasContent(netInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    case DECRYPTED:
-                    {
-                        if (!BufferUtil.hasContent(appInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    case CLOSED:
-                    {
-                        if (BufferUtil.hasContent(appInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    default:
-                    {
-                        throw wrongReadStateUpdate(oldReadState, newReadState);
-                    }
-                }
-            }
-            case IDLE:
-            {
-                switch (newReadState)
-                {
-                    case UNDERFLOW:
-                    {
-                        if (!BufferUtil.hasContent(netInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    case DECRYPTED:
-                    {
-                        if (!BufferUtil.hasContent(appInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    case CLOSED:
-                    {
-                        if (BufferUtil.hasContent(appInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    default:
-                    {
-                        throw wrongReadStateUpdate(oldReadState, newReadState);
-                    }
-                }
-            }
-            case DECRYPTED:
-            {
-                switch (newReadState)
-                {
-                    case IDLE:
-                    {
-                        if (BufferUtil.hasContent(netInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    case UNDERFLOW:
-                    {
-                        if (!BufferUtil.hasContent(netInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    case CLOSED:
-                    {
-                        if (BufferUtil.hasContent(appInput))
-                            throw wrongReadStateUpdate(oldReadState, newReadState);
-                        readState = newReadState;
-                        break;
-                    }
-                    default:
-                    {
-                        throw wrongReadStateUpdate(oldReadState, newReadState);
-                    }
-                }
-            }
-            default:
-            {
-                throw wrongReadStateUpdate(oldReadState, newReadState);
-            }
-        }
-    }
-
-    private IllegalStateException wrongReadStateUpdate(ReadState oldReadState, ReadState newReadState)
-    {
-        String message = String.format("Invalid read state update: %s => %s", oldReadState, newReadState);
-        return new IllegalStateException(message);
-    }
-
+    
+    /* ------------------------------------------------------------ */
     @Override
     public void onReadable()
     {
-        if (appInput != null)
-            throw new IllegalStateException();
-
-        switch (readState)
-        {
-            case HANDSHAKING:
-            case IDLE:
-            {
-                if (netInput != null)
-                    throw new IllegalStateException();
-                netInput = byteBufferPool.acquire(sslEngine.getSession().getPacketBufferSize(), direct);
-                appInput = byteBufferPool.acquire(sslEngine.getSession().getApplicationBufferSize(), false);
-                break;
-            }
-            case UNDERFLOW:
-            {
-                if (netInput == null)
-                    throw new IllegalStateException();
-                BufferUtil.compact(netInput);
-                break;
-            }
-            default:
-            {
-                throw new IllegalStateException("Unexpected read state " + readState);
-            }
-        }
-
-        AsyncEndPoint endPoint = getEndPoint();
-        try
-        {
-            while (true) // TODO: writes can close the connection, check that also ?
-            {
-                BufferUtil.compact(netInput);
-                int filled = endPoint.fill(netInput);
-                if (filled == 0)
-                {
-                    scheduleOnReadable();
-                    break;
-                }
-                else if (filled < 0)
-                {
-                    updateReadState(ReadState.CLOSED);
-                    sslEngine.closeInbound();
-                    break;
-                }
-                else if (filled > 0)
-                {
-                    boolean readMore = decrypt();
-                    if (!readMore)
-                        break;
-                }
-            }
-        }
-        catch (IOException x)
-        {
-            endPoint.close();
-        }
+        LOG.debug("{} onReadable",this);
+        
+        // We are hand shaking so could be either a reader or a writer
+        // that is interested.  So tell both either if they care
+        if (_appEndPoint._readInterest.isInterested())
+            _appEndPoint._readInterest.readable();
+        
+        else if (_appEndPoint._writeFlusher.isWriting())
+            _appEndPoint._writeFlusher.completeWrite();
     }
 
-    private boolean decrypt() throws SSLException
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
     {
-        while (true)
-        {
-            updateReadState(sslMachine.decrypt(netInput, appInput));
-            switch (readState)
-            {
-                case UNDERFLOW:
+        return String.format("SslConnection@%x{%s,%s%s}",
+            hashCode(),
+            _sslEngine.getHandshakeStatus(),
+            _appEndPoint._readInterest.isInterested()?"R":"",
+            _appEndPoint._writeFlusher.isWriting()?"W":"");
+    }
+    
+    /* ------------------------------------------------------------ */
+    public class SslEndPoint extends AbstractEndPoint implements AsyncEndPoint
+    {
+        private AsyncConnection _connection;
+        private boolean _fillWrap;
+        private boolean _flushing;
+        private boolean _ishut=false;
+        
+        private final Callback<Void> _writeCallback = new Callback<Void>(){
+
+            @Override
+            public void completed(Void context)
+            {      
+                synchronized (SslEndPoint.this)
                 {
-                    return true;
-                }
-                case HANDSHAKEN:
-                {
-                    getAppEndPoint().getAsyncConnection().onOpen();
-                    if (!netInput.hasRemaining())
+                    LOG.debug("{} write.complete {}",SslConnection.this,_flushing?(_fillWrap?"FW":"F"):(_fillWrap?"W":""));
+
+                    if (_netOut==null && !_netOut.hasRemaining())
                     {
-                        updateReadState(ReadState.IDLE);
-                        return true;
+                        _bufferPool.release(_netOut);
+                        _netOut=null;
                     }
-                    break;
-                }
-                case DECRYPTED:
-                {
-                    appReader.completed(readContext);
-                    return false;
-                }
-                case CLOSED:
-                {
-                    appReader.completed(readContext);
-                    return false;
-                }
-                default:
-                {
-                    throw new IllegalStateException("Unexpected read state " + readState);
+                    
+                    _flushing=false;
+                    if (_fillWrap)
+                    {
+                        _fillWrap=false;
+                        _readInterest.readable();
+                    }
+                    
+                    if (_writeFlusher.isWriting())
+                        _writeFlusher.completeWrite();
                 }
             }
-        }
-    }
 
-    public void setAllowRenegotiate(boolean allowRenegotiate)
-    {
-        // TODO
-    }
-
-    public class ApplicationEndPoint extends AbstractEndPoint implements AsyncEndPoint
-    {
-        private final AtomicBoolean writing = new AtomicBoolean();
-        private boolean oshut;
-        private Object context;
-        private Callback callback;
-        private ByteBuffer[] buffers;
-        private AsyncConnection connection;
-
-        public ApplicationEndPoint()
+            @Override
+            public void failed(Void context, Throwable x)
+            {     
+                synchronized (SslEndPoint.this)
+                {
+                    LOG.debug("{} write.failed",SslConnection.this,x);
+                    _flushing=false;
+                    if (_fillWrap)
+                    {
+                        _fillWrap=false;
+                        _readInterest.failed(x);
+                    }
+                    
+                    if (_writeFlusher.isWriting())
+                        _writeFlusher.failed(x);
+                }           
+            }
+            
+        };
+        
+        private final ReadInterest _readInterest = new ReadInterest()
+        {
+            @Override
+            protected boolean readInterested() throws IOException
+            {
+                if (BufferUtil.hasContent(_appIn)||BufferUtil.hasContent(_netIn))
+                    return true;
+                scheduleOnReadable();
+                return false;
+            }       
+        };
+        
+        private final WriteFlusher _writeFlusher = new WriteFlusher(this)
+        {
+            @Override
+            protected void scheduleCompleteWrite()
+            {           
+                if (BufferUtil.isEmpty(_netOut))
+                    throw new IllegalStateException();
+                getEndPoint().write(null,_writeCallback,_netOut);
+            }
+        };
+        
+        public SslEndPoint()
         {
             super(getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
         }
@@ -341,97 +229,246 @@ public class SslConnection extends AbstractAsyncConnection
         @Override
         public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
         {
-            if (appReader != null)
-                throw new ReadPendingException();
+            _readInterest.registerInterest(context,callback);
+        }
 
-            switch (readState)
+        @Override
+        public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
+        {
+            _writeFlusher.write(context,callback,buffers);
+        }
+       
+        @Override
+        public synchronized int fill(ByteBuffer buffer) throws IOException
+        {
+            LOG.debug("{} fill",SslConnection.this);
+            try
             {
-                case IDLE:
+                // Do we already have some decrypted data?
+                if (BufferUtil.hasContent(_appIn))
+                    return BufferUtil.append(_appIn,buffer);
+
+                // We will need a network buffer
+                if (_netIn==null)
+                    _netIn=_bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(),_netDirect);
+                else
+                    BufferUtil.compact(_netIn);
+
+                // We also need an app buffer, but can use the passed buffer if it is big enough
+                ByteBuffer app_in;
+                if (BufferUtil.space(buffer)>_sslEngine.getSession().getApplicationBufferSize())
+                    app_in=buffer;
+                else if (_appIn==null)
+                    app_in=_appIn=_bufferPool.acquire(_sslEngine.getSession().getApplicationBufferSize(),_appDirect);
+                else
+                    app_in=_appIn;
+
+                // loop filling and unwrapping until we have something
+                while(true)
                 {
-                    if (BufferUtil.hasContent(netInput))
-                        throw new IllegalStateException();
-                    appReader = callback;
-                    readContext = context;
-                    scheduleOnReadable();
-                    break;
+                    // Let's try reading some encrypted data... even if we have some already.
+                    int net_filled=getEndPoint().fill(_netIn);
+                    
+                    // Let's try the SSL thang even if we have no net data because in that
+                    // case we want to fall through to the handshake handling
+                    int pos=BufferUtil.flipToFill(app_in);
+                    SSLEngineResult result = _sslEngine.unwrap(_netIn,app_in);
+                    LOG.debug("{} unwrap {}",SslConnection.this,result);
+                    BufferUtil.flipToFlush(app_in,pos);
+
+                    // and deal with the results
+                    switch(result.getStatus())
+                    {
+                        case BUFFER_OVERFLOW:
+                            throw new IllegalStateException();
+
+                        case CLOSED:
+
+                            // Dang! we have to care about the handshake state
+                            switch(_sslEngine.getHandshakeStatus())
+                            {
+                                case NOT_HANDSHAKING:
+                                    return -1;
+
+                                case NEED_TASK:
+                                    // run the task
+                                    _sslEngine.getDelegatedTask().run();
+                                    continue;
+
+                                case NEED_WRAP:
+                                    // we need to send some handshake data
+                                    _fillWrap=true;
+                                    flush(BufferUtil.EMPTY_BUFFER);
+                                    getEndPoint().close();
+                                    return -1;
+
+                                default:
+                                    throw new IllegalStateException();
+                            }
+
+                        default:
+                            // if we produced bytes, we don't care about the handshake state
+                            if (result.bytesProduced()>0)
+                            {
+                                if (app_in==buffer)
+                                    return result.bytesProduced();
+                                return BufferUtil.append(_appIn,buffer);
+                            }
+
+                            // Dang! we have to care about the handshake state
+                            switch(_sslEngine.getHandshakeStatus())
+                            {
+                                case NOT_HANDSHAKING:
+                                    // we just didn't read anything.
+                                    if (net_filled<0)
+                                        _sslEngine.closeInbound();
+                                    return 0;
+
+                                case NEED_TASK:
+                                    // run the task
+                                    _sslEngine.getDelegatedTask().run();
+                                    continue;
+
+                                case NEED_WRAP:
+                                    // we need to send some handshake data
+                                    _fillWrap=true;
+                                    flush(BufferUtil.EMPTY_BUFFER);
+                                    continue;
+
+                                case NEED_UNWRAP:
+                                    // if we just filled some net data
+                                    if (net_filled<0)
+                                        _sslEngine.closeInbound();
+                                    else if (net_filled>0)
+                                        // maybe we will fill some more on a retry
+                                        continue;
+                                    // we need to wait for more net data
+                                    return 0;
+
+                                case FINISHED:
+                                    throw new IllegalStateException();
+                            }
+                    }
                 }
-                case UNDERFLOW:
+            }
+            catch(Exception e)
+            {
+                getEndPoint().close();
+                throw e;
+            }
+            finally
+            {
+                if (_netIn!=null && !_netIn.hasRemaining())
                 {
-                    if (!BufferUtil.hasContent(netInput))
-                        throw new IllegalStateException();
-                    appReader = callback;
-                    readContext = context;
-                    scheduleOnReadable();
-                    break;
+                    _bufferPool.release(_netIn);
+                    _netIn=null;
                 }
-                case DECRYPTED:
+                if (_appIn!=null && !_appIn.hasRemaining())
                 {
-                    if (!BufferUtil.hasContent(appInput))
-                        throw new IllegalStateException();
-                    callback.completed(context);
-                    break;
+                    _bufferPool.release(_appIn);
+                    _appIn=null;
                 }
-                case CLOSED:
-                {
-                    if (BufferUtil.hasContent(appInput))
-                        throw new IllegalStateException();
-                    callback.completed(context);
-                    break;
-                }
-                default:
-                {
-                    throw new IllegalStateException("Unexpected read state " + readState);
-                }
+                LOG.debug("{} !fill",SslConnection.this);
             }
         }
 
         @Override
-        public int fill(ByteBuffer buffer) throws IOException
+        public synchronized int flush(ByteBuffer... appOuts) throws IOException
         {
-            switch (readState)
+            LOG.debug("{} flush",SslConnection.this);
+            try
             {
-                case IDLE:
-                case UNDERFLOW:
-                {
+                if (_flushing)
                     return 0;
-                }
-                case DECRYPTED:
-                {
-                    if (!BufferUtil.hasContent(appInput))
-                        throw new IllegalStateException();
+                    
+                // We will need a network buffer
+                if (_netOut==null)
+                    _netOut=_bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(),_netDirect);
+                else
+                    BufferUtil.compact(_netOut);
 
-                    int filled = BufferUtil.append(appInput, buffer);
-                    if (!BufferUtil.hasContent(appInput))
+
+                while(true)
+                {
+                    // do the funky SSL thang!
+                    int pos=BufferUtil.flipToFill(_netOut);
+                    SSLEngineResult result=_sslEngine.wrap(appOuts,_netOut);
+                    LOG.debug("{} wrap {}",SslConnection.this,result);
+                    BufferUtil.flipToFlush(_netOut,pos);
+
+                    // and deal with the results
+                    switch(result.getStatus())
                     {
-                        byteBufferPool.release(appInput);
-                        appInput = null;
-                        updateReadState(BufferUtil.hasContent(netInput) ? ReadState.UNDERFLOW :
-                                sslMachine.isRemoteClosed() ? ReadState.CLOSED : ReadState.IDLE);
+                        case CLOSED:
+                            if (appOuts.length==1 && appOuts[0]==BufferUtil.EMPTY_BUFFER)
+                                return 0;
+                            throw new EofException();
+
+                        case BUFFER_UNDERFLOW:
+                            throw new IllegalStateException();
+
+                        case BUFFER_OVERFLOW:
+                            return 0;
+                            
+                        default:
+                            // if we produced bytes, let's just flush them
+                            if (result.bytesProduced()>0)
+                            {
+                                getEndPoint().flush(_netOut);
+                                return result.bytesConsumed();
+                            }
+
+                            // Dang! we have to deal with handshake state
+                            switch(_sslEngine.getHandshakeStatus())
+                            {
+                                case NOT_HANDSHAKING:
+                                    // we just didn't write anything. Strange?
+                                    return 0;
+
+                                case NEED_TASK:
+                                    // run the task
+                                    _sslEngine.getDelegatedTask().run();
+                                    continue;
+
+                                case NEED_WRAP:
+                                    // Hey we just wrapped! Oh well we will wrap again when flush is called again
+                                    continue;
+
+                                case NEED_UNWRAP:
+                                    // Were we were not called from fill and not reading anyway
+                                    if ((appOuts.length!=1 || appOuts[0]!=BufferUtil.EMPTY_BUFFER) && !_readInterest.isInterested())
+                                        fill(BufferUtil.EMPTY_BUFFER);
+                                    return 0;
+
+                                case FINISHED:
+                                    throw new IllegalStateException();
+
+                            }
                     }
-                    return filled;
                 }
-                case CLOSED:
-                {
-                    return -1;
-                }
-                default:
-                {
-                    throw new IllegalStateException("Unexpected read state " + readState);
-                }
+            }
+            catch(Exception e)
+            {
+                getEndPoint().close();
+                throw e;
+            }
+            finally
+            {
+                LOG.debug("{} !flush",SslConnection.this);
             }
         }
 
         @Override
         public void shutdownOutput()
         {
-            oshut = true;
-            sslMachine.close();
+            _sslEngine.closeOutbound();
+            // TODO then?
         }
 
         @Override
         public boolean isOutputShutdown()
         {
-            return oshut;
+            return _sslEngine.isOutboundDone() || !getEndPoint().isOpen();
         }
 
         @Override
@@ -455,158 +492,25 @@ public class SslConnection extends AbstractAsyncConnection
         @Override
         public boolean isInputShutdown()
         {
-            return sslMachine.isRemoteClosed();
-        }
-
-        @Override
-        public int flush(ByteBuffer... appOutputs) throws IOException
-        {
-            switch (writeState)
-            {
-                case HANDSHAKING:
-                {
-                    if (netOutput != null)
-                        throw new IllegalStateException();
-                    netOutput = byteBufferPool.acquire(sslEngine.getSession().getPacketBufferSize(), direct);
-                    break;
-                }
-                default:
-                {
-                    throw new IllegalStateException("Unexpected write state " + readState);
-                }
-            }
-
-            ByteBuffer appOutput = appOutputs[0];
-            if (!appOutput.hasRemaining() && appOutputs.length > 1)
-            {
-                for (int i = 1; i < appOutputs.length; ++i)
-                {
-                    if (appOutputs[i].hasRemaining())
-                    {
-                        appOutput = appOutputs[i];
-                        break;
-                    }
-                }
-            }
-
-            int remaining = appOutput.remaining();
-            sslMachine.encrypt(appOutput, netOutput);
-            int result = remaining - appOutput.remaining();
-
-            getEndPoint().write(null, new Callback<Object>()
-            {
-                @Override
-                public void completed(Object context)
-                {
-                    completeWrite();
-                }
-
-                @Override
-                public void failed(Object context, Throwable x)
-                {
-                    // TODO
-                }
-            }, netOutput);
-
-            return result;
-        }
-
-        @Override
-        public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
-        {
-            if (!writing.compareAndSet(false, true))
-                throw new WritePendingException();
-
-            boolean writePending = false;
-            try
-            {
-                flush(buffers);
-
-                for (ByteBuffer buffer : buffers)
-                {
-                    if (buffer.hasRemaining())
-                    {
-                        this.context = context;
-                        this.callback = callback;
-                        this.buffers = buffers;
-                        writePending = true;
-                        return;
-                    }
-                }
-
-                callback.completed(context);
-            }
-            catch (IOException x)
-            {
-                callback.failed(context, x);
-            }
-            finally
-            {
-                writing.set(writePending);
-            }
-        }
-
-        private void completeWrite()
-        {
-            if (buffers == null)
-                return;
-
-            try
-            {
-                flush(buffers);
-
-                for (ByteBuffer buffer : buffers)
-                {
-                    if (buffer.hasRemaining())
-                        return;
-                }
-
-                callback.completed(context);
-            }
-            catch (IOException x)
-            {
-                callback.failed(context, x);
-            }
-            finally
-            {
-                context = null;
-                callback = null;
-                buffers = null;
-            }
+            return _ishut;
         }
 
         @Override
         public AsyncConnection getAsyncConnection()
         {
-            return connection;
+            return _connection;
         }
 
         @Override
         public void setAsyncConnection(AsyncConnection connection)
         {
-            this.connection = connection;
+            _connection=connection;
         }
-    }
-
-    private class ConnectionSSLMachine extends SSLMachine
-    {
-        private ConnectionSSLMachine(SSLEngine engine)
+        
+        @Override 
+        public String toString()
         {
-            super(engine);
-        }
-
-        @Override
-        protected void writeForDecrypt(ByteBuffer appOutput)
-        {
-            AsyncEndPoint endPoint = getAppEndPoint();
-            try
-            {
-                endPoint.flush(appOutput);
-            }
-            catch (IOException x)
-            {
-                endPoint.close();
-            }
+            return String.format("%s{%s%s}",super.toString(),_readInterest.isInterested()?"R":"",_writeFlusher.isWriting()?"W":"");
         }
     }
 }

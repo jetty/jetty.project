@@ -76,7 +76,7 @@ public class DumpHandler extends AbstractHandler
         
         if (request.getParameter("ISE")!=null)
         {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Testing ISE");
         }
         
         if (request.getParameter("error")!=null)

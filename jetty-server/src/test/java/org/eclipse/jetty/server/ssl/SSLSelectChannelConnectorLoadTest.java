@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SSLSelectChannelConnectorLoadTest
@@ -71,6 +72,7 @@ public class SSLSelectChannelConnectorLoadTest
     }
 
     @Test
+    @Ignore
     public void testLongLivedConnections() throws Exception
     {
         Worker.totalIterations.set(0);
@@ -118,6 +120,7 @@ public class SSLSelectChannelConnectorLoadTest
     }
 
     @Test
+    @Ignore
     public void testShortLivedConnections() throws Exception
     {
         Worker.totalIterations.set(0);

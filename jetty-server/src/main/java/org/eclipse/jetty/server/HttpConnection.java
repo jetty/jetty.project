@@ -232,20 +232,21 @@ public class HttpConnection extends AbstractAsyncConnection
                     // TODO protect against large/infinite headers as denial of service
                     
                     // If we failed to fill
-                    if (filled<=0)
+                    if (filled==0)
+                    {                        
+                        // Somebody wanted to read, we didn't so schedule another attempt
+                        scheduleOnReadable();
+                        releaseRequestBuffer();
+                        return;
+                    }
+                    else if (filled<0)
                     {
-                        if (filled==0)
-                            scheduleOnReadable();
-                        else
-                        {
-                            _parser.inputShutdown();
-                            // We were only filling if fully consumed, so if we have 
-                            // read -1 then we have nothing to parse and thus nothing that
-                            // will generate a response.  If we had a suspended request pending
-                            // a response or a request waiting in the buffer, we would not be here.
-                            getEndPoint().shutdownOutput();
-                        }
-
+                        _parser.inputShutdown();
+                        // We were only filling if fully consumed, so if we have 
+                        // read -1 then we have nothing to parse and thus nothing that
+                        // will generate a response.  If we had a suspended request pending
+                        // a response or a request waiting in the buffer, we would not be here.
+                        getEndPoint().shutdownOutput();
                         // buffer must be empty and the channel must be idle, so we can release.
                         releaseRequestBuffer();
                         return;

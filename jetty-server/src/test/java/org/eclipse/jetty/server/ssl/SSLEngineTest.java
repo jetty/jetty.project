@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -111,6 +112,7 @@ public class SSLEngineTest
     }
 
     @Test
+    @Ignore
     public void testBigResponse() throws Exception
     {
         SSLContext ctx=SSLContext.getInstance("TLS");
@@ -136,6 +138,7 @@ public class SSLEngineTest
     }
 
     @Test
+    @Ignore
     public void testRequestJettyHttps() throws Exception
     {
         final int loops=10;
@@ -202,6 +205,7 @@ public class SSLEngineTest
     }
 
     @Test
+    @Ignore
     public void testServletPost() throws Exception
     {
         stopServer();

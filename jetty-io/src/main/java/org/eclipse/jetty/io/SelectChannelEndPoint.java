@@ -52,7 +52,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
-        protected boolean readIsPossible()
+        protected boolean readInterested()
         {
             _interestOps=_interestOps | SelectionKey.OP_READ;
             updateKey();
@@ -184,7 +184,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     @Override
     public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
     {
-        _readInterest.readable(context,callback);
+        _readInterest.registerInterest(context,callback);
     }
 
     /* ------------------------------------------------------------ */

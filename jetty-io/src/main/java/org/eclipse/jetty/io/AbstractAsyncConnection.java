@@ -19,7 +19,16 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     /* ------------------------------------------------------------ */
     public AbstractAsyncConnection(AsyncEndPoint endp,Executor executor)
     {
+        this(endp,executor,false);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public AbstractAsyncConnection(AsyncEndPoint endp,Executor executor,final boolean executeOnlyFailure)
+    {
         _endp=endp;
+        if (executor==null)
+            throw new IllegalArgumentException();
+        
         _readCallback= new ExecutorCallback<Void>(executor)
         {
             @Override
@@ -33,7 +42,21 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
             protected void onFailed(Void context, Throwable x)
             {   
                 onReadFail(x);
-            }       
+            } 
+            
+            @Override
+            protected boolean execute()
+            {
+                return !executeOnlyFailure;
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("AbstractAsyncConnection.RCB@%x",AbstractAsyncConnection.this.hashCode());
+            }
+            
+            
         };
     }
     

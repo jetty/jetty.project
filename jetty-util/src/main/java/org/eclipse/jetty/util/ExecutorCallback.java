@@ -83,11 +83,16 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     public void failed(final C context, final Throwable x)
     {   
         // Always execute failure
-        _executor.execute(new Runnable()
+        Runnable runnable=new Runnable()
         {
             @Override
             public void run() { onFailed(context,x);}
-        });     
+        };
+        
+        if (_executor==null)
+            new Thread(runnable).start();
+        else
+            _executor.execute(runnable);
     }
 
     protected void onFailed(C context, Throwable x)

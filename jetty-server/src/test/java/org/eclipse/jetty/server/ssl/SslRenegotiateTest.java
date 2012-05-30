@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SslRenegotiateTest
@@ -50,6 +51,7 @@ public class SslRenegotiateTest
     }
 
     @Test
+    @Ignore
     public void testNoRenegNIO() throws Exception
     {
         doRequests(new SslSelectChannelConnector(),false);

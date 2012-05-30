@@ -26,7 +26,14 @@ public abstract class ReadInterest
     }
 
     /* ------------------------------------------------------------ */
-    public void readable(Object context, Callback callback) throws ReadPendingException
+    /** Call to register interest in a callback when a read is possible.
+     * The callback will be called either immediately if {@link #readInterested()} 
+     * returns true or eventually once {@link #readable()} is called.
+     * @param context
+     * @param callback
+     * @throws ReadPendingException
+     */
+    public <C> void registerInterest(C context, Callback<C> callback) throws ReadPendingException
     {
         if (!_interested.compareAndSet(false,true))
             throw new ReadPendingException();
@@ -34,7 +41,7 @@ public abstract class ReadInterest
         _callback=callback;
         try
         {
-            if (readIsPossible())
+            if (readInterested())
                 readable();
         }
         catch(IOException e)
@@ -44,6 +51,8 @@ public abstract class ReadInterest
     }
 
     /* ------------------------------------------------------------ */
+    /** Call to signal that a read is now possible.
+     */
     public void readable()
     {
         if (_interested.compareAndSet(true,false))
@@ -57,12 +66,17 @@ public abstract class ReadInterest
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return True if a read callback has been registered
+     */
     public boolean isInterested()
     {
         return _interested.get();
     }
     
     /* ------------------------------------------------------------ */
+    /** Call to signal a failure to a registered interest
+     */
     public void failed(Throwable cause)
     {
         if (_interested.compareAndSet(true,false))
@@ -95,7 +109,13 @@ public abstract class ReadInterest
     }
     
     /* ------------------------------------------------------------ */
-    abstract protected boolean readIsPossible() throws IOException;
+    /** Is a read interest satisfied now? 
+     * Abstract method to be implemented by the Specific ReadInterest to
+     * enquire if a read is immediately possible
+     * @return true if a read is possible
+     * @throws IOException
+     */
+    abstract protected boolean readInterested() throws IOException;
     
     
 }

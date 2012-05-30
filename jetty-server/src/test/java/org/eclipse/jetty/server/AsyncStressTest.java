@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class AsyncStressTest
@@ -84,6 +85,7 @@ public class AsyncStressTest
     }
 
     @Test
+    @Ignore
     public void testAsync() throws Throwable
     {
         if (Stress.isEnabled())

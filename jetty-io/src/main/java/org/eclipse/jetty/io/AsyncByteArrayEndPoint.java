@@ -25,7 +25,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
-        protected boolean readIsPossible() throws IOException
+        protected boolean readInterested() throws IOException
         {
             if (_closed)
                 throw new ClosedChannelException();
@@ -96,7 +96,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     @Override
     public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
     {
-        _readInterest.readable(context,callback);
+        _readInterest.registerInterest(context,callback);
     }
 
     @Override
