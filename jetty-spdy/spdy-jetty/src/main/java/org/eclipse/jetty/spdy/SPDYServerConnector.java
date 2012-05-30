@@ -29,7 +29,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -58,6 +57,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     private final ServerSessionFrameListener listener;
     private final SslContextFactory sslContextFactory;
     private AsyncConnectionFactory defaultConnectionFactory;
+    private volatile boolean flowControlEnabled = true;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
     {
@@ -176,36 +176,24 @@ public class SPDYServerConnector extends SelectChannelConnector
     {
         if (sslContextFactory != null)
         {
-            SSLEngine engine = newSSLEngine(sslContextFactory, channel);
-            final AtomicReference<AsyncEndPoint> sslEndPointRef = new AtomicReference<>();
+            final SSLEngine engine = newSSLEngine(sslContextFactory, channel);
             SslConnection sslConnection = new SslConnection(engine, endPoint)
             {
                 @Override
                 public void onClose()
                 {
-                    sslEndPointRef.set(null);
+                    NextProtoNego.remove(engine);
                     super.onClose();
                 }
             };
             endPoint.setConnection(sslConnection);
-            AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-            sslEndPointRef.set(sslEndPoint);
-
-            // Instances of the ServerProvider inner class strong reference the
-            // SslEndPoint (via lexical scoping), which strong references the SSLEngine.
-            // Since NextProtoNego stores in a WeakHashMap the SSLEngine as key
-            // and this instance as value, we are in the situation where the value
-            // of a WeakHashMap refers indirectly to the key, which is bad because
-            // the entry will never be removed from the WeakHashMap.
-            // We use AtomicReferences to be captured via lexical scoping,
-            // and we null them out above when the connection is closed.
+            final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
             NextProtoNego.put(engine, new NextProtoNego.ServerProvider()
             {
                 @Override
                 public void unsupported()
                 {
                     AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-                    AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
                     sslEndPoint.setConnection(connection);
                 }
@@ -220,7 +208,6 @@ public class SPDYServerConnector extends SelectChannelConnector
                 public void protocolSelected(String protocol)
                 {
                     AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory(protocol);
-                    AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
                     sslEndPoint.setConnection(connection);
                 }
@@ -286,5 +273,15 @@ public class SPDYServerConnector extends SelectChannelConnector
     protected Collection<Session> getSessions()
     {
         return Collections.unmodifiableCollection(sessions);
+    }
+
+    public boolean isFlowControlEnabled()
+    {
+        return flowControlEnabled;
+    }
+
+    public void setFlowControlEnabled(boolean flowControl)
+    {
+        this.flowControlEnabled = flowControl;
     }
 }

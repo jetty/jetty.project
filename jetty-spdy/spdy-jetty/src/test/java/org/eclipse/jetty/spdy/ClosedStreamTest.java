@@ -16,10 +16,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -30,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -41,7 +38,6 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
-import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.RstStreamFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
@@ -53,9 +49,14 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+
 public class ClosedStreamTest extends AbstractTest
 {
-    //TODO: Right now it sends a rst as the stream is unknown to the session once it's closed. But according to the spec we probably should just ignore the data?!
+    //TODO: Right now it sends a rst as the stream is unknown to the session once it's closed.
+    //TODO: But according to the spec we probably should just ignore the data?!
     @Test
     public void testDataSentOnClosedStreamIsIgnored() throws Exception
     {
@@ -83,25 +84,25 @@ public class ClosedStreamTest extends AbstractTest
 
         ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
         channel.write(writeBuffer);
+        Assert.assertThat(writeBuffer.hasRemaining(), is(false));
 
         byte[] bytes = new byte[1];
         writeBuffer = generator.data(streamId, bytes.length, new BytesDataInfo(bytes, true));
         channel.write(writeBuffer);
+        Assert.assertThat(writeBuffer.hasRemaining(), is(false));
 
         // Write again to simulate the faulty condition
         writeBuffer.flip();
         channel.write(writeBuffer);
+        Assert.assertThat(writeBuffer.hasRemaining(), is(false));
 
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
-        writeBuffer = generator.control(new GoAwayFrame(SPDY.V2, 0, SessionStatus.OK.getCode()));
-        channel.write(writeBuffer);
-        channel.shutdownOutput();
-        channel.close();
+        session.goAway().get(5, TimeUnit.SECONDS);
 
         server.close();
     }
-    
+
     @Test
     public void testSendDataOnHalfClosedStreamCausesExceptionOnServer() throws Exception
     {
@@ -143,14 +144,12 @@ public class ClosedStreamTest extends AbstractTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 replyReceivedLatch.countDown();
-                super.onReply(stream,replyInfo);
             }
 
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 clientReceivedDataLatch.countDown();
-                super.onData(stream,dataInfo);
             }
         }).get();
         assertThat("reply has been received by client",replyReceivedLatch.await(5,TimeUnit.SECONDS),is(true));
@@ -163,24 +162,23 @@ public class ClosedStreamTest extends AbstractTest
     @Test
     public void testV2ReceiveDataOnHalfClosedStream() throws Exception
     {
-        final CountDownLatch clientResetReceivedLatch = runReceiveDataOnHalfClosedStream(SPDY.V2);
-        assertThat("server didn't receive data",clientResetReceivedLatch.await(1,TimeUnit.SECONDS),not(true));
+        runReceiveDataOnHalfClosedStream(SPDY.V2);
     }
-    
+
     @Test
     @Ignore("until v3 is properly implemented")
     public void testV3ReceiveDataOnHalfClosedStream() throws Exception
     {
-        final CountDownLatch clientResetReceivedLatch = runReceiveDataOnHalfClosedStream(SPDY.V3);
-        assertThat("server didn't receive data",clientResetReceivedLatch.await(1,TimeUnit.SECONDS),not(true));
+        runReceiveDataOnHalfClosedStream(SPDY.V3);
     }
 
-    private CountDownLatch runReceiveDataOnHalfClosedStream(short version) throws Exception, IOException, InterruptedException
+    private void runReceiveDataOnHalfClosedStream(short version) throws Exception
     {
         final CountDownLatch clientResetReceivedLatch = new CountDownLatch(1);
         final CountDownLatch serverReplySentLatch = new CountDownLatch(1);
         final CountDownLatch clientReplyReceivedLatch = new CountDownLatch(1);
         final CountDownLatch serverDataReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch goAwayReceivedLatch = new CountDownLatch(1);
 
         InetSocketAddress startServer = startServer(new ServerSessionFrameListener.Adapter()
         {
@@ -203,17 +201,23 @@ public class ClosedStreamTest extends AbstractTest
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         serverDataReceivedLatch.countDown();
-                        super.onData(stream,dataInfo);
                     }
                 };
             }
+            @Override
+            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            {
+                goAwayReceivedLatch.countDown();
+            }
         });
 
-        final SocketChannel socketChannel = SocketChannel.open(startServer);
         final Generator generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory().newCompressor());
-        ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE,1,0,(byte)0,new Headers()));
+        int streamId = 1;
+        ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE, streamId,0,(byte)0,new Headers()));
 
+        final SocketChannel socketChannel = SocketChannel.open(startServer);
         socketChannel.write(synData);
+        assertThat("synData is fully written", synData.hasRemaining(), is(false));
 
         assertThat("server: syn reply is sent",serverReplySentLatch.await(5,TimeUnit.SECONDS),is(true));
 
@@ -242,13 +246,6 @@ public class ClosedStreamTest extends AbstractTest
                 {
                     clientResetReceivedLatch.countDown();
                 }
-                super.onControlFrame(frame);
-            }
-
-            @Override
-            public void onDataFrame(DataFrame frame, ByteBuffer data)
-            {
-                super.onDataFrame(frame,data);
             }
         });
         ByteBuffer response = ByteBuffer.allocate(28);
@@ -257,7 +254,14 @@ public class ClosedStreamTest extends AbstractTest
         parser.parse(response);
 
         assertThat("server didn't receive data",serverDataReceivedLatch.await(1,TimeUnit.SECONDS),not(true));
-        return clientResetReceivedLatch;
-    }
+        assertThat("client didn't receive reset",clientResetReceivedLatch.await(1,TimeUnit.SECONDS),not(true));
 
+        ByteBuffer buffer = generator.control(new GoAwayFrame(version, streamId, SessionStatus.OK.getCode()));
+        socketChannel.write(buffer);
+        Assert.assertThat(buffer.hasRemaining(), is(false));
+
+        assertThat("GoAway frame is received by server", goAwayReceivedLatch.await(5,TimeUnit.SECONDS), is(true));
+        
+        socketChannel.close();
+    }
 }

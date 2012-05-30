@@ -30,7 +30,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
 
@@ -107,6 +107,36 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
 
 
+    /*
+     * Feed a full header method
+     */
+    @Test
+    public void testFull() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+
+            byte[] buffer = new byte[64*1024];
+            Arrays.fill(buffer,(byte)'A');
+            
+            os.write(buffer);
+            os.flush();
+
+            // Read the response.
+            String response=readResponse(client);
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
 
 
     /*

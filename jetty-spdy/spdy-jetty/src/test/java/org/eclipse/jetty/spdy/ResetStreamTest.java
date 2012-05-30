@@ -28,7 +28,7 @@ public class ResetStreamTest extends AbstractTest
     @Test
     public void testResetStreamIsRemoved() throws Exception
     {
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()),null);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter(), true),null);
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
         session.rst(new RstInfo(stream.getId(),StreamStatus.CANCEL_STREAM)).get(5,TimeUnit.SECONDS);
@@ -169,7 +169,7 @@ public class ResetStreamTest extends AbstractTest
         stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Handler.Adapter<Void>()
         {
             @Override
-            public void failed(Throwable x)
+            public void failed(Void context, Throwable x)
             {
                 failLatch.countDown();
             }

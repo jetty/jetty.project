@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -54,6 +55,7 @@ public class JettyPolicyRuntimeTest
     {
         System.setSecurityManager(null);
         Policy.setPolicy(null);
+        IO.delete(new File ("/tmp", "foo"));
     }
 
     @Test
@@ -130,6 +132,7 @@ public class JettyPolicyRuntimeTest
         assertTrue ( test.canRead() );
 
         File test2 = new File( "/tmp/foo" );
+        test2.mkdirs();
         assertTrue ( test2.canRead() );
 
         try
