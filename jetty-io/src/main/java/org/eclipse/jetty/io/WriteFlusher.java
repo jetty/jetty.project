@@ -63,7 +63,6 @@ abstract public class WriteFlusher
         }
         catch (IOException e)
         {
-            e.printStackTrace();
             if (!_writing.compareAndSet(true,false))
                 throw new ConcurrentModificationException(e);
             callback.failed(context,e);

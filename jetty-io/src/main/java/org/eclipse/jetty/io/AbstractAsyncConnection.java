@@ -109,6 +109,6 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(),_readInterested.get()?"R":"");
     }
 }
