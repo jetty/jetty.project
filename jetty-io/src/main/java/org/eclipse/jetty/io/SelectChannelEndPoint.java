@@ -63,10 +63,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected void scheduleCompleteWrite()
+        protected boolean canFlush()
         {
             _interestOps = _interestOps | SelectionKey.OP_WRITE;
             updateKey();
+            return false;
         }
     };
 

@@ -36,8 +36,9 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected void scheduleCompleteWrite()
+        protected boolean canFlush()
         {            
+            return false;
         }
     };
     

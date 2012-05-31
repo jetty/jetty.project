@@ -496,13 +496,13 @@ public class SelectChannelEndPointTest
     public void testStress() throws Exception
     {
         Socket client = newClient();
-        client.setSoTimeout(60000);
+        client.setSoTimeout(30000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
         _manager.accept(server);
-        int writes = 100000;
+        final int writes = 200000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);
@@ -546,17 +546,23 @@ public class SelectChannelEndPointTest
                         }
                         last=System.currentTimeMillis();
 
+                        //if (latch.getCount()%1000==0)
+                        //    System.out.println(writes-latch.getCount());
+                            
                         latch.countDown();
                     }
                 }
                 catch(Throwable e)
                 {
+                    
                     long now = System.currentTimeMillis();
                     System.err.println("count="+count);
                     System.err.println("latch="+latch.getCount());
                     System.err.println("time="+(now-start));
                     System.err.println("last="+(now-last));
                     System.err.println("endp="+_lastEndp);
+                    System.err.println("conn="+_lastEndp.getAsyncConnection());
+                    
                     e.printStackTrace();
                 }
             }
@@ -568,13 +574,25 @@ public class SelectChannelEndPointTest
             out.write(bytes);
             out.write(Integer.toString(i).getBytes(StringUtil.__ISO_8859_1_CHARSET));
             out.write('\n');
-            if (i%100==0)
+            if (i%1000==0)
+            {
+                //System.err.println(i+"/"+writes);
                 out.flush();
+            }
             Thread.yield();
         }
         out.flush();
 
-        assertTrue(latch.await(100,TimeUnit.SECONDS));
+        long last=latch.getCount();
+        while(!latch.await(5,TimeUnit.SECONDS))
+        {
+            //System.err.println(latch.getCount());
+            if (latch.getCount()==last)
+                Assert.fail();
+            last=latch.getCount();
+        }
+        
+        assertEquals(0,latch.getCount());
     }
 
 

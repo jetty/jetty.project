@@ -15,7 +15,7 @@ import org.eclipse.jetty.util.Callback;
 /** 
  * A Utility class to help implement {@link AsyncEndPoint#write(Object, Callback, ByteBuffer...)}
  * by calling {@link EndPoint#flush(ByteBuffer...)} until all content is written.
- * The abstract method {@link #scheduleCompleteWrite()} is called when not all content has been 
+ * The abstract method {@link #canFlush()} is called when not all content has been 
  * written after a call to flush and should organise for the {@link #completeWrite()}
  * method to be called when a subsequent call to flush should be able to make more progress.
  * 
@@ -52,8 +52,11 @@ abstract public class WriteFlusher
                     _buffers=buffers;
                     _context=context;
                     _callback=callback;
-                    scheduleCompleteWrite();
-                    _writing.set(true); // Needed as memory barrier
+                    if(canFlush())
+                        completeWrite();
+                    else
+                        _writing.set(true); // Needed as memory barrier
+                    
                     return;
                 }
             }
@@ -73,7 +76,7 @@ abstract public class WriteFlusher
     }
     
     /* ------------------------------------------------------------ */
-    abstract protected void scheduleCompleteWrite();
+    abstract protected boolean canFlush();
 
     
     /* ------------------------------------------------------------ */
@@ -101,7 +104,7 @@ abstract public class WriteFlusher
     /* ------------------------------------------------------------ */
     /**
      * Complete a write that has not completed and that called 
-     * {@link #scheduleCompleteWrite()} to request a call to this
+     * {@link #canFlush()} to request a call to this
      * method when a call to {@link EndPoint#flush(ByteBuffer...)} 
      * is likely to be able to progress.
      * @return true if a write was in progress
@@ -113,19 +116,23 @@ abstract public class WriteFlusher
 
         try
         {
-            _buffers=compact(_buffers);
-            _endp.flush(_buffers);
-
-            // Are we complete?
-            for (ByteBuffer b : _buffers)
+            retry: while(true)
             {
-                if (b.hasRemaining())
+                _buffers=compact(_buffers);
+                _endp.flush(_buffers);
+
+                // Are we complete?
+                for (ByteBuffer b : _buffers)
                 {
-                    scheduleCompleteWrite();
-                    return true;
+                    if (b.hasRemaining())
+                    {
+                        if (canFlush())
+                            continue retry;
+                        return true;
+                    }
                 }
+                break;
             }
-            
             // we are complete and ready
             Callback callback=_callback;
             Object context=_context;
