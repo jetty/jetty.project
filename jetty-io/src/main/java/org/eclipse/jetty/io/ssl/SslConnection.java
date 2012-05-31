@@ -22,6 +22,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AbstractAsyncConnection;
@@ -127,7 +128,9 @@ public class SslConnection extends AbstractAsyncConnection
         // do all the filling, unwrapping ,wrapping and flushing
         if (_appEndPoint._readInterest.isInterested())
             _appEndPoint._readInterest.readable();
-        else if (_appEndPoint._writeFlusher.isWriting())
+        
+        else if (_appEndPoint._writeFlusher.isWriting() && _sslEngine.getHandshakeStatus()!=HandshakeStatus.NOT_HANDSHAKING)
+            // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
             _appEndPoint._writeFlusher.completeWrite();
     }
 
@@ -147,7 +150,7 @@ public class SslConnection extends AbstractAsyncConnection
     {
         private AsyncConnection _connection;
         private boolean _fillWrap;
-        private boolean _flushing;
+        private boolean _writing;
         private boolean _ishut=false;
         
         private final Callback<Void> _writeCallback = new Callback<Void>(){
@@ -157,7 +160,7 @@ public class SslConnection extends AbstractAsyncConnection
             {      
                 synchronized (SslEndPoint.this)
                 {
-                    LOG.debug("{} write.complete {}",SslConnection.this,_flushing?(_fillWrap?"FW":"F"):(_fillWrap?"W":""));
+                    LOG.debug("{} write.complete {}",SslConnection.this,_writing?(_fillWrap?"FW":"F"):(_fillWrap?"W":""));
 
                     if (_netOut==null && !_netOut.hasRemaining())
                     {
@@ -165,7 +168,7 @@ public class SslConnection extends AbstractAsyncConnection
                         _netOut=null;
                     }
                     
-                    _flushing=false;
+                    _writing=false;
                     if (_fillWrap)
                     {
                         _fillWrap=false;
@@ -183,7 +186,7 @@ public class SslConnection extends AbstractAsyncConnection
                 synchronized (SslEndPoint.this)
                 {
                     LOG.debug("{} write.failed",SslConnection.this,x);
-                    _flushing=false;
+                    _writing=false;
                     if (_fillWrap)
                     {
                         _fillWrap=false;
@@ -202,14 +205,26 @@ public class SslConnection extends AbstractAsyncConnection
             @Override
             protected boolean readInterested() throws IOException
             {
-                if (BufferUtil.hasContent(_appIn)||BufferUtil.hasContent(_netIn))
-                    return true;
+                synchronized (SslEndPoint.this)
+                {
+                    if (BufferUtil.hasContent(_appIn)||BufferUtil.hasContent(_netIn))
+                        return true;
 
-                // TODO handle the case where we need to wrap some more.
-                
-                scheduleOnReadable();
-                return false;
-            }       
+                    // Are we actually write blocked?
+                    if (_sslEngine.getHandshakeStatus()==HandshakeStatus.NEED_WRAP && BufferUtil.hasContent(_netOut) )
+                    {
+                        // we must be blocked trying to write before we can read, so 
+                        // let's write the netdata
+                        _fillWrap=true;
+                        getEndPoint().write(null,_writeCallback,_netOut);
+                    }
+                    else
+                        // Normal readable callback
+                        scheduleOnReadable();
+                    
+                    return false;
+                }  
+            }
         };
         
         private final WriteFlusher _writeFlusher = new WriteFlusher(this)
@@ -217,11 +232,18 @@ public class SslConnection extends AbstractAsyncConnection
             @Override
             protected void scheduleCompleteWrite()
             {           
-                if (BufferUtil.hasContent(_netOut))
-                    getEndPoint().write(null,_writeCallback,_netOut);
-                else
-                    // TODO handle the case where we need to unwrap some more.
-                    throw new IllegalStateException();
+                synchronized (SslEndPoint.this)
+                {
+                    // If we have pending output data, 
+                    if (BufferUtil.hasContent(_netOut))
+                    {    // write it
+                        _writing=true;
+                        getEndPoint().write(null,_writeCallback,_netOut);
+                    }
+                    else if (_sslEngine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP )
+                        // we are actually read blocked in order to write
+                        scheduleOnReadable();
+                }
             }
         };
         
@@ -356,6 +378,12 @@ public class SslConnection extends AbstractAsyncConnection
                     }
                 }
             }
+            catch(SSLException e)
+            {
+                getEndPoint().close();
+                LOG.debug(e);
+                throw new EofException(e);
+            }
             catch(Exception e)
             {
                 getEndPoint().close();
@@ -383,7 +411,7 @@ public class SslConnection extends AbstractAsyncConnection
             LOG.debug("{} flush",SslConnection.this);
             try
             {
-                if (_flushing)
+                if (_writing)
                     return 0;
                     
                 // We will need a network buffer
@@ -412,12 +440,9 @@ public class SslConnection extends AbstractAsyncConnection
                         case BUFFER_UNDERFLOW:
                             throw new IllegalStateException();
 
-                        case BUFFER_OVERFLOW:
-                            return 0;
-                            
                         default:
-                            // if we produced bytes, let's just flush them
-                            if (result.bytesProduced()>0)
+                            // if we have net bytes, let's try to flush them
+                            if (BufferUtil.hasContent(_netOut))
                             {
                                 getEndPoint().flush(_netOut);
                                 return result.bytesConsumed();

@@ -199,13 +199,13 @@ public class SelectChannelEndPointTest
                     e2.printStackTrace();
                 }
             }
-            catch(InterruptedException e)
+            catch(InterruptedException|EofException e)
             {
-                // e.printStackTrace();
+                SelectChannelEndPoint.LOG.ignore(e);
             }
             catch(Exception e)
             {
-                e.printStackTrace();
+                SelectChannelEndPoint.LOG.warn(e);
             }
             finally
             {
@@ -503,7 +503,7 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.accept(server);
-        int writes = 100000;
+        int writes = 1000000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);
