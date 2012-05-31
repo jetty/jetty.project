@@ -30,11 +30,13 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * @version $Revision$ $Date$
  */
+@Ignore
 public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 {
     @BeforeClass

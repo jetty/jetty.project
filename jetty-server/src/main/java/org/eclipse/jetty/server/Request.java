@@ -119,7 +119,7 @@ public class Request implements HttpServletRequest
 
     private final HttpChannel _channel;
     private HttpFields _fields;
-    private final HttpChannelState _async;
+    private final HttpChannelState _state;
 
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
@@ -169,7 +169,7 @@ public class Request implements HttpServletRequest
     public Request(HttpChannel channel)
     {
         _channel = channel;
-        _async=channel.getState();
+        _state=channel.getState();
         _fields=_channel.getRequestFields();
     }
     
@@ -305,15 +305,15 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext getAsyncContext()
     {
-        if (_async.isInitial() && !_async.isAsyncStarted())
-            throw new IllegalStateException(_async.getStatusString());
-        return _async;
+        if (_state.isInitial() && !_state.isAsyncStarted())
+            throw new IllegalStateException(_state.getStatusString());
+        return _state;
     }
 
     /* ------------------------------------------------------------ */
     public HttpChannelState getAsyncContinuation()
     {
-        return _async;
+        return _state;
     }
 
     /* ------------------------------------------------------------ */
@@ -325,7 +325,7 @@ public class Request implements HttpServletRequest
     {
         Object attr = (_attributes == null)?null:_attributes.getAttribute(name);
         if (attr == null && Continuation.ATTRIBUTE.equals(name))
-            return _async;
+            return _state;
         return attr;
     }
 
@@ -1296,7 +1296,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isAsyncStarted()
     {
-       return _async.isAsyncStarted();
+       return _state.isAsyncStarted();
     }
 
 
@@ -1403,7 +1403,7 @@ public class Request implements HttpServletRequest
         }
 
         setAuthentication(Authentication.NOT_CHECKED);
-        _async.recycle();
+        _state.recycle();
         _asyncSupported = true;
         _handled = false;
         if (_context != null)
@@ -1899,8 +1899,8 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _async.suspend(_context,this,_channel.getResponse());
-        return _async;
+        _state.suspend(_context,this,_channel.getResponse());
+        return _state;
     }
 
     /* ------------------------------------------------------------ */
@@ -1909,8 +1909,8 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _async.suspend(_context,servletRequest,servletResponse);
-        return _async;
+        _state.suspend(_context,servletRequest,servletResponse);
+        return _state;
     }
 
     /* ------------------------------------------------------------ */

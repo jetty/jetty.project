@@ -89,7 +89,7 @@ public class HttpGeneratorServerTest
         }
 
         @Override
-        public void badMessage(String reason)
+        public void badMessage(int status, String reason)
         {
             throw new IllegalStateException(reason);
         }

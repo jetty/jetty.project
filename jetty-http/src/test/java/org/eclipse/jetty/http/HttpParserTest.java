@@ -762,7 +762,7 @@ public class HttpParserTest
         }
 
         @Override
-        public void badMessage(String reason)
+        public void badMessage(int status, String reason)
         {
             _bad=reason;
         }

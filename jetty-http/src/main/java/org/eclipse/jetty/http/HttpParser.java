@@ -1069,7 +1069,7 @@ public class HttpParser
             }
 
             LOG.warn(e);
-            _handler.badMessage(e.toString());
+            _handler.badMessage(400, e.toString());
             return true;
         }
     }
@@ -1080,7 +1080,7 @@ public class HttpParser
         BufferUtil.clear(buffer);
         _persistent=false;
         _state=State.END;
-        _handler.badMessage(reason);
+        _handler.badMessage(400, reason);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1176,7 +1176,7 @@ public class HttpParser
 
         public boolean earlyEOF();
         
-        public void badMessage(String reason);
+        public void badMessage(int status, String reason);
     }
 
     public interface RequestHandler extends HttpHandler

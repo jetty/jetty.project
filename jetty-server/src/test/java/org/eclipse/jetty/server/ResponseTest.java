@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
+import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -75,9 +76,17 @@ public class ResponseTest
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
         _server.start();
+        
         AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
         HttpInput input = new HttpInput();
-        AsyncConnection connection = new AbstractAsyncConnection(endp,null)
+        AsyncConnection connection = new AbstractAsyncConnection(endp,new Executor()
+        {
+            @Override
+            public void execute(Runnable command)
+            {
+                command.run();                
+            }
+        })
         {
             @Override
             public void onReadable()

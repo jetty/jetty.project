@@ -299,6 +299,11 @@ public class SslConnection extends AbstractAsyncConnection
             super(getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
         }
 
+        public SslConnection getSslConnection()
+        {
+            return SslConnection.this;
+        }
+        
         @Override
         public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
         {
@@ -629,5 +634,6 @@ public class SslConnection extends AbstractAsyncConnection
         {
             return String.format("%s{%s%s%s}",super.toString(),_readInterest.isInterested()?"R":"",_writeFlusher.isWriting()?"W":"",_netWriting?"w":"");
         }
+
     }
 }

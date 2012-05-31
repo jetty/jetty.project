@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpParser;
@@ -54,6 +55,7 @@ public class HttpConnection extends AbstractAsyncConnection
     ByteBuffer _responseHeader=null;
     ByteBuffer _chunk=null;
     ByteBuffer _responseBuffer=null; 
+    private int _headerBytes;
     
     
     /* ------------------------------------------------------------ */
@@ -251,11 +253,17 @@ public class HttpConnection extends AbstractAsyncConnection
                         releaseRequestBuffer();
                         return;
                     }
+                    else
+                    {
+                        System.err.println("HB="+_headerBytes);
+                        _headerBytes+=filled;
+                    }
                 }
 
                 // Parse the buffer
                 if (_parser.parseNext(_requestBuffer))
                 {
+                    _headerBytes=0;
                     // The parser returned true, which indicates the channel is ready 
                     // to handle a request. Call the channel and this will either handle the 
                     // request/response to completion OR if the request suspends, the channel
@@ -280,6 +288,10 @@ public class HttpConnection extends AbstractAsyncConnection
                         return;
                     }
                 } 
+                else if (_headerBytes>= _connector.getRequestHeaderSize())
+                {
+                    _channel.getEventHandler().badMessage(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
+                }
             }
         }
         catch(Exception e)

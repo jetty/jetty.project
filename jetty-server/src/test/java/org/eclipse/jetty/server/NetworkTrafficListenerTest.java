@@ -37,8 +37,10 @@ import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class NetworkTrafficListenerTest
 {
     private static final byte END_OF_CONTENT = '~';

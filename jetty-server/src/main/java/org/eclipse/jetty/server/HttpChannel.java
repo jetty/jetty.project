@@ -333,7 +333,6 @@ public abstract class HttpChannel
                     if (_state.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
-                        _request.setPathInfo(_uri.getPath());
                         getHttpConnector().customize(_request);
                         getServer().handle(this);
                     }
@@ -537,12 +536,15 @@ public abstract class HttpChannel
                 _request.setTimeStamp(System.currentTimeMillis());
             _request.setMethod(httpMethod,method);
 
+            System.err.printf("%s %s %s%n",method,uri,version);
+            
             if (httpMethod==HttpMethod.CONNECT)
                 _uri.parseConnect(uri);
             else
                 _uri.parse(uri);
-
+            System.err.printf("%s%n",_uri.getDecodedPath());
             _request.setUri(_uri);
+            _request.setPathInfo(_uri.getDecodedPath());
             _version=version==null?HttpVersion.HTTP_0_9:version;
             _request.setHttpVersion(_version);
                 
@@ -685,9 +687,11 @@ public abstract class HttpChannel
         }
 
         @Override
-        public void badMessage(String reason)
+        public void badMessage(int status, String reason)
         {
-            commitError(HttpStatus.BAD_REQUEST_400,reason,null);
+            if (status<400||status>599)
+                status=HttpStatus.BAD_REQUEST_400;
+            commitError(status,null,null);
         }
 
         @Override
