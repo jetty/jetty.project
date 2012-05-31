@@ -285,6 +285,11 @@ public class ServerInstanceWrapper
             {
                 // Execute a Jetty configuration file
                 Resource r = Resource.newResource(jettyConfiguration);
+                if (!r.exists())
+                {
+                    LOG.warn("File does not exist "+r);
+                    continue;
+                }
                 is = r.getInputStream();
                 XmlConfiguration config = new XmlConfiguration(is);
                 config.getIdMap().putAll(id_map);

@@ -17,6 +17,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.Hashtable;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
@@ -32,6 +33,8 @@ import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 
 
@@ -66,6 +69,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
         private ContextHandler _contextHandler;
         private Dictionary _properties;
         private boolean _configured = false;
+        private ServiceRegistration _registrationAsService = null;
         
         public BundleApp(DeploymentManager manager, AppProvider provider, String originId, Bundle bundle, String contextFile)
         {
@@ -101,6 +105,16 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
         }
         
         
+        public ServiceRegistration getRegistrationAsService()
+        {
+            return _registrationAsService;
+        }
+
+        public void setRegistrationAsService(ServiceRegistration registrationAsService)
+        {
+            _registrationAsService = registrationAsService;
+        }
+
         public void configureContextHandler()
         throws Exception
         {
@@ -319,7 +333,8 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             throw new IllegalStateException(app+" is not a BundleApp");
         
         //Create a ContextHandler suitable to deploy in OSGi
-        return ((BundleApp)app).getContextHandler();
+        ContextHandler h = ((BundleApp)app).getContextHandler();    
+        return h;
     }
     
     /* ------------------------------------------------------------ */
@@ -332,5 +347,21 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     public DeploymentManager getDeploymentManager()
     {
         return _deploymentManager;
+    }
+ 
+    
+    protected void registerAsOSGiService(App app) throws Exception
+    {
+        Dictionary<String,String> properties = new Hashtable<String,String>();
+        properties.put(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
+        FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), ((BundleApp)app).getContextHandler(), properties);
+    }
+    
+    protected void deregisterAsOSGiService(App app) throws Exception
+    {
+        if ((app == null) || (((BundleApp)app).getRegistrationAsService() == null))
+            return;
+        
+        ((BundleApp)app).getRegistrationAsService().unregister();
     }
 }

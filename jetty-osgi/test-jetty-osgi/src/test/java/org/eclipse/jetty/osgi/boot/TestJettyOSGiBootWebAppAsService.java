@@ -29,7 +29,9 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +42,7 @@ import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 /**
  * TestJettyOSGiBootWebAppAsService
@@ -166,6 +169,11 @@ public class TestJettyOSGiBootWebAppAsService
             client.stop();
         }
         
+        ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
+        Assert.assertNotNull(refs);
+        Assert.assertEquals(1,refs.length);
+        WebAppContext wac = (WebAppContext)bundleContext.getService(refs[0]);
+        Assert.assertEquals("/acme", wac.getContextPath());
     }
 
 	

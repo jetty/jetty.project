@@ -173,9 +173,16 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
             int i=0;
             while (!deployed && i<deployers.length)
             {
-                
+
                 BundleProvider p = (BundleProvider)deployers[i];
-                deployed = p.bundleAdded(bundle);
+                try
+                {
+                    deployed = p.bundleAdded(bundle);
+                }
+                catch (Exception x)
+                {
+                    LOG.warn("Error deploying bundle for jetty context", x);
+                }
                 i++;
             }
         }
@@ -196,7 +203,14 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
             int i=0;
             while (!undeployed && i<deployers.length)
             {
-                undeployed = ((BundleProvider)deployers[i++]).bundleRemoved(bundle);
+                try
+                {
+                    undeployed = ((BundleProvider)deployers[i++]).bundleRemoved(bundle);
+                }
+                catch (Exception x)
+                {
+                    LOG.warn("Error undeploying bundle for jetty context", x);
+                }
             }
         }
     }

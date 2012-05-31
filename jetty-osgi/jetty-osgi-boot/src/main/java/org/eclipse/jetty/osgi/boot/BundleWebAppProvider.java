@@ -103,7 +103,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
      * A bundle has been added that could be a webapp 
      * @param bundle
      */
-    public boolean bundleAdded (Bundle bundle) 
+    public boolean bundleAdded (Bundle bundle) throws Exception
     {
         if (bundle == null)
             return false;
@@ -126,7 +126,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
                 app.setContextPath(contextPath);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
-
+                registerAsOSGiService(app);
                 return true;
             }
 
@@ -143,6 +143,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
                 app.setWebAppPath(base);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
+                registerAsOSGiService(app);
                 return true;
             }
 
@@ -159,6 +160,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
                 app.setWebAppPath(base);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
+                registerAsOSGiService(app);
                 return true;
             }
 
@@ -178,12 +180,13 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
      * 
      * @return true if this was a webapp we had deployed, false otherwise
      */
-    public boolean bundleRemoved (Bundle bundle)
+    public boolean bundleRemoved (Bundle bundle) throws Exception
     {
         App app = _bundleMap.remove(bundle);
         if (app != null)
         {
             getDeploymentManager().removeApp(app);
+            deregisterAsOSGiService(app);
             return true;
         }
         return false;

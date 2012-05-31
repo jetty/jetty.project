@@ -54,8 +54,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 {
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
     
-    public static final String WATERMARK = "o.e.j.o.b.BWAP"; //indicates this class created the webapp
-    
     public static String __defaultConfigurations[] = {
                                                             "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
                                                             "org.eclipse.jetty.webapp.WebXmlConfiguration",
@@ -103,6 +101,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         private String _webAppPath;
         private WebAppContext _webApp;
         private Dictionary _properties;
+        private ServiceRegistration _registration;
 
         public BundleApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String originId)
         {
@@ -149,6 +148,16 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             this._webAppPath = path;
         }
         
+        public void setRegistration (ServiceRegistration registration)
+        {
+            _registration = registration;
+        }
+        
+        public ServiceRegistration getRegistration ()
+        {
+            return _registration;
+        }
+        
         
         public WebAppContext getWebAppContext()
         throws Exception
@@ -174,7 +183,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         protected WebAppContext newWebApp ()
         {
            WebAppContext webApp = new WebAppContext();
-           webApp.setAttribute(WATERMARK, WATERMARK);
+           webApp.setAttribute(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
            return webApp;
         }
 
@@ -538,4 +547,19 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return contributor.getSymbolicName() + "-" + contributor.getVersion().toString() + (path.startsWith("/") ? path : "/" + path);
     }
     
+    
+    protected void registerAsOSGiService(App app) throws Exception
+    {
+        Dictionary<String,String> properties = new Hashtable<String,String>();
+        properties.put(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
+        FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), ((BundleApp)app).getContextHandler(), properties);
+    }
+    
+    protected void deregisterAsOSGiService(App app) throws Exception
+    {
+        if ((app == null) || (((BundleApp)app).getRegistration() == null))
+            return;
+        
+        ((BundleApp)app).getRegistration().unregister();
+    }
 }

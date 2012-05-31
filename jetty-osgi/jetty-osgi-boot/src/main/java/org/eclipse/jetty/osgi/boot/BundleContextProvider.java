@@ -98,7 +98,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
      * @param contextFiles
      * @return
      */
-    public boolean bundleAdded (Bundle bundle)
+    public boolean bundleAdded (Bundle bundle) throws Exception
     {
         if (bundle == null)
             return false;
@@ -128,6 +128,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             }
             apps.add(app);
             getDeploymentManager().addApp(app);
+            registerAsOSGiService(app);
         }
         
         return added; //true if even 1 context from this bundle was added
@@ -141,7 +142,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
      * 
      * @return true if this was a context we had deployed, false otherwise
      */
-    public boolean bundleRemoved (Bundle bundle)
+    public boolean bundleRemoved (Bundle bundle) throws Exception
     {
         List<App> apps = _bundleMap.remove(bundle);
         boolean removed = false;
@@ -152,6 +153,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
                 _appMap.remove(app.getOriginId());
                 getDeploymentManager().removeApp(app);
                 removed = true;
+                deregisterAsOSGiService(app);
             }
         }
         return removed; //true if even 1 context was removed associated with this bundle

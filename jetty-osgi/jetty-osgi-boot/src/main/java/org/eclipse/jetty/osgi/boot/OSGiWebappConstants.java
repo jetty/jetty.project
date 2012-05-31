@@ -118,4 +118,6 @@ public class OSGiWebappConstants
      * Both the name of the manifest header and the name of the service property.
      */
     public static final String SERVICE_PROP_REQUIRE_TLD_BUNDLE = REQUIRE_TLD_BUNDLE;
+    
+    public static final String WATERMARK = "o.e.j.o.b.watermark";
 }

@@ -40,9 +40,12 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     /* ------------------------------------------------------------ */
     public boolean serviceAdded (ServiceReference serviceRef, ContextHandler context)
     {
-        //TODO deploy a contexthandler that some other package has created as a service
         if (context == null || serviceRef == null)
             return false;
+        
+        String watermark = (String)serviceRef.getProperty(OSGiWebappConstants.WATERMARK);
+        if (watermark != null && !"".equals(watermark))
+            return false;  //this service represents a contexthandler that has already been registered as a service by another of our deployers
         
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(getServerInstanceWrapper().getParentClassLoaderForWebapps());
@@ -81,7 +84,11 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
 
         if (context == null || serviceRef == null)
             return false;
-
+        
+        String watermark = (String)serviceRef.getProperty(OSGiWebappConstants.WATERMARK);
+        if (watermark != null && !"".equals(watermark))
+            return false;  //this service represents a contexthandler that will be deregistered as a service by another of our deployers
+        
         App app = _serviceMap.remove(serviceRef);
         if (app != null)
         {

@@ -37,6 +37,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -205,6 +206,9 @@ public class TestJettyOSGiBootCore
         {
             client.stop();
         }
+        ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
+        Assert.assertNotNull(refs);
+        Assert.assertEquals(1,refs.length);
     }
     
 }

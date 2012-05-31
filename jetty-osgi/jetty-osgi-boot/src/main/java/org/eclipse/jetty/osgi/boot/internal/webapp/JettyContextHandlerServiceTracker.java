@@ -128,18 +128,29 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                 BundleContext context = FrameworkUtil.getBundle(JettyBootstrapActivator.class).getBundleContext();
                 ContextHandler contextHandler = (ContextHandler) context.getService(sr);
               
-                
-                //Get a jetty deployer targetted to the named server instance, or the default one if not named
-                String serverName = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
-                Map<ServiceReference, ServiceProvider> candidates = getDeployers(serverName);
-                if (candidates != null)
+                //if this was not a service that another of our deployers may have deployed (in which case they will undeploy it)
+                String watermark = (String)sr.getProperty(OSGiWebappConstants.WATERMARK);
+                if (watermark != null && !"".equals(watermark))
                 {
-                    boolean removed = false;
-                    Iterator<Entry<ServiceReference, ServiceProvider>> itor = candidates.entrySet().iterator();
-                    while (!removed && itor.hasNext())
+                    //Get a jetty deployer targetted to the named server instance, or the default one if not named
+                    String serverName = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
+                    Map<ServiceReference, ServiceProvider> candidates = getDeployers(serverName);
+                    if (candidates != null)
                     {
-                        Entry<ServiceReference, ServiceProvider> e = itor.next();
-                        removed = e.getValue().serviceRemoved(sr, contextHandler);
+                        boolean removed = false;
+                        Iterator<Entry<ServiceReference, ServiceProvider>> itor = candidates.entrySet().iterator();
+                        while (!removed && itor.hasNext())
+                        {
+                            Entry<ServiceReference, ServiceProvider> e = itor.next();
+                            try
+                            {
+                                removed = e.getValue().serviceRemoved(sr, contextHandler);
+                            }
+                            catch (Exception x)
+                            {
+                                LOG.warn("Error undeploying service representing jetty context ", x);
+                            }
+                        }
                     }
                 }
             }
@@ -162,6 +173,9 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     // is configured elsewhere.
                     return;
                 }
+                String watermark = (String)sr.getProperty(OSGiWebappConstants.WATERMARK);
+                if (watermark != null && !"".equals(watermark))
+                    return; //another of our deployers is responsible for handling service registrations for this context
                 
                 //Get a jetty deployer targetted to the named server instance, or the default one if not named
                 String serverName = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);    
@@ -173,9 +187,16 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     while (!added && itor.hasNext())
                     {
                         Entry<ServiceReference, ServiceProvider> e = itor.next();
-                        added = e.getValue().serviceAdded(sr, contextHandler);
-                        if (added && LOG.isDebugEnabled())
-                            LOG.debug("Provider "+e.getValue()+" deployed "+contextHandler);
+                        try
+                        {
+                            added = e.getValue().serviceAdded(sr, contextHandler);
+                            if (added && LOG.isDebugEnabled())
+                                LOG.debug("Provider "+e.getValue()+" deployed "+contextHandler);
+                        }
+                        catch (Exception x)
+                        {
+                            LOG.warn("Error deploying service representing jetty context", x);
+                        }
                     }
                 }
                 break;
