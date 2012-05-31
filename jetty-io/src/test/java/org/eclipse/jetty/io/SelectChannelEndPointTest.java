@@ -83,7 +83,7 @@ public class SelectChannelEndPointTest
     };
 
     // Must be volatile or the test may fail spuriously
-    private volatile int _blockAt=0;
+    protected volatile int _blockAt=0;
     private volatile int _writeCount=1;
 
     @Before
@@ -349,20 +349,19 @@ public class SelectChannelEndPointTest
         OutputStream clientOutputStream = client.getOutputStream();
         InputStream clientInputStream = client.getInputStream();
 
-        int specifiedTimeout = 2000;
+        int specifiedTimeout = 1000;
         client.setSoTimeout(specifiedTimeout);
 
         // Write 8 and cause block waiting for 10
         _blockAt=10;
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
-
+        
         while(_lastEndp==null);
 
         _lastEndp.setMaxIdleTime(10*specifiedTimeout);
-        Thread.sleep(2 * specifiedTimeout);
-
-        // No echo as blocking for 10
+        Thread.sleep((11*specifiedTimeout)/10);
+        
         long start=System.currentTimeMillis();
         try
         {
@@ -374,7 +373,7 @@ public class SelectChannelEndPointTest
             int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
             Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3*specifiedTimeout/4));
         }
-
+        
         // write remaining characters
         clientOutputStream.write("90ABCDEF".getBytes("UTF-8"));
         clientOutputStream.flush();
@@ -503,7 +502,7 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.accept(server);
-        int writes = 1000000;
+        int writes = 100000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);
@@ -595,21 +594,25 @@ public class SelectChannelEndPointTest
         _writeCount=10000;
         String data="Now is the time for all good men to come to the aid of the party";
         client.getOutputStream().write(data.getBytes("UTF-8"));
+        BufferedInputStream in = new BufferedInputStream(client.getInputStream());
 
         for (int i=0;i<_writeCount;i++)
         {
+            if (i%1000==0)
+            {
+                //System.out.println(i);
+                TimeUnit.MILLISECONDS.sleep(200);
+            }
             // Verify echo server to client
             for (int j=0;j<data.length();j++)
             {
                 char c=data.charAt(j);
-                int b = client.getInputStream().read();
+                int b = in.read();
                 assertTrue(b>0);
                 assertEquals("test-"+i+"/"+j,c,(char)b);
             }
             if (i==0)
                 _lastEndp.setMaxIdleTime(60000);
-            if (i%100==0)
-                TimeUnit.MILLISECONDS.sleep(10);
         }
 
 

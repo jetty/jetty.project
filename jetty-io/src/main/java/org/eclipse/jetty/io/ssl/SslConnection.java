@@ -136,6 +136,14 @@ public class SslConnection extends AbstractAsyncConnection
 
     /* ------------------------------------------------------------ */
     @Override
+    public void onReadFail(Throwable cause)
+    {
+        System.err.println("SSL onReadFail "+cause);
+        super.onReadFail(cause);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return String.format("SslConnection@%x{%s,%s%s}",
@@ -151,6 +159,7 @@ public class SslConnection extends AbstractAsyncConnection
         private AsyncConnection _connection;
         private boolean _fillWrap;
         private boolean _writing;
+        private boolean _underflown;
         private boolean _ishut=false;
         
         private final Callback<Void> _writeCallback = new Callback<Void>(){
@@ -207,21 +216,36 @@ public class SslConnection extends AbstractAsyncConnection
             {
                 synchronized (SslEndPoint.this)
                 {
-                    if (BufferUtil.hasContent(_appIn)||BufferUtil.hasContent(_netIn))
+                    // Do we already have some app data
+                    if (BufferUtil.hasContent(_appIn))
                         return true;
 
+                    // If we are not underflown and have net data
+                    if (!_underflown && BufferUtil.hasContent(_netIn))
+                        return true;
+                    
+                    
+                    // So we are not read ready
+                    
                     // Are we actually write blocked?
-                    if (_sslEngine.getHandshakeStatus()==HandshakeStatus.NEED_WRAP && BufferUtil.hasContent(_netOut) )
+                    if (_sslEngine.getHandshakeStatus()==HandshakeStatus.NEED_WRAP )
                     {
-                        // we must be blocked trying to write before we can read, so 
-                        // let's write the netdata
+                        // we must be blocked trying to write before we can read
+                        
+                        // Do we don't have some netdata to write
+                        if (BufferUtil.isEmpty(_netOut))
+                            // pretend we are readable so the wrap is done by next fill call
+                            return true;
+                        
+                        // otherwise write the net data
                         _fillWrap=true;
+                        _writing=true;
                         getEndPoint().write(null,_writeCallback,_netOut);
                     }
                     else
                         // Normal readable callback
                         scheduleOnReadable();
-                    
+
                     return false;
                 }  
             }
@@ -236,7 +260,8 @@ public class SslConnection extends AbstractAsyncConnection
                 {
                     // If we have pending output data, 
                     if (BufferUtil.hasContent(_netOut))
-                    {    // write it
+                    {    
+                        // write it
                         _writing=true;
                         getEndPoint().write(null,_writeCallback,_netOut);
                     }
@@ -294,6 +319,8 @@ public class SslConnection extends AbstractAsyncConnection
                 {
                     // Let's try reading some encrypted data... even if we have some already.
                     int net_filled=getEndPoint().fill(_netIn);
+                    if (net_filled>0)
+                        _underflown=false;
                     
                     // Let's try the SSL thang even if we have no net data because in that
                     // case we want to fall through to the handshake handling
@@ -331,7 +358,12 @@ public class SslConnection extends AbstractAsyncConnection
                                 default:
                                     throw new IllegalStateException();
                             }
+                            
+                        case BUFFER_UNDERFLOW:
+                            _underflown=true;
 
+                            //$FALL-THROUGH$ to deal with handshaking stuff
+                            
                         default:
                             // if we produced bytes, we don't care about the handshake state
                             if (result.bytesProduced()>0)

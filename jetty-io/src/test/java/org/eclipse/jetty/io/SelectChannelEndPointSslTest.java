@@ -2,10 +2,13 @@ package org.eclipse.jetty.io;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -191,6 +194,63 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     public void testWriteBlock() throws Exception
     {
         super.testWriteBlock();
+    }
+
+    @Override
+    public void testBlockRead() throws Exception
+    {
+        super.testBlockRead();
+    }
+
+    @Override
+    public void testIdle() throws Exception
+    {
+        super.testIdle();
+    }
+
+    @Override
+    public void testBlockedReadIdle() throws Exception
+    {
+        Socket client = newClient();
+        OutputStream clientOutputStream = client.getOutputStream();
+
+        client.setSoTimeout(5000);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.accept(server);
+
+        // Write client to server
+        clientOutputStream.write("HelloWorld".getBytes("UTF-8"));
+
+        // Verify echo server to client
+        for (char c : "HelloWorld".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b>0);
+            assertEquals(c,(char)b);
+        }
+
+        // Set Max idle
+        _lastEndp.setMaxIdleTime(500);
+
+        // Write 8 and cause block waiting for 10
+        _blockAt=10;
+        clientOutputStream.write("12345678".getBytes("UTF-8"));
+        clientOutputStream.flush();
+
+        // read until idle shutdown received
+        long start=System.currentTimeMillis();
+        int b=client.getInputStream().read();
+        assertEquals(-1,b);
+        long idle=System.currentTimeMillis()-start;
+        assertTrue(idle>400);
+        assertTrue(idle<2000);
+
+        Thread.sleep(1000);
+        
+        assertFalse(_lastEndp.isOpen());
     }
 
     @Test
