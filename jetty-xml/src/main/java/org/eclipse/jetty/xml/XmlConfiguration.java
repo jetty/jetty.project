@@ -36,9 +36,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
@@ -70,7 +72,10 @@ public class XmlConfiguration
     private static final Class<?>[] __primitiveHolders =
     { Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class };
     private static final Integer ZERO = new Integer(0);
-
+    
+    private static final Class<?>[] __supportedCollections =
+    { ArrayList.class,ArrayQueue.class,HashSet.class,Queue.class,List.class,Set.class,Collection.class,};
+    
     private static final Iterable<?> __factoryLoader;
 
     private static final XmlParser __parser = initParser();
@@ -494,7 +499,6 @@ public class XmlConfiguration
             Method set = null;
             for (int s = 0; sets != null && s < sets.length; s++)
             {
-
                 Class<?>[] paramTypes = sets[s].getParameterTypes();
                 if (name.equals(sets[s].getName()) && paramTypes.length == 1)
                 {
@@ -515,25 +519,18 @@ public class XmlConfiguration
                         LOG.ignore(e);
                     }
 
-                    Class<?> parameterClass = paramTypes[0];
-                    Collection<?> collection = tryToConvertObjectToCollection(parameterClass,value);
-                    if (collection != null)
+                    try
                     {
-                        try
-                        {
-                            sets[s].invoke(obj,collection);
-                            return;
-                        }
-                        catch (IllegalAccessException e)
-                        {
-                            LOG.ignore(e);
-                        }
-                        catch (IllegalArgumentException e)
-                        {
-                            // it's ok to throw here as we wouldn't be here if parameterClass is not a Collection and this is the only place we evaluate
-                            // collections
-                            throw new IllegalArgumentException("Not a supported Collection type.");
-                        }
+                        for (Class<?> c : __supportedCollections)
+                            if (paramTypes[0].isAssignableFrom(c))
+                            {
+                                sets[s].invoke(obj,convertArrayToCollection(value,c));
+                                return;
+                            }
+                    }
+                    catch (IllegalAccessException e)
+                    {
+                        LOG.ignore(e);
                     }
                 }
             }
@@ -581,25 +578,34 @@ public class XmlConfiguration
         /**
          * @return a collection if compareValueToClass is a Set or List. null if that's not the case or value can't be converted to a Collection
          */
-        private static Collection<?> tryToConvertObjectToCollection(Class<?> compareValueToClass, Object value)
+        private static Collection<?> convertArrayToCollection(Object array, Class<?> collectionType)
         {
             Collection<?> collection = null;
-            if (value.getClass().isArray())
+            if (array.getClass().isArray())
             {
-                if (HashSet.class.isAssignableFrom(compareValueToClass) || Set.class.isAssignableFrom(compareValueToClass))
-                    collection = new HashSet<Object>(convertArrayToList(value));
-                else if (ArrayList.class.isAssignableFrom(compareValueToClass) || List.class.isAssignableFrom(compareValueToClass))
-                    collection = convertArrayToList(value);
+                if (collectionType.isAssignableFrom(ArrayList.class))
+                    collection = convertArrayToArrayList(array);
+                else if (collectionType.isAssignableFrom(HashSet.class))
+                    collection = new HashSet<Object>(convertArrayToArrayList(array));
+                else if (collectionType.isAssignableFrom(ArrayQueue.class))
+                {
+                    ArrayQueue<Object> q= new ArrayQueue<Object>();
+                    q.addAll(convertArrayToArrayList(array));
+                    collection=q;
+                }
             }
+            if (collection==null)
+                throw new IllegalArgumentException("Can't convert \"" + array.getClass() + "\" to " + collectionType);
             return collection;
         }
 
-        private static List<Object> convertArrayToList(Object value)
+        /* ------------------------------------------------------------ */
+        private static ArrayList<Object> convertArrayToArrayList(Object array)
         {
-            int length = Array.getLength(value);
-            List<Object> list = new ArrayList<Object>(length);
+            int length = Array.getLength(array);
+            ArrayList<Object> list = new ArrayList<Object>(length);
             for (int i = 0; i < length; i++)
-                list.add(Array.get(value,i));
+                list.add(Array.get(array,i));
             return list;
         }
 
@@ -1078,31 +1084,21 @@ public class XmlConfiguration
                     throw new InvocationTargetException(e);
                 }
             }
-
-            if (isTypeMatchingClass(type,List.class))
+            
+            for (Class<?> collectionClass : __supportedCollections)
             {
-                if (value.getClass().isArray())
-                    return convertArrayToList(value);
-                throw new IllegalStateException("Can't convert \"" + value + "\" to " + type + ". Only Array elements are supported");
-            }
-
-            if (isTypeMatchingClass(type,Set.class))
-            {
-                if (value.getClass().isArray())
-                {
-                    Collection<?> set = tryToConvertObjectToCollection(Set.class,value);
-                    if (set != null)
-                        return set;
-                }
-                throw new IllegalStateException("Can't convert \"" + value + "\" to " + type + ". Only Array elements are supported");
+                if (isTypeMatchingClass(type,collectionClass))
+                    return convertArrayToCollection(value,collectionClass);
             }
 
             throw new IllegalStateException("Unknown type " + type);
         }
-
+        
+        /* ------------------------------------------------------------ */
         private static boolean isTypeMatchingClass(String type, Class<?> classToMatch)
         {
-            return classToMatch.getSimpleName().equals(type) || classToMatch.getName().equals(type);
+            boolean match = classToMatch.getSimpleName().equalsIgnoreCase(type) || classToMatch.getName().equals(type);
+            return match;
         }
 
         /* ------------------------------------------------------------ */

@@ -219,7 +219,7 @@ public class XmlConfigurationTest
         assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testListNotContainingArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
@@ -241,7 +241,7 @@ public class XmlConfigurationTest
         assertThat("tc.getList() has two entries as specified in the xml",tc.getSet().size(),is(2));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSetNotContainingArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
@@ -272,7 +272,7 @@ public class XmlConfigurationTest
         assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=NoSuchMethodException.class)
     public void testNotSupportedLinkedListSetter() throws Exception
     {
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">"
