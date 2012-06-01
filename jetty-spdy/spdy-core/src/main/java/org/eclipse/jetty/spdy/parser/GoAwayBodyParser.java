@@ -24,7 +24,7 @@ import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 public class GoAwayBodyParser extends ControlFrameBodyParser
 {
     private final ControlFrameParser controlFrameParser;
-    private State state = State.LAST_STREAM_ID;
+    private State state = State.LAST_GOOD_STREAM_ID;
     private int cursor;
     private int lastStreamId;
     private int statusCode;
@@ -41,7 +41,7 @@ public class GoAwayBodyParser extends ControlFrameBodyParser
         {
             switch (state)
             {
-                case LAST_STREAM_ID:
+                case LAST_GOOD_STREAM_ID:
                 {
                     if (buffer.remaining() >= 4)
                     {
@@ -66,12 +66,12 @@ public class GoAwayBodyParser extends ControlFrameBodyParser
                     }
                     else
                     {
-                        state = State.LAST_STREAM_ID_BYTES;
+                        state = State.LAST_GOOD_STREAM_ID_BYTES;
                         cursor = 4;
                     }
                     break;
                 }
-                case LAST_STREAM_ID_BYTES:
+                case LAST_GOOD_STREAM_ID_BYTES:
                 {
                     byte currByte = buffer.get();
                     --cursor;
@@ -144,7 +144,7 @@ public class GoAwayBodyParser extends ControlFrameBodyParser
 
     private void reset()
     {
-        state = State.LAST_STREAM_ID;
+        state = State.LAST_GOOD_STREAM_ID;
         cursor = 0;
         lastStreamId = 0;
         statusCode = 0;
@@ -152,6 +152,6 @@ public class GoAwayBodyParser extends ControlFrameBodyParser
 
     private enum State
     {
-        LAST_STREAM_ID, LAST_STREAM_ID_BYTES, STATUS_CODE, STATUS_CODE_BYTES
+        LAST_GOOD_STREAM_ID, LAST_GOOD_STREAM_ID_BYTES, STATUS_CODE, STATUS_CODE_BYTES
     }
 }
