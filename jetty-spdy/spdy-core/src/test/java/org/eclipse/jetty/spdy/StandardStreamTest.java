@@ -120,12 +120,12 @@ public class StandardStreamTest
     @Test(expected = IllegalStateException.class)
     public void testSendDataOnHalfClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
-        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,SynInfo.FLAG_CLOSE,1,0,(byte)0,null);
-        IStream stream = new StandardStream(synStreamFrame,session,null);
+        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
+        IStream stream = new StandardStream(synStreamFrame, session, null);
         stream.updateWindowSize(8192);
-        stream.updateCloseState(synStreamFrame.isClose(),true);
-        assertThat("stream is half closed",stream.isHalfClosed(),is(true));
-        stream.data(new StringDataInfo("data on half closed stream",true));
-        verify(session,never()).data(any(IStream.class),any(DataInfo.class),anyInt(),any(TimeUnit.class),any(Handler.class),any(void.class));
+        stream.updateCloseState(synStreamFrame.isClose(), true);
+        assertThat("stream is half closed", stream.isHalfClosed(), is(true));
+        stream.data(new StringDataInfo("data on half closed stream", true));
+        verify(session, never()).data(any(IStream.class), any(DataInfo.class), anyInt(), any(TimeUnit.class), any(Handler.class), any(void.class));
     }
 }

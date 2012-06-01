@@ -46,6 +46,7 @@ public abstract class ControlFrameParser
         parsers.put(ControlFrameType.GO_AWAY, new GoAwayBodyParser(this));
         parsers.put(ControlFrameType.HEADERS, new HeadersBodyParser(decompressor, this));
         parsers.put(ControlFrameType.WINDOW_UPDATE, new WindowUpdateBodyParser(this));
+        parsers.put(ControlFrameType.CREDENTIAL, new CredentialBodyParser(this));
     }
 
     public short getVersion()

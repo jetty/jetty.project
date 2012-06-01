@@ -50,6 +50,11 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         this.listener = listener;
     }
 
+    public short getVersion()
+    {
+        return version;
+    }
+
     @Override
     public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
     {

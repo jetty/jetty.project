@@ -213,7 +213,7 @@ public class ClosedStreamTest extends AbstractTest
 
         final Generator generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory().newCompressor());
         int streamId = 1;
-        ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE, streamId,0,(byte)0,new Headers()));
+        ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE, streamId,0,(byte)0,(short)0,new Headers()));
 
         final SocketChannel socketChannel = SocketChannel.open(startServer);
         socketChannel.write(synData);
@@ -261,7 +261,7 @@ public class ClosedStreamTest extends AbstractTest
         Assert.assertThat(buffer.hasRemaining(), is(false));
 
         assertThat("GoAway frame is received by server", goAwayReceivedLatch.await(5,TimeUnit.SECONDS), is(true));
-        
+
         socketChannel.close();
     }
 }

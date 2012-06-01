@@ -414,7 +414,7 @@ public class PushStreamTest extends AbstractTest
         final SocketChannel channel = SocketChannel.open(serverAddress);
         final Generator generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory.StandardCompressor());
         int streamId = 1;
-        ByteBuffer writeBuffer = generator.control(new SynStreamFrame(version,(byte)0,streamId,0,(byte)0,new Headers()));
+        ByteBuffer writeBuffer = generator.control(new SynStreamFrame(version,(byte)0,streamId,0,(byte)0,(short)0,new Headers()));
         channel.write(writeBuffer);
         assertThat("writeBuffer is fully written",writeBuffer.hasRemaining(), is(false));
 
