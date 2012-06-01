@@ -73,8 +73,8 @@ public class SPDYServerConnector extends SelectChannelConnector
         if (sslContextFactory != null)
             addBean(sslContextFactory);
         defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, bufferPool, executor, scheduler, listener);
-        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
         putAsyncConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, bufferPool, executor, scheduler, listener));
+        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
     }
 
     public ByteBufferPool getByteBufferPool()
