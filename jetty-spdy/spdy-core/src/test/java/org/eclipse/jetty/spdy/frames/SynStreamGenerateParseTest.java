@@ -37,10 +37,11 @@ public class SynStreamGenerateParseTest
         int streamId = 13;
         int associatedStreamId = 11;
         byte priority = 3;
+        short slot = 5;
         Headers headers = new Headers();
         headers.put("a", "b");
         headers.put("c", "d");
-        SynStreamFrame frame1 = new SynStreamFrame(SPDY.V2, flags, streamId, associatedStreamId, priority, headers);
+        SynStreamFrame frame1 = new SynStreamFrame(SPDY.V2, flags, streamId, associatedStreamId, priority, slot, headers);
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -60,6 +61,7 @@ public class SynStreamGenerateParseTest
         Assert.assertEquals(associatedStreamId, synStream.getAssociatedStreamId());
         Assert.assertEquals(flags, synStream.getFlags());
         Assert.assertEquals(priority, synStream.getPriority());
+        Assert.assertEquals(slot, synStream.getSlot());
         Assert.assertEquals(headers, synStream.getHeaders());
     }
 
@@ -70,10 +72,11 @@ public class SynStreamGenerateParseTest
         int streamId = 13;
         int associatedStreamId = 11;
         byte priority = 3;
+        short slot = 5;
         Headers headers = new Headers();
         headers.put("a", "b");
         headers.put("c", "d");
-        SynStreamFrame frame1 = new SynStreamFrame(SPDY.V2, flags, streamId, associatedStreamId, priority, headers);
+        SynStreamFrame frame1 = new SynStreamFrame(SPDY.V2, flags, streamId, associatedStreamId, priority, slot, headers);
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -94,6 +97,7 @@ public class SynStreamGenerateParseTest
         Assert.assertEquals(associatedStreamId, synStream.getAssociatedStreamId());
         Assert.assertEquals(flags, synStream.getFlags());
         Assert.assertEquals(priority, synStream.getPriority());
+        Assert.assertEquals(slot, synStream.getSlot());
         Assert.assertEquals(headers, synStream.getHeaders());
     }
 }

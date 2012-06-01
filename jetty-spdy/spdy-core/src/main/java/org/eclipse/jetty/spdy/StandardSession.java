@@ -158,7 +158,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         synchronized (this)
         {
             int streamId = streamIds.getAndAdd(2);
-            SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), synInfo.getHeaders());
+            // TODO: for SPDYv3 we need to support the "slot" argument
+            SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), (short)0, synInfo.getHeaders());
             IStream stream = createStream(synStream, listener, true);
             generateAndEnqueueControlFrame(stream, synStream, timeout, unit, handler, stream);
         }

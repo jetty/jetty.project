@@ -64,6 +64,7 @@ public class SynStreamGenerator extends ControlFrameGenerator
         buffer.putInt(streamId & 0x7F_FF_FF_FF);
         buffer.putInt(synStream.getAssociatedStreamId() & 0x7F_FF_FF_FF);
         writePriority(streamId, version, synStream.getPriority(), buffer);
+        buffer.put((byte)synStream.getSlot());
 
         buffer.put(headersBuffer);
 
@@ -85,6 +86,5 @@ public class SynStreamGenerator extends ControlFrameGenerator
                 throw new StreamException(streamId, StreamStatus.UNSUPPORTED_VERSION);
         }
         buffer.put(priority);
-        buffer.put((byte)0);
     }
 }

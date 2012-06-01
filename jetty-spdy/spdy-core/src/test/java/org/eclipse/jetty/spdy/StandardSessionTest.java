@@ -404,8 +404,8 @@ public class StandardSessionTest
         setControllerWriteExpectationToFail(true);
 
         final CountDownLatch failedCalledLatch = new CountDownLatch(2);
-        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,SynInfo.FLAG_CLOSE,1,0,(byte)0,null);
-        IStream stream = new StandardStream(synStreamFrame,session,null);
+        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
+        IStream stream = new StandardStream(synStreamFrame, session, null);
         stream.updateWindowSize(8192);
         Handler.Adapter<Void> handler = new Handler.Adapter<Void>()
         {
@@ -417,13 +417,12 @@ public class StandardSessionTest
         };
 
         // first data frame should fail on controller.write()
-        stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,handler);
+        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, handler);
         // second data frame should fail without controller.writer() as the connection is expected to be broken after first controller.write() call failed.
-        stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,handler);
+        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, handler);
 
-        verify(controller,times(1)).write(any(ByteBuffer.class),any(Handler.class),any(FrameBytes.class));
-        assertThat("Handler.failed has been called twice",failedCalledLatch.await(5,TimeUnit.SECONDS),is(true));
-
+        verify(controller, times(1)).write(any(ByteBuffer.class), any(Handler.class), any(FrameBytes.class));
+        assertThat("Handler.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
     private IStream createStream() throws InterruptedException, ExecutionException, TimeoutException
