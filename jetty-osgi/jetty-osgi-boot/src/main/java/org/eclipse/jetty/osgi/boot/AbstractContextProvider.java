@@ -86,18 +86,35 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             _properties = properties;
             _bundle = bundle;  
         }
+        
+        public Bundle getBundle()
+        {
+            return _bundle;
+        }
+        
+        public String getBundleSymbolicName()
+        {
+            return _bundle.getSymbolicName();
+        }
+        
+        public String getBundleVersionAsString()
+        {
+            if (_bundle.getVersion() == null)
+                return null;
+            return _bundle.getVersion().toString();
+        }
                
         public String getContextFile ()
         {
             return _contextFile;
         }
         
-        public void setContextHandler(ContextHandler h)
+        public void setHandler(ContextHandler h)
         {
             _contextHandler = h;
         }
        
-        public ContextHandler getContextHandler()
+        public ContextHandler createContextHandler()
         throws Exception
         {
             configureContextHandler();
@@ -255,7 +272,10 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             if (contextPath == null)
                 contextPath = (String)_properties.get(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH);
             if (contextPath != null)
-                _contextHandler.setContextPath(contextPath);            
+                _contextHandler.setContextPath(contextPath);    
+            
+            //osgi Enterprise Spec r4 p.427
+            _contextHandler.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, _bundle.getBundleContext());
         }
 
 
@@ -333,7 +353,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             throw new IllegalStateException(app+" is not a BundleApp");
         
         //Create a ContextHandler suitable to deploy in OSGi
-        ContextHandler h = ((BundleApp)app).getContextHandler();    
+        ContextHandler h = ((BundleApp)app).createContextHandler();    
         return h;
     }
     
@@ -354,9 +374,14 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     {
         Dictionary<String,String> properties = new Hashtable<String,String>();
         properties.put(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
-        FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), ((BundleApp)app).getContextHandler(), properties);
+        if (((BundleApp)app).getBundleSymbolicName() != null)
+            properties.put(OSGiWebappConstants.OSGI_WEB_SYMBOLICNAME,((BundleApp)app).getBundleSymbolicName());
+        if (((BundleApp)app).getBundleVersionAsString() != null)
+            properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, ((BundleApp)app).getBundleVersionAsString());
+        properties.put(OSGiWebappConstants.OSGI_WEB_CONTEXTPATH, app.getContextPath());
+        FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), app.getContextHandler(), properties);
     }
-    
+
     protected void deregisterAsOSGiService(App app) throws Exception
     {
         if ((app == null) || (((BundleApp)app).getRegistrationAsService() == null))

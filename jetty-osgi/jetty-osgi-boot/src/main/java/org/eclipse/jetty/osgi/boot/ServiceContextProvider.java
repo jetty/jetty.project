@@ -66,7 +66,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             Bundle bundle = serviceRef.getBundle();                
             String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-"+contextFile;
             BundleApp app = new BundleApp(getDeploymentManager(), this, bundle, properties, contextFile, originId);         
-            app.setContextHandler(context); //set the pre=made ContextHandler instance
+            app.setHandler(context); //set the pre=made ContextHandler instance
             _serviceMap.put(serviceRef, app);
             getDeploymentManager().addApp(app);
             return true;

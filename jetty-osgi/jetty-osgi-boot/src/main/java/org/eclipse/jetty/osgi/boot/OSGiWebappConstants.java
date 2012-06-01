@@ -19,6 +19,20 @@ package org.eclipse.jetty.osgi.boot;
  */
 public class OSGiWebappConstants
 {
+    /** service property osgi.web.symbolicname. See OSGi r4 */
+    public static final String OSGI_WEB_SYMBOLICNAME = "osgi.web.symbolicname";
+    
+    /** service property osgi.web.symbolicname. See OSGi r4 */
+    public static final String OSGI_WEB_VERSION = "osgi.web.version";
+    
+    /** service property osgi.web.contextpath. See OSGi r4 */
+    public static final String OSGI_WEB_CONTEXTPATH = "osgi.web.contextpath";
+    
+    /** See OSGi r4 p.427 */
+    public static final String OSGI_BUNDLECONTEXT = "osgi-bundlecontext";
+
+    
+
     /** url scheme to deploy war file as bundled webapp */
     public static final String RFC66_WAR_URL_SCHEME = "war";
 

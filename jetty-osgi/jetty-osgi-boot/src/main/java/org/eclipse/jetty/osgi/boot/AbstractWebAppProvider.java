@@ -116,6 +116,18 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             _properties = properties;
             _bundle = bundle;
         }
+     
+        public String getBundleSymbolicName()
+        {
+            return _bundle.getSymbolicName();
+        }
+        
+        public String getBundleVersionAsString()
+        {
+           if (_bundle.getVersion() == null)
+               return null;
+           return _bundle.getVersion().toString();
+        }
         
         public void setWebAppContext (WebAppContext webApp)
         {
@@ -159,7 +171,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         }
         
         
-        public WebAppContext getWebAppContext()
+        public ContextHandler createContextHandler()
         throws Exception
         {
             if (_webApp != null)
@@ -172,6 +184,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             return _webApp;
         }
         
+      
         
         protected void createWebApp ()
         throws Exception
@@ -190,10 +203,12 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
         public void configureWebApp() 
         throws Exception
-        {           
-            
+        {                     
             //TODO turn this around and let any context.xml file get applied first, and have the properties override
             _webApp.setContextPath(_contextPath);
+            
+            //osgi Enterprise Spec r4 p.427
+            _webApp.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, _bundle.getBundleContext());
 
             String overrideBundleInstallLocation = (String)_properties.get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
             File bundleInstallLocation = 
@@ -537,7 +552,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             throw new IllegalStateException(app+" is not a BundleApp");
         
         //Create a WebAppContext suitable to deploy in OSGi
-        return ((BundleApp)app).getWebAppContext();
+        return ((BundleApp)app).createContextHandler();
     }
 
     
@@ -552,7 +567,12 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     {
         Dictionary<String,String> properties = new Hashtable<String,String>();
         properties.put(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
-        FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), ((BundleApp)app).getContextHandler(), properties);
+        if (((BundleApp)app).getBundleSymbolicName() != null)
+            properties.put(OSGiWebappConstants.OSGI_WEB_SYMBOLICNAME,((BundleApp)app).getBundleSymbolicName());
+        if (((BundleApp)app).getBundleVersionAsString() != null)
+            properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, ((BundleApp)app).getBundleVersionAsString());
+        properties.put(OSGiWebappConstants.OSGI_WEB_CONTEXTPATH, app.getContextPath());
+        FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), app.getContextHandler(), properties);
     }
     
     protected void deregisterAsOSGiService(App app) throws Exception
