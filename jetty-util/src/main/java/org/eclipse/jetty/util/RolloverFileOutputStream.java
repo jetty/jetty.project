@@ -4,14 +4,14 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.util; 
+package org.eclipse.jetty.util;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,21 +26,21 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
-/** 
+/**
  * RolloverFileOutputStream
- * 
+ *
  * This output stream puts content in a file that is rolled over every 24 hours.
- * The filename must include the string "yyyy_mm_dd", which is replaced with the 
+ * The filename must include the string "yyyy_mm_dd", which is replaced with the
  * actual date when creating and rolling over the file.
- * 
+ *
  * Old files are retained for a number of days before being deleted.
- * 
- * 
+ *
+ *
  */
 public class RolloverFileOutputStream extends FilterOutputStream
 {
     private static Timer __rollover;
-    
+
     final static String YYYY_MM_DD="yyyy_mm_dd";
     final static String ROLLOVER_FILE_DATE_FORMAT = "yyyy_MM_dd";
     final static String ROLLOVER_FILE_BACKUP_FORMAT = "HHmmssSSS";
@@ -54,10 +54,10 @@ public class RolloverFileOutputStream extends FilterOutputStream
     private File _file;
     private boolean _append;
     private int _retainDays;
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * @param filename The filename must include the string "yyyy_mm_dd", 
+     * @param filename The filename must include the string "yyyy_mm_dd",
      * which is replaced with the actual date when creating and rolling over the file.
      * @throws IOException
      */
@@ -66,10 +66,10 @@ public class RolloverFileOutputStream extends FilterOutputStream
     {
         this(filename,true,ROLLOVER_FILE_RETAIN_DAYS);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * @param filename The filename must include the string "yyyy_mm_dd", 
+     * @param filename The filename must include the string "yyyy_mm_dd",
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
      * @throws IOException
@@ -82,7 +82,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
 
     /* ------------------------------------------------------------ */
     /**
-     * @param filename The filename must include the string "yyyy_mm_dd", 
+     * @param filename The filename must include the string "yyyy_mm_dd",
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
      * @param retainDays The number of days to retain files before deleting them.  0 to retain forever.
@@ -98,7 +98,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
 
     /* ------------------------------------------------------------ */
     /**
-     * @param filename The filename must include the string "yyyy_mm_dd", 
+     * @param filename The filename must include the string "yyyy_mm_dd",
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
      * @param retainDays The number of days to retain files before deleting them. 0 to retain forever.
@@ -113,15 +113,15 @@ public class RolloverFileOutputStream extends FilterOutputStream
 
          this(filename,append,retainDays,zone,null,null);
     }
-     
+
     /* ------------------------------------------------------------ */
     /**
-     * @param filename The filename must include the string "yyyy_mm_dd", 
+     * @param filename The filename must include the string "yyyy_mm_dd",
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
      * @param retainDays The number of days to retain files before deleting them. 0 to retain forever.
-     * @param dateFormat The format for the date file substitution. The default is "yyyy_MM_dd". 
-     * @param backupFormat The format for the file extension of backup files. The default is "HHmmssSSS". 
+     * @param dateFormat The format for the date file substitution. The default is "yyyy_MM_dd".
+     * @param backupFormat The format for the file extension of backup files. The default is "HHmmssSSS".
      * @throws IOException
      */
     public RolloverFileOutputStream(String filename,
@@ -137,14 +137,14 @@ public class RolloverFileOutputStream extends FilterOutputStream
         if (dateFormat==null)
             dateFormat=ROLLOVER_FILE_DATE_FORMAT;
         _fileDateFormat = new SimpleDateFormat(dateFormat);
-        
+
         if (backupFormat==null)
             backupFormat=ROLLOVER_FILE_BACKUP_FORMAT;
         _fileBackupFormat = new SimpleDateFormat(backupFormat);
-        
+
         _fileBackupFormat.setTimeZone(zone);
         _fileDateFormat.setTimeZone(zone);
-        
+
         if (filename!=null)
         {
             filename=filename.trim();
@@ -158,12 +158,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
         _append=append;
         _retainDays=retainDays;
         setFile();
-        
+
         synchronized(RolloverFileOutputStream.class)
         {
             if (__rollover==null)
                 __rollover=new Timer(RolloverFileOutputStream.class.getName(),true);
-            
+
             _rollTask=new RollTask();
 
              Calendar now = Calendar.getInstance();
@@ -185,7 +185,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     {
         return _filename;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getDatedFilename()
     {
@@ -193,7 +193,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
             return null;
         return _file.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     public int getRetainDays()
     {
@@ -211,9 +211,9 @@ public class RolloverFileOutputStream extends FilterOutputStream
         File dir= new File(file.getParent());
         if (!dir.isDirectory() || !dir.canWrite())
             throw new IOException("Cannot write log directory "+dir);
-            
+
         Date now=new Date();
-        
+
         // Is this a rollover file?
         String filename=file.getName();
         int i=filename.toLowerCase().indexOf(YYYY_MM_DD);
@@ -224,7 +224,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
                           _fileDateFormat.format(now)+
                           filename.substring(i+YYYY_MM_DD.length()));
         }
-            
+
         if (file.exists()&&!file.canWrite())
             throw new IOException("Cannot write log file "+file);
 
@@ -249,7 +249,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
         if (_retainDays>0)
         {
             long now = System.currentTimeMillis();
-            
+
             File file= new File(_filename);
             File dir = new File(file.getParent());
             String fn=file.getName();
@@ -264,11 +264,11 @@ public class RolloverFileOutputStream extends FilterOutputStream
             {
                 fn = logList[i];
                 if(fn.startsWith(prefix)&&fn.indexOf(suffix,prefix.length())>=0)
-                {        
+                {
                     File f = new File(dir,fn);
                     long date = f.lastModified();
                     if ( ((now-date)/(1000*60*60*24))>_retainDays)
-                        f.delete();   
+                        f.delete();
                 }
             }
         }
@@ -289,9 +289,9 @@ public class RolloverFileOutputStream extends FilterOutputStream
      {
             out.write (buf, off, len);
      }
-    
+
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      */
     @Override
     public void close()
@@ -306,10 +306,10 @@ public class RolloverFileOutputStream extends FilterOutputStream
                 _file=null;
             }
 
-            _rollTask.cancel(); 
+            _rollTask.cancel();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
