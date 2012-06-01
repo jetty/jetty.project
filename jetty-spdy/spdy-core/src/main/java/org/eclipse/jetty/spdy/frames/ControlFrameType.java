@@ -29,7 +29,8 @@ public enum ControlFrameType
     PING((short)6),
     GO_AWAY((short)7),
     HEADERS((short)8),
-    WINDOW_UPDATE((short)9);
+    WINDOW_UPDATE((short)9),
+    CREDENTIAL((short)10);
 
     public static ControlFrameType from(short code)
     {
