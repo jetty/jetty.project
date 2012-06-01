@@ -52,6 +52,7 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
+import org.eclipse.jetty.spdy.frames.CredentialFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
@@ -326,6 +327,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 case WINDOW_UPDATE:
                 {
                     onWindowUpdate((WindowUpdateFrame)frame);
+                    break;
+                }
+                case CREDENTIAL:
+                {
+                    onCredential((CredentialFrame)frame);
                     break;
                 }
                 default:
@@ -630,6 +636,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         int streamId = frame.getStreamId();
         IStream stream = streams.get(streamId);
         flowControlStrategy.onWindowUpdate(this, stream, frame.getWindowDelta());
+        flush();
+    }
+
+    private void onCredential(CredentialFrame frame)
+    {
+        logger.warn("{} frame not yet supported", ControlFrameType.CREDENTIAL);
         flush();
     }
 
