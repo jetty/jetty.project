@@ -66,6 +66,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     private final Queue<Runnable> tasks = new LinkedList<>();
     private final BlockingQueue<DataInfo> dataInfos = new LinkedBlockingQueue<>();
+    private final short version;
     private final SPDYAsyncConnection connection;
     private final PushStrategy pushStrategy;
     private final Stream stream;
@@ -75,9 +76,10 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     private volatile State state = State.INITIAL;
     private boolean dispatched; // Guarded by synchronization on tasks
 
-    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
+    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, short version, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
     {
         super(connector, endPoint, server);
+        this.version = version;
         this.connection = connection;
         this.pushStrategy = pushStrategy;
         this.stream = stream;
@@ -159,9 +161,9 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 }
                 case REQUEST:
                 {
-                    Headers.Header method = headers.get("method");
-                    Headers.Header uri = headers.get("url");
-                    Headers.Header version = headers.get("version");
+                    Headers.Header method = headers.get(HTTPSPDYHeader.METHOD.name(version));
+                    Headers.Header uri = headers.get(HTTPSPDYHeader.URI.name(version));
+                    Headers.Header version = headers.get(HTTPSPDYHeader.VERSION.name(this.version));
 
                     if (method == null || uri == null || version == null)
                         throw new HttpException(HttpStatus.BAD_REQUEST_400);
@@ -181,15 +183,19 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     for (Headers.Header header : headers)
                     {
                         String name = header.name();
+
+                        // Skip special SPDY headers, unless it's the "host" header
+                        HTTPSPDYHeader specialHeader = HTTPSPDYHeader.from(version, name);
+                        if (specialHeader != null)
+                        {
+                            if (specialHeader == HTTPSPDYHeader.HOST)
+                                name = "host";
+                            else
+                                continue;
+                        }
+
                         switch (name)
                         {
-                            case "method":
-                            case "version":
-                            case "url":
-                            {
-                                // Skip request line headers
-                                continue;
-                            }
                             case "connection":
                             case "keep-alive":
                             case "proxy-connection":
@@ -264,8 +270,8 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         else
         {
             Headers headers = new Headers();
-            headers.put("status", String.valueOf(status));
-            headers.put("version", "HTTP/1.1");
+            headers.put(HTTPSPDYHeader.STATUS.name(version), String.valueOf(status));
+            headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
             stream.reply(new ReplyInfo(headers, true));
         }
     }
@@ -393,21 +399,22 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     {
         if (!stream.isUnidirectional())
             stream.reply(replyInfo);
-        if (replyInfo.getHeaders().get("status").value().startsWith("200") && !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
+        if (replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") &&
+                !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
         {
             // We have a 200 OK with some content to send
 
-            Headers.Header scheme = headers.get("scheme");
-            Headers.Header host = headers.get("host");
-            Headers.Header url = headers.get("url");
-            Set<String> pushResources = pushStrategy.apply(stream, this.headers, replyInfo.getHeaders());
-            String referrer = new StringBuilder(scheme.value()).append("://").append(host.value()).append(url.value()).toString();
+            Headers.Header scheme = headers.get(HTTPSPDYHeader.SCHEME.name(version));
+            Headers.Header host = headers.get(HTTPSPDYHeader.HOST.name(version));
+            Headers.Header uri = headers.get(HTTPSPDYHeader.URI.name(version));
+            Set<String> pushResources = pushStrategy.apply(stream, headers, replyInfo.getHeaders());
+            String referrer = new StringBuilder(scheme.value()).append("://").append(host.value()).append(uri.value()).toString();
             for (String pushURL : pushResources)
             {
                 final Headers pushHeaders = new Headers();
-                pushHeaders.put("method", "GET");
-                pushHeaders.put("url", pushURL);
-                pushHeaders.put("version", "HTTP/1.1");
+                pushHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+                pushHeaders.put(HTTPSPDYHeader.URI.name(version), pushURL);
+                pushHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 pushHeaders.put(scheme);
                 pushHeaders.put(host);
                 pushHeaders.put("referer", referrer);
@@ -418,7 +425,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     @Override
                     public void completed(Stream pushStream)
                     {
-                        Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), connection, pushStrategy, pushStream);
+                        Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), version, connection, pushStrategy, pushStream);
                         pushConnection.beginRequest(pushHeaders, true);
                     }
                 });
@@ -427,12 +434,10 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     }
 
     private boolean isIfModifiedSinceHeaderPresent()
-    {   
-        if (headers.get("if-modified-since") != null)
-            return true;
-        return false;
-    }   
-    
+    {
+        return headers.get("if-modified-since") != null;
+    }
+
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
     {
         while (true)
@@ -614,11 +619,11 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         {
             Headers headers = new Headers();
             String version = "HTTP/1.1";
-            headers.put("version", version);
+            headers.put(HTTPSPDYHeader.VERSION.name(ServerHTTPSPDYAsyncConnection.this.version), version);
             StringBuilder status = new StringBuilder().append(_status);
             if (_reason != null)
                 status.append(" ").append(_reason.toString("UTF-8"));
-            headers.put("status", status.toString());
+            headers.put(HTTPSPDYHeader.STATUS.name(ServerHTTPSPDYAsyncConnection.this.version), status.toString());
             logger.debug("HTTP < {} {}", version, status);
 
             if (fields != null)
@@ -747,9 +752,9 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     private static class Synchronous extends ServerHTTPSPDYAsyncConnection
     {
-        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
+        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, short version, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
         {
-            super(connector, endPoint, server, connection, pushStrategy, stream);
+            super(connector, endPoint, server, version, connection, pushStrategy, stream);
         }
 
         @Override

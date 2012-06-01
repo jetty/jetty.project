@@ -16,7 +16,6 @@ import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -28,10 +27,10 @@ import org.junit.Test;
 public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 {
     @Override
-    protected SPDYServerConnector newHTTPSPDYServerConnector()
+    protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
-        SPDYServerConnector connector = super.newHTTPSPDYServerConnector();
-        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
+        SPDYServerConnector connector = super.newHTTPSPDYServerConnector(version);
+        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
         connector.setDefaultAsyncConnectionFactory(defaultFactory);
         return connector;
     }

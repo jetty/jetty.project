@@ -55,8 +55,13 @@ public abstract class AbstractHTTPSPDYTest
 
     protected InetSocketAddress startHTTPServer(Handler handler) throws Exception
     {
+        return startHTTPServer(SPDY.V2, handler);
+    }
+
+    protected InetSocketAddress startHTTPServer(short version, Handler handler) throws Exception
+    {
         server = new Server();
-        connector = newHTTPSPDYServerConnector();
+        connector = newHTTPSPDYServerConnector(version);
         connector.setPort(0);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -64,16 +69,21 @@ public abstract class AbstractHTTPSPDYTest
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 
-    protected SPDYServerConnector newHTTPSPDYServerConnector()
+    protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
         SPDYServerConnector connector = new HTTPSPDYServerConnector();
-        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new PushStrategy.None());
+        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new PushStrategy.None());
         connector.setDefaultAsyncConnectionFactory(defaultFactory);
         return connector;
     }
 
     protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
+    {
+        return startClient(SPDY.V2, socketAddress, listener);
+    }
+
+    protected Session startClient(short version, InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
     {
         if (clientFactory == null)
         {
@@ -82,7 +92,7 @@ public abstract class AbstractHTTPSPDYTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
-        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
+        return clientFactory.newSPDYClient(version).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
     }
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
