@@ -18,10 +18,13 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.spdy.ByteBufferPool;
+import org.eclipse.jetty.spdy.SessionException;
+import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.CredentialFrame;
 
@@ -65,7 +68,16 @@ public class CredentialGenerator extends ControlFrameGenerator
 
     private List<byte[]> serializeCertificates(Certificate[] certificates)
     {
-        // TODO
-        return new ArrayList<>();
+        try
+        {
+            List<byte[]> result = new ArrayList<>(certificates.length);
+            for (Certificate certificate : certificates)
+                result.add(certificate.getEncoded());
+            return result;
+        }
+        catch (CertificateEncodingException x)
+        {
+            throw new SessionException(SessionStatus.PROTOCOL_ERROR, x);
+        }
     }
 }

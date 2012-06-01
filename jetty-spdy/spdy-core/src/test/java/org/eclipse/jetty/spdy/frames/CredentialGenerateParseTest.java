@@ -16,7 +16,9 @@
 
 package org.eclipse.jetty.spdy.frames;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.security.KeyStore;
 import java.security.cert.Certificate;
 
 import org.eclipse.jetty.spdy.StandardByteBufferPool;
@@ -24,6 +26,7 @@ import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,7 +37,10 @@ public class CredentialGenerateParseTest
     {
         short slot = 1;
         byte[] proof = new byte[]{0, 1, 2};
-        Certificate[] certificates = new Certificate[0]; // TODO
+        Certificate[] temp = loadCertificates();
+        Certificate[] certificates = new Certificate[temp.length * 2];
+        System.arraycopy(temp, 0, certificates, 0, temp.length);
+        System.arraycopy(temp, 0, certificates, temp.length, temp.length);
         CredentialFrame frame1 = new CredentialFrame(SPDY.V3, slot, proof, certificates);
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
@@ -62,7 +68,7 @@ public class CredentialGenerateParseTest
     {
         short slot = 1;
         byte[] proof = new byte[]{0, 1, 2};
-        Certificate[] certificates = new Certificate[0]; // TODO
+        Certificate[] certificates = loadCertificates();
         CredentialFrame frame1 = new CredentialFrame(SPDY.V3, slot, proof, certificates);
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
@@ -84,5 +90,13 @@ public class CredentialGenerateParseTest
         Assert.assertEquals(slot, credential.getSlot());
         Assert.assertArrayEquals(proof, credential.getProof());
         Assert.assertArrayEquals(certificates, credential.getCertificateChain());
+    }
+
+    private Certificate[] loadCertificates() throws Exception
+    {
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        InputStream keyStoreStream = Resource.newResource("src/test/resources/keystore.jks").getInputStream();
+        keyStore.load(keyStoreStream, "storepwd".toCharArray());
+        return keyStore.getCertificateChain("mykey");
     }
 }

@@ -16,8 +16,11 @@
 
 package org.eclipse.jetty.spdy.parser;
 
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -229,8 +232,15 @@ public class CredentialBodyParser extends ControlFrameBodyParser
 
     private Certificate deserializeCertificate(byte[] bytes)
     {
-        // TODO
-        return null;
+        try
+        {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            return certificateFactory.generateCertificate(new ByteArrayInputStream(bytes));
+        }
+        catch (CertificateException x)
+        {
+            throw new SessionException(SessionStatus.PROTOCOL_ERROR, x);
+        }
     }
 
     private void onCredential()
