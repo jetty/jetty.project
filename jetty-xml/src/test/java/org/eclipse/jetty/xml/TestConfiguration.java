@@ -14,7 +14,11 @@
 package org.eclipse.jetty.xml;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import org.junit.Ignore;
 
@@ -33,6 +37,11 @@ public class TestConfiguration extends HashMap<String,Object>
     public int testField1;
     public int testField2;
     public int propValue;
+    @SuppressWarnings("rawtypes")
+    private List list;
+    @SuppressWarnings("rawtypes")
+    private Set set;
+    private ConstructorArgTestClass constructorArgTestClass;
 
     public void setTest(Object value)
     {
@@ -86,5 +95,50 @@ public class TestConfiguration extends HashMap<String,Object>
     public void call(int[] ia)
     {
         this.ia=ia;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List getList()
+    {
+        if (constructorArgTestClass != null)
+            return constructorArgTestClass.getList();
+        return list;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void setList(List list)
+    {
+        this.list = list;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void setLinkedList(LinkedList list)
+    {
+        this.list = list;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void setArrayList(ArrayList list)
+    {
+        this.list = list;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public Set getSet()
+    {
+        if (constructorArgTestClass != null)
+            return constructorArgTestClass.getSet();
+        return set;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void setSet(Set set)
+    {
+        this.set = set;
+    }
+
+    public void setConstructorArgTestClass(ConstructorArgTestClass constructorArgTestClass)
+    {
+        this.constructorArgTestClass = constructorArgTestClass;
     }
 }
