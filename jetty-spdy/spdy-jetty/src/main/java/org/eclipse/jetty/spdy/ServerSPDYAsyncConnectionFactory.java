@@ -68,7 +68,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, bufferPool, parser, listener, connector);
         endPoint.setConnection(connection);
 
-        FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
+        FlowControlStrategy flowControlStrategy = connector.newFlowControlStrategy(version);
 
         StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator, flowControlStrategy);
         session.setWindowSize(connector.getInitialWindowSize());
@@ -83,11 +83,6 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     protected ServerSessionFrameListener provideServerSessionFrameListener(AsyncEndPoint endPoint, Object attachment)
     {
         return listener;
-    }
-
-    protected FlowControlStrategy newFlowControlStrategy(short version)
-    {
-        return FlowControlStrategyFactory.newFlowControlStrategy(version);
     }
 
     private static class ServerSPDYAsyncConnection extends SPDYAsyncConnection

@@ -232,6 +232,11 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
+    protected FlowControlStrategy newFlowControlStrategy(short version)
+    {
+        return FlowControlStrategyFactory.newFlowControlStrategy(version);
+    }
+
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
         String peerHost = channel.socket().getInetAddress().getHostAddress();
