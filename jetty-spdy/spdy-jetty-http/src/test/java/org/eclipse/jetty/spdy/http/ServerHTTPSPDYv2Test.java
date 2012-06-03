@@ -16,6 +16,7 @@
 
 package org.eclipse.jetty.spdy.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -939,9 +940,28 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     }
 
     @Test
-    public void testGETWithMediumContentByPassed() throws Exception
+    public void testGETWithMediumContentAsInputStreamByPassed() throws Exception
     {
-        final byte[] data = new byte[2048];
+        byte[] data = new byte[2048];
+        testGETWithContentByPassed(new ByteArrayInputStream(data), data.length);
+    }
+
+    @Test
+    public void testGETWithBigContentAsInputStreamByPassed() throws Exception
+    {
+        byte[] data = new byte[128 * 1024];
+        testGETWithContentByPassed(new ByteArrayInputStream(data), data.length);
+    }
+
+    @Test
+    public void testGETWithMediumContentAsBufferByPassed() throws Exception
+    {
+        byte[] data = new byte[2048];
+        testGETWithContentByPassed(new ByteArrayBuffer(data), data.length);
+    }
+
+    private void testGETWithContentByPassed(final Object content, final int length) throws Exception
+    {
         final CountDownLatch handlerLatch = new CountDownLatch(1);
         Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
         {
@@ -953,7 +973,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
                 // We use this trick that's present in Jetty code: if we add a request attribute
                 // called "org.eclipse.jetty.server.sendContent", then it will trigger the
                 // content bypass that we want to test
-                request.setAttribute("org.eclipse.jetty.server.sendContent", new ByteArrayBuffer(data));
+                request.setAttribute("org.eclipse.jetty.server.sendContent", content);
                 handlerLatch.countDown();
             }
         }), null);
@@ -969,7 +989,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
             private final AtomicInteger replyFrames = new AtomicInteger();
-            private final AtomicInteger dataFrames = new AtomicInteger();
+            private final AtomicInteger contentLength = new AtomicInteger();
 
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -984,10 +1004,12 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                Assert.assertEquals(1, dataFrames.incrementAndGet());
-                Assert.assertTrue(dataInfo.isClose());
-                Assert.assertArrayEquals(data, dataInfo.asBytes(true));
-                dataLatch.countDown();
+                contentLength.addAndGet(dataInfo.asBytes(true).length);
+                if (dataInfo.isClose())
+                {
+                    Assert.assertEquals(length, contentLength.get());
+                    dataLatch.countDown();
+                }
             }
         });
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));

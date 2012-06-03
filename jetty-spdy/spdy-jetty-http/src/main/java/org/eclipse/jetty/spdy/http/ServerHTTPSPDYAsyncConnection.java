@@ -24,8 +24,10 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
@@ -47,6 +49,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYAsyncConnection;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
+import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
@@ -639,18 +642,13 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             }
 
             // We have to query the HttpGenerator and its buffers to know
-            // whether there is content buffered; if so, send the data frame
+            // whether there is content buffered and update the generator state
             Buffer content = getContentBuffer();
             reply(stream, new ReplyInfo(headers, content == null));
             if (content != null)
             {
                 closed = allContentAdded || isAllContentWritten();
-                ByteBuffer buffer = ByteBuffer.wrap(content.asArray());
-                logger.debug("HTTP < {} bytes of content", buffer.remaining());
-                // Send the data frame
-                stream.data(new ByteBufferDataInfo(buffer, closed));
                 // Update HttpGenerator fields so that they remain consistent
-                content.clear();
                 _state = closed ? HttpGenerator.STATE_END : HttpGenerator.STATE_CONTENT;
             }
             else
@@ -665,7 +663,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         {
             if (_buffer != null && _buffer.length() > 0)
                 return _buffer;
-            if (_bypass && _content != null && _content.length() > 0)
+            if (_content != null && _content.length() > 0)
                 return _content;
             return null;
         }
@@ -690,22 +688,46 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         @Override
         public void flush(long maxIdleTime) throws IOException
         {
-            while (_content != null && _content.length() > 0)
+            try
             {
-                _content.skip(_buffer.put(_content));
-                ByteBuffer buffer = ByteBuffer.wrap(_buffer.asArray());
-                logger.debug("HTTP < {} bytes of content", buffer.remaining());
-                _buffer.clear();
-                closed = _content.length() == 0 && _last;
-                stream.data(new ByteBufferDataInfo(buffer, closed));
-
-                boolean expired = !connection.getEndPoint().blockWritable(maxIdleTime);
-                if (expired)
+                Buffer content = getContentBuffer();
+                if (content != null)
                 {
-                    stream.getSession().goAway();
-                    throw new EOFException("write timeout");
+                    DataInfo dataInfo = toDataInfo(content, closed);
+                    logger.debug("HTTP < {} bytes of content", dataInfo.length());
+                    stream.data(dataInfo).get(maxIdleTime, TimeUnit.MILLISECONDS);
+                    content.clear();
                 }
             }
+            catch (TimeoutException x)
+            {
+                stream.getSession().goAway();
+                throw new EOFException("write timeout");
+            }
+            catch (InterruptedException x)
+            {
+                throw new InterruptedIOException();
+            }
+            catch (ExecutionException x)
+            {
+                throw new IOException(x.getCause());
+            }
+        }
+
+        private DataInfo toDataInfo(Buffer buffer, boolean close)
+        {
+            if (buffer instanceof ByteArrayBuffer)
+                return new BytesDataInfo(buffer.array(), buffer.getIndex(), buffer.length(), close);
+
+            if (buffer instanceof NIOBuffer)
+            {
+                ByteBuffer byteBuffer = ((NIOBuffer)buffer).getByteBuffer();
+                byteBuffer.limit(buffer.putIndex());
+                byteBuffer.position(buffer.getIndex());
+                return new ByteBufferDataInfo(byteBuffer, close);
+            }
+
+            return new BytesDataInfo(buffer.asArray(), close);
         }
 
         @Override
@@ -732,19 +754,15 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             Buffer content = getContentBuffer();
             if (content != null)
             {
-                ByteBuffer buffer = ByteBuffer.wrap(content.asArray());
-                logger.debug("HTTP < {} bytes of content", buffer.remaining());
-                // Update HttpGenerator fields so that they remain consistent
-                content.clear();
+                closed = true;
                 _state = STATE_END;
-                // Send the data frame
-                stream.data(new ByteBufferDataInfo(buffer, true));
+                flush(getMaxIdleTime());
             }
             else if (!closed)
             {
                 closed = true;
                 _state = STATE_END;
-                // Send the data frame
+                // Send the last, empty, data frame
                 stream.data(new ByteBufferDataInfo(ZERO_BYTES, true));
             }
         }
