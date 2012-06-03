@@ -770,10 +770,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             synchronized (this)
             {
                 ByteBuffer buffer = generator.control(frame);
-                logger.debug("Queuing {} on {}",frame,stream);
-                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream,handler,context,frame,buffer);
+                logger.debug("Queuing {} on {}", frame, stream);
+                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream, handler, context, frame, buffer);
                 if (timeout > 0)
-                    frameBytes.task = scheduler.schedule(frameBytes,timeout,unit);
+                    frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
 
                 // Special handling for PING frames, they must be sent as soon as possible
                 if (ControlFrameType.PING == frame.getType())
@@ -1061,8 +1061,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public int compareTo(FrameBytes that)
         {
-            // If this.stream.priority > that.stream.priority => -1 (this.stream has less priority than that.stream)
-            return that.getStream().getPriority() - getStream().getPriority();
+            // FrameBytes may have or not have a related stream (for example, PING do not have a related stream)
+            // FrameBytes without related streams have higher priority
+            IStream thisStream = getStream();
+            IStream thatStream = that.getStream();
+            if (thisStream == null)
+                return thatStream == null ? 0 : -1;
+            if (thatStream == null)
+                return 1;
+            // If this.stream.priority > that.stream.priority => this.stream has less priority than that.stream
+            return thatStream.getPriority() - thisStream.getPriority();
         }
 
         @Override
