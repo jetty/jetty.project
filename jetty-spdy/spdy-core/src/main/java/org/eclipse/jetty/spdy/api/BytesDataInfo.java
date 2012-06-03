@@ -23,39 +23,44 @@ import java.nio.ByteBuffer;
  */
 public class BytesDataInfo extends DataInfo
 {
-    private byte[] bytes;
-    private int offset;
+    private final byte[] bytes;
+    private final int offset;
+    private final int length;
+    private int index;
 
     public BytesDataInfo(byte[] bytes, boolean close)
     {
-        this(bytes, close, false);
+        this(bytes, 0, bytes.length, close);
     }
 
-    public BytesDataInfo(byte[] bytes, boolean close, boolean compress)
+    public BytesDataInfo(byte[] bytes, int offset, int length, boolean close)
     {
-        super(close, compress);
+        super(close, false);
         this.bytes = bytes;
+        this.offset = offset;
+        this.length = length;
+        this.index = offset;
     }
 
     @Override
     public int length()
     {
-        return bytes.length;
+        return length;
     }
 
     @Override
     public int available()
     {
-        return length() - offset;
+        return length - index + offset;
     }
 
     @Override
     public int readInto(ByteBuffer output)
     {
         int space = output.remaining();
-        int length = Math.min(available(), space);
-        output.put(bytes, offset, length);
-        offset += length;
-        return length;
+        int chunk = Math.min(available(), space);
+        output.put(bytes, index, chunk);
+        index += chunk;
+        return chunk;
     }
 }

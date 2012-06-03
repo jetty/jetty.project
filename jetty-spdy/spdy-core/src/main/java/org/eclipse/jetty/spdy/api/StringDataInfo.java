@@ -25,11 +25,6 @@ public class StringDataInfo extends BytesDataInfo
 {
     public StringDataInfo(String string, boolean close)
     {
-        this(string, close, false);
-    }
-
-    public StringDataInfo(String string, boolean close, boolean compress)
-    {
-        super(string.getBytes(Charset.forName("UTF-8")), close, compress);
+        super(string.getBytes(Charset.forName("UTF-8")), close);
     }
 }
