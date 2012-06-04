@@ -661,7 +661,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     {
         try
         {
-            if (!request.getMethod().equals(HttpMethods.HEAD) )
+            if (!HttpMethods.HEAD.is(request.getMethod()))
             {
                 String ifms=request.getHeader(HttpHeaders.IF_MODIFIED_SINCE);
                 if (ifms!=null)

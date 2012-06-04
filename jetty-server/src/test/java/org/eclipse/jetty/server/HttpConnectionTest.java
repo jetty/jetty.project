@@ -339,10 +339,9 @@ public class HttpConnectionTest
         "\n"+
         "abcdefghij\n";
 
-        Logger logger=null;
         try
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");
             offset = checkContains(response,offset,"Connection: close");
@@ -350,7 +349,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
 
@@ -488,12 +487,60 @@ public class HttpConnectionTest
     }
 
     @Test
+    public void testOversizedResponse2() throws Exception
+    {
+        String str = "thisisastringthatshouldreachover1kbytes-";
+        for (int i=0;i<500;i++)
+            str+="xxxxxxxxxxxx";
+        final String longstr = str;
+        
+        String response = null;        
+        server.stop();
+        server.setHandler(new DumpHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setHeader(HttpHeader.CONTENT_TYPE.toString(),MimeTypes.Type.TEXT_HTML.toString());
+                response.setHeader("LongStr", longstr);
+                PrintWriter writer = response.getWriter();
+                writer.write("<html><h1>FOO</h1></html>");
+                writer.flush();
+                if (!writer.checkError())
+                    throw new RuntimeException("SHOULD NOT GET HERE");
+                response.flushBuffer();
+            }
+        });
+        server.start();
+
+        try
+        {
+            int offset = 0;
+
+            response = connector.getResponses("GET / HTTP/1.1\n"+
+                "Host: localhost\n" +
+                "\015\012"
+             );
+
+            checkContains(response, offset, "HTTP/1.1 500");
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            if(response != null)
+                System.err.println(response);
+            fail("Exception");
+        }
+    }
+
+    @Test
     public void testAsterisk()
     {
         String response = null;
 
         try
         {
+            ((StdErrLog)HttpParser.LOG).setHideStacks(true);
             int offset=0;
 
             response=connector.getResponses("OPTIONS * HTTP/1.1\n"+
@@ -539,6 +586,10 @@ public class HttpConnectionTest
             assertTrue(false);
             if (response!=null)
                  System.err.println(response);
+        }
+        finally
+        {
+            ((StdErrLog)HttpParser.LOG).setHideStacks(false);
         }
 
     }

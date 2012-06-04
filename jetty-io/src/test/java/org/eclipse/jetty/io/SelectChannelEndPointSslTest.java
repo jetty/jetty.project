@@ -60,8 +60,8 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         engine.setUseClientMode(false);
         SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
 
-        AsyncConnection appConnection = super.newConnection(channel,sslConnection.getAppEndPoint());
-        sslConnection.getAppEndPoint().setAsyncConnection(appConnection);
+        AsyncConnection appConnection = super.newConnection(channel,sslConnection.getSslEndPoint());
+        sslConnection.getSslEndPoint().setAsyncConnection(appConnection);
         return sslConnection;
     }
 

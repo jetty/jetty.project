@@ -62,7 +62,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String method = request.getMethod();
-        if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST) && !method.equals(HttpMethods.HEAD))
+        if (!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.isMethod())
         {
             AbstractHttpConnection.getCurrentConnection().getRequest().setHandled(true);
             return;

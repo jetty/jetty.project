@@ -190,7 +190,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                 }
             };
             endPoint.setAsyncConnection(sslConnection);
-            AsyncEndPoint sslEndPoint = sslConnection.getAppEndPoint();
+            AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
             sslEndPointRef.set(sslEndPoint);
 
             // Instances of the ServerProvider inner class strong reference the

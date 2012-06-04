@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class HttpParser
 {
-    private static final Logger LOG = Log.getLogger(HttpParser.class);
+    public static final Logger LOG = Log.getLogger(HttpParser.class);
 
     // States
     public enum State
@@ -170,6 +170,12 @@ public class HttpParser
         return isState(State.CLOSED);
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean isIdle()
+    {
+        return isState(State.START)||isState(State.END)||isState(State.CLOSED);
+    }
+    
     /* ------------------------------------------------------------ */
     public boolean isComplete()
     {
@@ -375,6 +381,7 @@ public class HttpParser
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri,null);
                         _persistent=false;
                         _state=State.END;
+                        BufferUtil.clear(buffer);
                         return_from_parse|=_handler.headerComplete(false,_persistent);
                         return_from_parse|=_handler.messageComplete(_contentPosition);
                     }
@@ -426,6 +433,7 @@ public class HttpParser
                             return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, null);
                             _persistent=false;
                             _state=State.END;
+                            BufferUtil.clear(buffer);
                             return_from_parse|=_handler.headerComplete(false,_persistent);
                             return_from_parse|=_handler.messageComplete(_contentPosition);
                         }
@@ -606,7 +614,8 @@ public class HttpParser
                             // now handle the ch
                             if (ch == HttpTokens.CARRIAGE_RETURN || ch == HttpTokens.LINE_FEED)
                             {
-                                _eol=ch;
+                                consumeCRLF(ch,buffer);
+                                
                                 _contentPosition=0;
 
                                 // End of headers!
@@ -680,7 +689,7 @@ public class HttpParser
                     {
                         case HttpTokens.CARRIAGE_RETURN:
                         case HttpTokens.LINE_FEED:
-                            _eol=ch;
+                            consumeCRLF(ch,buffer);
                             _headerString=takeLengthString();
                             _header=HttpHeader.CACHE.get(_headerString);
                             _state=State.HEADER;
@@ -723,7 +732,7 @@ public class HttpParser
                     {
                         case HttpTokens.CARRIAGE_RETURN:
                         case HttpTokens.LINE_FEED:
-                            _eol=ch;
+                            consumeCRLF(ch,buffer);
                             _headerString=takeString();
                             _length=-1;
                             _header=HttpHeader.CACHE.get(_headerString);
@@ -755,7 +764,7 @@ public class HttpParser
                     {
                         case HttpTokens.CARRIAGE_RETURN:
                         case HttpTokens.LINE_FEED:
-                            _eol=ch;
+                            consumeCRLF(ch,buffer);
                             if (_length > 0)
                             {
                                 if (_valueString!=null)
@@ -794,7 +803,7 @@ public class HttpParser
                     {
                         case HttpTokens.CARRIAGE_RETURN:
                         case HttpTokens.LINE_FEED:
-                            _eol=ch;
+                            consumeCRLF(ch,buffer);
                             if (_length > 0)
                             {
                                 if (_valueString!=null)
@@ -836,7 +845,18 @@ public class HttpParser
 
         return return_from_parse;
     }
-    
+
+    /* ------------------------------------------------------------------------------- */
+    private void consumeCRLF(byte ch, ByteBuffer buffer)
+    {
+        _eol=ch;
+        if (_eol==HttpTokens.CARRIAGE_RETURN && buffer.hasRemaining() && buffer.get(buffer.position())==HttpTokens.LINE_FEED)
+        {
+            buffer.get();
+            _eol=0;
+        }
+    }
+
     /* ------------------------------------------------------------------------------- */
     /**
      * Parse until next Event.

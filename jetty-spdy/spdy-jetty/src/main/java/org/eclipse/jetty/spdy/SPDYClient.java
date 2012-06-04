@@ -327,7 +327,7 @@ public class SPDYClient
                             }
                         };
                         endPoint.setAsyncConnection(sslConnection);
-                        AsyncEndPoint sslEndPoint = sslConnection.getAppEndPoint();
+                        AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
                         sslEndPointRef.set(sslEndPoint);
 
                         // Instances of the ClientProvider inner class strong reference the

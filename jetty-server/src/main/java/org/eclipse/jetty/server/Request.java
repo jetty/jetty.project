@@ -232,8 +232,8 @@ public class Request implements HttpServletRequest
             {
                 content_type = HttpFields.valueParameters(content_type,null);
 
-                if (MimeTypes.Type.FORM_ENCODED.is(content_type) && _inputState == __NONE
-                        && (HttpMethod.POST.equals(getMethod()) || HttpMethod.PUT.equals(getMethod())))
+                if (MimeTypes.Type.FORM_ENCODED.is(content_type) && _inputState == __NONE &&
+                    (HttpMethod.POST.is(getMethod()) || HttpMethod.PUT.is(getMethod())))
                 {
                     int content_length = getContentLength();
                     if (content_length != 0)

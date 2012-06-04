@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public abstract class HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
+    
 
     private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<HttpChannel>();
 
@@ -408,7 +409,7 @@ public abstract class HttpChannel
                     _in.consumeAll();
                     
                 }
-                catch(IOException e)
+                catch(Exception e)
                 {
                     LOG.warn(e);
                 }
@@ -535,14 +536,11 @@ public abstract class HttpChannel
             if(_request.getTimeStamp()==0)
                 _request.setTimeStamp(System.currentTimeMillis());
             _request.setMethod(httpMethod,method);
-
-            System.err.printf("%s %s %s%n",method,uri,version);
             
             if (httpMethod==HttpMethod.CONNECT)
                 _uri.parseConnect(uri);
             else
                 _uri.parse(uri);
-            System.err.printf("%s%n",_uri.getDecodedPath());
             _request.setUri(_uri);
             _request.setPathInfo(_uri.getDecodedPath());
             _version=version==null?HttpVersion.HTTP_0_9:version;

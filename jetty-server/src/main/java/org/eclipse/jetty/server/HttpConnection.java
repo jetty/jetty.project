@@ -140,11 +140,7 @@ public class HttpConnection extends AbstractAsyncConnection
         _generator.reset();
         _channel.reset();
         _httpInput.recycle();
-        if (_requestBuffer!=null && !_requestBuffer.hasRemaining())
-        {
-            _bufferPool.release(_requestBuffer);
-            _requestBuffer=null;
-        }
+        releaseRequestBuffer();
         if (_responseHeader!=null && !_responseHeader.hasRemaining())
         {
             _bufferPool.release(_responseHeader);
@@ -204,7 +200,7 @@ public class HttpConnection extends AbstractAsyncConnection
      * @see org.eclipse.jetty.io.AbstractAsyncConnection#onReadable()
      */
     @Override
-    public void onReadable()
+    public synchronized void onReadable()
     {        
         LOG.debug("{} onReadable {}",this,_channel.isIdle());
         
@@ -255,14 +251,16 @@ public class HttpConnection extends AbstractAsyncConnection
                     }
                     else
                     {
-                        System.err.println("HB="+_headerBytes);
                         _headerBytes+=filled;
                     }
                 }
 
                 // Parse the buffer
                 if (_parser.parseNext(_requestBuffer))
-                {
+                {                    
+                    // For most requests, there will not be a body, so we can try to recycle the buffer now
+                    releaseRequestBuffer();
+                    
                     _headerBytes=0;
                     // The parser returned true, which indicates the channel is ready 
                     // to handle a request. Call the channel and this will either handle the 
@@ -275,7 +273,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     // Return if the channel is still processing the request
                     if (_channel.isSuspended())
                     {
-                        // release buffer if all input has been consumed
+                        // release buffer if no input being held
                         if (_httpInput.available()==0)
                             releaseRequestBuffer();
                         return;
@@ -290,13 +288,15 @@ public class HttpConnection extends AbstractAsyncConnection
                 } 
                 else if (_headerBytes>= _connector.getRequestHeaderSize())
                 {
+                    _parser.reset();
+                    _parser.close();
                     _channel.getEventHandler().badMessage(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
                 }
             }
         }
         catch(Exception e)
         {
-            if (_parser.isClosed())
+            if (_parser.isIdle())
                 LOG.debug(e);
             else
                 LOG.warn(this.toString(),e);
@@ -387,7 +387,7 @@ public class HttpConnection extends AbstractAsyncConnection
         
         
         @Override
-        protected boolean commitError(int status, String reason, String content)
+        protected synchronized boolean commitError(int status, String reason, String content)
         {
             if (!super.commitError(status,reason,content))
             {
@@ -408,7 +408,7 @@ public class HttpConnection extends AbstractAsyncConnection
         }
 
         @Override
-        protected void completed()
+        protected synchronized void completed()
         {
             // This is called by HttpChannel#process when it knows that it's handling of the request/response cycle 
             // is complete.  This may be in the original thread dispatched to the connection that has called process from
@@ -582,7 +582,9 @@ public class HttpConnection extends AbstractAsyncConnection
             {
                 try
                 {
-                    if (_generator.isCommitted() || BufferUtil.hasContent(_responseBuffer))
+                    if (_generator.isCommitted())
+                        throw new IllegalStateException("committed");
+                    if (BufferUtil.hasContent(_responseBuffer))
                         throw new IllegalStateException("!empty");
                     if (_generator.isComplete())
                         throw new EofException();

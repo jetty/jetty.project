@@ -1163,32 +1163,32 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
 
         /* ------------------------------------------------------------ */
-        public void putTo(ByteBuffer buffer)
+        public void putTo(ByteBuffer bufferInFillMode)
         {
             HttpHeader header = HttpHeader.CACHE.get(_name);
             if (header!=null)
             {
-                buffer.put(header.getBytesColonSpace());
+                bufferInFillMode.put(header.getBytesColonSpace());
 
                 if (HttpHeaderValue.hasKnownValues(header))
                 {
                     HttpHeaderValue value=HttpHeaderValue.CACHE.get(_value);
                     if (value!=null)
-                        buffer.put(value.toBuffer());
+                        bufferInFillMode.put(value.toBuffer());
                     else
-                        buffer.put(toSanitisedBytes(_value));
+                        bufferInFillMode.put(toSanitisedBytes(_value));
                 }
                 else
-                    buffer.put(toSanitisedBytes(_value));
+                    bufferInFillMode.put(toSanitisedBytes(_value));
             }
             else
             {
-                buffer.put(toSanitisedBytes(_name));
-                buffer.put(__colon_space);
-                buffer.put(toSanitisedBytes(_value));
+                bufferInFillMode.put(toSanitisedBytes(_name));
+                bufferInFillMode.put(__colon_space);
+                bufferInFillMode.put(toSanitisedBytes(_value));
             }
 
-            BufferUtil.putCRLF(buffer);
+            BufferUtil.putCRLF(bufferInFillMode);
         }
 
         /* ------------------------------------------------------------ */

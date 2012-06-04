@@ -82,11 +82,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         }   
     }   
 
-    public void testRequest2Fragments() throws Exception
-    {
-        super.testRequest2Fragments();
-    }
-
     @Test
     public void testRequest2FixedFragments() throws Exception
     {

@@ -48,7 +48,7 @@ public class ErrorHandler extends AbstractHandler
     {
         baseRequest.setHandled(true);
         String method = request.getMethod();
-        if(!method.equals(HttpMethod.GET) && !method.equals(HttpMethod.POST) && !method.equals(HttpMethod.HEAD))
+        if(!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
             return;
         response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());    
         if (_cacheControl!=null)

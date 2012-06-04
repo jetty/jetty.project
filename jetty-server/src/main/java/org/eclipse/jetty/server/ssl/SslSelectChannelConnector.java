@@ -538,8 +538,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         {
             SSLEngine engine = createSSLEngine(channel);
             SslConnection connection = newSslConnection(endpoint, engine);
-            AsyncConnection delegate = newPlainConnection(channel, connection.getAppEndPoint());
-            connection.getAppEndPoint().setAsyncConnection(delegate);
+            AsyncConnection delegate = newPlainConnection(channel, connection.getSslEndPoint());
+            connection.getSslEndPoint().setAsyncConnection(delegate);
             return connection;
         }
         catch (IOException e)

@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.Test;
@@ -240,6 +241,6 @@ public class ResourceCacheTest
         if (content==null)
             return null;
         
-        return content.getIndirectBuffer().toString();
+        return BufferUtil.toString(content.getIndirectBuffer());
     }
 }

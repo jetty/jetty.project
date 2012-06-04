@@ -48,7 +48,7 @@ import org.omg.stub.java.rmi._Remote_Stub;
  * Connection, that implements TLS encryption using an {@link SSLEngine}.
  * <p>
  * The connector uses an {@link EndPoint} (like {@link SelectChannelEndPoint}) as
- * it's source/sink of encrypted data.   It then provides {@link #getAppEndPoint()} to
+ * it's source/sink of encrypted data.   It then provides {@link #getSslEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  */
 public class SslConnection extends AbstractAsyncConnection
@@ -81,7 +81,7 @@ public class SslConnection extends AbstractAsyncConnection
         return _sslEngine;
     }
 
-    public AsyncEndPoint getAppEndPoint()
+    public AsyncEndPoint getSslEndPoint()
     {
         return _appEndPoint;
     }
@@ -119,7 +119,14 @@ public class SslConnection extends AbstractAsyncConnection
             throw new RuntimeIOException(x);
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void onClose()
+    {
+        super.onClose();
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public void onReadable()

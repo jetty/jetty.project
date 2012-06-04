@@ -50,7 +50,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -81,11 +83,12 @@ public class SSLEngineTest
 
     private static final int BODY_SIZE=300;
 
-    private static Server server;
-    private static SslSelectChannelConnector connector;
+    private Server server;
+    private SslSelectChannelConnector connector;
 
-    @BeforeClass
-    public static void startServer() throws Exception
+    
+    @Before
+    public void startServer() throws Exception
     {
         server=new Server();
         connector=new SslSelectChannelConnector();
@@ -101,20 +104,20 @@ public class SSLEngineTest
 
         server.setConnectors(new Connector[]{connector });
         server.setHandler(new HelloWorldHandler());
-        server.start();
     }
 
-    @AfterClass
-    public static void stopServer() throws Exception
+    @After
+    public void stopServer() throws Exception
     {
         server.stop();
         server.join();
     }
 
     @Test
-    @Ignore
     public void testBigResponse() throws Exception
     {
+        server.start();
+        
         SSLContext ctx=SSLContext.getInstance("TLS");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
@@ -138,11 +141,12 @@ public class SSLEngineTest
     }
 
     @Test
-    @Ignore
     public void testRequestJettyHttps() throws Exception
     {
-        final int loops=10;
-        final int numConns=10;
+        server.start();
+        
+        final int loops=20;
+        final int numConns=20;
 
         Socket[] client=new Socket[numConns];
 
@@ -183,7 +187,7 @@ public class SSLEngineTest
                         // Read the response.
                         String responses=readResponse(client[i]);
                         // Check the response
-                        assertEquals(String.format("responses %d %d",l,i),RESPONSE0+RESPONSE0+RESPONSE1,responses);
+                        assertEquals(String.format("responses loop=%d connection=%d",l,i),RESPONSE0+RESPONSE0+RESPONSE1,responses);
                     }
                 }
                 finally
@@ -205,10 +209,8 @@ public class SSLEngineTest
     }
 
     @Test
-    @Ignore
-    public void testServletPost() throws Exception
+    public void testURLConnectionChunkedPost() throws Exception
     {
-        stopServer();
 
         StreamHandler handler = new StreamHandler();
         server.setHandler(handler);

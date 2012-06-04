@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
@@ -32,7 +33,8 @@ public class HttpGenerator
 
     public static final ResponseInfo CONTINUE_100_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,100,null,false);
     public static final ResponseInfo PROGRESS_102_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,102,null,false);
-    
+    public final static ResponseInfo RESPONSE_500_INFO = 
+        new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(){{put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);}},0,HttpStatus.INTERNAL_SERVER_ERROR_500,null,false);
     
     // states
     public enum Action { FLUSH, COMPLETE, PREPARE };
@@ -431,6 +433,33 @@ public class HttpGenerator
                 default:
                     throw new IllegalStateException();
             }
+        }
+        catch(Exception e)
+        {
+            if (header!=null && info instanceof ResponseInfo)
+            {
+                if (e instanceof BufferOverflowException)
+                {
+                    LOG.warn("Response header too large");
+                    LOG.debug(e);
+                }
+                else
+                    LOG.warn(e);
+                _state=State.COMPLETING;
+                // We were probably trying to generate a header, so let's make it a 500 instead
+                header.clear();
+                _persistent=false;
+                generateResponseLine(RESPONSE_500_INFO,header);
+                generateHeaders(RESPONSE_500_INFO,header,null,true);
+                if (buffer!=null)
+                    BufferUtil.clear(buffer);
+                if (chunk!=null)
+                    BufferUtil.clear(chunk);
+                if (content!=null)
+                    BufferUtil.clear(content);
+                return Result.FLUSH;
+            }
+            throw e;
         }
         finally
         {

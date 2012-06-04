@@ -87,7 +87,7 @@ public class DefaultHandler extends AbstractHandler
         String method=request.getMethod();
 
         // little cheat for common request
-        if (_serveIcon && _favicon!=null && method.equals(HttpMethod.GET) && request.getRequestURI().equals("/favicon.ico"))
+        if (_serveIcon && _favicon!=null && HttpMethod.GET.is(method) && request.getRequestURI().equals("/favicon.ico"))
         {
             if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.toString())==_faviconModified)
                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
@@ -104,7 +104,7 @@ public class DefaultHandler extends AbstractHandler
         }
         
         
-        if (!_showContexts || !method.equals(HttpMethod.GET) || !request.getRequestURI().equals("/"))
+        if (!_showContexts || !HttpMethod.GET.is(method) || !request.getRequestURI().equals("/"))
         {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;   

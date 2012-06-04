@@ -352,9 +352,9 @@ public class ResourceHandler extends HandlerWrapper
 
         boolean skipContentBody = false;
 
-        if(!HttpMethod.GET.equals(request.getMethod()))
+        if(!HttpMethod.GET.is(request.getMethod()))
         {
-            if(!HttpMethod.HEAD.equals(request.getMethod()))
+            if(!HttpMethod.HEAD.is(request.getMethod()))
             {
                 //try another handler
                 super.handle(target, baseRequest, request, response);

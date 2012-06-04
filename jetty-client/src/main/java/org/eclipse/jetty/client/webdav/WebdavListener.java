@@ -54,7 +54,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         _exchange=ex;
 
         // We'll only enable webdav if this is a PUT request
-        if ( HttpMethod.PUT.equalsIgnoreCase( _exchange.getMethod() ) )
+        if ( HttpMethod.PUT.asString().equalsIgnoreCase( _exchange.getMethod() ) )
         {
             _webdavEnabled = true;
         }

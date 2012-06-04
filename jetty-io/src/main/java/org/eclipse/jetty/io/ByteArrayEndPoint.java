@@ -242,7 +242,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public int fill(ByteBuffer buffer) throws IOException
     {
         if (_closed)
-            throw new IOException("CLOSED");
+            throw new EofException("CLOSED");
         if (_in==null)
             shutdownInput();
         if (_ishut)
