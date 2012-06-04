@@ -235,6 +235,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
                 throw new IllegalStateException();
             
             setHeader("Content-Encoding", _encoding);
+            setHeader("Vary","Accept-Encoding");
             
             if (_response.containsHeader("Content-Encoding"))
             {

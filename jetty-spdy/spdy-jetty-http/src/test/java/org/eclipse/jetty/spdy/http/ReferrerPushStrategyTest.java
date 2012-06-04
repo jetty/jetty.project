@@ -16,7 +16,6 @@ import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -28,19 +27,12 @@ import org.junit.Test;
 public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 {
     @Override
-    protected SPDYServerConnector newHTTPSPDYServerConnector()
+    protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
-        return new HTTPSPDYServerConnector()
-        {
-            private final AsyncConnectionFactory defaultAsyncConnectionFactory =
-                    new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, new ReferrerPushStrategy());
-
-            @Override
-            protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
-            {
-                return defaultAsyncConnectionFactory;
-            }
-        };
+        SPDYServerConnector connector = super.newHTTPSPDYServerConnector(version);
+        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
+        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+        return connector;
     }
 
     @Test
@@ -363,7 +355,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         Assert.assertTrue(mainStreamLatch.await(5, TimeUnit.SECONDS));
         Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void testRequestWithIfModifiedSinceHeaderPreventsPush() throws Exception
     {

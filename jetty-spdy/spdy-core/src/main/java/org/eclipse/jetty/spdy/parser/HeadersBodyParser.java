@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
 
@@ -51,7 +52,7 @@ public class HeadersBodyParser extends ControlFrameBodyParser
                     if (buffer.remaining() >= 4)
                     {
                         streamId = buffer.getInt() & 0x7F_FF_FF_FF;
-                        state = State.HEADERS;
+                        state = State.ADDITIONAL;
                     }
                     else
                     {
@@ -68,14 +69,55 @@ public class HeadersBodyParser extends ControlFrameBodyParser
                     if (cursor == 0)
                     {
                         streamId &= 0x7F_FF_FF_FF;
-                        state = State.HEADERS;
+                        state = State.ADDITIONAL;
                     }
+                    break;
+                }
+                case ADDITIONAL:
+                {
+                    switch (controlFrameParser.getVersion())
+                    {
+                        case SPDY.V2:
+                        {
+                            if (buffer.remaining() >= 2)
+                            {
+                                buffer.getShort();
+                                state = State.HEADERS;
+                            }
+                            else
+                            {
+                                state = State.ADDITIONAL_BYTES;
+                                cursor = 2;
+                            }
+                            break;
+                        }
+                        case SPDY.V3:
+                        {
+                            state = State.HEADERS;
+                            break;
+                        }
+                        default:
+                        {
+                            throw new IllegalStateException();
+                        }
+                    }
+                    break;
+                }
+                case ADDITIONAL_BYTES:
+                {
+                    assert controlFrameParser.getVersion() == SPDY.V2;
+                    buffer.get();
+                    --cursor;
+                    if (cursor == 0)
+                        state = State.HEADERS;
                     break;
                 }
                 case HEADERS:
                 {
                     short version = controlFrameParser.getVersion();
                     int length = controlFrameParser.getLength() - 4;
+                    if (version == SPDY.V2)
+                        length -= 2;
                     if (headersBlockParser.parse(streamId, version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
@@ -109,7 +151,7 @@ public class HeadersBodyParser extends ControlFrameBodyParser
 
     private enum State
     {
-        STREAM_ID, STREAM_ID_BYTES, HEADERS
+        STREAM_ID, STREAM_ID_BYTES, ADDITIONAL, ADDITIONAL_BYTES, HEADERS
     }
 
     private class HeadersHeadersBlockParser extends HeadersBlockParser

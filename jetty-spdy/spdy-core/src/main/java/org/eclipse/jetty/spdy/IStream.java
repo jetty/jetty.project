@@ -16,14 +16,12 @@
 
 package org.eclipse.jetty.spdy;
 
-import java.nio.ByteBuffer;
-
+import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
-import org.eclipse.jetty.spdy.frames.DataFrame;
 
 /**
  * <p>The internal interface that represents a stream.</p>
@@ -77,37 +75,36 @@ public interface IStream extends Stream
      * for example by updating the stream's state or by calling listeners.</p>
      *
      * @param frame the control frame to process
-     * @see #process(DataFrame, ByteBuffer)
+     * @see #process(DataInfo)
      */
     public void process(ControlFrame frame);
 
     /**
-     * <p>Processes the given data frame along with the given byte buffer,
+     * <p>Processes the given {@code dataInfo},
      * for example by updating the stream's state or by calling listeners.</p>
      *
-     * @param frame the data frame to process
-     * @param data the byte buffer to process
+     * @param dataInfo the DataInfo to process
      * @see #process(ControlFrame)
      */
-    public void process(DataFrame frame, ByteBuffer data);
-    
+    public void process(DataInfo dataInfo);
+
     /**
      * <p>Associate the given {@link IStream} to this {@link IStream}.</p>
-     * 
+     *
      * @param stream the stream to associate with this stream
      */
     public void associate(IStream stream);
-    
+
     /**
      * <p>remove the given associated {@link IStream} from this stream</p>
-     * 
+     *
      * @param stream the stream to be removed
      */
     public void disassociate(IStream stream);
-    
+
     /**
      * <p>Overrides Stream.getAssociatedStream() to return an instance of IStream instead of Stream
-     * 
+     *
      * @see Stream#getAssociatedStream()
      */
     @Override

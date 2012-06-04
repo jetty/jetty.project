@@ -312,7 +312,6 @@ public class CookieCutter
                     }
                     catch (Exception e)
                     {
-                        LOG.warn(e.toString());
                         LOG.debug(e);
                     }
 

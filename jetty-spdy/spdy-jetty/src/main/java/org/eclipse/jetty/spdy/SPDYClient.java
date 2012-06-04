@@ -64,7 +64,7 @@ public class SPDYClient
     private final Factory factory;
     private SocketAddress bindAddress;
     private long maxIdleTime = -1;
-    private boolean flowControlEnabled = true;
+    private volatile int initialWindowSize = 65536;
 
     protected SPDYClient(short version, Factory factory)
     {
@@ -119,14 +119,14 @@ public class SPDYClient
         this.maxIdleTime = maxIdleTime;
     }
 
-    public boolean isFlowControlEnabled()
+    public int getInitialWindowSize()
     {
-        return flowControlEnabled;
+        return initialWindowSize;
     }
 
-    public void setFlowControlEnabled(boolean flowControlEnabled)
+    public void setInitialWindowSize(int initialWindowSize)
     {
-        this.flowControlEnabled = flowControlEnabled;
+        this.initialWindowSize = initialWindowSize;
     }
 
     protected String selectProtocol(List<String> serverProtocols)
@@ -181,6 +181,11 @@ public class SPDYClient
         SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
         engine.setUseClientMode(true);
         return engine;
+    }
+
+    protected FlowControlStrategy newFlowControlStrategy()
+    {
+        return FlowControlStrategyFactory.newFlowControlStrategy(version);
     }
 
     public static class Factory extends AggregateLifeCycle
@@ -440,8 +445,10 @@ public class SPDYClient
             SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, factory.bufferPool, parser, factory);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(client.version, factory.bufferPool, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator);
-            session.setFlowControlEnabled(client.isFlowControlEnabled());
+            FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
+
+            StandardSession session = new StandardSession(client.version, factory.bufferPool, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator, flowControlStrategy);
+            session.setWindowSize(client.getInitialWindowSize());
             parser.addListener(session);
             sessionPromise.completed(session);
             connection.setSession(session);

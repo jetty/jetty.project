@@ -42,6 +42,7 @@ public class Generator
         generators.put(ControlFrameType.GO_AWAY, new GoAwayGenerator(bufferPool));
         generators.put(ControlFrameType.HEADERS, new HeadersGenerator(bufferPool, headersBlockGenerator));
         generators.put(ControlFrameType.WINDOW_UPDATE, new WindowUpdateGenerator(bufferPool));
+        generators.put(ControlFrameType.CREDENTIAL, new CredentialGenerator(bufferPool));
 
         dataFrameGenerator = new DataFrameGenerator(bufferPool);
     }
