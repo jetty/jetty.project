@@ -292,6 +292,34 @@ public class ContextHandlerTest
         assertEquals("333",handler.getServletContext().getAttribute("ccc"));
         assertEquals(null,handler.getServletContext().getAttribute("ddd"));
     }
+    
+    @Test
+    public void testProtected() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        String[] protectedTargets = {"/foo-inf", "/bar-inf"};
+        handler.setProtectedTargets(protectedTargets);
+        
+        assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
+        assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
+        assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
+        
+        protectedTargets = new String[4];
+        System.arraycopy(handler.getProtectedTargets(), 0, protectedTargets, 0, 2);
+        protectedTargets[2] = "/abc";
+        protectedTargets[3] = "/def";
+        handler.setProtectedTargets(protectedTargets);
+        
+        assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
+        assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
+        assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
+        assertTrue(handler.isProtectedTarget("/abc/124"));
+        assertTrue(handler.isProtectedTarget("//def"));
+       
+        assertTrue(handler.isProtectedTarget("/ABC/7777"));
+    }
+    
+    
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException
     {
