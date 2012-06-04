@@ -134,4 +134,9 @@ public class OSGiWebappConstants
     public static final String SERVICE_PROP_REQUIRE_TLD_BUNDLE = REQUIRE_TLD_BUNDLE;
     
     public static final String WATERMARK = "o.e.j.o.b.watermark";
+    
+    /**
+     * Set of extra dirs that must not be served by osgi webapps
+     */
+    public static final String[] DEFAULT_PROTECTED_OSGI_TARGETS = {"/osgi-inf", "/osgi-opts"};
 }

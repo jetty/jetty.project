@@ -276,6 +276,22 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
             
             //osgi Enterprise Spec r4 p.427
             _contextHandler.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, _bundle.getBundleContext());
+            
+            //make sure we protect also the osgi dirs specified by OSGi Enterprise spec
+            String[] targets = _contextHandler.getProtectedTargets();
+            int length = (targets==null?0:targets.length);
+            
+            String[] updatedTargets = null;
+            if (targets != null)
+            {
+                updatedTargets = new String[length+OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
+                System.arraycopy(targets, 0, updatedTargets, 0, length);
+                
+            }
+            else
+                updatedTargets = new String[OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
+            System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
+            _contextHandler.setProtectedTargets(updatedTargets);
         }
 
 
