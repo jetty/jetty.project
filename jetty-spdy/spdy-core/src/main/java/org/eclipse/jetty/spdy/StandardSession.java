@@ -52,6 +52,7 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
+import org.eclipse.jetty.spdy.frames.CredentialFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
@@ -157,7 +158,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         synchronized (this)
         {
             int streamId = streamIds.getAndAdd(2);
-            SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), synInfo.getHeaders());
+            // TODO: for SPDYv3 we need to support the "slot" argument
+            SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), (short)0, synInfo.getHeaders());
             IStream stream = createStream(synStream, listener, true);
             generateAndEnqueueControlFrame(stream, synStream, timeout, unit, handler, stream);
         }
@@ -326,6 +328,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 case WINDOW_UPDATE:
                 {
                     onWindowUpdate((WindowUpdateFrame)frame);
+                    break;
+                }
+                case CREDENTIAL:
+                {
+                    onCredential((CredentialFrame)frame);
                     break;
                 }
                 default:
@@ -633,6 +640,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         flush();
     }
 
+    private void onCredential(CredentialFrame frame)
+    {
+        logger.warn("{} frame not yet supported", ControlFrameType.CREDENTIAL);
+        flush();
+    }
+
     protected void close()
     {
         // Check for null to support tests
@@ -757,10 +770,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             synchronized (this)
             {
                 ByteBuffer buffer = generator.control(frame);
-                logger.debug("Queuing {} on {}",frame,stream);
-                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream,handler,context,frame,buffer);
+                logger.debug("Queuing {} on {}", frame, stream);
+                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream, handler, context, frame, buffer);
                 if (timeout > 0)
-                    frameBytes.task = scheduler.schedule(frameBytes,timeout,unit);
+                    frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
 
                 // Special handling for PING frames, they must be sent as soon as possible
                 if (ControlFrameType.PING == frame.getType())
@@ -1048,8 +1061,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public int compareTo(FrameBytes that)
         {
-            // If this.stream.priority > that.stream.priority => -1 (this.stream has less priority than that.stream)
-            return that.getStream().getPriority() - getStream().getPriority();
+            // FrameBytes may have or not have a related stream (for example, PING do not have a related stream)
+            // FrameBytes without related streams have higher priority
+            IStream thisStream = getStream();
+            IStream thatStream = that.getStream();
+            if (thisStream == null)
+                return thatStream == null ? 0 : -1;
+            if (thatStream == null)
+                return 1;
+            // If this.stream.priority > that.stream.priority => this.stream has less priority than that.stream
+            return thatStream.getPriority() - thisStream.getPriority();
         }
 
         @Override

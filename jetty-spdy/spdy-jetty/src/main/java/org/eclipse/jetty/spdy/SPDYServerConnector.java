@@ -72,9 +72,9 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
-        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, bufferPool, executor, scheduler, listener);
-        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
         putAsyncConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, bufferPool, executor, scheduler, listener));
+        putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, bufferPool, executor, scheduler, listener));
+        setDefaultAsyncConnectionFactory(getAsyncConnectionFactory("spdy/2"));
     }
 
     public ByteBufferPool getByteBufferPool()
@@ -230,6 +230,11 @@ public class SPDYServerConnector extends SelectChannelConnector
             endPoint.setConnection(connection);
             return connection;
         }
+    }
+
+    protected FlowControlStrategy newFlowControlStrategy(short version)
+    {
+        return FlowControlStrategyFactory.newFlowControlStrategy(version);
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)

@@ -99,7 +99,10 @@ public class Monitor extends Thread
                     new LineNumberReader(new InputStreamReader(socket.getInputStream()));
                 String key=lin.readLine();
                 if (!_key.equals(key))
+                {
+                    System.err.println("Ignoring command with incorrect key");
                     continue;
+                }
                 
                 String cmd=lin.readLine();
                 Config.debug("command=" + cmd);

@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package org.eclipse.jetty.spdy.api;
+package org.eclipse.jetty.spdy.http;
 
-import java.nio.charset.Charset;
+import org.eclipse.jetty.spdy.api.SPDY;
 
-/**
- * <p>Specialized {@link DataInfo} for {@link String} content.</p>
- */
-public class StringDataInfo extends BytesDataInfo
+public class ServerHTTPSPDYv3Test extends ServerHTTPSPDYv2Test
 {
-    public StringDataInfo(String string, boolean close)
+    @Override
+    protected short version()
     {
-        super(string.getBytes(Charset.forName("UTF-8")), close);
+        return SPDY.V3;
     }
 }

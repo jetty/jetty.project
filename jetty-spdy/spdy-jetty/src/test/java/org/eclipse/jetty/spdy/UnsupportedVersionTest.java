@@ -44,7 +44,7 @@ public class UnsupportedVersionTest extends AbstractTest
             }
         });
 
-        SynStreamFrame frame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, new Headers());
+        SynStreamFrame frame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, new Headers());
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
         ByteBuffer buffer = generator.control(frame);
         // Replace the version byte with an unsupported version

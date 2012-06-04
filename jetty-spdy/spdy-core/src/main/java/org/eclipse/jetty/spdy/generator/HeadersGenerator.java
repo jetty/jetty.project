@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.ByteBufferPool;
 import org.eclipse.jetty.spdy.SessionException;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
@@ -43,6 +44,8 @@ public class HeadersGenerator extends ControlFrameGenerator
         ByteBuffer headersBuffer = headersBlockGenerator.generate(version, headers.getHeaders());
 
         int frameBodyLength = 4;
+        if (frame.getVersion() == SPDY.V2)
+            frameBodyLength += 2;
 
         int frameLength = frameBodyLength + headersBuffer.remaining();
         if (frameLength > 0xFF_FF_FF)
@@ -58,6 +61,8 @@ public class HeadersGenerator extends ControlFrameGenerator
         generateControlFrameHeader(headers, frameLength, buffer);
 
         buffer.putInt(headers.getStreamId() & 0x7F_FF_FF_FF);
+        if (frame.getVersion() == SPDY.V2)
+            buffer.putShort((short)0);
 
         buffer.put(headersBuffer);
 
