@@ -824,8 +824,8 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                Assert.assertTrue(dataInfo.isClose());
-                dataLatch.countDown();
+                if (dataInfo.isClose())
+                    dataLatch.countDown();
             }
         });
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
