@@ -421,6 +421,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 pushHeaders.put(scheme);
                 pushHeaders.put(host);
                 pushHeaders.put("referer", referrer);
+                pushHeaders.put("x-spdy-push", "true");
                 // Remember support for gzip encoding
                 pushHeaders.put(headers.get("accept-encoding"));
                 stream.syn(new SynInfo(pushHeaders, false), getMaxIdleTime(), TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
@@ -428,7 +429,8 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     @Override
                     public void completed(Stream pushStream)
                     {
-                        Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), version, connection, pushStrategy, pushStream);
+                        ServerHTTPSPDYAsyncConnection pushConnection =
+                                new ServerHTTPSPDYAsyncConnection(getConnector(), getEndPoint(), getServer(), version, connection, pushStrategy, pushStream);
                         pushConnection.beginRequest(pushHeaders, true);
                     }
                 });
@@ -765,20 +767,6 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 // Send the last, empty, data frame
                 stream.data(new ByteBufferDataInfo(ZERO_BYTES, true));
             }
-        }
-    }
-
-    private static class Synchronous extends ServerHTTPSPDYAsyncConnection
-    {
-        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, short version, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
-        {
-            super(connector, endPoint, server, version, connection, pushStrategy, stream);
-        }
-
-        @Override
-        protected void execute(Runnable task)
-        {
-            task.run();
         }
     }
 }
