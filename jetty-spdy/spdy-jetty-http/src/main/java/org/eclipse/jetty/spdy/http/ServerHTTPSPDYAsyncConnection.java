@@ -649,9 +649,9 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             reply(stream, new ReplyInfo(headers, content == null));
             if (content != null)
             {
-                closed = allContentAdded || isAllContentWritten();
+                closed = false;
                 // Update HttpGenerator fields so that they remain consistent
-                _state = closed ? HttpGenerator.STATE_END : HttpGenerator.STATE_CONTENT;
+                _state = HttpGenerator.STATE_CONTENT;
             }
             else
             {
@@ -693,12 +693,13 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             try
             {
                 Buffer content = getContentBuffer();
-                if (content != null)
+                while (content != null)
                 {
                     DataInfo dataInfo = toDataInfo(content, closed);
                     logger.debug("HTTP < {} bytes of content", dataInfo.length());
                     stream.data(dataInfo).get(maxIdleTime, TimeUnit.MILLISECONDS);
                     content.clear();
+                    content = getContentBuffer();
                 }
             }
             catch (TimeoutException x)
