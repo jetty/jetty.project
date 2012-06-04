@@ -87,7 +87,8 @@ import javax.net.ssl.SSLSocket;
  * </pre>
  * <p>There is no need to unregister {@link SSLSocket} or {@link SSLEngine} instances, as they
  * are kept in a {@link WeakHashMap} and will be garbage collected when the application does not
- * hard reference them anymore.</p>
+ * hard reference them anymore. However, methods to explicitly unregister {@link SSLSocket} or
+ * {@link SSLEngine} instances are provided.</p>
  * <p>In order to help application development, you can set the {@link NextProtoNego#debug} field
  * to {@code true} to have debug code printed to {@link System#err}.</p>
  */
@@ -109,6 +110,7 @@ public class NextProtoNego
      *
      * @param socket the socket to register with the provider
      * @param provider the provider to register with the socket
+     * @see #remove(SSLSocket)
      */
     public static void put(SSLSocket socket, Provider provider)
     {
@@ -125,10 +127,23 @@ public class NextProtoNego
     }
 
     /**
+     * <p>Unregisters the given SSLSocket.</p>
+     *
+     * @param socket the socket to unregister
+     * @return the provider registered with the socket
+     * @see #put(SSLSocket, Provider)
+     */
+    public static Provider remove(SSLSocket socket)
+    {
+        return objects.remove(socket);
+    }
+
+    /**
      * <p>Registers a SSLEngine with a provider.</p>
      *
      * @param engine the engine to register with the provider
      * @param provider the provider to register with the engine
+     * @see #remove(SSLEngine)
      */
     public static void put(SSLEngine engine, Provider provider)
     {
@@ -143,6 +158,18 @@ public class NextProtoNego
     public static Provider get(SSLEngine engine)
     {
         return objects.get(engine);
+    }
+
+    /**
+     * <p>Unregisters the given SSLEngine.</p>
+     *
+     * @param engine the engine to unregister
+     * @return the provider registered with the engine
+     * @see #put(SSLEngine, Provider)
+     */
+    public static Provider remove(SSLEngine engine)
+    {
+        return objects.remove(engine);
     }
 
     /**

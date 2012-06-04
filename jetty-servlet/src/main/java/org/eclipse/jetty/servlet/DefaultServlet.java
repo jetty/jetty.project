@@ -497,6 +497,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         if (gzip)
                         {
                             response.setHeader(HttpHeaders.CONTENT_ENCODING,"gzip");
+                            response.setHeader(HttpHeaders.VARY,HttpHeaders.ACCEPT_ENCODING);
                             String mt=_servletContext.getMimeType(pathInContext);
                             if (mt!=null)
                                 response.setContentType(mt);

@@ -76,7 +76,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public final static String SERVER_CONFIG = "org.eclipse.jetty.webapp.configuration";
     public final static String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public final static String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
-
+    
+    private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
+    
     private static String[] __dftConfigurationClasses =
     {
         "org.eclipse.jetty.webapp.WebInfConfiguration",
@@ -151,6 +153,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationsSet=false;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
+    
+    
 
     private MetaData _metadata=new MetaData();
 
@@ -172,6 +176,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(SESSIONS|SECURITY);
         _scontext=new Context();
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -186,6 +191,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setContextPath(contextPath);
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -200,6 +206,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _scontext=new Context();
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -216,6 +223,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(null, sessionHandler, securityHandler, servletHandler, errorHandler);
         _scontext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -833,16 +841,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    protected boolean isProtectedTarget(String target)
-    {
-        while (target.startsWith("//"))
-            target=URIUtil.compactPath(target);
-
-        return StringUtil.startsWithIgnoreCase(target, "/web-inf") || StringUtil.startsWithIgnoreCase(target, "/meta-inf");
-    }
-
+  
 
     /* ------------------------------------------------------------ */
     @Override

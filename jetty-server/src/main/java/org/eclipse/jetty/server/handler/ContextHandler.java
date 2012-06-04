@@ -68,6 +68,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -143,6 +144,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private Object _requestListeners;
     private Object _requestAttributeListeners;
     private Map<String, Object> _managedAttributes;
+    private String[] _protectedTargets;
 
     private boolean _shutdown = false;
     private boolean _available = true;
@@ -1131,13 +1133,46 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Check the target. Called by {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)} when a target within a context is determined. If
-     * the target is protected, 404 is returned. The default implementation always returns false.
+     * the target is protected, 404 is returned. 
      */
     /* ------------------------------------------------------------ */
-    protected boolean isProtectedTarget(String target)
+    public boolean isProtectedTarget(String target)
     {
-        return false;
+        if (target == null || _protectedTargets == null)
+            return false;
+        
+        while (target.startsWith("//"))
+            target=URIUtil.compactPath(target);
+        
+        boolean isProtected = false;
+        int i=0;
+        while (!isProtected && i<_protectedTargets.length)
+        {
+            isProtected = StringUtil.startsWithIgnoreCase(target, _protectedTargets[i++]);
+        }
+        return isProtected;
     }
+    
+    
+    public void setProtectedTargets (String[] targets)
+    {
+        if (targets == null)
+        {
+            _protectedTargets = null;
+            return;
+        }
+        
+        _protectedTargets = Arrays.copyOf(targets, targets.length);
+    }
+    
+    public String[] getProtectedTargets ()
+    {
+        if (_protectedTargets == null)
+            return null;
+        
+        return Arrays.copyOf(_protectedTargets, _protectedTargets.length);
+    }
+    
 
     /* ------------------------------------------------------------ */
     /*

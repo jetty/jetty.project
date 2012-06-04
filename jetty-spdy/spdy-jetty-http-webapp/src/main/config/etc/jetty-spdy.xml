@@ -11,6 +11,8 @@
         <Set name="protocol">TLSv1</Set>
     </New>
 
+    <!--<Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>-->
+
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">

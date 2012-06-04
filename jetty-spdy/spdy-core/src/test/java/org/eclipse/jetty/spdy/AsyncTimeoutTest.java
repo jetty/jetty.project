@@ -46,7 +46,7 @@ public class AsyncTimeoutTest
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             public void flush()
@@ -72,7 +72,7 @@ public class AsyncTimeoutTest
             }
 
             @Override
-            public void failed(Throwable x)
+            public void failed(Stream stream, Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -91,7 +91,7 @@ public class AsyncTimeoutTest
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             protected void write(ByteBuffer buffer, Handler<FrameBytes> handler, FrameBytes frameBytes)
@@ -120,7 +120,7 @@ public class AsyncTimeoutTest
             }
 
             @Override
-            public void failed(Throwable x)
+            public void failed(Void context, Throwable x)
             {
                 failedLatch.countDown();
             }

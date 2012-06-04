@@ -52,7 +52,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
     }
 
     @Override
-    protected ServerSessionFrameListener newServerSessionFrameListener(AsyncEndPoint endPoint, Object attachment)
+    protected ServerSessionFrameListener provideServerSessionFrameListener(AsyncEndPoint endPoint, Object attachment)
     {
         return new HTTPServerFrameListener(endPoint);
     }
@@ -78,8 +78,8 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             logger.debug("Received {} on {}", synInfo, stream);
 
             HTTPSPDYAsyncEndPoint asyncEndPoint = new HTTPSPDYAsyncEndPoint(endPoint, stream);
-            ServerHTTPSPDYAsyncConnection connection = new ServerHTTPSPDYAsyncConnection(connector,
-                    asyncEndPoint, connector.getServer(), (SPDYAsyncConnection)endPoint.getConnection(),
+            ServerHTTPSPDYAsyncConnection connection = new ServerHTTPSPDYAsyncConnection(connector, asyncEndPoint,
+                    connector.getServer(), getVersion(), (SPDYAsyncConnection)endPoint.getConnection(),
                     pushStrategy, stream);
             asyncEndPoint.setConnection(connection);
             stream.setAttribute(CONNECTION_ATTRIBUTE, connection);

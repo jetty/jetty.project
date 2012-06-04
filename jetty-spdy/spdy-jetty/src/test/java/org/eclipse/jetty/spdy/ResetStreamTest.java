@@ -1,11 +1,5 @@
 package org.eclipse.jetty.spdy;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -23,12 +17,18 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class ResetStreamTest extends AbstractTest
 {
     @Test
     public void testResetStreamIsRemoved() throws Exception
     {
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()),null);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()/*TODO, true*/),null);
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
         session.rst(new RstInfo(stream.getId(),StreamStatus.CANCEL_STREAM)).get(5,TimeUnit.SECONDS);
@@ -169,7 +169,7 @@ public class ResetStreamTest extends AbstractTest
         stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Handler.Adapter<Void>()
         {
             @Override
-            public void failed(Throwable x)
+            public void failed(Void context, Throwable x)
             {
                 failLatch.countDown();
             }

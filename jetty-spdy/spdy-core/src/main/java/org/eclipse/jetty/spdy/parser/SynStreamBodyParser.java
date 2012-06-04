@@ -38,6 +38,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
     private int streamId;
     private int associatedStreamId;
     private byte priority;
+    private short slot;
 
     public SynStreamBodyParser(CompressionFactory.Decompressor decompressor, ControlFrameParser controlFrameParser)
     {
@@ -118,7 +119,9 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                     }
                     else
                     {
-                        // Unused byte after priority, skip it
+                        slot = (short)(currByte & 0xFF);
+                        if (slot < 0)
+                            throw new StreamException(streamId, StreamStatus.INVALID_CREDENTIALS);
                         cursor = 0;
                         state = State.HEADERS;
                     }
@@ -134,7 +137,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                         if (flags > (SynInfo.FLAG_CLOSE | PushSynInfo.FLAG_UNIDIRECTIONAL))
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.SYN_STREAM);
 
-                        SynStreamFrame frame = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, new Headers(headers, true));
+                        SynStreamFrame frame = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, slot, new Headers(headers, true));
                         controlFrameParser.onControlFrame(frame);
 
                         reset();

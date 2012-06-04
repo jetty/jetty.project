@@ -122,7 +122,8 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
         catch (Exception x)
         {
             close(false);
-            handler.failed(x);
+            handler.failed(context, x);
+            return -1;
         }
         finally
         {
@@ -222,6 +223,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     @Override
     public void onIdleExpired(long idleForMs)
     {
+        logger.debug("Idle timeout expired for {}", getEndPoint());
         session.goAway();
     }
 

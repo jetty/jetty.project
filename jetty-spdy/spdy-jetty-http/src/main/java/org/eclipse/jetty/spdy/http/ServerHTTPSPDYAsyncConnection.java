@@ -24,8 +24,10 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
@@ -47,6 +49,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYAsyncConnection;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
+import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
@@ -66,6 +69,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     private final Queue<Runnable> tasks = new LinkedList<>();
     private final BlockingQueue<DataInfo> dataInfos = new LinkedBlockingQueue<>();
+    private final short version;
     private final SPDYAsyncConnection connection;
     private final PushStrategy pushStrategy;
     private final Stream stream;
@@ -75,9 +79,10 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     private volatile State state = State.INITIAL;
     private boolean dispatched; // Guarded by synchronization on tasks
 
-    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
+    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, short version, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
     {
         super(connector, endPoint, server);
+        this.version = version;
         this.connection = connection;
         this.pushStrategy = pushStrategy;
         this.stream = stream;
@@ -159,9 +164,9 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 }
                 case REQUEST:
                 {
-                    Headers.Header method = headers.get("method");
-                    Headers.Header uri = headers.get("url");
-                    Headers.Header version = headers.get("version");
+                    Headers.Header method = headers.get(HTTPSPDYHeader.METHOD.name(version));
+                    Headers.Header uri = headers.get(HTTPSPDYHeader.URI.name(version));
+                    Headers.Header version = headers.get(HTTPSPDYHeader.VERSION.name(this.version));
 
                     if (method == null || uri == null || version == null)
                         throw new HttpException(HttpStatus.BAD_REQUEST_400);
@@ -181,15 +186,19 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     for (Headers.Header header : headers)
                     {
                         String name = header.name();
+
+                        // Skip special SPDY headers, unless it's the "host" header
+                        HTTPSPDYHeader specialHeader = HTTPSPDYHeader.from(version, name);
+                        if (specialHeader != null)
+                        {
+                            if (specialHeader == HTTPSPDYHeader.HOST)
+                                name = "host";
+                            else
+                                continue;
+                        }
+
                         switch (name)
                         {
-                            case "method":
-                            case "version":
-                            case "url":
-                            {
-                                // Skip request line headers
-                                continue;
-                            }
                             case "connection":
                             case "keep-alive":
                             case "proxy-connection":
@@ -264,8 +273,8 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         else
         {
             Headers headers = new Headers();
-            headers.put("status", String.valueOf(status));
-            headers.put("version", "HTTP/1.1");
+            headers.put(HTTPSPDYHeader.STATUS.name(version), String.valueOf(status));
+            headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
             stream.reply(new ReplyInfo(headers, true));
         }
     }
@@ -393,21 +402,22 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     {
         if (!stream.isUnidirectional())
             stream.reply(replyInfo);
-        if (replyInfo.getHeaders().get("status").value().startsWith("200") && !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
+        if (replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") &&
+                !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
         {
             // We have a 200 OK with some content to send
 
-            Headers.Header scheme = headers.get("scheme");
-            Headers.Header host = headers.get("host");
-            Headers.Header url = headers.get("url");
-            Set<String> pushResources = pushStrategy.apply(stream, this.headers, replyInfo.getHeaders());
-            String referrer = new StringBuilder(scheme.value()).append("://").append(host.value()).append(url.value()).toString();
+            Headers.Header scheme = headers.get(HTTPSPDYHeader.SCHEME.name(version));
+            Headers.Header host = headers.get(HTTPSPDYHeader.HOST.name(version));
+            Headers.Header uri = headers.get(HTTPSPDYHeader.URI.name(version));
+            Set<String> pushResources = pushStrategy.apply(stream, headers, replyInfo.getHeaders());
+            String referrer = new StringBuilder(scheme.value()).append("://").append(host.value()).append(uri.value()).toString();
             for (String pushURL : pushResources)
             {
                 final Headers pushHeaders = new Headers();
-                pushHeaders.put("method", "GET");
-                pushHeaders.put("url", pushURL);
-                pushHeaders.put("version", "HTTP/1.1");
+                pushHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+                pushHeaders.put(HTTPSPDYHeader.URI.name(version), pushURL);
+                pushHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 pushHeaders.put(scheme);
                 pushHeaders.put(host);
                 pushHeaders.put("referer", referrer);
@@ -418,7 +428,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     @Override
                     public void completed(Stream pushStream)
                     {
-                        Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), connection, pushStrategy, pushStream);
+                        Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), version, connection, pushStrategy, pushStream);
                         pushConnection.beginRequest(pushHeaders, true);
                     }
                 });
@@ -427,12 +437,10 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     }
 
     private boolean isIfModifiedSinceHeaderPresent()
-    {   
-        if (headers.get("if-modified-since") != null)
-            return true;
-        return false;
-    }   
-    
+    {
+        return headers.get("if-modified-since") != null;
+    }
+
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
     {
         while (true)
@@ -614,11 +622,11 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         {
             Headers headers = new Headers();
             String version = "HTTP/1.1";
-            headers.put("version", version);
+            headers.put(HTTPSPDYHeader.VERSION.name(ServerHTTPSPDYAsyncConnection.this.version), version);
             StringBuilder status = new StringBuilder().append(_status);
             if (_reason != null)
                 status.append(" ").append(_reason.toString("UTF-8"));
-            headers.put("status", status.toString());
+            headers.put(HTTPSPDYHeader.STATUS.name(ServerHTTPSPDYAsyncConnection.this.version), status.toString());
             logger.debug("HTTP < {} {}", version, status);
 
             if (fields != null)
@@ -634,18 +642,13 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             }
 
             // We have to query the HttpGenerator and its buffers to know
-            // whether there is content buffered; if so, send the data frame
+            // whether there is content buffered and update the generator state
             Buffer content = getContentBuffer();
             reply(stream, new ReplyInfo(headers, content == null));
             if (content != null)
             {
                 closed = allContentAdded || isAllContentWritten();
-                ByteBuffer buffer = ByteBuffer.wrap(content.asArray());
-                logger.debug("HTTP < {} bytes of content", buffer.remaining());
-                // Send the data frame
-                stream.data(new ByteBufferDataInfo(buffer, closed));
                 // Update HttpGenerator fields so that they remain consistent
-                content.clear();
                 _state = closed ? HttpGenerator.STATE_END : HttpGenerator.STATE_CONTENT;
             }
             else
@@ -660,7 +663,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         {
             if (_buffer != null && _buffer.length() > 0)
                 return _buffer;
-            if (_bypass && _content != null && _content.length() > 0)
+            if (_content != null && _content.length() > 0)
                 return _content;
             return null;
         }
@@ -685,22 +688,46 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         @Override
         public void flush(long maxIdleTime) throws IOException
         {
-            while (_content != null && _content.length() > 0)
+            try
             {
-                _content.skip(_buffer.put(_content));
-                ByteBuffer buffer = ByteBuffer.wrap(_buffer.asArray());
-                logger.debug("HTTP < {} bytes of content", buffer.remaining());
-                _buffer.clear();
-                closed = _content.length() == 0 && _last;
-                stream.data(new ByteBufferDataInfo(buffer, closed));
-
-                boolean expired = !connection.getEndPoint().blockWritable(maxIdleTime);
-                if (expired)
+                Buffer content = getContentBuffer();
+                if (content != null)
                 {
-                    stream.getSession().goAway();
-                    throw new EOFException("write timeout");
+                    DataInfo dataInfo = toDataInfo(content, closed);
+                    logger.debug("HTTP < {} bytes of content", dataInfo.length());
+                    stream.data(dataInfo).get(maxIdleTime, TimeUnit.MILLISECONDS);
+                    content.clear();
                 }
             }
+            catch (TimeoutException x)
+            {
+                stream.getSession().goAway();
+                throw new EOFException("write timeout");
+            }
+            catch (InterruptedException x)
+            {
+                throw new InterruptedIOException();
+            }
+            catch (ExecutionException x)
+            {
+                throw new IOException(x.getCause());
+            }
+        }
+
+        private DataInfo toDataInfo(Buffer buffer, boolean close)
+        {
+            if (buffer instanceof ByteArrayBuffer)
+                return new BytesDataInfo(buffer.array(), buffer.getIndex(), buffer.length(), close);
+
+            if (buffer instanceof NIOBuffer)
+            {
+                ByteBuffer byteBuffer = ((NIOBuffer)buffer).getByteBuffer();
+                byteBuffer.limit(buffer.putIndex());
+                byteBuffer.position(buffer.getIndex());
+                return new ByteBufferDataInfo(byteBuffer, close);
+            }
+
+            return new BytesDataInfo(buffer.asArray(), close);
         }
 
         @Override
@@ -727,19 +754,15 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             Buffer content = getContentBuffer();
             if (content != null)
             {
-                ByteBuffer buffer = ByteBuffer.wrap(content.asArray());
-                logger.debug("HTTP < {} bytes of content", buffer.remaining());
-                // Update HttpGenerator fields so that they remain consistent
-                content.clear();
+                closed = true;
                 _state = STATE_END;
-                // Send the data frame
-                stream.data(new ByteBufferDataInfo(buffer, true));
+                flush(getMaxIdleTime());
             }
             else if (!closed)
             {
                 closed = true;
                 _state = STATE_END;
-                // Send the data frame
+                // Send the last, empty, data frame
                 stream.data(new ByteBufferDataInfo(ZERO_BYTES, true));
             }
         }
@@ -747,9 +770,9 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     private static class Synchronous extends ServerHTTPSPDYAsyncConnection
     {
-        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
+        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, short version, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
         {
-            super(connector, endPoint, server, connection, pushStrategy, stream);
+            super(connector, endPoint, server, version, connection, pushStrategy, stream);
         }
 
         @Override

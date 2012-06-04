@@ -27,9 +27,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -54,10 +54,12 @@ public class SPDYServerConnector extends SelectChannelConnector
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final ByteBufferPool bufferPool = new StandardByteBufferPool();
+    private final Executor executor = new LazyExecutor();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ServerSessionFrameListener listener;
     private final SslContextFactory sslContextFactory;
-    private AsyncConnectionFactory defaultConnectionFactory;
+    private volatile AsyncConnectionFactory defaultConnectionFactory;
+    private volatile int initialWindowSize = 65536;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
     {
@@ -70,6 +72,9 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
+        putAsyncConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, bufferPool, executor, scheduler, listener));
+        putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, bufferPool, executor, scheduler, listener));
+        setDefaultAsyncConnectionFactory(getAsyncConnectionFactory("spdy/2"));
     }
 
     public ByteBufferPool getByteBufferPool()
@@ -79,22 +84,17 @@ public class SPDYServerConnector extends SelectChannelConnector
 
     public Executor getExecutor()
     {
-        final ThreadPool threadPool = getThreadPool();
-        if (threadPool instanceof Executor)
-            return (Executor)threadPool;
-        return new Executor()
-        {
-            @Override
-            public void execute(Runnable command)
-            {
-                threadPool.dispatch(command);
-            }
-        };
+        return executor;
     }
 
     public ScheduledExecutorService getScheduler()
     {
         return scheduler;
+    }
+
+    public ServerSessionFrameListener getServerSessionFrameListener()
+    {
+        return listener;
     }
 
     public SslContextFactory getSslContextFactory()
@@ -106,8 +106,6 @@ public class SPDYServerConnector extends SelectChannelConnector
     protected void doStart() throws Exception
     {
         super.doStart();
-        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), scheduler, listener);
-        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
         logger.info("SPDY support is experimental. Please report feedback at jetty-dev@eclipse.org");
     }
 
@@ -166,9 +164,14 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
-    protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+    public AsyncConnectionFactory getDefaultAsyncConnectionFactory()
     {
         return defaultConnectionFactory;
+    }
+
+    public void setDefaultAsyncConnectionFactory(AsyncConnectionFactory defaultConnectionFactory)
+    {
+        this.defaultConnectionFactory = defaultConnectionFactory;
     }
 
     @Override
@@ -176,36 +179,24 @@ public class SPDYServerConnector extends SelectChannelConnector
     {
         if (sslContextFactory != null)
         {
-            SSLEngine engine = newSSLEngine(sslContextFactory, channel);
-            final AtomicReference<AsyncEndPoint> sslEndPointRef = new AtomicReference<>();
+            final SSLEngine engine = newSSLEngine(sslContextFactory, channel);
             SslConnection sslConnection = new SslConnection(engine, endPoint)
             {
                 @Override
                 public void onClose()
                 {
-                    sslEndPointRef.set(null);
+                    NextProtoNego.remove(engine);
                     super.onClose();
                 }
             };
             endPoint.setConnection(sslConnection);
-            AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-            sslEndPointRef.set(sslEndPoint);
-
-            // Instances of the ServerProvider inner class strong reference the
-            // SslEndPoint (via lexical scoping), which strong references the SSLEngine.
-            // Since NextProtoNego stores in a WeakHashMap the SSLEngine as key
-            // and this instance as value, we are in the situation where the value
-            // of a WeakHashMap refers indirectly to the key, which is bad because
-            // the entry will never be removed from the WeakHashMap.
-            // We use AtomicReferences to be captured via lexical scoping,
-            // and we null them out above when the connection is closed.
+            final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
             NextProtoNego.put(engine, new NextProtoNego.ServerProvider()
             {
                 @Override
                 public void unsupported()
                 {
                     AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-                    AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
                     sslEndPoint.setConnection(connection);
                 }
@@ -220,7 +211,6 @@ public class SPDYServerConnector extends SelectChannelConnector
                 public void protocolSelected(String protocol)
                 {
                     AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory(protocol);
-                    AsyncEndPoint sslEndPoint = sslEndPointRef.get();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
                     sslEndPoint.setConnection(connection);
                 }
@@ -240,6 +230,11 @@ public class SPDYServerConnector extends SelectChannelConnector
             endPoint.setConnection(connection);
             return connection;
         }
+    }
+
+    protected FlowControlStrategy newFlowControlStrategy(short version)
+    {
+        return FlowControlStrategyFactory.newFlowControlStrategy(version);
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
@@ -286,5 +281,27 @@ public class SPDYServerConnector extends SelectChannelConnector
     protected Collection<Session> getSessions()
     {
         return Collections.unmodifiableCollection(sessions);
+    }
+
+    public int getInitialWindowSize()
+    {
+        return initialWindowSize;
+    }
+
+    public void setInitialWindowSize(int initialWindowSize)
+    {
+        this.initialWindowSize = initialWindowSize;
+    }
+
+    private class LazyExecutor implements Executor
+    {
+        @Override
+        public void execute(Runnable command)
+        {
+            ThreadPool threadPool = getThreadPool();
+            if (threadPool == null)
+                throw new RejectedExecutionException();
+            threadPool.dispatch(command);
+        }
     }
 }

@@ -25,14 +25,16 @@ public class SynStreamFrame extends ControlFrame
     private final int streamId;
     private final int associatedStreamId;
     private final byte priority;
+    private final short slot;
     private final Headers headers;
 
-    public SynStreamFrame(short version, byte flags, int streamId, int associatedStreamId, byte priority, Headers headers)
+    public SynStreamFrame(short version, byte flags, int streamId, int associatedStreamId, byte priority, short slot, Headers headers)
     {
         super(version, ControlFrameType.SYN_STREAM, flags);
         this.streamId = streamId;
         this.associatedStreamId = associatedStreamId;
         this.priority = priority;
+        this.slot = slot;
         this.headers = headers;
     }
 
@@ -49,6 +51,11 @@ public class SynStreamFrame extends ControlFrame
     public byte getPriority()
     {
         return priority;
+    }
+
+    public short getSlot()
+    {
+        return slot;
     }
 
     public Headers getHeaders()

@@ -14,17 +14,26 @@
  * limitations under the License.
  */
 
-package org.eclipse.jetty.spdy.api;
+package org.eclipse.jetty.spdy;
 
-import java.nio.charset.Charset;
+import org.eclipse.jetty.spdy.api.SPDY;
 
-/**
- * <p>Specialized {@link DataInfo} for {@link String} content.</p>
- */
-public class StringDataInfo extends BytesDataInfo
+public class FlowControlStrategyFactory
 {
-    public StringDataInfo(String string, boolean close)
+    private FlowControlStrategyFactory()
     {
-        super(string.getBytes(Charset.forName("UTF-8")), close);
+    }
+
+    public static FlowControlStrategy newFlowControlStrategy(short version)
+    {
+        switch (version)
+        {
+            case SPDY.V2:
+                return new FlowControlStrategy.None();
+            case SPDY.V3:
+                return new SPDYv3FlowControlStrategy();
+            default:
+                throw new IllegalStateException();
+        }
     }
 }
