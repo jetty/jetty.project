@@ -97,7 +97,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private final AtomicInteger lastStreamId = new AtomicInteger();
     private final FlowControlStrategy flowControlStrategy;
     private boolean flushing;
-    private boolean failed = false;
+    private Throwable failure;
 
     public StandardSession(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler,
             Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener,
@@ -870,11 +870,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private void append(FrameBytes frameBytes)
     {
-        boolean fail;
+        Throwable failure;
         synchronized (queue)
         {
-            fail = failed;
-            if (!fail)
+            failure = this.failure;
+            if (failure == null)
             {
                 int index = queue.size();
                 while (index > 0)
@@ -888,17 +888,17 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             }
         }
 
-        if (fail)
-            frameBytes.fail(new SPDYException("Session failed"));
+        if (failure != null)
+            frameBytes.fail(new SPDYException(failure));
     }
 
     private void prepend(FrameBytes frameBytes)
     {
-        boolean fail;
+        Throwable failure;
         synchronized (queue)
         {
-            fail = failed;
-            if (!fail)
+            failure = this.failure;
+            if (failure == null)
             {
                 int index = 0;
                 while (index < queue.size())
@@ -912,8 +912,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             }
         }
 
-        if (fail)
-            frameBytes.fail(new SPDYException("Session failed"));
+        if (failure != null)
+            frameBytes.fail(new SPDYException(failure));
     }
 
     @Override
@@ -935,7 +935,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
         synchronized (queue)
         {
-            failed = true;
+            failure = x;
             String logMessage = String.format("Failed write of %s, failing all %d frame(s) in queue",frameBytes,queue.size());
             logger.debug(logMessage,x);
             frameBytesToFail.addAll(queue);
