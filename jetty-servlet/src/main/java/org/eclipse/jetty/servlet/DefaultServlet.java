@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -33,23 +34,23 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
-import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.HttpConnector;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
 import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.nio.NIOConnector;
 import org.eclipse.jetty.server.ssl.SslConnector;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
@@ -154,7 +155,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private String[] _welcomes;
     private Resource _stylesheet;
     private boolean _useFileMappedBuffer=false;
-    private ByteArrayBuffer _cacheControl;
+    private String _cacheControl;
     private String _relativeResourceBase;
     private ServletHandler _servletHandler;
     private ServletHolder _defaultHolder;
@@ -237,9 +238,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             LOG.debug(e);
         }
 
-        String t=getInitParameter("cacheControl");
-        if (t!=null)
-            _cacheControl=new ByteArrayBuffer(t);
+        _cacheControl=getInitParameter("cacheControl");
 
         String resourceCache = getInitParameter("resourceCache");
         int max_cache_size=getInitInt("maxCacheSize", -2);
@@ -390,11 +389,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         String servletPath=null;
         String pathInfo=null;
         Enumeration<String> reqRanges = null;
-        Boolean included =request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI)!=null;
+        Boolean included =request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI)!=null;
         if (included!=null && included.booleanValue())
         {
-            servletPath=(String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
-            pathInfo=(String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+            servletPath=(String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo=(String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
             if (servletPath==null)
             {
                 servletPath=request.getServletPath();
@@ -408,7 +407,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             pathInfo = request.getPathInfo();
 
             // Is this a Range request?
-            reqRanges = request.getHeaders(HttpHeaders.RANGE);
+            reqRanges = request.getHeaders(HttpHeader.RANGE.asString());
             if (!hasDefinedRange(reqRanges))
                 reqRanges = null;
         }
@@ -421,7 +420,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         boolean gzip=false;
         if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
         {
-            String accept=request.getHeader(HttpHeaders.ACCEPT_ENCODING);
+            String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
             if (accept!=null && accept.indexOf("gzip")>=0)
                 gzip=true;
         }
@@ -496,7 +495,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     {
                         if (gzip)
                         {
-                            response.setHeader(HttpHeaders.CONTENT_ENCODING,"gzip");
+                            response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),"gzip");
                             String mt=_servletContext.getMimeType(pathInContext);
                             if (mt!=null)
                                 response.setContentType(mt);
@@ -661,17 +660,17 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     {
         try
         {
-            if (!HttpMethods.HEAD.is(request.getMethod()))
+            if (!HttpMethod.HEAD.is(request.getMethod()))
             {
-                String ifms=request.getHeader(HttpHeaders.IF_MODIFIED_SINCE);
+                String ifms=request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
                 if (ifms!=null)
                 {
                     if (content!=null)
                     {
-                        Buffer mdlm=content.getLastModified();
+                        String mdlm=content.getLastModified();
                         if (mdlm!=null)
                         {
-                            if (ifms.equals(mdlm.toString()))
+                            if (ifms.equals(mdlm))
                             {
                                 response.reset();
                                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
@@ -681,7 +680,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         }
                     }
 
-                    long ifmsl=request.getDateHeader(HttpHeaders.IF_MODIFIED_SINCE);
+                    long ifmsl=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
                     if (ifmsl!=-1)
                     {
                         if (resource.lastModified()/1000 <= ifmsl/1000)
@@ -695,7 +694,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
 
                 // Parse the if[un]modified dates and compare to resource
-                long date=request.getDateHeader(HttpHeaders.IF_UNMODIFIED_SINCE);
+                long date=request.getDateHeader(HttpHeader.IF_UNMODIFIED_SINCE.asString());
 
                 if (date!=-1)
                 {
@@ -772,8 +771,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         else
         {
-            Connector connector = AbstractHttpConnection.getCurrentConnection().getConnector();
-            direct=connector instanceof NIOConnector && ((NIOConnector)connector).getUseDirectBuffers() && !(connector instanceof SslConnector);
+            HttpConnector connector = HttpChannel.getCurrentHttpChannel().getHttpConnector();
+            // TODO either make this more targeted and/or configurable or just get rid of the choice
+            direct=!(connector instanceof SslConnector);
             content_length=content.getContentLength();
         }
 
@@ -788,7 +788,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             // has a filter already written to the response?
             written = out instanceof HttpOutput 
                 ? ((HttpOutput)out).isWritten() 
-                : AbstractHttpConnection.getCurrentConnection().getGenerator().isWritten();
+                : true;
         }
         catch(IllegalStateException e) 
         {
@@ -811,15 +811,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     if (response instanceof Response)
                     {
                         writeOptionHeaders(((Response)response).getHttpFields());
-                        ((AbstractHttpConnection.Output)out).sendContent(content);
+                        ((HttpOutput)out).sendContent(content);
                     }
                     else 
                     {
-                        Buffer buffer = direct?content.getDirectBuffer():content.getIndirectBuffer();
+                        ByteBuffer buffer = direct?content.getDirectBuffer():content.getIndirectBuffer();
                         if (buffer!=null)
                         {
                             writeHeaders(response,content,content_length);
-                            ((AbstractHttpConnection.Output)out).sendContent(buffer);
+                            ((HttpOutput)out).sendContent(buffer);
                         }
                         else
                         {
@@ -834,9 +834,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     writeHeaders(response,content,written?-1:content_length);
 
                     // Write content normally
-                    Buffer buffer = (content==null)?null:content.getIndirectBuffer();
+                    ByteBuffer buffer = (content==null)?null:content.getIndirectBuffer();
                     if (buffer!=null)
-                        buffer.writeTo(out);
+                        BufferUtil.writeTo(buffer,out);
                     else
                         resource.writeTo(out,0,content_length);
                 }
@@ -852,7 +852,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             {
                 writeHeaders(response, content, content_length);
                 response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
-                response.setHeader(HttpHeaders.CONTENT_RANGE,
+                response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         InclusiveByteRange.to416HeaderRangeString(content_length));
                 resource.writeTo(out,0,content_length);
                 return;
@@ -867,7 +867,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 long singleLength = singleSatisfiableRange.getSize(content_length);
                 writeHeaders(response,content,singleLength                     );
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-                response.setHeader(HttpHeaders.CONTENT_RANGE,
+                response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         singleSatisfiableRange.toHeaderRangeString(content_length));
                 resource.writeTo(out,singleSatisfiableRange.getFirst(content_length),singleLength);
                 return;
@@ -886,7 +886,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             // send an old style multipart/x-byteranges Content-Type. This
             // keeps Netscape and acrobat happy. This is what Apache does.
             String ctp;
-            if (request.getHeader(HttpHeaders.REQUEST_RANGE)!=null)
+            if (request.getHeader(HttpHeader.REQUEST_RANGE.asString())!=null)
                 ctp = "multipart/x-byteranges; boundary=";
             else
                 ctp = "multipart/byteranges; boundary=";
@@ -905,8 +905,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 length+=
                     ((i>0)?2:0)+
                     2+multi.getBoundary().length()+2+
-                    HttpHeaders.CONTENT_TYPE.length()+2+mimetype.length()+2+
-                    HttpHeaders.CONTENT_RANGE.length()+2+header[i].length()+2+
+                    HttpHeader.CONTENT_TYPE.asString().length()+2+mimetype.length()+2+
+                    HttpHeader.CONTENT_RANGE.asString().length()+2+header[i].length()+2+
                     2+
                     (ibr.getLast(content_length)-ibr.getFirst(content_length))+1;
             }
@@ -916,7 +916,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             for (int i=0;i<ranges.size();i++)
             {
                 InclusiveByteRange ibr = (InclusiveByteRange) ranges.get(i);
-                multi.startPart(mimetype,new String[]{HttpHeaders.CONTENT_RANGE+": "+header[i]});
+                multi.startPart(mimetype,new String[]{HttpHeader.CONTENT_RANGE+": "+header[i]});
 
                 long start=ibr.getFirst(content_length);
                 long size=ibr.getSize(content_length);
@@ -962,12 +962,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             HttpFields fields = r.getHttpFields();
 
             if (content.getLastModified()!=null)
-                fields.put(HttpHeaders.LAST_MODIFIED_BUFFER,content.getLastModified());
+                fields.put(HttpHeader.LAST_MODIFIED,content.getLastModified());
             else if (content.getResource()!=null)
             {
                 long lml=content.getResource().lastModified();
                 if (lml!=-1)
-                    fields.putDateField(HttpHeaders.LAST_MODIFIED_BUFFER,lml);
+                    fields.putDateField(HttpHeader.LAST_MODIFIED,lml);
             }
 
             if (count != -1)
@@ -979,14 +979,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             long lml=content.getResource().lastModified();
             if (lml>=0)
-                response.setDateHeader(HttpHeaders.LAST_MODIFIED,lml);
+                response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),lml);
 
             if (count != -1)
             {
                 if (count<Integer.MAX_VALUE)
                     response.setContentLength((int)count);
                 else
-                    response.setHeader(HttpHeaders.CONTENT_LENGTH,Long.toString(count));
+                    response.setHeader(HttpHeader.CONTENT_LENGTH.asString(),Long.toString(count));
             }
 
             writeOptionHeaders(response);
@@ -997,20 +997,20 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     protected void writeOptionHeaders(HttpFields fields) throws IOException
     {
         if (_acceptRanges)
-            fields.put(HttpHeaders.ACCEPT_RANGES_BUFFER,HttpHeaderValues.BYTES_BUFFER);
+            fields.put(HttpHeader.ACCEPT_RANGES,"bytes");
 
         if (_cacheControl!=null)
-            fields.put(HttpHeaders.CACHE_CONTROL_BUFFER,_cacheControl);
+            fields.put(HttpHeader.CACHE_CONTROL,_cacheControl);
     }
 
     /* ------------------------------------------------------------ */
     protected void writeOptionHeaders(HttpServletResponse response) throws IOException
     {
         if (_acceptRanges)
-            response.setHeader(HttpHeaders.ACCEPT_RANGES,"bytes");
+            response.setHeader(HttpHeader.ACCEPT_RANGES.asString(),"bytes");
 
         if (_cacheControl!=null)
-            response.setHeader(HttpHeaders.CACHE_CONTROL,_cacheControl.toString());
+            response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl);
     }
 
     /* ------------------------------------------------------------ */

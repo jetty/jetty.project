@@ -732,6 +732,7 @@ public abstract class HttpChannel
 
 
         /* ------------------------------------------------------------ */
+        @Override
         public void sendContent(Object content) throws IOException
         {
             Resource resource=null;

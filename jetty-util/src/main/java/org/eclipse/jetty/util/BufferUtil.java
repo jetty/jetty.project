@@ -16,6 +16,7 @@ package org.eclipse.jetty.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -336,6 +337,19 @@ public class BufferUtil
             tmp.position(0);
             tmp.limit(l);
             buffer.put(tmp);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
+    {
+        if (buffer.hasArray())
+            out.write(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
+        else
+        {
+            // TODO this is horribly inefficient
+            for (int i=buffer.position();i<buffer.limit();i++)
+                out.write(buffer.get(i));
         }
     }
     

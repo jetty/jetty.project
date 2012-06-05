@@ -152,9 +152,7 @@ public class DispatcherTest
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
-            "Transfer-Encoding: chunked\r\n"+
-            "\r\n"+
-            "0\r\n"+
+            "Content-Length: 0\r\n"+
             "\r\n";
 
         String responses = _connector.getResponses("GET /context/IncludeServlet/includepath?do=forward HTTP/1.1\n" + "Host: localhost\n\n");

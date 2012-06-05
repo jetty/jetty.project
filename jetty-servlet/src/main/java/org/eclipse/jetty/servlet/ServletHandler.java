@@ -44,15 +44,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
-import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
@@ -252,7 +250,7 @@ public class ServletHandler extends ScopedHandler
      * @param pathInContext Path within _context.
      * @return PathMap Entries pathspec to ServletHolder
      */
-    public PathMap.Entry getHolderEntry(String pathInContext)
+    public PathMap.MappedEntry getHolderEntry(String pathInContext)
     {
         if (_servletPathMap==null)
             return null;
@@ -367,7 +365,7 @@ public class ServletHandler extends ScopedHandler
         if (target.startsWith("/"))
         {
             // Look for the servlet by path
-            PathMap.Entry entry=getHolderEntry(target);
+            PathMap.MappedEntry entry=getHolderEntry(target);
             if (entry!=null)
             {
                 servlet_holder=(ServletHolder)entry.getValue();
@@ -531,8 +529,6 @@ public class ServletHandler extends ScopedHandler
             }
 
             // handle or log exception
-            if (th instanceof HttpException)
-                throw (HttpException)th;
             else if (th instanceof RuntimeIOException)
                 throw (RuntimeIOException)th;
             else if (th instanceof EofException)
@@ -1324,7 +1320,7 @@ public class ServletHandler extends ScopedHandler
         public void doFilter(ServletRequest request, ServletResponse response) 
             throws IOException, ServletException
         {                   
-            final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
+            final Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
 
             // pass to next filter
             if (_filterHolder!=null)
@@ -1446,7 +1442,7 @@ public class ServletHandler extends ScopedHandler
                 notFound(srequest, (HttpServletResponse)response);
             else
             {            
-                Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
+                Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
                 nextHandle(URIUtil.addPaths(srequest.getServletPath(),srequest.getPathInfo()),
                            baseRequest,srequest,(HttpServletResponse)response);
             }

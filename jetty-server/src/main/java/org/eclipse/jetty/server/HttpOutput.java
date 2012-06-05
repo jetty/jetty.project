@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 
 import javax.servlet.ServletOutputStream;
 
+import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
@@ -146,6 +147,12 @@ public class HttpOutput extends ServletOutputStream
     public void print(String s) throws IOException
     {
         write(s.getBytes());
+    }
+
+    /* ------------------------------------------------------------ */
+    public void sendContent(Object content) throws IOException
+    {
+        throw new IllegalStateException("Not implemented");
     }
 
 }

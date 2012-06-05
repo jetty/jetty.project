@@ -12,9 +12,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -74,12 +74,12 @@ public class AsyncContextDispatchWithQueryStrings {
 			String path = request.getRequestURI();
 			String queryString = request.getQueryString();
 			if ("/initialCall".equals(path)) {
-				AsyncContinuation continuation = (AsyncContinuation) ContinuationSupport.getContinuation(request);
+			    HttpChannelState continuation = (HttpChannelState) ContinuationSupport.getContinuation(request);
 				continuation.suspend();
 				continuation.dispatch("/firstDispatchWithNewQueryString?newQueryString=initialValue");
 				assertEquals("initialParam=right", queryString);
 			} else if ("/firstDispatchWithNewQueryString".equals(path)) {
-				AsyncContinuation continuation = (AsyncContinuation) ContinuationSupport.getContinuation(request);
+			    HttpChannelState continuation = (HttpChannelState) ContinuationSupport.getContinuation(request);
 				continuation.suspend();
 				continuation.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
 				assertEquals("newQueryString=initialValue&initialParam=right", queryString);
