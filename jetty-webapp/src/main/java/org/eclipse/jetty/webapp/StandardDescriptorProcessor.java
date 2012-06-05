@@ -239,23 +239,26 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String servlet_class = node.getString("servlet-class", false, true);
 
         // Handle JSP
-        String jspServletName=null;
         String jspServletClass=null;;
-        boolean hasJSP=false;
+
+        //Handle the default jsp servlet instance
         if (id != null && id.equals("jsp"))
         {
-            jspServletName = servlet_name;
             jspServletClass = servlet_class;
             try
             {
                 Loader.loadClass(this.getClass(), servlet_class);
-                hasJSP = true;
             }
             catch (ClassNotFoundException e)
             {
                 LOG.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servlet_class);
                 jspServletClass = servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
             }
+        }
+        
+        //could be more than 1 declaration of the jsp servlet, so configure them all
+        if (servlet_class != null && "org.apache.jasper.servlet.JspServlet".equals(servlet_class))
+        {
             if (holder.getInitParameter("scratchdir") == null)
             {
                 File tmp = context.getTempDirectory();
@@ -316,12 +319,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }          
         }
 
-        // Handler JSP file
+        // Handle JSP file
         String jsp_file = node.getString("jsp-file", false, true);
         if (jsp_file != null)
         {
             holder.setForcedPath(jsp_file);
-            holder.setClassName(jspServletClass);
+            holder.setClassName(jspServletClass); //only use our default instance
             //set the system classpath explicitly for the holder that will represent the JspServlet instance
             holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
         }

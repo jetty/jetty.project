@@ -113,4 +113,9 @@ public abstract class AbstractHTTPSPDYTest
             server.join();
         }
     }
+
+    protected short version()
+    {
+        return SPDY.V2;
+    }
 }
