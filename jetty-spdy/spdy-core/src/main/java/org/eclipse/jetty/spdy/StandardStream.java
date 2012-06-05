@@ -247,13 +247,18 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                logger.debug("Invoking reply callback with {} on listener {}",replyInfo,listener);
-                listener.onReply(this,replyInfo);
+                logger.debug("Invoking reply callback with {} on listener {}", replyInfo, listener);
+                listener.onReply(this, replyInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener,x);
+            logger.info("Exception while notifying listener " + listener, x);
+        }
+        catch (Error x)
+        {
+            logger.info("Exception while notifying listener " + listener, x);
+            throw x;
         }
     }
 
@@ -264,13 +269,18 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                logger.debug("Invoking headers callback with {} on listener {}",frame,listener);
+                logger.debug("Invoking headers callback with {} on listener {}", frame, listener);
                 listener.onHeaders(this, headersInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener,x);
+            logger.info("Exception while notifying listener " + listener, x);
+        }
+        catch (Error x)
+        {
+            logger.info("Exception while notifying listener " + listener, x);
+            throw x;
         }
     }
 
@@ -281,14 +291,19 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                logger.debug("Invoking data callback with {} on listener {}",dataInfo,listener);
+                logger.debug("Invoking data callback with {} on listener {}", dataInfo, listener);
                 listener.onData(this, dataInfo);
                 logger.debug("Invoked data callback with {} on listener {}", dataInfo, listener);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener,x);
+            logger.info("Exception while notifying listener " + listener, x);
+        }
+        catch (Error x)
+        {
+            logger.info("Exception while notifying listener " + listener, x);
+            throw x;
         }
     }
 
