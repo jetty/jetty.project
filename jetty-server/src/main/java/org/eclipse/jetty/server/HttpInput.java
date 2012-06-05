@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.util.ArrayQueue;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

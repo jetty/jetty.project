@@ -1,6 +1,5 @@
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
 public abstract class AbstractEndPoint implements EndPoint

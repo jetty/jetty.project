@@ -1,10 +1,8 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.CompletionHandler;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExecutorCallback;

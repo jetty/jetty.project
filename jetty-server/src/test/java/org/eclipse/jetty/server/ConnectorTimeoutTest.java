@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.Assert;
 import org.junit.Test;
 

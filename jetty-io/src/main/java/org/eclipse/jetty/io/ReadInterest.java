@@ -3,7 +3,6 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.Callback;

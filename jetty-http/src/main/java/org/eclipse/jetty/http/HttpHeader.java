@@ -15,9 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;

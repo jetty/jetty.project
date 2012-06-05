@@ -21,8 +21,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

@@ -1,22 +1,16 @@
 package org.eclipse.jetty.server;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Timer;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

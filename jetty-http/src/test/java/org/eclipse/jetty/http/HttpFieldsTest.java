@@ -25,9 +25,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.hamcrest.Matchers;
 
 /**
  *

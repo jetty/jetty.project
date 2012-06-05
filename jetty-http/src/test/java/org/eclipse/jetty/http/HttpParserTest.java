@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

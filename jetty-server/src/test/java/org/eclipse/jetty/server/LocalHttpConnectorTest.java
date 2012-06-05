@@ -3,7 +3,6 @@ package org.eclipse.jetty.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

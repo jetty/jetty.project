@@ -3,9 +3,6 @@ package org.eclipse.jetty.http;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
 
 public class MimeTypesTest

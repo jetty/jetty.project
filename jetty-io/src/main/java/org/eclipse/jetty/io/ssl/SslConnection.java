@@ -15,11 +15,8 @@ package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ReadPendingException;
-import java.nio.channels.WritePendingException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -38,10 +35,8 @@ import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.omg.stub.java.rmi._Remote_Stub;
 
 /**
  * An AsyncConnection that acts as an interceptor between and EndPoint and another

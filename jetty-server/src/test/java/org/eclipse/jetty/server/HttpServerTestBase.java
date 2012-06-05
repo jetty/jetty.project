@@ -40,12 +40,9 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.HttpServerTestFixture.EchoHandler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 

@@ -23,7 +23,6 @@ import java.util.Timer;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.HttpContent;

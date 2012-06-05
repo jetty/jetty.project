@@ -7,7 +7,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.concurrent.ExecutionException;
@@ -16,7 +15,6 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class AsyncByteArrayEndPointTest
