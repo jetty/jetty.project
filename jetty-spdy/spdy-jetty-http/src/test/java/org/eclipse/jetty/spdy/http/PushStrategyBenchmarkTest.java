@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -61,11 +60,6 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
     private final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
     private final long roundtrip = 100;
     private final int runs = 10;
-
-    protected short version()
-    {
-        return SPDY.V2;
-    }
 
     @Test
     public void benchmarkPushStrategy() throws Exception

@@ -73,10 +73,10 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
 
         // Perform slow request. This will wait on server side until the fast request wakes it up
         Headers headers = new Headers();
-        headers.put("method", "GET");
-        headers.put("url", "/slow");
-        headers.put("version", "HTTP/1.1");
-        headers.put("host", "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version()), "/slow");
+        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
         final CountDownLatch slowClientLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -91,10 +91,10 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
 
         // Perform the fast request. This will wake up the slow request
         headers.clear();
-        headers.put("method", "GET");
-        headers.put("url", "/fast");
-        headers.put("version", "HTTP/1.1");
-        headers.put("host", "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version()), "/fast");
+        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
         final CountDownLatch fastClientLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
