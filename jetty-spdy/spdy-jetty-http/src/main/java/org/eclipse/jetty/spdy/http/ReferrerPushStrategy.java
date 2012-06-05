@@ -39,17 +39,18 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>However, also following a hyperlink generates a HTTP request with a <tt>Referer</tt>
  * HTTP header that points to <tt>index.html</tt>; therefore main resources and associated
  * resources must be distinguishable.</p>
- * <p>This class distinguishes associated resources by their URL path suffix.
+ * <p>This class distinguishes associated resources by their URL path suffix and content
+ * type.
  * CSS stylesheets, images and JavaScript files have recognizable URL path suffixes that
  * are classified as associated resources.</p>
- * <p>Note however, that CSS stylesheets may refer to images, and the CSS image request
- * will have the CSS stylesheet as referrer, so there is some degree of recursion that
- * needs to be handled.</p>
- *
- * TODO: this class is kind-of leaking since the resources map is always adding entries
- * TODO: although these entries will be limited by the number of application pages.
- * TODO: however, there is no ConcurrentLinkedHashMap yet in JDK (there is in Guava though)
- * TODO: so we cannot use the built-in LRU features of LinkedHashMap
+ * <p>When CSS stylesheets refer to images, the CSS image request will have the CSS
+ * stylesheet as referrer. This implementation will push also the CSS image.</p>
+ * <p>The push metadata built by this implementation is limited by the number of pages
+ * of the application itself, and by the
+ * {@link #getMaxAssociatedResources() max associated resources} parameter.
+ * This parameter limits the number of associated resources per each main resource, so
+ * that if a main resource has hundreds of associated resources, only up to the number
+ * specified by this parameter will be pushed.</p>
  */
 public class ReferrerPushStrategy implements PushStrategy
 {
@@ -58,6 +59,7 @@ public class ReferrerPushStrategy implements PushStrategy
     private final Set<Pattern> pushRegexps = new HashSet<>();
     private final Set<String> pushContentTypes = new HashSet<>();
     private final Set<Pattern> allowedPushOrigins = new HashSet<>();
+    private volatile int maxAssociatedResources = 32;
 
     public ReferrerPushStrategy()
     {
@@ -87,6 +89,16 @@ public class ReferrerPushStrategy implements PushStrategy
         this.pushContentTypes.addAll(pushContentTypes);
         for (String allowedPushOrigin : allowedPushOrigins)
             this.allowedPushOrigins.add(Pattern.compile(allowedPushOrigin.replace(".", "\\.").replace("*", ".*")));
+    }
+
+    public int getMaxAssociatedResources()
+    {
+        return maxAssociatedResources;
+    }
+
+    public void setMaxAssociatedResources(int maxAssociatedResources)
+    {
+        this.maxAssociatedResources = maxAssociatedResources;
     }
 
     @Override
@@ -173,8 +185,19 @@ public class ReferrerPushStrategy implements PushStrategy
                 if (existing != null)
                     pushResources = existing;
             }
-            pushResources.add(url);
-            logger.debug("Built push metadata for {}: {}", referrer, pushResources);
+            // This check is not strictly concurrent-safe, but limiting
+            // the number of associated resources is achieved anyway
+            // although in rare cases few more resources will be stored
+            if (pushResources.size() < getMaxAssociatedResources())
+            {
+                pushResources.add(url);
+                logger.debug("Stored push metadata for {}: {}", referrer, pushResources);
+            }
+            else
+            {
+                logger.debug("Skipped store of push metadata {} for {}: max associated resources ({}) reached",
+                        url, referrer, maxAssociatedResources);
+            }
         }
     }
 

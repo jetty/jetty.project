@@ -52,6 +52,139 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     }
 
     @Test
+    public void testMaxAssociatedResources() throws Exception
+    {
+        InetSocketAddress address = startHTTPServer(version(), new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                String url = request.getRequestURI();
+                PrintWriter output = response.getWriter();
+                if (url.endsWith(".html"))
+                    output.print("<html><head/><body>HELLO</body></html>");
+                else if (url.endsWith(".css"))
+                    output.print("body { background: #FFF; }");
+                else if (url.endsWith(".js"))
+                    output.print("function(){}();");
+                baseRequest.setHandled(true);
+            }
+        });
+        ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
+        pushStrategy.setMaxAssociatedResources(1);
+        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+
+        Session session1 = startClient(version(), address, null);
+
+        final CountDownLatch mainResourceLatch = new CountDownLatch(1);
+        Headers mainRequestHeaders = new Headers();
+        mainRequestHeaders.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        String mainResource = "/index.html";
+        mainRequestHeaders.put(HTTPSPDYHeader.URI.name(version()), mainResource);
+        mainRequestHeaders.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        mainRequestHeaders.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
+        mainRequestHeaders.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        session1.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataInfo.consume(dataInfo.length());
+                if (dataInfo.isClose())
+                    mainResourceLatch.countDown();
+            }
+        });
+        Assert.assertTrue(mainResourceLatch.await(5, TimeUnit.SECONDS));
+
+        final CountDownLatch associatedResourceLatch1 = new CountDownLatch(1);
+        Headers associatedRequestHeaders1 = new Headers();
+        associatedRequestHeaders1.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        associatedRequestHeaders1.put(HTTPSPDYHeader.URI.name(version()), "/style.css");
+        associatedRequestHeaders1.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        associatedRequestHeaders1.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
+        associatedRequestHeaders1.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        associatedRequestHeaders1.put("referer", "http://localhost:" + connector.getLocalPort() + mainResource);
+        session1.syn(new SynInfo(associatedRequestHeaders1, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataInfo.consume(dataInfo.length());
+                if (dataInfo.isClose())
+                    associatedResourceLatch1.countDown();
+            }
+        });
+        Assert.assertTrue(associatedResourceLatch1.await(5, TimeUnit.SECONDS));
+
+        final CountDownLatch associatedResourceLatch2 = new CountDownLatch(1);
+        Headers associatedRequestHeaders2 = new Headers();
+        associatedRequestHeaders2.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        associatedRequestHeaders2.put(HTTPSPDYHeader.URI.name(version()), "/application.js");
+        associatedRequestHeaders2.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        associatedRequestHeaders2.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
+        associatedRequestHeaders2.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        associatedRequestHeaders2.put("referer", "http://localhost:" + connector.getLocalPort() + mainResource);
+        session1.syn(new SynInfo(associatedRequestHeaders2, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataInfo.consume(dataInfo.length());
+                if (dataInfo.isClose())
+                    associatedResourceLatch2.countDown();
+            }
+        });
+        Assert.assertTrue(associatedResourceLatch2.await(5, TimeUnit.SECONDS));
+
+        // Create another client, and perform the same request for the main resource,
+        // we expect the css being pushed, but not the js
+
+        final CountDownLatch mainStreamLatch = new CountDownLatch(2);
+        final CountDownLatch pushDataLatch = new CountDownLatch(1);
+        Session session2 = startClient(version(), address, new SessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                Assert.assertTrue(stream.isUnidirectional());
+                Assert.assertTrue(synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version())).value().endsWith(".css"));
+                return new StreamFrameListener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+
+                        dataInfo.consume(dataInfo.length());
+                        if (dataInfo.isClose())
+                            pushDataLatch.countDown();
+                    }
+                };
+            }
+        });
+        session2.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertFalse(replyInfo.isClose());
+                mainStreamLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataInfo.consume(dataInfo.length());
+                if (dataInfo.isClose())
+                    mainStreamLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(mainStreamLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(pushDataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testAssociatedResourceIsPushed() throws Exception
     {
         InetSocketAddress address = startHTTPServer(version(), new AbstractHandler()
