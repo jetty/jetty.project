@@ -14,7 +14,7 @@ package org.eclipse.jetty.servlet;
 
 import junit.framework.AssertionFailedError;
 
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.junit.After;
@@ -24,7 +24,7 @@ import org.junit.Test;
 public class StatisticsServletTest
 {
     private Server server;
-    private LocalConnector connector;
+    private LocalHttpConnector connector;
     private ServletContextHandler context;
 
     @Before
@@ -40,7 +40,7 @@ public class StatisticsServletTest
         context.addServlet(holder, "/stats");
 
         server.setHandler(context);
-        connector = new LocalConnector();
+        connector = new LocalHttpConnector();
         server.addConnector(connector);
     }
 

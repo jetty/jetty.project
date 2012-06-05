@@ -20,7 +20,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
@@ -57,7 +57,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     {
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
 
         try
         {
@@ -94,7 +94,7 @@ public class BasicAuthenticator extends LoginAuthenticator
             if (_deferred.isDeferred(response))
                 return Authentication.UNAUTHENTICATED;
             
-            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
+            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + _loginService.getName() + '"');
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return Authentication.SEND_CONTINUE;
         }

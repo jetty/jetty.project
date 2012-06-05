@@ -27,14 +27,15 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.MultiMap;
@@ -217,8 +218,8 @@ public class FormAuthenticator extends LoginAuthenticator
                 else if (_dispatch)
                 {
                     RequestDispatcher dispatcher = request.getRequestDispatcher(_formErrorPage);
-                    response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
-                    response.setDateHeader(HttpHeaders.EXPIRES,1);
+                    response.setHeader(HttpHeader.CACHE_CONTROL.asString(),HttpHeaderValue.NO_CACHE.asString());
+                    response.setDateHeader(HttpHeader.EXPIRES.asString(),1);
                     dispatcher.forward(new FormRequest(request), new FormResponse(response));
                 }
                 else
@@ -259,8 +260,8 @@ public class FormAuthenticator extends LoginAuthenticator
                                 // so restore method and parameters
 
                                 session.removeAttribute(__J_POST);                        
-                                Request base_request = (req instanceof Request)?(Request)req:AbstractHttpConnection.getCurrentConnection().getRequest();
-                                base_request.setMethod(HttpMethods.POST);
+                                Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
+                                base_request.setMethod(HttpMethod.POST,HttpMethod.POST.asString());
                                 base_request.setParameters(j_post);
                             }
                         }
@@ -287,9 +288,9 @@ public class FormAuthenticator extends LoginAuthenticator
                         buf.append("?").append(request.getQueryString());
                     session.setAttribute(__J_URI, buf.toString());
                     
-                    if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(req.getContentType()) && HttpMethods.POST.equals(request.getMethod()))
+                    if (MimeTypes.Type.FORM_ENCODED.is(req.getContentType()) && HttpMethod.POST.is(request.getMethod()))
                     {
-                        Request base_request = (req instanceof Request)?(Request)req:AbstractHttpConnection.getCurrentConnection().getRequest();
+                        Request base_request = (req instanceof Request)?(Request)req:HttpChannel.getCurrentHttpChannel().getRequest();
                         base_request.extractParameters();                        
                         session.setAttribute(__J_POST, new MultiMap<String>(base_request.getParameters()));
                     }
@@ -300,8 +301,8 @@ public class FormAuthenticator extends LoginAuthenticator
             if (_dispatch)
             {
                 RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
-                response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
-                response.setDateHeader(HttpHeaders.EXPIRES,1);
+                response.setHeader(HttpHeader.CACHE_CONTROL.asString(),HttpHeaderValue.NO_CACHE.asString());
+                response.setDateHeader(HttpHeader.EXPIRES.asString(),1);
                 dispatcher.forward(new FormRequest(request), new FormResponse(response));
             }
             else
@@ -427,12 +428,12 @@ public class FormAuthenticator extends LoginAuthenticator
         
         private boolean notIgnored(String name)
         {
-            if (HttpHeaders.CACHE_CONTROL.equalsIgnoreCase(name) ||
-                HttpHeaders.PRAGMA.equalsIgnoreCase(name) ||
-                HttpHeaders.ETAG.equalsIgnoreCase(name) ||
-                HttpHeaders.EXPIRES.equalsIgnoreCase(name) ||
-                HttpHeaders.LAST_MODIFIED.equalsIgnoreCase(name) ||
-                HttpHeaders.AGE.equalsIgnoreCase(name))
+            if (HttpHeader.CACHE_CONTROL.is(name) ||
+                HttpHeader.PRAGMA.is(name) ||
+                HttpHeader.ETAG.is(name) ||
+                HttpHeader.EXPIRES.is(name) ||
+                HttpHeader.LAST_MODIFIED.is(name) ||
+                HttpHeader.AGE.is(name))
                 return false;
             return true;
         }

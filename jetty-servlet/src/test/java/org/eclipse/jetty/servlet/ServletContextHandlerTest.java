@@ -14,7 +14,7 @@ import junit.framework.AssertionFailedError;
 
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -27,14 +27,14 @@ import org.junit.Test;
 public class ServletContextHandlerTest
 {
     private Server _server;
-    private LocalConnector _connector;
+    private LocalHttpConnector _connector;
     
     @Before
     public void createServer()
     {
         _server = new Server();
 
-        _connector = new LocalConnector();
+        _connector = new LocalHttpConnector();
         _server.addConnector(_connector);
     }
     

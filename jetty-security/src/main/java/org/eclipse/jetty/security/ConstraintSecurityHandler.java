@@ -25,8 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.AbstractHttpConnection;
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class ConstraintSecurityHandler extends SecurityHandler implements ConstraintAware
 {
+    private static final String ALL_METHODS = "*";
     private final List<ConstraintMapping> _constraintMappings= new CopyOnWriteArrayList<ConstraintMapping>();
     private final Set<String> _roles = new CopyOnWriteArraySet<String>();
     private final PathMap _constraintMap = new PathMap();
@@ -145,7 +146,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 if (cmr!=null)
                 {
                     for (String r : cmr)
-                        if (!"*".equals(r))
+                        if (!ALL_METHODS.equals(r))
                             roles.add(r);
                 }
             }
@@ -245,11 +246,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             mappings = new StringMap();
             _constraintMap.put(mapping.getPathSpec(),mappings);
         }
-        RoleInfo allMethodsRoleInfo = mappings.get(null);
+        RoleInfo allMethodsRoleInfo = mappings.get(ALL_METHODS);
         if (allMethodsRoleInfo != null && allMethodsRoleInfo.isForbidden())
             return;
 
         String httpMethod = mapping.getMethod();
+        if (httpMethod==null)
+            httpMethod=ALL_METHODS;
         RoleInfo roleInfo = mappings.get(httpMethod);
         if (roleInfo == null)
         {
@@ -268,10 +271,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         roleInfo.setForbidden(forbidden);
         if (forbidden)
         {
-            if (httpMethod == null)
+            if (httpMethod.equals(ALL_METHODS))
             {
                 mappings.clear();
-                mappings.put(null,roleInfo);
+                mappings.put(ALL_METHODS,roleInfo);
             }
         }
         else
@@ -306,11 +309,11 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                     }
                 }
             }
-            if (httpMethod == null)
+            if (httpMethod.equals(ALL_METHODS))
             {
                 for (Map.Entry<String, RoleInfo> entry : mappings.entrySet())
                 {
-                    if (entry.getKey() != null)
+                    if (!entry.getKey().equals(ALL_METHODS))
                     {
                         RoleInfo specific = entry.getValue();
                         specific.combine(roleInfo);
@@ -329,7 +332,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             String httpMethod = request.getMethod();
             RoleInfo roleInfo = mappings.get(httpMethod);
             if (roleInfo == null)
-                roleInfo = mappings.get(null);
+                roleInfo = mappings.get(ALL_METHODS);
             return roleInfo;
         }
 
@@ -351,8 +354,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             return true;
         }
-        AbstractHttpConnection connection = AbstractHttpConnection.getCurrentConnection();
-        Connector connector = connection.getConnector();
+        
+        HttpConnector connector = HttpChannel.getCurrentHttpChannel().getHttpConnector();
 
         if (dataConstraint == UserDataConstraint.Integral)
         {

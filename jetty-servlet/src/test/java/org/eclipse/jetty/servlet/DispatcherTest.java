@@ -45,7 +45,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -58,7 +58,7 @@ import org.junit.Test;
 public class DispatcherTest
 {
     private Server _server;
-    private LocalConnector _connector;
+    private LocalHttpConnector _connector;
     private ContextHandlerCollection _contextCollection;
     private ServletContextHandler _contextHandler;
     private ResourceHandler _resourceHandler;
@@ -68,7 +68,7 @@ public class DispatcherTest
     {
         _server = new Server();
         _server.setSendServerVersion(false);
-        _connector = new LocalConnector();
+        _connector = new LocalHttpConnector();
         
         _contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();

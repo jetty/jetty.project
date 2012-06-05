@@ -39,10 +39,10 @@ public class HttpFieldsTest
     {
         HttpFields header = new HttpFields();
 
-        header.put("name0", "value0");
+        header.put("name0", "value:0");
         header.put("name1", "value1");
 
-        assertEquals("value0",header.getStringField("name0"));
+        assertEquals("value:0",header.getStringField("name0"));
         assertEquals("value1",header.getStringField("name1"));
         assertNull(header.getStringField("name2"));
 
@@ -60,10 +60,31 @@ public class HttpFieldsTest
 
         e = header.getValues("name0");
         assertEquals(true, e.hasMoreElements());
-        assertEquals(e.nextElement(), "value0");
+        assertEquals(e.nextElement(), "value:0");
         assertEquals(false, e.hasMoreElements());
     }
 
+    @Test
+    public void testPutTo() throws Exception
+    {
+        HttpFields header = new HttpFields();
+
+        header.put("name0", "value0");
+        header.put("name1", "value:A");
+        header.add("name1", "value:B");
+        header.add("name2", "");
+
+        ByteBuffer buffer=BufferUtil.allocate(1024);
+        BufferUtil.flipToFill(buffer);
+        header.putTo(buffer);
+        BufferUtil.flipToFlush(buffer,0);
+        String result=BufferUtil.toString(buffer);
+        
+        assertThat(result,Matchers.containsString("name0: value0"));
+        assertThat(result,Matchers.containsString("name1: value:A"));
+        assertThat(result,Matchers.containsString("name1: value:B"));
+    }
+    
     @Test
     public void testGet() throws Exception
     {

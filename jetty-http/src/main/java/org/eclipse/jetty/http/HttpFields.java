@@ -574,8 +574,9 @@ public class HttpFields implements Iterable<HttpFields.Field>
      */
     public void add(String name, String value) throws IllegalArgumentException
     {
-        if (value == null) throw new IllegalArgumentException("null value");
-
+        if (value == null) 
+            return;
+        
         Field field = _names.get(name);
         Field last = null;
         while (field != null)
@@ -890,15 +891,15 @@ public class HttpFields implements Iterable<HttpFields.Field>
     }
 
     /* -------------------------------------------------------------- */
-    public void putTo(ByteBuffer buffer) throws IOException
+    public void putTo(ByteBuffer bufferInFillMode) throws IOException
     {
         for (int i = 0; i < _fields.size(); i++)
         {
             Field field = _fields.get(i);
             if (field != null)
-                field.putTo(buffer);
+                field.putTo(bufferInFillMode);
         }
-        BufferUtil.putCRLF(buffer);
+        BufferUtil.putCRLF(bufferInFillMode);
     }
 
     /* -------------------------------------------------------------- */
@@ -1146,7 +1147,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
 
         /* ------------------------------------------------------------ */
-        private byte[] toSanitisedBytes(String s)
+        private byte[] toSanitisedName(String s)
         {
             byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
             for (int i=bytes.length;i-->0;)
@@ -1156,6 +1157,22 @@ public class HttpFields implements Iterable<HttpFields.Field>
                     case '\r':
                     case '\n':
                     case ':' :
+                        bytes[i]=(byte)'?';
+                }
+            }
+            return bytes;
+        }
+        
+        /* ------------------------------------------------------------ */
+        private byte[] toSanitisedValue(String s)
+        {
+            byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+            for (int i=bytes.length;i-->0;)
+            {
+                switch(bytes[i])
+                {
+                    case '\r':
+                    case '\n':
                         bytes[i]=(byte)'?';
                 }
             }
@@ -1176,16 +1193,16 @@ public class HttpFields implements Iterable<HttpFields.Field>
                     if (value!=null)
                         bufferInFillMode.put(value.toBuffer());
                     else
-                        bufferInFillMode.put(toSanitisedBytes(_value));
+                        bufferInFillMode.put(toSanitisedValue(_value));
                 }
                 else
-                    bufferInFillMode.put(toSanitisedBytes(_value));
+                    bufferInFillMode.put(toSanitisedValue(_value));
             }
             else
             {
-                bufferInFillMode.put(toSanitisedBytes(_name));
+                bufferInFillMode.put(toSanitisedName(_name));
                 bufferInFillMode.put(__colon_space);
-                bufferInFillMode.put(toSanitisedBytes(_value));
+                bufferInFillMode.put(toSanitisedValue(_value));
             }
 
             BufferUtil.putCRLF(bufferInFillMode);
@@ -1194,7 +1211,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         /* ------------------------------------------------------------ */
         public void putValueTo(ByteBuffer buffer)
         {
-            buffer.put(toSanitisedBytes(_value));
+            buffer.put(toSanitisedValue(_value));
         }
 
         /* ------------------------------------------------------------ */

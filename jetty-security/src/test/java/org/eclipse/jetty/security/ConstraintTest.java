@@ -14,7 +14,9 @@
 package org.eclipse.jetty.security;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
@@ -42,9 +44,11 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.matchers.JUnitMatchers;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -53,7 +57,7 @@ public class ConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
     private static Server _server;
-    private static LocalConnector _connector;
+    private static LocalHttpConnector _connector;
     private static SessionHandler _session;
     private ConstraintSecurityHandler _security;
 
@@ -61,7 +65,7 @@ public class ConstraintTest
     public static void startServer()
     {
         _server = new Server();
-        _connector = new LocalConnector();
+        _connector = new LocalHttpConnector();
         _server.setConnectors(new Connector[]{_connector});
 
         ContextHandler _context = new ContextHandler();
@@ -254,9 +258,9 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-        assertTrue(response.indexOf("Cache-Control: no-cache") > 0);
-        assertTrue(response.indexOf("Expires") > 0);
-        assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
+        assertThat(response,containsString("Cache-Control: no-cache"));
+        assertThat(response,containsString("Expires"));
+        assertThat(response,containsString("URI=/ctx/testLoginPage"));
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 

@@ -608,7 +608,8 @@ public abstract class HttpChannel
                         break;
                 }
             }
-            _requestFields.add(name, value);
+            if (name!=null)
+                _requestFields.add(name, value);
             return false;
         }
 

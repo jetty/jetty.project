@@ -23,12 +23,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
@@ -46,8 +45,8 @@ import org.junit.Test;
 public class DataConstraintsTest
 {
     private Server _server;
-    private LocalConnector _connector;
-    private LocalConnector _connectorS;
+    private LocalHttpConnector _connector;
+    private LocalHttpConnector _connectorS;
     private SessionHandler _session;
     private ConstraintSecurityHandler _security;
 
@@ -55,20 +54,22 @@ public class DataConstraintsTest
     public  void startServer()
     {
         _server = new Server();
-        _connector = new LocalConnector();
+        _connector = new LocalHttpConnector();
         _connector.setMaxIdleTime(300000);
         _connector.setIntegralPort(9998);
         _connector.setIntegralScheme("FTP");
         _connector.setConfidentialPort(9999);
         _connector.setConfidentialScheme("SPDY");
-        _connectorS = new LocalConnector()
+        _connectorS = new LocalHttpConnector()
         {
+            
             @Override
-            public void customize(EndPoint endpoint, Request request) throws IOException
+            public void customize(Request request) throws IOException
             {
-                super.customize(endpoint,request);
-                request.setScheme(HttpSchemes.HTTPS);
+                request.setScheme(HttpScheme.HTTPS.asString());
+                super.customize(request);
             }
+
 
             @Override
             public boolean isIntegral(Request request)
@@ -214,7 +215,7 @@ public class DataConstraintsTest
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/confid/*");
-        mapping0.setMethod(HttpMethods.POST);
+        mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
@@ -248,7 +249,7 @@ public class DataConstraintsTest
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/confid/*");
-        mapping0.setMethod(HttpMethods.POST);
+        mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
@@ -284,7 +285,7 @@ public class DataConstraintsTest
         constraint0.setDataConstraint(Constraint.DC_CONFIDENTIAL);
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/confid/*");
-        mapping0.setMethod(HttpMethods.POST);
+        mapping0.setMethod(HttpMethod.POST.asString());
         mapping0.setConstraint(constraint0);
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
@@ -347,10 +348,10 @@ public class DataConstraintsTest
         response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n Authorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connector.getResponses("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n Authorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
 
     }

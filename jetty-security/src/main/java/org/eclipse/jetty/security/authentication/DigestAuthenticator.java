@@ -27,7 +27,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
@@ -120,7 +120,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
 
         try
         {
@@ -197,7 +197,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                 String domain = request.getContextPath();
                 if (domain == null) 
                     domain = "/";
-                response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Digest realm=\"" + _loginService.getName()
+                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName()
                         + "\", domain=\""
                         + domain
                         + "\", nonce=\""

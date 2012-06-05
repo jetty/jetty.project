@@ -22,7 +22,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
@@ -46,7 +46,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         HttpServletRequest req = (HttpServletRequest)request;
         HttpServletResponse res = (HttpServletResponse)response;
         
-        String header = req.getHeader(HttpHeaders.AUTHORIZATION);
+        String header = req.getHeader(HttpHeader.AUTHORIZATION.asString());
 
         if (!mandatory)
         {
@@ -64,7 +64,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
             	 }
             	 
                 LOG.debug("SpengoAuthenticator: sending challenge");
-                res.setHeader(HttpHeaders.WWW_AUTHENTICATE, HttpHeaders.NEGOTIATE);
+                res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), HttpHeader.NEGOTIATE.asString());
                 res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                 return Authentication.SEND_CONTINUE;
             } 
@@ -73,7 +73,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
                 throw new ServerAuthException(ioe);
             }       
         }
-        else if (header != null && header.startsWith(HttpHeaders.NEGOTIATE))
+        else if (header != null && header.startsWith(HttpHeader.NEGOTIATE.asString()))
         {
             String spnegoToken = header.substring(10);
             
