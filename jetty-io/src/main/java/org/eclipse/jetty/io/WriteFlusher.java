@@ -36,8 +36,10 @@ abstract public class WriteFlusher
     }
 
     /* ------------------------------------------------------------ */
-    public void write(Object context, Callback callback, ByteBuffer... buffers)
+    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers)
     {
+        if (callback==null)
+            throw new IllegalArgumentException();
         if (!_writing.compareAndSet(false,true))
             throw new WritePendingException();
         try
