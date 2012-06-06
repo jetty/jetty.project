@@ -139,4 +139,7 @@ public class OSGiWebappConstants
      * Set of extra dirs that must not be served by osgi webapps
      */
     public static final String[] DEFAULT_PROTECTED_OSGI_TARGETS = {"/osgi-inf", "/osgi-opts"};
+
+    
+    
 }

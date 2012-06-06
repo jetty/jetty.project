@@ -24,6 +24,7 @@ import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.utils.EventSender;
 import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -62,46 +64,22 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
      *
      *
      */
-    public class BundleApp extends App
+    public class OSGiApp extends AbstractOSGiApp
     {
         private String _contextFile;
-        private Bundle _bundle;
         private ContextHandler _contextHandler;
-        private Dictionary _properties;
         private boolean _configured = false;
-        private ServiceRegistration _registrationAsService = null;
         
-        public BundleApp(DeploymentManager manager, AppProvider provider, String originId, Bundle bundle, String contextFile)
+        public OSGiApp(DeploymentManager manager, AppProvider provider, String originId, Bundle bundle, String contextFile)
         {
-            super(manager, provider, originId);
-            _bundle = bundle;
+            super(manager, provider, bundle, originId);
             _contextFile = contextFile;
-            _properties = bundle.getHeaders();
         }
         
-        public BundleApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String contextFile, String originId)
+        public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String contextFile, String originId)
         {
-            super(manager, provider, originId);
+            super(manager, provider, bundle, properties, originId);
             _contextFile = contextFile;
-            _properties = properties;
-            _bundle = bundle;  
-        }
-        
-        public Bundle getBundle()
-        {
-            return _bundle;
-        }
-        
-        public String getBundleSymbolicName()
-        {
-            return _bundle.getSymbolicName();
-        }
-        
-        public String getBundleVersionAsString()
-        {
-            if (_bundle.getVersion() == null)
-                return null;
-            return _bundle.getVersion().toString();
         }
                
         public String getContextFile ()
@@ -119,17 +97,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
         {
             configureContextHandler();
             return _contextHandler;
-        }
-        
-        
-        public ServiceRegistration getRegistrationAsService()
-        {
-            return _registrationAsService;
-        }
-
-        public void setRegistrationAsService(ServiceRegistration registrationAsService)
-        {
-            _registrationAsService = registrationAsService;
         }
 
         public void configureContextHandler()
@@ -292,6 +259,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                 updatedTargets = new String[OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
             System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
             _contextHandler.setProtectedTargets(updatedTargets);
+           
         }
 
 
@@ -365,11 +333,11 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     {
         if (app == null)
             return null;
-        if (!(app instanceof BundleApp))
+        if (!(app instanceof OSGiApp))
             throw new IllegalStateException(app+" is not a BundleApp");
         
         //Create a ContextHandler suitable to deploy in OSGi
-        ContextHandler h = ((BundleApp)app).createContextHandler();    
+        ContextHandler h = ((OSGiApp)app).createContextHandler();           
         return h;
     }
     
@@ -383,26 +351,5 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     public DeploymentManager getDeploymentManager()
     {
         return _deploymentManager;
-    }
- 
-    
-    protected void registerAsOSGiService(App app) throws Exception
-    {
-        Dictionary<String,String> properties = new Hashtable<String,String>();
-        properties.put(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
-        if (((BundleApp)app).getBundleSymbolicName() != null)
-            properties.put(OSGiWebappConstants.OSGI_WEB_SYMBOLICNAME,((BundleApp)app).getBundleSymbolicName());
-        if (((BundleApp)app).getBundleVersionAsString() != null)
-            properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, ((BundleApp)app).getBundleVersionAsString());
-        properties.put(OSGiWebappConstants.OSGI_WEB_CONTEXTPATH, app.getContextPath());
-        FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), app.getContextHandler(), properties);
-    }
-
-    protected void deregisterAsOSGiService(App app) throws Exception
-    {
-        if ((app == null) || (((BundleApp)app).getRegistrationAsService() == null))
-            return;
-        
-        ((BundleApp)app).getRegistrationAsService().unregister();
     }
 }

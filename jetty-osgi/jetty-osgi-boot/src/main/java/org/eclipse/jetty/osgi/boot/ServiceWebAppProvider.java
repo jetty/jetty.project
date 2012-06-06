@@ -6,11 +6,15 @@ import java.util.Hashtable;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.deploy.AppProvider;
+import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.osgi.boot.utils.EventSender;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
@@ -34,6 +38,39 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     private Map<ServiceReference, App> _serviceMap = new HashMap<ServiceReference, App>();
     
     private ServiceRegistration _serviceRegForServices;
+    
+    
+    /**
+     * ServiceApp
+     *
+     *
+     */
+    public class ServiceApp extends OSGiApp
+    {
+
+        public ServiceApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String originId)
+        {
+            super(manager, provider, bundle, properties, originId);
+        }
+
+        public ServiceApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String originId)
+        {
+            super(manager, provider, bundle, originId);
+        }
+
+        @Override
+        public void registerAsOSGiService() throws Exception
+        {
+            //not applicable for apps that are already services
+        }
+
+        @Override
+        protected void deregisterAsOSGiService() throws Exception
+        {
+            //not applicable for apps that are already services
+        }
+    }
+    
     
     
     /* ------------------------------------------------------------ */
@@ -114,7 +151,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
         try
         {
             String originId = getOriginId(serviceRef.getBundle(), base);
-            BundleApp app = new BundleApp(getDeploymentManager(), this, serviceRef.getBundle(), properties, originId);
+            ServiceApp app = new ServiceApp(getDeploymentManager(), this, serviceRef.getBundle(), properties, originId);
             app.setContextPath(contextPath);
             app.setWebAppPath(base);
             app.setWebAppContext(webApp); //set the pre=made webapp instance

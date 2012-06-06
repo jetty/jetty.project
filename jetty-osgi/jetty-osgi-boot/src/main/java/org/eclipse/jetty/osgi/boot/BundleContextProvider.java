@@ -22,9 +22,11 @@ import java.util.Map;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.osgi.boot.utils.EventSender;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
@@ -118,7 +120,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         for (String contextFile : tmp)
         {
             String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-"+contextFile;
-            BundleApp app = new BundleApp(getDeploymentManager(), this, originId, bundle, contextFile);
+            OSGiApp app = new OSGiApp(getDeploymentManager(), this, originId, bundle, contextFile);
             _appMap.put(originId,app);
             List<App> apps = _bundleMap.get(bundle);
             if (apps == null)
@@ -128,9 +130,8 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             }
             apps.add(app);
             getDeploymentManager().addApp(app);
-            registerAsOSGiService(app);
         }
-        
+
         return added; //true if even 1 context from this bundle was added
     }
     
@@ -153,7 +154,6 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
                 _appMap.remove(app.getOriginId());
                 getDeploymentManager().removeApp(app);
                 removed = true;
-                deregisterAsOSGiService(app);
             }
         }
         return removed; //true if even 1 context was removed associated with this bundle

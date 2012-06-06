@@ -182,6 +182,8 @@ public class TestJettyOSGiBootWithJsp
         ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
         Assert.assertNotNull(refs);
         Assert.assertEquals(1,refs.length);
+        
+        //TODO check that the events got sent
     }
 
 	

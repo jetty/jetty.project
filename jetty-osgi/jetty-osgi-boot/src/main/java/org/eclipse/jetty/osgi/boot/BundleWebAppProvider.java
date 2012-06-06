@@ -19,6 +19,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.osgi.boot.utils.EventSender;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
@@ -110,6 +111,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(getServerInstanceWrapper().getParentClassLoaderForWebapps());
+        String contextPath = null;
         try 
         {
             Dictionary headers = bundle.getHeaders();
@@ -118,15 +120,17 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             if (headers.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH) != null)
             {
                 String base = (String)headers.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
-                String contextPath = getContextPath(bundle);
+                contextPath = getContextPath(bundle);
                 String originId = getOriginId(bundle, base);
-
-                BundleApp app = new BundleApp(getDeploymentManager(), this, bundle, originId);
+ 
+                //TODO : we don't know whether an app is actually deployed, as deploymentManager swallows all
+                //exceptions inside the impl of addApp. Need to send the Event and also register as a service
+                //only if the deployment succeeded
+                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, originId);
                 app.setWebAppPath(base);
                 app.setContextPath(contextPath);
                 _bundleMap.put(bundle, app);
                 getDeploymentManager().addApp(app);
-                registerAsOSGiService(app);
                 return true;
             }
 
@@ -135,15 +139,14 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             if (bundle.getEntry("/WEB-INF/web.xml") != null)
             {
                 String base = ".";
-                String contextPath = getContextPath(bundle);
+                contextPath = getContextPath(bundle);
                 String originId = getOriginId(bundle, base);
-
-                BundleApp app = new BundleApp(getDeploymentManager(), this, bundle, originId);
+       
+                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, originId);
                 app.setContextPath(contextPath);
                 app.setWebAppPath(base);
                 _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);
-                registerAsOSGiService(app);
+                getDeploymentManager().addApp(app);               
                 return true;
             }
 
@@ -152,19 +155,23 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             {
                 //Could be a static webapp with no web.xml
                 String base = ".";
-                String contextPath = (String)headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+                contextPath = (String)headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
                 String originId = getOriginId(bundle,base);
-
-                BundleApp app = new BundleApp(getDeploymentManager(), this, bundle, originId);
+                
+                OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, originId);
                 app.setContextPath(contextPath);
                 app.setWebAppPath(base);
                 _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);
-                registerAsOSGiService(app);
+                getDeploymentManager().addApp(app);                
                 return true;
             }
 
             return false;
+        }
+        catch (Exception e)
+        {
+            
+            throw e;
         }
         finally
         {
@@ -185,8 +192,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         App app = _bundleMap.remove(bundle);
         if (app != null)
         {
-            getDeploymentManager().removeApp(app);
-            deregisterAsOSGiService(app);
+            getDeploymentManager().removeApp(app); 
             return true;
         }
         return false;

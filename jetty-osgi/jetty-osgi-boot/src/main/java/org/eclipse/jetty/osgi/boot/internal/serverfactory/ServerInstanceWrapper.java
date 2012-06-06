@@ -24,12 +24,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.bindings.StandardStarter;
+import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.osgi.boot.BundleContextProvider;
 import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.osgi.boot.OSGiDeployer;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.osgi.boot.OSGiUndeployer;
 import org.eclipse.jetty.osgi.boot.ServiceContextProvider;
 import org.eclipse.jetty.osgi.boot.ServiceWebAppProvider;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
@@ -62,6 +67,8 @@ public class ServerInstanceWrapper
     public static final String PROPERTY_THIS_JETTY_XML_FOLDER_URL = "this.jetty.xml.parent.folder.url";
 
     private static Logger LOG = Log.getLogger(ServerInstanceWrapper.class.getName());
+    
+ 
 
     private final String _managedServerName;
 
@@ -332,7 +339,6 @@ public class ServerInstanceWrapper
      * 
      * It is assumed the server has already been configured with the ContextHandlerCollection structure.
      * 
-     * The server must have an instance of OSGiAppProvider. If one is not provided, it is created.
      */
     private void init()
     {
@@ -363,6 +369,14 @@ public class ServerInstanceWrapper
             _server.addBean(_deploymentManager);
         }
 
+        _deploymentManager.setUseStandardBindings(false);
+        List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<AppLifeCycle.Binding>();
+        deploymentLifeCycleBindings.add(new OSGiDeployer());
+        deploymentLifeCycleBindings.add(new StandardStarter());
+        deploymentLifeCycleBindings.add(new StandardStopper());
+        deploymentLifeCycleBindings.add(new OSGiUndeployer());
+        _deploymentManager.setLifeCycleBindings(deploymentLifeCycleBindings);
+        
         if (!providerClassNames.contains(BundleWebAppProvider.class.getName()))
         {
             // create it on the fly with reasonable default values.

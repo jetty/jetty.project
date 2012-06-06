@@ -9,6 +9,23 @@
     <Call name="addBean">
       <Arg>
         <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+          <Set name="useStandardBindings">false</Set>
+          <Set name="lifeCycleBindings">
+            <Array type="org.eclipse.jetty.deploy.AppLifeCycle.Binding">
+              <Item>
+                <New class="org.eclipse.jetty.osgi.boot.OSGiDeployer"/>
+              </Item>
+              <Item>
+               <New class="org.eclipse.jetty.deploy.bindings.StandardStarter"/>
+              </Item>
+              <Item>
+                <New class="org.eclipse.jetty.deploy.bindings.StandardStopper"/>
+              </Item>
+              <Item>
+              <New class="org.eclipse.jetty.osgi.boot.OSGiUndeployer"/>
+              </Item>
+            </Array>
+          </Set>
           <Set name="contexts">
             <Ref id="Contexts" />
           </Set>

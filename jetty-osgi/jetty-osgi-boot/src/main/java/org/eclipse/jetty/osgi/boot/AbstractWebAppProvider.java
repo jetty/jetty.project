@@ -31,6 +31,7 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.internal.webapp.OSGiWebappClassLoader;
+import org.eclipse.jetty.osgi.boot.utils.EventSender;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -92,54 +93,29 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     
     /* ------------------------------------------------------------ */
     /**
-     * BundleApp
+     * OSGiApp
      *
      *
      */
-    public class BundleApp extends App
+    public class OSGiApp extends AbstractOSGiApp
     {
-        private Bundle _bundle;
         private String _contextPath;
         private String _webAppPath;
         private WebAppContext _webApp;
-        private Dictionary _properties;
-        private ServiceRegistration _registration;
 
-        public BundleApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String originId)
+        public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String originId)
         {
-            super(manager, provider, originId);
-            _properties = bundle.getHeaders();
-            _bundle = bundle;
+            super(manager, provider, bundle, originId);
         }
         
-        public BundleApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String originId)
+        public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String originId)
         {
-            super(manager, provider, originId);
-            _properties = properties;
-            _bundle = bundle;
+            super(manager, provider, bundle, properties, originId);
         }
      
-        public String getBundleSymbolicName()
-        {
-            return _bundle.getSymbolicName();
-        }
-        
-        public String getBundleVersionAsString()
-        {
-           if (_bundle.getVersion() == null)
-               return null;
-           return _bundle.getVersion().toString();
-        }
-        
         public void setWebAppContext (WebAppContext webApp)
         {
             _webApp = webApp;
-        }
-        
-        
-        public Bundle getBundle()
-        {
-            return _bundle;
         }
 
         public String getContextPath()
@@ -160,16 +136,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         public void setWebAppPath(String path)
         {
             this._webAppPath = path;
-        }
-        
-        public void setRegistration (ServiceRegistration registration)
-        {
-            _registration = registration;
-        }
-        
-        public ServiceRegistration getRegistration ()
-        {
-            return _registration;
         }
         
         
@@ -564,11 +530,13 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     {
         if (app == null)
             return null;
-        if (!(app instanceof BundleApp))
+        if (!(app instanceof OSGiApp))
             throw new IllegalStateException(app+" is not a BundleApp");
-        
+
         //Create a WebAppContext suitable to deploy in OSGi
-        return ((BundleApp)app).createContextHandler();
+        ContextHandler ch = ((OSGiApp)app).createContextHandler();
+        System.err.println("Created contexthandler "+ch);
+        return ch;
     }
 
     
@@ -578,24 +546,4 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return contributor.getSymbolicName() + "-" + contributor.getVersion().toString() + (path.startsWith("/") ? path : "/" + path);
     }
     
-    
-    protected void registerAsOSGiService(App app) throws Exception
-    {
-        Dictionary<String,String> properties = new Hashtable<String,String>();
-        properties.put(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
-        if (((BundleApp)app).getBundleSymbolicName() != null)
-            properties.put(OSGiWebappConstants.OSGI_WEB_SYMBOLICNAME,((BundleApp)app).getBundleSymbolicName());
-        if (((BundleApp)app).getBundleVersionAsString() != null)
-            properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, ((BundleApp)app).getBundleVersionAsString());
-        properties.put(OSGiWebappConstants.OSGI_WEB_CONTEXTPATH, app.getContextPath());
-        FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), app.getContextHandler(), properties);
-    }
-    
-    protected void deregisterAsOSGiService(App app) throws Exception
-    {
-        if ((app == null) || (((BundleApp)app).getRegistration() == null))
-            return;
-        
-        ((BundleApp)app).getRegistration().unregister();
-    }
 }

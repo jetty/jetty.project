@@ -6,6 +6,8 @@ import java.util.Hashtable;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.deploy.AppProvider;
+import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
@@ -27,6 +29,37 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     private Map<ServiceReference, App> _serviceMap = new HashMap<ServiceReference, App>();
     
     private ServiceRegistration _serviceRegForServices;
+    
+    
+    /**
+     * ServiceApp
+     *
+     *
+     */
+    public class ServiceApp extends OSGiApp
+    {
+        public ServiceApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String contextFile, String originId)
+        {
+            super(manager, provider, bundle, properties, contextFile, originId);
+        }
+
+        public ServiceApp(DeploymentManager manager, AppProvider provider, String originId, Bundle bundle, String contextFile)
+        {
+            super(manager, provider, originId, bundle, contextFile);
+        }
+
+        @Override
+        public void registerAsOSGiService() throws Exception
+        {
+            //not applicable for apps that are already services
+        }
+
+        @Override
+        protected void deregisterAsOSGiService() throws Exception
+        {
+            //not applicable for apps that are already services
+        }
+    }
     
     
     
@@ -65,7 +98,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             }
             Bundle bundle = serviceRef.getBundle();                
             String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-"+contextFile;
-            BundleApp app = new BundleApp(getDeploymentManager(), this, bundle, properties, contextFile, originId);         
+            ServiceApp app = new ServiceApp(getDeploymentManager(), this, bundle, properties, contextFile, originId);         
             app.setHandler(context); //set the pre=made ContextHandler instance
             _serviceMap.put(serviceRef, app);
             getDeploymentManager().addApp(app);
