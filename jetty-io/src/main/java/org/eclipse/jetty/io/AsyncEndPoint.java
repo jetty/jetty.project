@@ -24,14 +24,14 @@ import org.eclipse.jetty.util.FutureCallback;
  * from:
  * <blockquote><pre>
  * FutureCallback<String> future = new FutureCallback<>();
- * endpoint.readable("ContextObj",future);
+ * endpoint.fillInterested("ContextObj",future);
  * ...
  * String context = future.get(); // This blocks
  * int filled=endpoint.fill(mybuffer);</pre></blockquote>
  * <h3>Dispatched Read</h3>
  * By using a different callback, the read can be done asynchronously in its own dispatched thread:
  * <blockquote><pre>
- * endpoint.readable("ContextObj",new ExecutorCallback<String>(executor)
+ * endpoint.fillInterested("ContextObj",new ExecutorCallback<String>(executor)
  * {
  *   public void onCompleted(String context)
  *   {
@@ -71,14 +71,14 @@ import org.eclipse.jetty.util.FutureCallback;
 public interface AsyncEndPoint extends EndPoint
 {
     /* ------------------------------------------------------------ */
-    /** Asynchronous a readable notification.
+    /** Asynchronous a fillable notification.
      * <p>
      * This method schedules a callback operations when a call to {@link #fill(ByteBuffer)} will return data or EOF.
      * @param context Context to return via the callback
      * @param callback The callback to call when an error occurs or we are readable.
      * @throws ReadPendingException if another read operation is concurrent.
      */
-    <C> void readable(C context, Callback<C> callback) throws ReadPendingException;
+    <C> void fillInterested(C context, Callback<C> callback) throws ReadPendingException;
 
     /* ------------------------------------------------------------ */
     /** Asynchronous write operation.

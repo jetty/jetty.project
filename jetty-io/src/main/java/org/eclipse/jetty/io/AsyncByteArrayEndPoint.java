@@ -95,7 +95,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     }
 
     @Override
-    public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
+    public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
     {
         _readInterest.register(context,callback);
     }

@@ -30,14 +30,14 @@ public class AsyncByteArrayEndPointTest
         ByteBuffer buffer = BufferUtil.allocate(1024);
         FutureCallback<String> fcb = new FutureCallback<>();
         
-        endp.readable("CTX",fcb);
+        endp.fillInterested("CTX",fcb);
         assertTrue(fcb.isDone());
         assertEquals("CTX",fcb.get());
         assertEquals(10,endp.fill(buffer));
         assertEquals("test input",BufferUtil.toString(buffer));
         
         fcb = new FutureCallback<>();
-        endp.readable("CTX",fcb);
+        endp.fillInterested("CTX",fcb);
         assertFalse(fcb.isDone());
         assertEquals(0,endp.fill(buffer));
         
@@ -48,7 +48,7 @@ public class AsyncByteArrayEndPointTest
         assertEquals("test input more",BufferUtil.toString(buffer));
 
         fcb = new FutureCallback<>();
-        endp.readable("CTX",fcb);
+        endp.fillInterested("CTX",fcb);
         assertFalse(fcb.isDone());
         assertEquals(0,endp.fill(buffer));
 
@@ -58,7 +58,7 @@ public class AsyncByteArrayEndPointTest
         assertEquals(-1,endp.fill(buffer));
         
         fcb = new FutureCallback<>();
-        endp.readable("CTX",fcb);
+        endp.fillInterested("CTX",fcb);
         assertTrue(fcb.isDone());
         assertEquals("CTX",fcb.get());
         assertEquals(-1,endp.fill(buffer));
@@ -66,7 +66,7 @@ public class AsyncByteArrayEndPointTest
         endp.close();
 
         fcb = new FutureCallback<>();
-        endp.readable("CTX",fcb);
+        endp.fillInterested("CTX",fcb);
         assertTrue(fcb.isDone());
         try
         {
@@ -126,7 +126,7 @@ public class AsyncByteArrayEndPointTest
         ByteBuffer buffer = BufferUtil.allocate(1024);
         FutureCallback<Void> fcb = new FutureCallback<>();
         
-        endp.readable(null,fcb);
+        endp.fillInterested(null,fcb);
         assertTrue(fcb.isDone());
         assertEquals(null,fcb.get());
         assertEquals(4,endp.fill(buffer));
@@ -134,7 +134,7 @@ public class AsyncByteArrayEndPointTest
         
         // read timeout
         fcb = new FutureCallback<>();
-        endp.readable(null,fcb);
+        endp.fillInterested(null,fcb);
         long start=System.currentTimeMillis();
         try
         {

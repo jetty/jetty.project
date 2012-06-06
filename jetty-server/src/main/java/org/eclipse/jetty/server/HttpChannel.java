@@ -380,7 +380,7 @@ public abstract class HttpChannel
             if (threadName!=null)
                 Thread.currentThread().setName(threadName);
             
-            if (_state.isUncompleted())
+            if (_state.isCompleting())
             {
                 try
                 {
@@ -809,6 +809,8 @@ public abstract class HttpChannel
     
     protected abstract void execute(Runnable task);
     
+    // TODO replace with ScheduledExecutorService?
+    // TODO constructor inject
     public abstract Timer getTimer();
     
 

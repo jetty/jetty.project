@@ -124,7 +124,7 @@ public class SslConnection extends AbstractAsyncConnection
 
     /* ------------------------------------------------------------ */
     @Override
-    public void onReadable()
+    public void onFillable()
     {
         LOG.debug("{} onReadable",this);
 
@@ -262,7 +262,7 @@ public class SslConnection extends AbstractAsyncConnection
                     }
                     else
                         // Normal readable callback
-                        readInterested();
+                        SslConnection.this.fillInterested();
 
                     return false;
                 }  
@@ -285,7 +285,7 @@ public class SslConnection extends AbstractAsyncConnection
                     }
                     else if (_sslEngine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP )
                         // we are actually read blocked in order to write
-                        readInterested();
+                        SslConnection.this.fillInterested();
                     else
                     {
                         // try the flush again
@@ -307,7 +307,7 @@ public class SslConnection extends AbstractAsyncConnection
         }
         
         @Override
-        public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
+        public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
         {
             _readInterest.register(context,callback);
         }

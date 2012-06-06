@@ -44,7 +44,7 @@ public interface Callback<C>
      *
      * @param <C> the type of the context object
      */
-    public static class Adapter<C> implements Callback<C>
+    public static class Empty<C> implements Callback<C>
     {
         @Override
         public void completed(C context)

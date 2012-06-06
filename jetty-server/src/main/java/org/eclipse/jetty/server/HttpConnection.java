@@ -182,7 +182,7 @@ public class HttpConnection extends AbstractAsyncConnection
     {
         LOG.debug("Opened HTTP Connection {}",this);
         super.onOpen();
-        readInterested();
+        fillInterested();
     }
     
     /* ------------------------------------------------------------ */
@@ -207,7 +207,7 @@ public class HttpConnection extends AbstractAsyncConnection
      * the HttpChannel becomes !idle; or the connection has been changed
      */
     @Override
-    public synchronized void onReadable()
+    public synchronized void onFillable()
     {        
         LOG.debug("{} onReadable {}",this,_channel.isIdle());
         
@@ -232,7 +232,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     if (filled==0)
                     {                        
                         // Somebody wanted to read, we didn't so schedule another attempt
-                        readInterested();
+                        fillInterested();
                         releaseRequestBuffer();
                         return;
                     }
@@ -430,7 +430,7 @@ public class HttpConnection extends AbstractAsyncConnection
                 {
                     // it wants to eat more
                     if (_requestBuffer==null)
-                        readInterested();
+                        fillInterested();
                     else if (getConnector().isStarted())
                     {
                         LOG.debug("{} pipelined",this);
@@ -440,7 +440,7 @@ public class HttpConnection extends AbstractAsyncConnection
                         {
                             execute(new Runnable() 
                             {
-                                @Override public void run() {onReadable();} 
+                                @Override public void run() {onFillable();} 
                             });
                         }
                         catch(RejectedExecutionException e)
@@ -742,7 +742,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     {
                         // Wait until we can read
                         FutureCallback<Void> block=new FutureCallback<>();
-                        getEndPoint().readable(null,block);
+                        getEndPoint().fillInterested(null,block);
                         LOG.debug("{} block readable on {}",this,block);
                         block.get();
 

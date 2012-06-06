@@ -129,11 +129,11 @@ public class SelectChannelEndPointTest
         @Override
         public void onOpen()
         {
-            readInterested();
+            fillInterested();
         }
 
         @Override
-        public synchronized void onReadable()
+        public synchronized void onFillable()
         {
             AsyncEndPoint _endp = getEndPoint();
             try
@@ -155,7 +155,7 @@ public class SelectChannelEndPointTest
                     while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
                     {
                         FutureCallback<Void> blockingRead= new FutureCallback<>();
-                        _endp.readable(null,blockingRead);
+                        _endp.fillInterested(null,blockingRead);
                         blockingRead.get();
                         filled=_endp.fill(_in);
                         progress|=filled>0;
@@ -210,7 +210,7 @@ public class SelectChannelEndPointTest
             finally
             {
                 if (_endp.isOpen())
-                    readInterested();
+                    fillInterested();
             }
         }
 

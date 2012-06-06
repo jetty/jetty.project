@@ -14,8 +14,8 @@ import org.eclipse.jetty.util.log.Logger;
 /** A convenience base implementation of {@link AsyncConnection}.
  * <p>
  * This class uses the capabilities of the {@link AsyncEndPoint} API to provide a 
- * more traditional style of async reading.  A call to {@link #readInterested()}
- * will schedule a callback to {@link #onReadable()} or {@link #onReadFail(Throwable)}
+ * more traditional style of async reading.  A call to {@link #fillInterested()}
+ * will schedule a callback to {@link #onFillable()} or {@link #onReadFail(Throwable)}
  * as appropriate.
  */
 public abstract class AbstractAsyncConnection implements AsyncConnection
@@ -44,7 +44,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
             protected void onCompleted(Void context)
             {
                 if (_readInterested.compareAndSet(true,false))
-                    onReadable();
+                    onFillable();
             }
 
             @Override
@@ -71,17 +71,19 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
 
     /* ------------------------------------------------------------ */
     /** Call to register read interest.
-     * After this call, {@link #onReadable()} or {@link #onReadFail(Throwable)}
+     * After this call, {@link #onFillable()} or {@link #onReadFail(Throwable)}
      * will be called back as appropriate.
      */
-    public void readInterested()
+    public void fillInterested()
     {
         if (_readInterested.compareAndSet(false,true))
-            getEndPoint().readable(null,_readCallback);
+            getEndPoint().fillInterested(null,_readCallback);
     }
 
     /* ------------------------------------------------------------ */
-    public abstract void onReadable();
+    /** Callback when the endpoint is fillable.
+     */
+    public abstract void onFillable();
 
     /* ------------------------------------------------------------ */
     public void onReadFail(Throwable cause)

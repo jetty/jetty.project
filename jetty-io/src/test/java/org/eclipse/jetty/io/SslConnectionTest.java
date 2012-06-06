@@ -139,7 +139,7 @@ public class SslConnectionTest
         public void onOpen()
         {
             // System.err.println("onOpen");
-            readInterested();
+            fillInterested();
         }
 
         @Override
@@ -149,7 +149,7 @@ public class SslConnectionTest
         }
         
         @Override
-        public synchronized void onReadable()
+        public synchronized void onFillable()
         {
             AsyncEndPoint endp = getEndPoint();
             // System.err.println("onReadable "+endp);
@@ -201,7 +201,7 @@ public class SslConnectionTest
             finally
             {
                 if (endp.isOpen())
-                    readInterested();
+                    fillInterested();
             }
         }
     }

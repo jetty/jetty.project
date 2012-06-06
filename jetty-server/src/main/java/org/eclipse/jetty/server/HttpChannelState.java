@@ -49,31 +49,31 @@ public class HttpChannelState implements AsyncContext, Continuation
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
     
     // STATES:
-    //               handling()    suspend()     unhandle()    resume()       complete()  doComplete()
-    //                             startAsync()                dispatch()   
-    // IDLE          DISPATCHED                                               COMPLETING
-    // DISPATCHED                  ASYNCSTARTED  UNCOMPLETED
-    // ASYNCSTARTED                              ASYNCWAIT     REDISPATCHING  COMPLETING
-    // REDISPATCHING                             REDISPATCHED  
-    // ASYNCWAIT                                               REDISPATCH     COMPLETING
-    // REDISPATCH    REDISPATCHED
-    // REDISPATCHED                ASYNCSTARTED  UNCOMPLETED
-    // COMPLETING    UNCOMPLETED                 UNCOMPLETED
-    // UNCOMPLETED   UNCOMPLETED                                                          COMPLETED
-    // COMPLETED
+    //                handling()    suspend()     unhandle()    resume()       complete()     doComplete()
+    //                              startAsync()                dispatch()   
+    // IDLE           DISPATCHED                                               COMPLETECALLED
+    // DISPATCHED                   ASYNCSTARTED  UNCOMPLETED
+    // ASYNCSTARTED                               ASYNCWAIT     REDISPATCHING  COMPLETECALLED
+    // REDISPATCHING                              REDISPATCHED  
+    // ASYNCWAIT                                                REDISPATCH     COMPLETECALLED
+    // REDISPATCH     REDISPATCHED
+    // REDISPATCHED                 ASYNCSTARTED  COMPLETING
+    // COMPLETECALLED COMPLETING                  COMPLETING
+    // COMPLETING     COMPLETING                                                              COMPLETED
+    // COMPLETED 
 
     public enum State 
     { 
-        IDLE,         // Idle request
-        DISPATCHED,   // Request dispatched to filter/servlet
-        ASYNCSTARTED, // Suspend called, but not yet returned to container
-        REDISPATCHING,// resumed while dispatched
-        ASYNCWAIT,    // Suspended and parked
-        REDISPATCH,   // Has been scheduled
-        REDISPATCHED, // Request redispatched to filter/servlet
-        COMPLETING,   // complete while dispatched
-        UNCOMPLETED,  // Request is completable
-        COMPLETED     // Request is complete
+        IDLE,          // Idle request
+        DISPATCHED,    // Request dispatched to filter/servlet
+        ASYNCSTARTED,  // Suspend called, but not yet returned to container
+        REDISPATCHING, // resumed while dispatched
+        ASYNCWAIT,     // Suspended and parked
+        REDISPATCH,    // Has been scheduled
+        REDISPATCHED,  // Request redispatched to filter/servlet
+        COMPLETECALLED,// complete called
+        COMPLETING,    // Request is completable
+        COMPLETED      // Request is complete
     };
     
     /* ------------------------------------------------------------ */
@@ -208,7 +208,7 @@ public class HttpChannelState implements AsyncContext, Continuation
             {
                 case ASYNCSTARTED:
                 case REDISPATCHING:
-                case COMPLETING:
+                case COMPLETECALLED:
                 case ASYNCWAIT:
                     return true;
                     
@@ -254,7 +254,7 @@ public class HttpChannelState implements AsyncContext, Continuation
                 case REDISPATCH:
                 case REDISPATCHED:
                 case REDISPATCHING:
-                case COMPLETING:
+                case COMPLETECALLED:
                     return true;
                     
                 default:
@@ -312,11 +312,11 @@ public class HttpChannelState implements AsyncContext, Continuation
                     }
                     return true;
                     
-                case COMPLETING:
-                    _state=State.UNCOMPLETED;
+                case COMPLETECALLED:
+                    _state=State.COMPLETING;
                     return false;
 
-                case UNCOMPLETED:
+                case COMPLETING:
                 case ASYNCWAIT:
                     return false;
                     
@@ -412,7 +412,7 @@ public class HttpChannelState implements AsyncContext, Continuation
             {
                 case REDISPATCHED:
                 case DISPATCHED:
-                    _state=State.UNCOMPLETED;
+                    _state=State.COMPLETING;
                     return true;
 
                 case IDLE:
@@ -424,9 +424,9 @@ public class HttpChannelState implements AsyncContext, Continuation
                     scheduleTimeout(); 
                     if (_state==State.ASYNCWAIT)
                         return true;
-                    else if (_state==State.COMPLETING)
+                    else if (_state==State.COMPLETECALLED)
                     {
-                        _state=State.UNCOMPLETED;
+                        _state=State.COMPLETING;
                         return true;
                     }         
                     _initial=false;
@@ -438,9 +438,9 @@ public class HttpChannelState implements AsyncContext, Continuation
                     _state=State.REDISPATCHED;
                     return false; 
 
-                case COMPLETING:
+                case COMPLETECALLED:
                     _initial=false;
-                    _state=State.UNCOMPLETED;
+                    _state=State.COMPLETING;
                     return true;
 
                 default:
@@ -573,11 +573,11 @@ public class HttpChannelState implements AsyncContext, Continuation
 
                 case IDLE:
                 case ASYNCSTARTED:
-                    _state=State.COMPLETING;
+                    _state=State.COMPLETECALLED;
                     return;
                     
                 case ASYNCWAIT:
-                    _state=State.COMPLETING;
+                    _state=State.COMPLETECALLED;
                     dispatch=!_expired;
                     break;
                     
@@ -621,7 +621,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case UNCOMPLETED:
+                case COMPLETING:
                     _state=State.COMPLETED;
                     cListeners=_continuationListeners;
                     aListeners=_asyncListeners;
@@ -729,25 +729,25 @@ public class HttpChannelState implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isCompleting()
+    public boolean isCompleteCalled()
+    {
+        synchronized (this)
+        {
+            return _state==State.COMPLETECALLED;
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    boolean isCompleting()
     {
         synchronized (this)
         {
             return _state==State.COMPLETING;
         }
-    }
-    
-    /* ------------------------------------------------------------ */
-    boolean isUncompleted()
-    {
-        synchronized (this)
-        {
-            return _state==State.UNCOMPLETED;
-        }
     } 
     
     /* ------------------------------------------------------------ */
-    public boolean isComplete()
+    public boolean isCompleted()
     {
         synchronized (this)
         {
@@ -785,7 +785,7 @@ public class HttpChannelState implements AsyncContext, Continuation
             {
                 case IDLE:
                 case DISPATCHED:
-                case UNCOMPLETED:
+                case COMPLETING:
                 case COMPLETED:
                     return false;
 

@@ -10,7 +10,7 @@ import org.eclipse.jetty.util.Callback;
 
 /* ------------------------------------------------------------ */
 /** 
- * A Utility class to help implement {@link AsyncEndPoint#readable(Object, Callback)}
+ * A Utility class to help implement {@link AsyncEndPoint#fillInterested(Object, Callback)}
  * by keeping state and calling the context and callback objects.
  * 
  */
