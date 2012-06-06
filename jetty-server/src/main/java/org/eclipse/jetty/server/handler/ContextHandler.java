@@ -1128,7 +1128,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             return;
         }
         
-        _protectedTargets = Arrays.copyOf(targets, targets.length);
+        _protectedTargets = new String[targets.length];
+        System.arraycopy(targets, 0, _protectedTargets, 0, targets.length);
     }
     
     public String[] getProtectedTargets ()
@@ -1136,7 +1137,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         if (_protectedTargets == null)
             return null;
         
-        return Arrays.copyOf(_protectedTargets, _protectedTargets.length);
+        String[] tmp = new String[_protectedTargets.length];
+        System.arraycopy(_protectedTargets, 0, tmp, 0, _protectedTargets.length);
+        return tmp;
     }
     
 
