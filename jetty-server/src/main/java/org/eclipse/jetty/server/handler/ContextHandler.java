@@ -1782,8 +1782,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     query = uriInContext.substring(q + 1);
                     uriInContext = uriInContext.substring(0,q);
                 }
-                if ((q = uriInContext.indexOf(';')) > 0)
-                    uriInContext = uriInContext.substring(0,q);
+                // if ((q = uriInContext.indexOf(';')) > 0)
+                //     uriInContext = uriInContext.substring(0,q);
 
                 String pathInContext = URIUtil.canonicalPath(URIUtil.decodePath(uriInContext));
                 String uri = URIUtil.addPaths(getContextPath(),uriInContext);
