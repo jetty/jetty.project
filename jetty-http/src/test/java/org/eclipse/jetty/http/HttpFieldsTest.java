@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -113,9 +114,9 @@ public class HttpFieldsTest
         header.putTo(buffer);
         buffer.flip();
         String out = BufferUtil.toString(buffer);
-        assertTrue(out.contains("name0: value??0"));
-        assertTrue(out.contains("name??1: value1"));
-        assertTrue(out.contains("name?2: value???2"));
+        assertThat(out,containsString("name0: value??0"));
+        assertThat(out,containsString("name??1: value1"));
+        assertThat(out,containsString("name?2: value:??2"));
     }
 
     @Test

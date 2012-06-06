@@ -388,7 +388,7 @@ public class HttpGeneratorServerTest
 
         assertEquals(0,gen.getContentPrepared());
         assertThat(head,containsString("HTTP/1.1 200 OK"));
-        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
+        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(head,containsString("Content-Length: 0"));
     }
     
@@ -492,7 +492,7 @@ public class HttpGeneratorServerTest
         // System.err.println(head+body);
 
         assertThat(head,containsString("HTTP/1.1 200 OK"));
-        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
+        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(head,not(containsString("Content-Length")));
         assertThat(head,containsString("Transfer-Encoding: chunked"));
         assertTrue(head.endsWith("\r\n\r\n10\r\n"));
@@ -579,7 +579,7 @@ public class HttpGeneratorServerTest
         // System.err.println(head+body);
 
         assertThat(head,containsString("HTTP/1.1 200 OK"));
-        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
+        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(head,containsString("Content-Length: 59"));
         assertThat(head,not(containsString("chunked")));
         assertTrue(head.endsWith("\r\n\r\n"));
@@ -633,7 +633,7 @@ public class HttpGeneratorServerTest
         // System.err.println(head+body);
 
         assertThat(head,containsString("HTTP/1.1 200 OK"));
-        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
+        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(head,containsString("Content-Length: 59"));
         assertThat(head,not(containsString("chunked")));
         assertTrue(head.endsWith("\r\n\r\n"));
@@ -698,7 +698,7 @@ public class HttpGeneratorServerTest
         // System.err.println(head+body);
 
         assertThat(head,containsString("HTTP/1.1 200 OK"));
-        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
+        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(head,not(containsString("Content-Length")));
         assertThat(head,containsString("Transfer-Encoding: chunked"));
         assertTrue(head.endsWith("\r\n\r\n13\r\n"));
@@ -752,7 +752,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.END,gen.getState());
 
         assertThat(head,containsString("HTTP/1.1 200 OK"));
-        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
+        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(head,containsString("Content-Length: 58"));
         assertTrue(head.endsWith("\r\n\r\n"));
 
@@ -823,7 +823,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.END,gen.getState());
 
         assertThat(head,containsString("HTTP/1.1 200 OK"));
-        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
+        assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(head,containsString("Content-Length: 58"));
         assertTrue(head.endsWith("\r\n\r\n"));
 
