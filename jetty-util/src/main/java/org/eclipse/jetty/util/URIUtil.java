@@ -252,7 +252,7 @@ public class URIUtil
     }
     
     /* ------------------------------------------------------------ */
-    /* Decode a URI path.
+    /* Decode a URI path and strip parameters
      * @param path The path the encode
      * @param buf StringBuilder to encode path into
      */
@@ -260,8 +260,10 @@ public class URIUtil
     {
         if (path==null)
             return null;
+        // Array to hold all converted characters
         char[] chars=null;
         int n=0;
+        // Array to hold a sequence of %encodings
         byte[] bytes=null;
         int b=0;
         
@@ -283,14 +285,26 @@ public class URIUtil
                 i+=2;
                 continue;
             }
+            else if (c==';')
+            {
+                if (chars==null)
+                {
+                    chars=new char[len];
+                    path.getChars(0,i,chars,0);
+                    n=i;
+                }
+                break;
+            }
             else if (bytes==null)
             {
                 n++;
                 continue;
             }
             
+            // Do we have some bytes to convert?
             if (b>0)
             {
+                // convert series of bytes and add to chars
                 String s;
                 try
                 {
@@ -311,8 +325,10 @@ public class URIUtil
         if (chars==null)
             return path;
 
+        // if we have a remaining sequence of bytes
         if (b>0)
         {
+            // convert series of bytes and add to chars
             String s;
             try
             {
@@ -330,7 +346,7 @@ public class URIUtil
     }
     
     /* ------------------------------------------------------------ */
-    /* Decode a URI path.
+    /* Decode a URI path and strip parameters.
      * @param path The path the encode
      * @param buf StringBuilder to encode path into
      */
@@ -347,6 +363,11 @@ public class URIUtil
             {
                 b=(byte)(0xff&TypeUtil.parseInt(buf,i+offset+1,2,16));
                 i+=2;
+            }
+            else if (b==';')
+            {
+                length=i;
+                break;
             }
             else if (bytes==null)
             {
@@ -436,20 +457,6 @@ public class URIUtil
         if (slash>=0)
             return p.substring(0,slash+1);
         return null;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Strip parameters from a path.
-     * Return path upto any semicolon parameters.
-     */
-    public static String stripPath(String path)
-    {
-        if (path==null)
-            return null;
-        int semi=path.indexOf(';');
-        if (semi<0)
-            return path;
-        return path.substring(0,semi);
     }
     
     /* ------------------------------------------------------------ */
