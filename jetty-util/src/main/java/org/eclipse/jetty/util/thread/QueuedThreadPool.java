@@ -85,7 +85,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     public QueuedThreadPool(int maxThreads, int minThreads, int maxIdleTimeMs)
     {
         _name="qtp"+super.hashCode();
-        setMaxThreads(minThreads);
+        setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setMaxIdleTimeMs(maxIdleTimeMs);
     }

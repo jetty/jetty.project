@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
+ * A Connection that handles the HTTP protocol
  */
 public class HttpConnection extends AbstractAsyncConnection
 {
@@ -181,7 +182,7 @@ public class HttpConnection extends AbstractAsyncConnection
     {
         LOG.debug("Opened HTTP Connection {}",this);
         super.onOpen();
-        scheduleOnReadable();
+        readInterested();
     }
     
     /* ------------------------------------------------------------ */
@@ -195,26 +196,26 @@ public class HttpConnection extends AbstractAsyncConnection
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * {@link #scheduleOnReadable()}
-     * @see org.eclipse.jetty.io.AbstractAsyncConnection#onReadable()
+    /** Parse and handle HTTP messages.
+     * <p>
+     * This method is normally called as the {@link AbstractAsyncConnection} onReadable callback. 
+     * However, it can also be called {@link HttpChannelOverHttp#completed()} if there is unconsumed 
+     * data in the _requestBuffer, as a result of resuming a suspended request when there is a pipelined 
+     * request already read into the buffer.
+     * <p>
+     * This method will fill data and parse it until either: EOF is filled; 0 bytes are filled; 
+     * the HttpChannel becomes !idle; or the connection has been changed
      */
     @Override
     public synchronized void onReadable()
     {        
         LOG.debug("{} onReadable {}",this,_channel.isIdle());
         
-        // This method is normally called as callback passed to 
-        // EndPoint.readable() by scheduleOnReadable.    However, it can also be called
-        // by HttpChannel.completed() if there is unconsumed data in the _requestBuffer, as a result of 
-        // resuming a suspending a request when there is a pipelined request already read into the buffer.
-        //
-        // This method will fill data and parse it until either: EOF is filled; 0 bytes are filled; 
-        // the HttpChannel becomes !idle; or the connection has been changed
         try
         {
             setCurrentConnection(this);
             
+            // TODO try to generalize this loop into AbstractAsyncConnection
             while (true)
             {
                 // Fill the request buffer with data only if it is totally empty.
@@ -226,14 +227,12 @@ public class HttpConnection extends AbstractAsyncConnection
                     int filled=getEndPoint().fill(_requestBuffer);
                     
                     LOG.debug("{} filled {}",this,filled);
-                    
-                    // TODO protect against large/infinite headers as denial of service
-                    
+                                        
                     // If we failed to fill
                     if (filled==0)
                     {                        
                         // Somebody wanted to read, we didn't so schedule another attempt
-                        scheduleOnReadable();
+                        readInterested();
                         releaseRequestBuffer();
                         return;
                     }
@@ -431,7 +430,7 @@ public class HttpConnection extends AbstractAsyncConnection
                 {
                     // it wants to eat more
                     if (_requestBuffer==null)
-                        scheduleOnReadable();
+                        readInterested();
                     else if (getConnector().isStarted())
                     {
                         LOG.debug("{} pipelined",this);

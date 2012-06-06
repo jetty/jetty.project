@@ -11,7 +11,8 @@ import org.eclipse.jetty.util.Callback;
 /* ------------------------------------------------------------ */
 /** 
  * A Utility class to help implement {@link AsyncEndPoint#readable(Object, Callback)}
- * by keeping and calling the context and callback objects.
+ * by keeping state and calling the context and callback objects.
+ * 
  */
 public abstract class ReadInterest
 {
@@ -26,13 +27,13 @@ public abstract class ReadInterest
 
     /* ------------------------------------------------------------ */
     /** Call to register interest in a callback when a read is possible.
-     * The callback will be called either immediately if {@link #readInterested()} 
+     * The callback will be called either immediately if {@link #registerReadInterest()} 
      * returns true or eventually once {@link #readable()} is called.
      * @param context
      * @param callback
      * @throws ReadPendingException
      */
-    public <C> void registerInterest(C context, Callback<C> callback) throws ReadPendingException
+    public <C> void register(C context, Callback<C> callback) throws ReadPendingException
     {
         if (!_interested.compareAndSet(false,true))
             throw new ReadPendingException();
@@ -40,7 +41,7 @@ public abstract class ReadInterest
         _callback=callback;
         try
         {
-            if (readInterested())
+            if (registerReadInterest())
                 readable();
         }
         catch(IOException e)
@@ -108,13 +109,14 @@ public abstract class ReadInterest
     }
     
     /* ------------------------------------------------------------ */
-    /** Is a read interest satisfied now? 
+    /** Register the read interest 
      * Abstract method to be implemented by the Specific ReadInterest to
-     * enquire if a read is immediately possible
+     * enquire if a read is immediately possible and if not to schedule a future
+     * call to {@link #readable()} or {@link #failed(Throwable)}
      * @return true if a read is possible
      * @throws IOException
      */
-    abstract protected boolean readInterested() throws IOException;
+    abstract protected boolean registerReadInterest() throws IOException;
     
     
 }

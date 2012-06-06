@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.continuation.test;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -24,15 +30,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 
 
-
-public abstract class ContinuationBase extends TestCase
+public abstract class ContinuationBase
 {
     protected SuspendServlet _servlet=new SuspendServlet();
     protected int _port;
@@ -206,22 +209,14 @@ public abstract class ContinuationBase extends TestCase
     
     protected void assertContains(String content,String response)
     {
-        assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
-        if (response.indexOf(content,15)<0)
-        {
-            System.err.println("'"+content+"' NOT IN:\n"+response+"\n--");
-            assertTrue(false);
-        }
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,containsString(content));
     }
     
     protected void assertNotContains(String content,String response)
     {
-        assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
-        if (response.indexOf(content,15)>=0)
-        {
-            System.err.println("'"+content+"' IS IN:\n"+response+"'\n--");
-            assertTrue(false);
-        }
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,not(containsString(content)));
     }
     
     public synchronized String process(String query,String content) throws Exception

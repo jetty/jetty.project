@@ -129,7 +129,7 @@ public class SelectChannelEndPointTest
         @Override
         public void onOpen()
         {
-            scheduleOnReadable();
+            readInterested();
         }
 
         @Override
@@ -210,7 +210,7 @@ public class SelectChannelEndPointTest
             finally
             {
                 if (_endp.isOpen())
-                    scheduleOnReadable();
+                    readInterested();
             }
         }
 

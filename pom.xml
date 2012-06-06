@@ -351,8 +351,13 @@
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-deploy</module>
-    <!--
+    
     <module>jetty-websocket</module>
+
+    <module>test-continuation</module>
+    <module>test-jetty-webapp</module>
+    <module>example-jetty-embedded</module>
+    <!--
     <module>jetty-jaspi</module>
     <module>jetty-client</module>
     <module>jetty-servlets</module>
@@ -371,11 +376,8 @@
     <module>jetty-http-spi</module>
     <module>jetty-jsp</module>
     <module>jetty-distribution</module>
-    <module>test-continuation</module>
-    <module>test-jetty-servlet</module>
-    <module>test-jetty-webapp</module>
     <module>test-jetty-nested</module>
-    <module>example-jetty-embedded</module>
+    <module>test-jetty-servlet</module>
     <module>example-async-rest</module>
     <module>tests</module>
     -->

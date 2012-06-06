@@ -229,7 +229,7 @@ public class SslConnection extends AbstractAsyncConnection
         private final ReadInterest _readInterest = new ReadInterest()
         {
             @Override
-            protected boolean readInterested() throws IOException
+            protected boolean registerReadInterest() throws IOException
             {
                 synchronized (SslEndPoint.this)
                 {
@@ -262,7 +262,7 @@ public class SslConnection extends AbstractAsyncConnection
                     }
                     else
                         // Normal readable callback
-                        scheduleOnReadable();
+                        readInterested();
 
                     return false;
                 }  
@@ -272,7 +272,7 @@ public class SslConnection extends AbstractAsyncConnection
         private final WriteFlusher _writeFlusher = new WriteFlusher(this)
         {
             @Override
-            protected boolean canFlush()
+            protected boolean registerFlushInterest()
             {           
                 synchronized (SslEndPoint.this)
                 {
@@ -285,7 +285,7 @@ public class SslConnection extends AbstractAsyncConnection
                     }
                     else if (_sslEngine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP )
                         // we are actually read blocked in order to write
-                        scheduleOnReadable();
+                        readInterested();
                     else
                     {
                         // try the flush again
@@ -309,7 +309,7 @@ public class SslConnection extends AbstractAsyncConnection
         @Override
         public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
         {
-            _readInterest.registerInterest(context,callback);
+            _readInterest.register(context,callback);
         }
 
         @Override

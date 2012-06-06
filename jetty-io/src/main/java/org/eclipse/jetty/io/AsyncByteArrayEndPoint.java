@@ -25,7 +25,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
-        protected boolean readInterested() throws IOException
+        protected boolean registerReadInterest() throws IOException
         {
             if (_closed)
                 throw new ClosedChannelException();
@@ -36,7 +36,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected boolean canFlush()
+        protected boolean registerFlushInterest()
         {            
             return false;
         }
@@ -97,7 +97,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     @Override
     public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
     {
-        _readInterest.registerInterest(context,callback);
+        _readInterest.register(context,callback);
     }
 
     @Override

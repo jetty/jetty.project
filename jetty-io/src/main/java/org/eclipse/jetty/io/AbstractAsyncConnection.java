@@ -9,6 +9,15 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
+
+/* ------------------------------------------------------------ */
+/** A convenience base implementation of {@link AsyncConnection}.
+ * <p>
+ * This class uses the capabilities of the {@link AsyncEndPoint} API to provide a 
+ * more traditional style of async reading.  A call to {@link #readInterested()}
+ * will schedule a callback to {@link #onReadable()} or {@link #onReadFail(Throwable)}
+ * as appropriate.
+ */
 public abstract class AbstractAsyncConnection implements AsyncConnection
 {
     private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
@@ -59,9 +68,33 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
             
         };
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /** Call to register read interest.
+     * After this call, {@link #onReadable()} or {@link #onReadFail(Throwable)}
+     * will be called back as appropriate.
+     */
+    public void readInterested()
+    {
+        if (_readInterested.compareAndSet(false,true))
+            getEndPoint().readable(null,_readCallback);
+    }
+
     /* ------------------------------------------------------------ */
     public abstract void onReadable();
+
+    /* ------------------------------------------------------------ */
+    public void onReadFail(Throwable cause)
+    {
+        LOG.debug("{} onReadFailed {}",this,cause);
+        if (_endp.isOpen())
+        {
+            if (_endp.isOutputShutdown())
+                _endp.close();
+            else
+                _endp.shutdownOutput();
+        }
+    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -83,26 +116,6 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     public AsyncEndPoint getEndPoint()
     {
         return _endp;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void scheduleOnReadable()
-    {
-        if (_readInterested.compareAndSet(false,true))
-            getEndPoint().readable(null,_readCallback);
-    }
-
-    /* ------------------------------------------------------------ */
-    public void onReadFail(Throwable cause)
-    {
-        LOG.debug("{} onReadFailed {}",this,cause);
-        if (_endp.isOpen())
-        {
-            if (_endp.isOutputShutdown())
-                _endp.close();
-            else
-                _endp.shutdownOutput();
-        }
     }
 
     /* ------------------------------------------------------------ */

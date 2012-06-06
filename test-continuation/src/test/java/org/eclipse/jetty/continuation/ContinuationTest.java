@@ -26,6 +26,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 
 
@@ -36,8 +39,8 @@ public class ContinuationTest extends ContinuationBase
     protected SelectChannelConnector _connector;
     FilterHolder _filter;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
         _connector = new SelectChannelConnector();
         _server.setConnectors(new Connector[]{ _connector });
@@ -50,101 +53,117 @@ public class ContinuationTest extends ContinuationBase
 
         _server.start();
         _port=_connector.getLocalPort();
-        
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         _server.stop();
     }
     
+    @Test
     public void testContinuation() throws Exception
     {
         doNormal("AsyncContinuation");
     }
-    
+
+    @Test
     public void testSleep() throws Exception
     {
         doSleep();
     }
 
+    @Test
     public void testSuspend() throws Exception
     {
         doSuspend();
     }
 
+    @Test
     public void testSuspendWaitResume() throws Exception
     {
         doSuspendWaitResume();
     }
 
+    @Test
     public void testSuspendResume() throws Exception
     {
         doSuspendResume();
     }
 
+    @Test
     public void testSuspendWaitComplete() throws Exception
     {
         doSuspendWaitComplete();
     }
 
+    @Test
     public void testSuspendComplete() throws Exception
     {
         doSuspendComplete();
     }
 
+    @Test
     public void testSuspendWaitResumeSuspendWaitResume() throws Exception
     {
         doSuspendWaitResumeSuspendWaitResume();
     }
-    
+
+    @Test
     public void testSuspendWaitResumeSuspendComplete() throws Exception
     {
         doSuspendWaitResumeSuspendComplete();
     }
 
+    @Test
     public void testSuspendWaitResumeSuspend() throws Exception
     {
         doSuspendWaitResumeSuspend();
     }
 
+    @Test
     public void testSuspendTimeoutSuspendResume() throws Exception
     {
         doSuspendTimeoutSuspendResume();
     }
 
+    @Test
     public void testSuspendTimeoutSuspendComplete() throws Exception
     {
         doSuspendTimeoutSuspendComplete();
     }
 
+    @Test
     public void testSuspendTimeoutSuspend() throws Exception
     {
         doSuspendTimeoutSuspend();
     }
 
+    @Test
     public void testSuspendThrowResume() throws Exception
     {
         doSuspendThrowResume();
     }
 
+    @Test
     public void testSuspendResumeThrow() throws Exception
     {
         doSuspendResumeThrow();
     }
 
+    @Test
     public void testSuspendThrowComplete() throws Exception
     {
         doSuspendThrowComplete();
     }
 
+    @Test
     public void testSuspendCompleteThrow() throws Exception
     {
         doSuspendCompleteThrow();
     }
     
-    
+    @Override
     protected String toString(InputStream in) throws IOException
     {
         return IO.toString(in);

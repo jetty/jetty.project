@@ -15,7 +15,7 @@ import org.eclipse.jetty.util.Callback;
 /** 
  * A Utility class to help implement {@link AsyncEndPoint#write(Object, Callback, ByteBuffer...)}
  * by calling {@link EndPoint#flush(ByteBuffer...)} until all content is written.
- * The abstract method {@link #canFlush()} is called when not all content has been 
+ * The abstract method {@link #registerFlushInterest()} is called when not all content has been 
  * written after a call to flush and should organise for the {@link #completeWrite()}
  * method to be called when a subsequent call to flush should be able to make more progress.
  * 
@@ -52,7 +52,7 @@ abstract public class WriteFlusher
                     _buffers=buffers;
                     _context=context;
                     _callback=callback;
-                    if(canFlush())
+                    if(registerFlushInterest())
                         completeWrite();
                     else
                         _writing.set(true); // Needed as memory barrier
@@ -75,7 +75,13 @@ abstract public class WriteFlusher
     }
     
     /* ------------------------------------------------------------ */
-    abstract protected boolean canFlush();
+    /**
+     * Abstract call to be implemented by specific WriteFlushers. Will return true if a 
+     * flush is immediately possible, otherwise it will schedule a call to {@link #completeWrite()} or
+     * {@link #failed(Throwable)} when appropriate.
+     * @return true if a flush can proceed.
+     */
+    abstract protected boolean registerFlushInterest();
 
     
     /* ------------------------------------------------------------ */
@@ -103,7 +109,7 @@ abstract public class WriteFlusher
     /* ------------------------------------------------------------ */
     /**
      * Complete a write that has not completed and that called 
-     * {@link #canFlush()} to request a call to this
+     * {@link #registerFlushInterest()} to request a call to this
      * method when a call to {@link EndPoint#flush(ByteBuffer...)} 
      * is likely to be able to progress.
      * @return true if a write was in progress
@@ -125,7 +131,7 @@ abstract public class WriteFlusher
                 {
                     if (b.hasRemaining())
                     {
-                        if (canFlush())
+                        if (registerFlushInterest())
                             continue retry;
                         return true;
                     }

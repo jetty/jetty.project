@@ -168,7 +168,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @return the new endpoint {@link SelectChannelEndPoint}
      * @throws IOException if the endPoint cannot be created
      */
-    protected abstract SelectableAsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey sKey) throws IOException;
+    protected abstract Selectable newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey sKey) throws IOException;
 
     protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
     {
@@ -216,7 +216,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
         private final ConcurrentLinkedQueue<Runnable> _changes = new ConcurrentLinkedQueue<>();
-        private ConcurrentMap<SelectableAsyncEndPoint,Object> _endPoints = new ConcurrentHashMap<>();
+        private ConcurrentMap<Selectable,Object> _endPoints = new ConcurrentHashMap<>();
         private final int _id;
         private Selector _selector;
         private Thread _thread;
@@ -384,10 +384,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             try
             {
                 Object att = key.attachment();
-                if (att instanceof SelectableAsyncEndPoint)
+                if (att instanceof Selectable)
                 {
                     if (key.isReadable() || key.isWritable())
-                        ((SelectableAsyncEndPoint)att).onSelected();
+                        ((Selectable)att).onSelected();
                 }
                 else if (key.isConnectable())
                 {
@@ -435,7 +435,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
         {
-            SelectableAsyncEndPoint endp = newEndPoint(channel, this, sKey);
+            Selectable endp = newEndPoint(channel, this, sKey);
             _endPoints.put(endp, this);
             LOG.debug("Created {}", endp);
             endPointOpened(endp);
@@ -443,7 +443,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
 
 
-        public void destroyEndPoint(SelectableAsyncEndPoint endp)
+        public void destroyEndPoint(Selectable endp)
         {
             LOG.debug("Destroyed {}", endp);
             _endPoints.remove(endp);
@@ -521,7 +521,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private void timeoutCheck()
         {
             long now = System.currentTimeMillis();
-            for (SelectableAsyncEndPoint endPoint : _endPoints.keySet())
+            for (Selectable endPoint : _endPoints.keySet())
                 endPoint.checkReadWriteTimeout(now);
         }
 
@@ -675,7 +675,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
 
     // TODO review this interface
-    public interface SelectableAsyncEndPoint extends AsyncEndPoint
+    public interface Selectable extends AsyncEndPoint
     {
         void onSelected();
 

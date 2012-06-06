@@ -139,7 +139,7 @@ public class SslConnectionTest
         public void onOpen()
         {
             // System.err.println("onOpen");
-            scheduleOnReadable();
+            readInterested();
         }
 
         @Override
@@ -201,7 +201,7 @@ public class SslConnectionTest
             finally
             {
                 if (endp.isOpen())
-                    scheduleOnReadable();
+                    readInterested();
             }
         }
     }

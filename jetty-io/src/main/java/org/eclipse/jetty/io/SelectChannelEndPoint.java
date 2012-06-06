@@ -27,13 +27,13 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
- * An Endpoint that can be scheduled by {@link SelectorManager}.
+ * An ChannelEndpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, SelectorManager.SelectableAsyncEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, SelectorManager.Selectable
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
-    private final SelectorManager.ManagedSelector _selectSet;
+    private final SelectorManager.ManagedSelector _selector;
     private final SelectorManager _manager;
 
     private SelectionKey _key;
@@ -44,26 +44,28 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /** The desired value for {@link SelectionKey#interestOps()} */
     private int _interestOps;
 
-    /** true if {@link ManagedSelector#destroyEndPoint(SelectorManager.SelectableAsyncEndPoint)} has not been called */
+    /** true if {@link ManagedSelector#destroyEndPoint(SelectorManager.Selectable)} has not been called */
     private boolean _open;
 
     private volatile AsyncConnection _connection;
 
+    /* ------------------------------------------------------------ */
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
-        protected boolean readInterested()
+        protected boolean registerReadInterest()
         {
             _interestOps=_interestOps | SelectionKey.OP_READ;
             updateKey();
             return false;
         }
     };
-
+    
+    /* ------------------------------------------------------------ */
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected boolean canFlush()
+        protected boolean registerFlushInterest()
         {
             _interestOps = _interestOps | SelectionKey.OP_WRITE;
             updateKey();
@@ -76,13 +78,27 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     {
         super(channel);
         _manager = selectSet.getManager();
-        _selectSet = selectSet;
+        _selector = selectSet;
         _open = true;
         _key = key;
 
         setMaxIdleTime(maxIdleTime);
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
+    {
+        _readInterest.register(context,callback);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
+    {
+        _writeFlusher.write(context,callback,buffers);
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public AsyncConnection getAsyncConnection()
@@ -141,7 +157,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             }
             finally
             {
-                _selectSet.submit(this);
+                _selector.submit(this);
                 _selected = false;
             }
         }
@@ -181,19 +197,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public <C> void readable(C context, Callback<C> callback) throws IllegalStateException
-    {
-        _readInterest.registerInterest(context,callback);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
-    {
-        _writeFlusher.write(context,callback,buffers);
-    }
     
     /* ------------------------------------------------------------ */
     @Override
@@ -229,7 +232,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 if (_interestOps != current_ops && !_changing)
                 {
                     _changing = true;
-                    _selectSet.submit(this);
+                    _selector.submit(this);
                 }
             }
         }
@@ -266,7 +269,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                         {
                             try
                             {
-                                _key = ((SelectableChannel)getChannel()).register(_selectSet.getSelector(),_interestOps,this);
+                                _key = ((SelectableChannel)getChannel()).register(_selector.getSelector(),_interestOps,this);
                             }
                             catch (Exception e)
                             {
@@ -278,7 +281,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
                                 if (_open)
                                 {
-                                    _selectSet.destroyEndPoint(this);
+                                    _selector.destroyEndPoint(this);
                                 }
                                 _open = false;
                                 _key = null;
@@ -306,7 +309,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 if (_open)
                 {
                     _open = false;
-                    _selectSet.destroyEndPoint(this);
+                    _selector.destroyEndPoint(this);
                 }
                 _key = null;
             }
@@ -368,7 +371,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     public ManagedSelector getSelectSet()
     {
-        return _selectSet;
+        return _selector;
     }
 
 }
