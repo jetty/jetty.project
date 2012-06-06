@@ -469,11 +469,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 
                 /* Set the webapp's classpath for Jasper */
                 ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
-                System.err.println(_servlet.getClass().getName()+":"+_name+":Set attribute org.apache.catalina.jsp_classpath:"+ ch.getAttribute("org.apache.catalina.jsp_classpath"));
 
                 /* Set the system classpath for Jasper */
                 setInitParameter("com.sun.appserv.jsp.classpath", Loader.getClassPath(ch.getClassLoader())); 
-                System.err.println(_servlet.getClass().getName()+":"+_name+":Set com.sun.appserv.jsp.classpath:"+getInitParameter("com.sun.appserv.jsp.classpath"));
                 
                 /* Set up other classpath attribute */
                 if ("?".equals(getInitParameter("classpath")))
@@ -625,7 +623,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             c = c.getSuperclass();
         }
         
-        System.err.println(servlet.getClass().getName()+" is "+(result?"":"not")+" jsp servlet");
         return result;
     }
     
@@ -635,7 +632,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         if (classname == null)
             return false;
-        System.err.println("Testing isJspServlet: "+classname);
         return ("org.apache.jasper.servlet.JspServlet".equals(classname));
     }
 
