@@ -83,7 +83,7 @@ public class StressTest
     @BeforeClass
     public static void init() throws Exception
     {
-        _threads = new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
+        _threads = new QueuedThreadPool();
         _threads.setMaxThreads(200);
 
         _server = new Server();

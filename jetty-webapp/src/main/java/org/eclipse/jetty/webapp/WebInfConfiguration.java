@@ -595,19 +595,25 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (connectors.length>0)
             {
                 //Get the host
-                String host = (connectors==null||connectors[0]==null?"":connectors[0].getHost());
+                String host=null;
+                int port=0;
+                if (connectors!=null && (connectors[0] instanceof Connector.NetConnector))
+                {
+                    Connector.NetConnector connector = (Connector.NetConnector)connectors[0];
+                    host=connector.getHost();
+                    port=connector.getLocalPort();
+                    if (port < 0)
+                        port = connector.getPort();
+                }
                 if (host == null)
                     host = "0.0.0.0";
                 canonicalName.append(host);
                 
                 //Get the port
                 canonicalName.append("-");
-                //try getting the real port being listened on
-                int port = (connectors==null||connectors[0]==null?0:connectors[0].getLocalPort());
+
                 //if not available (eg no connectors or connector not started), 
                 //try getting one that was configured.
-                if (port < 0)
-                    port = connectors[0].getPort();
                 canonicalName.append(port);
                 canonicalName.append("-");
             }

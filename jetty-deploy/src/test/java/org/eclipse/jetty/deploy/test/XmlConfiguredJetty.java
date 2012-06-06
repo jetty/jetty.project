@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -56,7 +56,7 @@ public class XmlConfiguredJetty
     private Map<String,String> _properties = new HashMap<String,String>();
     private Server _server;
     private int _serverPort;
-    private String _scheme = HttpSchemes.HTTP;
+    private String _scheme = HttpScheme.HTTP.asString();
     private File _jettyHome;
 
     public XmlConfiguredJetty(TestingDir testdir) throws IOException
@@ -408,15 +408,15 @@ public class XmlConfiguredJetty
         _server.start();
 
         // Find the active server port.
-        this._serverPort = (-1);
+        _serverPort = -1;
         Connector connectors[] = _server.getConnectors();
-        for (int i = 0; i < connectors.length; i++)
+        for (int i = 0; _serverPort<0 && i < connectors.length; i++)
         {
-            Connector connector = connectors[i];
-            if (connector.getLocalPort() > 0)
+            if (connectors[i] instanceof Connector.NetConnector)
             {
-                this._serverPort = connector.getLocalPort();
-                break;
+                int port = ((Connector.NetConnector)connectors[i]).getLocalPort();
+                if (port>0)
+                    _serverPort=port;
             }
         }
 

@@ -296,12 +296,14 @@ public class XmlConfiguration
     /* ------------------------------------------------------------ */
     private static class JettyXmlConfiguration implements ConfigurationProcessor
     {
-        XmlParser.Node _config;
-        Map<String, Object> _idMap;
-        Map<String, String> _propertyMap;
+        private String _url;
+        private XmlParser.Node _config;
+        private Map<String, Object> _idMap;
+        private Map<String, String> _propertyMap;
 
         public void init(URL url, XmlParser.Node config, Map<String, Object> idMap, Map<String, String> properties)
         {
+            _url=url.toString();
             _config=config;
             _idMap=idMap;
             _propertyMap=properties;
@@ -315,7 +317,7 @@ public class XmlConfiguration
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader()==obj.getClass().getClassLoader())?"":"Object Class and type Class are from different loaders.";
-                throw new IllegalArgumentException("Object of class '"+obj.getClass().getCanonicalName()+"' is not of type '" + oClass.getCanonicalName()+"'. "+loaders);
+                throw new IllegalArgumentException("Object of class '"+obj.getClass().getCanonicalName()+"' is not of type '" + oClass.getCanonicalName()+"'. "+loaders+" in "+_url);
             }
             configure(obj,_config,0);
             return obj;
@@ -333,7 +335,7 @@ public class XmlConfiguration
                 obj = oClass.newInstance();
 
             if (oClass != null && !oClass.isInstance(obj))
-                throw new ClassCastException(oClass.toString());
+                throw new ClassCastException(oClass.toString()+" in "+_url);
 
             configure(obj,_config,0);
             return obj;
@@ -391,11 +393,11 @@ public class XmlConfiguration
                     else if ("Property".equals(tag))
                         propertyObj(obj,node);
                     else
-                        throw new IllegalStateException("Unknown tag: " + tag);
+                        throw new IllegalStateException("Unknown tag: " + tag+" in "+_url);
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Config error at " + node,e.toString());
+                    LOG.warn("Config error at " + node,e.toString()+" in "+_url);
                     throw e;
                 }
             }

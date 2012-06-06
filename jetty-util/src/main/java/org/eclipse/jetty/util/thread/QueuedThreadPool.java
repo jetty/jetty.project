@@ -47,8 +47,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private BlockingQueue<Runnable> _jobs;
     private String _name;
     private int _maxIdleTimeMs=60000;
-    private int _maxThreads=254;
-    private int _minThreads=8;
+    private int _maxThreads;
+    private int _minThreads;
     private int _maxQueued=-1;
     private int _priority=Thread.NORM_PRIORITY;
     private boolean _daemon=false;
@@ -60,7 +60,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      */
     public QueuedThreadPool()
     {
-        _name="qtp"+super.hashCode();
+        this(200,8,60000);
     }
 
     /* ------------------------------------------------------------------- */
@@ -68,20 +68,27 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      */
     public QueuedThreadPool(int maxThreads)
     {
-        this();
-        setMaxThreads(maxThreads);
+        this(maxThreads,8,60000);
     }
 
     /* ------------------------------------------------------------------- */
     /** Construct
      */
-    public QueuedThreadPool(BlockingQueue<Runnable> jobQ)
+    public QueuedThreadPool(int maxThreads, int minThreads)
     {
-        this();
-        _jobs=jobQ;
-        _jobs.clear();
+        this(maxThreads,8,60000);
     }
-
+    
+    /* ------------------------------------------------------------------- */
+    /** Construct
+     */
+    public QueuedThreadPool(int maxThreads, int minThreads, int maxIdleTimeMs)
+    {
+        _name="qtp"+super.hashCode();
+        setMaxThreads(minThreads);
+        setMaxThreads(maxThreads);
+        setMaxIdleTimeMs(maxIdleTimeMs);
+    }
 
     /* ------------------------------------------------------------ */
     @Override

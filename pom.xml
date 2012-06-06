@@ -344,18 +344,18 @@
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
-    <module>jetty-websocket</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
     <module>jetty-servlet</module>
+    <module>jetty-webapp</module>
+    <module>jetty-deploy</module>
     <!--
+    <module>jetty-websocket</module>
     <module>jetty-jaspi</module>
     <module>jetty-client</module>
-    <module>jetty-webapp</module>
     <module>jetty-servlets</module>
-    <module>jetty-deploy</module>
     <module>jetty-ajp</module>
     <module>jetty-jndi</module>
     <module>jetty-annotations</module>
