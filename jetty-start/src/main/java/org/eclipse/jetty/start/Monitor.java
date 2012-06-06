@@ -111,7 +111,18 @@ public class Monitor extends Thread
                     try {socket.close();}catch(Exception e){e.printStackTrace();}
                     try {_socket.close();}catch(Exception e){e.printStackTrace();}
                     if (_process!=null)
+                    {
+                        //if we have a child process, wait for it to finish before we stop
+                        try
+                        {
                         _process.destroy();
+                        _process.waitFor();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            System.err.println("Interrupted waiting for child to terminate");
+                        }
+                    }
                     System.exit(0);
                 }
                 else if ("status".equals(cmd))
