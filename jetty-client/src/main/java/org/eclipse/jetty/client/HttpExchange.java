@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.security.SecurityListener;
@@ -26,9 +27,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 
-import org.eclipse.jetty.io.BufferCache.ByteBuffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -88,10 +86,10 @@ public class HttpExchange
     public static final int STATUS_CANCELLED = 11;
 
     // HTTP protocol fields
-    private String _method = HttpMethod.GET;
-    private ByteBuffer _scheme = HttpScheme.HTTP_BUFFER;
+    private String _method = HttpMethod.GET.asString();
+    private String _scheme = HttpScheme.HTTP.asString();
     private String _uri;
-    private int _version = HttpVersion.HTTP_1_1_ORDINAL;
+    private HttpVersion _version = HttpVersion.HTTP_1_1;
     private Address _address;
     private final HttpFields _requestFields = new HttpFields();
     private ByteBuffer _requestContent;
@@ -459,32 +457,16 @@ public class HttpExchange
      * @param scheme
      *            the scheme of the URL (for example 'http')
      */
-    public void setScheme(ByteBuffer scheme)
+    public void setScheme(String scheme)
     {
         _scheme = scheme;
     }
 
-    /**
-     * @param scheme
-     *            the scheme of the URL (for example 'http')
-     */
-    public void setScheme(String scheme)
-    {
-        if (scheme != null)
-        {
-            if (HttpScheme.HTTP.equalsIgnoreCase(scheme))
-                setScheme(HttpScheme.HTTP_BUFFER);
-            else if (HttpScheme.HTTPS.equalsIgnoreCase(scheme))
-                setScheme(HttpScheme.HTTPS_BUFFER);
-            else
-                setScheme(new ByteArrayBuffer(scheme));
-        }
-    }
 
     /**
      * @return the scheme of the URL
      */
-    public ByteBuffer getScheme()
+    public String getScheme()
     {
         return _scheme;
     }
@@ -493,29 +475,16 @@ public class HttpExchange
      * @param version
      *            the HTTP protocol version as integer, 9, 10 or 11 for 0.9, 1.0 or 1.1
      */
-    public void setVersion(int version)
+    public void setVersion(HttpVersion version)
     {
         _version = version;
-    }
-
-    /**
-     * @param version
-     *            the HTTP protocol version as string
-     */
-    public void setVersion(String version)
-    {
-        CachedBuffer v = HttpVersion.CACHE.get(version);
-        if (v == null)
-            _version = 10;
-        else
-            _version = v.getOrdinal();
     }
 
     /**
      * @return the HTTP protocol version as integer
      * @see #setVersion(int)
      */
-    public int getVersion()
+    public HttpVersion getVersion()
     {
         return _version;
     }
@@ -635,19 +604,6 @@ public class HttpExchange
     }
 
     /**
-     * Adds the specified request header
-     *
-     * @param name
-     *            the header name
-     * @param value
-     *            the header value
-     */
-    public void addRequestHeader(ByteBuffer name, ByteBuffer value)
-    {
-        getRequestFields().add(name,value);
-    }
-
-    /**
      * Sets the specified request header
      *
      * @param name
@@ -661,25 +617,12 @@ public class HttpExchange
     }
 
     /**
-     * Sets the specified request header
-     *
-     * @param name
-     *            the header name
-     * @param value
-     *            the header value
-     */
-    public void setRequestHeader(ByteBuffer name, ByteBuffer value)
-    {
-        getRequestFields().put(name,value);
-    }
-
-    /**
      * @param value
      *            the content type of the request
      */
     public void setRequestContentType(String value)
     {
-        getRequestFields().put(HttpHeader.CONTENT_TYPE_BUFFER,value);
+        getRequestFields().put(HttpHeader.CONTENT_TYPE,value);
     }
 
     /**

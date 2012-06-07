@@ -16,10 +16,12 @@
 package org.eclipse.jetty.websocket;
 
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
+import org.eclipse.jetty.io.AsyncConnection;
 
-import org.eclipse.jetty.io.nio.AsyncConnection;
+
 
 public interface WebSocketConnection extends AsyncConnection
 {

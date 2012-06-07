@@ -28,6 +28,8 @@
 
 package org.eclipse.jetty.websocket;
 
+import java.nio.ByteBuffer;
+
 
 
 

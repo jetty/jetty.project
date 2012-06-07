@@ -39,11 +39,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.server.AbstractHttpConnection;
-import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -239,29 +235,6 @@ public class WebSocketFactory extends AbstractLifeCycle
         final WebSocketServletConnection connection;
         switch (draft)
         {
-            case -1: // unspecified draft/version
-            case 0: // Old school draft/version
-            {
-                connection = new WebSocketServletConnectionD00(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
-                break;
-            }
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            {
-                connection = new WebSocketServletConnectionD06(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
-                break;
-            }
-            case 7:
-            case 8:
-            {
-                List<Extension> extensions = initExtensions(extensions_requested, 8 - WebSocketConnectionD08.OP_EXT_DATA, 16 - WebSocketConnectionD08.OP_EXT_CTRL, 3);
-                connection = new WebSocketServletConnectionD08(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol, extensions, draft);
-                break;
-            }
             case WebSocketConnectionRFC6455.VERSION: // RFC 6455 Version
             {
                 List<Extension> extensions = initExtensions(extensions_requested, 8 - WebSocketConnectionRFC6455.OP_EXT_DATA, 16 - WebSocketConnectionRFC6455.OP_EXT_CTRL, 3);

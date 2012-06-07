@@ -29,9 +29,9 @@
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
-import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
