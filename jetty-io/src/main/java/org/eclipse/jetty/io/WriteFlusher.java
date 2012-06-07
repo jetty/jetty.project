@@ -15,7 +15,7 @@ import org.eclipse.jetty.util.Callback;
 /**
  * A Utility class to help implement {@link AsyncEndPoint#write(Object, Callback, ByteBuffer...)}
  * by calling {@link EndPoint#flush(ByteBuffer...)} until all content is written.
- * The abstract method {@link #registerFlushInterest()} is called when not all content has been
+ * The abstract method {@link #onIncompleteFlushed()} is called when not all content has been
  * written after a call to flush and should organise for the {@link #completeWrite()}
  * method to be called when a subsequent call to flush should be able to make more progress.
  *
@@ -28,7 +28,7 @@ abstract public class WriteFlusher
 
     private ByteBuffer[] _buffers;
     private Object _context;
-    private Callback _callback;
+    private Callback<Object> _callback;
 
     protected WriteFlusher(EndPoint endp)
     {
@@ -44,9 +44,6 @@ abstract public class WriteFlusher
             throw new WritePendingException();
         try
         {
-            _buffers=buffers;
-            _context=context;
-            _callback=callback;
 
             _endp.flush(buffers);
 
@@ -55,17 +52,14 @@ abstract public class WriteFlusher
             {
                 if (b.hasRemaining())
                 {
-                    if(registerFlushInterest())
-                        completeWrite();
-                    else
-                        _writing.set(true); // Needed as memory barrier
+                    _buffers=buffers;
+                    _context=context;
+                    _callback=(Callback<Object>)callback;
+                    _writing.set(true); // Needed as memory barrier
+                    onIncompleteFlushed();
                     return;
                 }
             }
-
-            _buffers=null;
-            _context=null;
-            _callback=null;
 
             if (!_writing.compareAndSet(true,false))
                 throw new ConcurrentModificationException();
@@ -73,10 +67,6 @@ abstract public class WriteFlusher
         }
         catch (IOException e)
         {
-            _buffers=null;
-            _context=null;
-            _callback=null;
-
             if (!_writing.compareAndSet(true,false))
                 throw new ConcurrentModificationException(e);
             callback.failed(context,e);
@@ -85,12 +75,12 @@ abstract public class WriteFlusher
 
     /* ------------------------------------------------------------ */
     /**
-     * Abstract call to be implemented by specific WriteFlushers. Will return true if a
-     * flush is immediately possible, otherwise it will schedule a call to {@link #completeWrite()} or
+     * Abstract call to be implemented by specific WriteFlushers. 
+     * It should schedule a call to {@link #completeWrite()} or
      * {@link #failed(Throwable)} when appropriate.
      * @return true if a flush can proceed.
      */
-    abstract protected boolean registerFlushInterest();
+    abstract protected void onIncompleteFlushed();
 
 
     /* ------------------------------------------------------------ */
@@ -116,19 +106,18 @@ abstract public class WriteFlusher
     /* ------------------------------------------------------------ */
     /**
      * Complete a write that has not completed and that called
-     * {@link #registerFlushInterest()} to request a call to this
+     * {@link #onIncompleteFlushed()} to request a call to this
      * method when a call to {@link EndPoint#flush(ByteBuffer...)}
      * is likely to be able to progress.
-     * @return true if a write was in progress
      */
-    public boolean completeWrite()
+    public void completeWrite()
     {
         if (!isWriting())
-            return false;
+            return; // TODO throw?
 
         try
         {
-            retry: while(true)
+            while(true)
             {
                 _buffers=compact(_buffers);
                 _endp.flush(_buffers);
@@ -138,15 +127,14 @@ abstract public class WriteFlusher
                 {
                     if (b.hasRemaining())
                     {
-                        if (registerFlushInterest())
-                            continue retry;
-                        return true;
+                        onIncompleteFlushed();
+                        return;
                     }
                 }
                 break;
             }
             // we are complete and ready
-            Callback callback=_callback;
+            Callback<Object> callback=_callback;
             Object context=_context;
             _buffers=null;
             _callback=null;
@@ -157,7 +145,7 @@ abstract public class WriteFlusher
         }
         catch (IOException e)
         {
-            Callback callback=_callback;
+            Callback<Object> callback=_callback;
             Object context=_context;
             _buffers=null;
             _callback=null;
@@ -166,7 +154,7 @@ abstract public class WriteFlusher
                 throw new ConcurrentModificationException();
             callback.failed(context,e);
         }
-        return true;
+        return;
     }
 
     /* ------------------------------------------------------------ */
@@ -179,7 +167,7 @@ abstract public class WriteFlusher
     {
         if (!_writing.compareAndSet(true,false))
             return false;
-        Callback callback=_callback;
+        Callback<Object> callback=_callback;
         Object context=_context;
         _buffers=null;
         _callback=null;
@@ -199,7 +187,7 @@ abstract public class WriteFlusher
     {
         if (!_writing.compareAndSet(true,false))
             return false;
-        Callback callback=_callback;
+        Callback<Object> callback=_callback;
         Object context=_context;
         _buffers=null;
         _callback=null;
@@ -215,6 +203,7 @@ abstract public class WriteFlusher
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return String.format("WriteFlusher@%x{%b,%s,%s}",hashCode(),isWriting(),_callback,_context);

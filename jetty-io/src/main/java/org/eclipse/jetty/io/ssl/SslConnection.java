@@ -228,7 +228,7 @@ public class SslConnection extends AbstractAsyncConnection
         private final ReadInterest _readInterest = new ReadInterest()
         {
             @Override
-            protected boolean registerReadInterest() throws IOException
+            protected boolean needsFill() throws IOException
             {
                 synchronized (SslEndPoint.this)
                 {
@@ -271,7 +271,7 @@ public class SslConnection extends AbstractAsyncConnection
         private final WriteFlusher _writeFlusher = new WriteFlusher(this)
         {
             @Override
-            protected boolean registerFlushInterest()
+            protected void onIncompleteFlushed()
             {
                 synchronized (SslEndPoint.this)
                 {
@@ -282,15 +282,13 @@ public class SslConnection extends AbstractAsyncConnection
                         _netWriting=true;
                         getEndPoint().write(null,_writeCallback,_netOut);
                     }
+                    // TODO test this with _flushInwrap
                     else if (_sslEngine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP )
                         // we are actually read blocked in order to write
                         SslConnection.this.fillInterested();
                     else
-                    {
                         // try the flush again
-                        return true;
-                    }
-                    return false;
+                        completeWrite();
                 }
             }
         };
@@ -495,7 +493,9 @@ public class SslConnection extends AbstractAsyncConnection
                             if (BufferUtil.hasContent(_netOut))
                             {
                                 _netWriting=true;
-                                getEndPoint().write(null,_writeCallback,_netOut);
+                                getEndPoint().flush(_netOut);
+                                if (BufferUtil.hasContent(_netOut))
+                                    return 0;
                             }
                             if (_fillWrap)
                                 return 0;

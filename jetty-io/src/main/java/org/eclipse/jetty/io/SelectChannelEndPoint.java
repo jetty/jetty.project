@@ -53,7 +53,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
-        protected boolean registerReadInterest()
+        protected boolean needsFill()
         {
             _interestOps=_interestOps | SelectionKey.OP_READ;
             updateKey();
@@ -65,11 +65,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected boolean registerFlushInterest()
+        protected void onIncompleteFlushed()
         {
             _interestOps = _interestOps | SelectionKey.OP_WRITE;
             updateKey();
-            return false;
         }
     };
 

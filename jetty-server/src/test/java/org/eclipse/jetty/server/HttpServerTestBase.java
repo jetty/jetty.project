@@ -278,6 +278,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         byte[] bytes=REQUEST2.getBytes();
         final int pointCount=2;
+        // TODO random unit tests suck!
         Random random=new Random(System.currentTimeMillis());
         for (int i=0; i<LOOPS; i++)
         {
@@ -291,7 +292,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             {
                 points[j]=random.nextInt(bytes.length);
             }
-            System.err.println("points "+points[0]+" "+points[1]);
+            // System.err.println("points "+points[0]+" "+points[1]);
 
             // Sort the list
             Arrays.sort(points);

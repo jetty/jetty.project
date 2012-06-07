@@ -17,7 +17,7 @@ import org.eclipse.jetty.util.Callback;
 public abstract class ReadInterest
 {
     private final AtomicBoolean _interested = new AtomicBoolean(false);
-    private volatile Callback _callback;
+    private volatile Callback<Object> _callback;
     private Object _context;
 
     /* ------------------------------------------------------------ */
@@ -27,7 +27,7 @@ public abstract class ReadInterest
 
     /* ------------------------------------------------------------ */
     /** Call to register interest in a callback when a read is possible.
-     * The callback will be called either immediately if {@link #registerReadInterest()} 
+     * The callback will be called either immediately if {@link #needsFill()} 
      * returns true or eventually once {@link #readable()} is called.
      * @param context
      * @param callback
@@ -38,10 +38,10 @@ public abstract class ReadInterest
         if (!_interested.compareAndSet(false,true))
             throw new ReadPendingException();
         _context=context;
-        _callback=callback;
+        _callback=(Callback<Object>)callback;
         try
         {
-            if (registerReadInterest())
+            if (needsFill())
                 readable();
         }
         catch(IOException e)
@@ -57,7 +57,7 @@ public abstract class ReadInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback callback=_callback;
+            Callback<Object> callback=_callback;
             Object context=_context;
             _callback=null;
             _context=null;
@@ -81,7 +81,7 @@ public abstract class ReadInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback callback=_callback;
+            Callback<Object> callback=_callback;
             Object context=_context;
             _callback=null;
             _context=null;
@@ -94,7 +94,7 @@ public abstract class ReadInterest
     {
         if (_interested.compareAndSet(true,false))
         {
-            Callback callback=_callback;
+            Callback<Object> callback=_callback;
             Object context=_context;
             _callback=null;
             _context=null;
@@ -103,6 +103,7 @@ public abstract class ReadInterest
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return String.format("ReadInterest@%x{%b,%s,%s}",hashCode(),_interested.get(),_callback,_context);
@@ -116,7 +117,7 @@ public abstract class ReadInterest
      * @return true if a read is possible
      * @throws IOException
      */
-    abstract protected boolean registerReadInterest() throws IOException;
+    abstract protected boolean needsFill() throws IOException;
     
     
 }

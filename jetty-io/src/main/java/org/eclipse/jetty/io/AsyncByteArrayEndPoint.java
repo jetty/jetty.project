@@ -25,7 +25,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
-        protected boolean registerReadInterest() throws IOException
+        protected boolean needsFill() throws IOException
         {
             if (_closed)
                 throw new ClosedChannelException();
@@ -36,9 +36,9 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected boolean registerFlushInterest()
+        protected void onIncompleteFlushed()
         {            
-            return false;
+            // Don't need to do anything here as takeOutput does the signalling.
         }
     };
     
