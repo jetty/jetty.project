@@ -246,8 +246,7 @@ public class SslConnection extends AbstractAsyncConnection
                     if (_fillWrap )
                     {
                         // we must be blocked trying to write before we can read
-
-                        // Do we don't have some netdata to write
+                        // If we have written the net data
                         if (BufferUtil.isEmpty(_netOut))
                         {
                             // pretend we are readable so the wrap is done by next readable callback
@@ -379,6 +378,9 @@ public class SslConnection extends AbstractAsyncConnection
                                     {
                                         _fillWrap=true;
                                         flush(BufferUtil.EMPTY_BUFFER);
+                                        if (BufferUtil.hasContent(_netOut))
+                                            return 0;
+                                        _fillWrap=false;
                                     }
                                     return -1;
 
@@ -415,10 +417,14 @@ public class SslConnection extends AbstractAsyncConnection
                                     continue;
 
                                 case NEED_WRAP:
-                                    // TODO maybe just do the wrap here ourselves?
                                     // we need to send some handshake data
+                                    if (_flushUnwrap)
+                                        return 0;
                                     _fillWrap=true;
                                     flush(BufferUtil.EMPTY_BUFFER);
+                                    if (BufferUtil.hasContent(_netOut))
+                                        return 0;
+                                    _fillWrap=false;
                                     continue;
 
                                 case NEED_UNWRAP:
