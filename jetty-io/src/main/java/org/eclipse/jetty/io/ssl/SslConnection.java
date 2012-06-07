@@ -16,7 +16,6 @@ package org.eclipse.jetty.io.ssl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -64,7 +63,7 @@ public class SslConnection extends AbstractAsyncConnection
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, AsyncEndPoint endPoint, SSLEngine sslEngine)
     {
         super(endPoint, executor, true);
-        
+
         _executor=executor;
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
@@ -80,20 +79,20 @@ public class SslConnection extends AbstractAsyncConnection
     {
         return _appEndPoint;
     }
-    
+
     @Override
     public void onOpen()
     {
         try
         {
             super.onOpen();
-            
+
             // Begin the handshake
             _sslEngine.setUseClientMode(false);
             _sslEngine.beginHandshake();
-            
+
             LOG.debug("{} onopen",this);
-            
+
             // Tell the app that we are open, even though we have
             // not completed the handshake.  All handshaking will be
             // done in calls to fill and flush, as it has to be with
@@ -146,16 +145,16 @@ public class SslConnection extends AbstractAsyncConnection
     public void onReadFail(Throwable cause)
     {
         super.onReadFail(cause);
-        
+
         if (_appEndPoint._readInterest.isInterested())
             _appEndPoint._readInterest.failed(cause);
-        
+
         if (_appEndPoint._writeFlusher.isWriting() && _appEndPoint._flushUnwrap)
         {
             _appEndPoint._flushUnwrap=false;
             _appEndPoint._writeFlusher.failed(cause);
         }
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -168,7 +167,7 @@ public class SslConnection extends AbstractAsyncConnection
             _appEndPoint._readInterest.isInterested()?"R":"",
             _appEndPoint._writeFlusher.isWriting()?"W":"");
     }
-    
+
     /* ------------------------------------------------------------ */
     public class SslEndPoint extends AbstractEndPoint implements AsyncEndPoint
     {
@@ -178,12 +177,12 @@ public class SslConnection extends AbstractAsyncConnection
         private boolean _netWriting;
         private boolean _underflown;
         private boolean _ishut=false;
-        
+
         private final Callback<Void> _writeCallback = new Callback<Void>(){
 
             @Override
             public void completed(Void context)
-            {      
+            {
                 synchronized (SslEndPoint.this)
                 {
                     LOG.debug("{} write.complete {}",SslConnection.this,_netWriting?(_fillWrap?"FW":"F"):(_fillWrap?"W":""));
@@ -196,7 +195,7 @@ public class SslConnection extends AbstractAsyncConnection
                         _fillWrap=false;
                         _readInterest.readable();
                     }
-                    
+
                     if (_writeFlusher.isWriting())
                         _writeFlusher.completeWrite();
                 }
@@ -204,7 +203,7 @@ public class SslConnection extends AbstractAsyncConnection
 
             @Override
             public void failed(Void context, Throwable x)
-            {     
+            {
                 synchronized (SslEndPoint.this)
                 {
                     LOG.debug("{} write.failed",SslConnection.this,x);
@@ -217,15 +216,15 @@ public class SslConnection extends AbstractAsyncConnection
                         _fillWrap=false;
                         _readInterest.failed(x);
                     }
-                    
+
                     if (_writeFlusher.isWriting())
                         _writeFlusher.failed(x);
-                    
+
                     // TODO release all buffers??? or may in onClose
-                }           
+                }
             }
         };
-        
+
         private final ReadInterest _readInterest = new ReadInterest()
         {
             @Override
@@ -240,14 +239,14 @@ public class SslConnection extends AbstractAsyncConnection
                     // If we are not underflown and have net data
                     if (!_underflown && BufferUtil.hasContent(_netIn))
                         return true;
-                    
+
                     // So we are not read ready
-                    
+
                     // Are we actually write blocked?
                     if (_fillWrap )
                     {
                         // we must be blocked trying to write before we can read
-                        
+
                         // Do we don't have some netdata to write
                         if (BufferUtil.isEmpty(_netOut))
                         {
@@ -255,7 +254,7 @@ public class SslConnection extends AbstractAsyncConnection
                             _fillWrap=false;
                             return true;
                         }
-                        
+
                         // otherwise write the net data
                         _netWriting=true;
                         getEndPoint().write(null,_writeCallback,_netOut);
@@ -265,20 +264,20 @@ public class SslConnection extends AbstractAsyncConnection
                         SslConnection.this.fillInterested();
 
                     return false;
-                }  
+                }
             }
         };
-        
+
         private final WriteFlusher _writeFlusher = new WriteFlusher(this)
         {
             @Override
             protected boolean registerFlushInterest()
-            {           
+            {
                 synchronized (SslEndPoint.this)
                 {
-                    // If we have pending output data, 
+                    // If we have pending output data,
                     if (BufferUtil.hasContent(_netOut))
-                    {    
+                    {
                         // write it
                         _netWriting=true;
                         getEndPoint().write(null,_writeCallback,_netOut);
@@ -295,7 +294,7 @@ public class SslConnection extends AbstractAsyncConnection
                 }
             }
         };
-        
+
         public SslEndPoint()
         {
             super(getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
@@ -305,7 +304,7 @@ public class SslConnection extends AbstractAsyncConnection
         {
             return SslConnection.this;
         }
-        
+
         @Override
         public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
         {
@@ -317,11 +316,11 @@ public class SslConnection extends AbstractAsyncConnection
         {
             _writeFlusher.write(context,callback,buffers);
         }
-       
+
         @Override
         public synchronized int fill(ByteBuffer buffer) throws IOException
         {
-            LOG.debug("{} fill",SslConnection.this);
+            LOG.debug("{} fill enter",SslConnection.this);
             try
             {
                 // Do we already have some decrypted data?
@@ -350,7 +349,7 @@ public class SslConnection extends AbstractAsyncConnection
                     int net_filled=getEndPoint().fill(_netIn);
                     if (net_filled>0)
                         _underflown=false;
-                    
+
                     // Let's try the SSL thang even if we have no net data because in that
                     // case we want to fall through to the handshake handling
                     int pos=BufferUtil.flipToFill(app_in);
@@ -388,12 +387,12 @@ public class SslConnection extends AbstractAsyncConnection
                                 default:
                                     throw new IllegalStateException();
                             }
-                            
+
                         case BUFFER_UNDERFLOW:
                             _underflown=true;
 
                             //$FALL-THROUGH$ to deal with handshaking stuff
-                            
+
                         default:
                             // if we produced bytes, we don't care about the handshake state
                             if (_unwrapResult.bytesProduced()>0)
@@ -463,19 +462,19 @@ public class SslConnection extends AbstractAsyncConnection
                     _bufferPool.release(_appIn);
                     _appIn=null;
                 }
-                LOG.debug("{} !fill",SslConnection.this);
+                LOG.debug("{} fill exit",SslConnection.this);
             }
         }
 
         @Override
         public synchronized int flush(ByteBuffer... appOuts) throws IOException
         {
-            LOG.debug("{} flush",SslConnection.this);
+            LOG.debug("{} flush enter",SslConnection.this);
             try
             {
                 if (_netWriting)
                     return 0;
-                    
+
                 // We will need a network buffer
                 if (_netOut==null)
                     _netOut=_bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize()*2,_netDirect);
@@ -508,7 +507,7 @@ public class SslConnection extends AbstractAsyncConnection
                         case BUFFER_OVERFLOW:
                             if (LOG.isDebugEnabled())
                                 LOG.debug("{} OVERFLOW {}",this,BufferUtil.toDetailString(_netOut));
-                            
+
                             //$FALL-THROUGH$
                         default:
                             // if we have net bytes, let's try to flush them
@@ -557,7 +556,7 @@ public class SslConnection extends AbstractAsyncConnection
             }
             finally
             {
-                LOG.debug("{} !flush",SslConnection.this);
+                LOG.debug("{} flush exit",SslConnection.this);
                 releaseNetOut();
             }
         }
@@ -572,8 +571,8 @@ public class SslConnection extends AbstractAsyncConnection
                     getEndPoint().shutdownOutput();
             }
         }
-        
-        
+
+
         @Override
         public void shutdownOutput()
         {
@@ -630,8 +629,8 @@ public class SslConnection extends AbstractAsyncConnection
         {
             _connection=connection;
         }
-        
-        @Override 
+
+        @Override
         public String toString()
         {
             return String.format("%s{%s%s%s}",super.toString(),_readInterest.isInterested()?"R":"",_writeFlusher.isWriting()?"W":"",_netWriting?"w":"");
