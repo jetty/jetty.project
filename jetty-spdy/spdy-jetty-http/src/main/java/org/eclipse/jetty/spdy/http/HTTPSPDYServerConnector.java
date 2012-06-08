@@ -47,13 +47,14 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
         // We pass a null ServerSessionFrameListener because for
         // HTTP over SPDY we need one that references the endPoint
         super(null, sslContextFactory);
-        // Override the "spdy/3" protocol by handling HTTP over SPDY
+        clearAsyncConnectionFactories();
+        // The "spdy/3" protocol handles HTTP over SPDY
         putAsyncConnectionFactory("spdy/3", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
-        // Override the "spdy/2" protocol by handling HTTP over SPDY
+        // The "spdy/2" protocol handles HTTP over SPDY
         putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
-        // Add the "http/1.1" protocol for browsers that support NPN but not SPDY
+        // The "http/1.1" protocol handles browsers that support NPN but not SPDY
         putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
-        // Override the default connection factory for non-SSL connections to speak plain HTTP
+        // The default connection factory handles plain HTTP on non-SSL or non-NPN connections
         setDefaultAsyncConnectionFactory(getAsyncConnectionFactory("http/1.1"));
     }
 
