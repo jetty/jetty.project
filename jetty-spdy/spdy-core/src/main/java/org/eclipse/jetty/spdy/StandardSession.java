@@ -64,6 +64,7 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -831,16 +832,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         int streamId = stream.getId();
         if (stream.isClosed() && streamId % 2 != streamIds.get() % 2)
-        {
-            // Non-blocking atomic update
-            int oldValue = lastStreamId.get();
-            while (streamId > oldValue)
-            {
-                if (lastStreamId.compareAndSet(oldValue,streamId))
-                    break;
-                oldValue = lastStreamId.get();
-            }
-        }
+            Atomics.updateMax(lastStreamId, streamId);
     }
 
     @Override
