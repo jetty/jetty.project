@@ -400,7 +400,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         };
         flowControlStrategy.onDataReceived(this, stream, dataInfo);
         stream.process(dataInfo);
-        updateLastStreamId(stream);
         if (stream.isClosed())
             removeStream(stream);
     }
@@ -430,6 +429,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void processSyn(SessionFrameListener listener, IStream stream, SynStreamFrame frame)
     {
         stream.process(frame);
+        // Update the last stream id before calling the application (which may send a GO_AWAY)
+        updateLastStreamId(stream);
         SynInfo synInfo = new SynInfo(frame.getHeaders(),frame.isClose(),frame.getPriority());
         StreamFrameListener streamListener = notifyOnSyn(listener,stream,synInfo);
         stream.setStreamFrameListener(streamListener);
@@ -801,9 +802,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         try
         {
-            if (stream != null)
-                updateLastStreamId(stream);
-
             // Synchronization is necessary, since we may have concurrent replies
             // and those needs to be generated and enqueued atomically in order
             // to maintain a correct compression context
@@ -831,7 +829,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void updateLastStreamId(IStream stream)
     {
         int streamId = stream.getId();
-        if (stream.isClosed() && streamId % 2 != streamIds.get() % 2)
+        if (streamId % 2 != streamIds.get() % 2)
             Atomics.updateMax(lastStreamId, streamId);
     }
 
