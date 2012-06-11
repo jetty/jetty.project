@@ -180,20 +180,28 @@ public interface Session
     public void goAway(long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
-     * @return the streams currently active in this session
+     * @return a snapshot of the streams currently active in this session
+     * @see #getStream(int)
      */
     public Set<Stream> getStreams();
 
     /**
+     * @param streamId the id of the stream to retrieve
+     * @return the stream with the given stream id
+     * @see #getStreams()
+     */
+    public Stream getStream(int streamId);
+
+    /**
      * @param key the attribute key
-     * @return an arbitrary object associated with the given key to this stream
+     * @return an arbitrary object associated with the given key to this session
      * @see #setAttribute(String, Object)
      */
     public Object getAttribute(String key);
 
     /**
      * @param key   the attribute key
-     * @param value an arbitrary object to associate with the given key to this stream
+     * @param value an arbitrary object to associate with the given key to this session
      * @see #getAttribute(String)
      * @see #removeAttribute(String)
      */
@@ -201,7 +209,7 @@ public interface Session
 
     /**
      * @param key the attribute key
-     * @return the arbitrary object associated with the given key to this stream
+     * @return the arbitrary object associated with the given key to this session
      * @see #setAttribute(String, Object)
      */
     public Object removeAttribute(String key);
