@@ -29,7 +29,6 @@ import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
-import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
@@ -113,7 +112,7 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public Session getSession()
+    public ISession getSession()
     {
         return session;
     }
