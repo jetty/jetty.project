@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.spdy.ISession;
+import org.eclipse.jetty.spdy.IStream;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.spdy.StandardStream;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.SynInfo;
@@ -142,8 +144,7 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
 
     private Stream syn(boolean close)
     {
-        // TODO: stream id uniqueness
-        Stream stream = new HTTPStream(1, (byte)0, session);
+        Stream stream = new HTTPStream(1, (byte)0, session, null);
         proxyEngine.onSyn(stream, new SynInfo(headers, close));
         return stream;
     }
@@ -172,6 +173,13 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
         }
 
         @Override
+        public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Handler<Void> handler)
+        {
+            // Not much we can do in HTTP land: just close the connection
+            goAway(timeout, unit, handler);
+        }
+
+        @Override
         public void goAway(long timeout, TimeUnit unit, Handler<Void> handler)
         {
             try
@@ -193,24 +201,23 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
     {
         private final Pattern statusRegexp = Pattern.compile("(\\d{3})\\s*(.*)");
 
-        private HTTPStream(int id, byte priority, ISession session)
+        private HTTPStream(int id, byte priority, ISession session, IStream associatedStream)
         {
-            super(id, priority, session, null);
+            super(id, priority, session, associatedStream);
         }
 
         @Override
         public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler)
         {
-            // No support for pushed stream in HTTP, but we need to return a non-null stream anyway
-            // TODO
-            throw new UnsupportedOperationException();
+            // HTTP does not support pushed streams
+            handler.completed(new HTTPPushStream(2, getPriority(), getSession(), this));
         }
 
         @Override
         public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler)
         {
             // TODO
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Not Yet Implemented");
         }
 
         @Override
@@ -302,6 +309,28 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
             // We need to call asyncDispatch() as if the HTTP request
             // has been suspended and now we complete the response
             getEndPoint().asyncDispatch();
+        }
+    }
+
+    private class HTTPPushStream extends StandardStream
+    {
+        private HTTPPushStream(int id, byte priority, ISession session, IStream associatedStream)
+        {
+            super(id, priority, session, associatedStream);
+        }
+
+        @Override
+        public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler)
+        {
+            // Ignore pushed headers
+            handler.completed(null);
+        }
+
+        @Override
+        public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Handler<Void> handler)
+        {
+            // Ignore pushed data
+            handler.completed(null);
         }
     }
 }
