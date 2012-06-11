@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -80,6 +81,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     };
 
+    private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final LinkedList<FrameBytes> queue = new LinkedList<>();
@@ -209,7 +211,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         SettingsFrame frame = new SettingsFrame(version,settingsInfo.getFlags(),settingsInfo.getSettings());
-        control(null,frame,timeout,unit,handler,null);
+        control(null, frame, timeout, unit, handler, null);
     }
 
     @Override
@@ -245,7 +247,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void goAway(long timeout, TimeUnit unit, Handler<Void> handler)
     {
-        goAway(SessionStatus.OK,timeout,unit,handler);
+        goAway(SessionStatus.OK, timeout, unit, handler);
     }
 
     private void goAway(SessionStatus sessionStatus, long timeout, TimeUnit unit, Handler<Void> handler)
@@ -268,6 +270,24 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         Set<Stream> result = new HashSet<>();
         result.addAll(streams.values());
         return result;
+    }
+
+    @Override
+    public Object getAttribute(String key)
+    {
+        return attributes.get(key);
+    }
+
+    @Override
+    public void setAttribute(String key, Object value)
+    {
+        attributes.put(key, value);
+    }
+
+    @Override
+    public Object removeAttribute(String key)
+    {
+        return attributes.remove(key);
     }
 
     @Override
