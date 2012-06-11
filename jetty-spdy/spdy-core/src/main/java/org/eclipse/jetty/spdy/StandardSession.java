@@ -273,6 +273,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
+    public IStream getStream(int streamId)
+    {
+        return streams.get(streamId);
+    }
+
+    @Override
     public Object getAttribute(String key)
     {
         return attributes.get(key);
