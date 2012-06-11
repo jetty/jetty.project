@@ -14,33 +14,30 @@
  * limitations under the License.
  */
 
-package org.eclipse.jetty.spdy.http;
+package org.eclipse.jetty.spdy.proxy;
 
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.server.AsyncHttpConnection;
-import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
+import org.eclipse.jetty.spdy.http.ServerHTTPAsyncConnectionFactory;
 
-public class ServerHTTPAsyncConnectionFactory implements AsyncConnectionFactory
+public class ProxyHTTPAsyncConnectionFactory extends ServerHTTPAsyncConnectionFactory
 {
-    private final SPDYServerConnector connector;
+    private final short version;
+    private final ProxyEngine proxyEngine;
 
-    public ServerHTTPAsyncConnectionFactory(SPDYServerConnector connector)
+    public ProxyHTTPAsyncConnectionFactory(SPDYServerConnector connector, short version, ProxyEngine proxyEngine)
     {
-        this.connector = connector;
-    }
-
-    public SPDYServerConnector getConnector()
-    {
-        return connector;
+        super(connector);
+        this.version = version;
+        this.proxyEngine = proxyEngine;
     }
 
     @Override
     public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
     {
-        return new AsyncHttpConnection(connector, endPoint, connector.getServer());
+        return new ProxyHTTPSPDYAsyncConnection(getConnector(), endPoint, version, proxyEngine);
     }
 }
