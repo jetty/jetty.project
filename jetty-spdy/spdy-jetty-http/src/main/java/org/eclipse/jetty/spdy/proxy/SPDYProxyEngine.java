@@ -23,7 +23,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.SPDYClient;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
@@ -50,9 +50,10 @@ import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 public class SPDYProxyEngine extends ProxyEngine
 {
     private static final String STREAM_HANDLER_ATTRIBUTE = "org.eclipse.jetty.spdy.http.proxy.streamHandler";
+    private static final String CLIENT_STREAM_ATTRIBUTE = "org.eclipse.jetty.spdy.http.proxy.clientStream";
+    private static final String CLIENT_SESSIONS_ATTRIBUTE = "org.eclipse.jetty.spdy.http.proxy.clientSessions";
 
-    private final ConcurrentMap<String, Future<Session>> serverSessions = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Session, Set<Session>> clientSessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Session> serverSessions = new ConcurrentHashMap<>();
     private final SessionFrameListener sessionListener = new ProxySessionFrameListener();
     private final SPDYClient.Factory factory;
     private volatile long connectTimeout = 15000;
@@ -84,27 +85,27 @@ public class SPDYProxyEngine extends ProxyEngine
     }
 
     @Override
+    public void onPing(Session clientSession, PingInfo pingInfo)
+    {
+        // We do not know to which upstream server
+        // to send the PING so we just ignore it
+    }
+
+    @Override
     public void onGoAway(Session clientSession, GoAwayInfo goAwayInfo)
     {
-        Set<Session> target = null;
-        for (Set<Session> sessions : clientSessions.values())
+        for (Session serverSession : serverSessions.values())
         {
+            @SuppressWarnings("unchecked")
+            Set<Session> sessions = (Set<Session>)serverSession.getAttribute(CLIENT_SESSIONS_ATTRIBUTE);
             for (Session session : sessions)
             {
                 if (session == clientSession)
                 {
-                    target = sessions;
-                    break;
+                    sessions.remove(session);
+                    return;
                 }
             }
-            if (target != null)
-                break;
-        }
-        if (target != null)
-        {
-            target.remove(clientSession);
-            // Do not remove the Set if it's empty: there is one Set per proxied
-            // host, so we can afford this small leak and avoid synchronization
         }
     }
 
@@ -146,14 +147,8 @@ public class SPDYProxyEngine extends ProxyEngine
             return null;
         }
 
-        Set<Session> sessions = clientSessions.get(serverSession);
-        if (sessions == null)
-        {
-            sessions = Collections.newSetFromMap(new ConcurrentHashMap<Session, Boolean>());
-            Set<Session> existing = clientSessions.putIfAbsent(serverSession, sessions);
-            if (existing != null)
-                sessions = existing;
-        }
+        @SuppressWarnings("unchecked")
+        Set<Session> sessions = (Set<Session>)serverSession.getAttribute(CLIENT_SESSIONS_ATTRIBUTE);
         sessions.add(clientSession);
 
         convert(clientVersion, serverVersion, headers);
@@ -164,26 +159,10 @@ public class SPDYProxyEngine extends ProxyEngine
         logger.debug("P -> S {}", serverSynInfo);
 
         StreamFrameListener listener = new ProxyStreamFrameListener(clientStream);
-        if (serverSynInfo.isClose())
-        {
-            serverSession.syn(serverSynInfo, listener, timeout, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
-            {
-                @Override
-                public void failed(Stream context, Throwable x)
-                {
-                    logger.debug(x);
-                    rst(clientStream);
-                }
-            });
-            return null;
-        }
-        else
-        {
-            StreamHandler streamHandler = new StreamHandler(clientStream);
-            clientStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, streamHandler);
-            serverSession.syn(serverSynInfo, listener, timeout, TimeUnit.MILLISECONDS, streamHandler);
-            return this;
-        }
+        StreamHandler handler = new StreamHandler(clientStream);
+        clientStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
+        serverSession.syn(serverSynInfo, listener, timeout, TimeUnit.MILLISECONDS, handler);
+        return this;
     }
 
     @Override
@@ -196,7 +175,7 @@ public class SPDYProxyEngine extends ProxyEngine
     public void onHeaders(Stream stream, HeadersInfo headersInfo)
     {
         // TODO
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not Yet Implemented");
     }
 
     @Override
@@ -222,19 +201,20 @@ public class SPDYProxyEngine extends ProxyEngine
     {
         try
         {
-            Future<Session> session = serverSessions.get(host);
+            Session session = serverSessions.get(host);
             if (session == null)
             {
                 SPDYClient client = factory.newSPDYClient(version);
-                session = client.connect(address, sessionListener);
-                Future<Session> existing = serverSessions.putIfAbsent(host, session);
+                session = client.connect(address, sessionListener).get(getConnectTimeout(), TimeUnit.MILLISECONDS);
+                session.setAttribute(CLIENT_SESSIONS_ATTRIBUTE, Collections.newSetFromMap(new ConcurrentHashMap<Session, Boolean>()));
+                Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
                 {
-                    session.cancel(true);
+                    session.goAway(getTimeout(), TimeUnit.MILLISECONDS, new Handler.Adapter<Void>());
                     session = existing;
                 }
             }
-            return session.get(getConnectTimeout(), TimeUnit.MILLISECONDS);
+            return session;
         }
         catch (Exception x)
         {
@@ -366,6 +346,8 @@ public class SPDYProxyEngine extends ProxyEngine
         @Override
         public void completed(Stream serverStream)
         {
+            serverStream.setAttribute(CLIENT_STREAM_ATTRIBUTE, clientStream);
+
             DataInfoHandler dataInfoHandler;
             synchronized (queue)
             {
@@ -484,17 +466,80 @@ public class SPDYProxyEngine extends ProxyEngine
         }
     }
 
-    private class ProxySessionFrameListener extends SessionFrameListener.Adapter
+    private class ProxySessionFrameListener extends SessionFrameListener.Adapter implements StreamFrameListener
     {
+        @Override
+        public StreamFrameListener onSyn(Stream serverStream, SynInfo serverSynInfo)
+        {
+            logger.debug("S -> P pushed {} on {}", serverSynInfo, serverStream);
+
+            Headers headers = new Headers(serverSynInfo.getHeaders(), false);
+
+            Stream clientStream = (Stream)serverStream.getAssociatedStream().getAttribute(CLIENT_STREAM_ATTRIBUTE);
+            convert(serverStream.getSession().getVersion(), clientStream.getSession().getVersion(), headers);
+
+            addResponseProxyHeaders(headers);
+
+            StreamHandler handler = new StreamHandler(clientStream);
+            serverStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
+            clientStream.syn(new SynInfo(headers, serverSynInfo.isClose()), getTimeout(), TimeUnit.MILLISECONDS, handler);
+            return this;
+        }
+
+        @Override
+        public void onRst(Session serverSession, RstInfo serverRstInfo)
+        {
+            Stream serverStream = serverSession.getStream(serverRstInfo.getStreamId());
+            if (serverStream != null)
+            {
+                Stream clientStream = (Stream)serverStream.getAttribute(CLIENT_STREAM_ATTRIBUTE);
+                if (clientStream != null)
+                {
+                    Session clientSession = clientStream.getSession();
+                    RstInfo clientRstInfo = new RstInfo(clientStream.getId(), serverRstInfo.getStreamStatus());
+                    clientSession.rst(clientRstInfo, getTimeout(), TimeUnit.MILLISECONDS, new Handler.Adapter<Void>());
+                }
+            }
+        }
+
         @Override
         public void onGoAway(Session serverSession, GoAwayInfo goAwayInfo)
         {
-            Set<Session> sessions = clientSessions.remove(serverSession);
-            if (sessions != null)
+            @SuppressWarnings("unchecked")
+            Set<Session> sessions = (Set<Session>)serverSession.removeAttribute(CLIENT_SESSIONS_ATTRIBUTE);
+            for (Session session : sessions)
+                session.goAway(getTimeout(), TimeUnit.MILLISECONDS, new Handler.Adapter<Void>());
+        }
+
+        @Override
+        public void onReply(Stream stream, ReplyInfo replyInfo)
+        {
+            // Push streams never send a reply
+        }
+
+        @Override
+        public void onHeaders(Stream stream, HeadersInfo headersInfo)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void onData(Stream serverStream, final DataInfo serverDataInfo)
+        {
+            logger.debug("S -> P pushed {} on {}", serverDataInfo, serverStream);
+
+            ByteBufferDataInfo clientDataInfo = new ByteBufferDataInfo(serverDataInfo.asByteBuffer(false), serverDataInfo.isClose())
             {
-                for (Session session : sessions)
-                    session.goAway(getTimeout(), TimeUnit.MILLISECONDS, new Handler.Adapter<Void>());
-            }
+                @Override
+                public void consume(int delta)
+                {
+                    super.consume(delta);
+                    serverDataInfo.consume(delta);
+                }
+            };
+
+            StreamHandler handler = (StreamHandler)serverStream.getAttribute(STREAM_HANDLER_ATTRIBUTE);
+            handler.data(clientDataInfo);
         }
     }
 }
