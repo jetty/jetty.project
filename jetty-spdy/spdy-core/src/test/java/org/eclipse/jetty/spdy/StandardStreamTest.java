@@ -46,15 +46,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
-/* ------------------------------------------------------------ */
-/**
- */
 @RunWith(MockitoJUnitRunner.class)
 public class StandardStreamTest
 {
-    @Mock private ISession session;
-    @Mock private SynStreamFrame synStreamFrame;
+    @Mock
+    private ISession session;
+    @Mock
+    private SynStreamFrame synStreamFrame;
 
     /**
      * Test method for {@link org.eclipse.jetty.spdy.StandardStream#syn(org.eclipse.jetty.spdy.api.SynInfo)}.
@@ -63,17 +61,18 @@ public class StandardStreamTest
     @Test
     public void testSyn()
     {
-        Stream stream = new StandardStream(synStreamFrame,session,null);
+        Stream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
         Set<Stream> streams = new HashSet<>();
         streams.add(stream);
         when(synStreamFrame.isClose()).thenReturn(false);
         SynInfo synInfo = new SynInfo(false);
         when(session.getStreams()).thenReturn(streams);
         stream.syn(synInfo);
-        verify(session).syn(argThat(new PushSynInfoMatcher(stream.getId(),synInfo)),any(StreamFrameListener.class),anyLong(),any(TimeUnit.class),any(Handler.class));
+        verify(session).syn(argThat(new PushSynInfoMatcher(stream.getId(), synInfo)), any(StreamFrameListener.class), anyLong(), any(TimeUnit.class), any(Handler.class));
     }
 
-    private class PushSynInfoMatcher extends ArgumentMatcher<PushSynInfo>{
+    private class PushSynInfoMatcher extends ArgumentMatcher<PushSynInfo>
+    {
         int associatedStreamId;
         SynInfo synInfo;
 
@@ -82,15 +81,18 @@ public class StandardStreamTest
             this.associatedStreamId = associatedStreamId;
             this.synInfo = synInfo;
         }
+
         @Override
         public boolean matches(Object argument)
         {
             PushSynInfo pushSynInfo = (PushSynInfo)argument;
-            if(pushSynInfo.getAssociatedStreamId() != associatedStreamId){
+            if (pushSynInfo.getAssociatedStreamId() != associatedStreamId)
+            {
                 System.out.println("streamIds do not match!");
                 return false;
             }
-            if(pushSynInfo.isClose() != synInfo.isClose()){
+            if (pushSynInfo.isClose() != synInfo.isClose())
+            {
                 System.out.println("isClose doesn't match");
                 return false;
             }
@@ -99,13 +101,14 @@ public class StandardStreamTest
     }
 
     @Test
-    public void testSynOnClosedStream(){
-        IStream stream = new StandardStream(synStreamFrame,session,null);
-        stream.updateCloseState(true,true);
-        stream.updateCloseState(true,false);
-        assertThat("stream expected to be closed",stream.isClosed(),is(true));
+    public void testSynOnClosedStream()
+    {
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
+        stream.updateCloseState(true, true);
+        stream.updateCloseState(true, false);
+        assertThat("stream expected to be closed", stream.isClosed(), is(true));
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Handler.Adapter<Stream>()
+        stream.syn(new SynInfo(false), 1, TimeUnit.SECONDS, new Handler.Adapter<Stream>()
         {
             @Override
             public void failed(Stream stream, Throwable x)
@@ -121,7 +124,7 @@ public class StandardStreamTest
     public void testSendDataOnHalfClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
-        IStream stream = new StandardStream(synStreamFrame, session, null);
+        IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
         stream.updateWindowSize(8192);
         stream.updateCloseState(synStreamFrame.isClose(), true);
         assertThat("stream is half closed", stream.isHalfClosed(), is(true));

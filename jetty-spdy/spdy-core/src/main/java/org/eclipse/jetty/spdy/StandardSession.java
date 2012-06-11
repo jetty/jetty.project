@@ -476,7 +476,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private IStream newStream(SynStreamFrame frame)
     {
         IStream associatedStream = streams.get(frame.getAssociatedStreamId());
-        IStream stream = new StandardStream(frame, this, associatedStream);
+        IStream stream = new StandardStream(frame.getStreamId(), frame.getPriority(), this, associatedStream);
         flowControlStrategy.onNewStream(this, stream);
         return stream;
     }
