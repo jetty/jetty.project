@@ -68,4 +68,10 @@ public class ByteBufferDataInfo extends DataInfo
         }
         return space;
     }
+
+    @Override
+    protected ByteBuffer allocate(int size)
+    {
+        return buffer.isDirect() ? ByteBuffer.allocateDirect(size) : super.allocate(size);
+    }
 }
