@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Ignore;
@@ -42,6 +43,7 @@ public class TestConfiguration extends HashMap<String,Object>
     @SuppressWarnings("rawtypes")
     private Set set;
     private ConstructorArgTestClass constructorArgTestClass;
+    public Map map;
 
     public void setTest(Object value)
     {
@@ -52,7 +54,7 @@ public class TestConfiguration extends HashMap<String,Object>
     {
         testInt=value;
     }
-    
+
     public void setPropertyTest(int value)
     {
     	propValue=value;
@@ -140,5 +142,10 @@ public class TestConfiguration extends HashMap<String,Object>
     public void setConstructorArgTestClass(ConstructorArgTestClass constructorArgTestClass)
     {
         this.constructorArgTestClass = constructorArgTestClass;
+    }
+
+    public void setMap(Map map)
+    {
+        this.map = map;
     }
 }
