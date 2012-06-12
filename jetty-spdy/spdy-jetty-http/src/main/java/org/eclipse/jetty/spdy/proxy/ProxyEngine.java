@@ -19,6 +19,8 @@ package org.eclipse.jetty.spdy.proxy;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -82,6 +84,17 @@ public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter imp
     protected void addResponseProxyHeaders(Headers headers)
     {
         // TODO: add Via header
+    }
+
+    public Map<String, ProxyInfo> getProxyInfos()
+    {
+        return new HashMap<>(proxyInfos);
+    }
+
+    public void setProxyInfos(Map<String, ProxyInfo> proxyInfos)
+    {
+        this.proxyInfos.clear();
+        this.proxyInfos.putAll(proxyInfos);
     }
 
     public void putProxyInfo(String host, ProxyInfo proxyInfo)

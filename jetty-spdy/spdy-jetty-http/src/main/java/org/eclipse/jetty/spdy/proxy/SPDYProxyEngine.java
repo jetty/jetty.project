@@ -98,14 +98,8 @@ public class SPDYProxyEngine extends ProxyEngine
         {
             @SuppressWarnings("unchecked")
             Set<Session> sessions = (Set<Session>)serverSession.getAttribute(CLIENT_SESSIONS_ATTRIBUTE);
-            for (Session session : sessions)
-            {
-                if (session == clientSession)
-                {
-                    sessions.remove(session);
-                    return;
-                }
-            }
+            if (sessions.remove(clientSession))
+                break;
         }
     }
 
@@ -207,6 +201,7 @@ public class SPDYProxyEngine extends ProxyEngine
                 SPDYClient client = factory.newSPDYClient(version);
                 session = client.connect(address, sessionListener).get(getConnectTimeout(), TimeUnit.MILLISECONDS);
                 session.setAttribute(CLIENT_SESSIONS_ATTRIBUTE, Collections.newSetFromMap(new ConcurrentHashMap<Session, Boolean>()));
+                logger.debug("Proxy session connected to {}", address);
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
                 {
@@ -505,6 +500,7 @@ public class SPDYProxyEngine extends ProxyEngine
         @Override
         public void onGoAway(Session serverSession, GoAwayInfo goAwayInfo)
         {
+            serverSessions.values().remove(serverSession);
             @SuppressWarnings("unchecked")
             Set<Session> sessions = (Set<Session>)serverSession.removeAttribute(CLIENT_SESSIONS_ATTRIBUTE);
             for (Session session : sessions)
