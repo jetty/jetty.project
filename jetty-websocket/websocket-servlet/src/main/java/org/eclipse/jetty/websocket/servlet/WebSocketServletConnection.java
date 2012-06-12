@@ -13,24 +13,15 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.servlet;
 
+import java.io.IOException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import java.nio.ByteBuffer;
-import java.util.List;
+import org.eclipse.jetty.websocket.WebSocketConnection;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.websocket.extensions.Extension;
-
-
-
-public interface WebSocketConnection extends AsyncConnection
+public interface WebSocketServletConnection extends WebSocketConnection
 {
-    void fillBuffersFrom(ByteBuffer buffer);
-
-    List<Extension> getExtensions();
-
-    WebSocket.Connection getConnection();
-
-    void shutdown();
+    void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException;
 }

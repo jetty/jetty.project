@@ -44,6 +44,12 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.extensions.Extension;
+import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
+import org.eclipse.jetty.websocket.extensions.fragment.FragmentExtension;
+import org.eclipse.jetty.websocket.extensions.identity.IdentityExtension;
+import org.eclipse.jetty.websocket.servlet.helper.WebSocketServletConnection;
+import org.eclipse.jetty.websocket.servlet.helper.WebSocketServletConnectionRFC6455;
 
 /**
  * Factory to create WebSocket connections

@@ -13,24 +13,14 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.extensions.identity;
 
+import org.eclipse.jetty.websocket.extensions.AbstractExtension;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.websocket.extensions.Extension;
-
-
-
-public interface WebSocketConnection extends AsyncConnection
+public class IdentityExtension extends AbstractExtension
 {
-    void fillBuffersFrom(ByteBuffer buffer);
-
-    List<Extension> getExtensions();
-
-    WebSocket.Connection getConnection();
-
-    void shutdown();
+    public IdentityExtension()
+    {
+        super("identity");
+    }
 }

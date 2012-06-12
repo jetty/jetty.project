@@ -13,24 +13,22 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.extensions;
 
+import java.util.Map;
 
-import java.nio.ByteBuffer;
-import java.util.List;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocketGenerator;
+import org.eclipse.jetty.websocket.WebSocketParser;
+import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
+import org.eclipse.jetty.websocket.WebSocketParser.FrameHandler;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.websocket.extensions.Extension;
-
-
-
-public interface WebSocketConnection extends AsyncConnection
+public interface Extension extends WebSocketParser.FrameHandler, WebSocketGenerator
 {
-    void fillBuffersFrom(ByteBuffer buffer);
-
-    List<Extension> getExtensions();
-
-    WebSocket.Connection getConnection();
-
-    void shutdown();
+    public String getName();
+    public String getParameterizedName();
+    
+    public boolean init(Map<String,String> parameters);
+    public void bind(WebSocket.FrameConnection connection, WebSocketParser.FrameHandler inbound, WebSocketGenerator outbound);
+    
 }
