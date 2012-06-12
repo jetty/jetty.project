@@ -13,28 +13,30 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.generator;
+
+import java.util.Random;
 
 
-public class FixedMaskGen implements MaskGen
+public class RandomMaskGen implements MaskGen
 {
-    private final byte[] _mask;
+    private final Random _random;
 
-    public FixedMaskGen()
+    public RandomMaskGen()
     {
-        this(new byte[]{(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff});
+        this(new Random());
     }
 
-    public FixedMaskGen(byte[] mask)
+    public RandomMaskGen(Random random)
     {
-        _mask=new byte[4];
-        // Copy to avoid that external code keeps a reference
-        // to the array parameter to modify masking on-the-fly
-        System.arraycopy(mask, 0, _mask, 0, 4);
+        _random=random;
     }
 
     public void genMask(byte[] mask)
     {
-        System.arraycopy(_mask, 0, mask, 0, 4);
+        // The assumption is that this code is always called
+        // with an external lock held to prevent concurrent access
+        // Otherwise we need to synchronize on the _random.
+        _random.nextBytes(mask);
     }
 }

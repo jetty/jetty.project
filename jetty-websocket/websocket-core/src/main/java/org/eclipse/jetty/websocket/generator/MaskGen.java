@@ -13,13 +13,9 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.generator;
 
-
-public class ZeroMaskGen implements MaskGen
+public interface MaskGen
 {
-    public void genMask(byte[] mask)
-    {
-        mask[0]=mask[1]=mask[2]=mask[3]=0;
-    }
+    void genMask(byte[] mask);
 }

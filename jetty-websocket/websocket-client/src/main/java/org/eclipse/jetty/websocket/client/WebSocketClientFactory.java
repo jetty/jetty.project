@@ -49,12 +49,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.websocket.MaskGen;
-import org.eclipse.jetty.websocket.RandomMaskGen;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketConnection;
 import org.eclipse.jetty.websocket.WebSocketConnectionRFC6455;
 import org.eclipse.jetty.websocket.extensions.Extension;
+import org.eclipse.jetty.websocket.generator.MaskGen;
+import org.eclipse.jetty.websocket.generator.RandomMaskGen;
 
 /* ------------------------------------------------------------ */
 /**

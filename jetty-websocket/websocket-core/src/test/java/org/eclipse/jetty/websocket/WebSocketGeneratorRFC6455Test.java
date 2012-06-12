@@ -21,6 +21,8 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.generator.FixedMaskGen;
+import org.eclipse.jetty.websocket.generator.MaskGen;
 import org.junit.Before;
 import org.junit.Test;
 

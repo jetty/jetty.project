@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.websocket.generator.MaskGen;
 
 
 /* ------------------------------------------------------------ */

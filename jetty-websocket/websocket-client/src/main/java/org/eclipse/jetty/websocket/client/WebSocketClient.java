@@ -33,13 +33,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.MaskGen;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketConnection;
 import org.eclipse.jetty.websocket.WebSocketConnectionRFC6455;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
+import org.eclipse.jetty.websocket.generator.MaskGen;
 
 
 /* ------------------------------------------------------------ */
