@@ -71,11 +71,10 @@ public class XmlConfiguration
 
     private static final Class<?>[] __primitiveHolders =
     { Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class };
-    private static final Integer ZERO = new Integer(0);
-    
+
     private static final Class<?>[] __supportedCollections =
     { ArrayList.class,ArrayQueue.class,HashSet.class,Queue.class,List.class,Set.class,Collection.class,};
-    
+
     private static final Iterable<?> __factoryLoader;
 
     private static final XmlParser __parser = initParser();
@@ -141,9 +140,11 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * Constructor. Reads the XML configuration file.
+     * Reads and parses the XML configuration file.
      *
-     * @param configuration
+     * @param configuration the URL of the XML configuration
+     * @throws IOException if the configuration could not be read
+     * @throws SAXException if the configuration could not be parsed
      */
     public XmlConfiguration(URL configuration) throws SAXException, IOException
     {
@@ -157,12 +158,12 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * Constructor.
+     * Reads and parses the XML configuration string.
      *
-     * @param configuration
-     *            String of XML configuration commands excluding the normal XML preamble. The String should start with a " <Configure ...." element.
-     * @exception SAXException
-     * @exception IOException
+     * @param configuration String of XML configuration commands excluding the normal XML preamble.
+     * The String should start with a "&lt;Configure ....&gt;" element.
+     * @throws IOException if the configuration could not be read
+     * @throws SAXException if the configuration could not be parsed
      */
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
@@ -178,12 +179,11 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * Constructor.
+     * Reads and parses the XML configuration stream.
      *
-     * @param configuration
-     *            An input stream containing a complete e.g. configuration file
-     * @exception SAXException
-     * @exception IOException
+     * @param configuration An input stream containing a complete configuration file
+     * @throws IOException if the configuration could not be read
+     * @throws SAXException if the configuration could not be parsed
      */
     public XmlConfiguration(InputStream configuration) throws SAXException, IOException
     {
@@ -240,6 +240,7 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
+     * @param map the ID map
      * @deprecated use {@link #getIdMap()}.put(...)
      */
     @Deprecated
@@ -251,6 +252,7 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
+     * @param map the properties map
      * @deprecated use {@link #getProperties()}.putAll(...)
      */
     @Deprecated
@@ -268,13 +270,12 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * Configure an object.
+     * Applies the XML configuration script to the given object.
      *
-     * <p>Apply the XML configuration script to the passed object.</p>
-     *
-     * @param obj
-     *            The object to be configured, which must be of a type or super type of the class attribute of the Configure element.
-     * @exception Exception
+     * @param obj The object to be configured, which must be of a type or super type
+     * of the class attribute of the &lt;Configure&gt; element.
+     * @throws Exception if the configuration fails
+     * @return the configured object
      */
     public Object configure(Object obj) throws Exception
     {
@@ -283,10 +284,13 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * Configure an object. If the configuration has an ID, an object is looked up by ID and it's type check. Otherwise a new object is created.
+     * Applies the XML configuration script.
+     * If the root element of the configuration has an ID, an object is looked up by ID and its type checked
+     * against the root element's type.
+     * Otherwise a new object of the type specified by the root element is created.
      *
      * @return The newly created configured object.
-     * @exception Exception
+     * @throws Exception if the configuration fails
      */
     public Object configure() throws Exception
     {
@@ -353,12 +357,13 @@ public class XmlConfiguration
 
         /* ------------------------------------------------------------ */
         /**
-         * Recursive configuration step. This method applies the remaining Set, Put and Call elements to the current object.
+         * Recursive configuration routine.
+         * This method applies the nested Set, Put, Call, etc. elements to the given object.
          *
-         * @param obj
-         * @param cfg
-         * @param i
-         * @exception Exception
+         * @param obj the object to configure
+         * @param cfg the XML nodes of the configuration
+         * @param i the index of the XML nodes
+         * @throws Exception if the configuration fails
          */
         public void configure(Object obj, XmlParser.Node cfg, int i) throws Exception
         {
@@ -576,7 +581,9 @@ public class XmlConfiguration
         }
 
         /**
-         * @return a collection if compareValueToClass is a Set or List. null if that's not the case or value can't be converted to a Collection
+         * @param array the array to convert
+         * @param collectionType the desired collection type
+         * @return a collection of the desired type if the array can be converted
          */
         private static Collection<?> convertArrayToCollection(Object array, Class<?> collectionType)
         {
@@ -862,7 +869,7 @@ public class XmlConfiguration
                 XmlParser.Node item = (Node)nodeObject;
                 String nid = item.getAttribute("id");
                 Object v = value(obj,item);
-                al = LazyList.add(al,(v == null && aClass.isPrimitive())?ZERO:v);
+                al = LazyList.add(al,(v == null && aClass.isPrimitive())?0:v);
                 if (nid != null)
                     _idMap.put(nid,v);
             }
@@ -896,7 +903,7 @@ public class XmlConfiguration
                 XmlParser.Node key = null;
                 XmlParser.Node value = null;
 
-                for (Object object : node)
+                for (Object object : entry)
                 {
                     if (object instanceof String)
                         continue;
@@ -932,26 +939,26 @@ public class XmlConfiguration
          * Get a Property.
          *
          * @param node
-         * @return 
+         * @return
          * @exception Exception
          */
         private Object propertyObj(XmlParser.Node node) throws Exception
         {
             String id = node.getAttribute("id");
             String name = node.getAttribute("name");
-            String defval = node.getAttribute("default");
-            Object prop = null;
+            String defaultValue = node.getAttribute("default");
+            Object prop;
             if (_propertyMap != null && _propertyMap.containsKey(name))
                 prop = _propertyMap.get(name);
             else
-                prop = defval;
+                prop = defaultValue;
             if (id != null)
                 _idMap.put(id,prop);
             if (prop != null)
                 configure(prop,node,0);
             return prop;
         }
-        
+
 
         /* ------------------------------------------------------------ */
         /*
@@ -960,7 +967,7 @@ public class XmlConfiguration
          */
         private Object value(Object obj, XmlParser.Node node) throws Exception
         {
-            Object value = null;
+            Object value;
 
             // Get the type
             String type = node.getAttribute("type");
@@ -989,7 +996,7 @@ public class XmlConfiguration
                 if (type == null || !"String".equals(type))
                 {
                     // Skip leading white
-                    Object item = null;
+                    Object item;
                     while (first <= last)
                     {
                         item = node.get(first);
@@ -1084,7 +1091,7 @@ public class XmlConfiguration
                     throw new InvocationTargetException(e);
                 }
             }
-            
+
             for (Class<?> collectionClass : __supportedCollections)
             {
                 if (isTypeMatchingClass(type,collectionClass))
@@ -1093,12 +1100,11 @@ public class XmlConfiguration
 
             throw new IllegalStateException("Unknown type " + type);
         }
-        
+
         /* ------------------------------------------------------------ */
         private static boolean isTypeMatchingClass(String type, Class<?> classToMatch)
         {
-            boolean match = classToMatch.getSimpleName().equalsIgnoreCase(type) || classToMatch.getName().equals(type);
-            return match;
+            return classToMatch.getSimpleName().equalsIgnoreCase(type) || classToMatch.getName().equals(type);
         }
 
         /* ------------------------------------------------------------ */
@@ -1134,7 +1140,7 @@ public class XmlConfiguration
                 String defaultValue = node.getAttribute("default");
                 return System.getProperty(name,defaultValue);
             }
-            
+
             if ("Env".equals(tag))
             {
                 String name = node.getAttribute("name");
@@ -1167,6 +1173,7 @@ public class XmlConfiguration
      *
      * @param args
      *            array of property and xml configuration filenames or {@link Resource}s.
+     * @throws Exception if the XML configurations cannot be run
      */
     public static void main(final String[] args) throws Exception
     {
