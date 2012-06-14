@@ -16,6 +16,7 @@
 
 package org.eclipse.jetty.spdy;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -89,6 +90,8 @@ public class Promise<T> implements Handler<T>, Future<T>
 
     private T result() throws ExecutionException
     {
+        if (isCancelled())
+            throw new CancellationException();
         Throwable failure = this.failure;
         if (failure != null)
             throw new ExecutionException(failure);

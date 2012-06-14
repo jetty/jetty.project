@@ -41,7 +41,6 @@ import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
@@ -52,11 +51,6 @@ import org.junit.Test;
 
 public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
 {
-    protected short version()
-    {
-        return SPDY.V2;
-    }
-
     @Test
     public void testSimpleGET() throws Exception
     {

@@ -421,6 +421,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         boolean gzip=false;
         if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
         {
+            // Tell caches that response may vary by accept-encoding
+            response.setHeader(HttpHeaders.VARY,HttpHeaders.ACCEPT_ENCODING);
+            // Should we vary this response according to accept-encoding?
             String accept=request.getHeader(HttpHeaders.ACCEPT_ENCODING);
             if (accept!=null && accept.indexOf("gzip")>=0)
                 gzip=true;
@@ -497,7 +500,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         if (gzip)
                         {
                             response.setHeader(HttpHeaders.CONTENT_ENCODING,"gzip");
-                            response.setHeader(HttpHeaders.VARY,HttpHeaders.ACCEPT_ENCODING);
                             String mt=_servletContext.getMimeType(pathInContext);
                             if (mt!=null)
                                 response.setContentType(mt);

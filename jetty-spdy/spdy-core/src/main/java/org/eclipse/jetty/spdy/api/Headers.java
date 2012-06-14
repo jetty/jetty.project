@@ -269,6 +269,21 @@ public class Headers implements Iterable<Headers.Header>
         }
 
         /**
+         * @return the values as a comma separated list
+         */
+        public String valuesAsString()
+        {
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < values.length; ++i)
+            {
+                if (i > 0)
+                    result.append(", ");
+                result.append(values[i]);
+            }
+            return result.toString();
+        }
+
+        /**
          * @return whether the header has multiple values
          */
         public boolean hasMultipleValues()
