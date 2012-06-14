@@ -37,6 +37,8 @@ public class Constraint implements Cloneable, Serializable
     
     public final static String __SPNEGO_AUTH = "SPNEGO";
     
+    public final static String __NEGOTIATE_AUTH = "NEGOTIATE";
+    
     public static boolean validateMethod (String method)
     {
         if (method == null)
@@ -47,7 +49,8 @@ public class Constraint implements Cloneable, Serializable
                 || method.equals (__DIGEST_AUTH) 
                 || method.equals (__CERT_AUTH) 
                 || method.equals(__CERT_AUTH2)
-                || method.equals(__SPNEGO_AUTH));
+                || method.equals(__SPNEGO_AUTH)
+                || method.equals(__NEGOTIATE_AUTH));
     }
 
     /* ------------------------------------------------------------ */
