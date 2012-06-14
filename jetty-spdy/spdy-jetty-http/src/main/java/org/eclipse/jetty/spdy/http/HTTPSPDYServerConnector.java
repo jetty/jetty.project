@@ -16,16 +16,10 @@
 
 package org.eclipse.jetty.spdy.http;
 
-import java.io.IOException;
-
-import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class HTTPSPDYServerConnector extends SPDYServerConnector
+public class HTTPSPDYServerConnector extends AbstractHTTPSPDYServerConnector
 {
     public HTTPSPDYServerConnector()
     {
@@ -47,43 +41,14 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
         // We pass a null ServerSessionFrameListener because for
         // HTTP over SPDY we need one that references the endPoint
         super(null, sslContextFactory);
-        // Override the "spdy/3" protocol by handling HTTP over SPDY
+        clearAsyncConnectionFactories();
+        // The "spdy/3" protocol handles HTTP over SPDY
         putAsyncConnectionFactory("spdy/3", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
-        // Override the "spdy/2" protocol by handling HTTP over SPDY
+        // The "spdy/2" protocol handles HTTP over SPDY
         putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
-        // Add the "http/1.1" protocol for browsers that support NPN but not SPDY
+        // The "http/1.1" protocol handles browsers that support NPN but not SPDY
         putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
-        // Override the default connection factory for non-SSL connections to speak plain HTTP
+        // The default connection factory handles plain HTTP on non-SSL or non-NPN connections
         setDefaultAsyncConnectionFactory(getAsyncConnectionFactory("http/1.1"));
-    }
-
-    @Override
-    public void customize(EndPoint endPoint, Request request) throws IOException
-    {
-        super.customize(endPoint, request);
-        if (getSslContextFactory() != null)
-            request.setScheme(HttpSchemes.HTTPS);
-    }
-
-    @Override
-    public boolean isConfidential(Request request)
-    {
-        if (getSslContextFactory() != null)
-        {
-            int confidentialPort = getConfidentialPort();
-            return confidentialPort == 0 || confidentialPort == request.getServerPort();
-        }
-        return super.isConfidential(request);
-    }
-
-    @Override
-    public boolean isIntegral(Request request)
-    {
-        if (getSslContextFactory() != null)
-        {
-            int integralPort = getIntegralPort();
-            return integralPort == 0 || integralPort == request.getServerPort();
-        }
-        return super.isIntegral(request);
     }
 }

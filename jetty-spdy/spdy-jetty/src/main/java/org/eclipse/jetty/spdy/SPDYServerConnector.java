@@ -156,6 +156,14 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
+    public void clearAsyncConnectionFactories()
+    {
+        synchronized (factories)
+        {
+            factories.clear();
+        }
+    }
+
     protected List<String> provideProtocols()
     {
         synchronized (factories)

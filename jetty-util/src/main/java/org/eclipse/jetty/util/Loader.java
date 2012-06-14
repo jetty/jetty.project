@@ -163,9 +163,6 @@ public class Loader
      */
     public static String getClassPath(ClassLoader loader) throws Exception
     {
-        if (loader.getParent() != null)
-            loader = loader.getParent();
-
         StringBuilder classpath=new StringBuilder();
         while (loader != null && (loader instanceof URLClassLoader))
         {

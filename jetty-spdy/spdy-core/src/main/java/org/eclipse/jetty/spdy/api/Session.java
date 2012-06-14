@@ -75,7 +75,7 @@ public interface Session
      * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Handler)
      */
     public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
-    
+
     /**
      * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
      * <p>Callers may pass a non-null completion handler to be notified of when the
@@ -90,7 +90,7 @@ public interface Session
      */
     public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
 
-    
+
     /**
      * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
      * <p>Callers may use the returned future to wait for the reset to be sent.</p>
@@ -180,9 +180,39 @@ public interface Session
     public void goAway(long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
-     * @return the streams currently active in this session
+     * @return a snapshot of the streams currently active in this session
+     * @see #getStream(int)
      */
     public Set<Stream> getStreams();
+
+    /**
+     * @param streamId the id of the stream to retrieve
+     * @return the stream with the given stream id
+     * @see #getStreams()
+     */
+    public Stream getStream(int streamId);
+
+    /**
+     * @param key the attribute key
+     * @return an arbitrary object associated with the given key to this session
+     * @see #setAttribute(String, Object)
+     */
+    public Object getAttribute(String key);
+
+    /**
+     * @param key   the attribute key
+     * @param value an arbitrary object to associate with the given key to this session
+     * @see #getAttribute(String)
+     * @see #removeAttribute(String)
+     */
+    public void setAttribute(String key, Object value);
+
+    /**
+     * @param key the attribute key
+     * @return the arbitrary object associated with the given key to this session
+     * @see #setAttribute(String, Object)
+     */
+    public Object removeAttribute(String key);
 
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -64,6 +65,7 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -79,6 +81,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     };
 
+    private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final LinkedList<FrameBytes> queue = new LinkedList<>();
@@ -208,7 +211,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         SettingsFrame frame = new SettingsFrame(version,settingsInfo.getFlags(),settingsInfo.getSettings());
-        control(null,frame,timeout,unit,handler,null);
+        control(null, frame, timeout, unit, handler, null);
     }
 
     @Override
@@ -244,7 +247,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void goAway(long timeout, TimeUnit unit, Handler<Void> handler)
     {
-        goAway(SessionStatus.OK,timeout,unit,handler);
+        goAway(SessionStatus.OK, timeout, unit, handler);
     }
 
     private void goAway(SessionStatus sessionStatus, long timeout, TimeUnit unit, Handler<Void> handler)
@@ -267,6 +270,30 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         Set<Stream> result = new HashSet<>();
         result.addAll(streams.values());
         return result;
+    }
+
+    @Override
+    public IStream getStream(int streamId)
+    {
+        return streams.get(streamId);
+    }
+
+    @Override
+    public Object getAttribute(String key)
+    {
+        return attributes.get(key);
+    }
+
+    @Override
+    public void setAttribute(String key, Object value)
+    {
+        attributes.put(key, value);
+    }
+
+    @Override
+    public Object removeAttribute(String key)
+    {
+        return attributes.remove(key);
     }
 
     @Override
@@ -399,7 +426,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         };
         flowControlStrategy.onDataReceived(this, stream, dataInfo);
         stream.process(dataInfo);
-        updateLastStreamId(stream);
         if (stream.isClosed())
             removeStream(stream);
     }
@@ -429,6 +455,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void processSyn(SessionFrameListener listener, IStream stream, SynStreamFrame frame)
     {
         stream.process(frame);
+        // Update the last stream id before calling the application (which may send a GO_AWAY)
+        updateLastStreamId(stream);
         SynInfo synInfo = new SynInfo(frame.getHeaders(),frame.isClose(),frame.getPriority());
         StreamFrameListener streamListener = notifyOnSyn(listener,stream,synInfo);
         stream.setStreamFrameListener(streamListener);
@@ -474,7 +502,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private IStream newStream(SynStreamFrame frame)
     {
         IStream associatedStream = streams.get(frame.getAssociatedStreamId());
-        IStream stream = new StandardStream(frame, this, associatedStream);
+        IStream stream = new StandardStream(frame.getStreamId(), frame.getPriority(), this, associatedStream);
         flowControlStrategy.onNewStream(this, stream);
         return stream;
     }
@@ -800,9 +828,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         try
         {
-            if (stream != null)
-                updateLastStreamId(stream);
-
             // Synchronization is necessary, since we may have concurrent replies
             // and those needs to be generated and enqueued atomically in order
             // to maintain a correct compression context
@@ -830,17 +855,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void updateLastStreamId(IStream stream)
     {
         int streamId = stream.getId();
-        if (stream.isClosed() && streamId % 2 != streamIds.get() % 2)
-        {
-            // Non-blocking atomic update
-            int oldValue = lastStreamId.get();
-            while (streamId > oldValue)
-            {
-                if (lastStreamId.compareAndSet(oldValue,streamId))
-                    break;
-                oldValue = lastStreamId.get();
-            }
-        }
+        if (streamId % 2 != streamIds.get() % 2)
+            Atomics.updateMax(lastStreamId, streamId);
     }
 
     @Override
