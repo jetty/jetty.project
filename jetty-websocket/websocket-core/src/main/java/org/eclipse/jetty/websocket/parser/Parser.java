@@ -94,17 +94,22 @@ public class Parser {
         baseframe = new BaseFrame();
         reset();
 
-        parsers.put(OpCode.CONTINUATION,new ContinuationPayloadParser());
-        parsers.put(OpCode.TEXT,new TextPayloadParser());
-        parsers.put(OpCode.BINARY,new BinaryPayloadParser());
-        parsers.put(OpCode.CLOSE,new ClosePayloadParser());
-        parsers.put(OpCode.PING,new PingPayloadParser());
-        parsers.put(OpCode.PONG,new PongPayloadParser());
+        parsers.put(OpCode.CONTINUATION,new ContinuationPayloadParser(this));
+        parsers.put(OpCode.TEXT,new TextPayloadParser(this));
+        parsers.put(OpCode.BINARY,new BinaryPayloadParser(this));
+        parsers.put(OpCode.CLOSE,new ClosePayloadParser(this));
+        parsers.put(OpCode.PING,new PingPayloadParser(this));
+        parsers.put(OpCode.PONG,new PongPayloadParser(this));
     }
 
     public void addListener(Listener listener)
     {
         listeners.add(listener);
+    }
+
+    protected BaseFrame getBaseFrame()
+    {
+        return baseframe;
     }
 
     protected void notifyControlFrame(final ControlFrame f)

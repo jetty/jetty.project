@@ -4,6 +4,12 @@ import java.nio.ByteBuffer;
 
 public class ContinuationPayloadParser extends PayloadParser
 {
+    private Parser baseParser;
+
+    public ContinuationPayloadParser(Parser parser)
+    {
+        this.baseParser = parser;
+    }
 
     @Override
     public boolean parse(ByteBuffer buffer)
@@ -12,4 +18,10 @@ public class ContinuationPayloadParser extends PayloadParser
         return false;
     }
 
+    @Override
+    public void reset()
+    {
+        // TODO Auto-generated method stub
+
+    }
 }

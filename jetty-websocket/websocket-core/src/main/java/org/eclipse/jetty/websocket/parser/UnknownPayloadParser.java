@@ -12,4 +12,11 @@ public class UnknownPayloadParser extends PayloadParser
         return false;
     }
 
+    @Override
+    public void reset()
+    {
+        // TODO Auto-generated method stub
+
+    }
+
 }
