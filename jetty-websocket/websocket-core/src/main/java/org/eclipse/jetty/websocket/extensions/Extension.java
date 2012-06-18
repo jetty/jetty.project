@@ -17,18 +17,10 @@ package org.eclipse.jetty.websocket.extensions;
 
 import java.util.Map;
 
-import org.eclipse.jetty.websocket.WebSocket;
-import org.eclipse.jetty.websocket.WebSocketGenerator;
-import org.eclipse.jetty.websocket.WebSocketParser;
-import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
-import org.eclipse.jetty.websocket.WebSocketParser.FrameHandler;
-
-public interface Extension extends WebSocketParser.FrameHandler, WebSocketGenerator
+public interface Extension
 {
     public String getName();
     public String getParameterizedName();
-    
+
     public boolean init(Map<String,String> parameters);
-    public void bind(WebSocket.FrameConnection connection, WebSocketParser.FrameHandler inbound, WebSocketGenerator outbound);
-    
 }

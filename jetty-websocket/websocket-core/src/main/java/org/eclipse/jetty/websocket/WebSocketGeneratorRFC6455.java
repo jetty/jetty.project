@@ -28,13 +28,9 @@
 
 package org.eclipse.jetty.websocket;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.websocket.generator.MaskGen;
+import org.eclipse.jetty.websocket.generator.Generator;
 
 
 /* ------------------------------------------------------------ */
@@ -43,18 +39,21 @@ import org.eclipse.jetty.websocket.generator.MaskGen;
  * It is fully synchronized because it is likely that async
  * threads will call the addMessage methods while other
  * threads are flushing the generator.
+ * @deprecated see {@link Generator} replacement
  */
-public class WebSocketGeneratorRFC6455 implements WebSocketGenerator
+@Deprecated
+public class WebSocketGeneratorRFC6455 /* implements WebSocketGenerator */
 {
-    final private WebSocketBuffers _buffers;
-    final private EndPoint _endp;
+    // final private WebSocketBuffers _buffers;
+    // final private EndPoint _endp;
     private ByteBuffer _buffer;
-    private final byte[] _mask=new byte[4];
+    // private final byte[] _mask=new byte[4];
     private int _m;
     private boolean _opsent;
-    private final MaskGen _maskGen;
+    // private final MaskGen _maskGen;
     private boolean _closed;
 
+    /* TODO: Migrate to new Jetty9 IO
     public WebSocketGeneratorRFC6455(WebSocketBuffers buffers, EndPoint endp)
     {
         _buffers=buffers;
@@ -68,12 +67,14 @@ public class WebSocketGeneratorRFC6455 implements WebSocketGenerator
         _endp=endp;
         _maskGen=maskGen;
     }
+     */
 
     public synchronized ByteBuffer getBuffer()
     {
         return _buffer;
     }
 
+    /* TODO: Migrate to new Jetty9 IO
     public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
     {
         // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
@@ -270,4 +271,5 @@ public class WebSocketGeneratorRFC6455 implements WebSocketGenerator
                 _closed,
                 buffer == null ? -1 : buffer.length());
     }
+     */
 }
