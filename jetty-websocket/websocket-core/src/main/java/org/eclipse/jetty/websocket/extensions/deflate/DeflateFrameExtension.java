@@ -16,13 +16,12 @@
 package org.eclipse.jetty.websocket.extensions.deflate;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocketConnectionRFC6455;
@@ -67,6 +66,7 @@ public class DeflateFrameExtension extends AbstractExtension
     @Override
     public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
     {
+    	/* TODO: Migrate to new Jetty9 IO
         if (getConnection().isControl(opcode) || !isFlag(flags,1))
         {
             super.onFrame(flags,opcode,buffer);
@@ -106,6 +106,7 @@ public class DeflateFrameExtension extends AbstractExtension
             LOG.warn(e);
             getConnection().close(WebSocketConnectionRFC6455.CLOSE_BAD_PAYLOAD,e.toString());
         }
+        */
     }
 
     /* (non-Javadoc)

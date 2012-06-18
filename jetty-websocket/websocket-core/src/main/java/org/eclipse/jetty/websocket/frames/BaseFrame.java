@@ -1,7 +1,7 @@
-package org.eclipse.jetty.websocket.generator;
+package org.eclipse.jetty.websocket.frames;
 
 /**
- * Generating a frame in WebSocket land.
+ * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
  * 
  * <pre>
  *    0                   1                   2                   3
@@ -24,6 +24,13 @@ package org.eclipse.jetty.websocket.generator;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public class Generator {
-
+public class BaseFrame {
+	private boolean fin;
+	private boolean rsv1;
+	private boolean rsv2;
+	private boolean rsv3;
+	private byte opcode = -1;
+	private boolean mask = false;
+	private long payloadLength;
+	private byte maskingKey[];
 }

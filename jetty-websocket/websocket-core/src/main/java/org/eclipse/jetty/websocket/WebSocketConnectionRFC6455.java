@@ -30,15 +30,13 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
@@ -77,7 +75,7 @@ import org.eclipse.jetty.websocket.generator.MaskGen;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public class WebSocketConnectionRFC6455 extends AbstractConnection implements WebSocketConnection
+public class WebSocketConnectionRFC6455 /* extends AbstractConnection  implements WebSocketConnection */
 {
     private static final Logger LOG = Log.getLogger(WebSocketConnectionRFC6455.class);
 
@@ -277,8 +275,8 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
     /* ------------------------------------------------------------ */
     public void onInputShutdown() throws IOException
     {
-        if (!_closedIn)
-            _endp.close();
+//        if (!_closedIn)
+//            _endp.close();
     }
 
     /* ------------------------------------------------------------ */
@@ -288,7 +286,6 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void onIdleExpired(long idleForMs)
     {
         closeOut(WebSocketConnectionRFC6455.CLOSE_NORMAL,"Idle for "+idleForMs+"ms > "+_endp.getMaxIdleTime()+"ms");
@@ -418,10 +415,10 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
     /* ------------------------------------------------------------ */
     private void checkWriteable()
     {
-        if (!_outbound.isBufferEmpty() && _endp instanceof AsyncEndPoint)
-        {
-            ((AsyncEndPoint)_endp).scheduleWrite();
-        }
+//        if (!_outbound.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+//        {
+//            ((AsyncEndPoint)_endp).scheduleWrite();
+//        }
     }
 
     protected void onFrameHandshake()
@@ -489,7 +486,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         /* ------------------------------------------------------------ */
         public boolean isOpen()
         {
-            return _endp!=null&&_endp.isOpen();
+//            return _endp!=null&&_endp.isOpen();
         }
 
         /* ------------------------------------------------------------ */
@@ -504,14 +501,14 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         /* ------------------------------------------------------------ */
         public void setMaxIdleTime(int ms)
         {
-            try
-            {
-                _endp.setMaxIdleTime(ms);
-            }
-            catch(IOException e)
-            {
-                LOG.warn(e);
-            }
+//            try
+//            {
+//                _endp.setMaxIdleTime(ms);
+//            }
+//            catch(IOException e)
+//            {
+//                LOG.warn(e);
+//            }
         }
 
         /* ------------------------------------------------------------ */
@@ -529,7 +526,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         /* ------------------------------------------------------------ */
         public int getMaxIdleTime()
         {
-            return _endp.getMaxIdleTime();
+//            return _endp.getMaxIdleTime();
         }
 
         /* ------------------------------------------------------------ */
@@ -644,13 +641,13 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         @Override
         public String toString()
         {
-            return String.format("%s@%x l(%s:%d)<->r(%s:%d)",
-                    getClass().getSimpleName(),
-                    hashCode(),
-                    _endp.getLocalAddr(),
-                    _endp.getLocalPort(),
-                    _endp.getRemoteAddr(),
-                    _endp.getRemotePort());
+//            return String.format("%s@%x l(%s:%d)<->r(%s:%d)",
+//                    getClass().getSimpleName(),
+//                    hashCode(),
+//                    _endp.getLocalAddr(),
+//                    _endp.getLocalPort(),
+//                    _endp.getRemoteAddr(),
+//                    _endp.getRemotePort());
         }
     }
 

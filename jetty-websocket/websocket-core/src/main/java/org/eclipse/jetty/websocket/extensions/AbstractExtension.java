@@ -16,15 +16,13 @@
 package org.eclipse.jetty.websocket.extensions;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketGenerator;
-import org.eclipse.jetty.websocket.WebSocketParser;
-import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
 import org.eclipse.jetty.websocket.WebSocketParser.FrameHandler;
 
 public class AbstractExtension implements Extension
