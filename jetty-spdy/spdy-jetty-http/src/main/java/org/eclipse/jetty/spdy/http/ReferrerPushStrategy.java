@@ -37,12 +37,13 @@ import org.eclipse.jetty.util.log.Logger;
  * will have a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>, which we
  * use to link the associated resource to the main resource.</p>
  * <p>However, also following a hyperlink generates a HTTP request with a <tt>Referer</tt>
- * HTTP header that points to <tt>index.html</tt>; therefore main resources and associated
- * resources must be distinguishable.</p>
- * <p>This class distinguishes associated resources by their URL path suffix and content
+ * HTTP header that points to <tt>index.html</tt>; therefore a proper value for {@link #getReferrerPushPeriod()}
+ * has to be set. If the referrerPushPeriod for a main resource has been passed, no more
+ * associated resources will be added for that main resource.</p>
+ * <p>This class distinguishes associated mainResources by their URL path suffix and content
  * type.
  * CSS stylesheets, images and JavaScript files have recognizable URL path suffixes that
- * are classified as associated resources.</p>
+ * are classified as associated resources. The suffix regexs can be configured by constructor argument</p>
  * <p>When CSS stylesheets refer to images, the CSS image request will have the CSS
  * stylesheet as referrer. This implementation will push also the CSS image.</p>
  * <p>The push metadata built by this implementation is limited by the number of pages
@@ -55,11 +56,12 @@ import org.eclipse.jetty.util.log.Logger;
 public class ReferrerPushStrategy implements PushStrategy
 {
     private static final Logger logger = Log.getLogger(ReferrerPushStrategy.class);
-    private final ConcurrentMap<String, Set<String>> resources = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, MainResource> mainResources = new ConcurrentHashMap<>();
     private final Set<Pattern> pushRegexps = new HashSet<>();
     private final Set<String> pushContentTypes = new HashSet<>();
     private final Set<Pattern> allowedPushOrigins = new HashSet<>();
     private volatile int maxAssociatedResources = 32;
+    private volatile int referrerPushPeriod = 5000;
 
     public ReferrerPushStrategy()
     {
@@ -101,6 +103,16 @@ public class ReferrerPushStrategy implements PushStrategy
         this.maxAssociatedResources = maxAssociatedResources;
     }
 
+    public int getReferrerPushPeriod()
+    {
+        return referrerPushPeriod;
+    }
+
+    public void setReferrerPushPeriod(int referrerPushPeriod)
+    {
+        this.referrerPushPeriod = referrerPushPeriod;
+    }
+
     @Override
     public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
     {
@@ -116,7 +128,8 @@ public class ReferrerPushStrategy implements PushStrategy
         {
             if (isMainResource(url, responseHeaders))
             {
-                result = pushResources(absoluteURL);
+                MainResource mainResource = getOrCreateMainResource(absoluteURL);
+                result = mainResource.getResources();
             }
             else if (isPushResource(url, responseHeaders))
             {
@@ -124,16 +137,40 @@ public class ReferrerPushStrategy implements PushStrategy
                 if (referrerHeader != null)
                 {
                     String referrer = referrerHeader.value();
-                    Set<String> pushResources = resources.get(referrer);
-                    if (pushResources == null || !pushResources.contains(url))
-                        buildMetadata(origin, url, referrer);
+                    MainResource mainResource = mainResources.get(referrer);
+                    if (mainResource == null)
+                        mainResource = getOrCreateMainResource(referrer);
+
+                    Set<String> pushResources = mainResource.getResources();
+                    if (!pushResources.contains(url))
+                        mainResource.addResource(url, origin, referrer);
                     else
-                        result = pushResources(absoluteURL);
+                        result = getPushResources(absoluteURL);
                 }
             }
         }
-        logger.debug("Push resources for {}: {}", absoluteURL, result);
+        logger.debug("Push mainResources for {}: {}", absoluteURL, result);
         return result;
+    }
+
+    private Set<String> getPushResources(String absoluteURL)
+    {
+        Set<String> result = Collections.<String>emptySet();
+        if (mainResources.get(absoluteURL) != null)
+            result = mainResources.get(absoluteURL).getResources();
+        return result;
+    }
+
+    private MainResource getOrCreateMainResource(String absoluteURL)
+    {
+        MainResource mainResource = mainResources.get(absoluteURL);
+        if (mainResource == null)
+        {
+            logger.debug("Creating new main resource for {}", absoluteURL);
+            mainResource = new MainResource(absoluteURL, maxAssociatedResources, referrerPushPeriod);
+            mainResources.putIfAbsent(absoluteURL, mainResource);
+        }
+        return mainResource;
     }
 
     private boolean isValidMethod(String method)
@@ -165,49 +202,63 @@ public class ReferrerPushStrategy implements PushStrategy
         return false;
     }
 
-    private Set<String> pushResources(String absoluteURL)
+    private class MainResource
     {
-        Set<String> pushResources = resources.get(absoluteURL);
-        if (pushResources == null)
-            return Collections.emptySet();
-        return Collections.unmodifiableSet(pushResources);
-    }
+        private String name;
+        private Set resources = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+        private long created = System.currentTimeMillis();
 
-    private void buildMetadata(String origin, String url, String referrer)
-    {
-        if (referrer.startsWith(origin) || isPushOriginAllowed(origin))
+        MainResource(String name, int maxAssociatedResources, int referrerCallPeriod)
         {
-            Set<String> pushResources = resources.get(referrer);
-            if (pushResources == null)
-            {
-                pushResources = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-                Set<String> existing = resources.putIfAbsent(referrer, pushResources);
-                if (existing != null)
-                    pushResources = existing;
+            this.name = name;
+        }
+
+        public void addResource(String url, String origin, String referrer)
+        {
+            long delay =  System.currentTimeMillis() - created;
+            if (!referrer.startsWith(origin) && !isPushOriginAllowed(origin)){
+                logger.debug("Skipped store of push metadata {} for {}: Origin doesn't match or origin not allowed",
+                        url, name, maxAssociatedResources);
+                return;
             }
+
             // This check is not strictly concurrent-safe, but limiting
-            // the number of associated resources is achieved anyway
-            // although in rare cases few more resources will be stored
-            if (pushResources.size() < getMaxAssociatedResources())
+            // the number of associated mainResources is achieved anyway
+            // although in rare cases few more mainResources will be stored
+            if (resources.size() >= maxAssociatedResources)
             {
-                pushResources.add(url);
-                logger.debug("Stored push metadata for {}: {}", referrer, pushResources);
+                logger.debug("Skipped store of push metadata {} for {}: max associated mainResources ({}) reached",
+                        url, name, maxAssociatedResources);
+                return;
             }
-            else
+            if (delay > referrerPushPeriod)
             {
-                logger.debug("Skipped store of push metadata {} for {}: max associated resources ({}) reached",
-                        url, referrer, maxAssociatedResources);
+                logger.debug("Delay: {}ms longer than referrerCallPeriod: {}ms. Not adding resource: {} for: {}", new Object[]{delay, referrerPushPeriod, url, name});
+                return;
             }
-        }
-    }
 
-    private boolean isPushOriginAllowed(String origin)
-    {
-        for (Pattern allowedPushOrigin : allowedPushOrigins)
-        {
-            if (allowedPushOrigin.matcher(origin).matches())
-                return true;
+            logger.debug("Adding resource: {} for: {} with delay: {}ms.", new Object[]{url, name, delay});
+            resources.add(url);
         }
-        return false;
+
+        public Set<String> getResources()
+        {
+            return Collections.unmodifiableSet(resources);
+        }
+
+        public String toString()
+        {
+            return "MainResource: " + name + " associated resources:" + resources.size();
+        }
+
+        private boolean isPushOriginAllowed(String origin)
+        {
+            for (Pattern allowedPushOrigin : allowedPushOrigins)
+            {
+                if (allowedPushOrigin.matcher(origin).matches())
+                    return true;
+            }
+            return false;
+        }
     }
 }
