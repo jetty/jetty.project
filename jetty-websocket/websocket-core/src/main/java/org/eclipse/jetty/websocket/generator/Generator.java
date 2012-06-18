@@ -37,23 +37,20 @@ import org.eclipse.jetty.websocket.generator.ControlFrameGenerator;
 public class Generator {
 
     private final EnumMap<ControlFrameType, ControlFrameGenerator> generators = new EnumMap<>(ControlFrameType.class);
-
     
     public Generator(ByteBufferPool bufferPool) //, CompressionFactory.Compressor compressor)
     {
         HeadersBlockGenerator headerBlockGenerator = new HeadersBlockGenerator();
-    	generators.put(ControlFrameType.PING_FRAME, new PingFrameGenerator());
-    	generators.put(ControlFrameType.PONG_FRAME, new PongFrameGenerator());
-    	generators.put(ControlFrameType.CLOSE_FRAME, new CloseFrameGenerator());
+    	generators.put(ControlFrameType.PING_FRAME, new PingFrameGenerator(bufferPool));
+    	generators.put(ControlFrameType.PONG_FRAME, new PongFrameGenerator(bufferPool));
+    	generators.put(ControlFrameType.CLOSE_FRAME, new CloseFrameGenerator(bufferPool));
     	
     }
-    
     
     public ByteBuffer control(ControlFrame frame)
     {
         ControlFrameGenerator generator = generators.get(frame.getType());
         return generator.generate(frame);
     }
-    
     
 }
