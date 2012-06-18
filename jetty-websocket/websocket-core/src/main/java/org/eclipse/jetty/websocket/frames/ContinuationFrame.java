@@ -1,5 +1,11 @@
 package org.eclipse.jetty.websocket.frames;
 
-public class ContinuationFrame {
+import org.eclipse.jetty.websocket.api.OpCode;
 
+public class ContinuationFrame extends BaseFrame
+{
+    public ContinuationFrame()
+    {
+        super(OpCode.CONTINUATION);
+    }
 }

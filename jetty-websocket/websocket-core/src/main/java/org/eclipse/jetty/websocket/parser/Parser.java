@@ -1,17 +1,18 @@
 package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
+import java.util.EnumMap;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.ControlFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame;
 
 /**
  * Parsing of a frame in WebSocket land.
@@ -43,17 +44,12 @@ public class Parser {
         public static class Adapter implements Listener
         {
             @Override
-            public void onBinaryFrame(final BinaryFrame frame)
-            {
-            }
-
-            @Override
             public void onControlFrame(final ControlFrame frame)
             {
             }
 
             @Override
-            public void onTextFrame(final TextFrame frame)
+            public void onDataFrame(final DataFrame frame)
             {
             }
 
@@ -63,25 +59,32 @@ public class Parser {
             }
         }
 
-        public void onBinaryFrame(final BinaryFrame frame);
         public void onControlFrame(final ControlFrame frame);
-        public void onTextFrame(final TextFrame frame);
+        public void onDataFrame(final DataFrame frame);
         public void onWebSocketException(WebSocketException e);
     }
 
     private enum State
     {
-        FINOP, PAYLOAD_LEN, PAYLOAD_LEN_BYTES, MASK, MASK_BYTES, PAYLOAD
+        FINOP,
+        PAYLOAD_LEN,
+        PAYLOAD_LEN_BYTES,
+        MASK,
+        MASK_BYTES,
+        PAYLOAD
     }
 
     private static final Logger LOG = Log.getLogger(Parser.class);
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private State state = State.FINOP;
 
+    private final EnumMap<OpCode, PayloadParser> parsers = new EnumMap<>(OpCode.class);
+
     // Holder for the values represented in the baseframe being parsed.
     private BaseFrame baseframe = new BaseFrame();
-    private long length = 0;
+    private int length = 0;
     private int cursor = 0;
+    private PayloadParser parser;
 
     public Parser()
     {
@@ -89,27 +92,19 @@ public class Parser {
          * TODO: Investigate addition of decompression factory similar to SPDY work in situation of negotiated deflate extension?
          */
         baseframe = new BaseFrame();
-        state = State.FINOP;
+        reset();
+
+        parsers.put(OpCode.CONTINUATION,new ContinuationPayloadParser());
+        parsers.put(OpCode.TEXT,new TextPayloadParser());
+        parsers.put(OpCode.BINARY,new BinaryPayloadParser());
+        parsers.put(OpCode.CLOSE,new ClosePayloadParser());
+        parsers.put(OpCode.PING,new PingPayloadParser());
+        parsers.put(OpCode.PONG,new PongPayloadParser());
     }
 
     public void addListener(Listener listener)
     {
         listeners.add(listener);
-    }
-
-    protected void notifyBinaryFrame(final BinaryFrame frame) {
-        LOG.debug("Notify Binary Frame: {}",frame);
-        for (Listener listener : listeners)
-        {
-            try
-            {
-                listener.onBinaryFrame(frame);
-            }
-            catch (Throwable t)
-            {
-                LOG.warn(t);
-            }
-        }
     }
 
     protected void notifyControlFrame(final ControlFrame f)
@@ -128,13 +123,13 @@ public class Parser {
         }
     }
 
-    protected void notifyTextFrame(final TextFrame frame) {
-        LOG.debug("Notify Text Frame: {}",frame);
+    protected void notifyDataFrame(final DataFrame frame) {
+        LOG.debug("Notify Data Frame: {}",frame);
         for (Listener listener : listeners)
         {
             try
             {
-                listener.onTextFrame(frame);
+                listener.onDataFrame(frame);
             }
             catch (Throwable t)
             {
@@ -169,9 +164,10 @@ public class Parser {
                         baseframe.setRsv1((flags & BaseFrame.FLAG_RSV1) == 1);
                         baseframe.setRsv2((flags & BaseFrame.FLAG_RSV2) == 1);
                         baseframe.setRsv3((flags & BaseFrame.FLAG_RSV3) == 1);
-                        baseframe.setOpcode((byte)(b & 0xF));
+                        OpCode opcode = OpCode.from((byte)(b & 0xF));
+                        baseframe.setOpCode(opcode);
 
-                        if (baseframe.isControlFrame() && !baseframe.isLastFrame())
+                        if (opcode.isControlFrame() && !baseframe.isLastFrame())
                         {
                             throw new WebSocketException("Fragmented Control Frame");
                         }
@@ -275,8 +271,16 @@ public class Parser {
                     }
                     case PAYLOAD:
                     {
-                        // TODO: establish specific type parser and hand off to them.
+                        if (parser == null)
+                        {
+                            // Establish specific type parser and hand off to them.
+                            parser = parsers.get(baseframe.getOpCode());
+                        }
 
+                        if (parser.parse(buffer))
+                        {
+                            reset();
+                        }
                         break;
                     }
                 }
@@ -299,8 +303,10 @@ public class Parser {
         listeners.remove(listener);
     }
 
-    private void reset()
+    public void reset()
     {
         state = State.FINOP;
+        parser = null;
+        baseframe.reset();
     }
 }

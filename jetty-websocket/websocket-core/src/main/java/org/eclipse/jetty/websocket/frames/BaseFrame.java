@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket.frames;
 
+import org.eclipse.jetty.websocket.api.OpCode;
+
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
  * 
@@ -26,59 +28,24 @@ package org.eclipse.jetty.websocket.frames;
  */
 public class BaseFrame
 {
-    /**
-     * OpCode for a {@link ContinuationFrame}
-     * 
-     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
-     */
-    public final static byte OP_CONTINUATION = 0x00;
-    /**
-     * OpCode for a {@link TextFrame}
-     * 
-     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
-     */
-    public final static byte OP_TEXT = 0x01;
-    /**
-     * OpCode for a {@link BinaryFrame}
-     * 
-     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
-     */
-    public final static byte OP_BINARY = 0x02;
-    /**
-     * OpCode for a {@link CloseFrame}
-     * 
-     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
-     */
-    public final static byte OP_CLOSE = 0x08;
-    /**
-     * OpCode for a {@link PingFrame}
-     * 
-     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
-     */
-    public final static byte OP_PING = 0x09;
-    /**
-     * OpCode for a {@link PongFrame}
-     * 
-     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
-     */
-    public final static byte OP_PONG = 0x0A;
-
     private boolean fin;
     private boolean rsv1;
     private boolean rsv2;
     private boolean rsv3;
-    private byte opcode = -1;
+    private OpCode opcode = null;
     private boolean masked = false;
-
-    private long payloadLength;
+    private int payloadLength;
     private byte mask[];
     public final static int FLAG_FIN = 0x8;
     public final static int FLAG_RSV1 = 0x4;
     public final static int FLAG_RSV2 = 0x2;
     public final static int FLAG_RSV3 = 0x1;
 
+    /**
+     * Default constructor
+     */
     public BaseFrame() {
-        /* default */
+        reset();
     }
 
     /**
@@ -86,6 +53,7 @@ public class BaseFrame
      * @param copy the copy
      */
     public BaseFrame(BaseFrame copy) {
+        this();
         this.fin = copy.fin;
         this.rsv1 = copy.rsv1;
         this.rsv2 = copy.rsv2;
@@ -100,6 +68,14 @@ public class BaseFrame
         }
     }
 
+    /**
+     * Construct form opcode
+     */
+    public BaseFrame(OpCode opcode) {
+        reset();
+        this.opcode = opcode;
+    }
+
     public byte[] getMask()
     {
         if (!masked)
@@ -109,19 +85,14 @@ public class BaseFrame
         return mask;
     }
 
-    public byte getOpcode()
+    public OpCode getOpCode()
     {
         return opcode;
     }
 
-    public long getPayloadLength()
+    public int getPayloadLength()
     {
         return payloadLength;
-    }
-
-    public boolean isControlFrame()
-    {
-        return (opcode >= OP_CLOSE);
     }
 
     public boolean isFin()
@@ -154,6 +125,18 @@ public class BaseFrame
         return rsv3;
     }
 
+    public void reset()
+    {
+        fin = false;
+        rsv1 = false;
+        rsv2 = false;
+        rsv3 = false;
+        opcode = null;
+        masked = false;
+        payloadLength = -1;
+        mask = null;
+    }
+
     public void setFin(boolean fin)
     {
         this.fin = fin;
@@ -169,12 +152,12 @@ public class BaseFrame
         this.masked = mask;
     }
 
-    public void setOpcode(byte opcode)
+    public void setOpCode(OpCode opCode)
     {
-        this.opcode = opcode;
+        this.opcode = opCode;
     }
 
-    public void setPayloadLength(long payloadLength)
+    public void setPayloadLength(int payloadLength)
     {
         this.payloadLength = payloadLength;
     }

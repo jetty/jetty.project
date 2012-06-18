@@ -1,5 +1,6 @@
 package org.eclipse.jetty.websocket.frames;
 
+import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocket;
 
 /**
@@ -17,8 +18,14 @@ public class CloseFrame extends ControlFrame
 
     public CloseFrame(short statusCode)
     {
-        super(ControlFrameType.CLOSE_FRAME);
+        super(OpCode.CLOSE);
         this.statusCode = statusCode;
+    }
+
+    @Override
+    public OpCode getOpCode()
+    {
+        return OpCode.CLOSE;
     }
 
     public String getReason()

@@ -4,11 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.frames.ControlFrame;
-import org.eclipse.jetty.websocket.frames.ControlFrameType;
-import org.eclipse.jetty.websocket.frames.PingFrame;
-import org.eclipse.jetty.websocket.generator.ControlFrameGenerator;
 
 /**
  * Generating a frame in WebSocket land.
@@ -36,24 +33,24 @@ import org.eclipse.jetty.websocket.generator.ControlFrameGenerator;
  */
 public class Generator {
 
-    private final EnumMap<ControlFrameType, ControlFrameGenerator> generators = new EnumMap<>(ControlFrameType.class);
+    private final EnumMap<OpCode, ControlFrameGenerator> generators = new EnumMap<>(OpCode.class);
 
-    
+
     public Generator(ByteBufferPool bufferPool) //, CompressionFactory.Compressor compressor)
     {
         HeadersBlockGenerator headerBlockGenerator = new HeadersBlockGenerator();
-    	generators.put(ControlFrameType.PING_FRAME, new PingFrameGenerator());
-    	generators.put(ControlFrameType.PONG_FRAME, new PongFrameGenerator());
-    	generators.put(ControlFrameType.CLOSE_FRAME, new CloseFrameGenerator());
-    	
+        generators.put(OpCode.PING,new PingFrameGenerator());
+        generators.put(OpCode.PONG,new PongFrameGenerator());
+        generators.put(OpCode.CLOSE,new CloseFrameGenerator());
+
     }
-    
-    
+
+
     public ByteBuffer control(ControlFrame frame)
     {
-        ControlFrameGenerator generator = generators.get(frame.getType());
+        ControlFrameGenerator generator = generators.get(frame.getOpCode());
         return generator.generate(frame);
     }
-    
-    
+
+
 }

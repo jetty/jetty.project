@@ -2,19 +2,19 @@ package org.eclipse.jetty.websocket.frames;
 
 import org.eclipse.jetty.websocket.api.OpCode;
 
-public abstract class ControlFrame extends BaseFrame
+public abstract class DataFrame extends BaseFrame
 {
-    public ControlFrame()
+    public DataFrame()
     {
         super();
     }
 
-    public ControlFrame(BaseFrame copy)
+    public DataFrame(BaseFrame copy)
     {
         super(copy);
     }
 
-    public ControlFrame(OpCode opcode)
+    public DataFrame(OpCode opcode)
     {
         super(opcode);
     }

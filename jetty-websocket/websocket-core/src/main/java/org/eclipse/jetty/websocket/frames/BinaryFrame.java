@@ -2,10 +2,12 @@ package org.eclipse.jetty.websocket.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.OpCode;
+
 /**
  * Representation of a <a href="https://tools.ietf.org/html/rfc6455#section-5.6">Binary Data Frame (0x02)</a>.
  */
-public class BinaryFrame extends BaseFrame
+public class BinaryFrame extends DataFrame
 {
     private ByteBuffer data; // TODO: make this a standard byte buffer?
 
@@ -14,8 +16,7 @@ public class BinaryFrame extends BaseFrame
      */
     public BinaryFrame()
     {
-        super();
-        super.setOpcode(OP_BINARY);
+        super(OpCode.BINARY);
     }
 
     /**
@@ -29,7 +30,7 @@ public class BinaryFrame extends BaseFrame
         super(base);
         // TODO: limit this somehow?
         // TODO: create a streaming binary frame?
-        data = ByteBuffer.allocate((int)base.getPayloadLength());
+        data = ByteBuffer.allocate(base.getPayloadLength());
     }
 
     /**
@@ -40,6 +41,12 @@ public class BinaryFrame extends BaseFrame
     public ByteBuffer getData()
     {
         return data;
+    }
+
+    @Override
+    public OpCode getOpCode()
+    {
+        return OpCode.BINARY;
     }
 
     /**
