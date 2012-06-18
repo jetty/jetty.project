@@ -411,7 +411,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             Headers.Header host = headers.get(HTTPSPDYHeader.HOST.name(version));
             Headers.Header uri = headers.get(HTTPSPDYHeader.URI.name(version));
             Set<String> pushResources = pushStrategy.apply(stream, headers, replyInfo.getHeaders());
-            String referrer = new StringBuilder(scheme.value()).append("://").append(host.value()).append(uri.value()).toString();
+            String referrer = scheme.value() + "://" + host.value() + uri.value();
             for (String pushURL : pushResources)
             {
                 final Headers pushHeaders = new Headers();
