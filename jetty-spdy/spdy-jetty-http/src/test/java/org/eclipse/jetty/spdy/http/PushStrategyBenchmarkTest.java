@@ -137,39 +137,21 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
             for (int i = 0; i < cssResources.length; ++i)
             {
                 String path = "/" + i + ".css";
-                exchange = new TestExchange();
-                exchange.setMethod("GET");
-                exchange.setRequestURI(path);
-                exchange.setVersion("HTTP/1.1");
-                exchange.setAddress(new Address("localhost", connector.getLocalPort()));
-                exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
-                exchange.setRequestHeader("referer", referrer);
+                exchange = createExchangeWithReferrer(referrer, path);
                 ++result;
                 httpClient.send(exchange);
             }
             for (int i = 0; i < jsResources.length; ++i)
             {
                 String path = "/" + i + ".js";
-                exchange = new TestExchange();
-                exchange.setMethod("GET");
-                exchange.setRequestURI(path);
-                exchange.setVersion("HTTP/1.1");
-                exchange.setAddress(new Address("localhost", connector.getLocalPort()));
-                exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
-                exchange.setRequestHeader("referer", referrer);
+                exchange = createExchangeWithReferrer(referrer, path);
                 ++result;
                 httpClient.send(exchange);
             }
             for (int i = 0; i < pngResources.length; ++i)
             {
                 String path = "/" + i + ".png";
-                exchange = new TestExchange();
-                exchange.setMethod("GET");
-                exchange.setRequestURI(path);
-                exchange.setVersion("HTTP/1.1");
-                exchange.setAddress(new Address("localhost", connector.getLocalPort()));
-                exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
-                exchange.setRequestHeader("referer", referrer);
+                exchange = createExchangeWithReferrer(referrer, path);
                 ++result;
                 httpClient.send(exchange);
             }
@@ -178,6 +160,19 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
 
         return result;
+    }
+
+    private ContentExchange createExchangeWithReferrer(String referrer, String path)
+    {
+        ContentExchange exchange;
+        exchange = new TestExchange();
+        exchange.setMethod("GET");
+        exchange.setRequestURI(path);
+        exchange.setVersion("HTTP/1.1");
+        exchange.setAddress(new Address("localhost", connector.getLocalPort()));
+        exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
+        exchange.setRequestHeader("referer", referrer);
+        return exchange;
     }
 
 
@@ -238,13 +233,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 String path = "/" + i + ".css";
                 if (pushedResources.contains(path))
                     continue;
-                headers = new Headers();
-                headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-                headers.put(HTTPSPDYHeader.URI.name(version()), path);
-                headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-                headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-                headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
-                headers.put("referer", referrer);
+                headers = createRequestHeaders(referrer, path);
                 ++result;
                 session.syn(new SynInfo(headers, true), new DataListener());
             }
@@ -253,13 +242,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 String path = "/" + i + ".js";
                 if (pushedResources.contains(path))
                     continue;
-                headers = new Headers();
-                headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-                headers.put(HTTPSPDYHeader.URI.name(version()), path);
-                headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-                headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-                headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
-                headers.put("referer", referrer);
+                headers = createRequestHeaders(referrer, path);
                 ++result;
                 session.syn(new SynInfo(headers, true), new DataListener());
             }
@@ -268,13 +251,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 String path = "/" + i + ".png";
                 if (pushedResources.contains(path))
                     continue;
-                headers = new Headers();
-                headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-                headers.put(HTTPSPDYHeader.URI.name(version()), path);
-                headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-                headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-                headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
-                headers.put("referer", referrer);
+                headers = createRequestHeaders(referrer, path);
                 ++result;
                 session.syn(new SynInfo(headers, true), new DataListener());
             }
@@ -283,6 +260,19 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
 
         return result;
+    }
+
+    private Headers createRequestHeaders(String referrer, String path)
+    {
+        Headers headers;
+        headers = new Headers();
+        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version()), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put("referer", referrer);
+        return headers;
     }
 
     private void sleep(long delay) throws ServletException
