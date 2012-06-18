@@ -26,7 +26,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import javax.servlet.ServletException;
@@ -36,8 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.WebSocketFactory;
-import org.eclipse.jetty.websocket.WebSocketFactory.Acceptor;
+import org.eclipse.jetty.websocket.server.WebSocketFactory.Acceptor;
 
 /* ------------------------------------------------------------ */
 /**

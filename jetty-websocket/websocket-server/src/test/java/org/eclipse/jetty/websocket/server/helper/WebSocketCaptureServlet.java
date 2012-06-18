@@ -13,42 +13,34 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket.servlet.helper;
+package org.eclipse.jetty.websocket.server.helper;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.servlet.helper.WebSocketServlet;
 
-public class CaptureSocket implements WebSocket.OnTextMessage
+@SuppressWarnings("serial") 
+public class WebSocketCaptureServlet extends WebSocketServlet
 {
-    private final CountDownLatch latch = new CountDownLatch(1);
-    public List<String> messages;
+    public List<CaptureSocket> captures = new ArrayList<CaptureSocket>();;
 
-    public CaptureSocket()
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        messages = new ArrayList<String>();
+        resp.sendError(404);
     }
 
-    public boolean awaitConnected(long timeout) throws InterruptedException
+    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
     {
-        return latch.await(timeout, TimeUnit.MILLISECONDS);
-    }
-
-    public void onMessage(String data)
-    {
-        // System.out.printf("Received Message \"%s\" [size %d]%n", data, data.length());
-        messages.add(data);
-    }
-
-    public void onOpen(Connection connection)
-    {
-        latch.countDown();
-    }
-
-    public void onClose(int closeCode, String message)
-    {
+        CaptureSocket capture = new CaptureSocket();
+        captures.add(capture);
+        return capture;
     }
 }

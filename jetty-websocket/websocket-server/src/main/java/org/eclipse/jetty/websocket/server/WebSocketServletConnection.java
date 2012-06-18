@@ -13,34 +13,15 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket.servlet.helper;
+package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.WebSocket;
-import org.eclipse.jetty.websocket.servlet.helper.WebSocketServlet;
+import org.eclipse.jetty.websocket.WebSocketConnection;
 
-@SuppressWarnings("serial") 
-public class WebSocketCaptureServlet extends WebSocketServlet
+public interface WebSocketServletConnection extends WebSocketConnection
 {
-    public List<CaptureSocket> captures = new ArrayList<CaptureSocket>();;
-
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-    {
-        resp.sendError(404);
-    }
-
-    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
-    {
-        CaptureSocket capture = new CaptureSocket();
-        captures.add(capture);
-        return capture;
-    }
+    void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException;
 }

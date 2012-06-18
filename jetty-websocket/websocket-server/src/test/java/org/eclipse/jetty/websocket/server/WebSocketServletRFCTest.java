@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 

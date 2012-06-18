@@ -13,7 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;

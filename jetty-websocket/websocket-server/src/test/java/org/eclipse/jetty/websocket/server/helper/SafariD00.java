@@ -13,7 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket.servlet.helper;
+package org.eclipse.jetty.websocket.server.helper;
 
 import java.io.BufferedReader;
 import java.io.IOException;

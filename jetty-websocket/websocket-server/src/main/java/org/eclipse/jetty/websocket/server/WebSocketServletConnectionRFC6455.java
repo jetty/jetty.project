@@ -13,7 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,7 +23,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketConnectionRFC6455;
-import org.eclipse.jetty.websocket.WebSocketFactory;
 import org.eclipse.jetty.websocket.extensions.Extension;
 
 public class WebSocketServletConnectionRFC6455 extends WebSocketConnectionRFC6455 implements WebSocketServletConnection
