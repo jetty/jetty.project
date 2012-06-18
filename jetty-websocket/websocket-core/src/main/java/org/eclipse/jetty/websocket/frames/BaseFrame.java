@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket.frames;
 
+import org.eclipse.jetty.websocket.api.WebSocket;
+
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
  * 
@@ -24,13 +26,38 @@ package org.eclipse.jetty.websocket.frames;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public class BaseFrame {
-	private boolean fin;
-	private boolean rsv1;
-	private boolean rsv2;
-	private boolean rsv3;
-	private byte opcode = -1;
-	private boolean mask = false;
-	private long payloadLength;
-	private byte maskingKey[];
+public class BaseFrame
+{
+    public final static byte OP_CONTINUATION = 0x00;
+    public final static byte OP_TEXT = 0x01;
+    public final static byte OP_BINARY = 0x02;
+    public final static byte OP_EXT_DATA = 0x03;
+
+    public final static byte OP_CONTROL = 0x08;
+    public final static byte OP_CLOSE = 0x08;
+    public final static byte OP_PING = 0x09;
+    public final static byte OP_PONG = 0x0A;
+    public final static byte OP_EXT_CTRL = 0x0B;
+    
+    private boolean fin;
+    private boolean rsv1;
+    private boolean rsv2;
+    private boolean rsv3;
+    private byte opcode = -1;
+    private boolean mask = false;
+    private long payloadLength;
+    private byte maskingKey[];
+    
+    public final static int FLAG_FIN=0x8;
+
+    public static boolean isLastFrame(byte flags)
+    {
+        return (flags & FLAG_FIN) != 0;
+    }
+
+    public static boolean isControlFrame(byte opcode)
+    {
+        return (opcode & OP_CONTROL) != 0;
+    }
+
 }
