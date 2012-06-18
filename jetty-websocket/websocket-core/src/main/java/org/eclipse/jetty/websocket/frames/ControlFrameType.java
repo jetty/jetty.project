@@ -23,7 +23,10 @@ import org.eclipse.jetty.websocket.frames.ControlFrameType;
 
 public enum ControlFrameType 
 {
-	BASE_FRAME((short)1);
+	BASE_FRAME((short)1),  // remove?
+	PING_FRAME((short)2),
+	PONG_FRAME((short)3),
+	CLOSE_FRAME((short)4);
 	
     public static ControlFrameType from(short code)
     {

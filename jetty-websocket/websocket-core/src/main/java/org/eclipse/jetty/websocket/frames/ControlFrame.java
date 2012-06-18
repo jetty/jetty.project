@@ -1,5 +1,6 @@
 package org.eclipse.jetty.websocket.frames;
 
-public class ControlFrame {
+public class ControlFrame extends BaseFrame 
+{
 
 }

@@ -1,5 +1,12 @@
 package org.eclipse.jetty.websocket.generator;
 
+import java.util.EnumMap;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.ControlFrameType;
+import org.eclipse.jetty.websocket.generator.ControlFrameGenerator;
+
 /**
  * Generating a frame in WebSocket land.
  * 
@@ -26,4 +33,12 @@ package org.eclipse.jetty.websocket.generator;
  */
 public class Generator {
 
+    private final EnumMap<ControlFrameType, BaseFrame> generators = new EnumMap<>(ControlFrameType.class);
+
+    
+    public Generator(ByteBufferPool bufferPool) //, CompressionFactory.Compressor compressor)
+    {
+        HeadersBlockGenerator headerBlockGenerator = new HeadersBlockGenerator();
+    	generators.put(ControlFrameType.BASE_FRAME, new BaseFrame());
+    }
 }
