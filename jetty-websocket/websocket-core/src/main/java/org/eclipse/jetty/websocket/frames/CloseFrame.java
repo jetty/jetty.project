@@ -1,26 +1,52 @@
 package org.eclipse.jetty.websocket.frames;
 
-import org.eclipse.jetty.websocket.frames.ControlFrameType;
+import org.eclipse.jetty.websocket.api.WebSocket;
 
-public class CloseFrame extends ControlFrame 
+/**
+ * Representation of a <a href="https://tools.ietf.org/html/rfc6455#section-5.5.1">Close Frame (0x08)</a>.
+ */
+public class CloseFrame extends ControlFrame
 {
-    private final int pingId;
+    private final short statusCode;
+    private String reason;
 
-    public CloseFrame(short version, int pingId)
+    public CloseFrame()
     {
-        super(version, ControlFrameType.CLOSE_FRAME, (byte)0);
-        this.pingId = pingId;
+        this(WebSocket.CLOSE_NORMAL); // TODO: evaluate default (or unspecified status code)
     }
 
-    public int getPingId()
+    public CloseFrame(short statusCode)
     {
-        return pingId;
+        super(ControlFrameType.CLOSE_FRAME);
+        this.statusCode = statusCode;
+    }
+
+    public String getReason()
+    {
+        return reason;
+    }
+
+    public short getStatusCode()
+    {
+        return statusCode;
+    }
+
+    public void setReason(String reason)
+    {
+        this.reason = reason;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s ping=%d", super.toString(), getPingId());
+        StringBuilder msg = new StringBuilder();
+        msg.append(super.toString());
+        msg.append(" statusCode=").append(statusCode);
+        if (reason != null)
+        {
+            msg.append(" reason=\"").append(reason).append("\"");
+        }
+
+        return msg.toString();
     }
-    
 }

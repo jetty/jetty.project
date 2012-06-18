@@ -1,34 +1,27 @@
 package org.eclipse.jetty.websocket.frames;
 
-import org.eclipse.jetty.websocket.frames.ControlFrameType;
-
-public class ControlFrame extends BaseFrame 
+/**
+ * Base class for all <a href="https://tools.ietf.org/html/rfc6455#section-5.5">control frames</a>.
+ * <p>
+ * TODO: investigate as candidate for removal.
+ */
+public abstract class ControlFrame extends BaseFrame
 {
-    private final short _version;
-    private final ControlFrameType _type; 
-    private final byte _flags; // check if needed
+    private final ControlFrameType type;
 
-    
-    public ControlFrame( short version, ControlFrameType type, byte flags )
+    public ControlFrame(ControlFrameType type)
     {
-        _version = version;
-        _type = type;
-        _flags = flags;
-    }
-    
-    public short getVersion()
-    {
-        return _version;
+        this.type = type;
     }
 
     public ControlFrameType getType()
     {
-        return _type;
+        return type;
     }
-    
+
     @Override
     public String toString()
     {
-        return String.format("%s frame v%s", getType(), getVersion());
+        return String.format("%s frame v%s",getType());
     }
 }

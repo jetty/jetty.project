@@ -86,7 +86,7 @@ public class WebSocketGeneratorRFC6455 implements WebSocketGenerator
         boolean mask=_maskGen!=null;
 
         if (_buffer==null)
-            _buffer=mask?_buffers.getBuffer():_buffers.getDirectBuffer();
+            _buffer=mask?_buffers.getData():_buffers.getDirectBuffer();
 
         boolean last=WebSocketConnectionRFC6455.isLastFrame(flags);
 

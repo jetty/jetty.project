@@ -1,14 +1,15 @@
 package org.eclipse.jetty.websocket.frames;
 
-import org.eclipse.jetty.websocket.frames.ControlFrameType;
-
+/**
+ * Representation of a <a href="https://tools.ietf.org/html/rfc6455#section-5.5.2">Ping Frame (0x09)</a>.
+ */
 public class PingFrame extends ControlFrame
 {
     private final int pingId;
 
-    public PingFrame(short version, int pingId)
+    public PingFrame(int pingId)
     {
-        super(version, ControlFrameType.PING_FRAME, (byte)0);
+        super(ControlFrameType.PING_FRAME);
         this.pingId = pingId;
     }
 

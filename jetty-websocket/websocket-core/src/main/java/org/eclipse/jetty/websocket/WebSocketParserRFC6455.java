@@ -82,7 +82,7 @@ public class WebSocketParserRFC6455 implements WebSocketParser
 
     /* ------------------------------------------------------------ */
     /**
-     * @param buffers The buffers to use for parsing.  Only the {@link Buffers#getBuffer()} is used.
+     * @param buffers The buffers to use for parsing.  Only the {@link Buffers#getData()} is used.
      * This should be a direct buffer if binary data is mostly used or an indirect buffer if utf-8 data
      * is mostly used.
      * @param endp the endpoint
@@ -139,7 +139,7 @@ public class WebSocketParserRFC6455 implements WebSocketParser
     public int parseNext()
     {
         if (_buffer==null)
-            _buffer=_buffers.getBuffer();
+            _buffer=_buffers.getData();
 
         boolean progress=false;
         int filled=-1;
@@ -374,7 +374,7 @@ public class WebSocketParserRFC6455 implements WebSocketParser
         if (buffer!=null && buffer.length()>0)
         {
             if (_buffer==null)
-                _buffer=_buffers.getBuffer();
+                _buffer=_buffers.getData();
 
             _buffer.put(buffer);
             buffer.clear();

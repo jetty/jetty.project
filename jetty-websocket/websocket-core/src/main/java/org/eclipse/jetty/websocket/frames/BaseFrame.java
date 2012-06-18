@@ -26,16 +26,42 @@ package org.eclipse.jetty.websocket.frames;
  */
 public class BaseFrame
 {
+    /**
+     * OpCode for a {@link ContinuationFrame}
+     * 
+     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
+     */
     public final static byte OP_CONTINUATION = 0x00;
+    /**
+     * OpCode for a {@link TextFrame}
+     * 
+     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
+     */
     public final static byte OP_TEXT = 0x01;
+    /**
+     * OpCode for a {@link BinaryFrame}
+     * 
+     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
+     */
     public final static byte OP_BINARY = 0x02;
-    public final static byte OP_EXT_DATA = 0x03;
-
-    public final static byte OP_CONTROL = 0x08;
+    /**
+     * OpCode for a {@link CloseFrame}
+     * 
+     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
+     */
     public final static byte OP_CLOSE = 0x08;
+    /**
+     * OpCode for a {@link PingFrame}
+     * 
+     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
+     */
     public final static byte OP_PING = 0x09;
+    /**
+     * OpCode for a {@link PongFrame}
+     * 
+     * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
+     */
     public final static byte OP_PONG = 0x0A;
-    public final static byte OP_EXT_CTRL = 0x0B;
 
     private boolean fin;
     private boolean rsv1;
@@ -43,30 +69,35 @@ public class BaseFrame
     private boolean rsv3;
     private byte opcode = -1;
     private boolean masked = false;
+
     private long payloadLength;
     private byte mask[];
-
     public final static int FLAG_FIN = 0x8;
     public final static int FLAG_RSV1 = 0x4;
     public final static int FLAG_RSV2 = 0x2;
     public final static int FLAG_RSV3 = 0x1;
 
-    /**
-     * @deprecated use {@link #isControlFrame()} instead
-     */
-    @Deprecated
-    public static boolean isControlFrame(byte opcode)
-    {
-        return (opcode & OP_CONTROL) != 0;
+    public BaseFrame() {
+        /* default */
     }
 
     /**
-     * @deprecated use {@link #isLastFrame()} instead
+     * Copy Constructor
+     * @param copy the copy
      */
-    @Deprecated
-    public static boolean isLastFrame(byte flags)
-    {
-        return (flags & FLAG_FIN) != 0;
+    public BaseFrame(BaseFrame copy) {
+        this.fin = copy.fin;
+        this.rsv1 = copy.rsv1;
+        this.rsv2 = copy.rsv2;
+        this.rsv3 = copy.rsv3;
+        this.opcode = copy.opcode;
+        this.masked = copy.masked;
+        this.payloadLength = copy.payloadLength;
+        if(copy.mask != null) {
+            int mlen = copy.mask.length;
+            this.mask = new byte[mlen];
+            System.arraycopy(copy.mask,0,this.mask,0,mlen);
+        }
     }
 
     public byte[] getMask()
@@ -90,7 +121,7 @@ public class BaseFrame
 
     public boolean isControlFrame()
     {
-        return (opcode & OP_CONTROL) != 0;
+        return (opcode >= OP_CLOSE);
     }
 
     public boolean isFin()
