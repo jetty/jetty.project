@@ -104,16 +104,16 @@ public class ReferrerPushStrategy implements PushStrategy
     @Override
     public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
     {
-        Set<String> result = Collections.emptySet();
+        Set<String> result = Collections.<String>emptySet();
         short version = stream.getSession().getVersion();
-        String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
-        String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).value();
-        String origin = new StringBuilder(scheme).append("://").append(host).toString();
-        String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).value();
-        String absoluteURL = new StringBuilder(origin).append(url).toString();
-        logger.debug("Applying push strategy for {}", absoluteURL);
-        if (isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value()))
+        if (!isIfModifiedSinceHeaderPresent(requestHeaders) && isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value()))
         {
+            String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
+            String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).value();
+            String origin = new StringBuilder(scheme).append("://").append(host).toString();
+            String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).value();
+            String absoluteURL = new StringBuilder(origin).append(url).toString();
+            logger.debug("Applying push strategy for {}", absoluteURL);
             if (isMainResource(url, responseHeaders))
             {
                 result = pushResources(absoluteURL);
@@ -131,9 +131,14 @@ public class ReferrerPushStrategy implements PushStrategy
                         result = pushResources(absoluteURL);
                 }
             }
+            logger.debug("Push resources for {}: {}", absoluteURL, result);
         }
-        logger.debug("Push resources for {}: {}", absoluteURL, result);
         return result;
+    }
+
+    private boolean isIfModifiedSinceHeaderPresent(Headers headers)
+    {
+        return headers.get("if-modified-since") != null;
     }
 
     private boolean isValidMethod(String method)
