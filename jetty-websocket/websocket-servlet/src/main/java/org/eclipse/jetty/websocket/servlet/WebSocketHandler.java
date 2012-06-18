@@ -26,7 +26,7 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
 
@@ -36,6 +36,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.websocket.WebSocketFactory;
+import org.eclipse.jetty.websocket.WebSocketFactory.Acceptor;
 
 public abstract class WebSocketHandler extends HandlerWrapper implements WebSocketFactory.Acceptor
 {

@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.generator.MaskGen;
 import org.eclipse.jetty.websocket.generator.RandomMaskGen;
+import org.eclipse.jetty.websocket.servlet.WebSocketHandler;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;

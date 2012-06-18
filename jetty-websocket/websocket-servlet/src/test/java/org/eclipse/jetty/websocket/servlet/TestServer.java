@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketConnectionRFC6455;
-import org.eclipse.jetty.websocket.WebSocketHandler;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
 import org.eclipse.jetty.websocket.WebSocket.OnBinaryMessage;
