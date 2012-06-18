@@ -1,7 +1,5 @@
 package org.eclipse.jetty.websocket.frames;
 
-import org.eclipse.jetty.websocket.api.WebSocket;
-
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
  * 
@@ -38,26 +36,130 @@ public class BaseFrame
     public final static byte OP_PING = 0x09;
     public final static byte OP_PONG = 0x0A;
     public final static byte OP_EXT_CTRL = 0x0B;
-    
+
     private boolean fin;
     private boolean rsv1;
     private boolean rsv2;
     private boolean rsv3;
     private byte opcode = -1;
-    private boolean mask = false;
+    private boolean masked = false;
     private long payloadLength;
-    private byte maskingKey[];
-    
-    public final static int FLAG_FIN=0x8;
+    private byte mask[];
 
-    public static boolean isLastFrame(byte flags)
-    {
-        return (flags & FLAG_FIN) != 0;
-    }
+    public final static int FLAG_FIN = 0x8;
+    public final static int FLAG_RSV1 = 0x4;
+    public final static int FLAG_RSV2 = 0x2;
+    public final static int FLAG_RSV3 = 0x1;
 
+    /**
+     * @deprecated use {@link #isControlFrame()} instead
+     */
+    @Deprecated
     public static boolean isControlFrame(byte opcode)
     {
         return (opcode & OP_CONTROL) != 0;
     }
 
+    /**
+     * @deprecated use {@link #isLastFrame()} instead
+     */
+    @Deprecated
+    public static boolean isLastFrame(byte flags)
+    {
+        return (flags & FLAG_FIN) != 0;
+    }
+
+    public byte[] getMask()
+    {
+        if (!masked)
+        {
+            throw new IllegalStateException("Frame is not masked");
+        }
+        return mask;
+    }
+
+    public byte getOpcode()
+    {
+        return opcode;
+    }
+
+    public long getPayloadLength()
+    {
+        return payloadLength;
+    }
+
+    public boolean isControlFrame()
+    {
+        return (opcode & OP_CONTROL) != 0;
+    }
+
+    public boolean isFin()
+    {
+        return fin;
+    }
+
+    public boolean isLastFrame()
+    {
+        return fin;
+    }
+
+    public boolean isMasked()
+    {
+        return masked;
+    }
+
+    public boolean isRsv1()
+    {
+        return rsv1;
+    }
+
+    public boolean isRsv2()
+    {
+        return rsv2;
+    }
+
+    public boolean isRsv3()
+    {
+        return rsv3;
+    }
+
+    public void setFin(boolean fin)
+    {
+        this.fin = fin;
+    }
+
+    public void setMask(byte[] maskingKey)
+    {
+        this.mask = maskingKey;
+    }
+
+    public void setMasked(boolean mask)
+    {
+        this.masked = mask;
+    }
+
+    public void setOpcode(byte opcode)
+    {
+        this.opcode = opcode;
+    }
+
+    public void setPayloadLength(long payloadLength)
+    {
+        this.payloadLength = payloadLength;
+    }
+
+    public void setRsv1(boolean rsv1)
+    {
+        this.rsv1 = rsv1;
+    }
+
+    public void setRsv2(boolean rsv2)
+    {
+        this.rsv2 = rsv2;
+    }
+
+    public void setRsv3(boolean rsv3)
+    {
+        this.rsv3 = rsv3;
+    }
 }

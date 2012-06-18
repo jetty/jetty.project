@@ -19,35 +19,32 @@ package org.eclipse.jetty.websocket.frames;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.websocket.frames.ControlFrameType;
-
-public enum ControlFrameType 
+public enum ControlFrameType
 {
-	BASE_FRAME((short)1),  // remove?
-	PING_FRAME((short)2),
-	PONG_FRAME((short)3),
-	CLOSE_FRAME((short)4);
-	
-    public static ControlFrameType from(short code)
+    PING_FRAME(BaseFrame.OP_PING),
+    PONG_FRAME(BaseFrame.OP_PONG),
+    CLOSE_FRAME(BaseFrame.OP_CLOSE);
+
+    private static class Codes
     {
-        return Codes.codes.get(code);
+        private static final Map<Byte, ControlFrameType> codes = new HashMap<>();
     }
 
-    private final short code;
-
-    private ControlFrameType(short code)
+    public static ControlFrameType from(byte opcode)
     {
-        this.code = code;
-        Codes.codes.put(code, this);
+        return Codes.codes.get(opcode);
+    }
+
+    private final byte opcode;
+
+    private ControlFrameType(byte opcode)
+    {
+        this.opcode = opcode;
+        Codes.codes.put(opcode,this);
     }
 
     public short getCode()
     {
-        return code;
-    }
-
-    private static class Codes
-    {
-        private static final Map<Short, ControlFrameType> codes = new HashMap<>();
+        return opcode;
     }
 }
