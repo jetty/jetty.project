@@ -13,7 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.net.URI;
@@ -27,6 +27,9 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocket.Connection;
+import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.generator.ZeroMaskGen;

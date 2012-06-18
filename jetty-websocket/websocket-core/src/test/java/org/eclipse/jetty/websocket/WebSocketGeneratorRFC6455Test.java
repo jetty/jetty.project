@@ -15,21 +15,11 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import static junit.framework.Assert.*;
-
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.generator.FixedMaskGen;
-import org.eclipse.jetty.websocket.generator.MaskGen;
-import org.junit.Before;
-import org.junit.Test;
-
 /**
  */
 public class WebSocketGeneratorRFC6455Test
 {
+    /*
     private ByteArrayBuffer _out;
     private WebSocketGenerator _generator;
     ByteArrayEndPoint _endPoint;
@@ -250,4 +240,5 @@ public class WebSocketGeneratorRFC6455Test
         
         assertTrue(_endPoint.isOutputShutdown());
     }
+    */
 }

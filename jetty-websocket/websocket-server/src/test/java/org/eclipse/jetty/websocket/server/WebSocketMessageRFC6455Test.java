@@ -13,7 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -43,6 +43,13 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455;
+import org.eclipse.jetty.websocket.WebSocket.Connection;
+import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
+import org.eclipse.jetty.websocket.WebSocket.OnBinaryMessage;
+import org.eclipse.jetty.websocket.WebSocket.OnFrame;
+import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 import org.eclipse.jetty.websocket.generator.MaskGen;
 import org.eclipse.jetty.websocket.generator.RandomMaskGen;
 import org.eclipse.jetty.websocket.servlet.WebSocketHandler;

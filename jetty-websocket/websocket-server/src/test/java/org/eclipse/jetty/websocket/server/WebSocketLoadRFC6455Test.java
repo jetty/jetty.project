@@ -13,9 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
-
-import static org.junit.Assert.*;
+package org.eclipse.jetty.websocket.server;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -28,11 +26,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.Assert;
-
 
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -41,13 +37,19 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455;
+import org.eclipse.jetty.websocket.WebSocket.Connection;
+import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 import org.eclipse.jetty.websocket.generator.FixedMaskGen;
 import org.eclipse.jetty.websocket.servlet.WebSocketHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class WebSocketLoadD08Test
+import static org.junit.Assert.assertTrue;
+
+public class WebSocketLoadRFC6455Test
 {
     private static Server _server;
     private static Connector _connector;
@@ -129,7 +131,7 @@ public class WebSocketLoadD08Test
         {
             this.outbound = outbound;
         }
-        
+
         public void onMessage(String data)
         {
             try
@@ -156,8 +158,8 @@ public class WebSocketLoadD08Test
         private final int iterations;
         private final CountDownLatch latch;
         private final SocketEndPoint _endp;
-        private final WebSocketGeneratorD08 _generator;
-        private final WebSocketParserD08 _parser;
+        private final WebSocketGeneratorRFC6455 _generator;
+        private final WebSocketParserRFC6455 _parser;
         private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
         {
             public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
@@ -170,7 +172,7 @@ public class WebSocketLoadD08Test
             }
         };
         private volatile ByteBuffer _response;
-        
+
         public WebSocketClient(String host, int port, int readTimeout, CountDownLatch latch, int iterations) throws IOException
         {
             this.latch = latch;
@@ -179,11 +181,11 @@ public class WebSocketLoadD08Test
             output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "ISO-8859-1"));
             input = new BufferedReader(new InputStreamReader(socket.getInputStream(), "ISO-8859-1"));
             this.iterations = iterations;
-            
+
             _endp=new SocketEndPoint(socket);
-            _generator = new WebSocketGeneratorD08(new WebSocketBuffers(32*1024),_endp,new FixedMaskGen());
-            _parser = new WebSocketParserD08(new WebSocketBuffers(32*1024),_endp,_handler,false);
-            
+            _generator = new WebSocketGeneratorRFC6455(new WebSocketBuffers(32*1024),_endp,new FixedMaskGen());
+            _parser = new WebSocketParserRFC6455(new WebSocketBuffers(32*1024),_endp,_handler,false);
+
         }
 
         private void open() throws IOException
@@ -216,11 +218,11 @@ public class WebSocketLoadD08Test
                 for (int i = 0; i < iterations; ++i)
                 {
                     byte[] data = message.getBytes(StringUtil.__UTF8);
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD08.OP_TEXT,data,0,data.length);
+                    _generator.addFrame((byte)0x8,WebSocketConnectionRFC6455.OP_TEXT,data,0,data.length);
                     _generator.flush();
-                    
+
                     //System.err.println("-> "+message);
-                    
+
                     _response=null;
                     while(_response==null)
                         _parser.parseNext();

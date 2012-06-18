@@ -14,21 +14,15 @@
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
 
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.server;
 
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.servlet.helper.WebSocketServlet;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocket.Connection;
+import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,6 +33,20 @@ public class WebSocketRedeployTest
     private ServletContextHandler context;
     private String uri;
     private WebSocketClientFactory wsFactory;
+
+    @After
+    public void destroy() throws Exception
+    {
+        if (wsFactory != null)
+        {
+            wsFactory.stop();
+        }
+        if (server != null)
+        {
+            server.stop();
+            server.join();
+        }
+    }
 
     public void init(final WebSocket webSocket) throws Exception
     {
@@ -71,16 +79,57 @@ public class WebSocketRedeployTest
         wsFactory.start();
     }
 
-    @After
-    public void destroy() throws Exception
+    @Test
+    public void testStoppingClientFactoryClosesConnections() throws Exception
     {
-        if (wsFactory != null)
-            wsFactory.stop();
-        if (server != null)
+        final CountDownLatch openLatch = new CountDownLatch(2);
+        final CountDownLatch closeLatch = new CountDownLatch(2);
+        init(new WebSocket.OnTextMessage()
         {
-            server.stop();
-            server.join();
-        }
+            @Override
+            public void onClose(int closeCode, String message)
+            {
+                closeLatch.countDown();
+            }
+
+            @Override
+            public void onMessage(String data)
+            {
+            }
+
+            @Override
+            public void onOpen(Connection connection)
+            {
+                openLatch.countDown();
+            }
+        });
+
+        WebSocketClient client = wsFactory.newWebSocketClient();
+        client.open(new URI(uri), new WebSocket.OnTextMessage()
+        {
+            @Override
+            public void onClose(int closeCode, String message)
+            {
+                closeLatch.countDown();
+            }
+
+            @Override
+            public void onMessage(String data)
+            {
+            }
+
+            @Override
+            public void onOpen(Connection connection)
+            {
+                openLatch.countDown();
+            }
+        }, 5, TimeUnit.SECONDS);
+
+        Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
+
+        wsFactory.stop();
+
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -90,89 +139,48 @@ public class WebSocketRedeployTest
         final CountDownLatch closeLatch = new CountDownLatch(2);
         init(new WebSocket.OnTextMessage()
         {
-            public void onOpen(Connection connection)
+            @Override
+            public void onClose(int closeCode, String message)
             {
-                openLatch.countDown();
+                closeLatch.countDown();
             }
 
+            @Override
             public void onMessage(String data)
             {
             }
 
-            public void onClose(int closeCode, String message)
+            @Override
+            public void onOpen(Connection connection)
             {
-                closeLatch.countDown();
+                openLatch.countDown();
             }
         });
 
         WebSocketClient client = wsFactory.newWebSocketClient();
         client.open(new URI(uri), new WebSocket.OnTextMessage()
         {
-            public void onOpen(Connection connection)
+            @Override
+            public void onClose(int closeCode, String message)
             {
-                openLatch.countDown();
+                closeLatch.countDown();
             }
 
+            @Override
             public void onMessage(String data)
             {
             }
 
-            public void onClose(int closeCode, String message)
+            @Override
+            public void onOpen(Connection connection)
             {
-                closeLatch.countDown();
+                openLatch.countDown();
             }
         }, 5, TimeUnit.SECONDS);
 
         Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
 
         context.stop();
-
-        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void testStoppingClientFactoryClosesConnections() throws Exception
-    {
-        final CountDownLatch openLatch = new CountDownLatch(2);
-        final CountDownLatch closeLatch = new CountDownLatch(2);
-        init(new WebSocket.OnTextMessage()
-        {
-            public void onOpen(Connection connection)
-            {
-                openLatch.countDown();
-            }
-
-            public void onMessage(String data)
-            {
-            }
-
-            public void onClose(int closeCode, String message)
-            {
-                closeLatch.countDown();
-            }
-        });
-
-        WebSocketClient client = wsFactory.newWebSocketClient();
-        client.open(new URI(uri), new WebSocket.OnTextMessage()
-        {
-            public void onOpen(Connection connection)
-            {
-                openLatch.countDown();
-            }
-
-            public void onMessage(String data)
-            {
-            }
-
-            public void onClose(int closeCode, String message)
-            {
-                closeLatch.countDown();
-            }
-        }, 5, TimeUnit.SECONDS);
-
-        Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
-
-        wsFactory.stop();
 
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }

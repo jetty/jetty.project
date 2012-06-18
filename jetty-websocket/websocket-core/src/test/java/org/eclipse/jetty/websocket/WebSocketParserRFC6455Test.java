@@ -15,25 +15,10 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.jetty.http.HttpHeaderValue;
-
-import org.eclipse.jetty.io.BufferCache.ByteBuffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class WebSocketParserRFC6455Test
 {
+    /*
     private ByteArrayEndPoint _endPoint;
     private MaskedByteArrayBuffer _in;
     private Handler _handler;
@@ -403,4 +388,5 @@ public class WebSocketParserRFC6455Test
             _code=code;
         }
     }
+    */
 }

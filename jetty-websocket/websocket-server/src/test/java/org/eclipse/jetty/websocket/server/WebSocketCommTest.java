@@ -13,7 +13,7 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket;
+package org.eclipse.jetty.websocket.server;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;

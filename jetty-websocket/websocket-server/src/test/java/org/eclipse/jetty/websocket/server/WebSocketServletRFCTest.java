@@ -22,7 +22,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455Test;
-import org.eclipse.jetty.websocket.WebSocketMessageRFC6455Test;
 import org.eclipse.jetty.websocket.WebSocketParserRFC6455Test;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
