@@ -39,9 +39,9 @@ public class Generator {
     public Generator(ByteBufferPool bufferPool) //, CompressionFactory.Compressor compressor)
     {
         HeadersBlockGenerator headerBlockGenerator = new HeadersBlockGenerator();
-        generators.put(OpCode.PING,new PingFrameGenerator());
-        generators.put(OpCode.PONG,new PongFrameGenerator());
-        generators.put(OpCode.CLOSE,new CloseFrameGenerator());
+        generators.put(OpCode.PING,new PingFrameGenerator(bufferPool));
+        generators.put(OpCode.PONG,new PongFrameGenerator(bufferPool));
+        generators.put(OpCode.CLOSE,new CloseFrameGenerator(bufferPool));
 
     }
 
