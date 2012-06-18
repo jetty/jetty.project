@@ -374,10 +374,10 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         for (Bean b : _beans)
         {
             i++;
-            
+
+            out.append(indent).append(" +- ");
             if (b._managed)
             {
-                out.append(indent).append(" +- ");
                 if (b._bean instanceof Dumpable)
                     ((Dumpable)b._bean).dump(out,indent+(i==size?"    ":" |  "));
                 else 

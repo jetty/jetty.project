@@ -23,9 +23,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -37,12 +39,13 @@ import org.eclipse.jetty.util.log.Logger;
  * will have a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>, which we
  * use to link the associated resource to the main resource.</p>
  * <p>However, also following a hyperlink generates a HTTP request with a <tt>Referer</tt>
- * HTTP header that points to <tt>index.html</tt>; therefore main resources and associated
- * resources must be distinguishable.</p>
- * <p>This class distinguishes associated resources by their URL path suffix and content
+ * HTTP header that points to <tt>index.html</tt>; therefore a proper value for {@link #getReferrerPushPeriod()}
+ * has to be set. If the referrerPushPeriod for a main resource has been passed, no more
+ * associated resources will be added for that main resource.</p>
+ * <p>This class distinguishes associated main resources by their URL path suffix and content
  * type.
  * CSS stylesheets, images and JavaScript files have recognizable URL path suffixes that
- * are classified as associated resources.</p>
+ * are classified as associated resources. The suffix regexs can be configured by constructor argument</p>
  * <p>When CSS stylesheets refer to images, the CSS image request will have the CSS
  * stylesheet as referrer. This implementation will push also the CSS image.</p>
  * <p>The push metadata built by this implementation is limited by the number of pages
@@ -55,11 +58,13 @@ import org.eclipse.jetty.util.log.Logger;
 public class ReferrerPushStrategy implements PushStrategy
 {
     private static final Logger logger = Log.getLogger(ReferrerPushStrategy.class);
-    private final ConcurrentMap<String, Set<String>> resources = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, MainResource> mainResources = new ConcurrentHashMap<>();
     private final Set<Pattern> pushRegexps = new HashSet<>();
     private final Set<String> pushContentTypes = new HashSet<>();
     private final Set<Pattern> allowedPushOrigins = new HashSet<>();
+    private final HashSet<Short> supportedSPDYVersions = new HashSet<Short>();
     private volatile int maxAssociatedResources = 32;
+    private volatile int referrerPushPeriod = 5000;
 
     public ReferrerPushStrategy()
     {
@@ -89,6 +94,9 @@ public class ReferrerPushStrategy implements PushStrategy
         this.pushContentTypes.addAll(pushContentTypes);
         for (String allowedPushOrigin : allowedPushOrigins)
             this.allowedPushOrigins.add(Pattern.compile(allowedPushOrigin.replace(".", "\\.").replace("*", ".*")));
+        // by default we support v2 and v3
+        supportedSPDYVersions.add(SPDY.V2);
+        supportedSPDYVersions.add(SPDY.V3);
     }
 
     public int getMaxAssociatedResources()
@@ -101,22 +109,51 @@ public class ReferrerPushStrategy implements PushStrategy
         this.maxAssociatedResources = maxAssociatedResources;
     }
 
+    public int getReferrerPushPeriod()
+    {
+        return referrerPushPeriod;
+    }
+
+    public void setReferrerPushPeriod(int referrerPushPeriod)
+    {
+        this.referrerPushPeriod = referrerPushPeriod;
+    }
+
+    public void removeSPDYVersionSupport(Short version)
+    {
+        supportedSPDYVersions.remove(version);
+    }
+
+    public void addSPDYVersionSupport(Short version)
+    {
+        // consider to make SPDY.Vx an enum when we add support for more than two drafts
+        if (version == SPDY.V2 || version == SPDY.V3)
+            supportedSPDYVersions.add(version);
+    }
+
     @Override
     public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
     {
-        Set<String> result = Collections.emptySet();
+        Set<String> result = Collections.<String>emptySet();
         short version = stream.getSession().getVersion();
-        String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
-        String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).value();
-        String origin = new StringBuilder(scheme).append("://").append(host).toString();
-        String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).value();
-        String absoluteURL = new StringBuilder(origin).append(url).toString();
-        logger.debug("Applying push strategy for {}", absoluteURL);
-        if (isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value()))
+        if (!supportedSPDYVersions.contains(version))
         {
+            logger.debug("SPDY version {} not supported. Returning empty Set.", version);
+            return result;
+        }
+
+        if (!isIfModifiedSinceHeaderPresent(requestHeaders) && isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value()))
+        {
+            String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
+            String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).value();
+            String origin = scheme + "://" + host;
+            String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).value();
+            String absoluteURL = origin + url;
+            logger.debug("Applying push strategy for {}", absoluteURL);
             if (isMainResource(url, responseHeaders))
             {
-                result = pushResources(absoluteURL);
+                MainResource mainResource = getOrCreateMainResource(absoluteURL);
+                result = mainResource.getResources();
             }
             else if (isPushResource(url, responseHeaders))
             {
@@ -124,16 +161,47 @@ public class ReferrerPushStrategy implements PushStrategy
                 if (referrerHeader != null)
                 {
                     String referrer = referrerHeader.value();
-                    Set<String> pushResources = resources.get(referrer);
-                    if (pushResources == null || !pushResources.contains(url))
-                        buildMetadata(origin, url, referrer);
+                    MainResource mainResource = mainResources.get(referrer);
+                    if (mainResource == null)
+                        mainResource = getOrCreateMainResource(referrer);
+
+                    Set<String> pushResources = mainResource.getResources();
+                    if (!pushResources.contains(url))
+                        mainResource.addResource(url, origin, referrer);
                     else
-                        result = pushResources(absoluteURL);
+                        result = getPushResources(absoluteURL);
                 }
             }
+            logger.debug("Pushing {} resources for {}: {}", result.size(), absoluteURL, result);
         }
-        logger.debug("Push resources for {}: {}", absoluteURL, result);
         return result;
+    }
+
+    private Set<String> getPushResources(String absoluteURL)
+    {
+        Set<String> result = Collections.emptySet();
+        if (mainResources.get(absoluteURL) != null)
+            result = mainResources.get(absoluteURL).getResources();
+        return result;
+    }
+
+    private MainResource getOrCreateMainResource(String absoluteURL)
+    {
+        MainResource mainResource = mainResources.get(absoluteURL);
+        if (mainResource == null)
+        {
+            logger.debug("Creating new main resource for {}", absoluteURL);
+            MainResource value = new MainResource(absoluteURL);
+            mainResource = mainResources.putIfAbsent(absoluteURL, value);
+            if (mainResource == null)
+                mainResource = value;
+        }
+        return mainResource;
+    }
+
+    private boolean isIfModifiedSinceHeaderPresent(Headers headers)
+    {
+        return headers.get("if-modified-since") != null;
     }
 
     private boolean isValidMethod(String method)
@@ -165,49 +233,65 @@ public class ReferrerPushStrategy implements PushStrategy
         return false;
     }
 
-    private Set<String> pushResources(String absoluteURL)
+    private class MainResource
     {
-        Set<String> pushResources = resources.get(absoluteURL);
-        if (pushResources == null)
-            return Collections.emptySet();
-        return Collections.unmodifiableSet(pushResources);
-    }
+        private final String name;
+        private final long created = System.nanoTime();
+        private final Set<String> resources = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
-    private void buildMetadata(String origin, String url, String referrer)
-    {
-        if (referrer.startsWith(origin) || isPushOriginAllowed(origin))
+        MainResource(String name)
         {
-            Set<String> pushResources = resources.get(referrer);
-            if (pushResources == null)
+            this.name = name;
+        }
+
+        public boolean addResource(String url, String origin, String referrer)
+        {
+            long delay = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - created);
+            if (!referrer.startsWith(origin) && !isPushOriginAllowed(origin))
             {
-                pushResources = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-                Set<String> existing = resources.putIfAbsent(referrer, pushResources);
-                if (existing != null)
-                    pushResources = existing;
+                logger.debug("Skipped store of push metadata {} for {}: Origin: {} doesn't match or origin not allowed",
+                        url, name, origin);
+                return false;
             }
+
             // This check is not strictly concurrent-safe, but limiting
             // the number of associated resources is achieved anyway
             // although in rare cases few more resources will be stored
-            if (pushResources.size() < getMaxAssociatedResources())
-            {
-                pushResources.add(url);
-                logger.debug("Stored push metadata for {}: {}", referrer, pushResources);
-            }
-            else
+            if (resources.size() >= maxAssociatedResources)
             {
                 logger.debug("Skipped store of push metadata {} for {}: max associated resources ({}) reached",
-                        url, referrer, maxAssociatedResources);
+                        url, name, maxAssociatedResources);
+                return false;
             }
-        }
-    }
+            if (delay > referrerPushPeriod)
+            {
+                logger.debug("Delay: {}ms longer than referrerPushPeriod: {}ms. Not adding resource: {} for: {}", delay, referrerPushPeriod, url, name);
+                return false;
+            }
 
-    private boolean isPushOriginAllowed(String origin)
-    {
-        for (Pattern allowedPushOrigin : allowedPushOrigins)
-        {
-            if (allowedPushOrigin.matcher(origin).matches())
-                return true;
+            logger.debug("Adding resource: {} for: {} with delay: {}ms.", url, name, delay);
+            resources.add(url);
+            return true;
         }
-        return false;
+
+        public Set<String> getResources()
+        {
+            return Collections.unmodifiableSet(resources);
+        }
+
+        public String toString()
+        {
+            return "MainResource: " + name + " associated resources:" + resources.size();
+        }
+
+        private boolean isPushOriginAllowed(String origin)
+        {
+            for (Pattern allowedPushOrigin : allowedPushOrigins)
+            {
+                if (allowedPushOrigin.matcher(origin).matches())
+                    return true;
+            }
+            return false;
+        }
     }
 }
