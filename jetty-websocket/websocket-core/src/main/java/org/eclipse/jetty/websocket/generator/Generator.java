@@ -1,10 +1,13 @@
 package org.eclipse.jetty.websocket.generator;
 
+import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.ControlFrame;
 import org.eclipse.jetty.websocket.frames.ControlFrameType;
+import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.generator.ControlFrameGenerator;
 
 /**
@@ -33,12 +36,24 @@ import org.eclipse.jetty.websocket.generator.ControlFrameGenerator;
  */
 public class Generator {
 
-    private final EnumMap<ControlFrameType, BaseFrame> generators = new EnumMap<>(ControlFrameType.class);
+    private final EnumMap<ControlFrameType, ControlFrameGenerator> generators = new EnumMap<>(ControlFrameType.class);
 
     
     public Generator(ByteBufferPool bufferPool) //, CompressionFactory.Compressor compressor)
     {
         HeadersBlockGenerator headerBlockGenerator = new HeadersBlockGenerator();
-    	generators.put(ControlFrameType.BASE_FRAME, new BaseFrame());
+    	generators.put(ControlFrameType.PING_FRAME, new PingFrameGenerator());
+    	generators.put(ControlFrameType.PONG_FRAME, new PongFrameGenerator());
+    	generators.put(ControlFrameType.CLOSE_FRAME, new CloseFrameGenerator());
+    	
     }
+    
+    
+    public ByteBuffer control(ControlFrame frame)
+    {
+        ControlFrameGenerator generator = generators.get(frame.getType());
+        return generator.generate(frame);
+    }
+    
+    
 }
