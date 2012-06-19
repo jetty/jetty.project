@@ -54,11 +54,23 @@ public abstract class FrameParser<T extends BaseFrame>
         this.settings = settings;
     }
 
+    /**
+     * Copy the bytes from one buffer to the other, demasking the content if necessary.
+     * 
+     * @param src
+     *            the source {@link ByteBuffer}
+     * @param dest
+     *            the destination {@link ByteBuffer}
+     * @param length
+     *            the length of bytes to worry about
+     * @return the number of bytes copied
+     */
     protected int copyBuffer(ByteBuffer src, ByteBuffer dest, int length)
     {
         int amt = Math.min(length,src.remaining());
         if (getFrame().isMasked())
         {
+            // Demask the content
             byte mask[] = getFrame().getMask();
             for (int i = 0; i < amt; i++)
             {
@@ -67,6 +79,7 @@ public abstract class FrameParser<T extends BaseFrame>
         }
         else
         {
+            // Copy the content as-is
             byte b[] = new byte[amt];
             src.get(b,0,amt);
             dest.put(b,0,amt);
