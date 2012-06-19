@@ -13,7 +13,7 @@ public class PingParserTest
     {
         Debug.enableDebugLogging(Parser.class);
 
-        ByteBuffer buf = ByteBuffer.allocate(7);
+        ByteBuffer buf = ByteBuffer.allocate(16);
         buf.put(new byte[]
                 { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
         Debug.dumpState(buf);

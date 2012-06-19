@@ -5,7 +5,7 @@ import java.util.EnumMap;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.OpCode;
-import org.eclipse.jetty.websocket.frames.ControlFrame;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 /**
  * Generating a frame in WebSocket land.
@@ -33,24 +33,21 @@ import org.eclipse.jetty.websocket.frames.ControlFrame;
  */
 public class Generator {
 
-    private final EnumMap<OpCode, ControlFrameGenerator> generators = new EnumMap<>(OpCode.class);
+    private final EnumMap<OpCode, FrameGenerator<?>> generators = new EnumMap<>(OpCode.class);
 
 
     public Generator(ByteBufferPool bufferPool) //, CompressionFactory.Compressor compressor)
     {
-        HeadersBlockGenerator headerBlockGenerator = new HeadersBlockGenerator();
         generators.put(OpCode.PING,new PingFrameGenerator(bufferPool));
         generators.put(OpCode.PONG,new PongFrameGenerator(bufferPool));
         generators.put(OpCode.CLOSE,new CloseFrameGenerator(bufferPool));
-
     }
 
-
-    public ByteBuffer control(ControlFrame frame)
+    @SuppressWarnings(
+    { "unchecked", "rawtypes" })
+    public ByteBuffer control(BaseFrame frame)
     {
-        ControlFrameGenerator generator = generators.get(frame.getOpCode());
+        FrameGenerator generator = generators.get(frame.getOpCode());
         return generator.generate(frame);
     }
-
-
 }
