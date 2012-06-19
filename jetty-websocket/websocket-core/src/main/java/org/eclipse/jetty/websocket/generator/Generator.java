@@ -5,6 +5,7 @@ import java.util.EnumMap;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 /**
@@ -34,18 +35,19 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
 public class Generator {
 
     private final EnumMap<OpCode, FrameGenerator<?>> generators = new EnumMap<>(OpCode.class);
+    private MaskGen maskgen = null;
 
-
-    public Generator(ByteBufferPool bufferPool) //, CompressionFactory.Compressor compressor)
+    public Generator(ByteBufferPool bufferPool, WebSocketSettings settings) 
     {
-        generators.put(OpCode.PING,new PingFrameGenerator(bufferPool));
-        generators.put(OpCode.PONG,new PongFrameGenerator(bufferPool));
-        generators.put(OpCode.CLOSE,new CloseFrameGenerator(bufferPool));
+        generators.put(OpCode.PING,new PingFrameGenerator(bufferPool, settings));
+        generators.put(OpCode.PONG,new PongFrameGenerator(bufferPool, settings));
+        generators.put(OpCode.CLOSE,new CloseFrameGenerator(bufferPool, settings));
     }
-
+    
+    
     @SuppressWarnings(
     { "unchecked", "rawtypes" })
-    public ByteBuffer control(BaseFrame frame)
+    public ByteBuffer generate(BaseFrame frame)
     {
         FrameGenerator generator = generators.get(frame.getOpCode());
         return generator.generate(frame);

@@ -3,15 +3,18 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 public abstract class FrameGenerator<T extends BaseFrame>
 {
     private final ByteBufferPool bufferPool;
+    private final WebSocketSettings settings;
 
-    protected FrameGenerator(ByteBufferPool bufferPool)
+    protected FrameGenerator(ByteBufferPool bufferPool, WebSocketSettings settings)
     {
         this.bufferPool = bufferPool;
+        this.settings = settings;
     }
 
     public ByteBuffer generate(T frame)
@@ -73,6 +76,11 @@ public abstract class FrameGenerator<T extends BaseFrame>
         // TODO: figure out how to get this from a bytebuffer pool
 
         buffer.put(framing);
+        
+        // thinking:
+        // generate payload
+        // mask it if needed
+        // combine the frame:buffer
         
         generatePayload(buffer, frame);
         return buffer;

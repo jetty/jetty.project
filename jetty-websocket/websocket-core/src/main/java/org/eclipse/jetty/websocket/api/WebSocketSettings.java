@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket.api;
 
+import org.eclipse.jetty.websocket.generator.MaskGen;
+
 /**
  * Settings for WebSocket operations.
  */
@@ -14,6 +16,11 @@ public class WebSocketSettings
      */
     private int maxBinaryMessageSize = -1;
 
+    /**
+     * The implementation for masking
+     */
+    private MaskGen maskGen = null;
+    
     public int getMaxBinaryMessageSize()
     {
         return maxBinaryMessageSize;
@@ -33,4 +40,15 @@ public class WebSocketSettings
     {
         this.maxTextMessageSize = maxTextMessageSize;
     }
+
+    public MaskGen getMaskGen()
+    {
+        return maskGen;
+    }
+
+    public void setMaskGen(MaskGen maskGen)
+    {
+        this.maskGen = maskGen;
+    }
+    
 }
