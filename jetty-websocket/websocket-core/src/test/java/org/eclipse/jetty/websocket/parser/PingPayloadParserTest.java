@@ -6,7 +6,7 @@ import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.junit.Test;
 
-public class PingParserTest
+public class PingPayloadParserTest
 {
     @Test
     public void testBasicPingParsing()

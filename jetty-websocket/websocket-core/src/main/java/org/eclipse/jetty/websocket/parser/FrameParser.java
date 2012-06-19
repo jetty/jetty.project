@@ -57,9 +57,20 @@ public abstract class FrameParser<T extends BaseFrame>
     protected int copyBuffer(ByteBuffer src, ByteBuffer dest, int length)
     {
         int amt = Math.min(length,src.remaining());
-        byte b[] = new byte[amt];
-        src.get(b,0,amt);
-        dest.put(b,0,amt);
+        if (getFrame().isMasked())
+        {
+            byte mask[] = getFrame().getMask();
+            for (int i = 0; i < amt; i++)
+            {
+                dest.put((byte)(src.get() ^ mask[i % 4]));
+            }
+        }
+        else
+        {
+            byte b[] = new byte[amt];
+            src.get(b,0,amt);
+            dest.put(b,0,amt);
+        }
         return amt;
     }
 
