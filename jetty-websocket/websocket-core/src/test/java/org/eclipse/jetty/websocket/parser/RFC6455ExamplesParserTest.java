@@ -17,7 +17,7 @@ import org.junit.Test;
 public class RFC6455ExamplesParserTest
 {
     @Test
-    public void testFragmentedUnmakedTextMessage()
+    public void testFragmentedUnmaskedTextMessage()
     {
         Parser parser = new Parser();
         FrameParseCapture capture = new FrameParseCapture();
@@ -53,7 +53,7 @@ public class RFC6455ExamplesParserTest
     }
 
     @Test
-    public void testMaskedPongRequest()
+    public void testSingleMaskedPongRequest()
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -75,7 +75,7 @@ public class RFC6455ExamplesParserTest
     }
 
     @Test
-    public void testSingleFrameMaskedTextMessage()
+    public void testSingleMaskedTextMessage()
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -97,51 +97,7 @@ public class RFC6455ExamplesParserTest
     }
 
     @Test
-    public void testSingleFrameUnmaskedTextMessage()
-    {
-        ByteBuffer buf = ByteBuffer.allocate(16);
-        // Raw bytes as found in RFC 6455, Section 5.7 - Examples
-        // A single-frame unmasked text message
-        buf.put(new byte[]
-                { (byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
-        buf.flip();
-
-        Parser parser = new Parser();
-        FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
-        parser.parse(buf);
-
-        capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
-
-        TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data", txt.getData().toString(), is("Hello"));
-    }
-
-    @Test
-    public void testUnmaskedPingRequest()
-    {
-        ByteBuffer buf = ByteBuffer.allocate(16);
-        // Raw bytes as found in RFC 6455, Section 5.7 - Examples
-        // Unmasked Ping request
-        buf.put(new byte[]
-                { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
-        buf.flip();
-
-        Parser parser = new Parser();
-        FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
-        parser.parse(buf);
-
-        capture.assertNoErrors();
-        capture.assertHasFrame(PingFrame.class,1);
-
-        PingFrame ping = (PingFrame)capture.getFrames().get(0);
-        Assert.assertThat("PingFrame.data",ping.getPayload().toString(),is("Hello"));
-    }
-
-    @Test
-    public void testUnmaskedSingle256ByteBinaryMessage()
+    public void testSingleUnmasked256ByteBinaryMessage()
     {
         ByteBuffer buf = ByteBuffer.allocate(300);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -170,7 +126,7 @@ public class RFC6455ExamplesParserTest
     }
 
     @Test
-    public void testUnmaskedSingle64KByteBinaryMessage()
+    public void testSingleUnmasked64KByteBinaryMessage()
     {
         int dataSize = 1024 * 64;
 
@@ -198,6 +154,50 @@ public class RFC6455ExamplesParserTest
         byte data[] = new byte[bin.getPayloadLength()];
         bin.getData().get(data,0,dataSize);
         Assert.assertThat("BinaryFrame.data",data.length,is(dataSize));
+    }
+
+    @Test
+    public void testSingleUnmaskedPingRequest()
+    {
+        ByteBuffer buf = ByteBuffer.allocate(16);
+        // Raw bytes as found in RFC 6455, Section 5.7 - Examples
+        // Unmasked Ping request
+        buf.put(new byte[]
+                { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
+        buf.flip();
+
+        Parser parser = new Parser();
+        FrameParseCapture capture = new FrameParseCapture();
+        parser.addListener(capture);
+        parser.parse(buf);
+
+        capture.assertNoErrors();
+        capture.assertHasFrame(PingFrame.class,1);
+
+        PingFrame ping = (PingFrame)capture.getFrames().get(0);
+        Assert.assertThat("PingFrame.data",ping.getPayload().toString(),is("Hello"));
+    }
+
+    @Test
+    public void testSingleUnmaskedTextMessage()
+    {
+        ByteBuffer buf = ByteBuffer.allocate(16);
+        // Raw bytes as found in RFC 6455, Section 5.7 - Examples
+        // A single-frame unmasked text message
+        buf.put(new byte[]
+                { (byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
+        buf.flip();
+
+        Parser parser = new Parser();
+        FrameParseCapture capture = new FrameParseCapture();
+        parser.addListener(capture);
+        parser.parse(buf);
+
+        capture.assertNoErrors();
+        capture.assertHasFrame(TextFrame.class,1);
+
+        TextFrame txt = (TextFrame)capture.getFrames().get(0);
+        Assert.assertThat("TextFrame.data", txt.getData().toString(), is("Hello"));
     }
 
 }
