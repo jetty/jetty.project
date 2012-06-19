@@ -7,7 +7,7 @@ import org.eclipse.jetty.websocket.api.OpCode;
 public abstract class ControlFrame extends BaseFrame
 {
     private ByteBuffer payload = null; // TODO decide if payload needs to go all the way down to baseframe
-    
+
     public ControlFrame()
     {
         super();
@@ -17,7 +17,7 @@ public abstract class ControlFrame extends BaseFrame
     {
         super(opcode);
     }
-    
+
     public ByteBuffer getPayload()
     {
         return payload;
@@ -31,6 +31,11 @@ public abstract class ControlFrame extends BaseFrame
     public void setPayload(ByteBuffer payload)
     {
         this.payload = payload;
+        if (payload.position() != 0)
+        {
+            // Make buffer ready for reading?
+            payload.flip();
+        }
         setPayloadLength(payload.array().length);
     }
 }

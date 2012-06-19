@@ -1,9 +1,10 @@
 package org.eclipse.jetty.websocket.parser;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
@@ -175,7 +176,7 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(PingFrame.class,1);
 
         PingFrame ping = (PingFrame)capture.getFrames().get(0);
-        Assert.assertThat("PingFrame.data",ping.getPayload().toString(),is("Hello"));
+        ByteBufferAssert.assertEquals("PingFrame.payload","Hello",ping.getPayload());
     }
 
     @Test
