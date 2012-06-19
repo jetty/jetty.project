@@ -35,7 +35,7 @@ public class TextPayloadParser extends FrameParser<TextFrame>
                 payload = ByteBuffer.allocate(payloadLength);
             }
 
-            copyBuffer(buffer,payload,payloadLength);
+            copyBuffer(buffer,payload,payload.remaining());
 
             if (payload.position() >= payloadLength)
             {

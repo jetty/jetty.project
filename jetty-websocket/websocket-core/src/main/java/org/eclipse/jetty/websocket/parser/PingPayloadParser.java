@@ -38,7 +38,8 @@ public class PingPayloadParser extends FrameParser<PingFrame>
                 payload = ByteBuffer.allocate(payloadLength);
             }
 
-            copyBuffer(buffer,payload,payloadLength);
+            copyBuffer(buffer,payload,payload.remaining());
+
             if (payload.position() >= payloadLength)
             {
                 frame.setPayload(payload);
