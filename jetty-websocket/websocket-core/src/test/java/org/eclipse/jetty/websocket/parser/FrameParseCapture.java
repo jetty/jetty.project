@@ -8,8 +8,6 @@ import java.util.List;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.ControlFrame;
-import org.eclipse.jetty.websocket.frames.DataFrame;
 import org.junit.Assert;
 
 public class FrameParseCapture implements Parser.Listener
@@ -55,13 +53,7 @@ public class FrameParseCapture implements Parser.Listener
     }
 
     @Override
-    public void onControlFrame(ControlFrame frame)
-    {
-        frames.add(frame);
-    }
-
-    @Override
-    public void onDataFrame(DataFrame frame)
+    public void onFrame(BaseFrame frame)
     {
         frames.add(frame);
     }

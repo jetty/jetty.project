@@ -2,17 +2,29 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
-public class BinaryPayloadParser extends PayloadParser
-{
-    private Parser baseParser;
+import org.eclipse.jetty.websocket.frames.BinaryFrame;
 
-    public BinaryPayloadParser(Parser parser)
+/**
+ * Parsing for the {@link BinaryFrame}.
+ */
+public class BinaryPayloadParser extends FrameParser<BinaryFrame>
+{
+    private BinaryFrame frame;
+
+    public BinaryPayloadParser()
     {
-        this.baseParser = parser;
+        super();
+        frame = new BinaryFrame();
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public BinaryFrame getFrame()
+    {
+        return frame;
+    }
+
+    @Override
+    public boolean parsePayload(ByteBuffer buffer)
     {
         // TODO Auto-generated method stub
         return false;
@@ -21,8 +33,6 @@ public class BinaryPayloadParser extends PayloadParser
     @Override
     public void reset()
     {
-        // TODO Auto-generated method stub
-
+        super.reset();
     }
-
 }

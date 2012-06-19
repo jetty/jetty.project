@@ -2,17 +2,29 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
-public class ClosePayloadParser extends PayloadParser
-{
-    private Parser baseParser;
+import org.eclipse.jetty.websocket.frames.CloseFrame;
 
-    public ClosePayloadParser(Parser parser)
+/**
+ * Parsing for the {@link CloseFrame}.
+ */
+public class ClosePayloadParser extends FrameParser<CloseFrame>
+{
+    private CloseFrame frame;
+
+    public ClosePayloadParser()
     {
-        this.baseParser = parser;
+        super();
+        frame = new CloseFrame();
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public CloseFrame getFrame()
+    {
+        return frame;
+    }
+
+    @Override
+    public boolean parsePayload(ByteBuffer buffer)
     {
         // TODO Auto-generated method stub
         return false;
@@ -21,8 +33,7 @@ public class ClosePayloadParser extends PayloadParser
     @Override
     public void reset()
     {
-        // TODO Auto-generated method stub
+        super.reset();
 
     }
-
 }

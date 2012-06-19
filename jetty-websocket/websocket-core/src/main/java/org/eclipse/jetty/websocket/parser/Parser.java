@@ -11,8 +11,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.ControlFrame;
-import org.eclipse.jetty.websocket.frames.DataFrame;
 
 /**
  * Parsing of a frame in WebSocket land.
@@ -41,36 +39,14 @@ import org.eclipse.jetty.websocket.frames.DataFrame;
 public class Parser {
     public interface Listener extends EventListener
     {
-        public static class Adapter implements Listener
-        {
-            @Override
-            public void onControlFrame(final ControlFrame frame)
-            {
-            }
-
-            @Override
-            public void onDataFrame(final DataFrame frame)
-            {
-            }
-
-            @Override
-            public void onWebSocketException(WebSocketException e)
-            {
-            }
-        }
-
-        public void onControlFrame(final ControlFrame frame);
-        public void onDataFrame(final DataFrame frame);
+        public void onFrame(final BaseFrame frame);
         public void onWebSocketException(WebSocketException e);
     }
 
     private enum State
     {
         FINOP,
-        PAYLOAD_LEN,
-        PAYLOAD_LEN_BYTES,
-        MASK,
-        MASK_BYTES,
+        BASE_FRAMING,
         PAYLOAD
     }
 
@@ -78,28 +54,23 @@ public class Parser {
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private State state = State.FINOP;
 
-    private final EnumMap<OpCode, PayloadParser> parsers = new EnumMap<>(OpCode.class);
+    private final EnumMap<OpCode, FrameParser> parsers = new EnumMap<>(OpCode.class);
 
-    // Holder for the values represented in the baseframe being parsed.
-    private BaseFrame baseframe = new BaseFrame();
-    private int length = 0;
-    private int cursor = 0;
-    private PayloadParser parser;
+    private FrameParser parser;
 
     public Parser()
     {
         /*
          * TODO: Investigate addition of decompression factory similar to SPDY work in situation of negotiated deflate extension?
          */
-        baseframe = new BaseFrame();
         reset();
 
-        parsers.put(OpCode.CONTINUATION,new ContinuationPayloadParser(this));
-        parsers.put(OpCode.TEXT,new TextPayloadParser(this));
-        parsers.put(OpCode.BINARY,new BinaryPayloadParser(this));
-        parsers.put(OpCode.CLOSE,new ClosePayloadParser(this));
-        parsers.put(OpCode.PING,new PingPayloadParser(this));
-        parsers.put(OpCode.PONG,new PongPayloadParser(this));
+        parsers.put(OpCode.CONTINUATION,new ContinuationPayloadParser());
+        parsers.put(OpCode.TEXT,new TextPayloadParser());
+        parsers.put(OpCode.BINARY,new BinaryPayloadParser());
+        parsers.put(OpCode.CLOSE,new ClosePayloadParser());
+        parsers.put(OpCode.PING,new PingPayloadParser());
+        parsers.put(OpCode.PONG,new PongPayloadParser());
     }
 
     public void addListener(Listener listener)
@@ -107,34 +78,14 @@ public class Parser {
         listeners.add(listener);
     }
 
-    protected BaseFrame getBaseFrame()
+    protected void notifyFrame(final BaseFrame f)
     {
-        return baseframe;
-    }
-
-    protected void notifyControlFrame(final ControlFrame f)
-    {
-        LOG.debug("Notify Control Frame: {}",f);
+        LOG.debug("Notify Frame: {}",f);
         for (Listener listener : listeners)
         {
             try
             {
-                listener.onControlFrame(f);
-            }
-            catch (Throwable t)
-            {
-                LOG.warn(t);
-            }
-        }
-    }
-
-    protected void notifyDataFrame(final DataFrame frame) {
-        LOG.debug("Notify Data Frame: {}",frame);
-        for (Listener listener : listeners)
-        {
-            try
-            {
-                listener.onDataFrame(frame);
+                listener.onFrame(f);
             }
             catch (Throwable t)
             {
@@ -165,110 +116,31 @@ public class Parser {
                         // peek at byte
                         byte b = buffer.get();
                         byte flags = (byte)(0xF & (b >> 4));
-                        baseframe.setFin((flags & BaseFrame.FLAG_FIN) == 1);
-                        baseframe.setRsv1((flags & BaseFrame.FLAG_RSV1) == 1);
-                        baseframe.setRsv2((flags & BaseFrame.FLAG_RSV2) == 1);
-                        baseframe.setRsv3((flags & BaseFrame.FLAG_RSV3) == 1);
+                        boolean fin = ((flags & BaseFrame.FLAG_FIN) == 1);
+                        boolean rsv1 = ((flags & BaseFrame.FLAG_RSV1) == 1);
+                        boolean rsv2 = ((flags & BaseFrame.FLAG_RSV2) == 1);
+                        boolean rsv3 = ((flags & BaseFrame.FLAG_RSV3) == 1);
                         OpCode opcode = OpCode.from((byte)(b & 0xF));
-                        baseframe.setOpCode(opcode);
 
-                        if (opcode.isControlFrame() && !baseframe.isLastFrame())
+                        if (opcode.isControlFrame() && !fin)
                         {
                             throw new WebSocketException("Fragmented Control Frame");
                         }
-                        state = State.PAYLOAD_LEN;
-                        break;
-                    }
-                    case PAYLOAD_LEN:
-                    {
-                        byte b = buffer.get();
-                        baseframe.setMasked((b & 0x80) != 0);
-                        length = (byte)(0x7F & b);
 
-                        if (b == 127)
+                        if (parser == null)
                         {
-                            // length 4 bytes (extended payload length)
-                            if (buffer.remaining() >= 4)
-                            {
-                                length = buffer.getInt();
-                            }
-                            else
-                            {
-                                length = 0;
-                                state = State.PAYLOAD_LEN_BYTES;
-                                cursor = 4;
-                                break; // continue onto next state
-                            }
-                        }
-                        else if (b == 126)
-                        {
-                            // length 2 bytes (extended payload length)
-                            if (buffer.remaining() >= 2)
-                            {
-                                length = buffer.getShort();
-                            }
-                            else
-                            {
-                                length = 0;
-                                state = State.PAYLOAD_LEN_BYTES;
-                                cursor = 2;
-                                break; // continue onto next state
-                            }
+                            // Establish specific type parser and hand off to them.
+                            parser = parsers.get(opcode);
+                            parser.reset();
+                            parser.initFrame(fin,rsv1,rsv2,rsv3,opcode);
                         }
 
-                        baseframe.setPayloadLength(length);
-                        if (baseframe.isMasked())
-                        {
-                            state = State.MASK;
-                        }
-                        else
-                        {
-                            state = State.PAYLOAD;
-                        }
-
+                        state = State.BASE_FRAMING;
                         break;
                     }
-                    case PAYLOAD_LEN_BYTES:
+                    case BASE_FRAMING:
                     {
-                        byte b = buffer.get();
-                        --cursor;
-                        length |= (b & 0xFF) << (8 * cursor);
-                        if (cursor == 0)
-                        {
-                            baseframe.setPayloadLength(length);
-                            if (baseframe.isMasked())
-                            {
-                                state = State.MASK;
-                            }
-                            else
-                            {
-                                state = State.PAYLOAD;
-                            }
-                        }
-                        break;
-                    }
-                    case MASK:
-                    {
-                        byte m[] = new byte[4];
-                        baseframe.setMask(m);
-                        if (buffer.remaining() >= 4)
-                        {
-                            buffer.get(m,0,4);
-                            state = State.PAYLOAD;
-                        }
-                        else
-                        {
-                            state = State.MASK_BYTES;
-                            cursor = 4;
-                        }
-                        break;
-                    }
-                    case MASK_BYTES:
-                    {
-                        byte b = buffer.get();
-                        --cursor;
-                        baseframe.getMask()[cursor] = b;
-                        if (cursor == 0)
+                        if (parser.parseBaseFraming(buffer))
                         {
                             state = State.PAYLOAD;
                         }
@@ -276,14 +148,9 @@ public class Parser {
                     }
                     case PAYLOAD:
                     {
-                        if (parser == null)
+                        if (parser.parsePayload(buffer))
                         {
-                            // Establish specific type parser and hand off to them.
-                            parser = parsers.get(baseframe.getOpCode());
-                        }
-
-                        if (parser.parse(buffer))
-                        {
+                            notifyFrame(parser.getFrame());
                             reset();
                         }
                         break;
@@ -311,7 +178,7 @@ public class Parser {
     public void reset()
     {
         state = State.FINOP;
+        parser.reset();
         parser = null;
-        baseframe.reset();
     }
 }

@@ -7,29 +7,28 @@ import org.eclipse.jetty.websocket.frames.PingFrame;
 /**
  * Parsing for the {@link PingFrame}.
  */
-public class PingPayloadParser extends PayloadParser
+public class PingPayloadParser extends FrameParser<PingFrame>
 {
-    private Parser baseParser;
+    private PingFrame frame;
     private ByteBuffer payload;
     private int payloadLength;
 
-    public PingPayloadParser(Parser parser)
+    public PingPayloadParser()
     {
-        this.baseParser = parser;
-    }
-
-    private void onPingFrame()
-    {
-        PingFrame ping = new PingFrame();
-        ping.copy(baseParser.getBaseFrame());
-        ping.setPayload(payload);
-        baseParser.notifyControlFrame(ping);
+        super();
+        frame = new PingFrame();
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public PingFrame getFrame()
     {
-        payloadLength = baseParser.getBaseFrame().getPayloadLength();
+        return frame;
+    }
+
+    @Override
+    public boolean parsePayload(ByteBuffer buffer)
+    {
+        payloadLength = getFrame().getPayloadLength();
         while (buffer.hasRemaining())
         {
             if (payload == null)
@@ -41,12 +40,12 @@ public class PingPayloadParser extends PayloadParser
             int size = Math.min(payloadLength,buffer.remaining());
             int limit = buffer.limit();
             buffer.limit(buffer.position() + size);
-            ByteBuffer bytes = buffer.slice();
+            ByteBuffer bytes = buffer.slice(); // TODO: make sure reference to subsection is acceptable
             buffer.limit(limit);
             payload.put(bytes);
             if (payload.position() >= payloadLength)
             {
-                onPingFrame();
+                frame.setPayload(bytes);
                 return true;
             }
         }
@@ -56,6 +55,7 @@ public class PingPayloadParser extends PayloadParser
     @Override
     public void reset()
     {
+        super.reset();
         payload = null;
     }
 }
