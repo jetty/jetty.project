@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 
 /**
@@ -11,9 +12,9 @@ public class BinaryPayloadParser extends FrameParser<BinaryFrame>
 {
     private BinaryFrame frame;
 
-    public BinaryPayloadParser()
+    public BinaryPayloadParser(WebSocketSettings settings)
     {
-        super();
+        super(settings);
         frame = new BinaryFrame();
     }
 

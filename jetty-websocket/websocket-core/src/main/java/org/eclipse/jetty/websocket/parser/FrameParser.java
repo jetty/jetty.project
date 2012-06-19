@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 /**
@@ -43,9 +44,15 @@ public abstract class FrameParser<T extends BaseFrame>
     }
 
     private static final Logger LOG = Log.getLogger(FrameParser.class);
+    private WebSocketSettings settings;
     private State state = State.PAYLOAD_LEN;
     private int length = 0;
     private int cursor = 0;
+
+    public FrameParser(WebSocketSettings settings)
+    {
+        this.settings = settings;
+    }
 
     /**
      * The frame that is being parsed
@@ -53,6 +60,11 @@ public abstract class FrameParser<T extends BaseFrame>
      * @return the frame that is being parsed. should always return an object (never null)
      */
     public abstract T getFrame();
+
+    protected WebSocketSettings getSettings()
+    {
+        return settings;
+    }
 
     /**
      * Initialize the base framing values.

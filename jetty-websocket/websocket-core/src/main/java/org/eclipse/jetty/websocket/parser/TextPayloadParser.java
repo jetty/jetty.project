@@ -2,15 +2,16 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 
 public class TextPayloadParser extends FrameParser<TextFrame>
 {
     private TextFrame frame;
 
-    public TextPayloadParser()
+    public TextPayloadParser(WebSocketSettings settings)
     {
-        super();
+        super(settings);
         frame = new TextFrame();
     }
 

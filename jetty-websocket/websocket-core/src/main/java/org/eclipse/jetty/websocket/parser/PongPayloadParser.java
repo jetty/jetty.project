@@ -2,15 +2,16 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 
 public class PongPayloadParser extends FrameParser<PongFrame>
 {
     private PongFrame frame;
 
-    public PongPayloadParser()
+    public PongPayloadParser(WebSocketSettings settings)
     {
-        super();
+        super(settings);
         frame = new PongFrame();
     }
 

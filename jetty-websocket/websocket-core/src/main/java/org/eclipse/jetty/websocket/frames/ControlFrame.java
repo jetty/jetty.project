@@ -3,7 +3,6 @@ package org.eclipse.jetty.websocket.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.OpCode;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 
 public abstract class ControlFrame extends BaseFrame
 {
@@ -29,21 +28,14 @@ public abstract class ControlFrame extends BaseFrame
         return payload;
     }
 
-    public void setPayload(ByteBuffer payload)
-    {
-        if ( payload.array().length >= 126 )
-        {
-            this.payload = payload;
-            setPayloadLength(payload.array().length);
-        }
-        else
-        {
-            throw new WebSocketException("too long, catch this better");
-        }
-    }
-
     public boolean hasPayload()
     {
         return payload != null;
+    }
+
+    public void setPayload(ByteBuffer payload)
+    {
+        this.payload = payload;
+        setPayloadLength(payload.array().length);
     }
 }

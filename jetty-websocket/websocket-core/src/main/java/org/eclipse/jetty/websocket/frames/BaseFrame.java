@@ -36,10 +36,6 @@ public class BaseFrame
     private boolean masked = false;
     private int payloadLength;
     private byte mask[];
-    public final static int FLAG_FIN = 0x8;
-    public final static int FLAG_RSV1 = 0x4;
-    public final static int FLAG_RSV2 = 0x2;
-    public final static int FLAG_RSV3 = 0x1;
 
     /**
      * Default constructor
@@ -155,6 +151,7 @@ public class BaseFrame
     public void setMask(byte[] maskingKey)
     {
         this.mask = maskingKey;
+        this.masked = (mask != null);
     }
 
     public void setMasked(boolean mask)

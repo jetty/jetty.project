@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 
 /**
@@ -13,9 +14,9 @@ public class PingPayloadParser extends FrameParser<PingFrame>
     private ByteBuffer payload;
     private int payloadLength;
 
-    public PingPayloadParser()
+    public PingPayloadParser(WebSocketSettings settings)
     {
-        super();
+        super(settings);
         frame = new PingFrame();
     }
 

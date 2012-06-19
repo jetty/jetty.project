@@ -37,6 +37,6 @@ public class PingFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return String.format("%s ping, payload=%s", super.toString(), hasPayload());
+        return String.format("%s ping, payload[has=%b, string=%s]",super.toString(),hasPayload(),getPayload().toString());
     }
 }

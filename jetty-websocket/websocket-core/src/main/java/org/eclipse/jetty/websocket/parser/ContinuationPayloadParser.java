@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.ContinuationFrame;
 
 /**
@@ -11,9 +12,9 @@ public class ContinuationPayloadParser extends FrameParser<ContinuationFrame>
 {
     private ContinuationFrame frame;
 
-    public ContinuationPayloadParser()
+    public ContinuationPayloadParser(WebSocketSettings settings)
     {
-        super();
+        super(settings);
         frame = new ContinuationFrame();
     }
 
