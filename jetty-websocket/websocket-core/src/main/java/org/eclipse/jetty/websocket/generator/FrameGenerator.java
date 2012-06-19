@@ -72,6 +72,8 @@ public abstract class FrameGenerator<T extends BaseFrame>
         ByteBuffer buffer = ByteBuffer.allocate(buflen);
         // TODO: figure out how to get this from a bytebuffer pool
 
+        buffer.put(framing);
+        
         generatePayload(buffer, frame);
         return buffer;
     }
