@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 
 public class ByteBufferAssert
@@ -18,13 +19,16 @@ public class ByteBufferAssert
         }
     }
 
+    public static void assertEquals(String message, ByteBuffer expectedBuffer, ByteBuffer actualBuffer)
+    {
+        byte expectedBytes[] = BufferUtil.toArray(expectedBuffer);
+        byte actualBytes[] = BufferUtil.toArray(actualBuffer);
+        assertEquals(message, expectedBytes, actualBytes);
+    }
+
     public static void assertEquals(String message, String expectedString, ByteBuffer actualBuffer)
     {
-        int len = actualBuffer.remaining();
-        byte actual[] = new byte[len];
-        actualBuffer.get(actual, 0, len);
-
-        byte expected[] = expectedString.getBytes();
-        assertEquals(message, expected, actual);
+        String actualString = BufferUtil.toString(actualBuffer);
+        Assert.assertThat(message,expectedString,is(actualString));
     }
 }
