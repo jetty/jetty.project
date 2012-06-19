@@ -13,11 +13,6 @@ public abstract class ControlFrame extends BaseFrame
         super();
     }
 
-    public ControlFrame(BaseFrame copy)
-    {
-        super(copy);
-    }
-
     public ControlFrame(OpCode opcode)
     {
         super(opcode);

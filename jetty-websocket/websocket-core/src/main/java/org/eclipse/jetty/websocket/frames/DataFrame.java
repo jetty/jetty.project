@@ -9,11 +9,6 @@ public abstract class DataFrame extends BaseFrame
         super();
     }
 
-    public DataFrame(BaseFrame copy)
-    {
-        super(copy);
-    }
-
     public DataFrame(OpCode opcode)
     {
         super(opcode);

@@ -20,20 +20,6 @@ public class BinaryFrame extends DataFrame
     }
 
     /**
-     * Copy Constructor
-     * 
-     * @param base
-     *            the base frame to work off of.
-     */
-    public BinaryFrame(BaseFrame base)
-    {
-        super(base);
-        // TODO: limit this somehow?
-        // TODO: create a streaming binary frame?
-        data = ByteBuffer.allocate(base.getPayloadLength());
-    }
-
-    /**
      * Get the data
      * 
      * @return the raw bytebuffer data (can be null)

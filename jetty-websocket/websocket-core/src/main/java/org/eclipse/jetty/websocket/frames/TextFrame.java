@@ -18,17 +18,6 @@ public class TextFrame extends DataFrame
     }
 
     /**
-     * Copy Constructor
-     * 
-     * @param base
-     *            the base frame to work off of.
-     */
-    public TextFrame(BaseFrame copy)
-    {
-        super(copy);
-    }
-
-    /**
      * Get the data
      * 
      * @return the raw StringBuilder data (can be null)

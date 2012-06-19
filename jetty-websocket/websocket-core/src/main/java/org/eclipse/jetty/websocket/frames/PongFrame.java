@@ -35,6 +35,13 @@ public class PongFrame extends ControlFrame
     public PongFrame(PingFrame ping)
     {
         this();
+        if (ping.isMasked())
+        {
+            int mlen = ping.getMask().length;
+            byte maskCopy[] = new byte[mlen];
+            System.arraycopy(ping.getMask(),0,maskCopy,0,mlen);
+            this.setMask(maskCopy);
+        }
         setPayload(ping.getPayload());
     }
 

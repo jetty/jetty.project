@@ -45,41 +45,11 @@ public class BaseFrame
     }
 
     /**
-     * Copy Constructor
-     * @param copy the copy
-     */
-    public BaseFrame(BaseFrame copy) {
-        this();
-        copy(copy);
-    }
-
-    /**
      * Construct form opcode
      */
     public BaseFrame(OpCode opcode) {
         reset();
         this.opcode = opcode;
-    }
-
-    /**
-     * Copy the baseframe values
-     * 
-     * @param copy
-     */
-    public void copy(BaseFrame copy) {
-        this.fin = copy.fin;
-        this.rsv1 = copy.rsv1;
-        this.rsv2 = copy.rsv2;
-        this.rsv3 = copy.rsv3;
-        this.opcode = copy.opcode;
-        this.masked = copy.masked;
-        this.payloadLength = copy.payloadLength;
-        if (copy.mask != null)
-        {
-            int mlen = copy.mask.length;
-            this.mask = new byte[mlen];
-            System.arraycopy(copy.mask,0,this.mask,0,mlen);
-        }
     }
 
     public byte[] getMask()
