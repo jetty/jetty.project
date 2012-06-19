@@ -39,7 +39,7 @@ public class FrameParseCapture implements Parser.Listener
     {
         int count = 0;
         for(BaseFrame frame: frames) {
-            if (frame.getClass().isInstance(frameType))
+            if (frameType.isInstance(frame))
             {
                 count++;
             }

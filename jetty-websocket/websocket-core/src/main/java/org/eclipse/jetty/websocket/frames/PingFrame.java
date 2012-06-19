@@ -34,9 +34,22 @@ public class PingFrame extends ControlFrame
         return OpCode.PING;
     }
 
+    public String getPayloadAsString()
+    {
+        if (hasPayload())
+        {
+            ByteBuffer payload = getPayload();
+            return payload.asCharBuffer().toString();
+        }
+        else
+        {
+            return "<n/a>";
+        }
+    }
+
     @Override
     public String toString()
     {
-        return String.format("%s ping, payload[has=%b, string=%s]",super.toString(),hasPayload(),getPayload().toString());
+        return String.format("%s ping, payload[has=%b, string=%s]",super.toString(),hasPayload(),getPayloadAsString());
     }
 }

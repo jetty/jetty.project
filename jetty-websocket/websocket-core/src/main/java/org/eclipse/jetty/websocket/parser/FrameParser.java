@@ -54,6 +54,15 @@ public abstract class FrameParser<T extends BaseFrame>
         this.settings = settings;
     }
 
+    protected int copyBuffer(ByteBuffer src, ByteBuffer dest, int length)
+    {
+        int amt = Math.min(length,src.remaining());
+        byte b[] = new byte[amt];
+        src.get(b,0,amt);
+        dest.put(b,0,amt);
+        return amt;
+    }
+
     /**
      * The frame that is being parsed
      * 

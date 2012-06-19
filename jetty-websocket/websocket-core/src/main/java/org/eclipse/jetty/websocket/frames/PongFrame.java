@@ -30,7 +30,9 @@ public class PongFrame extends ControlFrame
 
     /**
      * Construct appropriate PongFrame from PingFrame
-     * @param ping the ping frame to base pong from
+     * 
+     * @param ping
+     *            the ping frame to base pong from
      */
     public PongFrame(PingFrame ping)
     {
