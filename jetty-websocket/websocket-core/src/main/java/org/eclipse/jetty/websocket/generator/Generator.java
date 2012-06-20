@@ -7,7 +7,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.masks.Masker;
 
 /**
  * Generating a frame in WebSocket land.
@@ -36,18 +35,16 @@ import org.eclipse.jetty.websocket.masks.Masker;
 public class Generator {
 
     private final EnumMap<OpCode, FrameGenerator<?>> generators = new EnumMap<>(OpCode.class);
-    private Masker maskgen = null;
 
-    public Generator(ByteBufferPool bufferPool, WebSocketPolicy settings) 
+    public Generator(ByteBufferPool bufferPool, WebSocketPolicy policy)
     {
-        generators.put(OpCode.PING,new PingFrameGenerator(bufferPool, settings));
-        generators.put(OpCode.PONG,new PongFrameGenerator(bufferPool, settings));
-        generators.put(OpCode.CLOSE,new CloseFrameGenerator(bufferPool, settings));
+        generators.put(OpCode.PING,new PingFrameGenerator(bufferPool,policy));
+        generators.put(OpCode.PONG,new PongFrameGenerator(bufferPool,policy));
+        generators.put(OpCode.CLOSE,new CloseFrameGenerator(bufferPool,policy));
     }
-    
-    
+
     @SuppressWarnings(
-    { "unchecked", "rawtypes" })
+            { "unchecked", "rawtypes" })
     public ByteBuffer generate(BaseFrame frame)
     {
         FrameGenerator generator = generators.get(frame.getOpCode());

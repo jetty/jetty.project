@@ -14,9 +14,9 @@ public class PingPayloadParser extends FrameParser<PingFrame>
     private ByteBuffer payload;
     private int payloadLength;
 
-    public PingPayloadParser(WebSocketPolicy settings)
+    public PingPayloadParser(WebSocketPolicy policy)
     {
-        super(settings);
+        super(policy);
         frame = new PingFrame();
     }
 

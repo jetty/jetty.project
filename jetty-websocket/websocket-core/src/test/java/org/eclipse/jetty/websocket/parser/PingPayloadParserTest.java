@@ -3,6 +3,8 @@ package org.eclipse.jetty.websocket.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.junit.Test;
 
@@ -16,7 +18,8 @@ public class PingPayloadParserTest
                 { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
         buf.flip();
 
-        Parser parser = new Parser();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
         parser.parse(buf);

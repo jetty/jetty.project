@@ -44,14 +44,14 @@ public abstract class FrameParser<T extends BaseFrame>
     }
 
     private static final Logger LOG = Log.getLogger(FrameParser.class);
-    private WebSocketPolicy settings;
+    private WebSocketPolicy policy;
     private State state = State.PAYLOAD_LEN;
     private int length = 0;
     private int cursor = 0;
 
-    public FrameParser(WebSocketPolicy settings)
+    public FrameParser(WebSocketPolicy policy)
     {
-        this.settings = settings;
+        this.policy = policy;
     }
 
     /**
@@ -94,9 +94,9 @@ public abstract class FrameParser<T extends BaseFrame>
      */
     public abstract T getFrame();
 
-    protected WebSocketPolicy getSettings()
+    protected WebSocketPolicy getPolicy()
     {
-        return settings;
+        return policy;
     }
 
     /**

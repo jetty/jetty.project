@@ -5,7 +5,8 @@ import static org.hamcrest.Matchers.*;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.Debug;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,9 +19,6 @@ public class TextPayloadParserTest
     @Test
     public void testLongMaskedText() throws Exception
     {
-        Debug.enableDebugLogging(Parser.class);
-        Debug.enableDebugLogging(TextPayloadParser.class);
-
         StringBuffer sb = new StringBuffer(); ;
         for (int i = 0; i < 3500; i++)
         {
@@ -41,7 +39,8 @@ public class TextPayloadParserTest
         writeMaskedPayload(buf,utf);
         buf.flip();
 
-        Parser parser = new Parser();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
         parser.parse(buf);
@@ -55,9 +54,6 @@ public class TextPayloadParserTest
     @Test
     public void testMediumMaskedText() throws Exception
     {
-        Debug.enableDebugLogging(Parser.class);
-        Debug.enableDebugLogging(TextPayloadParser.class);
-
         StringBuffer sb = new StringBuffer(); ;
         for (int i = 0; i < 14; i++)
         {
@@ -78,7 +74,8 @@ public class TextPayloadParserTest
         writeMaskedPayload(buf,utf);
         buf.flip();
 
-        Parser parser = new Parser();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
         parser.parse(buf);
@@ -92,9 +89,6 @@ public class TextPayloadParserTest
     @Test
     public void testShortMaskedFragmentedText() throws Exception
     {
-        Debug.enableDebugLogging(Parser.class);
-        Debug.enableDebugLogging(TextPayloadParser.class);
-
         String part1 = "Hello ";
         String part2 = "World";
 
@@ -117,7 +111,8 @@ public class TextPayloadParserTest
 
         buf.flip();
 
-        Parser parser = new Parser();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
         parser.parse(buf);
@@ -142,7 +137,8 @@ public class TextPayloadParserTest
         writeMaskedPayload(buf,expectedText.getBytes(StringUtil.__UTF8));
         buf.flip();
 
-        Parser parser = new Parser();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
         parser.parse(buf);
@@ -167,7 +163,8 @@ public class TextPayloadParserTest
         writeMaskedPayload(buf,utf);
         buf.flip();
 
-        Parser parser = new Parser();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
         parser.parse(buf);

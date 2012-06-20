@@ -1,9 +1,11 @@
 package org.eclipse.jetty.websocket.parser;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -16,7 +18,8 @@ public class ParserTest
         // Put nothing in the buffer.
         buf.flip();
 
-        Parser parser = new Parser();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
         parser.parse(buf);

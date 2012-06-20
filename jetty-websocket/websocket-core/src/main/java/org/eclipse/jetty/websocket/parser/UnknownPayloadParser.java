@@ -9,9 +9,9 @@ public class UnknownPayloadParser extends FrameParser<BaseFrame>
 {
     private BaseFrame frame;
 
-    public UnknownPayloadParser(WebSocketPolicy settings)
+    public UnknownPayloadParser(WebSocketPolicy policy)
     {
-        super(settings);
+        super(policy);
         frame = new BaseFrame();
     }
 

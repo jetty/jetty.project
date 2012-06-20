@@ -6,46 +6,17 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.Debug;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.masks.FixedMasker;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest
 {
     StandardByteBufferPool bufferPool = new StandardByteBufferPool();
-    
-    @Test
-    public void testSingleUnmaskedPingRequest() throws Exception
-    {
-        
-        ByteBuffer buf = ByteBuffer.allocate(7);
-        buf.put(new byte[] {
-                (byte)0x89, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f
-        });
-        
-        //buffer.flip();
-        
-        PingFrame ping = new PingFrame();
-        ByteBuffer payload = ByteBuffer.allocate(5);
 
-        payload.put("Hello".getBytes(), 0, 5);
-        ping.setPayload(payload);
-        
-        PingFrameGenerator generator = new PingFrameGenerator(bufferPool, new WebSocketPolicy());
-        
-        ByteBuffer generatedPing = generator.generate(ping);
-
-        Debug.dumpState(buf);
-        Debug.dumpState(generatedPing);
-        
-        ByteBufferAssert.assertEquals("ping buffers are not equal",buf,generatedPing);
-    
-    }
-    
-    
     @Test
     public void testSingleMaskedPongRequest()
     {
@@ -61,19 +32,49 @@ public class RFC6455ExamplesGeneratorTest
         payload.put("Hello".getBytes(), 0, 5);
         pong.setPayload(payload);
 
-        WebSocketPolicy settings = new WebSocketPolicy();
-        settings.setMasker(new FixedMasker());
-        
-        PongFrameGenerator generator = new PongFrameGenerator(bufferPool, settings);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        policy.setMasker(new FixedMasker());
+
+        PongFrameGenerator generator = new PongFrameGenerator(bufferPool,policy);
 
         ByteBuffer generatedPong = generator.generate(pong);
         Debug.dumpState(buf);
         Debug.dumpState(generatedPong);
-        
+
         ByteBufferAssert.assertEquals("pong buffers are not equal", buf, generatedPong);
 
     }
-    
-   
+
+
+    @Test
+    public void testSingleUnmaskedPingRequest() throws Exception
+    {
+
+        ByteBuffer buf = ByteBuffer.allocate(7);
+        buf.put(new byte[] {
+                (byte)0x89, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f
+        });
+
+        //buffer.flip();
+
+        PingFrame ping = new PingFrame();
+        ByteBuffer payload = ByteBuffer.allocate(5);
+
+        payload.put("Hello".getBytes(), 0, 5);
+        ping.setPayload(payload);
+
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        PingFrameGenerator generator = new PingFrameGenerator(bufferPool, policy);
+
+        ByteBuffer generatedPing = generator.generate(ping);
+
+        Debug.dumpState(buf);
+        Debug.dumpState(generatedPing);
+
+        ByteBufferAssert.assertEquals("ping buffers are not equal",buf,generatedPing);
+
+    }
+
+
 }
 

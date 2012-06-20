@@ -13,9 +13,9 @@ public class TextPayloadParser extends FrameParser<TextFrame>
     private ByteBuffer payload;
     private int payloadLength;
 
-    public TextPayloadParser(WebSocketPolicy settings)
+    public TextPayloadParser(WebSocketPolicy policy)
     {
-        super(settings);
+        super(policy);
         frame = new TextFrame();
     }
 
@@ -40,6 +40,7 @@ public class TextPayloadParser extends FrameParser<TextFrame>
         {
             if (payload == null)
             {
+                getPolicy().assertValidTextMessageSize(payloadLength);
                 payload = ByteBuffer.allocate(payloadLength);
             }
 

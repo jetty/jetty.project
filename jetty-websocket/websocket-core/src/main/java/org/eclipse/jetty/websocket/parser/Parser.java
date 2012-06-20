@@ -36,30 +36,25 @@ public class Parser
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final EnumMap<OpCode, FrameParser<?>> parsers = new EnumMap<>(OpCode.class);
     private FrameParser<?> parser;
-    private WebSocketPolicy settings;
+    private WebSocketPolicy policy;
     private State state = State.FINOP;
     private int currentContinuationIndex = 0;
 
-    public Parser()
-    {
-        this(new WebSocketPolicy());
-    }
-
-    public Parser(WebSocketPolicy settings)
+    public Parser(WebSocketPolicy wspolicy)
     {
         /*
          * TODO: Investigate addition of decompression factory similar to SPDY work in situation of negotiated deflate extension?
          */
 
-        this.settings = settings;
+        this.policy = wspolicy;
 
         reset();
 
-        parsers.put(OpCode.TEXT,new TextPayloadParser(settings));
-        parsers.put(OpCode.BINARY,new BinaryPayloadParser(settings));
-        parsers.put(OpCode.CLOSE,new ClosePayloadParser(settings));
-        parsers.put(OpCode.PING,new PingPayloadParser(settings));
-        parsers.put(OpCode.PONG,new PongPayloadParser(settings));
+        parsers.put(OpCode.TEXT,new TextPayloadParser(policy));
+        parsers.put(OpCode.BINARY,new BinaryPayloadParser(policy));
+        parsers.put(OpCode.CLOSE,new ClosePayloadParser(policy));
+        parsers.put(OpCode.PING,new PingPayloadParser(policy));
+        parsers.put(OpCode.PONG,new PongPayloadParser(policy));
     }
 
     public void addListener(Listener listener)
@@ -67,9 +62,9 @@ public class Parser
         listeners.add(listener);
     }
 
-    public WebSocketPolicy getSettings()
+    public WebSocketPolicy getPolicy()
     {
-        return settings;
+        return policy;
     }
 
     protected void notifyFrame(final BaseFrame f)

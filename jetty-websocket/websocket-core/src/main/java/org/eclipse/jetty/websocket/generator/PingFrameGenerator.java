@@ -8,9 +8,9 @@ import org.eclipse.jetty.websocket.frames.PingFrame;
 
 public class PingFrameGenerator extends FrameGenerator<PingFrame>
 {
-    public PingFrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy settings)
+    public PingFrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy policy)
     {
-        super(bufferPool, settings);
+        super(bufferPool, policy);
     }
 
     @Override

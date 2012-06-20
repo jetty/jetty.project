@@ -14,9 +14,9 @@ public class BinaryPayloadParser extends FrameParser<BinaryFrame>
     private ByteBuffer payload;
     private int payloadLength;
 
-    public BinaryPayloadParser(WebSocketPolicy settings)
+    public BinaryPayloadParser(WebSocketPolicy policy)
     {
-        super(settings);
+        super(policy);
         frame = new BinaryFrame();
     }
 
@@ -41,7 +41,7 @@ public class BinaryPayloadParser extends FrameParser<BinaryFrame>
         {
             if (payload == null)
             {
-                // TODO: buffer size limits
+                getPolicy().assertValidBinaryMessageSize(payloadLength);
                 payload = ByteBuffer.allocate(payloadLength);
             }
 

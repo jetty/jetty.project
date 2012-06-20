@@ -12,9 +12,9 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
 {
     private CloseFrame frame;
 
-    public ClosePayloadParser(WebSocketPolicy settings)
+    public ClosePayloadParser(WebSocketPolicy policy)
     {
-        super(settings);
+        super(policy);
         frame = new CloseFrame();
     }
 

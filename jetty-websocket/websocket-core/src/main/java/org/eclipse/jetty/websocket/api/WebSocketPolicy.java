@@ -24,7 +24,36 @@ public class WebSocketPolicy
     /**
      * Behavior of the websockets
      */
-    private WebSocketBehavior behavior = WebSocketBehavior.SERVER; // TODO: Review default
+    private final WebSocketBehavior behavior;
+
+    public WebSocketPolicy(WebSocketBehavior behavior)
+    {
+        this.behavior = behavior;
+    }
+
+    public void assertValidBinaryMessageSize(int requestedSize)
+    {
+        if (maxBinaryMessageSize > 0)
+        {
+            // validate it
+            if (requestedSize > maxBinaryMessageSize)
+            {
+                throw new PolicyViolationException("Requested binary message size [" + requestedSize + "] exceeds maximum size [" + maxBinaryMessageSize + "]");
+            }
+        }
+    }
+
+    public void assertValidTextMessageSize(int requestedSize)
+    {
+        if (maxTextMessageSize > 0)
+        {
+            // validate it
+            if (requestedSize > maxTextMessageSize)
+            {
+                throw new PolicyViolationException("Requested text message size [" + requestedSize + "] exceeds maximum size [" + maxTextMessageSize + "]");
+            }
+        }
+    }
 
     public WebSocketBehavior getBehavior()
     {
@@ -46,11 +75,6 @@ public class WebSocketPolicy
         return maxTextMessageSize;
     }
 
-    public void setBehavior(WebSocketBehavior behavior)
-    {
-        this.behavior = behavior;
-    }
-
     public void setMasker(Masker masker)
     {
         this.masker = masker;
@@ -65,5 +89,4 @@ public class WebSocketPolicy
     {
         this.maxTextMessageSize = maxTextMessageSize;
     }
-
 }

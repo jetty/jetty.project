@@ -11,9 +11,9 @@ public class PongPayloadParser extends FrameParser<PongFrame>
     private ByteBuffer payload;
     private int payloadLength;
 
-    public PongPayloadParser(WebSocketPolicy settings)
+    public PongPayloadParser(WebSocketPolicy policy)
     {
-        super(settings);
+        super(policy);
         frame = new PongFrame();
     }
 

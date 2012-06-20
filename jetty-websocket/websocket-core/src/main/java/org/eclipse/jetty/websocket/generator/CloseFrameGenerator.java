@@ -3,25 +3,26 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.PingFrame;
 
 public class CloseFrameGenerator extends FrameGenerator<CloseFrame>
 {
-    public CloseFrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy settings)
+    public CloseFrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy policy)
     {
-        super(bufferPool, settings);
+        super(bufferPool, policy);
     }
 
     @Override
     public ByteBuffer payload(CloseFrame close)
     {
         ByteBuffer b = ByteBuffer.allocate(close.getReason().length() + 2);
-        
+
         b.putShort(close.getStatusCode());
-        b.put(close.getReason().getBytes()); // TODO force UTF-8 and work out ex handling
-        
+        byte utf[] = close.getReason().getBytes(StringUtil.__UTF8_CHARSET);
+        b.put(utf,0,utf.length);
+
         return b;
     }
 }

@@ -3,18 +3,19 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 public abstract class FrameGenerator<T extends BaseFrame>
 {
     private final ByteBufferPool bufferPool;
-    private final WebSocketPolicy settings;
+    private final WebSocketPolicy policy;
 
-    protected FrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy settings)
+    protected FrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy policy)
     {
         this.bufferPool = bufferPool;
-        this.settings = settings;
+        this.policy = policy;
     }
 
     public ByteBuffer generate(T frame)
@@ -25,10 +26,28 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
         // Setup fin thru opcode
         b = 0x00;
-        b |= (frame.isFin()?0x80:0x00); // 1000_0000
-        b |= (frame.isRsv1()?0x40:0x00); // 0100_0000
-        b |= (frame.isRsv2()?0x20:0x00); // 0010_0000 TODO: validate?
-        b |= (frame.isRsv3()?0x10:0x00); // 0001_0000 TODO: validate?
+        if (frame.isFin())
+        {
+            b |= 0x80; // 1000_0000
+        }
+        if (frame.isRsv1())
+        {
+            b |= 0x40; // 0100_0000
+            // TODO: extensions can negotiate this (somehow)
+            throw new PolicyViolationException("RSV1 not allowed to be set");
+        }
+        if (frame.isRsv2())
+        {
+            b |= 0x20; // 0010_0000
+            // TODO: extensions can negotiate this (somehow)
+            throw new PolicyViolationException("RSV2 not allowed to be set");
+        }
+        if (frame.isRsv3())
+        {
+            b |= 0x10;
+            // TODO: extensions can negotiate this (somehow)
+            throw new PolicyViolationException("RSV3 not allowed to be set");
+        }
         b |= (frame.getOpCode().getCode() & 0x0F);
         framing.put(b);
 
@@ -77,13 +96,13 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
         // TODO see if we can avoid the extra buffer here, make convention of payload
         // call back into masking check/method on this class?
-        
-        // generate payload        
+
+        // generate payload
         ByteBuffer payloadBuffer = payload(frame);
-        
+
         // insert framing
         buffer.put(framing);
-        
+
         // mask it if needed
         if ( frame.isMasked() )
         {
@@ -99,14 +118,19 @@ public abstract class FrameGenerator<T extends BaseFrame>
         {
             buffer.put(payloadBuffer);
         }
-        
+
         return buffer;
     }
-
-    public abstract ByteBuffer payload(T frame);
 
     protected ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }
+
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
+    }
+
+    public abstract ByteBuffer payload(T frame);
 }
