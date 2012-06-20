@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.*;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
-import org.eclipse.jetty.websocket.Debug;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
@@ -21,10 +20,6 @@ public class RFC6455ExamplesParserTest
     @Test
     public void testFragmentedUnmaskedTextMessage()
     {
-        Debug.enableDebugLogging(Parser.class);
-        Debug.enableDebugLogging(FrameParser.class);
-        Debug.enableDebugLogging(TextPayloadParser.class);
-
         Parser parser = new Parser();
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
