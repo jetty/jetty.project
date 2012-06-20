@@ -8,6 +8,8 @@ import org.eclipse.jetty.websocket.frames.PongFrame;
 public class PongPayloadParser extends FrameParser<PongFrame>
 {
     private PongFrame frame;
+    private ByteBuffer payload;
+    private int payloadLength;
 
     public PongPayloadParser(WebSocketSettings settings)
     {
@@ -22,9 +24,32 @@ public class PongPayloadParser extends FrameParser<PongFrame>
     }
 
     @Override
+    public PongFrame newFrame()
+    {
+        frame = new PongFrame();
+        return frame;
+    }
+
+    @Override
     public boolean parsePayload(ByteBuffer buffer)
     {
-        // TODO Auto-generated method stub
+        payloadLength = getFrame().getPayloadLength();
+        while (buffer.hasRemaining())
+        {
+            if (payload == null)
+            {
+                // TODO: buffer size limits
+                payload = ByteBuffer.allocate(payloadLength);
+            }
+
+            copyBuffer(buffer,payload,payload.remaining());
+
+            if (payload.position() >= payloadLength)
+            {
+                frame.setPayload(payload);
+                return true;
+            }
+        }
         return false;
     }
 
@@ -32,5 +57,6 @@ public class PongPayloadParser extends FrameParser<PongFrame>
     public void reset()
     {
         super.reset();
+        payload = null;
     }
 }

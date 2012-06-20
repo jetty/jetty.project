@@ -52,4 +52,15 @@ public class TextFrame extends DataFrame
         this.data = str;
         this.setPayloadLength(len);
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder b = new StringBuilder();
+        b.append("TextFrame[");
+        b.append("len=").append(getPayloadLength());
+        b.append(",data=").append(data);
+        b.append("]");
+        return b.toString();
+    }
 }

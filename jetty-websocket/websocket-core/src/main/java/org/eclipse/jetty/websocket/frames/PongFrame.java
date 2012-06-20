@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 
 /**
@@ -56,6 +57,19 @@ public class PongFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return String.format("%s pong, payload=%s",super.toString(), hasPayload());
+        StringBuilder b = new StringBuilder();
+        b.append("PongFrame[");
+        b.append("len=").append(getPayloadLength());
+        if (hasPayload())
+        {
+            b.append(",payload=");
+            b.append(BufferUtil.toSummaryString(getPayload()));
+        }
+        else
+        {
+            b.append(",no-payload");
+        }
+        b.append("]");
+        return b.toString();
     }
 }

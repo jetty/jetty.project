@@ -31,4 +31,9 @@ public class ByteBufferAssert
         String actualString = BufferUtil.toString(actualBuffer);
         Assert.assertThat(message,expectedString,is(actualString));
     }
+
+    public static void assertSize(String message, int expectedSize, ByteBuffer buffer)
+    {
+        Assert.assertThat(message + " buffer.remaining",buffer.remaining(),is(expectedSize));
+    }
 }

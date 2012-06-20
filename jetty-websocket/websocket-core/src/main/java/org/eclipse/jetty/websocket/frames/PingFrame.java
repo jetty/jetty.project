@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 
 /**
@@ -37,6 +38,19 @@ public class PingFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return String.format("%s ping, has-payload=%b",super.toString(),hasPayload());
+        StringBuilder b = new StringBuilder();
+        b.append("PingFrame[");
+        b.append("len=").append(getPayloadLength());
+        if (hasPayload())
+        {
+            b.append(",payload=");
+            b.append(BufferUtil.toSummaryString(getPayload()));
+        }
+        else
+        {
+            b.append(",no-payload");
+        }
+        b.append("]");
+        return b.toString();
     }
 }

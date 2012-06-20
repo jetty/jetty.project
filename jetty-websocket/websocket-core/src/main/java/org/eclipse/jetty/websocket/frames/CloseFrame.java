@@ -46,14 +46,12 @@ public class CloseFrame extends ControlFrame
     @Override
     public String toString()
     {
-        StringBuilder msg = new StringBuilder();
-        msg.append(super.toString());
-        msg.append(" statusCode=").append(statusCode);
-        if (reason != null)
-        {
-            msg.append(" reason=\"").append(reason).append("\"");
-        }
-
-        return msg.toString();
+        StringBuilder b = new StringBuilder();
+        b.append("CloseFrame[");
+        b.append("len=").append(getPayloadLength());
+        b.append(",statusCode=").append(statusCode);
+        b.append(",reason=").append(reason);
+        b.append("]");
+        return b.toString();
     }
 }

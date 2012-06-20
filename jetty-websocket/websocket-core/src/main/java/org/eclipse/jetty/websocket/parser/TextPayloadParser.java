@@ -25,6 +25,13 @@ public class TextPayloadParser extends FrameParser<TextFrame>
     }
 
     @Override
+    public TextFrame newFrame()
+    {
+        frame = new TextFrame();
+        return frame;
+    }
+
+    @Override
     public boolean parsePayload(ByteBuffer buffer)
     {
         payloadLength = getFrame().getPayloadLength();

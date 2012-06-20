@@ -110,13 +110,15 @@ public abstract class FrameParser<T extends BaseFrame>
      */
     public final void initFrame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, OpCode opcode)
     {
-        T frame = getFrame();
+        T frame = newFrame();
         frame.setFin(fin);
         frame.setRsv1(rsv1);
         frame.setRsv2(rsv2);
         frame.setRsv3(rsv3);
         frame.setOpCode(opcode);
     }
+
+    public abstract T newFrame();
 
     /**
      * Parse the base framing protocol buffer.
@@ -257,7 +259,5 @@ public abstract class FrameParser<T extends BaseFrame>
     public void reset() {
         // reset parser
         state = State.PAYLOAD_LEN;
-        // reset frame
-        getFrame().reset();
     }
 }

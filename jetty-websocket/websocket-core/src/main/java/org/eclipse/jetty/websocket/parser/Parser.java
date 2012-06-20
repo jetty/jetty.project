@@ -16,10 +16,12 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
 /**
  * Parsing of a frames in WebSocket land.
  */
-public class Parser {
+public class Parser
+{
     public interface Listener extends EventListener
     {
         public void onFrame(final BaseFrame frame);
+
         public void onWebSocketException(WebSocketException e);
     }
 
@@ -36,6 +38,7 @@ public class Parser {
     private FrameParser<?> parser;
     private WebSocketSettings settings;
     private State state = State.FINOP;
+    private int currentContinuationIndex = 0;
 
     public Parser()
     {
@@ -52,7 +55,6 @@ public class Parser {
 
         reset();
 
-        parsers.put(OpCode.CONTINUATION,new ContinuationPayloadParser(settings));
         parsers.put(OpCode.TEXT,new TextPayloadParser(settings));
         parsers.put(OpCode.BINARY,new BinaryPayloadParser(settings));
         parsers.put(OpCode.CLOSE,new ClosePayloadParser(settings));
@@ -97,7 +99,8 @@ public class Parser {
 
     public void parse(ByteBuffer buffer)
     {
-        try {
+        try
+        {
             LOG.debug("Parsing {} bytes",buffer.remaining());
             while (buffer.hasRemaining())
             {
@@ -118,13 +121,24 @@ public class Parser {
                             throw new WebSocketException("Fragmented Control Frame [" + opcode.name() + "]");
                         }
 
+                        if (opcode == OpCode.CONTINUATION)
+                        {
+                            if (parser == null)
+                            {
+                                throw new WebSocketException("Fragment continuation frame without prior !FIN");
+                            }
+
+                            currentContinuationIndex++;
+                        }
+
                         if (parser == null)
                         {
                             // Establish specific type parser and hand off to them.
                             parser = parsers.get(opcode);
-                            parser.reset();
-                            parser.initFrame(fin,rsv1,rsv2,rsv3,opcode);
                         }
+                        parser.reset();
+                        parser.initFrame(fin,rsv1,rsv2,rsv3,opcode);
+                        parser.getFrame().setContinuationIndex(currentContinuationIndex);
 
                         state = State.BASE_FRAMING;
                         break;
@@ -142,7 +156,12 @@ public class Parser {
                         if (parser.parsePayload(buffer))
                         {
                             notifyFrame(parser.getFrame());
-                            reset();
+                            parser.reset();
+                            if (parser.getFrame().isFin())
+                            {
+                                currentContinuationIndex = 0;
+                                reset();
+                            }
                             state = State.FINOP;
                         }
                         break;
@@ -153,10 +172,13 @@ public class Parser {
         catch (WebSocketException e)
         {
             notifyWebSocketException(e);
-        } catch(Throwable t) {
+        }
+        catch (Throwable t)
+        {
             notifyWebSocketException(new WebSocketException(t));
         }
-        finally {
+        finally
+        {
             // Be sure to consume after exceptions
             buffer.position(buffer.limit());
         }

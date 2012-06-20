@@ -22,6 +22,13 @@ public class UnknownPayloadParser extends FrameParser<BaseFrame>
     }
 
     @Override
+    public BaseFrame newFrame()
+    {
+        frame = new BaseFrame();
+        return frame;
+    }
+
+    @Override
     public boolean parsePayload(ByteBuffer buffer)
     {
         return false;
@@ -32,5 +39,4 @@ public class UnknownPayloadParser extends FrameParser<BaseFrame>
     {
         super.reset();
     }
-
 }

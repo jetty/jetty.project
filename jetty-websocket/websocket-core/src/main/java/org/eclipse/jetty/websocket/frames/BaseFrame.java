@@ -37,6 +37,9 @@ public class BaseFrame
     private int payloadLength;
     private byte mask[];
 
+    // internal tracking
+    private int continuationIndex = 0;
+
     /**
      * Default constructor
      */
@@ -50,6 +53,20 @@ public class BaseFrame
     public BaseFrame(OpCode opcode) {
         reset();
         this.opcode = opcode;
+    }
+
+    /**
+     * The number of fragments this frame consists of.
+     * <p>
+     * For every {@link OpCode#CONTINUATION} opcode encountered, this increments by one.
+     * <p>
+     * Note: Not part of the Base Framing Protocol / header information.
+     * 
+     * @return the number of continuation fragments encountered.
+     */
+    public int getContinuationIndex()
+    {
+        return continuationIndex;
     }
 
     public byte[] getMask()
@@ -111,6 +128,12 @@ public class BaseFrame
         masked = false;
         payloadLength = -1;
         mask = null;
+        continuationIndex = 0;
+    }
+
+    public void setContinuationIndex(int continuationIndex)
+    {
+        this.continuationIndex = continuationIndex;
     }
 
     public void setFin(boolean fin)

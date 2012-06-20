@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 
 /**
@@ -58,5 +59,16 @@ public class BinaryFrame extends DataFrame
     {
         this.data = buffer;
         this.setPayloadLength(buffer.capacity());
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder b = new StringBuilder();
+        b.append("BinaryFrame[");
+        b.append("len=").append(getPayloadLength());
+        b.append(",data=").append(BufferUtil.toDetailString(getData()));
+        b.append("]");
+        return b.toString();
     }
 }

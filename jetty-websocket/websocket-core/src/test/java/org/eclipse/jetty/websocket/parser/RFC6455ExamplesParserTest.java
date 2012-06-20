@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.*;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
+import org.eclipse.jetty.websocket.Debug;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
@@ -20,6 +21,10 @@ public class RFC6455ExamplesParserTest
     @Test
     public void testFragmentedUnmaskedTextMessage()
     {
+        Debug.enableDebugLogging(Parser.class);
+        Debug.enableDebugLogging(FrameParser.class);
+        Debug.enableDebugLogging(TextPayloadParser.class);
+
         Parser parser = new Parser();
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
@@ -35,7 +40,7 @@ public class RFC6455ExamplesParserTest
         // Parse #1
         parser.parse(buf);
 
-        // part 2 of 2 "lo"
+        // part 2 of 2 "lo" (A continuation frame of the prior text message)
         buf.flip();
         buf.put(new byte[]
                 { (byte)0x80, 0x02, 0x6c, 0x6f });
@@ -72,7 +77,7 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(PongFrame.class,1);
 
         PongFrame pong = (PongFrame)capture.getFrames().get(0);
-        Assert.assertThat("PongFrame.data",pong.getPayload().toString(),is("Hello"));
+        ByteBufferAssert.assertEquals("PongFrame.payload","Hello",pong.getPayload());
     }
 
     @Test
@@ -100,13 +105,15 @@ public class RFC6455ExamplesParserTest
     @Test
     public void testSingleUnmasked256ByteBinaryMessage()
     {
-        ByteBuffer buf = ByteBuffer.allocate(300);
+        int dataSize = 256;
+
+        ByteBuffer buf = ByteBuffer.allocate(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         buf.put(new byte[]
                 { (byte)0x82, 0x7E });
         buf.putShort((short)0x01_00);
-        for (int i = 0; i < 256; i++)
+        for (int i = 0; i < dataSize; i++)
         {
             buf.put((byte)0x44);
         }
@@ -121,9 +128,16 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(BinaryFrame.class,1);
 
         BinaryFrame bin = (BinaryFrame)capture.getFrames().get(0);
-        byte data[] = new byte[bin.getPayloadLength()];
-        bin.getData().get(data,0,256);
-        Assert.assertThat("BinaryFrame.data",data.length,is(256));
+        bin.getData().flip();
+
+        Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",dataSize,bin.getData());
+
+        ByteBuffer data = bin.getData();
+        for (int i = dataSize; i > 0; i--)
+        {
+            Assert.assertThat("BinaryFrame.data[" + i + "]",data.get(),is((byte)0x44));
+        }
     }
 
     @Test
@@ -152,9 +166,16 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(BinaryFrame.class,1);
 
         BinaryFrame bin = (BinaryFrame)capture.getFrames().get(0);
-        byte data[] = new byte[bin.getPayloadLength()];
-        bin.getData().get(data,0,dataSize);
-        Assert.assertThat("BinaryFrame.data",data.length,is(dataSize));
+        bin.getData().flip();
+
+        Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",dataSize,bin.getData());
+
+        ByteBuffer data = bin.getData();
+        for (int i = dataSize; i > 0; i--)
+        {
+            Assert.assertThat("BinaryFrame.data[" + i + "]",data.get(),is((byte)0x77));
+        }
     }
 
     @Test

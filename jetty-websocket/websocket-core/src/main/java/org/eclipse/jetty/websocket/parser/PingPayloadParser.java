@@ -27,6 +27,13 @@ public class PingPayloadParser extends FrameParser<PingFrame>
     }
 
     @Override
+    public PingFrame newFrame()
+    {
+        frame = new PingFrame();
+        return frame;
+    }
+
+    @Override
     public boolean parsePayload(ByteBuffer buffer)
     {
         payloadLength = getFrame().getPayloadLength();

@@ -25,6 +25,13 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
     }
 
     @Override
+    public CloseFrame newFrame()
+    {
+        frame = new CloseFrame();
+        return frame;
+    }
+
+    @Override
     public boolean parsePayload(ByteBuffer buffer)
     {
         // TODO Auto-generated method stub
