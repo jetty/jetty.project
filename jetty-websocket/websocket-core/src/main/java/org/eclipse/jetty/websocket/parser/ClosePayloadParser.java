@@ -2,6 +2,8 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 
@@ -11,6 +13,8 @@ import org.eclipse.jetty.websocket.frames.CloseFrame;
 public class ClosePayloadParser extends FrameParser<CloseFrame>
 {
     private CloseFrame frame;
+    private ByteBuffer payload;
+    private int payloadLength;
 
     public ClosePayloadParser(WebSocketPolicy policy)
     {
@@ -34,7 +38,35 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
     @Override
     public boolean parsePayload(ByteBuffer buffer)
     {
-        // TODO Auto-generated method stub
+        payloadLength = getFrame().getPayloadLength();
+        if (payloadLength == 0)
+        {
+            // no status code. no reason.
+            return true;
+        }
+
+        while (buffer.hasRemaining())
+        {
+            if (payload == null)
+            {
+                getPolicy().assertValidBinaryMessageSize(payloadLength);
+                payload = ByteBuffer.allocate(payloadLength);
+            }
+
+            copyBuffer(buffer,payload,payload.remaining());
+
+            if (payload.position() >= payloadLength)
+            {
+                payload.flip();
+                frame.setStatusCode(payload.getShort());
+                if (payload.remaining() > 0)
+                {
+                    String reason = BufferUtil.toString(payload,StringUtil.__UTF8_CHARSET);
+                    frame.setReason(reason);
+                }
+                return true;
+            }
+        }
         return false;
     }
 

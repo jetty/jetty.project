@@ -8,7 +8,7 @@ import org.eclipse.jetty.websocket.api.WebSocket;
  */
 public class CloseFrame extends ControlFrame
 {
-    private final short statusCode;
+    private short statusCode;
     private String reason;
 
     public CloseFrame()
@@ -41,6 +41,11 @@ public class CloseFrame extends ControlFrame
     public void setReason(String reason)
     {
         this.reason = reason;
+    }
+
+    public void setStatusCode(short statusCode)
+    {
+        this.statusCode = statusCode;
     }
 
     @Override
