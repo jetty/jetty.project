@@ -28,10 +28,10 @@ import org.eclipse.jetty.websocket.api.OpCode;
  */
 public class BaseFrame
 {
-    private boolean fin;
-    private boolean rsv1;
-    private boolean rsv2;
-    private boolean rsv3;
+    private boolean fin = false;
+    private boolean rsv1 = false;
+    private boolean rsv2 = false;
+    private boolean rsv3 = false;
     private OpCode opcode = null;
     private boolean masked = false;
     private int payloadLength;

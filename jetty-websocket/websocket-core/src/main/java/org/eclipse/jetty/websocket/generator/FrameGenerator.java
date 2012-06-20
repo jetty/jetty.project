@@ -99,6 +99,8 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
         // generate payload
         ByteBuffer payloadBuffer = payload(frame);
+        
+        payloadBuffer.flip(); // flip to ensure its ready to put pushed into final buffer
 
         // insert framing
         buffer.put(framing);

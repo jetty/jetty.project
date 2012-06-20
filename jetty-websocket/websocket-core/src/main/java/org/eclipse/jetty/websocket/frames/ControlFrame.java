@@ -31,11 +31,6 @@ public abstract class ControlFrame extends BaseFrame
     public void setPayload(ByteBuffer payload)
     {
         this.payload = payload;
-        if (payload.position() != 0)
-        {
-            // Make buffer ready for reading?
-            payload.flip();
-        }
-        setPayloadLength(payload.array().length);
+        setPayloadLength(this.payload.position());
     }
 }
