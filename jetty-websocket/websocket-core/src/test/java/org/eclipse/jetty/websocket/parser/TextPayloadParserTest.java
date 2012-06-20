@@ -3,8 +3,11 @@ package org.eclipse.jetty.websocket.parser;
 import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.PolicyViolationException;
+import org.eclipse.jetty.websocket.api.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.TextFrame;
@@ -15,6 +18,36 @@ public class TextPayloadParserTest
 {
     private final byte[] mask = new byte[]
             { 0x00, (byte)0xF0, 0x0F, (byte)0xFF };
+
+    @Test
+    public void testFrameTooLargeDueToPolicyText() throws Exception
+    {
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        policy.setMaxTextMessageSize(1024); // set policy
+        byte utf[] = new byte[2048];
+        Arrays.fill(utf,(byte)'a');
+
+        Assert.assertThat("Must be a medium length payload",utf.length,allOf(greaterThan(0x7E),lessThan(0xFFFF)));
+
+        ByteBuffer buf = ByteBuffer.allocate(utf.length + 8);
+        buf.put((byte)0x81);
+        buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
+        buf.putShort((short)utf.length);
+        writeMask(buf);
+        writeMaskedPayload(buf,utf);
+        buf.flip();
+
+        Parser parser = new Parser(policy);
+        FrameParseCapture capture = new FrameParseCapture();
+        parser.addListener(capture);
+        parser.parse(buf);
+
+        capture.assertHasErrors(PolicyViolationException.class,1);
+        capture.assertHasNoFrames();
+
+        PolicyViolationException err = (PolicyViolationException)capture.getErrors().get(0);
+        Assert.assertThat("Error.closeCode",err.getCloseCode(),is(WebSocket.CLOSE_POLICY_VIOLATION));
+    }
 
     @Test
     public void testLongMaskedText() throws Exception
