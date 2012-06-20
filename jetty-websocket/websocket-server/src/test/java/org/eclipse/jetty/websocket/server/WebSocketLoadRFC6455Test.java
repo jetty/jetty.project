@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
-import org.eclipse.jetty.websocket.generator.FixedMaskGen;
+import org.eclipse.jetty.websocket.masks.FixedMasker;
 import org.eclipse.jetty.websocket.servlet.WebSocketHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -183,7 +183,7 @@ public class WebSocketLoadRFC6455Test
             this.iterations = iterations;
 
             _endp=new SocketEndPoint(socket);
-            _generator = new WebSocketGeneratorRFC6455(new WebSocketBuffers(32*1024),_endp,new FixedMaskGen());
+            _generator = new WebSocketGeneratorRFC6455(new WebSocketBuffers(32*1024),_endp,new FixedMasker());
             _parser = new WebSocketParserRFC6455(new WebSocketBuffers(32*1024),_endp,_handler,false);
 
         }

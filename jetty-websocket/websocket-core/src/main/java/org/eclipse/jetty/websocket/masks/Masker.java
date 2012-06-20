@@ -13,9 +13,9 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket.generator;
+package org.eclipse.jetty.websocket.masks;
 
-public interface MaskGen
+public interface Masker
 {
     void genMask(byte[] mask);
 }

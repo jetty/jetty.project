@@ -13,19 +13,20 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket.generator;
+package org.eclipse.jetty.websocket.masks;
 
 
-public class FixedMaskGen implements MaskGen
+
+public class FixedMasker implements Masker
 {
     private final byte[] _mask;
 
-    public FixedMaskGen()
+    public FixedMasker()
     {
         this(new byte[]{(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff});
     }
 
-    public FixedMaskGen(byte[] mask)
+    public FixedMasker(byte[] mask)
     {
         _mask=new byte[4];
         // Copy to avoid that external code keeps a reference

@@ -9,6 +9,7 @@ import org.eclipse.jetty.websocket.Debug;
 import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
+import org.eclipse.jetty.websocket.masks.FixedMasker;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -60,7 +61,10 @@ public class RFC6455ExamplesGeneratorTest
         payload.put("Hello".getBytes(), 0, 5);
         pong.setPayload(payload);
 
-        PongFrameGenerator generator = new PongFrameGenerator(bufferPool, new WebSocketSettings());
+        WebSocketSettings settings = new WebSocketSettings();
+        settings.setMaskGen(new FixedMasker());
+        
+        PongFrameGenerator generator = new PongFrameGenerator(bufferPool, settings);
 
         ByteBuffer generatedPong = generator.generate(pong);
         Debug.dumpState(buf);

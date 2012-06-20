@@ -45,7 +45,7 @@ import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.generator.ZeroMaskGen;
+import org.eclipse.jetty.websocket.masks.ZeroMasker;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -83,7 +83,7 @@ public class WebSocketClientTest
     {
         QueuedThreadPool threadPool = new QueuedThreadPool();
         int bufferSize = 512;
-        WebSocketClientFactory factory = new WebSocketClientFactory(threadPool, new ZeroMaskGen(), bufferSize);
+        WebSocketClientFactory factory = new WebSocketClientFactory(threadPool, new ZeroMasker(), bufferSize);
         threadPool.start();
         factory.start();
         WebSocketClient client = new WebSocketClient(factory);

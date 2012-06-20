@@ -53,8 +53,8 @@ import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketConnection;
 import org.eclipse.jetty.websocket.WebSocketConnectionRFC6455;
 import org.eclipse.jetty.websocket.extensions.Extension;
-import org.eclipse.jetty.websocket.generator.MaskGen;
-import org.eclipse.jetty.websocket.generator.RandomMaskGen;
+import org.eclipse.jetty.websocket.masks.Masker;
+import org.eclipse.jetty.websocket.masks.RandomMasker;
 
 /* ------------------------------------------------------------ */
 /**
@@ -74,7 +74,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     private final SslContextFactory _sslContextFactory = new SslContextFactory();
     private final ThreadPool _threadPool;
     private final WebSocketClientSelector _selector;
-    private MaskGen _maskGen;
+    private Masker _maskGen;
     private WebSocketBuffers _buffers;
 
     /* ------------------------------------------------------------ */
@@ -94,7 +94,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      */
     public WebSocketClientFactory(ThreadPool threadPool)
     {
-        this(threadPool, new RandomMaskGen());
+        this(threadPool, new RandomMasker());
     }
 
     /* ------------------------------------------------------------ */
@@ -104,7 +104,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      * @param threadPool the ThreadPool instance to use
      * @param maskGen    the MaskGen instance to use
      */
-    public WebSocketClientFactory(ThreadPool threadPool, MaskGen maskGen)
+    public WebSocketClientFactory(ThreadPool threadPool, Masker maskGen)
     {
         this(threadPool, maskGen, 8192);
     }
@@ -118,7 +118,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      * @param maskGen    the mask generator to use
      * @param bufferSize the read buffer size
      */
-    public WebSocketClientFactory(ThreadPool threadPool, MaskGen maskGen, int bufferSize)
+    public WebSocketClientFactory(ThreadPool threadPool, Masker maskGen, int bufferSize)
     {
         if (threadPool == null)
             threadPool = new QueuedThreadPool();
@@ -174,7 +174,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      * @return the shared mask generator, or null if no shared mask generator is used
      * @see WebSocketClient#getMaskGen()
      */
-    public MaskGen getMaskGen()
+    public Masker getMaskGen()
     {
         return _maskGen;
     }
@@ -182,9 +182,9 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @param maskGen the shared mask generator, or null if no shared mask generator is used
-     * @see WebSocketClient#setMaskGen(MaskGen)
+     * @see WebSocketClient#setMaskGen(Masker)
      */
-    public void setMaskGen(MaskGen maskGen)
+    public void setMaskGen(Masker maskGen)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
@@ -559,7 +559,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     {
         private final WebSocketClientFactory factory;
 
-        public WebSocketClientConnection(WebSocketClientFactory factory, WebSocket webSocket, EndPoint endPoint, WebSocketBuffers buffers, long timeStamp, int maxIdleTime, String protocol, List<Extension> extensions, int draftVersion, MaskGen maskGen) throws IOException
+        public WebSocketClientConnection(WebSocketClientFactory factory, WebSocket webSocket, EndPoint endPoint, WebSocketBuffers buffers, long timeStamp, int maxIdleTime, String protocol, List<Extension> extensions, int draftVersion, Masker maskGen) throws IOException
         {
             super(webSocket, endPoint, buffers, timeStamp, maxIdleTime, protocol, extensions, draftVersion, maskGen);
             this.factory = factory;

@@ -50,8 +50,8 @@ import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
 import org.eclipse.jetty.websocket.WebSocket.OnBinaryMessage;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
 import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
-import org.eclipse.jetty.websocket.generator.MaskGen;
-import org.eclipse.jetty.websocket.generator.RandomMaskGen;
+import org.eclipse.jetty.websocket.masks.Masker;
+import org.eclipse.jetty.websocket.masks.RandomMasker;
 import org.eclipse.jetty.websocket.servlet.WebSocketHandler;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -1472,7 +1472,7 @@ public class WebSocketMessageRFC6455Test
         final AtomicReference<String> received = new AtomicReference<String>();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
 
-        MaskGen maskGen = new RandomMaskGen();
+        Masker maskGen = new RandomMasker();
 
         WebSocketGeneratorRFC6455 gen = new WebSocketGeneratorRFC6455(new WebSocketBuffers(8096),endp,maskGen);
         byte[] data = message.getBytes(StringUtil.__UTF8);

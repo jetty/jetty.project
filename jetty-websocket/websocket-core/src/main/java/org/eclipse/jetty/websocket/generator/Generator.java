@@ -7,6 +7,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.masks.Masker;
 
 /**
  * Generating a frame in WebSocket land.
@@ -35,7 +36,7 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
 public class Generator {
 
     private final EnumMap<OpCode, FrameGenerator<?>> generators = new EnumMap<>(OpCode.class);
-    private MaskGen maskgen = null;
+    private Masker maskgen = null;
 
     public Generator(ByteBufferPool bufferPool, WebSocketSettings settings) 
     {

@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.generator.ZeroMaskGen;
+import org.eclipse.jetty.websocket.masks.ZeroMasker;
 import org.eclipse.jetty.websocket.servlet.WebSocketHandler;
 import org.junit.After;
 import org.junit.Assert;
@@ -74,7 +74,7 @@ public class WebSocketOverSSLTest
         _threadPool.setName("wsc-" + _threadPool.getName());
         _threadPool.start();
 
-        _wsFactory = new WebSocketClientFactory(_threadPool, new ZeroMaskGen());
+        _wsFactory = new WebSocketClientFactory(_threadPool, new ZeroMasker());
         SslContextFactory cf = _wsFactory.getSslContextFactory();
         cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
         cf.setKeyStorePassword("storepwd");

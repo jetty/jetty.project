@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.WebSocketConnectionRFC6455;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
-import org.eclipse.jetty.websocket.generator.MaskGen;
+import org.eclipse.jetty.websocket.masks.Masker;
 
 
 /* ------------------------------------------------------------ */
@@ -90,7 +90,7 @@ public class WebSocketClient
     private int _maxIdleTime=-1;
     private int _maxTextMessageSize=16*1024;
     private int _maxBinaryMessageSize=-1;
-    private MaskGen _maskGen;
+    private Masker _maskGen;
     private SocketAddress _bindAddress;
 
     /* ------------------------------------------------------------ */
@@ -234,9 +234,9 @@ public class WebSocketClient
     /* ------------------------------------------------------------ */
     /**
      * @return the mask generator to use, or null if not mask generator should be used
-     * @see #setMaskGen(MaskGen)
+     * @see #setMaskGen(Masker)
      */
-    public MaskGen getMaskGen()
+    public Masker getMaskGen()
     {
         return _maskGen;
     }
@@ -246,7 +246,7 @@ public class WebSocketClient
      * @param maskGen the mask generator to use, or null if not mask generator should be used
      * @see #getMaskGen()
      */
-    public void setMaskGen(MaskGen maskGen)
+    public void setMaskGen(Masker maskGen)
     {
         _maskGen = maskGen;
     }
@@ -481,7 +481,7 @@ public class WebSocketClient
             return _client.getOrigin();
         }
 
-        public MaskGen getMaskGen()
+        public Masker getMaskGen()
         {
             return _client.getMaskGen();
         }
