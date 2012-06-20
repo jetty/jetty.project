@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.Debug;
-import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.masks.FixedMasker;
@@ -34,7 +34,7 @@ public class RFC6455ExamplesGeneratorTest
         payload.put("Hello".getBytes(), 0, 5);
         ping.setPayload(payload);
         
-        PingFrameGenerator generator = new PingFrameGenerator(bufferPool, new WebSocketSettings());
+        PingFrameGenerator generator = new PingFrameGenerator(bufferPool, new WebSocketPolicy());
         
         ByteBuffer generatedPing = generator.generate(ping);
 
@@ -61,8 +61,8 @@ public class RFC6455ExamplesGeneratorTest
         payload.put("Hello".getBytes(), 0, 5);
         pong.setPayload(payload);
 
-        WebSocketSettings settings = new WebSocketSettings();
-        settings.setMaskGen(new FixedMasker());
+        WebSocketPolicy settings = new WebSocketPolicy();
+        settings.setMasker(new FixedMasker());
         
         PongFrameGenerator generator = new PongFrameGenerator(bufferPool, settings);
 

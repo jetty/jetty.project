@@ -2,7 +2,7 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 
 /**
@@ -12,7 +12,7 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
 {
     private CloseFrame frame;
 
-    public ClosePayloadParser(WebSocketSettings settings)
+    public ClosePayloadParser(WebSocketPolicy settings)
     {
         super(settings);
         frame = new CloseFrame();

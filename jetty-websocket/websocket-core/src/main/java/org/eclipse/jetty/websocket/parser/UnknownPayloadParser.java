@@ -2,14 +2,14 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 public class UnknownPayloadParser extends FrameParser<BaseFrame>
 {
     private BaseFrame frame;
 
-    public UnknownPayloadParser(WebSocketSettings settings)
+    public UnknownPayloadParser(WebSocketPolicy settings)
     {
         super(settings);
         frame = new BaseFrame();

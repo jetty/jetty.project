@@ -3,15 +3,15 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 public abstract class FrameGenerator<T extends BaseFrame>
 {
     private final ByteBufferPool bufferPool;
-    private final WebSocketSettings settings;
+    private final WebSocketPolicy settings;
 
-    protected FrameGenerator(ByteBufferPool bufferPool, WebSocketSettings settings)
+    protected FrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy settings)
     {
         this.bufferPool = bufferPool;
         this.settings = settings;

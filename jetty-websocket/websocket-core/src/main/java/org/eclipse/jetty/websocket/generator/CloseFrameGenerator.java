@@ -3,13 +3,13 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 
 public class CloseFrameGenerator extends FrameGenerator<CloseFrame>
 {
-    public CloseFrameGenerator(ByteBufferPool bufferPool, WebSocketSettings settings)
+    public CloseFrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy settings)
     {
         super(bufferPool, settings);
     }

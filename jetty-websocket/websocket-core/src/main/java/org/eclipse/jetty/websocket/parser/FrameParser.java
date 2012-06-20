@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.OpCode;
-import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 /**
@@ -44,12 +44,12 @@ public abstract class FrameParser<T extends BaseFrame>
     }
 
     private static final Logger LOG = Log.getLogger(FrameParser.class);
-    private WebSocketSettings settings;
+    private WebSocketPolicy settings;
     private State state = State.PAYLOAD_LEN;
     private int length = 0;
     private int cursor = 0;
 
-    public FrameParser(WebSocketSettings settings)
+    public FrameParser(WebSocketPolicy settings)
     {
         this.settings = settings;
     }
@@ -94,7 +94,7 @@ public abstract class FrameParser<T extends BaseFrame>
      */
     public abstract T getFrame();
 
-    protected WebSocketSettings getSettings()
+    protected WebSocketPolicy getSettings()
     {
         return settings;
     }

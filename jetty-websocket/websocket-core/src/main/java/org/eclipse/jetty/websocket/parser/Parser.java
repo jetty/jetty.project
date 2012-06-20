@@ -10,7 +10,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 /**
@@ -36,16 +36,16 @@ public class Parser
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final EnumMap<OpCode, FrameParser<?>> parsers = new EnumMap<>(OpCode.class);
     private FrameParser<?> parser;
-    private WebSocketSettings settings;
+    private WebSocketPolicy settings;
     private State state = State.FINOP;
     private int currentContinuationIndex = 0;
 
     public Parser()
     {
-        this(new WebSocketSettings());
+        this(new WebSocketPolicy());
     }
 
-    public Parser(WebSocketSettings settings)
+    public Parser(WebSocketPolicy settings)
     {
         /*
          * TODO: Investigate addition of decompression factory similar to SPDY work in situation of negotiated deflate extension?
@@ -67,7 +67,7 @@ public class Parser
         listeners.add(listener);
     }
 
-    public WebSocketSettings getSettings()
+    public WebSocketPolicy getSettings()
     {
         return settings;
     }

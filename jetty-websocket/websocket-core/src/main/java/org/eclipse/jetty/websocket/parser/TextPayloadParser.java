@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 
 public class TextPayloadParser extends FrameParser<TextFrame>
@@ -13,7 +13,7 @@ public class TextPayloadParser extends FrameParser<TextFrame>
     private ByteBuffer payload;
     private int payloadLength;
 
-    public TextPayloadParser(WebSocketSettings settings)
+    public TextPayloadParser(WebSocketPolicy settings)
     {
         super(settings);
         frame = new TextFrame();
