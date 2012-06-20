@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 
@@ -47,7 +48,7 @@ public class TextPayloadParser extends FrameParser<TextFrame>
             if (payload.position() >= payloadLength)
             {
                 payload.flip();
-                frame.setData(BufferUtil.toString(payload));
+                frame.setData(BufferUtil.toString(payload,StringUtil.__UTF8_CHARSET));
                 return true;
             }
         }
