@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketSettings;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.frames.PingFrame;
 
 public class CloseFrameGenerator extends FrameGenerator<CloseFrame>
 {
@@ -14,8 +15,13 @@ public class CloseFrameGenerator extends FrameGenerator<CloseFrame>
     }
 
     @Override
-    public void generatePayload(ByteBuffer buffer, CloseFrame close)
+    public ByteBuffer payload(CloseFrame close)
     {
-        buffer.put(close.getReason().getBytes());
+        ByteBuffer b = ByteBuffer.allocate(close.getReason().length() + 2);
+        
+        b.putShort(close.getStatusCode());
+        b.put(close.getReason().getBytes()); // TODO force UTF-8 and work out ex handling
+        
+        return b;
     }
 }

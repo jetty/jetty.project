@@ -75,18 +75,35 @@ public abstract class FrameGenerator<T extends BaseFrame>
         ByteBuffer buffer = ByteBuffer.allocate(buflen);
         // TODO: figure out how to get this from a bytebuffer pool
 
+        // TODO see if we can avoid the extra buffer here, make convention of payload
+        // call back into masking check/method on this class?
+        
+        // generate payload        
+        ByteBuffer payloadBuffer = payload(frame);
+        
+        // insert framing
         buffer.put(framing);
         
-        // thinking:
-        // generate payload
         // mask it if needed
-        // combine the frame:buffer
+        if ( frame.isMasked() )
+        {
+            int size = payloadBuffer.remaining();
+            byte[] mask = frame.getMask();
+            int m = 0;
+            for (int i=0;i<size;i++)
+            {
+                buffer.put((byte)(payloadBuffer.get() ^ mask[m++%4]));
+            }
+        }
+        else
+        {
+            buffer.put(payloadBuffer);
+        }
         
-        generatePayload(buffer, frame);
         return buffer;
     }
 
-    public abstract void generatePayload(ByteBuffer buffer, T frame);
+    public abstract ByteBuffer payload(T frame);
 
     protected ByteBufferPool getByteBufferPool()
     {

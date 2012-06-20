@@ -14,8 +14,8 @@ public class PingFrameGenerator extends FrameGenerator<PingFrame>
     }
 
     @Override
-    public void generatePayload(ByteBuffer buffer, PingFrame ping)
+    public ByteBuffer payload(PingFrame ping)
     {
-        buffer.put(ping.getPayload().array());
+        return ping.getPayload();
     }
 }

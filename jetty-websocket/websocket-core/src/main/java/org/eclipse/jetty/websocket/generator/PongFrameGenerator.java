@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketSettings;
+import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 
 public class PongFrameGenerator extends FrameGenerator<PongFrame>
@@ -14,8 +15,8 @@ public class PongFrameGenerator extends FrameGenerator<PongFrame>
     }
 
     @Override
-    public void generatePayload(ByteBuffer buffer, PongFrame frame)
+    public ByteBuffer payload(PongFrame pong)
     {
-        // TODO Auto-generated method stub
+        return pong.getPayload();
     }
 }
