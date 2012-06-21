@@ -2,6 +2,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -229,6 +230,13 @@ public class ConnectHandler extends HandlerWrapper
         try
         {
             channel = connectToServer(request,host,port);
+        }
+        catch (SocketException se)
+        {
+            LOG.info("ConnectHandler: " + se.getMessage());
+            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
+            baseRequest.setHandled(true);
+            return;
         }
         catch (SocketTimeoutException ste)
         {
