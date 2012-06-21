@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket.frames;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.websocket.api.OpCode;
 
 /**
@@ -36,7 +38,7 @@ public class BaseFrame
     private boolean masked = false;
     private int payloadLength;
     private byte mask[];
-
+    private ByteBuffer payload = null;
 
     /**
      * Default constructor
@@ -53,8 +55,6 @@ public class BaseFrame
         this.opcode = opcode;
     }
 
-    
-
     public byte[] getMask()
     {
         if (!masked)
@@ -64,14 +64,34 @@ public class BaseFrame
         return mask;
     }
 
-    public OpCode getOpCode()
+    public final OpCode getOpCode()
     {
         return opcode;
+    }
+
+    /**
+     * Get the data
+     * 
+     * @return the raw bytebuffer data (can be null)
+     */
+    public ByteBuffer getPayload()
+    {
+        return payload;
     }
 
     public int getPayloadLength()
     {
         return payloadLength;
+    }
+
+    public boolean hasPayload()
+    {
+        return payload != null;
+    }
+
+    public boolean isContinuation()
+    {
+        return false; // always false here
     }
 
     public boolean isFin()
@@ -116,7 +136,6 @@ public class BaseFrame
         mask = null;
     }
 
-   
     public void setFin(boolean fin)
     {
         this.fin = fin;
@@ -136,6 +155,34 @@ public class BaseFrame
     public void setOpCode(OpCode opCode)
     {
         this.opcode = opCode;
+    }
+
+    /**
+     * Set the data and payload length.
+     * 
+     * @param buf
+     *            the bytebuffer to set
+     */
+    protected void setPayload(byte buf[])
+    {
+        int len = buf.length;
+        this.payload = ByteBuffer.allocate(len);
+        this.payload.put(buf,0,len);
+        this.payload.flip(); // make payload readable
+        this.setPayloadLength(len);
+    }
+
+    /**
+     * Set the data and payload length.
+     * 
+     * @param buf
+     *            the byte array to set
+     */
+    public void setPayload(ByteBuffer payload)
+    {
+        this.payload = payload;
+        this.payload.flip(); // make payload readable
+        setPayloadLength(this.payload.remaining());
     }
 
     public void setPayloadLength(int payloadLength)

@@ -30,12 +30,6 @@ public class PingFrame extends ControlFrame
     }
 
     @Override
-    public OpCode getOpCode()
-    {
-        return OpCode.PING;
-    }
-
-    @Override
     public String toString()
     {
         StringBuilder b = new StringBuilder();

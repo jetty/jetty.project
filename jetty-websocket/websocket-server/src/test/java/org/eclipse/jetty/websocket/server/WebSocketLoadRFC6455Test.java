@@ -174,8 +174,7 @@ public class WebSocketLoadRFC6455Test
                 String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
                 for (int i = 0; i < iterations; ++i)
                 {
-                    TextFrame txt = new TextFrame();
-                    txt.setData(message);
+                    TextFrame txt = new TextFrame(message);
                     ByteBuffer buf = _generator.generate(txt);
 
                     // TODO: Send it

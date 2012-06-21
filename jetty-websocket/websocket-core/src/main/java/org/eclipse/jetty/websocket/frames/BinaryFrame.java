@@ -1,7 +1,5 @@
 package org.eclipse.jetty.websocket.frames;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 
@@ -10,29 +8,12 @@ import org.eclipse.jetty.websocket.api.OpCode;
  */
 public class BinaryFrame extends DataFrame
 {
-
     /**
      * Default unspecified data
      */
     public BinaryFrame()
     {
         super(OpCode.BINARY);
-    } 
-
-    @Override
-    public OpCode getOpCode()
-    {
-        return OpCode.BINARY;
-    }
-
-    
-    
-    
-    @Override
-    public void setPayload(ByteBuffer buffer)
-    {
-        // TODO Auto-generated method stub
-        super.setPayload(buffer);
     }
 
     @Override

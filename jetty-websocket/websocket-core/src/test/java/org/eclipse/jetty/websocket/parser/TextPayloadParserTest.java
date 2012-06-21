@@ -69,7 +69,8 @@ public class TextPayloadParserTest
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
 
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        policy.setMaxTextMessageSize(100000);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
@@ -78,7 +79,7 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is(expectedText));
+        Assert.assertThat("TextFrame.data",txt.getPayloadUTF8(),is(expectedText));
     }
 
     @Test
@@ -113,7 +114,7 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is(expectedText));
+        Assert.assertThat("TextFrame.data",txt.getPayloadUTF8(),is(expectedText));
     }
 
     @Test
@@ -150,9 +151,9 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,2);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame[0].data",txt.getPayloadAsText(),is(part1));
+        Assert.assertThat("TextFrame[0].data",txt.getPayloadUTF8(),is(part1));
         txt = (TextFrame)capture.getFrames().get(1);
-        Assert.assertThat("TextFrame[1].data",txt.getPayloadAsText(),is(part2));
+        Assert.assertThat("TextFrame[1].data",txt.getPayloadUTF8(),is(part2));
     }
 
     @Test
@@ -177,7 +178,7 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is(expectedText));
+        Assert.assertThat("TextFrame.data",txt.getPayloadUTF8(),is(expectedText));
     }
 
     @Test
@@ -203,6 +204,6 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is(expectedText));
+        Assert.assertThat("TextFrame.data",txt.getPayloadUTF8(),is(expectedText));
     }
 }

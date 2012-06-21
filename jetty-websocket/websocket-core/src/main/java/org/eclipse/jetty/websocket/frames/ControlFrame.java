@@ -1,36 +1,33 @@
 package org.eclipse.jetty.websocket.frames;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.websocket.api.OpCode;
 
 public abstract class ControlFrame extends BaseFrame
 {
-    private ByteBuffer payload = null; // TODO decide if payload needs to go all the way down to baseframe
-
     public ControlFrame()
     {
         super();
+        super.setFin(true);
     }
 
     public ControlFrame(OpCode opcode)
     {
         super(opcode);
+        super.setFin(true);
     }
 
-    public ByteBuffer getPayload()
+    @Override
+    public boolean isContinuation()
     {
-        return payload;
+        return false; // no control frames can be continuation
     }
 
-    public boolean hasPayload()
+    @Override
+    public void setFin(boolean fin)
     {
-        return payload != null;
-    }
-
-    public void setPayload(ByteBuffer payload)
-    {
-        this.payload = payload;
-        setPayloadLength(this.payload.position());
+        if (!fin)
+        {
+            throw new IllegalArgumentException("Cannot set FIN to off on a " + getOpCode().name());
+        }
     }
 }

@@ -22,12 +22,6 @@ public class CloseFrame extends ControlFrame
         this.statusCode = statusCode;
     }
 
-    @Override
-    public OpCode getOpCode()
-    {
-        return OpCode.CLOSE;
-    }
-
     public String getReason()
     {
         return reason;

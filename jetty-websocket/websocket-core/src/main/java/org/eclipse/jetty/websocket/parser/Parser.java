@@ -12,7 +12,6 @@ import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.DataFrame;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -39,7 +38,6 @@ public class Parser
     private FrameParser<?> parser;
     private WebSocketPolicy policy;
     private State state = State.FINOP;
-    private int currentContinuationIndex = 0;
 
     public Parser(WebSocketPolicy wspolicy)
     {
@@ -129,8 +127,6 @@ public class Parser
                             {
                                 throw new WebSocketException("Fragment continuation frame without prior !FIN");
                             }
-
-                            currentContinuationIndex++;
                         }
 
                         if (parser == null)
@@ -140,11 +136,6 @@ public class Parser
                         }
                         parser.reset();
                         parser.initFrame(fin,rsv1,rsv2,rsv3,opcode);
-                        
-                        if ( parser.getFrame() instanceof DataFrame )
-                        {
-                            ((DataFrame)parser.getFrame()).setContinuationIndex(currentContinuationIndex);
-                        }
 
                         state = State.BASE_FRAMING;
                         break;
@@ -165,7 +156,6 @@ public class Parser
                             parser.reset();
                             if (parser.getFrame().isFin())
                             {
-                                currentContinuationIndex = 0;
                                 reset();
                             }
                             state = State.FINOP;

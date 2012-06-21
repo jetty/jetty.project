@@ -7,7 +7,6 @@ import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.DataFrame;
 
 public abstract class FrameGenerator<T extends BaseFrame>
 {
@@ -50,24 +49,17 @@ public abstract class FrameGenerator<T extends BaseFrame>
             // TODO: extensions can negotiate this (somehow)
             throw new PolicyViolationException("RSV3 not allowed to be set");
         }
-        
-        // TODO ewe
-        if ( frame instanceof DataFrame)
+
+        byte opcode = frame.getOpCode().getCode();
+
+        if (frame.isContinuation())
         {
-            if ( ((DataFrame)frame).isContinuation() )
-            {
-                b |= OpCode.CONTINUATION.getCode() & 0x0F;
-            }
-            else
-            {
-                b |= (frame.getOpCode().getCode() & 0x0F);
-            }
+            // Continuations are not the same OPCODE
+            opcode = OpCode.CONTINUATION.getCode();
         }
-        else
-        {
-            b |= (frame.getOpCode().getCode() & 0x0F);
-        }
-        
+
+        b |= opcode & 0x0F;
+
         framing.put(b);
 
         // is masked
@@ -118,8 +110,6 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
         // generate payload
         ByteBuffer payloadBuffer = payload(frame);
-        
-        payloadBuffer.flip(); // flip to ensure its ready to put pushed into final buffer
 
         // insert framing
         buffer.put(framing);
@@ -127,12 +117,11 @@ public abstract class FrameGenerator<T extends BaseFrame>
         // mask it if needed
         if ( frame.isMasked() )
         {
-            int size = payloadBuffer.remaining();
+            int size = frame.getPayloadLength();
             byte[] mask = frame.getMask();
-            int m = 0;
             for (int i=0;i<size;i++)
             {
-                buffer.put((byte)(payloadBuffer.get() ^ mask[m++%4]));
+                buffer.put((byte)(payloadBuffer.get() ^ mask[i % 4]));
             }
         }
         else

@@ -82,7 +82,13 @@ public enum OpCode
         return this.opcode;
     }
 
-    public boolean isControlFrame() {
+    public boolean isControlFrame()
+    {
         return (opcode >= CLOSE.opcode);
+    }
+
+    public boolean isDataFrame()
+    {
+        return (this == TEXT) || (this == BINARY);
     }
 }

@@ -1,11 +1,13 @@
 package org.eclipse.jetty.websocket.frames;
 
-import java.nio.ByteBuffer;
-
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 
 /**
  * Representation of a <a href="https://tools.ietf.org/html/rfc6455#section-5.6">Text Data Frame (0x01)</a>.
+ * <p>
+ * Note: UTF8 is the only charset supported for Text Frames according to RFC 6455.
  */
 public class TextFrame extends DataFrame
 {
@@ -30,23 +32,27 @@ public class TextFrame extends DataFrame
     }
 
     /**
+     * Get the Payload as a UTF8 charset string.
+     * <p>
+     * Note: UTF8 is the only charset supported for Text Frames according to RFC 6455.
+     * 
+     * @return a UTF8 format String representation of the payload
+     */
+    public String getPayloadUTF8()
+    {
+        return BufferUtil.toUTF8String(getPayload());
+    }
+
+    /**
      * Set the data and payload length.
      * 
-     * @param str
+     * @param message
      *            the String to set
      */
-    public void setPayload(String str)
+    public void setPayload(String message)
     {
-        int len = str.length();
-        ByteBuffer b = ByteBuffer.allocate(len);
-        b.put(str.getBytes()); // TODO validate utf-8
-        this.setPayload(b);
-        this.setPayloadLength(len);
-    }
-    
-    public String getPayloadAsText()
-    {
-        return new String(getPayload().array());
+        byte utf[] = message.getBytes(StringUtil.__UTF8_CHARSET);
+        super.setPayload(utf);
     }
 
     @Override
@@ -55,7 +61,7 @@ public class TextFrame extends DataFrame
         StringBuilder b = new StringBuilder();
         b.append("TextFrame[");
         b.append("len=").append(getPayloadLength());
-        b.append(",data=").append(getPayload()); // TODO pp
+        b.append(",data=").append(getPayloadUTF8());
         b.append("]");
         return b.toString();
     }

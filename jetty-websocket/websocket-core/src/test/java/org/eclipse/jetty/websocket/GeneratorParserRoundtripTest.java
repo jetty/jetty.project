@@ -47,7 +47,7 @@ public class GeneratorParserRoundtripTest
         capture.assertHasFrame(TextFrame.class,1);
 
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("Text parsed",txt.getPayloadAsText(),is(message));
+        Assert.assertThat("Text parsed",txt.getPayloadUTF8(),is(message));
     }
 
     @Test
@@ -82,6 +82,6 @@ public class GeneratorParserRoundtripTest
 
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
         Assert.assertTrue("Text.isMasked",txt.isMasked());
-        Assert.assertThat("Text parsed",txt.getPayloadAsText(),is(message));
+        Assert.assertThat("Text parsed",txt.getPayloadUTF8(),is(message));
     }
 }

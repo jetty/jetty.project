@@ -49,12 +49,6 @@ public class PongFrame extends ControlFrame
     }
 
     @Override
-    public OpCode getOpCode()
-    {
-        return OpCode.PONG;
-    }
-
-    @Override
     public String toString()
     {
         StringBuilder b = new StringBuilder();
