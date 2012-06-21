@@ -104,6 +104,35 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         }
     }
 
+    
+    @Test
+    public void testCONNECTBadHostPort() throws Exception
+    {
+        String hostPort = "badlocalhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        socket.setSoTimeout(30000);
+        try
+        {
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Expect 500 OK from the CONNECT request
+            Response response = readResponse(input);
+            assertEquals("500", response.getCode());
+        }
+        finally
+        {
+            socket.close();
+        }
+    }
+    
     @Test
     public void testCONNECT10AndGET() throws Exception
     {
