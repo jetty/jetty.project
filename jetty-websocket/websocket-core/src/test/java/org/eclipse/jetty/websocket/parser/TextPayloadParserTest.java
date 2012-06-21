@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
-import org.eclipse.jetty.websocket.api.WebSocket;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.TextFrame;
@@ -43,7 +43,7 @@ public class TextPayloadParserTest
         capture.assertHasNoFrames();
 
         PolicyViolationException err = (PolicyViolationException)capture.getErrors().get(0);
-        Assert.assertThat("Error.closeCode",err.getCloseCode(),is(WebSocket.CLOSE_POLICY_VIOLATION));
+        Assert.assertThat("Error.closeCode",err.getCloseCode(),is(StatusCode.POLICY_VIOLATION));
     }
 
     @Test

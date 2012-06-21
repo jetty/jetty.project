@@ -40,7 +40,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.api.AcceptHash;
 import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -929,7 +931,7 @@ public class WebSocketMessageRFC6455Test
     @Test
     public void testHash()
     {
-        assertEquals("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",org.eclipse.jetty.websocket.api.WebSocket.hashKey("dGhlIHNhbXBsZSBub25jZQ=="));
+        assertEquals("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",AcceptHash.hashKey("dGhlIHNhbXBsZSBub25jZQ=="));
     }
 
     @Test
@@ -1096,7 +1098,7 @@ public class WebSocketMessageRFC6455Test
         assertEquals(0x80 | OpCode.CLOSE.getCode(),input.read());
         assertEquals(19,input.read());
         int code=((0xff&input.read())*0x100)+(0xff&input.read());
-        assertEquals(org.eclipse.jetty.websocket.api.WebSocket.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(StatusCode.MESSAGE_TOO_LARGE,code);
         lookFor("Message size > 15",input);
     }
 
@@ -1146,7 +1148,7 @@ public class WebSocketMessageRFC6455Test
         assertEquals(0x80 | OpCode.CLOSE.getCode(),input.read());
         assertEquals(19,input.read());
         int code=((0xff&input.read())*0x100)+(0xff&input.read());
-        assertEquals(org.eclipse.jetty.websocket.api.WebSocket.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(StatusCode.MESSAGE_TOO_LARGE,code);
         lookFor("Message size > 15",input);
     }
 
@@ -1210,7 +1212,7 @@ public class WebSocketMessageRFC6455Test
         assertEquals(0x80 | OpCode.CLOSE.getCode(),input.read());
         assertEquals(30,input.read());
         int code=((0xff&input.read())*0x100)+(0xff&input.read());
-        assertEquals(org.eclipse.jetty.websocket.api.WebSocket.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(StatusCode.MESSAGE_TOO_LARGE,code);
         lookFor("Text message size > 15 chars",input);
     }
 
@@ -1264,7 +1266,7 @@ public class WebSocketMessageRFC6455Test
         assertEquals(0x80 | OpCode.CLOSE.getCode(),input.read());
         assertEquals(30,input.read());
         int code=((0xff&input.read())*0x100)+(0xff&input.read());
-        assertEquals(org.eclipse.jetty.websocket.api.WebSocket.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(StatusCode.MESSAGE_TOO_LARGE,code);
         lookFor("Text message size > 15 chars",input);
     }
 
@@ -1319,7 +1321,7 @@ public class WebSocketMessageRFC6455Test
         assertEquals(0x80 | OpCode.CLOSE.getCode(),input.read());
         assertEquals(33,input.read());
         int code=((0xff&input.read())*0x100)+(0xff&input.read());
-        assertEquals(org.eclipse.jetty.websocket.api.WebSocket.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(StatusCode.MESSAGE_TOO_LARGE,code);
         lookFor("Text message size > 10240 chars",input);
     }
 
@@ -1366,7 +1368,7 @@ public class WebSocketMessageRFC6455Test
         assertEquals(0x80 | OpCode.CLOSE.getCode(),input.read());
         assertEquals(15,input.read());
         int code=((0xff&input.read())*0x100)+(0xff&input.read());
-        assertEquals(org.eclipse.jetty.websocket.api.WebSocket.CLOSE_BAD_PAYLOAD,code);
+        assertEquals(StatusCode.BAD_PAYLOAD,code);
         lookFor("Invalid UTF-8",input);
     }
 

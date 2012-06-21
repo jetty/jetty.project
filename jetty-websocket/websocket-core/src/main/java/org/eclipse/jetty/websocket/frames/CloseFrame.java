@@ -1,7 +1,7 @@
 package org.eclipse.jetty.websocket.frames;
 
 import org.eclipse.jetty.websocket.api.OpCode;
-import org.eclipse.jetty.websocket.api.WebSocket;
+import org.eclipse.jetty.websocket.api.StatusCode;
 
 /**
  * Representation of a <a href="https://tools.ietf.org/html/rfc6455#section-5.5.1">Close Frame (0x08)</a>.
@@ -13,7 +13,7 @@ public class CloseFrame extends ControlFrame
 
     public CloseFrame()
     {
-        this(WebSocket.CLOSE_NORMAL); // TODO: evaluate default (or unspecified status code)
+        this(StatusCode.NORMAL); // TODO: evaluate default (or unspecified status code)
     }
 
     public CloseFrame(short statusCode)
