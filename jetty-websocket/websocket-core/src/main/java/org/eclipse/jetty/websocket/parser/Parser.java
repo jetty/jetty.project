@@ -12,6 +12,7 @@ import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -139,7 +140,11 @@ public class Parser
                         }
                         parser.reset();
                         parser.initFrame(fin,rsv1,rsv2,rsv3,opcode);
-                        parser.getFrame().setContinuationIndex(currentContinuationIndex);
+                        
+                        if ( parser.getFrame() instanceof DataFrame )
+                        {
+                            ((DataFrame)parser.getFrame()).setContinuationIndex(currentContinuationIndex);
+                        }
 
                         state = State.BASE_FRAMING;
                         break;

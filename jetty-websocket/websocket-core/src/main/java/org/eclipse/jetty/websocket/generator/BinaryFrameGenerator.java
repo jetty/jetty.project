@@ -16,6 +16,6 @@ public class BinaryFrameGenerator extends FrameGenerator<BinaryFrame>
     @Override
     public ByteBuffer payload(BinaryFrame binary)
     {
-        return binary.getData();
+        return binary.getPayload();
     }
 }

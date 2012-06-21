@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket.frames;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.websocket.api.OpCode;
 
 /**
@@ -7,8 +9,6 @@ import org.eclipse.jetty.websocket.api.OpCode;
  */
 public class TextFrame extends DataFrame
 {
-    private StringBuilder data = new StringBuilder();
-
     /**
      * Default constructor (unspecified data)
      */
@@ -26,17 +26,7 @@ public class TextFrame extends DataFrame
     public TextFrame(String message)
     {
         this();
-        setData(message);
-    }
-
-    /**
-     * Get the data
-     * 
-     * @return the raw StringBuilder data (can be null)
-     */
-    public StringBuilder getData()
-    {
-        return data;
+        setPayload(message);
     }
 
     /**
@@ -45,24 +35,18 @@ public class TextFrame extends DataFrame
      * @param str
      *            the String to set
      */
-    public void setData(String str)
+    public void setPayload(String str)
     {
         int len = str.length();
-        this.data = new StringBuilder(str);
+        ByteBuffer b = ByteBuffer.allocate(len);
+        b.put(str.getBytes()); // TODO validate utf-8
+        this.setPayload(b);
         this.setPayloadLength(len);
     }
-
-    /**
-     * Set the data and payload length.
-     * 
-     * @param str
-     *            the StringBuilder to set
-     */
-    public void setData(StringBuilder str)
+    
+    public String getPayloadAsText()
     {
-        int len = str.length();
-        this.data = str;
-        this.setPayloadLength(len);
+        return new String(getPayload().array());
     }
 
     @Override
@@ -71,7 +55,7 @@ public class TextFrame extends DataFrame
         StringBuilder b = new StringBuilder();
         b.append("TextFrame[");
         b.append("len=").append(getPayloadLength());
-        b.append(",data=").append(data);
+        b.append(",data=").append(getPayload()); // TODO pp
         b.append("]");
         return b.toString();
     }

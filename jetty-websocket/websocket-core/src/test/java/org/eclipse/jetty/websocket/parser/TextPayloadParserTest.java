@@ -78,7 +78,7 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getData().toString(),is(expectedText));
+        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is(expectedText));
     }
 
     @Test
@@ -113,7 +113,7 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getData().toString(),is(expectedText));
+        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is(expectedText));
     }
 
     @Test
@@ -150,9 +150,9 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,2);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame[0].data",txt.getData().toString(),is(part1));
+        Assert.assertThat("TextFrame[0].data",txt.getPayloadAsText(),is(part1));
         txt = (TextFrame)capture.getFrames().get(1);
-        Assert.assertThat("TextFrame[1].data",txt.getData().toString(),is(part2));
+        Assert.assertThat("TextFrame[1].data",txt.getPayloadAsText(),is(part2));
     }
 
     @Test
@@ -177,7 +177,7 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getData().toString(),is(expectedText));
+        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is(expectedText));
     }
 
     @Test
@@ -203,6 +203,6 @@ public class TextPayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getData().toString(),is(expectedText));
+        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is(expectedText));
     }
 }

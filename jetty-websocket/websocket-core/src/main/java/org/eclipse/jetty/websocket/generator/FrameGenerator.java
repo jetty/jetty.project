@@ -3,9 +3,11 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame;
 
 public abstract class FrameGenerator<T extends BaseFrame>
 {
@@ -48,7 +50,24 @@ public abstract class FrameGenerator<T extends BaseFrame>
             // TODO: extensions can negotiate this (somehow)
             throw new PolicyViolationException("RSV3 not allowed to be set");
         }
-        b |= (frame.getOpCode().getCode() & 0x0F);
+        
+        // TODO ewe
+        if ( frame instanceof DataFrame)
+        {
+            if ( ((DataFrame)frame).isContinuation() )
+            {
+                b |= OpCode.CONTINUATION.getCode() & 0x0F;
+            }
+            else
+            {
+                b |= (frame.getOpCode().getCode() & 0x0F);
+            }
+        }
+        else
+        {
+            b |= (frame.getOpCode().getCode() & 0x0F);
+        }
+        
         framing.put(b);
 
         // is masked

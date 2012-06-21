@@ -51,9 +51,9 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(TextFrame.class,2);
 
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame[0].data",txt.getData().toString(),is("Hel"));
+        Assert.assertThat("TextFrame[0].data",txt.getPayloadAsText(),is("Hel"));
         txt = (TextFrame)capture.getFrames().get(1);
-        Assert.assertThat("TextFrame[1].data",txt.getData().toString(),is("lo"));
+        Assert.assertThat("TextFrame[1].data",txt.getPayloadAsText(),is("lo"));
     }
 
     @Test
@@ -99,7 +99,7 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(TextFrame.class,1);
 
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data",txt.getData().toString(),is("Hello"));
+        Assert.assertThat("TextFrame.data",txt.getPayloadAsText(),is("Hello"));
     }
 
     @Test
@@ -129,12 +129,12 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(BinaryFrame.class,1);
 
         BinaryFrame bin = (BinaryFrame)capture.getFrames().get(0);
-        bin.getData().flip();
+        bin.getPayload().flip();
 
         Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
-        ByteBufferAssert.assertSize("BinaryFrame.payload",dataSize,bin.getData());
+        ByteBufferAssert.assertSize("BinaryFrame.payload",dataSize,bin.getPayload());
 
-        ByteBuffer data = bin.getData();
+        ByteBuffer data = bin.getPayload();
         for (int i = dataSize; i > 0; i--)
         {
             Assert.assertThat("BinaryFrame.data[" + i + "]",data.get(),is((byte)0x44));
@@ -168,12 +168,12 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(BinaryFrame.class,1);
 
         BinaryFrame bin = (BinaryFrame)capture.getFrames().get(0);
-        bin.getData().flip();
+        bin.getPayload().flip();
 
         Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
-        ByteBufferAssert.assertSize("BinaryFrame.payload",dataSize,bin.getData());
+        ByteBufferAssert.assertSize("BinaryFrame.payload",dataSize,bin.getPayload());
 
-        ByteBuffer data = bin.getData();
+        ByteBuffer data = bin.getPayload();
         for (int i = dataSize; i > 0; i--)
         {
             Assert.assertThat("BinaryFrame.data[" + i + "]",data.get(),is((byte)0x77));
@@ -223,6 +223,6 @@ public class RFC6455ExamplesParserTest
         capture.assertHasFrame(TextFrame.class,1);
 
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.data", txt.getData().toString(), is("Hello"));
+        Assert.assertThat("TextFrame.data", txt.getPayloadAsText(), is("Hello"));
     }
 }
