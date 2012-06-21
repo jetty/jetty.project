@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.Debug;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -22,7 +23,6 @@ public class RFC6455ExamplesGeneratorTest
     StandardByteBufferPool bufferPool = new StandardByteBufferPool();
 
     @Test
-    @Ignore ("need to fix still")
     public void testFragmentedUnmaskedTextMessage()
     {
         ByteBuffer b1 = ByteBuffer.allocate(5);
@@ -60,6 +60,9 @@ public class RFC6455ExamplesGeneratorTest
         
         Assert.assertEquals(b1.get(),g1.get());
         
+        System.out.println(Integer.toHexString(b2.get()));
+        System.out.println(Integer.toHexString(g2.get()));
+
         ByteBufferAssert.assertEquals("t1 buffers are not equal", b1, g1);
         ByteBufferAssert.assertEquals("t2 buffers are not equal", b2, g2);
 
