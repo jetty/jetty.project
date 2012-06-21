@@ -7,14 +7,43 @@ import org.eclipse.jetty.websocket.masks.Masker;
  */
 public class WebSocketPolicy
 {
+    public static WebSocketPolicy newClientPolicy()
+    {
+        return new WebSocketPolicy(WebSocketBehavior.CLIENT);
+    }
+
+    public static WebSocketPolicy newServerPolicy()
+    {
+        return new WebSocketPolicy(WebSocketBehavior.SERVER);
+    }
+
     /**
-     * The maximum size of a text message during parsing/generating
+     * The maximum size of a text message during parsing/generating.
+     * <p>
+     * Default: 16384 (16 K)
      */
-    private int maxTextMessageSize = -1;
+    private int maxTextMessageSize = 16384;
+
     /**
-     * The maximum size of a binary message during parsing/generating
+     * The maximum size of a binary message during parsing/generating.
+     * <p>
+     * Default: -1 (no validation)
      */
     private int maxBinaryMessageSize = -1;
+
+    /**
+     * Buffer size, which is also the max frame byte size.
+     * <p>
+     * Default: 65535 (64 K)
+     */
+    private int bufferSize = 65535;
+
+    /**
+     * The time in ms (milliseconds) that a websocket may be idle before closing.
+     * <p>
+     * Default: 300000 (ms)
+     */
+    private int maxIdleTime = 300000;
 
     /**
      * The implementation for masking
@@ -60,6 +89,11 @@ public class WebSocketPolicy
         return behavior;
     }
 
+    public int getBufferSize()
+    {
+        return bufferSize;
+    }
+
     public Masker getMasker()
     {
         return masker;
@@ -70,9 +104,19 @@ public class WebSocketPolicy
         return maxBinaryMessageSize;
     }
 
+    public int getMaxIdleTime()
+    {
+        return maxIdleTime;
+    }
+
     public int getMaxTextMessageSize()
     {
         return maxTextMessageSize;
+    }
+
+    public void setBufferSize(int bufferSize)
+    {
+        this.bufferSize = bufferSize;
     }
 
     public void setMasker(Masker masker)
@@ -83,6 +127,11 @@ public class WebSocketPolicy
     public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
     {
         this.maxBinaryMessageSize = maxBinaryMessageSize;
+    }
+
+    public void setMaxIdleTime(int maxIdleTime)
+    {
+        this.maxIdleTime = maxIdleTime;
     }
 
     public void setMaxTextMessageSize(int maxTextMessageSize)
