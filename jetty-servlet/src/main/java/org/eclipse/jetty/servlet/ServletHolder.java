@@ -38,7 +38,9 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.api.ServletRegistration;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -459,6 +461,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             {
                 old_run_as=_identityService.setRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
             }
+            
+            // Handle configuring servlets that implement org.apache.jasper.servlet.JspServlet
+            if (isJspServlet())
+            {
+                initJspServlet();
+            }
 
             _servlet.init(_config);
         }
@@ -488,6 +496,31 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             // pop run-as role
             if (_identityService!=null)
                 _identityService.unsetRunAs(old_run_as);
+        }
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @throws Exception
+     */
+    protected void initJspServlet () throws Exception
+    {
+        ContextHandler ch = ((ContextHandler.Context)getServletHandler().getServletContext()).getContextHandler();
+        
+        /* Set the webapp's classpath for Jasper */
+        ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
+
+        /* Set the system classpath for Jasper */
+        setInitParameter("com.sun.appserv.jsp.classpath", Loader.getClassPath(ch.getClassLoader().getParent())); 
+        
+        /* Set up other classpath attribute */
+        if ("?".equals(getInitParameter("classpath")))
+        {
+            String classpath = ch.getClassPath();
+            LOG.debug("classpath=" + classpath);
+            if (classpath != null) 
+                setInitParameter("classpath", classpath);
         }
     }
     
@@ -582,6 +615,34 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (servlet_error)
                 request.setAttribute("javax.servlet.error.servlet_name",getName());
         }
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private boolean isJspServlet ()
+    {
+        if (_servlet == null)
+            return false;
+        
+        Class c = _servlet.getClass();
+        
+        boolean result = false;
+        while (c != null && !result)
+        {
+            result = isJspServlet(c.getName());
+            c = c.getSuperclass();
+        }
+        
+        return result;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private boolean isJspServlet (String classname)
+    {
+        if (classname == null)
+            return false;
+        return ("org.apache.jasper.servlet.JspServlet".equals(classname));
     }
 
  

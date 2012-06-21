@@ -201,7 +201,11 @@ public class GzipFilter extends UserAgentFilter
     {
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
+        
+        // Inform caches that responses may vary according to Accept-Encoding
+        response.setHeader("Vary","Accept-Encoding");
 
+        // Should we vary this response according to Accept-Encoding
         String compressionType = selectCompression(request.getHeader("accept-encoding"));
         if (compressionType!=null && !response.containsHeader("Content-Encoding") && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
         {

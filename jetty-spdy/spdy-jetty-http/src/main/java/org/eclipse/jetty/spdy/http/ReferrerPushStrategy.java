@@ -18,7 +18,7 @@ package org.eclipse.jetty.spdy.http;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,58 +39,80 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>However, also following a hyperlink generates a HTTP request with a <tt>Referer</tt>
  * HTTP header that points to <tt>index.html</tt>; therefore main resources and associated
  * resources must be distinguishable.</p>
- * <p>This class distinguishes associated resources by their URL path suffix.
+ * <p>This class distinguishes associated resources by their URL path suffix and content
+ * type.
  * CSS stylesheets, images and JavaScript files have recognizable URL path suffixes that
  * are classified as associated resources.</p>
- * <p>Note however, that CSS stylesheets may refer to images, and the CSS image request
- * will have the CSS stylesheet as referrer, so there is some degree of recursion that
- * needs to be handled.</p>
- *
- * TODO: this class is kind-of leaking since the resources map is always adding entries
- * TODO: although these entries will be limited by the number of application pages.
- * TODO: however, there is no ConcurrentLinkedHashMap yet in JDK (there is in Guava though)
- * TODO: so we cannot use the built-in LRU features of LinkedHashMap
- *
- * TODO: Wikipedia maps URLs like http://en.wikipedia.org/wiki/File:PNG-Gradient_hex.png
- * TODO: to text/html, so perhaps we need to improve isPushResource() by looking at the
- * TODO: response Content-Type header, and not only at the URL extension
+ * <p>When CSS stylesheets refer to images, the CSS image request will have the CSS
+ * stylesheet as referrer. This implementation will push also the CSS image.</p>
+ * <p>The push metadata built by this implementation is limited by the number of pages
+ * of the application itself, and by the
+ * {@link #getMaxAssociatedResources() max associated resources} parameter.
+ * This parameter limits the number of associated resources per each main resource, so
+ * that if a main resource has hundreds of associated resources, only up to the number
+ * specified by this parameter will be pushed.</p>
  */
 public class ReferrerPushStrategy implements PushStrategy
 {
     private static final Logger logger = Log.getLogger(ReferrerPushStrategy.class);
     private final ConcurrentMap<String, Set<String>> resources = new ConcurrentHashMap<>();
-    private final Set<Pattern> pushRegexps = new LinkedHashSet<>();
-    private final Set<Pattern> allowedPushOrigins = new LinkedHashSet<>();
+    private final Set<Pattern> pushRegexps = new HashSet<>();
+    private final Set<String> pushContentTypes = new HashSet<>();
+    private final Set<Pattern> allowedPushOrigins = new HashSet<>();
+    private volatile int maxAssociatedResources = 32;
 
     public ReferrerPushStrategy()
     {
-        this(Arrays.asList(".*\\.css", ".*\\.js", ".*\\.png", ".*\\.jpg", ".*\\.gif"));
+        this(Arrays.asList(".*\\.css", ".*\\.js", ".*\\.png", ".*\\.jpeg", ".*\\.jpg", ".*\\.gif", ".*\\.ico"));
     }
 
     public ReferrerPushStrategy(List<String> pushRegexps)
     {
-        this(pushRegexps, Collections.<String>emptyList());
+        this(pushRegexps, Arrays.asList(
+                "text/css",
+                "text/javascript", "application/javascript", "application/x-javascript",
+                "image/png", "image/x-png",
+                "image/jpeg",
+                "image/gif",
+                "image/x-icon", "image/vnd.microsoft.icon"));
     }
 
-    public ReferrerPushStrategy(List<String> pushRegexps, List<String> allowedPushOrigins)
+    public ReferrerPushStrategy(List<String> pushRegexps, List<String> pushContentTypes)
+    {
+        this(pushRegexps, pushContentTypes, Collections.<String>emptyList());
+    }
+
+    public ReferrerPushStrategy(List<String> pushRegexps, List<String> pushContentTypes, List<String> allowedPushOrigins)
     {
         for (String pushRegexp : pushRegexps)
             this.pushRegexps.add(Pattern.compile(pushRegexp));
+        this.pushContentTypes.addAll(pushContentTypes);
         for (String allowedPushOrigin : allowedPushOrigins)
             this.allowedPushOrigins.add(Pattern.compile(allowedPushOrigin.replace(".", "\\.").replace("*", ".*")));
+    }
+
+    public int getMaxAssociatedResources()
+    {
+        return maxAssociatedResources;
+    }
+
+    public void setMaxAssociatedResources(int maxAssociatedResources)
+    {
+        this.maxAssociatedResources = maxAssociatedResources;
     }
 
     @Override
     public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
     {
         Set<String> result = Collections.emptySet();
-        String scheme = requestHeaders.get("scheme").value();
-        String host = requestHeaders.get("host").value();
+        short version = stream.getSession().getVersion();
+        String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
+        String host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version)).value();
         String origin = new StringBuilder(scheme).append("://").append(host).toString();
-        String url = requestHeaders.get("url").value();
+        String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).value();
         String absoluteURL = new StringBuilder(origin).append(url).toString();
         logger.debug("Applying push strategy for {}", absoluteURL);
-        if (isValidMethod(requestHeaders.get("method").value()))
+        if (isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value()))
         {
             if (isMainResource(url, responseHeaders))
             {
@@ -129,7 +151,16 @@ public class ReferrerPushStrategy implements PushStrategy
         for (Pattern pushRegexp : pushRegexps)
         {
             if (pushRegexp.matcher(url).matches())
-                return true;
+            {
+                Headers.Header header = responseHeaders.get("content-type");
+                if (header == null)
+                    return true;
+
+                String contentType = header.value().toLowerCase();
+                for (String pushContentType : pushContentTypes)
+                    if (contentType.startsWith(pushContentType))
+                        return true;
+            }
         }
         return false;
     }
@@ -154,8 +185,19 @@ public class ReferrerPushStrategy implements PushStrategy
                 if (existing != null)
                     pushResources = existing;
             }
-            pushResources.add(url);
-            logger.debug("Built push metadata for {}: {}", referrer, pushResources);
+            // This check is not strictly concurrent-safe, but limiting
+            // the number of associated resources is achieved anyway
+            // although in rare cases few more resources will be stored
+            if (pushResources.size() < getMaxAssociatedResources())
+            {
+                pushResources.add(url);
+                logger.debug("Stored push metadata for {}: {}", referrer, pushResources);
+            }
+            else
+            {
+                logger.debug("Skipped store of push metadata {} for {}: max associated resources ({}) reached",
+                        url, referrer, maxAssociatedResources);
+            }
         }
     }
 

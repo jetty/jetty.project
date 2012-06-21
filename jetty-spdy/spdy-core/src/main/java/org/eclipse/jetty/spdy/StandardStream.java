@@ -29,7 +29,6 @@ import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
-import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
@@ -37,7 +36,6 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
-import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -45,9 +43,10 @@ public class StandardStream implements IStream
 {
     private static final Logger logger = Log.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
-    private final IStream associatedStream;
-    private final SynStreamFrame frame;
+    private final int id;
+    private final byte priority;
     private final ISession session;
+    private final IStream associatedStream;
     private final AtomicInteger windowSize = new AtomicInteger();
     private final Set<Stream> pushedStreams = Collections.newSetFromMap(new ConcurrentHashMap<Stream, Boolean>());
     private volatile StreamFrameListener listener;
@@ -55,9 +54,10 @@ public class StandardStream implements IStream
     private volatile CloseState closeState = CloseState.OPENED;
     private volatile boolean reset = false;
 
-    public StandardStream(SynStreamFrame frame, ISession session, IStream associatedStream)
+    public StandardStream(int id, byte priority, ISession session, IStream associatedStream)
     {
-        this.frame = frame;
+        this.id = id;
+        this.priority = priority;
         this.session = session;
         this.associatedStream = associatedStream;
     }
@@ -65,7 +65,7 @@ public class StandardStream implements IStream
     @Override
     public int getId()
     {
-        return frame.getStreamId();
+        return id;
     }
 
     @Override
@@ -95,7 +95,7 @@ public class StandardStream implements IStream
     @Override
     public byte getPriority()
     {
-        return frame.getPriority();
+        return priority;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public Session getSession()
+    public ISession getSession()
     {
         return session;
     }
@@ -150,7 +150,7 @@ public class StandardStream implements IStream
             {
                 case OPENED:
                 {
-                    closeState = local?CloseState.LOCALLY_CLOSED:CloseState.REMOTELY_CLOSED;
+                    closeState = local ? CloseState.LOCALLY_CLOSED : CloseState.REMOTELY_CLOSED;
                     break;
                 }
                 case LOCALLY_CLOSED:
@@ -191,16 +191,16 @@ public class StandardStream implements IStream
             {
                 openState = OpenState.REPLY_RECV;
                 SynReplyFrame synReply = (SynReplyFrame)frame;
-                updateCloseState(synReply.isClose(),false);
-                ReplyInfo replyInfo = new ReplyInfo(synReply.getHeaders(),synReply.isClose());
+                updateCloseState(synReply.isClose(), false);
+                ReplyInfo replyInfo = new ReplyInfo(synReply.getHeaders(), synReply.isClose());
                 notifyOnReply(replyInfo);
                 break;
             }
             case HEADERS:
             {
                 HeadersFrame headers = (HeadersFrame)frame;
-                updateCloseState(headers.isClose(),false);
-                HeadersInfo headersInfo = new HeadersInfo(headers.getHeaders(),headers.isClose(),headers.isResetCompression());
+                updateCloseState(headers.isClose(), false);
+                HeadersInfo headersInfo = new HeadersInfo(headers.getHeaders(), headers.isClose(), headers.isResetCompression());
                 notifyOnHeaders(headersInfo);
                 break;
             }
@@ -269,7 +269,7 @@ public class StandardStream implements IStream
         {
             if (listener != null)
             {
-                logger.debug("Invoking headers callback with {} on listener {}", frame, listener);
+                logger.debug("Invoking headers callback with {} on listener {}", headersInfo, listener);
                 listener.onHeaders(this, headersInfo);
             }
         }
@@ -320,11 +320,11 @@ public class StandardStream implements IStream
     {
         if (isClosed() || isReset())
         {
-            handler.failed(this, new StreamException(getId(),StreamStatus.STREAM_ALREADY_CLOSED));
+            handler.failed(this, new StreamException(getId(), StreamStatus.STREAM_ALREADY_CLOSED));
             return;
         }
-        PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo);
-        session.syn(pushSynInfo,null,timeout,unit,handler);
+        PushSynInfo pushSynInfo = new PushSynInfo(getId(), synInfo);
+        session.syn(pushSynInfo, null, timeout, unit, handler);
     }
 
     @Override
@@ -341,9 +341,9 @@ public class StandardStream implements IStream
         if (isUnidirectional())
             throw new IllegalStateException("Protocol violation: cannot send SYN_REPLY frames in unidirectional streams");
         openState = OpenState.REPLY_SENT;
-        updateCloseState(replyInfo.isClose(),true);
-        SynReplyFrame frame = new SynReplyFrame(session.getVersion(),replyInfo.getFlags(),getId(),replyInfo.getHeaders());
-        session.control(this,frame,timeout,unit,handler,null);
+        updateCloseState(replyInfo.isClose(), true);
+        SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
+        session.control(this, frame, timeout, unit, handler, null);
     }
 
     @Override
@@ -359,18 +359,18 @@ public class StandardStream implements IStream
     {
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(),StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(),StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a closed stream");
         }
 
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this,dataInfo,timeout,unit,handler,null);
+        session.data(this, dataInfo, timeout, unit, handler, null);
     }
 
     @Override
@@ -386,18 +386,18 @@ public class StandardStream implements IStream
     {
         if (!canSend())
         {
-            session.rst(new RstInfo(getId(),StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame before a SYN_REPLY frame");
         }
         if (isLocallyClosed())
         {
-            session.rst(new RstInfo(getId(),StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame on a closed stream");
         }
 
-        updateCloseState(headersInfo.isClose(),true);
-        HeadersFrame frame = new HeadersFrame(session.getVersion(),headersInfo.getFlags(),getId(),headersInfo.getHeaders());
-        session.control(this,frame,timeout,unit,handler,null);
+        updateCloseState(headersInfo.isClose(), true);
+        HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
+        session.control(this, frame, timeout, unit, handler, null);
     }
 
     @Override
@@ -440,7 +440,7 @@ public class StandardStream implements IStream
     @Override
     public String toString()
     {
-        return String.format("stream=%d v%d %s",getId(),session.getVersion(),closeState);
+        return String.format("stream=%d v%d %s", getId(), session.getVersion(), closeState);
     }
 
     private boolean canSend()
