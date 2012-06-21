@@ -18,6 +18,18 @@ public class TextFrame extends DataFrame
     }
 
     /**
+     * Construct text frame with message data
+     * 
+     * @param message
+     *            the message data
+     */
+    public TextFrame(String message)
+    {
+        this();
+        setData(message);
+    }
+
+    /**
      * Get the data
      * 
      * @return the raw StringBuilder data (can be null)
