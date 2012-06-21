@@ -223,8 +223,21 @@ public class ConnectHandler extends HandlerWrapper
             return;
         }
 
-        SocketChannel channel = connectToServer(request, host, port);
+        SocketChannel channel;
 
+        try 
+        {
+        	channel = connectToServer(request, host, port);
+        }
+        catch ( IOException ioe )
+        {
+        	LOG.info("ConnectHandler: " + ioe.getMessage());
+        	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        	baseRequest.setHandled(true);
+            return;
+        }
+        	
+        
         // Transfer unread data from old connection to new connection
         // We need to copy the data to avoid races:
         // 1. when this unread data is written and the server replies before the clientToProxy
@@ -304,9 +317,15 @@ public class ConnectHandler extends HandlerWrapper
         return new ProxyToServerConnection(context, buffer);
     }
 
+    // may return null
     private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
     {
         SocketChannel channel = connect(request, host, port);
+        if ( channel == null )
+        {
+        	throw new IOException("unable to connector to " + host + ":" + port);
+        }
+        
         channel.configureBlocking(false);
         return channel;
     }
