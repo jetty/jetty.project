@@ -16,11 +16,8 @@ import org.junit.Test;
 
 public class TextPayloadParserTest
 {
-    private final byte[] mask = new byte[]
-            { 0x00, (byte)0xF0, 0x0F, (byte)0xFF };
-
     @Test
-    public void testFrameTooLargeDueToPolicyText() throws Exception
+    public void testFrameTooLargeDueToPolicy() throws Exception
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         policy.setMaxTextMessageSize(1024); // set policy
@@ -33,8 +30,8 @@ public class TextPayloadParserTest
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
-        writeMask(buf);
-        writeMaskedPayload(buf,utf);
+        MaskedByteBuffer.putMask(buf);
+        MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
 
         Parser parser = new Parser(policy);
@@ -68,8 +65,8 @@ public class TextPayloadParserTest
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | 0x7F)); // 0x7F == 127 (a 4 byte payload length)
         buf.putInt(utf.length);
-        writeMask(buf);
-        writeMaskedPayload(buf,utf);
+        MaskedByteBuffer.putMask(buf);
+        MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -103,8 +100,8 @@ public class TextPayloadParserTest
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
-        writeMask(buf);
-        writeMaskedPayload(buf,utf);
+        MaskedByteBuffer.putMask(buf);
+        MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -133,14 +130,14 @@ public class TextPayloadParserTest
         // part 1
         buf.put((byte)0x01); // no fin + text
         buf.put((byte)(0x80 | b1.length));
-        writeMask(buf);
-        writeMaskedPayload(buf,b1);
+        MaskedByteBuffer.putMask(buf);
+        MaskedByteBuffer.putPayload(buf,b1);
 
         // part 2
         buf.put((byte)0x80); // fin + continuation
         buf.put((byte)(0x80 | b2.length));
-        writeMask(buf);
-        writeMaskedPayload(buf,b2);
+        MaskedByteBuffer.putMask(buf);
+        MaskedByteBuffer.putPayload(buf,b2);
 
         buf.flip();
 
@@ -162,12 +159,13 @@ public class TextPayloadParserTest
     public void testShortMaskedText() throws Exception
     {
         String expectedText = "Hello World";
+        byte utf[] = expectedText.getBytes(StringUtil.__UTF8_CHARSET);
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
-        buf.put((byte)(0x80 | expectedText.length()));
-        writeMask(buf);
-        writeMaskedPayload(buf,expectedText.getBytes(StringUtil.__UTF8));
+        buf.put((byte)(0x80 | utf.length));
+        MaskedByteBuffer.putMask(buf);
+        MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -192,8 +190,8 @@ public class TextPayloadParserTest
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
-        writeMask(buf);
-        writeMaskedPayload(buf,utf);
+        MaskedByteBuffer.putMask(buf);
+        MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -206,19 +204,5 @@ public class TextPayloadParserTest
         capture.assertHasFrame(TextFrame.class,1);
         TextFrame txt = (TextFrame)capture.getFrames().get(0);
         Assert.assertThat("TextFrame.data",txt.getData().toString(),is(expectedText));
-    }
-
-    private void writeMask(ByteBuffer buf)
-    {
-        buf.put(mask,0,mask.length);
-    }
-
-    private void writeMaskedPayload(ByteBuffer buf, byte[] bytes)
-    {
-        int len = bytes.length;
-        for (int i = 0; i < len; i++)
-        {
-            buf.put((byte)(bytes[i] ^ mask[i % 4]));
-        }
     }
 }

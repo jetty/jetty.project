@@ -109,7 +109,13 @@ public class Parser
                         boolean rsv1 = ((b & 0x40) != 0);
                         boolean rsv2 = ((b & 0x20) != 0);
                         boolean rsv3 = ((b & 0x10) != 0);
-                        OpCode opcode = OpCode.from((byte)(b & 0x0F));
+                        byte opc = (byte)(b & 0x0F);
+                        OpCode opcode = OpCode.from(opc);
+
+                        if (opcode == null)
+                        {
+                            throw new WebSocketException("Unknown opcode: " + opc);
+                        }
 
                         if (opcode.isControlFrame() && !fin)
                         {

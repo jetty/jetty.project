@@ -24,9 +24,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.WebSocket;
-import org.eclipse.jetty.websocket.servlet.helper.WebSocketServlet;
+import org.eclipse.jetty.websocket.server.WebSocketServlet;
 
-@SuppressWarnings("serial") 
+@SuppressWarnings("serial")
 public class WebSocketCaptureServlet extends WebSocketServlet
 {
     public List<CaptureSocket> captures = new ArrayList<CaptureSocket>();;
@@ -37,6 +37,7 @@ public class WebSocketCaptureServlet extends WebSocketServlet
         resp.sendError(404);
     }
 
+    @Override
     public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
     {
         CaptureSocket capture = new CaptureSocket();

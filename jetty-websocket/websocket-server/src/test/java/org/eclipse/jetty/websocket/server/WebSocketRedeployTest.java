@@ -16,13 +16,17 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.WebSocket;
-import org.eclipse.jetty.websocket.WebSocket.Connection;
-import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,15 +36,16 @@ public class WebSocketRedeployTest
     private Server server;
     private ServletContextHandler context;
     private String uri;
-    private WebSocketClientFactory wsFactory;
+
+    // private WebSocketClientFactory wsFactory;
 
     @After
     public void destroy() throws Exception
     {
-        if (wsFactory != null)
-        {
-            wsFactory.stop();
-        }
+        // if (wsFactory != null)
+        // {
+        // wsFactory.stop();
+        // }
         if (server != null)
         {
             server.stop();
@@ -52,7 +57,7 @@ public class WebSocketRedeployTest
     {
         server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
-//        connector.setPort(8080);
+        //        connector.setPort(8080);
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();
@@ -63,6 +68,7 @@ public class WebSocketRedeployTest
 
         WebSocketServlet servlet = new WebSocketServlet()
         {
+            @Override
             public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 return webSocket;
@@ -75,8 +81,8 @@ public class WebSocketRedeployTest
 
         uri = "ws://localhost:" + connector.getLocalPort() + contextPath + servletPath;
 
-        wsFactory = new WebSocketClientFactory();
-        wsFactory.start();
+        // wsFactory = new WebSocketClientFactory();
+        // wsFactory.start();
     }
 
     @Test
@@ -104,30 +110,30 @@ public class WebSocketRedeployTest
             }
         });
 
-        WebSocketClient client = wsFactory.newWebSocketClient();
-        client.open(new URI(uri), new WebSocket.OnTextMessage()
-        {
-            @Override
-            public void onClose(int closeCode, String message)
-            {
-                closeLatch.countDown();
-            }
-
-            @Override
-            public void onMessage(String data)
-            {
-            }
-
-            @Override
-            public void onOpen(Connection connection)
-            {
-                openLatch.countDown();
-            }
-        }, 5, TimeUnit.SECONDS);
+        // WebSocketClient client = wsFactory.newWebSocketClient();
+        // client.open(new URI(uri), new WebSocket.OnTextMessage()
+        // {
+        // @Override
+        // public void onClose(int closeCode, String message)
+        // {
+        // closeLatch.countDown();
+        // }
+        //
+        // @Override
+        // public void onMessage(String data)
+        // {
+        // }
+        //
+        // @Override
+        // public void onOpen(Connection connection)
+        // {
+        // openLatch.countDown();
+        // }
+        // }, 5, TimeUnit.SECONDS);
 
         Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
 
-        wsFactory.stop();
+        // wsFactory.stop();
 
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
@@ -157,26 +163,26 @@ public class WebSocketRedeployTest
             }
         });
 
-        WebSocketClient client = wsFactory.newWebSocketClient();
-        client.open(new URI(uri), new WebSocket.OnTextMessage()
-        {
-            @Override
-            public void onClose(int closeCode, String message)
-            {
-                closeLatch.countDown();
-            }
-
-            @Override
-            public void onMessage(String data)
-            {
-            }
-
-            @Override
-            public void onOpen(Connection connection)
-            {
-                openLatch.countDown();
-            }
-        }, 5, TimeUnit.SECONDS);
+        // WebSocketClient client = wsFactory.newWebSocketClient();
+        // client.open(new URI(uri), new WebSocket.OnTextMessage()
+        // {
+        // @Override
+        // public void onClose(int closeCode, String message)
+        // {
+        // closeLatch.countDown();
+        // }
+        //
+        // @Override
+        // public void onMessage(String data)
+        // {
+        // }
+        //
+        // @Override
+        // public void onOpen(Connection connection)
+        // {
+        // openLatch.countDown();
+        // }
+        // }, 5, TimeUnit.SECONDS);
 
         Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
 

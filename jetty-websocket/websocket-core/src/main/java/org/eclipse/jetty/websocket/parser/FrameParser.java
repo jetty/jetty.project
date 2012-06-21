@@ -70,7 +70,7 @@ public abstract class FrameParser<T extends BaseFrame>
         int amt = Math.min(length,src.remaining());
         if (getFrame().isMasked())
         {
-            // Demask the content
+            // Demask the content 1 byte at a time
             byte mask[] = getFrame().getMask();
             for (int i = 0; i < amt; i++)
             {
@@ -80,6 +80,7 @@ public abstract class FrameParser<T extends BaseFrame>
         else
         {
             // Copy the content as-is
+            // TODO: Look into having a BufferUtil.put(from,to,len) method
             byte b[] = new byte[amt];
             src.get(b,0,amt);
             dest.put(b,0,amt);

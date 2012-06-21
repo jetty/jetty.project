@@ -38,6 +38,8 @@ public class Generator {
 
     public Generator(ByteBufferPool bufferPool, WebSocketPolicy policy)
     {
+        generators.put(OpCode.BINARY,new BinaryFrameGenerator(bufferPool,policy));
+        generators.put(OpCode.TEXT,new TextFrameGenerator(bufferPool,policy));
         generators.put(OpCode.PING,new PingFrameGenerator(bufferPool,policy));
         generators.put(OpCode.PONG,new PongFrameGenerator(bufferPool,policy));
         generators.put(OpCode.CLOSE,new CloseFrameGenerator(bufferPool,policy));

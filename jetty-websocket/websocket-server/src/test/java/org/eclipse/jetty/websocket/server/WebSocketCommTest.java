@@ -15,25 +15,22 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.servlet.helper.CaptureSocket;
-import org.eclipse.jetty.websocket.servlet.helper.MessageSender;
-import org.eclipse.jetty.websocket.servlet.helper.WebSocketCaptureServlet;
+import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
+import org.eclipse.jetty.websocket.server.helper.MessageSender;
+import org.eclipse.jetty.websocket.server.helper.WebSocketCaptureServlet;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * WebSocketCommTest - to test reported undelivered messages in bug <a
@@ -42,6 +39,7 @@ import static org.hamcrest.Matchers.notNullValue;
 public class WebSocketCommTest
 {
     private Server server;
+    private SelectChannelConnector connector;
     private WebSocketCaptureServlet servlet;
     private URI serverUri;
 
@@ -49,7 +47,9 @@ public class WebSocketCommTest
     public void startServer() throws Exception
     {
         // Configure Server
-        server = new Server(0);
+        server = new Server();
+        connector = new SelectChannelConnector();
+        server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
@@ -62,13 +62,12 @@ public class WebSocketCommTest
         // Start Server
         server.start();
 
-        Connector conn = server.getConnectors()[0];
-        String host = conn.getHost();
+        String host = connector.getHost();
         if (host == null)
         {
             host = "localhost";
         }
-        int port = conn.getLocalPort();
+        int port = connector.getLocalPort();
         serverUri = new URI(String.format("ws://%s:%d/",host,port));
         System.out.printf("Server URI: %s%n",serverUri);
     }
@@ -89,12 +88,12 @@ public class WebSocketCommTest
     @Test
     public void testSendTextMessages() throws Exception
     {
-        WebSocketClientFactory clientFactory = new WebSocketClientFactory();
-        clientFactory.start();
+        // WebSocketClientFactory clientFactory = new WebSocketClientFactory();
+        // clientFactory.start();
 
-        WebSocketClient wsc = clientFactory.newWebSocketClient();
+        // WebSocketClient wsc = clientFactory.newWebSocketClient();
         MessageSender sender = new MessageSender();
-        wsc.open(serverUri,sender);
+        // wsc.open(serverUri,sender);
 
         try
         {
