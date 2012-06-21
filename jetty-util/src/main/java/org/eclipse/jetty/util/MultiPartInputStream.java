@@ -371,7 +371,7 @@ public class MultiPartInputStream
         if (!_tmpDir.exists())
             _tmpDir.mkdirs();
 
-        String boundary="--"+QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary=")), true).trim());
+        String boundary="--"+QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary="))).trim());
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
 
         // Get first boundary
@@ -440,9 +440,9 @@ public class MultiPartInputStream
                 if(t.startsWith("form-data"))
                     form_data=true;
                 else if(tl.startsWith("name="))
-                    name=value(t, true);
+                    name=value(t);
                 else if(tl.startsWith("filename="))
-                    filename=value(t, false);
+                    filename=value(t);
             }
 
             // Check disposition
@@ -588,7 +588,7 @@ public class MultiPartInputStream
     
     
     /* ------------------------------------------------------------ */
-    private String value(String nameEqualsValue, boolean splitAfterSpace)
+    private String value(String nameEqualsValue)
     {
         String value=nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
         int i=value.indexOf(';');
@@ -598,7 +598,7 @@ public class MultiPartInputStream
         {
             value=value.substring(1,value.indexOf('"',1));
         }
-        else if (splitAfterSpace)
+        else
         {
             i=value.indexOf(' ');
             if(i>0)
