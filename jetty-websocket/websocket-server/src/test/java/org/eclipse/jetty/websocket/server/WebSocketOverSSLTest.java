@@ -16,10 +16,10 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Server;
@@ -28,12 +28,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.WebSocket;
-import org.eclipse.jetty.websocket.WebSocket.Connection;
-import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.masks.ZeroMasker;
-import org.eclipse.jetty.websocket.servlet.WebSocketHandler;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,8 +37,50 @@ public class WebSocketOverSSLTest
     private Server _server;
     private int _port;
     private QueuedThreadPool _threadPool;
-    private WebSocketClientFactory _wsFactory;
+//    private WebSocketClientFactory _wsFactory;
     private WebSocket.Connection _connection;
+
+    @After
+    public void destroy() throws Exception
+    {
+        if (_connection != null)
+        {
+            _connection.close();
+        }
+
+//        if (_wsFactory != null)
+//            _wsFactory.stop();
+
+        if (_threadPool != null)
+        {
+            _threadPool.stop();
+        }
+
+        if (_server != null)
+        {
+            _server.stop();
+            _server.join();
+        }
+    }
+
+    private void startClient(final WebSocket webSocket) throws Exception
+    {
+        Assert.assertTrue(_server.isStarted());
+
+        _threadPool = new QueuedThreadPool();
+        _threadPool.setName("wsc-" + _threadPool.getName());
+        _threadPool.start();
+
+//        _wsFactory = new WebSocketClientFactory(_threadPool, new ZeroMasker());
+//        SslContextFactory cf = _wsFactory.getSslContextFactory();
+//        cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
+//        cf.setKeyStorePassword("storepwd");
+//        cf.setKeyManagerPassword("keypwd");
+//        _wsFactory.start();
+
+//        WebSocketClient client = new WebSocketClient(_wsFactory);
+//        _connection = client.open(new URI("wss://localhost:" + _port), webSocket).get(5, TimeUnit.SECONDS);
+    }
 
     private void startServer(final WebSocket webSocket) throws Exception
     {
@@ -57,6 +93,7 @@ public class WebSocketOverSSLTest
         cf.setKeyManagerPassword("keypwd");
         _server.setHandler(new WebSocketHandler()
         {
+            @Override
             public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 return webSocket;
@@ -66,42 +103,71 @@ public class WebSocketOverSSLTest
         _port = connector.getLocalPort();
     }
 
-    private void startClient(final WebSocket webSocket) throws Exception
+    @Test
+    public void testManyMessages() throws Exception
     {
-        Assert.assertTrue(_server.isStarted());
-
-        _threadPool = new QueuedThreadPool();
-        _threadPool.setName("wsc-" + _threadPool.getName());
-        _threadPool.start();
-
-        _wsFactory = new WebSocketClientFactory(_threadPool, new ZeroMasker());
-        SslContextFactory cf = _wsFactory.getSslContextFactory();
-        cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-        _wsFactory.start();
-
-        WebSocketClient client = new WebSocketClient(_wsFactory);
-        _connection = client.open(new URI("wss://localhost:" + _port), webSocket).get(5, TimeUnit.SECONDS);
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        if (_connection != null)
-            _connection.close();
-
-        if (_wsFactory != null)
-            _wsFactory.stop();
-
-        if (_threadPool != null)
-            _threadPool.stop();
-
-        if (_server != null)
+        startServer(new WebSocket.OnTextMessage()
         {
-            _server.stop();
-            _server.join();
+            private Connection connection;
+
+            @Override
+            public void onClose(int closeCode, String message)
+            {
+            }
+
+            @Override
+            public void onMessage(String data)
+            {
+                try
+                {
+                    connection.sendMessage(data);
+                }
+                catch (IOException x)
+                {
+                    x.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onOpen(Connection connection)
+            {
+                this.connection = connection;
+            }
+        });
+        int count = 1000;
+        final CountDownLatch clientLatch = new CountDownLatch(count);
+        startClient(new WebSocket.OnTextMessage()
+        {
+            @Override
+            public void onClose(int closeCode, String message)
+            {
+            }
+
+            @Override
+            public void onMessage(String data)
+            {
+                clientLatch.countDown();
+            }
+
+            @Override
+            public void onOpen(Connection connection)
+            {
+            }
+        });
+
+        char[] chars = new char[256];
+        Arrays.fill(chars, 'x');
+        String message = new String(chars);
+        for (int i = 0; i < count; ++i)
+        {
+            _connection.sendMessage(message);
         }
+
+        Assert.assertTrue(clientLatch.await(20, TimeUnit.SECONDS));
+
+        // While messages may have all arrived, the SSL close alert
+        // may be in the way so give some time for it to be processed.
+        TimeUnit.SECONDS.sleep(1);
     }
 
     @Test
@@ -113,11 +179,12 @@ public class WebSocketOverSSLTest
         {
             private Connection connection;
 
-            public void onOpen(Connection connection)
+            @Override
+            public void onClose(int closeCode, String message)
             {
-                this.connection = connection;
             }
 
+            @Override
             public void onMessage(String data)
             {
                 try
@@ -132,24 +199,29 @@ public class WebSocketOverSSLTest
                 }
             }
 
-            public void onClose(int closeCode, String message)
+            @Override
+            public void onOpen(Connection connection)
             {
+                this.connection = connection;
             }
         });
         final CountDownLatch clientLatch = new CountDownLatch(1);
         startClient(new WebSocket.OnTextMessage()
         {
-            public void onOpen(Connection connection)
+            @Override
+            public void onClose(int closeCode, String message)
             {
             }
 
+            @Override
             public void onMessage(String data)
             {
                 Assert.assertEquals(message, data);
                 clientLatch.countDown();
             }
 
-            public void onClose(int closeCode, String message)
+            @Override
+            public void onOpen(Connection connection)
             {
             }
         });
@@ -157,64 +229,5 @@ public class WebSocketOverSSLTest
 
         Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void testManyMessages() throws Exception
-    {
-        startServer(new WebSocket.OnTextMessage()
-        {
-            private Connection connection;
-
-            public void onOpen(Connection connection)
-            {
-                this.connection = connection;
-            }
-
-            public void onMessage(String data)
-            {
-                try
-                {
-                    connection.sendMessage(data);
-                }
-                catch (IOException x)
-                {
-                    x.printStackTrace();
-                }
-            }
-
-            public void onClose(int closeCode, String message)
-            {
-            }
-        });
-        int count = 1000;
-        final CountDownLatch clientLatch = new CountDownLatch(count);
-        startClient(new WebSocket.OnTextMessage()
-        {
-            public void onOpen(Connection connection)
-            {
-            }
-
-            public void onMessage(String data)
-            {
-                clientLatch.countDown();
-            }
-
-            public void onClose(int closeCode, String message)
-            {
-            }
-        });
-
-        char[] chars = new char[256];
-        Arrays.fill(chars, 'x');
-        String message = new String(chars);
-        for (int i = 0; i < count; ++i)
-            _connection.sendMessage(message);
-
-        Assert.assertTrue(clientLatch.await(20, TimeUnit.SECONDS));
-
-        // While messages may have all arrived, the SSL close alert
-        // may be in the way so give some time for it to be processed.
-        TimeUnit.SECONDS.sleep(1);
     }
 }

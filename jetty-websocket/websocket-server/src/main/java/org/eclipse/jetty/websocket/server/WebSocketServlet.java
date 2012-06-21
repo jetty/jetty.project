@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011 Intalio, Inc.
+ * Copyright (c) 2011 Mort Bay Consulting Pty. Ltd.
  * ======================================================================
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,22 +13,11 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-// ========================================================================
-// Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
 
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -36,9 +25,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.server.WebSocketFactory.Acceptor;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
-/* ------------------------------------------------------------ */
 /**
  * Servlet to upgrade connections to WebSocket
  * <p/>
@@ -58,12 +47,30 @@ import org.eclipse.jetty.websocket.server.WebSocketFactory.Acceptor;
  * that a websocket may be accept before closing.
  */
 @SuppressWarnings("serial")
-public abstract class WebSocketServlet extends HttpServlet implements WebSocketFactory.Acceptor
+public abstract class WebSocketServlet extends HttpServlet implements WebSocketServerFactory.Acceptor
 {
     private final Logger LOG = Log.getLogger(getClass());
-    private WebSocketFactory _webSocketFactory;
+    private WebSocketServerFactory webSocketFactory;
 
-    /* ------------------------------------------------------------ */
+    @Override
+    public boolean checkOrigin(HttpServletRequest request, String origin)
+    {
+        return true;
+    }
+
+    @Override
+    public void destroy()
+    {
+        try
+        {
+            webSocketFactory.stop();
+        }
+        catch (Exception x)
+        {
+            LOG.ignore(x);
+        }
+    }
+
     /**
      * @see javax.servlet.GenericServlet#init()
      */
@@ -73,24 +80,27 @@ public abstract class WebSocketServlet extends HttpServlet implements WebSocketF
         try
         {
             String bs = getInitParameter("bufferSize");
-            _webSocketFactory = new WebSocketFactory(this, bs == null ? 8192 : Integer.parseInt(bs));
-            _webSocketFactory.start();
+            WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+            if(bs != null) {
+                policy.setBufferSize(Integer.parseInt(bs));
+            }
 
             String max = getInitParameter("maxIdleTime");
-            if (max != null)
-                _webSocketFactory.setMaxIdleTime(Integer.parseInt(max));
+            if (max != null) {
+                policy.setMaxIdleTime(Integer.parseInt(max));
+            }
 
             max = getInitParameter("maxTextMessageSize");
-            if (max != null)
-                _webSocketFactory.setMaxTextMessageSize(Integer.parseInt(max));
+            if (max != null) {
+                policy.setMaxTextMessageSize(Integer.parseInt(max));
+            }
 
             max = getInitParameter("maxBinaryMessageSize");
-            if (max != null)
-                _webSocketFactory.setMaxBinaryMessageSize(Integer.parseInt(max));
-        }
-        catch (ServletException x)
-        {
-            throw x;
+            if (max != null) {
+                policy.setMaxBinaryMessageSize(Integer.parseInt(max));
+            }
+
+            webSocketFactory = new WebSocketServerFactory(this,policy);
         }
         catch (Exception x)
         {
@@ -98,35 +108,16 @@ public abstract class WebSocketServlet extends HttpServlet implements WebSocketF
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.http.HttpServlet#service(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (_webSocketFactory.acceptWebSocket(request, response) || response.isCommitted())
+        if (webSocketFactory.acceptWebSocket(request,response) || response.isCommitted())
+        {
             return;
+        }
         super.service(request, response);
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean checkOrigin(HttpServletRequest request, String origin)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void destroy()
-    {
-        try
-        {
-            _webSocketFactory.stop();
-        }
-        catch (Exception x)
-        {
-            LOG.ignore(x);
-        }
     }
 }

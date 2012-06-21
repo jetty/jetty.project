@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.server.helper;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,12 +27,11 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 public class SafariD00
 {
@@ -61,6 +62,11 @@ public class SafariD00
         in = socket.getInputStream();
 
         return socket;
+    }
+
+    public void disconnect() throws IOException
+    {
+        socket.close();
     }
 
     /**
@@ -126,7 +132,7 @@ public class SafariD00
             len += (msg.length() + 2);
         }
 
-        ByteArrayBuffer buf = new ByteArrayBuffer(len);
+        ByteBuffer buf = ByteBuffer.allocate(len);
 
         for (String msg : msgs)
         {
@@ -135,12 +141,7 @@ public class SafariD00
             buf.put((byte)0xFF);
         }
 
-        out.write(buf.array());
+        BufferUtil.writeTo(buf,out);
         out.flush();
-    }
-
-    public void disconnect() throws IOException
-    {
-        socket.close();
     }
 }

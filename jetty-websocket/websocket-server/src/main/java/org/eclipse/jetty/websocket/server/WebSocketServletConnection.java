@@ -16,12 +16,12 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.WebSocketConnection;
 
-public interface WebSocketServletConnection extends WebSocketConnection
+public interface WebSocketServletConnection /* extends WebSocketConnection */
 {
     void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException;
 }

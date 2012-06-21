@@ -1,0 +1,340 @@
+// ========================================================================
+// Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
+
+package org.eclipse.jetty.websocket.server;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.extensions.Extension;
+import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
+import org.eclipse.jetty.websocket.extensions.fragment.FragmentExtension;
+import org.eclipse.jetty.websocket.extensions.identity.IdentityExtension;
+
+/**
+ * Factory to create WebSocket connections
+ */
+public class WebSocketServerFactory extends AbstractLifeCycle
+{
+    public interface Acceptor
+    {
+        /* ------------------------------------------------------------ */
+        /**
+         * <p>Checks the origin of an incoming WebSocket handshake request.</p>
+         * @param request the incoming HTTP upgrade request
+         * @param origin the origin URI
+         * @return boolean to indicate that the origin is acceptable.
+         */
+        boolean checkOrigin(HttpServletRequest request, String origin);
+
+        /* ------------------------------------------------------------ */
+        /**
+         * <p>Factory method that applications needs to implement to return a
+         * {@link WebSocket} object.</p>
+         * @param request the incoming HTTP upgrade request
+         * @param protocol the websocket sub protocol
+         * @return a new {@link WebSocket} object that will handle websocket events.
+         */
+        WebSocket doWebSocketConnect(HttpServletRequest request, String protocol);
+    }
+    private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
+
+    private final Queue<WebSocketServletConnection> connections = new ConcurrentLinkedQueue<WebSocketServletConnection>();
+
+    private final Map<String,Class<? extends Extension>> _extensionClasses = new HashMap<String, Class<? extends Extension>>();
+    {
+        _extensionClasses.put("identity",IdentityExtension.class);
+        _extensionClasses.put("fragment",FragmentExtension.class);
+        _extensionClasses.put("x-deflate-frame",DeflateFrameExtension.class);
+    }
+
+    private final Acceptor _acceptor;
+    private WebSocketPolicy policy;
+
+    public WebSocketServerFactory(Acceptor acceptor, WebSocketPolicy policy)
+    {
+        this._acceptor = acceptor;
+        this.policy = policy;
+    }
+
+    public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response)
+            throws IOException
+    {
+        if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
+        {
+            String origin = request.getHeader("Origin");
+            if (origin==null)
+            {
+                origin = request.getHeader("Sec-WebSocket-Origin");
+            }
+            if (!_acceptor.checkOrigin(request,origin))
+            {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return false;
+            }
+
+            // Try each requested protocol
+            WebSocket websocket = null;
+
+            @SuppressWarnings("unchecked")
+            Enumeration<String> protocols = request.getHeaders("Sec-WebSocket-Protocol");
+            String protocol=null;
+            while ((protocol==null) && (protocols!=null) && protocols.hasMoreElements())
+            {
+                String candidate = protocols.nextElement();
+                for (String p : parseProtocols(candidate))
+                {
+                    websocket = _acceptor.doWebSocketConnect(request, p);
+                    if (websocket != null)
+                    {
+                        protocol = p;
+                        break;
+                    }
+                }
+            }
+
+            // Did we get a websocket?
+            if (websocket == null)
+            {
+                // Try with no protocol
+                websocket = _acceptor.doWebSocketConnect(request, null);
+
+                if (websocket==null)
+                {
+                    response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    return false;
+                }
+            }
+
+            // Send the upgrade
+            upgrade(request, response, websocket, protocol);
+            return true;
+        }
+
+        return false;
+    }
+    
+    protected boolean addConnection(WebSocketServletConnection connection)
+    {
+        return isRunning() && connections.add(connection);
+    }
+
+    protected void closeConnections()
+    {
+        for (WebSocketServletConnection connection : connections)
+        {
+            // TODO connection.shutdown();
+        }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        closeConnections(); 
+    }
+
+    /**
+     * @return A modifiable map of extension name to extension class
+     */
+    public Map<String,Class<? extends Extension>> getExtensionClassesMap()
+    {
+        return _extensionClasses;
+    }
+
+    /**
+     * Get the policy in use for WebSockets.
+     * 
+     * @return
+     */
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
+    }
+
+    public List<Extension> initExtensions(List<String> requested,int maxDataOpcodes,int maxControlOpcodes,int maxReservedBits)
+    {
+        List<Extension> extensions = new ArrayList<Extension>();
+        for (String rExt : requested)
+        {
+            QuotedStringTokenizer tok = new QuotedStringTokenizer(rExt,";");
+            String extName=tok.nextToken().trim();
+            Map<String,String> parameters = new HashMap<String,String>();
+            while (tok.hasMoreTokens())
+            {
+                QuotedStringTokenizer nv = new QuotedStringTokenizer(tok.nextToken().trim(),"=");
+                String name=nv.nextToken().trim();
+                String value=nv.hasMoreTokens()?nv.nextToken().trim():null;
+                parameters.put(name,value);
+            }
+
+            Extension extension = newExtension(extName);
+
+            if (extension==null)
+            {
+                continue;
+            }
+
+            if (extension.init(parameters))
+            {
+                LOG.debug("add {} {}",extName,parameters);
+                extensions.add(extension);
+            }
+        }
+        LOG.debug("extensions={}",extensions);
+        return extensions;
+    }
+
+    private Extension newExtension(String name)
+    {
+        try
+        {
+            Class<? extends Extension> extClass = _extensionClasses.get(name);
+            if (extClass!=null)
+            {
+                return extClass.newInstance();
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
+
+        return null;
+    }
+
+    protected String[] parseProtocols(String protocol)
+    {
+        if (protocol == null)
+        {
+            return new String[]{null};
+        }
+        protocol = protocol.trim();
+        if ((protocol == null) || (protocol.length() == 0))
+        {
+            return new String[]{null};
+        }
+        String[] passed = protocol.split("\\s*,\\s*");
+        String[] protocols = new String[passed.length + 1];
+        System.arraycopy(passed, 0, protocols, 0, passed.length);
+        return protocols;
+    }
+
+    protected boolean removeConnection(WebSocketServletConnection connection)
+    {
+        return connections.remove(connection);
+    }
+
+    /**
+     * Upgrade the request/response to a WebSocket Connection.
+     * <p>This method will not normally return, but will instead throw a
+     * UpgradeConnectionException, to exit HTTP handling and initiate
+     * WebSocket handling of the connection.
+     *
+     * @param request   The request to upgrade
+     * @param response  The response to upgrade
+     * @param websocket The websocket handler implementation to use
+     * @param protocol  The websocket protocol
+     * @throws IOException in case of I/O errors
+     */
+    public void upgrade(HttpServletRequest request, HttpServletResponse response, WebSocket websocket, String protocol)
+            throws IOException
+    {
+        if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
+        {
+            throw new IllegalStateException("!Upgrade:websocket");
+        }
+        if (!"HTTP/1.1".equals(request.getProtocol()))
+        {
+            throw new IllegalStateException("!HTTP/1.1");
+        }
+
+        int draft = request.getIntHeader("Sec-WebSocket-Version");
+        if (draft < 0) {
+            // Old pre-RFC version specifications (header not present in RFC-6455)
+            draft = request.getIntHeader("Sec-WebSocket-Draft");
+        }
+        HttpConnection http = HttpConnection.getCurrentConnection();
+        AsyncEndPoint endp = http.getEndPoint();
+
+        List<String> extensions_requested = new ArrayList<String>(); 
+        @SuppressWarnings("unchecked")
+        Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
+        while (e.hasMoreElements())
+        {
+            QuotedStringTokenizer tok = new QuotedStringTokenizer(e.nextElement(),",");
+            while (tok.hasMoreTokens())
+            {
+                extensions_requested.add(tok.nextToken());
+            }
+        }
+
+        final WebSocketServletConnection connection;
+        switch (draft)
+        {
+            case org.eclipse.jetty.websocket.api.WebSocket.VERSION: // RFC 6455 Version
+            {
+//                List<Extension> extensions = initExtensions(extensions_requested, 
+//                        8 - WebSocketConnectionRFC6455.OP_EXT_DATA, 
+//                        16 - WebSocketConnectionRFC6455.OP_EXT_CTRL, 
+//                        3);
+//                connection = new WebSocketServletConnectionRFC6455(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol, extensions, draft);
+                break;
+            }
+            default:
+            {
+                LOG.warn("Unsupported Websocket version: " + draft);
+                // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
+                // Using the examples as outlined
+                response.setHeader("Sec-WebSocket-Version",  "" + org.eclipse.jetty.websocket.api.WebSocket.VERSION /*+ ", 0"*/);
+                response.setStatus(HttpStatus.BAD_REQUEST_400);
+                return;
+            }
+        }
+
+        // addConnection(connection);
+
+        // Set the defaults
+        // connection.getConnection().setMaxBinaryMessageSize(_maxBinaryMessageSize);
+        // connection.getConnection().setMaxTextMessageSize(_maxTextMessageSize);
+
+        // Let the connection finish processing the handshake
+        // connection.handshake(request, response, protocol);
+        response.flushBuffer();
+
+        // Give the connection any unused data from the HTTP connection.
+        // connection.fillBuffersFrom(((HttpParser)http.getParser()).getHeaderBuffer());
+        // connection.fillBuffersFrom(((HttpParser)http.getParser()).getBodyBuffer());
+
+        // Tell jetty about the new connection
+        // LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),draft,protocol,connection);
+        // request.setAttribute("org.eclipse.jetty.io.Connection", connection);
+    }
+}

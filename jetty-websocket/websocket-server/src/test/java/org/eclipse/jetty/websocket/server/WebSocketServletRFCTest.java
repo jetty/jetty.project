@@ -15,20 +15,14 @@ import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455Test;
-import org.eclipse.jetty.websocket.WebSocketParserRFC6455Test;
-import org.eclipse.jetty.websocket.WebSocket.Connection;
-import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.servlet.helper.MessageSender;
-import org.eclipse.jetty.websocket.servlet.helper.WebSocketServlet;
+import org.eclipse.jetty.websocket.server.helper.MessageSender;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -43,20 +37,27 @@ import org.junit.Test;
  */
 public class WebSocketServletRFCTest
 {
+    @SuppressWarnings("serial")
+    private static class RFCServlet extends WebSocketServlet
+    {
+        @Override
+        public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+        {
+            return new RFCSocket();
+        }
+    }
+
     private static class RFCSocket implements WebSocket, WebSocket.OnTextMessage
     {
         private Connection conn;
 
-        public void onOpen(Connection connection)
-        {
-            this.conn = connection;
-        }
-
+        @Override
         public void onClose(int closeCode, String message)
         {
             this.conn = null;
         }
 
+        @Override
         public void onMessage(String data)
         {
             // Test the RFC 6455 close code 1011 that should close
@@ -77,25 +78,25 @@ public class WebSocketServletRFCTest
             }
         }
 
-    }
-
-    @SuppressWarnings("serial")
-    private static class RFCServlet extends WebSocketServlet
-    {
-        public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+        @Override
+        public void onOpen(Connection connection)
         {
-            return new RFCSocket();
+            this.conn = connection;
         }
+
     }
 
     private static Server server;
+    private static SelectChannelConnector connector;
     private static URI serverUri;
 
     @BeforeClass
     public static void startServer() throws Exception
     {
         // Configure Server
-        server = new Server(0);
+        server = new Server();
+        connector = new SelectChannelConnector();
+        server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
@@ -107,13 +108,12 @@ public class WebSocketServletRFCTest
         // Start Server
         server.start();
 
-        Connector conn = server.getConnectors()[0];
-        String host = conn.getHost();
+        String host = connector.getHost();
         if (host == null)
         {
             host = "localhost";
         }
-        int port = conn.getLocalPort();
+        int port = connector.getLocalPort();
         serverUri = new URI(String.format("ws://%s:%d/",host,port));
         System.out.printf("Server URI: %s%n",serverUri);
     }
@@ -128,6 +128,59 @@ public class WebSocketServletRFCTest
         catch (Exception e)
         {
             e.printStackTrace(System.err);
+        }
+    }
+
+    private String readResponseHeader(InputStream in) throws IOException
+    {
+        InputStreamReader isr = new InputStreamReader(in);
+        BufferedReader reader = new BufferedReader(isr);
+        StringBuilder header = new StringBuilder();
+        // Read the response header
+        String line = reader.readLine();
+        Assert.assertNotNull(line);
+        Assert.assertThat(line,startsWith("HTTP/1.1 "));
+        header.append(line).append("\r\n");
+        while ((line = reader.readLine()) != null)
+        {
+            if (line.trim().length() == 0)
+            {
+                break;
+            }
+            header.append(line).append("\r\n");
+        }
+        return header.toString();
+    }
+
+    /**
+     * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal
+     * server error) being produced by the extended WebSocketServlet.
+     */
+    @Test
+    public void testResponseOnInternalError() throws Exception
+    {
+        // WebSocketClientFactory clientFactory = new WebSocketClientFactory();
+        // clientFactory.start();
+
+        // WebSocketClient wsc = clientFactory.newWebSocketClient();
+        MessageSender sender = new MessageSender();
+        // wsc.open(serverUri,sender);
+
+        try
+        {
+            sender.awaitConnect();
+
+            sender.sendMessage("CRASH");
+
+            // Give servlet 500 millisecond to process messages
+            TimeUnit.MILLISECONDS.sleep(500);
+
+            Assert.assertThat("WebSocket should be closed",sender.isConnected(),is(false));
+            Assert.assertThat("WebSocket close clode",sender.getCloseCode(),is(1011));
+        }
+        finally
+        {
+            sender.close();
         }
     }
 
@@ -175,59 +228,6 @@ public class WebSocketServletRFCTest
             IO.close(in);
             IO.close(out);
             socket.close();
-        }
-    }
-
-    private String readResponseHeader(InputStream in) throws IOException
-    {
-        InputStreamReader isr = new InputStreamReader(in);
-        BufferedReader reader = new BufferedReader(isr);
-        StringBuilder header = new StringBuilder();
-        // Read the response header
-        String line = reader.readLine();
-        Assert.assertNotNull(line);
-        Assert.assertThat(line,startsWith("HTTP/1.1 "));
-        header.append(line).append("\r\n");
-        while ((line = reader.readLine()) != null)
-        {
-            if (line.trim().length() == 0)
-            {
-                break;
-            }
-            header.append(line).append("\r\n");
-        }
-        return header.toString();
-    }
-
-    /**
-     * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal
-     * server error) being produced by the extended WebSocketServlet.
-     */
-    @Test
-    public void testResponseOnInternalError() throws Exception
-    {
-        WebSocketClientFactory clientFactory = new WebSocketClientFactory();
-        clientFactory.start();
-
-        WebSocketClient wsc = clientFactory.newWebSocketClient();
-        MessageSender sender = new MessageSender();
-        wsc.open(serverUri,sender);
-
-        try
-        {
-            sender.awaitConnect();
-
-            sender.sendMessage("CRASH");
-
-            // Give servlet 500 millisecond to process messages
-            TimeUnit.MILLISECONDS.sleep(500);
-
-            Assert.assertThat("WebSocket should be closed",sender.isConnected(),is(false));
-            Assert.assertThat("WebSocket close clode",sender.getCloseCode(),is(1011));
-        }
-        finally
-        {
-            sender.close();
         }
     }
 }
