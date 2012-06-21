@@ -40,8 +40,9 @@ public class RFC6455ExamplesGeneratorTest
 
         t1.setFin(false);
         t2.setFin(true);
-        t1.setData("Hel");
-        t2.setData("lo");
+        t2.setContinuation(true);
+        t1.setPayload("Hel");
+        t2.setPayload("lo");
         
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 
@@ -57,12 +58,7 @@ public class RFC6455ExamplesGeneratorTest
         g1.flip();
         b2.flip();
         g2.flip();
-        
-        Assert.assertEquals(b1.get(),g1.get());
-        
-        System.out.println(Integer.toHexString(b2.get()));
-        System.out.println(Integer.toHexString(g2.get()));
-
+                
         ByteBufferAssert.assertEquals("t1 buffers are not equal", b1, g1);
         ByteBufferAssert.assertEquals("t2 buffers are not equal", b2, g2);
 
@@ -149,7 +145,7 @@ public class RFC6455ExamplesGeneratorTest
                 { (byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
 
         TextFrame t1 = new TextFrame();
-        t1.setData("Hello");
+        t1.setPayload("Hello");
         t1.setFin(true);
         t1.setMasked(true);
         t1.setMask(new byte[]{(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff});

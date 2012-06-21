@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;

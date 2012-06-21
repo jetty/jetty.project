@@ -49,7 +49,7 @@ public class BinaryPayloadParser extends FrameParser<BinaryFrame>
 
             if (payload.position() >= payloadLength)
             {
-                frame.setData(payload);
+                frame.setPayload(payload);
                 return true;
             }
         }

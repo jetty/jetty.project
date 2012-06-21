@@ -10,7 +10,6 @@ import org.eclipse.jetty.websocket.api.OpCode;
  */
 public class BinaryFrame extends DataFrame
 {
-    private ByteBuffer data; // TODO: make this a standard byte buffer?
 
     /**
      * Default unspecified data
@@ -18,17 +17,7 @@ public class BinaryFrame extends DataFrame
     public BinaryFrame()
     {
         super(OpCode.BINARY);
-    }
-
-    /**
-     * Get the data
-     * 
-     * @return the raw bytebuffer data (can be null)
-     */
-    public ByteBuffer getData()
-    {
-        return data;
-    }
+    } 
 
     @Override
     public OpCode getOpCode()
@@ -36,29 +25,14 @@ public class BinaryFrame extends DataFrame
         return OpCode.BINARY;
     }
 
-    /**
-     * Set the data and payload length.
-     * 
-     * @param buf
-     *            the bytebuffer to set
-     */
-    public void setData(byte buf[])
+    
+    
+    
+    @Override
+    public void setPayload(ByteBuffer buffer)
     {
-        int len = buf.length;
-        this.data = ByteBuffer.allocate(len);
-        this.setPayloadLength(len);
-    }
-
-    /**
-     * Set the data and payload length.
-     * 
-     * @param buf
-     *            the byte array to set
-     */
-    public void setData(ByteBuffer buffer)
-    {
-        this.data = buffer;
-        this.setPayloadLength(buffer.capacity());
+        // TODO Auto-generated method stub
+        super.setPayload(buffer);
     }
 
     @Override
@@ -67,7 +41,7 @@ public class BinaryFrame extends DataFrame
         StringBuilder b = new StringBuilder();
         b.append("BinaryFrame[");
         b.append("len=").append(getPayloadLength());
-        b.append(",data=").append(BufferUtil.toDetailString(getData()));
+        b.append(",data=").append(BufferUtil.toDetailString(getPayload()));
         b.append("]");
         return b.toString();
     }

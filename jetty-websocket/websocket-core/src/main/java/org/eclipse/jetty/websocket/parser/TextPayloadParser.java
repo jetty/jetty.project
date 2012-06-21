@@ -49,7 +49,7 @@ public class TextPayloadParser extends FrameParser<TextFrame>
             if (payload.position() >= payloadLength)
             {
                 payload.flip();
-                frame.setData(BufferUtil.toString(payload,StringUtil.__UTF8_CHARSET));
+                frame.setPayload(BufferUtil.toString(payload,StringUtil.__UTF8_CHARSET));
                 return true;
             }
         }

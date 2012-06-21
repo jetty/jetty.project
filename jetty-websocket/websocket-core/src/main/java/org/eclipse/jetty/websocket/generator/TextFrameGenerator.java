@@ -17,19 +17,7 @@ public class TextFrameGenerator extends FrameGenerator<TextFrame>
 
     @Override
     public ByteBuffer payload(TextFrame text)
-    {
-        try
-        {
-            String data = text.getData().toString();
-            ByteBuffer payload = ByteBuffer.allocate(data.length());
-            payload.put(data.getBytes("UTF-8"));
-            return payload;
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            // TODO improve ex handling
-            throw new WebSocketException("text frame was not correctly encoded");
-        }
-
+    { 
+        return text.getPayload();
     }
 }
