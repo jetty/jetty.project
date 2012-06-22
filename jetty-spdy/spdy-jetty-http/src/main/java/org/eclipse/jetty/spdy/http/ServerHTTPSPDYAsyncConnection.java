@@ -418,6 +418,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 pushHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), pushURL);
                 pushHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+                pushHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200");
                 pushHeaders.put(scheme);
                 pushHeaders.put(host);
                 pushHeaders.put("referer", referrer);
