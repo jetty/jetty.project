@@ -2,6 +2,8 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -225,19 +227,32 @@ public class ConnectHandler extends HandlerWrapper
 
         SocketChannel channel;
 
-        try 
+        try
         {
-        	channel = connectToServer(request, host, port);
+            channel = connectToServer(request,host,port);
         }
-        catch ( IOException ioe )
+        catch (SocketException se)
         {
-        	LOG.info("ConnectHandler: " + ioe.getMessage());
-        	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        	baseRequest.setHandled(true);
+            LOG.info("ConnectHandler: " + se.getMessage());
+            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
+            baseRequest.setHandled(true);
             return;
         }
-        	
-        
+        catch (SocketTimeoutException ste)
+        {
+            LOG.info("ConnectHandler: " + ste.getMessage());
+            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
+            baseRequest.setHandled(true);
+            return;
+        }
+        catch (IOException ioe)
+        {
+            LOG.info("ConnectHandler: " + ioe.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            baseRequest.setHandled(true);
+            return;
+        }
+
         // Transfer unread data from old connection to new connection
         // We need to copy the data to avoid races:
         // 1. when this unread data is written and the server replies before the clientToProxy
@@ -320,12 +335,7 @@ public class ConnectHandler extends HandlerWrapper
     // may return null
     private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
     {
-        SocketChannel channel = connect(request, host, port);
-        if ( channel == null )
-        {
-        	throw new IOException("unable to connector to " + host + ":" + port);
-        }
-        
+        SocketChannel channel = connect(request, host, port);      
         channel.configureBlocking(false);
         return channel;
     }
@@ -342,6 +352,12 @@ public class ConnectHandler extends HandlerWrapper
     protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
     {
         SocketChannel channel = SocketChannel.open();
+
+        if (channel == null)
+        {
+            throw new IOException("unable to connect to " + host + ":" + port);
+        }
+
         try
         {
             // Connect to remote server
