@@ -68,21 +68,19 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
         // payload lengths
         int payloadLength = frame.getPayloadLength();
-        if (payloadLength >= 0x7F)
-        {
-            // we have a 64 bit length
-            b |= 0x7F;
-            framing.put(b);
-
-            framing.putInt(payloadLength);
-        }
-        else if (payloadLength >= 0x7E)
+        if ((payloadLength >= 0x7F) && (payloadLength <= 0xFF_FF))
         {
             // we have a 16 bit length
             b |= 0x7E;
-            framing.put(b);
-
-            framing.putShort((short)(payloadLength & 0xFFFF));
+            framing.put(b); // indicate 2 byte length
+            framing.putShort((short)(payloadLength & 0xFF_FF)); // write 2 byte length
+        }
+        else if (payloadLength >= 0xFFFF)
+        {
+            // we have a 64 bit length
+            b |= 0x7F;
+            framing.put(b); // indicate 4 byte length
+            framing.putInt(payloadLength); // write 4 byte length
         }
         else
         {
