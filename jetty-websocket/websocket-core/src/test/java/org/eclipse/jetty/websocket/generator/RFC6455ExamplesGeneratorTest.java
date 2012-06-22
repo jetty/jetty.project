@@ -4,10 +4,12 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
@@ -17,45 +19,122 @@ public class RFC6455ExamplesGeneratorTest
 {
     StandardByteBufferPool bufferPool = new StandardByteBufferPool();
 
+    
     @Test
-    public void testFragmentedUnmaskedTextMessage()
+    public void testSingleUnmaskedTextMessage()
     {
-        ByteBuffer b1 = ByteBuffer.allocate(5);
+        
 
-        b1.put(new byte[]
-                { (byte)0x01, (byte)0x03, (byte)0x48, (byte)0x65, (byte)0x6c });
+        TextFrame text = new TextFrame("Hello");
 
-        ByteBuffer b2 = ByteBuffer.allocate(4);
-
-        b2.put(new byte[]
-                { (byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f });
-
-        TextFrame t1 = new TextFrame();
-        TextFrame t2 = new TextFrame();
-
-        t1.setFin(false);
-        t2.setFin(true);
-        t2.setContinuation(true);
-        t1.setPayload("Hel");
-        t2.setPayload("lo");
+        text.setFin(true);
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 
         TextFrameGenerator generator = new TextFrameGenerator(bufferPool,policy);
 
-        ByteBuffer g1 = generator.generate(t1);
-        ByteBuffer g2 = generator.generate(t2);
+        ByteBuffer actual = generator.generate(text);
 
-        //Debug.dumpState(b1);
-        //Debug.dumpState(g1);
+        ByteBuffer expected = ByteBuffer.allocate(10);
 
-        b1.flip();
-        g1.flip();
-        b2.flip();
-        g2.flip();
+        expected.put(new byte[]
+                { (byte)0x81, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f });
 
-        ByteBufferAssert.assertEquals("t1 buffers are not equal", b1, g1);
-        ByteBufferAssert.assertEquals("t2 buffers are not equal", b2, g2);
+        expected.flip();
+        actual.flip();
+
+        ByteBufferAssert.assertEquals("t1 buffers are not equal", expected, actual);
+    }
+    
+    @Test
+    public void testSingleMaskedTextMessage()
+    {
+        TextFrame text = new TextFrame();
+        text.setPayload("Hello");
+        text.setFin(true);
+        text.setMask(new byte[]
+        { 0x37, (byte)0xfa, 0x21, 0x3d });
+
+        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+
+        TextFrameGenerator gen = new TextFrameGenerator(bufferPool,policy);
+
+        ByteBuffer actual = gen.generate(text);
+        actual.flip(); // make readable
+
+        ByteBuffer expected = ByteBuffer.allocate(11);
+        // Raw bytes as found in RFC 6455, Section 5.7 - Examples
+        // A single-frame masked text message
+        expected.put(new byte[]
+        { (byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
+        expected.flip(); // make readable
+
+        ByteBufferAssert.assertEquals("masked text buffers are not equal",expected,actual);
+    }
+    
+    @Test
+    public void testFragmentedUnmaskedTextMessage()
+    {
+        
+        TextFrame text1 = new TextFrame();
+        TextFrame text2 = new TextFrame();
+
+        text1.setFin(false);
+        text2.setFin(true);
+        text2.setContinuation(true);
+        text1.setPayload("Hel");
+        text2.setPayload("lo");
+
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+
+        TextFrameGenerator generator = new TextFrameGenerator(bufferPool,policy);
+
+        ByteBuffer actual1 = generator.generate(text1);
+        ByteBuffer actual2 = generator.generate(text2);
+
+        ByteBuffer expected1 = ByteBuffer.allocate(5);
+
+        expected1.put(new byte[]
+                { (byte)0x01, (byte)0x03, (byte)0x48, (byte)0x65, (byte)0x6c });
+
+        ByteBuffer expected2 = ByteBuffer.allocate(4);
+
+        expected2.put(new byte[]
+                { (byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f });
+
+        expected1.flip();
+        actual1.flip();
+        expected2.flip();
+        actual2.flip();
+
+        ByteBufferAssert.assertEquals("t1 buffers are not equal", expected1, actual1);
+        ByteBufferAssert.assertEquals("t2 buffers are not equal", expected2, actual2);
+    }
+    
+
+
+    @Test
+    public void testSingleUnmaskedPingRequest() throws Exception
+    {
+        PingFrame ping = new PingFrame();
+
+        byte msg[] = "Hello".getBytes(StringUtil.__UTF8_CHARSET);
+        ByteBuffer payload = ByteBuffer.allocate(msg.length);
+        payload.put(msg);
+        ping.setPayload(payload);
+
+        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+
+        PingFrameGenerator gen = new PingFrameGenerator(bufferPool,policy);
+        ByteBuffer actual = gen.generate(ping);
+        actual.flip(); // make readable
+
+        ByteBuffer expected = ByteBuffer.allocate(10);
+        expected.put(new byte[]
+                { (byte)0x89, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f });
+        expected.flip(); // make readable
+
+        ByteBufferAssert.assertEquals("Ping buffers",expected,actual);
     }
 
     @Test
@@ -87,55 +166,57 @@ public class RFC6455ExamplesGeneratorTest
     }
 
     @Test
-    public void testSingleMaskedTextMessage()
+    public void testSingleUnmasked256ByteBinaryMessage()
     {
-        TextFrame text = new TextFrame();
-        text.setPayload("Hello");
-        text.setFin(true);
-        text.setMask(new byte[]
-        { 0x37, (byte)0xfa, 0x21, 0x3d });
+        int dataSize = 256;
 
+        BinaryFrame binary = new BinaryFrame();
+        binary.setFin(true);
+        ByteBuffer payload = ByteBuffer.allocate(dataSize);
+        
+        for (int i = 0; i < dataSize; i++)
+        {
+            payload.put((byte)0x44);
+        }
+        binary.setPayload(payload);
+        
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-
-        TextFrameGenerator gen = new TextFrameGenerator(bufferPool,policy);
-
-        ByteBuffer actual = gen.generate(text);
-        actual.flip(); // make readable
-
-        ByteBuffer expected = ByteBuffer.allocate(11);
+        BinaryFrameGenerator gen = new BinaryFrameGenerator(bufferPool,policy);
+        
+        ByteBuffer actual = gen.generate(binary);
+        
+        ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
-        // A single-frame masked text message
+        // 256 bytes binary message in a single unmasked frame
         expected.put(new byte[]
-        { (byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
-        expected.flip(); // make readable
+                { (byte)0x82, (byte)0x7E, (byte)0x01_00 });
+        
+        for (int i = 0; i < dataSize; i++)
+        {
+            expected.put((byte)0x44);
+        }
+        
+        actual.flip();
+        expected.flip();
+        
+        System.out.println(binary);
+        
+        System.out.println(BufferUtil.toDetailString(expected));
+        System.out.println(BufferUtil.toDetailString(actual));
+        
+        for ( int i = 0 ; i < 6; ++i )
+        {
+            System.out.println("a " + Integer.toHexString(actual.get()));
+            System.out.println("e " + Integer.toHexString(expected.get()));
 
-        ByteBufferAssert.assertEquals("masked text buffers are not equal",expected,actual);
+        }
+     
+        
+        //ByteBufferAssert.assertEquals("binary buffers are not equal", expected, actual);
+
     }
+   
 
-
-    @Test
-    public void testSingleUnmaskedPingRequest() throws Exception
-    {
-        PingFrame ping = new PingFrame();
-
-        byte msg[] = "Hello".getBytes(StringUtil.__UTF8_CHARSET);
-        ByteBuffer payload = ByteBuffer.allocate(msg.length);
-        payload.put(msg);
-        ping.setPayload(payload);
-
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-
-        PingFrameGenerator gen = new PingFrameGenerator(bufferPool,policy);
-        ByteBuffer actual = gen.generate(ping);
-        actual.flip(); // make readable
-
-        ByteBuffer expected = ByteBuffer.allocate(10);
-        expected.put(new byte[]
-                { (byte)0x89, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f });
-        expected.flip(); // make readable
-
-        ByteBufferAssert.assertEquals("Ping buffers",expected,actual);
-    }
 }
 
 
