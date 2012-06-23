@@ -55,6 +55,7 @@ import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
@@ -403,7 +404,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         if (!stream.isUnidirectional())
             stream.reply(replyInfo);
         if (replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") &&
-                !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
+                !stream.isClosed() && !isIfModifiedSinceHeaderPresent() && version == SPDY.V3)
         {
             // We have a 200 OK with some content to send
 
