@@ -39,7 +39,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
-public abstract class WebSocketHandler extends HandlerWrapper implements WebSocketServerFactory.Acceptor
+public abstract class WebSocketHandler extends HandlerWrapper implements WebSocketServer.Acceptor
 {
     private final WebSocketServerFactory webSocketFactory;
 
