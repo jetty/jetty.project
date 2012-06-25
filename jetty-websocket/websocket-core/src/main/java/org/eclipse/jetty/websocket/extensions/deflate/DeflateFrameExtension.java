@@ -15,12 +15,12 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.extensions.deflate;
 
-import java.util.Map;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.extensions.AbstractExtension;
 
 /**
@@ -40,22 +40,14 @@ public class DeflateFrameExtension extends AbstractExtension
     }
 
     @Override
-    public boolean init(Map<String, String> parameters)
+    public void setConfig(ExtensionConfig config)
     {
-        if (!parameters.containsKey("minLength"))
-        {
-            parameters.put("minLength",Integer.toString(_minLength));
-        }
-        if(super.init(parameters))
-        {
-            _minLength=getInitParameter("minLength",_minLength);
+        super.setConfig(config);
 
-            _deflater=new Deflater();
-            _inflater=new Inflater();
+        _minLength = config.getParameter("minLength",_minLength);
 
-            return true;
-        }
-        return false;
+        _deflater = new Deflater();
+        _inflater = new Inflater();
     }
 
     /* (non-Javadoc)
@@ -105,7 +97,7 @@ public class DeflateFrameExtension extends AbstractExtension
             getConnection().close(WebSocketConnectionRFC6455.CLOSE_BAD_PAYLOAD,e.toString());
         }
     }
-        */
+     */
 
     /* (non-Javadoc)
      * @see org.eclipse.jetty.websocket.AbstractExtension#addFrame(byte, byte, byte[], int, int)
@@ -160,5 +152,5 @@ public class DeflateFrameExtension extends AbstractExtension
         else
             super.addFrame(clearFlag(flags,1),opcode,content,offset,length);
     }
-    */
+     */
 }
