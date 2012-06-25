@@ -634,6 +634,7 @@ public class HttpGenerator
                                 {
                                     // special case for websocket connection ordering
                                     header.put(HttpHeader.CONNECTION.getBytesColonSpace()).put(HttpHeader.UPGRADE.getBytes());
+                                    header.put(CRLF);
                                     break;
                                 }
 

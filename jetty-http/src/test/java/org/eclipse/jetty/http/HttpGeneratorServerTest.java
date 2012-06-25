@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -393,6 +395,40 @@ public class HttpGeneratorServerTest
     }
     
     @Test
+    public void testResponseUpgrade() throws Exception
+    {
+        ByteBuffer header=BufferUtil.allocate(8096);
+        
+        HttpGenerator gen = new HttpGenerator();
+
+        HttpGenerator.Result
+        result=gen.generate(null,null,null,null,null,Action.COMPLETE);
+        assertEquals(HttpGenerator.State.COMMITTING_COMPLETING,gen.getState());
+        assertEquals(HttpGenerator.Result.NEED_INFO,result);
+        
+        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),-1,101,null,false);
+        info.getHttpFields().add("Upgrade","WebSocket");
+        info.getHttpFields().add("Connection","Upgrade");
+        info.getHttpFields().add("Sec-WebSocket-Accept","123456789==");
+
+        result=gen.generate(info,header,null,null,null,null);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        String head = BufferUtil.toString(header);
+        System.out.println(head);
+        BufferUtil.clear(header);
+
+        result=gen.generate(info,null,null,null,null,null);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
+
+        assertEquals(0,gen.getContentPrepared());
+        
+        assertThat(head,startsWith("HTTP/1.1 101 Switching Protocols"));
+        assertThat(head,containsString("Upgrade: WebSocket\r\n"));
+        assertThat(head,containsString("Connection: Upgrade\r\n"));
+    }
+    
+    @Test
     public void testResponseWithChunkedContent() throws Exception
     {
         String body="";
@@ -497,6 +533,7 @@ public class HttpGeneratorServerTest
         assertThat(head,containsString("Transfer-Encoding: chunked"));
         assertTrue(head.endsWith("\r\n\r\n10\r\n"));
     }
+    
     @Test
     public void testResponseWithKnownContent() throws Exception
     {
