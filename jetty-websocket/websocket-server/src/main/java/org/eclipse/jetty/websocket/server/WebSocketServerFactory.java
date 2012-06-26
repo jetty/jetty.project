@@ -85,7 +85,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         this.policy = policy;
     }
 
-    public boolean ˇ(HttpServletRequest request, HttpServletResponse response)
+    public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response)
             throws IOException
     {
         if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
