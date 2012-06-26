@@ -7,7 +7,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * Unless required by ap‰plicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -32,6 +32,7 @@ import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -56,6 +57,28 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     }
 
     @Test
+    public void testPushHeadersAreValid() throws Exception
+    {
+        InetSocketAddress address = createServer();
+
+        ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
+        int referrerPushPeriod = 1000;
+        pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
+        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+
+        Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
+        Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);
+
+        // Sleep for pushPeriod This should prevent application.js from being mapped as pushResource
+        Thread.sleep(referrerPushPeriod + 1);
+
+        sendJSRequest(session1);
+
+        run2ndClientRequests(address, mainRequestHeaders, true);
+    }
+
+    @Test
     public void testReferrerPushPeriod() throws Exception
     {
         InetSocketAddress address = createServer();
@@ -74,7 +97,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         sendJSRequest(session1);
 
-        run2ndClientRequests(address, mainRequestHeaders);
+        run2ndClientRequests(address, mainRequestHeaders, false);
     }
 
     @Test
@@ -92,7 +115,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         sendJSRequest(session1);
 
-        run2ndClientRequests(address, mainRequestHeaders);
+        run2ndClientRequests(address, mainRequestHeaders, false);
     }
 
     private InetSocketAddress createServer() throws Exception
@@ -167,18 +190,22 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
         Assert.assertTrue(associatedResourceLatch2.await(5, TimeUnit.SECONDS));
     }
 
-    private void run2ndClientRequests(InetSocketAddress address, Headers mainRequestHeaders) throws Exception
+    private void run2ndClientRequests(InetSocketAddress address, Headers mainRequestHeaders, final boolean validateHeaders) throws Exception
     {
         // Create another client, and perform the same request for the main resource,
         // we expect the css being pushed, but not the js
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
+        final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
         Session session2 = startClient(version(), address, new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
+                if(validateHeaders)
+                    validateHeaders(synInfo.getHeaders(), pushSynHeadersValid);
+
                 Assert.assertTrue(stream.isUnidirectional());
                 Assert.assertTrue(synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version())).value().endsWith(".css"));
                 return new StreamFrameListener.Adapter()
@@ -212,8 +239,10 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
             }
         });
 
-        Assert.assertTrue(mainStreamLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(pushDataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue("Main request reply and/or data not received", mainStreamLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue("Pushed data not received", pushDataLatch.await(5, TimeUnit.SECONDS));
+        if(validateHeaders)
+            Assert.assertTrue("Push syn headers not valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -713,6 +742,37 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         Assert.assertTrue(mainStreamLatch.await(5, TimeUnit.SECONDS));
         Assert.assertFalse("We don't expect data to be pushed as the main request contained an if-modified-since header",pushDataLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    private void validateHeaders(Headers headers, CountDownLatch pushSynHeadersValid)
+    {
+        if (validateHeader(headers, HTTPSPDYHeader.STATUS.name(version()), "200")
+                && validateHeader(headers, HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1")
+                && validateUriHeader(headers)
+                && validateHeader(headers, "x-spdy-push", "true"))
+            pushSynHeadersValid.countDown();
+    }
+
+    private boolean validateHeader(Headers headers, String name, String expectedValue)
+    {
+        Headers.Header header = headers.get(name);
+        if (header != null && expectedValue.equals(header.value()))
+            return true;
+        System.out.println(name + " not valid! " + headers);
+        return false;
+    }
+
+    private boolean validateUriHeader(Headers headers)
+    {
+        Headers.Header uriHeader = headers.get(HTTPSPDYHeader.URI.name(version()));
+        if (uriHeader != null)
+            if (version() == SPDY.V2 && uriHeader.value().startsWith("http://"))
+                return true;
+            else if (version() == SPDY.V3 && uriHeader.value().startsWith("/")
+                    && headers.get(HTTPSPDYHeader.HOST.name(version())) != null && headers.get(HTTPSPDYHeader.SCHEME.name(version())) != null)
+                return true;
+        System.out.println(HTTPSPDYHeader.URI.name(version()) + " not valid!");
+        return false;
     }
 
     private Headers createHeaders(String resource)
