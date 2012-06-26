@@ -145,12 +145,14 @@ public abstract class FrameParser<T extends BaseFrame>
                     getFrame().setMasked((b & 0x80) != 0);
                     length = (byte)(0x7F & b);
 
+                    System.out.println(length);
                     if (length == 127)
                     {
-                        // length 4 bytes (extended payload length)
+                        // length 8 bytes (extended payload length)
                         if (buffer.remaining() >= 4)
                         {
-                            length = buffer.getInt();
+                            buffer.getInt(); //toss the first one, first 4 bytes
+                            length = buffer.getInt(); // last 4 bytes for actual length
                         }
                         else
                         {
@@ -166,6 +168,10 @@ public abstract class FrameParser<T extends BaseFrame>
                         if (buffer.remaining() >= 2)
                         {
                             length = buffer.getShort();
+                            if (length == -1)
+                            {
+                                length = 65535;
+                            }
                         }
                         else
                         {

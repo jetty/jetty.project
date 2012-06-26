@@ -164,6 +164,23 @@ public class Parser
                     }
                 }
             }
+            
+            /*
+             * if the payload was empty we could end up in this state
+             * because there was no remaining bits to process
+            */
+            if ( state == State.PAYLOAD )
+            {
+                parser.getFrame().setPayload(ByteBuffer.allocate(0));
+                notifyFrame( parser.getFrame() );
+                parser.reset();
+                if (parser.getFrame().isFin())
+                {
+                    reset();
+                }
+                state = State.FINOP;
+            }
+            
         }
         catch (WebSocketException e)
         {
@@ -174,7 +191,7 @@ public class Parser
             notifyWebSocketException(new WebSocketException(t));
         }
         finally
-        {
+        {   
             // Be sure to consume after exceptions
             buffer.position(buffer.limit());
         }
