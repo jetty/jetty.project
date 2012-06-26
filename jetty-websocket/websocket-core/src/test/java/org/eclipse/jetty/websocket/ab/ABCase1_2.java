@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.is;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.Debug;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -17,27 +18,27 @@ import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.parser.TextPayloadParser;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
-public class ABCase1
+public class ABCase1_2
 {
+    StandardByteBufferPool bufferPool = new StandardByteBufferPool();
     WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+    
 
     @Test
-    public void testGenerateEmptyTextCase1_1_1()
+    public void testGenerateEmptyBinaryCase1_2_1()
     {
-        TextFrame textFrame = new TextFrame("");
-        textFrame.setFin(true);
+        BinaryFrame binaryFrame = new BinaryFrame(new byte[]{});
+        binaryFrame.setFin(true);
         
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(10);
-        generator.generate(actual, textFrame);
+        Generator generator = new Generator(bufferPool,policy);
+        ByteBuffer actual = generator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x81, (byte)0x00 });
+                { (byte)0x82, (byte)0x00 });
         
         actual.flip();
         expected.flip();
@@ -47,13 +48,13 @@ public class ABCase1
     }
     
     @Test
-    public void testParseEmptyTextCase1_1_1()
+    public void testParseEmptyBinaryCase1_2_1()
     {
        
         ByteBuffer expected = ByteBuffer.allocate(5);
 
         expected.put(new byte[]
-                { (byte)0x81, (byte)0x00 });
+                { (byte)0x82, (byte)0x00 });
         
         expected.flip();
         
@@ -63,36 +64,37 @@ public class ABCase1
         parser.parse(expected);
         
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(BinaryFrame.class,1);
         
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(0));
-        ByteBufferAssert.assertSize("TextFrame.payload",0,pActual.getPayload());    
+        BinaryFrame pActual = (BinaryFrame)capture.getFrames().get(0);
+        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",0,pActual.getPayload());    
     }
     
     @Test
-    public void testGenerate125ByteTextCase1_1_2()
+    public void testGenerate125ByteBinaryCase1_2_2()
     {
         int length = 125;
         
-        StringBuilder builder = new StringBuilder();
+        ByteBuffer bb = ByteBuffer.allocate(length);
         
         for ( int i = 0 ; i < length ; ++i)
         {
-            builder.append("*");
+            bb.put("*".getBytes());
         }
         
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        bb.flip();
         
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(length+16);
-        generator.generate(actual, textFrame);
+        BinaryFrame binaryFrame = new BinaryFrame( BufferUtil.toArray(bb) );
+        binaryFrame.setFin(true);
+        
+        Generator generator = new Generator(bufferPool,policy);
+        ByteBuffer actual = generator.generate(binaryFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         
         byte b = 0x00; // no masking
         b |= length & 0x7F;
@@ -111,14 +113,14 @@ public class ABCase1
     }
     
     @Test
-    public void testParse125ByteTextCase1_1_2()
+    public void testParse125ByteBinaryCase1_2_2()
     {
         int length = 125;
-
+ 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
@@ -136,36 +138,37 @@ public class ABCase1
         parser.parse(expected);
         
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(BinaryFrame.class,1);
         
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());    
+        BinaryFrame pActual = (BinaryFrame)capture.getFrames().get(0);
+        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",length,pActual.getPayload());    
     }
     
     @Test
-    public void testGenerate126ByteTextCase1_1_3()
+    public void testGenerate126ByteBinaryCase1_2_3()
     {
         int length = 126;
         
-        StringBuilder builder = new StringBuilder();
+        ByteBuffer bb = ByteBuffer.allocate(length);
         
         for ( int i = 0 ; i < length ; ++i)
         {
-            builder.append("*");
+            bb.put("*".getBytes());
         }
         
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        bb.flip();
         
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(length+16);
-        generator.generate(actual, textFrame);
+        BinaryFrame binaryFrame = new BinaryFrame(BufferUtil.toArray(bb));
+        binaryFrame.setFin(true);
+        
+        Generator generator = new Generator(bufferPool,policy);
+        ByteBuffer actual = generator.generate(binaryFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -188,14 +191,14 @@ public class ABCase1
     }
     
     @Test
-    public void testParse126ByteTextCase1_1_3()
+    public void testParse126ByteBinaryCase1_2_3()
     {
         int length = 126;
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -214,36 +217,38 @@ public class ABCase1
         parser.parse(expected);
         
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(BinaryFrame.class,1);
         
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());    
+        BinaryFrame pActual = (BinaryFrame)capture.getFrames().get(0);
+        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",length,pActual.getPayload());    
     }
     
     @Test
-    public void testGenerate127ByteTextCase1_1_4()
+    public void testGenerate127ByteBinaryCase1_2_4()
     {
         int length = 127;
         
-        StringBuilder builder = new StringBuilder();
+        ByteBuffer bb = ByteBuffer.allocate(length);
         
         for ( int i = 0 ; i < length ; ++i)
         {
-            builder.append("*");
+            bb.put("*".getBytes());
+            
         }
         
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        bb.flip();
         
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(length+16);
-        generator.generate(actual, textFrame);
+        BinaryFrame binaryFrame = new BinaryFrame(BufferUtil.toArray(bb));
+        binaryFrame.setFin(true);
+        
+        Generator generator = new Generator(bufferPool,policy);
+        ByteBuffer actual = generator.generate(binaryFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         
         byte b = 0x00; // no masking
         b |= length & 0x7E;
@@ -266,14 +271,14 @@ public class ABCase1
     }
     
     @Test
-    public void testParse127ByteTextCase1_1_4()
+    public void testParse127ByteBinaryCase1_2_4()
     {
         int length = 127;
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         byte b = 0x00; // no masking
         b |= length & 0x7E;
         expected.put(b);
@@ -292,36 +297,37 @@ public class ABCase1
         parser.parse(expected);
         
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(BinaryFrame.class,1);
         
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());    
+        BinaryFrame pActual = (BinaryFrame)capture.getFrames().get(0);
+        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",length,pActual.getPayload());    
     }
     
     @Test
-    public void testGenerate128ByteTextCase1_1_5()
+    public void testGenerate128ByteBinaryCase1_2_5()
     {
         int length = 128;
         
-        StringBuilder builder = new StringBuilder();
+        ByteBuffer bb = ByteBuffer.allocate(length);
         
         for ( int i = 0 ; i < length ; ++i)
         {
-            builder.append("*");
+            bb.put("*".getBytes());
+            
         }
         
-        TextFrame textFrame = new TextFrame(builder.toString());
+        bb.flip();
+        BinaryFrame textFrame = new BinaryFrame(BufferUtil.toArray(bb));
         textFrame.setFin(true);
         
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(length+16);
-        generator.generate(actual, textFrame);
+        Generator generator = new Generator(bufferPool,policy);
+        ByteBuffer actual = generator.generate(textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         
         byte b = 0x00; // no masking
         b |= 0x7E;
@@ -344,14 +350,14 @@ public class ABCase1
     }
     
     @Test
-    public void testParse128ByteTextCase1_1_5()
+    public void testParse128ByteBinaryCase1_2_5()
     {
         int length = 128;
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -370,36 +376,38 @@ public class ABCase1
         parser.parse(expected);
         
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(BinaryFrame.class,1);
         
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());    
+        BinaryFrame pActual = (BinaryFrame)capture.getFrames().get(0);
+        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",length,pActual.getPayload());    
     }
     
     @Test
-    public void testGenerate65535ByteTextCase1_1_6()
+    public void testGenerate65535ByteBinaryCase1_2_6()
     {
         int length = 65535;
         
-        StringBuilder builder = new StringBuilder();
+        ByteBuffer bb = ByteBuffer.allocate(length);
         
         for ( int i = 0 ; i < length ; ++i)
         {
-            builder.append("*");
+            bb.put("*".getBytes());
+            
         }
         
-        TextFrame textFrame = new TextFrame(builder.toString());
+        bb.flip();
+        
+        BinaryFrame textFrame = new BinaryFrame(BufferUtil.toArray(bb));
         textFrame.setFin(true);
         
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(length+16);
-        generator.generate(actual, textFrame);
+        Generator generator = new Generator(bufferPool,policy);
+        ByteBuffer actual = generator.generate(textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         
         byte b = 0x00; // no masking
         b |= 0x7E;
@@ -419,17 +427,14 @@ public class ABCase1
     }
     
     @Test
-    public void testParse65535ByteTextCase1_1_6()
-    {
-        Debug.enableDebugLogging(Parser.class);
-        Debug.enableDebugLogging(TextPayloadParser.class);
-
+    public void testParse65535ByteBinaryCase1_2_6()
+    {      
         int length = 65535;
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         byte b = 0x00; // no masking
         b |= 0x7E;
         expected.put(b);
@@ -449,37 +454,39 @@ public class ABCase1
         parser.parse(expected);
         
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(BinaryFrame.class,1);
         
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());    
+        BinaryFrame pActual = (BinaryFrame)capture.getFrames().get(0);
+        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",length,pActual.getPayload());    
     }
     
     
     @Test
-    public void testGenerate65536ByteTextCase1_1_7()
+    public void testGenerate65536ByteBinaryCase1_2_7()
     {
         int length = 65536;
         
-        StringBuilder builder = new StringBuilder();
+        ByteBuffer bb = ByteBuffer.allocate(length);
         
         for ( int i = 0 ; i < length ; ++i)
         {
-            builder.append("*");
+            bb.put("*".getBytes());
+            
         }
         
-        TextFrame textFrame = new TextFrame(builder.toString());
+        bb.flip();
+        
+        BinaryFrame textFrame = new BinaryFrame(BufferUtil.toArray(bb));
         textFrame.setFin(true);
         
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(length+16);
-        generator.generate(actual, textFrame);
+        Generator generator = new Generator(bufferPool,policy);
+        ByteBuffer actual = generator.generate(textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         
         byte b = 0x00; // no masking
         b |= 0x7F;
@@ -500,14 +507,14 @@ public class ABCase1
     }
     
     @Test
-    public void testParse65536ByteTextCase1_1_7()
+    public void testParse65536ByteBinaryCase1_2_7()
     {
         int length = 65536;
 
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 
         expected.put(new byte[]
-                { (byte)0x81 });
+                { (byte)0x82 });
         byte b = 0x00; // no masking
         b |= 0x7F;
         expected.put(b);
@@ -528,10 +535,10 @@ public class ABCase1
         parser.parse(expected);
         
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(BinaryFrame.class,1);
         
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());    
+        BinaryFrame pActual = (BinaryFrame)capture.getFrames().get(0);
+        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        ByteBufferAssert.assertSize("BinaryFrame.payload",length,pActual.getPayload());    
     }
 }

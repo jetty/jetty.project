@@ -16,6 +16,12 @@ public class BinaryFrame extends DataFrame
         super(OpCode.BINARY);
     }
 
+    public BinaryFrame( byte[] payload )
+    {
+        this();
+        setPayload(payload);
+    }
+    
     @Override
     public String toString()
     {
