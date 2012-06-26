@@ -3,7 +3,6 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
@@ -36,20 +35,20 @@ public class Generator {
 
     private final EnumMap<OpCode, FrameGenerator<?>> generators = new EnumMap<>(OpCode.class);
 
-    public Generator(ByteBufferPool bufferPool, WebSocketPolicy policy)
+    public Generator(WebSocketPolicy policy)
     {
-        generators.put(OpCode.BINARY,new BinaryFrameGenerator(bufferPool,policy));
-        generators.put(OpCode.TEXT,new TextFrameGenerator(bufferPool,policy));
-        generators.put(OpCode.PING,new PingFrameGenerator(bufferPool,policy));
-        generators.put(OpCode.PONG,new PongFrameGenerator(bufferPool,policy));
-        generators.put(OpCode.CLOSE,new CloseFrameGenerator(bufferPool,policy));
+        generators.put(OpCode.BINARY,new BinaryFrameGenerator(policy));
+        generators.put(OpCode.TEXT,new TextFrameGenerator(policy));
+        generators.put(OpCode.PING,new PingFrameGenerator(policy));
+        generators.put(OpCode.PONG,new PongFrameGenerator(policy));
+        generators.put(OpCode.CLOSE,new CloseFrameGenerator(policy));
     }
 
     @SuppressWarnings(
             { "unchecked", "rawtypes" })
-    public ByteBuffer generate(BaseFrame frame)
+    public ByteBuffer generate(ByteBuffer buffer, BaseFrame frame)
     {
         FrameGenerator generator = generators.get(frame.getOpCode());
-        return generator.generate(frame);
+        return generator.generate(buffer,frame);
     }
 }

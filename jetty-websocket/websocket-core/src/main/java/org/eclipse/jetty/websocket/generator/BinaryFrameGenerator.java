@@ -2,20 +2,20 @@ package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 
 public class BinaryFrameGenerator extends FrameGenerator<BinaryFrame>
-{    
-    public BinaryFrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy policy)
+{
+    public BinaryFrameGenerator(WebSocketPolicy policy)
     {
-        super(bufferPool, policy);
+        super(policy);
     }
 
     @Override
-    public ByteBuffer payload(BinaryFrame binary)
+    public void fillPayload(ByteBuffer buffer, BinaryFrame binary)
     {
-        return binary.getPayload();
+        BufferUtil.put(binary.getPayload(),buffer);
     }
 }

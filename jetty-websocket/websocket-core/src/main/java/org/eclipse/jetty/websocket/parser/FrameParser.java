@@ -145,7 +145,6 @@ public abstract class FrameParser<T extends BaseFrame>
                     getFrame().setMasked((b & 0x80) != 0);
                     length = (byte)(0x7F & b);
 
-                    System.out.println(length);
                     if (length == 127)
                     {
                         // length 8 bytes (extended payload length)

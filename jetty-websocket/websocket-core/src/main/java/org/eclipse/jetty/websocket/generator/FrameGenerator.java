@@ -2,7 +2,6 @@ package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -10,19 +9,17 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 public abstract class FrameGenerator<T extends BaseFrame>
 {
-    private final ByteBufferPool bufferPool;
     private final WebSocketPolicy policy;
 
-    protected FrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy policy)
+    protected FrameGenerator(WebSocketPolicy policy)
     {
-        this.bufferPool = bufferPool;
         this.policy = policy;
     }
 
-    public ByteBuffer generate(T frame)
-    {
-        ByteBuffer framing = ByteBuffer.allocate(16);
+    public abstract void fillPayload(ByteBuffer buffer, T frame);
 
+    public ByteBuffer generate(ByteBuffer buffer, T frame)
+    {
         byte b;
 
         // Setup fin thru opcode
@@ -60,7 +57,7 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
         b |= opcode & 0x0F;
 
-        framing.put(b);
+        buffer.put(b);
 
         // is masked
         b = 0x00;
@@ -68,8 +65,8 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
         // payload lengths
         int payloadLength = frame.getPayloadLength();
-        
-        
+
+
         /*
          * if length is over 65535 then its a 7 + 64 bit length
          */
@@ -77,25 +74,25 @@ public abstract class FrameGenerator<T extends BaseFrame>
         {
             // we have a 64 bit length
             b |= 0x7F;
-            framing.put(b); // indicate 8 byte length
-            framing.put((byte)0); // 
-            framing.put((byte)0); // anything over an
-            framing.put((byte)0); // int is just 
-            framing.put((byte)0); // intsane!
-            framing.put((byte)((payloadLength>>24) & 0xFF)); 
-            framing.put((byte)((payloadLength>>16) & 0xFF)); 
-            framing.put((byte)((payloadLength>>8) & 0xFF)); 
-            framing.put((byte)(payloadLength & 0xFF)); 
-        }       
-        /* 
+            buffer.put(b); // indicate 8 byte length
+            buffer.put((byte)0); //
+            buffer.put((byte)0); // anything over an
+            buffer.put((byte)0); // int is just
+            buffer.put((byte)0); // intsane!
+            buffer.put((byte)((payloadLength >> 24) & 0xFF));
+            buffer.put((byte)((payloadLength >> 16) & 0xFF));
+            buffer.put((byte)((payloadLength >> 8) & 0xFF));
+            buffer.put((byte)(payloadLength & 0xFF));
+        }
+        /*
          * if payload is ge 126 we have a 7 + 16 bit length
          */
         else if (payloadLength >= 0x7E)
         {
             b |= 0x7E;
-            framing.put(b); // indicate 2 byte length
-            framing.put((byte)(payloadLength>>8)); 
-            framing.put((byte)(payloadLength & 0xFF)); 
+            buffer.put(b); // indicate 2 byte length
+            buffer.put((byte)(payloadLength >> 8));
+            buffer.put((byte)(payloadLength & 0xFF));
         }
         /*
          * we have a 7 bit length
@@ -103,59 +100,48 @@ public abstract class FrameGenerator<T extends BaseFrame>
         else
         {
             b |= (payloadLength & 0x7F);
-            framing.put(b);
+            buffer.put(b);
         }
 
         // masking key
         if (frame.isMasked())
         {
             // TODO: figure out maskgen
-            framing.put(frame.getMask());
+            buffer.put(frame.getMask());
         }
 
-        framing.flip(); // to figure out how many bytes are used
-
         // now the payload itself
-        int buflen = frame.getPayloadLength() + framing.remaining();
-        ByteBuffer buffer = ByteBuffer.allocate(buflen);
-        // TODO: figure out how to get this from a bytebuffer pool
 
-        // TODO see if we can avoid the extra buffer here, make convention of payload
         // call back into masking check/method on this class?
 
-        // generate payload
-        ByteBuffer payloadBuffer = payload(frame);
+        // remember the position
+        int positionPrePayload = buffer.position();
 
-        // insert framing
-        buffer.put(framing);
+        // generate payload
+        fillPayload(buffer, frame);
+
+        int positionPostPayload = buffer.position();
 
         // mask it if needed
         if ( frame.isMasked() )
         {
-            int size = frame.getPayloadLength();
+            // move back to remembered position.
+            int size = positionPostPayload - positionPrePayload;
             byte[] mask = frame.getMask();
+            int pos;
             for (int i=0;i<size;i++)
             {
-                buffer.put((byte)(payloadBuffer.get() ^ mask[i % 4]));
+                pos = positionPrePayload + i;
+                // Mask each byte by its absolute position in the bytebuffer
+                buffer.put(pos, (byte)(buffer.get(pos) ^ mask[i % 4]));
             }
-        }
-        else
-        {
-            buffer.put(payloadBuffer);
         }
 
         return buffer;
-    }
-
-    protected ByteBufferPool getByteBufferPool()
-    {
-        return bufferPool;
     }
 
     public WebSocketPolicy getPolicy()
     {
         return policy;
     }
-
-    public abstract ByteBuffer payload(T frame);
 }

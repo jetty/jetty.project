@@ -22,9 +22,7 @@ import org.junit.Test;
 
 public class ABCase1
 {
-    StandardByteBufferPool bufferPool = new StandardByteBufferPool();
     WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-    
 
     @Test
     public void testGenerateEmptyTextCase1_1_1()
@@ -32,8 +30,9 @@ public class ABCase1
         TextFrame textFrame = new TextFrame("");
         textFrame.setFin(true);
         
-        Generator generator = new Generator(bufferPool,policy);
-        ByteBuffer actual = generator.generate(textFrame);
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(10);
+        generator.generate(actual, textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -86,8 +85,9 @@ public class ABCase1
         TextFrame textFrame = new TextFrame(builder.toString());
         textFrame.setFin(true);
         
-        Generator generator = new Generator(bufferPool,policy);
-        ByteBuffer actual = generator.generate(textFrame);
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(length+16);
+        generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -158,8 +158,9 @@ public class ABCase1
         TextFrame textFrame = new TextFrame(builder.toString());
         textFrame.setFin(true);
         
-        Generator generator = new Generator(bufferPool,policy);
-        ByteBuffer actual = generator.generate(textFrame);
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(length+16);
+        generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -235,8 +236,9 @@ public class ABCase1
         TextFrame textFrame = new TextFrame(builder.toString());
         textFrame.setFin(true);
         
-        Generator generator = new Generator(bufferPool,policy);
-        ByteBuffer actual = generator.generate(textFrame);
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(length+16);
+        generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -312,8 +314,9 @@ public class ABCase1
         TextFrame textFrame = new TextFrame(builder.toString());
         textFrame.setFin(true);
         
-        Generator generator = new Generator(bufferPool,policy);
-        ByteBuffer actual = generator.generate(textFrame);
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(length+16);
+        generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -389,8 +392,9 @@ public class ABCase1
         TextFrame textFrame = new TextFrame(builder.toString());
         textFrame.setFin(true);
         
-        Generator generator = new Generator(bufferPool,policy);
-        ByteBuffer actual = generator.generate(textFrame);
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(length+16);
+        generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
 
@@ -468,8 +472,9 @@ public class ABCase1
         TextFrame textFrame = new TextFrame(builder.toString());
         textFrame.setFin(true);
         
-        Generator generator = new Generator(bufferPool,policy);
-        ByteBuffer actual = generator.generate(textFrame);
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(length+16);
+        generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
 

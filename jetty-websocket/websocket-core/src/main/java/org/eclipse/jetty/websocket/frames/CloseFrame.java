@@ -1,5 +1,6 @@
 package org.eclipse.jetty.websocket.frames;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.StatusCode;
 
@@ -30,6 +31,11 @@ public class CloseFrame extends ControlFrame
     public short getStatusCode()
     {
         return statusCode;
+    }
+
+    public boolean hasReason()
+    {
+        return StringUtil.isBlank(reason);
     }
 
     public void setReason(String reason)

@@ -35,7 +35,6 @@ import javax.servlet.http.HttpServletRequest;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -83,6 +82,7 @@ public class WebSocketLoadRFC6455Test
             this.outbound = outbound;
         }
     }
+
     private class WebSocketClient implements Runnable
     {
         private final Socket socket;
@@ -119,17 +119,16 @@ public class WebSocketLoadRFC6455Test
         public WebSocketClient(String host, int port, int readTimeout, CountDownLatch latch, int iterations) throws IOException
         {
             this.latch = latch;
-            socket = new Socket(host, port);
+            socket = new Socket(host,port);
             socket.setSoTimeout(readTimeout);
-            output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "ISO-8859-1"));
-            input = new BufferedReader(new InputStreamReader(socket.getInputStream(), "ISO-8859-1"));
+            output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),"ISO-8859-1"));
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream(),"ISO-8859-1"));
             this.iterations = iterations;
 
             WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
             // _endp=new SocketEndPoint(socket);
-            StandardByteBufferPool bufferPool = new StandardByteBufferPool();
-            _generator = new Generator(bufferPool,policy);
+            _generator = new Generator(policy);
             _parser = new Parser(policy);
 
         }
@@ -141,15 +140,9 @@ public class WebSocketLoadRFC6455Test
 
         private void open() throws IOException
         {
-            output.write("GET /chat HTTP/1.1\r\n"+
-                    "Host: server.example.com\r\n"+
-                    "Upgrade: websocket\r\n"+
-                    "Connection: Upgrade\r\n"+
-                    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
-                    "Sec-WebSocket-Origin: http://example.com\r\n"+
-                    "Sec-WebSocket-Protocol: onConnect\r\n" +
-                    "Sec-WebSocket-Version: 7\r\n"+
-                    "\r\n");
+            output.write("GET /chat HTTP/1.1\r\n" + "Host: server.example.com\r\n" + "Upgrade: websocket\r\n" + "Connection: Upgrade\r\n"
+                    + "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" + "Sec-WebSocket-Origin: http://example.com\r\n"
+                    + "Sec-WebSocket-Protocol: onConnect\r\n" + "Sec-WebSocket-Version: 7\r\n" + "\r\n");
             output.flush();
 
             String responseLine = input.readLine();
@@ -165,7 +158,6 @@ public class WebSocketLoadRFC6455Test
             }
         }
 
-
         @Override
         public void run()
         {
@@ -175,7 +167,8 @@ public class WebSocketLoadRFC6455Test
                 for (int i = 0; i < iterations; ++i)
                 {
                     TextFrame txt = new TextFrame(message);
-                    ByteBuffer buf = _generator.generate(txt);
+                    ByteBuffer buf = ByteBuffer.allocate((message.length() * iterations) + 32);
+                    _generator.generate(buf,txt);
 
                     // TODO: Send it
                     // TODO: Receive response
@@ -241,11 +234,11 @@ public class WebSocketLoadRFC6455Test
             WebSocketClient[] clients = new WebSocketClient[count];
             for (int i = 0; i < clients.length; ++i)
             {
-                clients[i] = new WebSocketClient("localhost", _connector.getLocalPort(), 1000, latch, iterations);
+                clients[i] = new WebSocketClient("localhost",_connector.getLocalPort(),1000,latch,iterations);
                 clients[i].open();
             }
 
-            //long start = System.nanoTime();
+            // long start = System.nanoTime();
             for (WebSocketClient client : clients)
             {
                 threadPool.execute(client);
@@ -253,8 +246,8 @@ public class WebSocketLoadRFC6455Test
 
             int parallelism = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
             long maxTimePerIteration = 5;
-            assertTrue(latch.await(iterations * ((count / parallelism) + 1) * maxTimePerIteration, TimeUnit.MILLISECONDS));
-            //long end = System.nanoTime();
+            assertTrue(latch.await(iterations * ((count / parallelism) + 1) * maxTimePerIteration,TimeUnit.MILLISECONDS));
+            // long end = System.nanoTime();
             // System.err.println("Elapsed: " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms");
 
             for (WebSocketClient client : clients)
@@ -265,7 +258,7 @@ public class WebSocketLoadRFC6455Test
         finally
         {
             threadPool.shutdown();
-            assertTrue(threadPool.awaitTermination(2, TimeUnit.SECONDS));
+            assertTrue(threadPool.awaitTermination(2,TimeUnit.SECONDS));
         }
     }
 }

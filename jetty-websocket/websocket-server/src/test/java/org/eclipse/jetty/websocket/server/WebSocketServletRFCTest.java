@@ -183,7 +183,7 @@ public class WebSocketServletRFCTest
         // acting as client
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ByteBufferPool bufferPool = new StandardByteBufferPool(policy.getBufferSize());
-        Generator generator = new Generator(bufferPool,policy);
+        Generator generator = new Generator(policy);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
@@ -218,19 +218,34 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             TextFrame txt = new TextFrame("CRASH");
-            ByteBuffer txtbuf = generator.generate(txt);
-            txtbuf.flip();
+            ByteBuffer txtbuf = bufferPool.acquire(policy.getBufferSize(),false);
+            try
+            {
+                generator.generate(txtbuf,txt);
+                txtbuf.flip();
 
-            // Write Text Frame
-            BufferUtil.writeTo(txtbuf,out);
+                // Write Text Frame
+                BufferUtil.writeTo(txtbuf,out);
+            }
+            finally
+            {
+                bufferPool.release(txtbuf);
+            }
 
             // Read frame (hopefully close frame)
-            ByteBuffer rbuf = ByteBuffer.allocate(20);
-            read(in,rbuf);
+            ByteBuffer rbuf = bufferPool.acquire(policy.getBufferSize(),false);
+            try
+            {
+                read(in,rbuf);
 
-            // Parse Frame
-            rbuf.flip();
-            parser.parse(rbuf);
+                // Parse Frame
+                rbuf.flip();
+                parser.parse(rbuf);
+            }
+            finally
+            {
+                bufferPool.release(rbuf);
+            }
 
             // Validate responses
             capture.assertNoErrors();

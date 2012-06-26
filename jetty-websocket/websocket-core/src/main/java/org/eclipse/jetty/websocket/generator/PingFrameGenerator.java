@@ -2,20 +2,20 @@ package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 
 public class PingFrameGenerator extends FrameGenerator<PingFrame>
 {
-    public PingFrameGenerator(ByteBufferPool bufferPool, WebSocketPolicy policy)
+    public PingFrameGenerator(WebSocketPolicy policy)
     {
-        super(bufferPool, policy);
+        super(policy);
     }
 
     @Override
-    public ByteBuffer payload(PingFrame ping)
+    public void fillPayload(ByteBuffer buffer, PingFrame ping)
     {
-        return ping.getPayload();
+        BufferUtil.put(ping.getPayload(),buffer);
     }
 }

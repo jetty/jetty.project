@@ -51,7 +51,7 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection
         super(endp,executor);
         this.policy = policy;
         this.bufferPool = new StandardByteBufferPool(policy.getBufferSize());
-        this.generator = new Generator(bufferPool,policy);
+        this.generator = new Generator(policy);
         this.parser = new Parser(policy);
         this.extensions = new ArrayList<>();
     }
@@ -67,6 +67,11 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection
             terminateConnection(StatusCode.PROTOCOL,e.getMessage());
             throw new RuntimeIOException(e);
         }
+    }
+
+    public ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
     }
 
     /**
@@ -146,6 +151,8 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection
         close.setReason(reason);
 
         // fire and forget -> close frame
-        getEndPoint().write(null,new WebSocketCloseCallback(this),generator.generate(close));
+        ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
+        generator.generate(buf,close);
+        getEndPoint().write(null,new WebSocketCloseCallback(this,buf),buf);
     }
 }
