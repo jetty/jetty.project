@@ -77,11 +77,11 @@ public abstract class FrameGenerator<T extends BaseFrame>
         {
             // we have a 64 bit length
             b |= 0x7F;
-            framing.put(b); // indicate 4 byte length
-            framing.put((byte)0);
-            framing.put((byte)0);
-            framing.put((byte)0);
-            framing.put((byte)0);
+            framing.put(b); // indicate 8 byte length
+            framing.put((byte)0); // 
+            framing.put((byte)0); // anything over an
+            framing.put((byte)0); // int is just 
+            framing.put((byte)0); // intsane!
             framing.put((byte)((payloadLength>>24) & 0xFF)); 
             framing.put((byte)((payloadLength>>16) & 0xFF)); 
             framing.put((byte)((payloadLength>>8) & 0xFF)); 
