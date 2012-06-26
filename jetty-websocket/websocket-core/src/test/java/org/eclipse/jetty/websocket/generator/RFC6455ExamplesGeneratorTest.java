@@ -232,7 +232,7 @@ public class RFC6455ExamplesGeneratorTest
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
-        // 256 bytes binary message in a single unmasked frame
+        // 64k bytes binary message in a single unmasked frame
         expected.put(new byte[]
                 { (byte)0x82, (byte)0x7F });
         expected.putInt(0x0000000000010000);

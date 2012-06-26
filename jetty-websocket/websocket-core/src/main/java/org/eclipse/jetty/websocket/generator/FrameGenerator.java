@@ -68,23 +68,40 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
         // payload lengths
         int payloadLength = frame.getPayloadLength();
-        if ((payloadLength >= 0x7F) && (payloadLength <= 0xFF_FF))
-        {
-            // we have a 16 bit length
-            b |= 0x7E;
-            framing.put(b); // indicate 2 byte length
-            framing.putShort((short)(payloadLength & 0xFF_FF)); // write 2 byte length
-        }
-        else if (payloadLength >= 0xFFFF)
+        
+        
+        /*
+         * if length is over 65535 then its a 7 + 64 bit length
+         */
+        if (payloadLength > 0xFF_FF)
         {
             // we have a 64 bit length
             b |= 0x7F;
             framing.put(b); // indicate 4 byte length
-            framing.putInt(payloadLength); // write 4 byte length
+            framing.put((byte)0);
+            framing.put((byte)0);
+            framing.put((byte)0);
+            framing.put((byte)0);
+            framing.put((byte)((payloadLength>>24) & 0xFF)); 
+            framing.put((byte)((payloadLength>>16) & 0xFF)); 
+            framing.put((byte)((payloadLength>>8) & 0xFF)); 
+            framing.put((byte)(payloadLength & 0xFF)); 
+        }       
+        /* 
+         * if payload is ge 126 we have a 7 + 16 bit length
+         */
+        else if (payloadLength >= 0x7E)
+        {
+            b |= 0x7E;
+            framing.put(b); // indicate 2 byte length
+            framing.put((byte)((payloadLength>>8) & 0xFF)); 
+            framing.put((byte)(payloadLength & 0xFF)); 
         }
+        /*
+         * we have a 7 bit length
+         */
         else
         {
-            // we have a 7 bit length
             b |= (payloadLength & 0x7F);
             framing.put(b);
         }
