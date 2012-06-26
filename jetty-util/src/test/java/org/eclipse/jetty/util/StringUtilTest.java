@@ -197,4 +197,34 @@ public class StringUtilTest
         }
         System.err.println(calc);
     }
+    
+    @Test
+    public void testIsBlank() {
+        Assert.assertTrue(StringUtil.isBlank(null));
+        Assert.assertTrue(StringUtil.isBlank(""));
+        Assert.assertTrue(StringUtil.isBlank("\r\n"));
+        Assert.assertTrue(StringUtil.isBlank("\t"));
+        Assert.assertTrue(StringUtil.isBlank("   "));
+                   
+        Assert.assertFalse(StringUtil.isBlank("a"));
+        Assert.assertFalse(StringUtil.isBlank("  a"));
+        Assert.assertFalse(StringUtil.isBlank("a  "));
+        Assert.assertFalse(StringUtil.isBlank("."));
+        Assert.assertFalse(StringUtil.isBlank(";\n"));
+    }
+
+    @Test
+    public void testIsNotBlank() {
+        Assert.assertFalse(StringUtil.isNotBlank(null));
+        Assert.assertFalse(StringUtil.isNotBlank(""));
+        Assert.assertFalse(StringUtil.isNotBlank("\r\n"));
+        Assert.assertFalse(StringUtil.isNotBlank("\t"));
+        Assert.assertFalse(StringUtil.isNotBlank("   "));
+                   
+        Assert.assertTrue(StringUtil.isNotBlank("a"));
+        Assert.assertTrue(StringUtil.isNotBlank("  a"));
+        Assert.assertTrue(StringUtil.isNotBlank("a  "));
+        Assert.assertTrue(StringUtil.isNotBlank("."));
+        Assert.assertTrue(StringUtil.isNotBlank(";\n"));
+    }
 }
