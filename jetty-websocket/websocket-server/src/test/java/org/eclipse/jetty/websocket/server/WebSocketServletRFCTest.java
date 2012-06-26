@@ -214,7 +214,7 @@ public class WebSocketServletRFCTest
 
             Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
             Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
-            // Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
+            Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
 
             // Generate text frame
             TextFrame txt = new TextFrame("CRASH");
@@ -225,13 +225,14 @@ public class WebSocketServletRFCTest
             BufferUtil.writeTo(txtbuf,out);
 
             // Read frame (hopefully close frame)
-            ByteBuffer closeFrame = ByteBuffer.allocate(20);
-            System.out.println("Reading from in");
-            read(in,closeFrame);
+            ByteBuffer rbuf = ByteBuffer.allocate(20);
+            read(in,rbuf);
 
             // Parse Frame
-            parser.parse(closeFrame);
+            rbuf.flip();
+            parser.parse(rbuf);
 
+            // Validate responses
             capture.assertNoErrors();
             capture.assertHasFrame(CloseFrame.class,1);
 
