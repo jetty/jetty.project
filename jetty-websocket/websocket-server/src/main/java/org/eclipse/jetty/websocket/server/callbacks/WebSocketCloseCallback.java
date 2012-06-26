@@ -1,8 +1,9 @@
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.server.callbacks;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.server.AsyncWebSocketConnection;
 
 public class WebSocketCloseCallback implements Callback<Void>
 {

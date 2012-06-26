@@ -20,6 +20,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.server.callbacks.WebSocketCloseCallback;
 
 // TODO: implement WebSocket.Connection (for API access)?
 public class AsyncWebSocketConnection extends AbstractAsyncConnection
