@@ -33,7 +33,7 @@ public class ABCase1_2
         binaryFrame.setFin(true);
         
         Generator generator = new Generator(policy);
-        ByteBuffer actual = BufferUtil.allocate(32);
+        ByteBuffer actual = ByteBuffer.allocate(32);
         generator.generate(actual, binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
@@ -91,7 +91,7 @@ public class ABCase1_2
 
         Generator generator = new Generator(policy);
 
-        ByteBuffer actual = BufferUtil.allocate(11);
+        ByteBuffer actual = ByteBuffer.allocate(length + 11);
 
         generator.generate(actual, binaryFrame);
         
@@ -168,7 +168,7 @@ public class ABCase1_2
         
         Generator generator = new Generator(policy);
         
-        ByteBuffer actual = BufferUtil.allocate(length + 11);
+        ByteBuffer actual = ByteBuffer.allocate(length + 11);
         
         generator.generate(actual, binaryFrame);
         
@@ -251,7 +251,7 @@ public class ABCase1_2
         
         Generator generator = new Generator(policy);
         
-        ByteBuffer actual = BufferUtil.allocate(length + 11);
+        ByteBuffer actual = ByteBuffer.allocate(length + 11);
         generator.generate(actual, binaryFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -331,7 +331,7 @@ public class ABCase1_2
         textFrame.setFin(true);
         
         Generator generator = new Generator(policy);
-        ByteBuffer actual = BufferUtil.allocate(length + 11);
+        ByteBuffer actual = ByteBuffer.allocate(length + 11);
         generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -412,7 +412,7 @@ public class ABCase1_2
         textFrame.setFin(true);
         
         Generator generator = new Generator(policy);
-        ByteBuffer actual = BufferUtil.allocate(length + 11);
+        ByteBuffer actual = ByteBuffer.allocate(length + 11);
         generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -492,7 +492,7 @@ public class ABCase1_2
         textFrame.setFin(true);
         
         Generator generator = new Generator(policy);
-        ByteBuffer actual = BufferUtil.allocate(length + 32);
+        ByteBuffer actual = ByteBuffer.allocate(length + 32);
         generator.generate(actual, textFrame);
         
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
