@@ -46,7 +46,7 @@ public abstract class FrameParser<T extends BaseFrame>
     private static final Logger LOG = Log.getLogger(FrameParser.class);
     private WebSocketPolicy policy;
     private State state = State.PAYLOAD_LEN;
-    private int length = 0;
+    private long length = 0;
     private int cursor = 0;
 
     public FrameParser(WebSocketPolicy policy)
@@ -149,37 +149,18 @@ public abstract class FrameParser<T extends BaseFrame>
                     if (length == 127)
                     {
                         // length 8 bytes (extended payload length)
-                        if (buffer.remaining() >= 4)
-                        {
-                            buffer.getInt(); //toss the first one, first 4 bytes
-                            length = buffer.getInt(); // last 4 bytes for actual length
-                        }
-                        else
-                        {
-                            length = 0;
-                            state = State.PAYLOAD_LEN_BYTES;
-                            cursor = 4;
-                            break; // continue onto next state
-                        }
+                        length = 0;
+                        state = State.PAYLOAD_LEN_BYTES;
+                        cursor = 8;
+                        break; // continue onto next state
                     }
                     else if (length == 126)
                     {
                         // length 2 bytes (extended payload length)
-                        if (buffer.remaining() >= 2)
-                        {
-                            length = buffer.getShort();
-                            if (length == -1)
-                            {
-                                length = 65535;
-                            }
-                        }
-                        else
-                        {
-                            length = 0;
-                            state = State.PAYLOAD_LEN_BYTES;
-                            cursor = 2;
-                            break; // continue onto next state
-                        }
+                        length = 0;
+                        state = State.PAYLOAD_LEN_BYTES;
+                        cursor = 2;
+                        break; // continue onto next state
                     }
 
                     getFrame().setPayloadLength(length);

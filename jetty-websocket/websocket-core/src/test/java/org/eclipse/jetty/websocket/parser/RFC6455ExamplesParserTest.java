@@ -112,7 +112,7 @@ public class RFC6455ExamplesParserTest
         // 256 bytes binary message in a single unmasked frame
         buf.put(new byte[]
                 { (byte)0x82, 0x7E });
-        buf.putShort((short)0x01_00);
+        buf.putShort((short)0x01_00); // 16 bit size
         for (int i = 0; i < dataSize; i++)
         {
             buf.put((byte)0x44);
@@ -134,7 +134,7 @@ public class RFC6455ExamplesParserTest
         ByteBufferAssert.assertSize("BinaryFrame.payload",dataSize,bin.getPayload());
 
         ByteBuffer data = bin.getPayload();
-        for (int i = dataSize; i > 0; i--)
+        for (long i = dataSize; i > 0; i--)
         {
             Assert.assertThat("BinaryFrame.data[" + i + "]",data.get(),is((byte)0x44));
         }
@@ -145,12 +145,12 @@ public class RFC6455ExamplesParserTest
     {
         int dataSize = 1024 * 64;
 
-        ByteBuffer buf = ByteBuffer.allocate(dataSize + 10);
+        ByteBuffer buf = ByteBuffer.allocate((dataSize + 10));
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64 Kbytes binary message in a single unmasked frame
         buf.put(new byte[]
                 { (byte)0x82, 0x7F });
-        buf.putInt(dataSize);
+        buf.putLong(dataSize); // 64bit size
         for (int i = 0; i < dataSize; i++)
         {
             buf.put((byte)0x77);
@@ -172,7 +172,7 @@ public class RFC6455ExamplesParserTest
         ByteBufferAssert.assertSize("BinaryFrame.payload",dataSize,bin.getPayload());
 
         ByteBuffer data = bin.getPayload();
-        for (int i = dataSize; i > 0; i--)
+        for (long i = dataSize; i > 0; i--)
         {
             Assert.assertThat("BinaryFrame.data[" + i + "]",data.get(),is((byte)0x77));
         }

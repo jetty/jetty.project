@@ -185,9 +185,20 @@ public class BaseFrame
         setPayloadLength(this.payload.remaining());
     }
 
-    public void setPayloadLength(int payloadLength)
+    public void setPayloadLength(int length)
     {
-        this.payloadLength = payloadLength;
+        this.payloadLength = length;
+    }
+
+    public void setPayloadLength(long length)
+    {
+        // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
+        if (length > Integer.MAX_VALUE)
+        {
+            // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
+            throw new IllegalArgumentException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
+        }
+        this.payloadLength = (int)length;
     }
 
     public void setRsv1(boolean rsv1)
