@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.server.callbacks;
 
 import org.eclipse.jetty.util.FutureCallback;
 
