@@ -16,14 +16,6 @@ import org.eclipse.jetty.websocket.frames.TextFrame;
 public interface WebSocket
 {
     /**
-     * Server side interface (to be moved once API settles down)
-     */
-    public static interface Accept
-    {
-        WebSocket acceptWebSocket(WebSocketHandshakeRequest request, WebSocketHandshakeResponse response);
-    }
-
-    /**
      * Advanced usage, for those interested in flags
      */
     public static interface BinaryFrameListener

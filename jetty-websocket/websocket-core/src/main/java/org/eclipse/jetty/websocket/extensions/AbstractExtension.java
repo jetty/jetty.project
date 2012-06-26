@@ -15,64 +15,40 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.extensions;
 
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 
 public class AbstractExtension implements Extension
 {
-    private final String name;
-    private final Map<String, String> parameters = new HashMap<String, String>();
+    private final ExtensionConfig config;
 
     public AbstractExtension(String name)
     {
-        this.name = name;
+        this.config = new ExtensionConfig(name);
     }
 
-    public int getInitParameter(String name, int dft)
+    @Override
+    public ExtensionConfig getConfig()
     {
-        String v = parameters.get(name);
-        if (v==null)
-        {
-            return dft;
-        }
-        return Integer.valueOf(v);
-    }
-
-    public String getInitParameter(String name,String dft)
-    {
-        if (!parameters.containsKey(name))
-        {
-            return dft;
-        }
-        return parameters.get(name);
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override
     public String getName()
     {
-        return name;
+        return config.getName();
     }
 
     @Override
     public String getParameterizedName()
     {
-        StringBuilder name = new StringBuilder();
-        name.append(name);
-        for (String param : parameters.keySet())
-        {
-            name.append(';').append(param).append('=').append(QuotedStringTokenizer.quoteIfNeeded(parameters.get(param),";="));
-        }
-        return name.toString();
+        return config.getParameterizedName();
     }
 
     @Override
-    public boolean init(Map<String, String> parameters)
+    public void setConfig(ExtensionConfig config)
     {
-        parameters.putAll(parameters);
-        return true;
+        this.config.init(config);
     }
 
     @Override

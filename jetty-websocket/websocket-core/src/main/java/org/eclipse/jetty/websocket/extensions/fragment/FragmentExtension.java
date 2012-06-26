@@ -15,31 +15,27 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.extensions.fragment;
 
-import java.io.IOException;
-import java.util.Map;
-
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.extensions.AbstractExtension;
 
 public class FragmentExtension extends AbstractExtension
 {
     private int _maxLength=-1;
     private int _minFragments=1;
-    
+
     public FragmentExtension()
     {
         super("fragment");
     }
 
     @Override
-    public boolean init(Map<String, String> parameters)
+    public void setConfig(ExtensionConfig config)
     {
-        if(super.init(parameters))
-        {
-            _maxLength=getInitParameter("maxLength",_maxLength);
-            _minFragments=getInitParameter("minFragments",_minFragments);
-            return true;
-        }
-        return false;
+        super.setConfig(config);
+
+        _maxLength = config.getParameter("maxLength",_maxLength);
+        _minFragments = config.getParameter("minFragments",_minFragments);
+
     }
 
     /* TODO: Migrate to new Jetty9 IO
@@ -50,9 +46,9 @@ public class FragmentExtension extends AbstractExtension
             super.addFrame(flags,opcode,content,offset,length);
             return;
         }
-        
+
         int fragments=1;
-        
+
         while (_maxLength>0 && length>_maxLength)
         {
             fragments++;
@@ -61,7 +57,7 @@ public class FragmentExtension extends AbstractExtension
             offset+=_maxLength;
             opcode=getConnection().continuationOpcode();
         }
-        
+
         while (fragments<_minFragments)
         {
             int frag=length/2;
@@ -74,5 +70,5 @@ public class FragmentExtension extends AbstractExtension
 
         super.addFrame((byte)(flags|getConnection().finMask()),opcode,content,offset,length);
     }
-    */
+     */
 }

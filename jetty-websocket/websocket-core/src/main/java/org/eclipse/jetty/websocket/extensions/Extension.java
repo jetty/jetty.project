@@ -15,12 +15,12 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.extensions;
 
-import java.util.Map;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 
 public interface Extension
 {
+    public ExtensionConfig getConfig();
     public String getName();
     public String getParameterizedName();
-
-    public boolean init(Map<String,String> parameters);
+    public void setConfig(ExtensionConfig config);
 }

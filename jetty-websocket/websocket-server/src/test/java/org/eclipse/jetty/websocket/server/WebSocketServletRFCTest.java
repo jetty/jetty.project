@@ -11,29 +11,37 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.util.concurrent.TimeUnit;
+import java.nio.ByteBuffer;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455Test;
-import org.eclipse.jetty.websocket.server.helper.MessageSender;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.generator.Generator;
+import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.server.helper.FrameParseCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on
- * {@link WebSocketServlet}
+ * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
  * <p>
- * This test serves a different purpose than than the {@link WebSocketGeneratorRFC6455Test},
- * {@link WebSocketMessageRFC6455Test}, and {@link WebSocketParserRFC6455Test} tests.
+ * This test serves a different purpose than than the {@link WebSocketGeneratorRFC6455Test}, {@link WebSocketMessageRFC6455Test}, and
+ * {@link WebSocketParserRFC6455Test} tests.
  */
 public class WebSocketServletRFCTest
 {
@@ -64,6 +72,7 @@ public class WebSocketServletRFCTest
             // trigger a WebSocket server terminated close.
             if (data.equals("CRASH"))
             {
+                System.out.printf("Got OnTextMessage");
                 throw new RuntimeException("Something bad happened");
             }
 
@@ -131,6 +140,14 @@ public class WebSocketServletRFCTest
         }
     }
 
+    private void read(InputStream in, ByteBuffer buf) throws IOException
+    {
+        while ((in.available() > 0) && (buf.remaining() > 0))
+        {
+            buf.put((byte)in.read());
+        }
+    }
+
     private String readResponseHeader(InputStream in) throws IOException
     {
         InputStreamReader isr = new InputStreamReader(in);
@@ -153,34 +170,79 @@ public class WebSocketServletRFCTest
     }
 
     /**
-     * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal
-     * server error) being produced by the extended WebSocketServlet.
+     * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal server error) being produced by the
+     * extended WebSocketServlet.
      */
     @Test
     public void testResponseOnInternalError() throws Exception
     {
-        // WebSocketClientFactory clientFactory = new WebSocketClientFactory();
-        // clientFactory.start();
+        Socket socket = new Socket();
+        SocketAddress endpoint = new InetSocketAddress(serverUri.getHost(),serverUri.getPort());
+        socket.connect(endpoint);
 
-        // WebSocketClient wsc = clientFactory.newWebSocketClient();
-        MessageSender sender = new MessageSender();
-        // wsc.open(serverUri,sender);
+        // acting as client
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+        ByteBufferPool bufferPool = new StandardByteBufferPool(policy.getBufferSize());
+        Generator generator = new Generator(bufferPool,policy);
+        Parser parser = new Parser(policy);
+        FrameParseCapture capture = new FrameParseCapture();
+        parser.addListener(capture);
 
+        StringBuilder req = new StringBuilder();
+        req.append("GET / HTTP/1.1\r\n");
+        req.append(String.format("Host: %s:%d\r\n",serverUri.getHost(),serverUri.getPort()));
+        req.append("Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n");
+        req.append("Upgrade: WebSocket\r\n");
+        req.append("Connection: Upgrade\r\n");
+        req.append("Sec-WebSocket-Version: 13\r\n"); // RFC 6455
+        req.append("\r\n");
+
+        OutputStream out = null;
+        InputStream in = null;
         try
         {
-            sender.awaitConnect();
+            out = socket.getOutputStream();
+            in = socket.getInputStream();
 
-            sender.sendMessage("CRASH");
+            // Write request
+            out.write(req.toString().getBytes());
+            out.flush();
 
-            // Give servlet 500 millisecond to process messages
-            TimeUnit.MILLISECONDS.sleep(500);
+            // Read response header
+            String respHeader = readResponseHeader(in);
+            // System.out.println("RESPONSE: " + respHeader);
 
-            Assert.assertThat("WebSocket should be closed",sender.isConnected(),is(false));
-            Assert.assertThat("WebSocket close clode",sender.getCloseCode(),is(1011));
+            Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
+            Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
+            // Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
+
+            // Generate text frame
+            TextFrame txt = new TextFrame("CRASH");
+            ByteBuffer txtbuf = generator.generate(txt);
+            txtbuf.flip();
+
+            // Write Text Frame
+            BufferUtil.writeTo(txtbuf,out);
+
+            // Read frame (hopefully close frame)
+            ByteBuffer closeFrame = ByteBuffer.allocate(20);
+            System.out.println("Reading from in");
+            read(in,closeFrame);
+
+            // Parse Frame
+            parser.parse(closeFrame);
+
+            capture.assertNoErrors();
+            capture.assertHasFrame(CloseFrame.class,1);
+
+            CloseFrame cf = (CloseFrame)capture.getFrames().get(0);
+            Assert.assertThat("Close Frame.status code",cf.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }
         finally
         {
-            sender.close();
+            IO.close(in);
+            IO.close(out);
+            socket.close();
         }
     }
 
@@ -190,9 +252,6 @@ public class WebSocketServletRFCTest
     @Test
     public void testResponseOnInvalidVersion() throws Exception
     {
-        // Using straight Socket to accomplish this as jetty's WebSocketClient
-        // doesn't allow the use of invalid versions. (obviously)
-
         Socket socket = new Socket();
         SocketAddress endpoint = new InetSocketAddress(serverUri.getHost(),serverUri.getPort());
         socket.connect(endpoint);
@@ -221,7 +280,7 @@ public class WebSocketServletRFCTest
             // System.out.println("RESPONSE: " + respHeader);
 
             Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 400 Unsupported websocket version specification"));
-            Assert.assertThat("Response Header Versions",respHeader,containsString("Sec-WebSocket-Version: 13, 8, 6, 0\r\n"));
+            Assert.assertThat("Response Header Versions",respHeader,containsString("Sec-WebSocket-Version: 13, 0\r\n"));
         }
         finally
         {
