@@ -235,7 +235,8 @@ public class RFC6455ExamplesGeneratorTest
         // 64k bytes binary message in a single unmasked frame
         expected.put(new byte[]
                 { (byte)0x82, (byte)0x7F });
-        expected.putInt(0x0000000000010000);
+        expected.putInt(0x00_00_00_00);
+        expected.putInt(0x00_01_00_00);
 
         for (int i = 0; i < dataSize; i++)
         {

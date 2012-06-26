@@ -94,7 +94,7 @@ public abstract class FrameGenerator<T extends BaseFrame>
         {
             b |= 0x7E;
             framing.put(b); // indicate 2 byte length
-            framing.put((byte)((payloadLength>>8) & 0xFF)); 
+            framing.put((byte)(payloadLength>>8)); 
             framing.put((byte)(payloadLength & 0xFF)); 
         }
         /*
