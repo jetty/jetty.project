@@ -43,16 +43,66 @@ public class ReferrerPushStrategyUnitTest
     @Test
     public void testReferrerCallsAfterTimeoutAreNotAddedAsPushResources() throws InterruptedException
     {
-        Headers requestHeaders = new Headers();
-        requestHeaders.put(HTTPSPDYHeader.SCHEME.name(VERSION), SCHEME);
-        requestHeaders.put(HTTPSPDYHeader.HOST.name(VERSION), HOST);
-        requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
-        requestHeaders.put(HTTPSPDYHeader.METHOD.name(VERSION), METHOD);
+        Headers requestHeaders = getBaseHeaders(VERSION);
         int referrerCallTimeout = 1000;
         referrerPushStrategy.setReferrerPushPeriod(referrerCallTimeout);
+        setMockExpectations();
 
+        String referrerUrl = fillPushStrategyCache(requestHeaders);
+        Set<String> pushResources;
+
+        // sleep to pretend that the user manually clicked on a linked resource instead the browser requesting subresources immediately
+        Thread.sleep(referrerCallTimeout + 1);
+
+        requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), "image2.jpg");
+        requestHeaders.put("referer", referrerUrl);
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        assertThat("pushResources is empty", pushResources.size(), is(0));
+
+        requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        // as the image2.jpg request has been a link and not a subresource, we expect that pushResources.size() is still 2
+        assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
+    }
+
+    @Test
+    public void testDisablePushByVersion() throws InterruptedException
+    {
+        referrerPushStrategy.removeSPDYVersionSupport(SPDY.V2);
+        
+        Headers requestHeaders = getBaseHeaders(VERSION);
+        setMockExpectations();
+
+        String referrerUrl = fillPushStrategyCache(requestHeaders);
+
+        requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
+        Set<String> pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
+
+        requestHeaders = getBaseHeaders(SPDY.V2);
+        when(session.getVersion()).thenReturn(SPDY.V2);
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        assertThat("no push resources are returned for SPDY.V2", pushResources.size(), is(0));
+    }
+
+    private Headers getBaseHeaders(short version)
+    {
+        Headers requestHeaders = new Headers();
+        requestHeaders.put(HTTPSPDYHeader.SCHEME.name(version), SCHEME);
+        requestHeaders.put(HTTPSPDYHeader.HOST.name(version), HOST);
+        requestHeaders.put(HTTPSPDYHeader.URI.name(version), MAIN_URI);
+        requestHeaders.put(HTTPSPDYHeader.METHOD.name(version), METHOD);
+        return requestHeaders;
+    }
+
+    private void setMockExpectations()
+    {
         when(stream.getSession()).thenReturn(session);
         when(session.getVersion()).thenReturn(VERSION);
+    }
+
+    private String fillPushStrategyCache(Headers requestHeaders)
+    {
         Set<String> pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
         assertThat("pushResources is empty", pushResources.size(), is(0));
 
@@ -71,18 +121,6 @@ public class ReferrerPushStrategyUnitTest
         requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
         pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
         assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
-
-        // sleep to pretend that the user manually clicked on a linked resource instead the browser requesting subresources immediately
-        Thread.sleep(referrerCallTimeout + 1);
-
-        requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), "image2.jpg");
-        requestHeaders.put("referer", referrerUrl);
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
-        assertThat("pushResources is empty", pushResources.size(), is(0));
-
-        requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
-        // as the image2.jpg request has been a link and not a subresource, we expect that pushResources.size() is still 2
-        assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
+        return referrerUrl;
     }
 }
