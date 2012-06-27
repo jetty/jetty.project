@@ -19,7 +19,7 @@ import org.eclipse.jetty.websocket.parser.PingPayloadParser;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ABCase2
+public class TestABCase2
 {
     WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 

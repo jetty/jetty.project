@@ -11,7 +11,7 @@ import org.eclipse.jetty.websocket.parser.Parser;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ABCase4
+public class TestABCase4
 {
     WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 

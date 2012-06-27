@@ -5,7 +5,7 @@ import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.junit.Test;
 
-public class ABCase3
+public class TestABCase3
 {
     @Test( expected=IllegalArgumentException.class )
     public void testGenerateRSV1PingFrame()
