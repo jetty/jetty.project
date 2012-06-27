@@ -41,7 +41,7 @@ public class ClosePayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(CloseFrame.class,1);
         CloseFrame txt = (CloseFrame)capture.getFrames().get(0);
-        Assert.assertThat("CloseFrame.statusCode",txt.getStatusCode(),is(StatusCode.NORMAL));
+        Assert.assertThat("CloseFrame.statusCode",(short)txt.getStatusCode(),is(StatusCode.NORMAL));
         Assert.assertThat("CloseFrame.data",txt.getReason(),is(expectedReason));
     }
 }

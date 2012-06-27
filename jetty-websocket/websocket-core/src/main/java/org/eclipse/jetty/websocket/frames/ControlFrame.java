@@ -64,7 +64,7 @@ public abstract class ControlFrame extends BaseFrame
     }
 
     @Override
-    protected void setPayload(byte[] buf)
+    public void setPayload(byte[] buf)
     {
         if ( buf.length > 125 )
         {

@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 
@@ -43,6 +44,14 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
         {
             // no status code. no reason.
             return true;
+        }
+        
+        /* invalid payload length and protects payload.getShort() call below from
+         * pulling too many bytes from buffer.
+         */
+        if ( payloadLength == 1 )
+        {
+            throw new WebSocketException("Close: invalid payload length: 1");
         }
 
         while (buffer.hasRemaining())
