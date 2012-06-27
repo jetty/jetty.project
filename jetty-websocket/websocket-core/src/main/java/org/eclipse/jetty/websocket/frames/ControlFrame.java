@@ -26,6 +26,33 @@ public abstract class ControlFrame extends BaseFrame
     }
     
     @Override
+    public void setRsv1(boolean rsv1)
+    {
+        if (rsv1)
+        {
+            throw new IllegalArgumentException("Cannot set RSV1 to true on a " + getOpCode().name());
+        }
+    }
+
+    @Override
+    public void setRsv2(boolean rsv2)
+    {
+        if (rsv2)
+        {
+            throw new IllegalArgumentException("Cannot set RSV2 to true on a " + getOpCode().name());
+        }
+    }
+
+    @Override
+    public void setRsv3(boolean rsv3)
+    {
+        if (rsv3)
+        {
+            throw new IllegalArgumentException("Cannot set RSV3 to true on a " + getOpCode().name());
+        }
+    }
+
+    @Override
     public void setPayload(ByteBuffer payload)
     {
         if ( payload.position() > 125 )
