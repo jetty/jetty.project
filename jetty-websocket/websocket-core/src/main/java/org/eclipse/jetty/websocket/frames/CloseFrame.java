@@ -9,18 +9,18 @@ import org.eclipse.jetty.websocket.api.StatusCode;
  */
 public class CloseFrame extends ControlFrame
 {
-    private short statusCode;
+    private int statusCode = 0;
     private String reason;
 
     public CloseFrame()
     {
-        this(StatusCode.NORMAL); // TODO: evaluate default (or unspecified status code)
+        super(OpCode.CLOSE);
     }
 
-    public CloseFrame(short statusCode)
+    public CloseFrame(int statusCode)
     {
         super(OpCode.CLOSE);
-        this.statusCode = statusCode;
+        setStatusCode(statusCode);
     }
 
     public String getReason()
@@ -28,7 +28,7 @@ public class CloseFrame extends ControlFrame
         return reason;
     }
 
-    public short getStatusCode()
+    public int getStatusCode()
     {
         return statusCode;
     }
@@ -43,8 +43,13 @@ public class CloseFrame extends ControlFrame
         this.reason = reason;
     }
 
-    public void setStatusCode(short statusCode)
+    public void setStatusCode(int statusCode)
     {
+        if ( ( statusCode <= 999) || ( statusCode > 65535 ) )
+        {
+            throw new IllegalArgumentException("Status Codes must be in the range 1000 - 65535");
+        }
+        
         this.statusCode = statusCode;
     }
 
