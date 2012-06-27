@@ -36,7 +36,7 @@ public class BaseFrame
     private boolean rsv3 = false;
     private OpCode opcode = null;
     private boolean masked = false;
-    private int payloadLength;
+    private int payloadLength = 0;
     private byte mask[];
     private ByteBuffer payload = null;
 
@@ -132,7 +132,7 @@ public class BaseFrame
         rsv3 = false;
         opcode = null;
         masked = false;
-        payloadLength = -1;
+        payloadLength = 0;
         mask = null;
     }
 

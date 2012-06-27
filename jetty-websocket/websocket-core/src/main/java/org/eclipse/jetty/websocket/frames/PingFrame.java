@@ -19,11 +19,11 @@ public class PingFrame extends ControlFrame
     }
 
     /**
-     * Construct Ping Frame from known bytebuffer
+     * Construct Ping Frame from known byte[]
      * 
      * @param payload
      */
-    public PingFrame(ByteBuffer payload)
+    public PingFrame(byte[] payload)
     {
         this();
         setPayload(payload);

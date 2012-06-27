@@ -16,6 +16,9 @@ public class PingFrameGenerator extends FrameGenerator<PingFrame>
     @Override
     public void fillPayload(ByteBuffer buffer, PingFrame ping)
     {
-        BufferUtil.put(ping.getPayload(),buffer);
+        if ( ping.hasPayload() )
+        {
+            BufferUtil.put(ping.getPayload(),buffer);
+        }
     }
 }
