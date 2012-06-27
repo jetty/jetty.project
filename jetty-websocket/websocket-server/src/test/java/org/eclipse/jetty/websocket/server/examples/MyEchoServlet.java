@@ -1,8 +1,6 @@
 package org.eclipse.jetty.websocket.server.examples;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.server.WebSocketServlet;
 
 /**
@@ -12,8 +10,8 @@ import org.eclipse.jetty.websocket.server.WebSocketServlet;
 public class MyEchoServlet extends WebSocketServlet
 {
     @Override
-    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+    public void registerWebSockets(WebSocketServerFactory factory)
     {
-        return new MyEchoSocket();
+        factory.register(MyEchoSocket.class);
     }
 }

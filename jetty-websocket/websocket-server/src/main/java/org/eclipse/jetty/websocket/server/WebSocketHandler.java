@@ -39,20 +39,40 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
-public abstract class WebSocketHandler extends HandlerWrapper implements WebSocketServer.Acceptor
+public abstract class WebSocketHandler extends HandlerWrapper
 {
+    /**
+     * Create a simple WebSocketHandler that registers a single WebSocket POJO that is created on every upgrade request.
+     */
+    public static class Simple extends WebSocketHandler
+    {
+        private Class<?> websocketPojo;
+
+        public Simple(Class<?> websocketClass)
+        {
+            this.websocketPojo = websocketClass;
+        }
+
+        @Override
+        public void registerWebSockets(WebSocketServerFactory factory)
+        {
+            factory.register(websocketPojo);
+        }
+    }
+
     private final WebSocketServerFactory webSocketFactory;
 
     public WebSocketHandler()
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        webSocketFactory = new WebSocketServerFactory(this,policy);
+        configurePolicy(policy);
+        webSocketFactory = new WebSocketServerFactory(policy);
+        registerWebSockets(webSocketFactory);
     }
 
-    @Override
-    public boolean checkOrigin(HttpServletRequest request, String origin)
+    public void configurePolicy(WebSocketPolicy policy)
     {
-        return true;
+        /* leave at default */
     }
 
     public WebSocketServerFactory getWebSocketFactory()
@@ -63,10 +83,25 @@ public abstract class WebSocketHandler extends HandlerWrapper implements WebSock
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (webSocketFactory.acceptWebSocket(request,response) || response.isCommitted())
+        if (webSocketFactory.isUpgradeRequest(request,response))
         {
-            return;
+            // We have an upgrade request
+            if (webSocketFactory.acceptWebSocket(request,response))
+            {
+                // We have a socket instance created
+                return;
+            }
+            // If we reach this point, it means we had an incoming request to upgrade
+            // but it was either not a proper websocket upgrade, or it was possibly rejected
+            // due to incoming request constraints (controlled by WebSocketCreator)
+            if (response.isCommitted())
+            {
+                // not much we can do at this point.
+                return;
+            }
         }
         super.handle(target,baseRequest,request,response);
     }
+
+    public abstract void registerWebSockets(WebSocketServerFactory factory);
 }

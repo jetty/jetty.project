@@ -31,8 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -195,19 +193,28 @@ public class WebSocketMessageRFC6455Test
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
             @Override
-            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public void registerWebSockets(WebSocketServerFactory factory)
             {
-                __textCount.set(0);
-                __serverWebSocket = new TestWebSocket();
-                __serverWebSocket._onConnect = ("onConnect".equals(protocol));
-                __serverWebSocket._echo = ("echo".equals(protocol));
-                __serverWebSocket._aggregate = ("aggregate".equals(protocol));
-                __serverWebSocket._latch = ("latch".equals(protocol));
-                if (__serverWebSocket._latch)
+                factory.register(TestWebSocket.class);
+                factory.setCreator(new WebSocketCreator()
                 {
-                    __latch = new CountDownLatch(1);
-                }
-                return __serverWebSocket;
+                    @Override
+                    public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
+                    {
+                        __textCount.set(0);
+
+                        __serverWebSocket = new TestWebSocket();
+                        __serverWebSocket._onConnect = req.hasSubProtocol("onConnect");
+                        __serverWebSocket._echo = req.hasSubProtocol("echo");
+                        __serverWebSocket._aggregate = req.hasSubProtocol("aggregate");
+                        __serverWebSocket._latch = req.hasSubProtocol("latch");
+                        if (__serverWebSocket._latch)
+                        {
+                            __latch = new CountDownLatch(1);
+                        }
+                        return __serverWebSocket;
+                    }
+                });
             }
         };
         wsHandler.getWebSocketFactory().getPolicy().setBufferSize(8192);

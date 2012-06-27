@@ -2,7 +2,7 @@ package org.eclipse.jetty.websocket.frames;
 
 import org.eclipse.jetty.websocket.api.OpCode;
 
-public abstract class DataFrame extends BaseFrame
+public class DataFrame extends BaseFrame
 {
     // internal tracking
     private int continuationIndex = 0;

@@ -30,8 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.http.HttpServletRequest;
-
 import junit.framework.Assert;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -200,14 +198,7 @@ public class WebSocketLoadRFC6455Test
         threadPool.setMaxStopTimeMs(1000);
         _server.setThreadPool(threadPool);
 
-        WebSocketHandler wsHandler = new WebSocketHandler()
-        {
-            @Override
-            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
-            {
-                return new EchoWebSocket();
-            }
-        };
+        WebSocketHandler wsHandler = new WebSocketHandler.Simple(EchoWebSocket.class);
         wsHandler.setHandler(new DefaultHandler());
         _server.setHandler(wsHandler);
 

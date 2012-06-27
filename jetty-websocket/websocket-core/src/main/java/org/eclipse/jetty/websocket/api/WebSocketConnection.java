@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 /**
  * Connection interface for WebSocket protocol <a href="https://tools.ietf.org/html/rfc6455">RFC-6455</a>.
@@ -60,6 +61,13 @@ public interface WebSocketConnection
     boolean isOpen();
 
     /**
+     * Send a frame.
+     * <p>
+     * Basic usage, results in a series of non-blocking async writes.
+     */
+    void write(BaseFrame frame) throws IOException;
+
+    /**
      * Send a binary message.
      * <p>
      * Basic usage, results in an non-blocking async write.
@@ -74,6 +82,14 @@ public interface WebSocketConnection
      * Basic usage, results in a series of non-blocking async writes.
      */
     void write(ByteBuffer... buffers) throws IOException;
+
+    /**
+     * Send a series of frames.
+     * <p>
+     * Advanced usage, with callbacks, allows for concurrent NIO style results of the entire write operation. (Callback is only called once at the end of
+     * processing all of the frames)
+     */
+    <C> void write(C context, Callback<C> callback, BaseFrame ... frames) throws IOException;
 
     /**
      * Send a series of binary messages.
@@ -91,7 +107,7 @@ public interface WebSocketConnection
      * Note: each messages results in its own text message frame.
      * <p>
      * Advanced usage, with callbacks, allows for concurrent NIO style results of the entire write operation. (Callback is only called once at the end of
-     * processing all of the buffers)
+     * processing all of the messages)
      */
     <C> void write(C context, Callback<C> callback, String... messages) throws IOException;
 

@@ -13,8 +13,6 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.server.SelectChannelConnector;
@@ -23,9 +21,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455Test;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
@@ -49,28 +47,20 @@ public class WebSocketServletRFCTest
     private static class RFCServlet extends WebSocketServlet
     {
         @Override
-        public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+        public void registerWebSockets(WebSocketServerFactory factory)
         {
-            return new RFCSocket();
+            factory.register(RFCSocket.class);
         }
     }
 
-    private static class RFCSocket implements WebSocket, WebSocket.OnTextMessage
+    private static class RFCSocket extends WebSocketAdapter
     {
-        private Connection conn;
-
         @Override
-        public void onClose(int closeCode, String message)
-        {
-            this.conn = null;
-        }
-
-        @Override
-        public void onMessage(String data)
+        public void onWebSocketText(String message)
         {
             // Test the RFC 6455 close code 1011 that should close
             // trigger a WebSocket server terminated close.
-            if (data.equals("CRASH"))
+            if (message.equals("CRASH"))
             {
                 System.out.printf("Got OnTextMessage");
                 throw new RuntimeException("Something bad happened");
@@ -79,20 +69,13 @@ public class WebSocketServletRFCTest
             // echo the message back.
             try
             {
-                conn.sendMessage(data);
+                getConnection().write(message);
             }
             catch (IOException e)
             {
                 e.printStackTrace(System.err);
             }
         }
-
-        @Override
-        public void onOpen(Connection connection)
-        {
-            this.conn = connection;
-        }
-
     }
 
     private static Server server;

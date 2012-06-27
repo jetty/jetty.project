@@ -16,21 +16,17 @@
 package org.eclipse.jetty.websocket.server.helper;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.server.WebSocketServlet;
 
 @SuppressWarnings("serial")
 public class WebSocketCaptureServlet extends WebSocketServlet
 {
-    public List<CaptureSocket> captures = new ArrayList<CaptureSocket>();;
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
@@ -38,10 +34,8 @@ public class WebSocketCaptureServlet extends WebSocketServlet
     }
 
     @Override
-    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+    public void registerWebSockets(WebSocketServerFactory factory)
     {
-        CaptureSocket capture = new CaptureSocket();
-        captures.add(capture);
-        return capture;
+        factory.register(CaptureSocket.class);
     }
 }

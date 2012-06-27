@@ -1,24 +1,26 @@
 package org.eclipse.jetty.websocket.server.handshake;
 
+import java.io.IOException;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.AcceptHash;
 import org.eclipse.jetty.websocket.extensions.Extension;
-import org.eclipse.jetty.websocket.server.WebSocketServer;
+import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
+import org.eclipse.jetty.websocket.server.ServletWebSocketResponse;
+import org.eclipse.jetty.websocket.server.WebSocketHandshake;
 
 /**
  * WebSocket Handshake for <a href="https://tools.ietf.org/html/rfc6455">RFC 6455</a>.
  */
-public class HandshakeRFC6455 implements WebSocketServer.Handshake
+public class HandshakeRFC6455 implements WebSocketHandshake
 {
     /** RFC 6455 - Sec-WebSocket-Version */
     public static final int VERSION = 13;
 
     @Override
-    public void doHandshakeResponse(HttpServletRequest request, HttpServletResponse response, List<Extension> extensions, String acceptedSubProtocol)
+    public void doHandshakeResponse(ServletWebSocketRequest request, ServletWebSocketResponse response, List<Extension> extensions) throws IOException
     {
         String key = request.getHeader("Sec-WebSocket-Key");
 
@@ -32,9 +34,9 @@ public class HandshakeRFC6455 implements WebSocketServer.Handshake
         response.addHeader("Connection","Upgrade");
         response.addHeader("Sec-WebSocket-Accept",AcceptHash.hashKey(key));
 
-        if (acceptedSubProtocol != null)
+        if (response.getAcceptedSubProtocol() != null)
         {
-            response.addHeader("Sec-WebSocket-Protocol",acceptedSubProtocol);
+            response.addHeader("Sec-WebSocket-Protocol",response.getAcceptedSubProtocol());
         }
 
         if (extensions != null)

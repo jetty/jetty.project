@@ -25,15 +25,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
  * <p>
- * This servlet implements the {@link WebSocketServer.Acceptor}, with a default implementation of
- * {@link WebSocketServer.Acceptor#checkOrigin(HttpServletRequest, String)} leaving you to implement the
- * {@link WebSocketServer.Acceptor#doWebSocketConnect(HttpServletRequest, String)}.
+ * To use this servlet, you will be required to register your websockets with the {@link WebSocketServerFactory} so that it can create your websockets under the
+ * appropriate conditions.
  * <p>
  * The most basic implementation would be as follows.
  * 
@@ -47,19 +47,21 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
  * public class MyEchoServlet extends WebSocketServlet
  * {
  *     &#064;Override
- *     public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+ *     public void registerWebSockets(WebSocketServerFactory factory)
  *     {
- *         return new MyEchoSocket();
+ *         factory.register(MyEchoSocket.class);
  *     }
  * }
  * </pre>
  * 
- * Note: this servlet will only forward on a incoming request that hits this servlet to the
- * {@link WebSocketServer.Acceptor#doWebSocketConnect(HttpServletRequest, String)} if it conforms to a "WebSocket: Upgrade" handshake request. <br>
- * All other requests are treated as normal servlet requets.
+ * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketServerFactory} handling of creating
+ * WebSockets.<br>
+ * All other requests are treated as normal servlet requests.
  * 
  * <p>
- * <b>Configuration / Init-Parameters:</b>
+ * <b>Configuration / Init-Parameters:</b><br>
+ * Note: If you use the {@link WebSocket &#064;WebSocket} annotation, these configuration settings can be specified on a per WebSocket basis, vs a per Servlet
+ * basis.
  * 
  * <dl>
  * <dt>bufferSize</dt>
@@ -80,16 +82,10 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
  * </dl>
  */
 @SuppressWarnings("serial")
-public abstract class WebSocketServlet extends HttpServlet implements WebSocketServer.Acceptor
+public abstract class WebSocketServlet extends HttpServlet
 {
     private final Logger LOG = Log.getLogger(getClass());
     private WebSocketServerFactory webSocketFactory;
-
-    @Override
-    public boolean checkOrigin(HttpServletRequest request, String origin)
-    {
-        return true;
-    }
 
     @Override
     public void destroy()
@@ -137,7 +133,9 @@ public abstract class WebSocketServlet extends HttpServlet implements WebSocketS
                 policy.setMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
-            webSocketFactory = new WebSocketServerFactory(this,policy);
+            webSocketFactory = new WebSocketServerFactory(policy);
+
+            registerWebSockets(webSocketFactory);
         }
         catch (Exception x)
         {
@@ -145,16 +143,33 @@ public abstract class WebSocketServlet extends HttpServlet implements WebSocketS
         }
     }
 
+    public abstract void registerWebSockets(WebSocketServerFactory factory);
+
     /**
      * @see javax.servlet.http.HttpServlet#service(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (webSocketFactory.acceptWebSocket(request,response) || response.isCommitted())
+        if (webSocketFactory.isUpgradeRequest(request,response))
         {
-            return;
+            // We have an upgrade request
+            if (webSocketFactory.acceptWebSocket(request,response))
+            {
+                // We have a socket instance created
+                return;
+            }
+            // If we reach this point, it means we had an incoming request to upgrade
+            // but it was either not a proper websocket upgrade, or it was possibly rejected
+            // due to incoming request constraints (controlled by WebSocketCreator)
+            if (response.isCommitted())
+            {
+                // not much we can do at this point.
+                return;
+            }
         }
+
+        // All other processing
         super.service(request,response);
     }
 }

@@ -2,35 +2,26 @@ package org.eclipse.jetty.websocket.server.examples;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
-public class MyEchoSocket implements WebSocket, WebSocket.OnTextMessage
+public class MyEchoSocket extends WebSocketAdapter
 {
-    private Connection conn;
-
     @Override
-    public void onClose(int closeCode, String message)
+    public void onWebSocketText(String message)
     {
-        /* do nothing */
-    }
+        if (isNotConnected())
+        {
+            return;
+        }
 
-    @Override
-    public void onMessage(String data)
-    {
         try
         {
             // echo the data back
-            conn.sendMessage(data);
+            getConnection().write(message);
         }
         catch (IOException e)
         {
             e.printStackTrace();
         }
-    }
-
-    @Override
-    public void onOpen(Connection connection)
-    {
-        this.conn = connection;
     }
 }

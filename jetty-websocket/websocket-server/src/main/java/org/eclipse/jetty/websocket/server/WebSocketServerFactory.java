@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +29,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.extensions.Extension;
 import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
@@ -60,19 +58,17 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         extensionClasses.put("x-deflate-frame",DeflateFrameExtension.class);
     }
 
-    private final Map<Integer, WebSocketServer.Handshake> handshakes = new HashMap<>();
+    private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     {
         handshakes.put(HandshakeRFC6455.VERSION,new HandshakeRFC6455());
         handshakes.put(HandshakeHixie76.VERSION,new HandshakeHixie76());
     }
 
-    private final WebSocketServer.Acceptor acceptor;
     private final String supportedVersions;
     private WebSocketPolicy policy;
 
-    public WebSocketServerFactory(WebSocketServer.Acceptor acceptor, WebSocketPolicy policy)
+    public WebSocketServerFactory(WebSocketPolicy policy)
     {
-        this.acceptor = acceptor;
         this.policy = policy;
 
         // Create supportedVersions
@@ -96,57 +92,25 @@ public class WebSocketServerFactory extends AbstractLifeCycle
 
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
+        ServletWebSocketRequest sockreq = new ServletWebSocketRequest(request);
+        ServletWebSocketResponse sockresp = new ServletWebSocketResponse(response);
+
+        WebSocketCreator creator = getCreator();
+
+        Object websocketPojo = creator.createWebSocket(sockreq,sockresp);
+
+        if (websocketPojo == null)
         {
-            String origin = request.getHeader("Origin");
-            if (origin == null)
-            {
-                origin = request.getHeader("Sec-WebSocket-Origin");
-            }
-            if (!acceptor.checkOrigin(request,origin))
-            {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                return false;
-            }
-
-            // Try each requested protocol
-            WebSocket websocket = null;
-
-            Enumeration<String> protocols = request.getHeaders("Sec-WebSocket-Protocol");
-            String protocol = null;
-            while ((protocol == null) && (protocols != null) && protocols.hasMoreElements())
-            {
-                String candidate = protocols.nextElement();
-                for (String p : parseProtocols(candidate))
-                {
-                    websocket = acceptor.doWebSocketConnect(request,p);
-                    if (websocket != null)
-                    {
-                        protocol = p;
-                        break;
-                    }
-                }
-            }
-
-            // Did we get a websocket?
-            if (websocket == null)
-            {
-                // Try with no protocol
-                websocket = acceptor.doWebSocketConnect(request,null);
-
-                if (websocket == null)
-                {
-                    response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                    return false;
-                }
-            }
-
-            // Send the upgrade
-            upgrade(request,response,websocket,protocol);
-            return true;
+            // no creation, sorry
+            response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            return false;
         }
 
-        return false;
+        // TODO: discover type, create proxy
+
+        // Send the upgrade
+        WebSocketEventDriver websocket = new WebSocketEventDriver(websocketPojo);
+        return upgrade(sockreq,sockresp,websocket);
     }
 
     protected boolean addConnection(AsyncWebSocketConnection connection)
@@ -166,6 +130,12 @@ public class WebSocketServerFactory extends AbstractLifeCycle
     protected void doStop() throws Exception
     {
         closeConnections();
+    }
+
+    public WebSocketCreator getCreator()
+    {
+        // TODO: implement
+        return null;
     }
 
     /**
@@ -207,6 +177,12 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         return extensions;
     }
 
+    public boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response)
+    {
+        // TODO: other checks against the spec?
+        return ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")));
+    }
+
     private Extension newExtension(String name)
     {
         try
@@ -244,9 +220,19 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         return protocols;
     }
 
+    public void register(Class<?> websocketClass)
+    {
+        // TODO: implement
+    }
+
     protected boolean removeConnection(AsyncWebSocketConnection connection)
     {
         return connections.remove(connection);
+    }
+
+    public void setCreator(WebSocketCreator creator)
+    {
+        // TODO: implement
     }
 
     /**
@@ -261,16 +247,14 @@ public class WebSocketServerFactory extends AbstractLifeCycle
      *            The response to upgrade
      * @param websocket
      *            The websocket handler implementation to use
-     * @param acceptedSubProtocol
-     *            The accepted websocket sub protocol
      * @throws IOException
      *             in case of I/O errors
      */
-    public void upgrade(HttpServletRequest request, HttpServletResponse response, WebSocket websocket, String acceptedSubProtocol) throws IOException
+    public boolean upgrade(ServletWebSocketRequest request, ServletWebSocketResponse response, WebSocketEventDriver websocket) throws IOException
     {
         if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {
-            throw new IllegalStateException("Not a 'WebSocket: Ugprade' request");
+            throw new IllegalStateException("Not a 'WebSocket: Upgrade' request");
         }
         if (!"HTTP/1.1".equals(request.getProtocol()))
         {
@@ -284,18 +268,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle
             version = request.getIntHeader("Sec-WebSocket-Draft");
         }
 
-        List<ExtensionConfig> extensionsRequested = new ArrayList<>();
-        Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
-        while (e.hasMoreElements())
-        {
-            QuotedStringTokenizer tok = new QuotedStringTokenizer(e.nextElement(),",");
-            while (tok.hasMoreTokens())
-            {
-                extensionsRequested.add(ExtensionConfig.parse(tok.nextToken()));
-            }
-        }
-
-        WebSocketServer.Handshake handshaker = handshakes.get(version);
+        WebSocketHandshake handshaker = handshakes.get(version);
         if (handshaker == null)
         {
             LOG.warn("Unsupported Websocket version: " + version);
@@ -303,7 +276,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle
             // Using the examples as outlined
             response.setHeader("Sec-WebSocket-Version",supportedVersions);
             response.sendError(HttpStatus.BAD_REQUEST_400,"Unsupported websocket version specification");
-            return;
+            return false;
         }
 
         // Create connection
@@ -314,16 +287,17 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         endp.setAsyncConnection(connection);
 
         // Initialize / Negotiate Extensions
-        List<Extension> extensions = initExtensions(extensionsRequested);
+        List<Extension> extensions = initExtensions(response.getExtensions());
 
         // Process (version specific) handshake response
-        handshaker.doHandshakeResponse(request,response,extensions,acceptedSubProtocol);
+        handshaker.doHandshakeResponse(request,response,extensions);
 
         // Add connection
         addConnection(connection);
 
         // Tell jetty about the new connection
-        LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),version,acceptedSubProtocol,connection);
+        LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),version,response.getAcceptedSubProtocol(),connection);
         request.setAttribute("org.eclipse.jetty.io.Connection",connection); // TODO: this still needed?
+        return true;
     }
 }
