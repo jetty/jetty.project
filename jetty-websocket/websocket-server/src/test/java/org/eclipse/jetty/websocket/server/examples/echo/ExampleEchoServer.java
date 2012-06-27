@@ -66,19 +66,19 @@ public class ExampleEchoServer
 
     private Server server;
 
-    private SelectChannelConnector _connector;
+    private SelectChannelConnector connector;
     private boolean _verbose;
-    private WebSocketHandler _wsHandler;
-    private ResourceHandler _rHandler;
+    private WebSocketHandler wsHandler;
+    private ResourceHandler rHandler;
 
     public ExampleEchoServer(int port)
     {
         server = new Server();
-        _connector = new SelectChannelConnector();
-        _connector.setPort(port);
+        connector = new SelectChannelConnector();
+        connector.setPort(port);
 
-        server.addConnector(_connector);
-        _wsHandler = new WebSocketHandler()
+        server.addConnector(connector);
+        wsHandler = new WebSocketHandler()
         {
             @Override
             public void registerWebSockets(WebSocketServerFactory factory)
@@ -88,17 +88,17 @@ public class ExampleEchoServer
             }
         };
 
-        server.setHandler(_wsHandler);
+        server.setHandler(wsHandler);
 
-        _rHandler = new ResourceHandler();
-        _rHandler.setDirectoriesListed(true);
-        _rHandler.setResourceBase("src/test/webapp");
-        _wsHandler.setHandler(_rHandler);
+        rHandler = new ResourceHandler();
+        rHandler.setDirectoriesListed(true);
+        rHandler.setResourceBase("src/test/webapp");
+        wsHandler.setHandler(rHandler);
     }
 
     public String getResourceBase()
     {
-        return _rHandler.getResourceBase();
+        return rHandler.getResourceBase();
     }
 
     public boolean isVerbose()
@@ -114,7 +114,7 @@ public class ExampleEchoServer
 
     public void setResourceBase(String dir)
     {
-        _rHandler.setResourceBase(dir);
+        rHandler.setResourceBase(dir);
     }
 
     public void setVerbose(boolean verbose)

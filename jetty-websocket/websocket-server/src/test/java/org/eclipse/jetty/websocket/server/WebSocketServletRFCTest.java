@@ -235,7 +235,7 @@ public class WebSocketServletRFCTest
             capture.assertHasFrame(CloseFrame.class,1);
 
             CloseFrame cf = (CloseFrame)capture.getFrames().get(0);
-            Assert.assertThat("Close Frame.status code",cf.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            Assert.assertThat("Close Frame.status code",cf.getStatusCode(),is((int)StatusCode.SERVER_ERROR));
         }
         finally
         {

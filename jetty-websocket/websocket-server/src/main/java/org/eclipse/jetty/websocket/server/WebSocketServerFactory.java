@@ -180,6 +180,10 @@ public class WebSocketServerFactory extends AbstractLifeCycle
     public boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response)
     {
         // TODO: other checks against the spec?
+        if (!"HTTP/1.1".equals(request.getProtocol()))
+        {
+            throw new IllegalStateException("Not a 'HTTP/1.1' request");
+        }
         return ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")));
     }
 
@@ -286,14 +290,20 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         final AsyncWebSocketConnection connection = new AsyncWebSocketConnection(endp,executor,policy);
         endp.setAsyncConnection(connection);
 
+        // Notify POJO of connection
+        websocket.setConnection(connection);
+
         // Initialize / Negotiate Extensions
-        List<Extension> extensions = initExtensions(response.getExtensions());
+        List<Extension> extensions = initExtensions(request.getExtensions());
 
         // Process (version specific) handshake response
         handshaker.doHandshakeResponse(request,response,extensions);
 
         // Add connection
         addConnection(connection);
+
+        // Notify POJO of connect
+        websocket.onConnect();
 
         // Tell jetty about the new connection
         LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),version,response.getAcceptedSubProtocol(),connection);

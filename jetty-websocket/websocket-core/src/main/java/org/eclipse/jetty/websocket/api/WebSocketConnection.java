@@ -49,7 +49,7 @@ public interface WebSocketConnection
     /**
      * Get the SubProtocol in use for this connection.
      * 
-     * @return the negotiated sub protocol name in use for this connection.
+     * @return the negotiated sub protocol name in use for this connection, can be null if there is no sub-protocol negotiated.
      */
     String getSubProtocol();
 

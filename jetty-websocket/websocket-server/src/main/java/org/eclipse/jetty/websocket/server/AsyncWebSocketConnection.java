@@ -1,6 +1,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,18 +13,21 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.server.callbacks.WebSocketCloseCallback;
 
 // TODO: implement WebSocket.Connection (for API access)?
-public class AsyncWebSocketConnection extends AbstractAsyncConnection
+public class AsyncWebSocketConnection extends AbstractAsyncConnection implements WebSocketConnection
 {
     private static final Logger LOG = Log.getLogger(AsyncWebSocketConnection.class);
     private static final ThreadLocal<AsyncWebSocketConnection> CURRENT_CONNECTION = new ThreadLocal<AsyncWebSocketConnection>();
@@ -57,6 +61,20 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection
         this.extensions = new ArrayList<>();
     }
 
+    @Override
+    public void close()
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void close(int statusCode, String reason)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
     private int fill(AsyncEndPoint endPoint, ByteBuffer buffer)
     {
         try
@@ -85,6 +103,34 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection
     public List<ExtensionConfig> getExtensions()
     {
         return extensions;
+    }
+
+    @Override
+    public WebSocketPolicy getPolicy()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public InetAddress getRemoteAddress()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getSubProtocol()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        // TODO Auto-generated method stub
+        return false;
     }
 
     @Override
@@ -155,5 +201,54 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         generator.generate(buf,close);
         getEndPoint().write(null,new WebSocketCloseCallback(this,buf),buf);
+    }
+
+    @Override
+    public void write(BaseFrame frame) throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void write(byte[] data, int offset, int length) throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void write(ByteBuffer... buffers) throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, BaseFrame... frames) throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, String... messages) throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void write(String message) throws IOException
+    {
+        // TODO Auto-generated method stub
+
     }
 }
