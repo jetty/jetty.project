@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 
 /**
