@@ -109,6 +109,6 @@ public class ABCase7_3
       
         WebSocketException known = capture.getErrors().get(0);
         
-        Assert.assertTrue("undefined option should be in message",known.getMessage().contains("invalid payload length"));
+        Assert.assertTrue("invalid payload should be in message",known.getMessage().contains("invalid payload length"));
     }
 }
