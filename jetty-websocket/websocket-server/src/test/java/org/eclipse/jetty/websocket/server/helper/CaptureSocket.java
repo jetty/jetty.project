@@ -15,14 +15,15 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.server.helper;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
-public class CaptureSocket implements WebSocket.OnTextMessage
+public class CaptureSocket extends WebSocketAdapter
 {
     private final CountDownLatch latch = new CountDownLatch(1);
     public List<String> messages;
@@ -34,13 +35,11 @@ public class CaptureSocket implements WebSocket.OnTextMessage
 
     public boolean awaitConnected(long timeout) throws InterruptedException
     {
-        return latch.await(timeout, TimeUnit.MILLISECONDS);
+        return latch.await(timeout,TimeUnit.MILLISECONDS);
     }
 
-    public void onMessage(String data)
+    public void onClose(int closeCode, String message)
     {
-        // System.out.printf("Received Message \"%s\" [size %d]%n", data, data.length());
-        messages.add(data);
     }
 
     public void onOpen(Connection connection)
@@ -48,7 +47,10 @@ public class CaptureSocket implements WebSocket.OnTextMessage
         latch.countDown();
     }
 
-    public void onClose(int closeCode, String message)
+    @Override
+    public void onWebSocketText(String message)
     {
+        // System.out.printf("Received Message \"%s\" [size %d]%n", message, message.length());
+        messages.add(message);
     }
 }

@@ -37,10 +37,20 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketBinary;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketText;
+import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.AcceptHash;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.frames.PingFrame;
+import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -48,7 +58,8 @@ import org.junit.Test;
 
 public class WebSocketMessageRFC6455Test
 {
-    private static class TestWebSocket implements WebSocket.OnFrame, WebSocket.OnBinaryMessage, WebSocket.OnTextMessage
+    @WebSocket
+    public static class TestWebSocket
     {
         protected boolean _latch;
         boolean _onConnect = false;
@@ -56,7 +67,7 @@ public class WebSocketMessageRFC6455Test
         boolean _aggregate = false;
         private final CountDownLatch connected = new CountDownLatch(1);
         private final CountDownLatch disconnected = new CountDownLatch(1);
-        private volatile FrameConnection connection;
+        private WebSocketConnection connection;
 
         private boolean awaitConnected(long time) throws InterruptedException
         {
@@ -68,58 +79,40 @@ public class WebSocketMessageRFC6455Test
             return disconnected.await(time,TimeUnit.MILLISECONDS);
         }
 
-        public FrameConnection getConnection()
-        {
-            return connection;
-        }
-
-        @Override
+        @OnWebSocketClose
         public void onClose(int code, String message)
         {
             disconnected.countDown();
         }
 
-        @Override
-        public boolean onFrame(byte flags, byte opcode, byte[] data, int offset, int length)
+        @OnWebSocketFrame
+        public boolean onFrame(BaseFrame frame)
         {
             if (_echo)
             {
-                OpCode op = OpCode.from(opcode);
-                switch (op)
+                if (!(frame instanceof PingFrame) && !(frame instanceof PongFrame) && !(frame instanceof CloseFrame))
                 {
-                    case CLOSE:
-                    case PING:
-                    case PONG:
-                        break;
-
-                    default:
-                        try
-                        {
-                            connection.sendFrame(flags,opcode,data,offset,length);
-                        }
-                        catch (IOException e)
-                        {
-                            e.printStackTrace();
-                        }
+                    try
+                    {
+                        connection.write(frame);
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
                 }
             }
             return false;
         }
 
-        @Override
-        public void onHandshake(FrameConnection connection)
-        {
-            this.connection = connection;
-        }
-
-        @Override
+        @OnWebSocketBinary
         public void onMessage(byte[] data, int offset, int length)
         {
             if (_aggregate)
             {
                 try
                 {
-                    connection.sendMessage(data,offset,length);
+                    connection.write(data,offset,length);
                 }
                 catch (IOException e)
                 {
@@ -128,7 +121,7 @@ public class WebSocketMessageRFC6455Test
             }
         }
 
-        @Override
+        @OnWebSocketText
         public void onMessage(String data)
         {
             __textCount.incrementAndGet();
@@ -148,7 +141,7 @@ public class WebSocketMessageRFC6455Test
             {
                 try
                 {
-                    connection.sendMessage(data);
+                    connection.write(data);
                 }
                 catch (IOException e)
                 {
@@ -157,14 +150,15 @@ public class WebSocketMessageRFC6455Test
             }
         }
 
-        @Override
-        public void onOpen(Connection connection)
+        @OnWebSocketConnect
+        public void onOpen(WebSocketConnection connection)
         {
+            this.connection = connection;
             if (_onConnect)
             {
                 try
                 {
-                    connection.sendMessage("sent on connect");
+                    connection.write("sent on connect");
                 }
                 catch (IOException e)
                 {
@@ -307,7 +301,6 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        __serverWebSocket.getConnection().setMaxBinaryMessageSize(1024);
 
         output.write(OpCode.BINARY.getCode());
         output.write(0x8a);
@@ -377,7 +370,6 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        __serverWebSocket.connection.setMaxIdleTime(60000);
 
         // Send and receive 1 message
         output.write(mesg);
@@ -462,7 +454,6 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        __serverWebSocket.connection.setMaxIdleTime(60000);
         __latch.countDown();
 
         // wait 2s and then consume messages
@@ -499,7 +490,7 @@ public class WebSocketMessageRFC6455Test
         String mesg = "How Now Brown Cow";
         for (int i = 0; i < count; i++)
         {
-            __serverWebSocket.connection.sendMessage(mesg);
+            __serverWebSocket.connection.write(mesg);
             if ((i % 100) == 0)
             {
                 output.flush();
@@ -658,7 +649,7 @@ public class WebSocketMessageRFC6455Test
             assertTrue(__serverWebSocket.awaitConnected(1000));
             assertNotNull(__serverWebSocket.connection);
 
-            __serverWebSocket.getConnection().close(tests[t][0],mesg[t]);
+            __serverWebSocket.connection.close(tests[t][0],mesg[t]);
 
             byte[] buf = new byte[128];
             int len = input.read(buf);
@@ -921,12 +912,12 @@ public class WebSocketMessageRFC6455Test
         assertTrue(__serverWebSocket.awaitDisconnected(5000));
         try
         {
-            __serverWebSocket.connection.sendMessage("Don't send");
-            assertTrue(false);
+            __serverWebSocket.connection.write("Don't send");
+            Assert.fail("Should have thrown IOException");
         }
         catch (IOException e)
         {
-            assertTrue(true);
+            Assert.assertThat("IOException",e.getMessage(),containsString("TODO"));
         }
     }
 
@@ -950,8 +941,6 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-
-        __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
 
         output.write(0x02);
         output.write(0x8a);
@@ -1006,8 +995,6 @@ public class WebSocketMessageRFC6455Test
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
 
-        __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
-
         output.write(0x02);
         output.write(0x94);
         output.write(0xff);
@@ -1048,8 +1035,6 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-
-        __serverWebSocket.getConnection().setMaxTextMessageSize(15);
 
         output.write(0x01);
         output.write(0x8a);
@@ -1104,8 +1089,6 @@ public class WebSocketMessageRFC6455Test
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
 
-        __serverWebSocket.getConnection().setMaxTextMessageSize(15);
-
         output.write(0x01);
         output.write(0x94);
         output.write(0xff);
@@ -1146,9 +1129,6 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-
-        __serverWebSocket.getConnection().setMaxTextMessageSize(10 * 1024);
-        __serverWebSocket.getConnection().setAllowFrameFragmentation(true);
 
         output.write(0x81);
         output.write(0x80 | 0x7E);
@@ -1192,8 +1172,6 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-
-        __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
 
         output.write(0x81);
         output.write(0x82);
@@ -1315,7 +1293,7 @@ public class WebSocketMessageRFC6455Test
             message.append(text);
         }
         String data = message.toString();
-        __serverWebSocket.connection.sendMessage(data);
+        __serverWebSocket.connection.write(data);
 
         assertEquals(OpCode.TEXT.getCode(),input.read());
         assertEquals(0x7e,input.read());
@@ -1387,12 +1365,12 @@ public class WebSocketMessageRFC6455Test
 
         try
         {
-            __serverWebSocket.connection.sendMessage("Don't send");
-            assertTrue(false);
+            __serverWebSocket.connection.write("Don't send");
+            Assert.fail("Should have thrown IOException");
         }
         catch (IOException e)
         {
-            assertTrue(true);
+            Assert.assertThat("IOException",e.getMessage(),containsString("TODO"));
         }
     }
 

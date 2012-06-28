@@ -19,51 +19,15 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 
-public class MessageSender implements WebSocket
+public class MessageSender extends WebSocketAdapter
 {
-    private Connection conn;
     private CountDownLatch connectLatch = new CountDownLatch(1);
     private int closeCode = -1;
     private String closeMessage = null;
-
-    public void onOpen(Connection connection)
-    {
-        this.conn = connection;
-        connectLatch.countDown();
-    }
-
-    public void onClose(int closeCode, String message)
-    {
-        this.conn = null;
-        this.closeCode = closeCode;
-        this.closeMessage = message;
-    }
-
-    public boolean isConnected()
-    {
-        if (this.conn == null)
-        {
-            return false;
-        }
-        return this.conn.isOpen();
-    }
-    
-    public int getCloseCode()
-    {
-        return closeCode;
-    }
-    
-    public String getCloseMessage()
-    {
-        return closeMessage;
-    }
-
-    public void sendMessage(String format, Object... args) throws IOException
-    {
-        this.conn.sendMessage(String.format(format,args));
-    }
 
     public void awaitConnect() throws InterruptedException
     {
@@ -72,10 +36,42 @@ public class MessageSender implements WebSocket
 
     public void close()
     {
-        if (this.conn == null)
+        try
         {
-            return;
+            getConnection().close(StatusCode.NORMAL,null);
         }
-        this.conn.close();
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public int getCloseCode()
+    {
+        return closeCode;
+    }
+
+    public String getCloseMessage()
+    {
+        return closeMessage;
+    }
+
+    @Override
+    public void onWebSocketClose(int statusCode, String reason)
+    {
+        this.closeCode = statusCode;
+        this.closeMessage = reason;
+    }
+
+    @Override
+    public void onWebSocketConnect(WebSocketConnection connection)
+    {
+        super.onWebSocketConnect(connection);
+        connectLatch.countDown();
+    }
+
+    public void sendMessage(String format, Object... args) throws IOException
+    {
+        getConnection().write(String.format(format,args));
     }
 }

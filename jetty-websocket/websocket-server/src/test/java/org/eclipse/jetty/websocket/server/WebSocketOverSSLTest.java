@@ -25,8 +25,9 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.annotations.MyEchoSocket;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,7 +38,7 @@ public class WebSocketOverSSLTest
     private int _port;
     private QueuedThreadPool _threadPool;
     // private WebSocketClientFactory _wsFactory;
-    private WebSocket.Connection _connection;
+    private WebSocketConnection _connection;
 
     @After
     public void destroy() throws Exception
@@ -62,7 +63,7 @@ public class WebSocketOverSSLTest
         }
     }
 
-    private void startClient(final WebSocket webSocket) throws Exception
+    private void startClient(final Object webSocket) throws Exception
     {
         Assert.assertTrue(_server.isStarted());
 
@@ -81,7 +82,7 @@ public class WebSocketOverSSLTest
         // _connection = client.open(new URI("wss://localhost:" + _port), webSocket).get(5, TimeUnit.SECONDS);
     }
 
-    private void startServer(final Class<?> websocketPojo) throws Exception
+    private void startServer(final Object websocket) throws Exception
     {
         _server = new Server();
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
@@ -90,7 +91,7 @@ public class WebSocketOverSSLTest
         cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        _server.setHandler(new WebSocketHandler.Simple(websocketPojo));
+        _server.setHandler(new WebSocketHandler.Simple(websocket.getClass()));
         _server.start();
         _port = connector.getLocalPort();
     }
@@ -101,22 +102,12 @@ public class WebSocketOverSSLTest
         startServer(MyEchoSocket.class);
         int count = 1000;
         final CountDownLatch clientLatch = new CountDownLatch(count);
-        startClient(new WebSocket.OnTextMessage()
+        startClient(new WebSocketAdapter()
         {
             @Override
-            public void onClose(int closeCode, String message)
-            {
-            }
-
-            @Override
-            public void onMessage(String data)
+            public void onWebSocketText(String message)
             {
                 clientLatch.countDown();
-            }
-
-            @Override
-            public void onOpen(Connection connection)
-            {
             }
         });
 
@@ -125,7 +116,7 @@ public class WebSocketOverSSLTest
         String message = new String(chars);
         for (int i = 0; i < count; ++i)
         {
-            _connection.sendMessage(message);
+            _connection.write(message);
         }
 
         Assert.assertTrue(clientLatch.await(20,TimeUnit.SECONDS));
@@ -138,61 +129,46 @@ public class WebSocketOverSSLTest
     @Test
     public void testWebSocketOverSSL() throws Exception
     {
-//        final String message = "message";
-//        final CountDownLatch serverLatch = new CountDownLatch(1);
-//        startServer(new WebSocket.OnTextMessage()
-//        {
-//            private Connection connection;
-//
-//            @Override
-//            public void onClose(int closeCode, String message)
-//            {
-//            }
-//
-//            @Override
-//            public void onMessage(String data)
-//            {
-//                try
-//                {
-//                    Assert.assertEquals(message,data);
-//                    connection.sendMessage(data);
-//                    serverLatch.countDown();
-//                }
-//                catch (IOException x)
-//                {
-//                    x.printStackTrace();
-//                }
-//            }
-//
-//            @Override
-//            public void onOpen(Connection connection)
-//            {
-//                this.connection = connection;
-//            }
-//        });
-//        final CountDownLatch clientLatch = new CountDownLatch(1);
-//        startClient(new WebSocket.OnTextMessage()
-//        {
-//            @Override
-//            public void onClose(int closeCode, String message)
-//            {
-//            }
-//
-//            @Override
-//            public void onMessage(String data)
-//            {
-//                Assert.assertEquals(message,data);
-//                clientLatch.countDown();
-//            }
-//
-//            @Override
-//            public void onOpen(Connection connection)
-//            {
-//            }
-//        });
-//        _connection.sendMessage(message);
-//
-//        Assert.assertTrue(serverLatch.await(5,TimeUnit.SECONDS));
-//        Assert.assertTrue(clientLatch.await(5,TimeUnit.SECONDS));
+        final String message = "message";
+        final CountDownLatch serverLatch = new CountDownLatch(1);
+        startServer(new WebSocketAdapter()
+        {
+            private WebSocketConnection connection;
+
+            @Override
+            public void onWebSocketConnect(WebSocketConnection connection)
+            {
+                this.connection = connection;
+            }
+
+            @Override
+            public void onWebSocketText(String message)
+            {
+                try
+                {
+                    Assert.assertEquals(message,message);
+                    connection.write(message);
+                    serverLatch.countDown();
+                }
+                catch (IOException x)
+                {
+                    x.printStackTrace();
+                }
+            }
+        });
+        final CountDownLatch clientLatch = new CountDownLatch(1);
+        startClient(new WebSocketAdapter()
+        {
+            @Override
+            public void onWebSocketText(String data)
+            {
+                Assert.assertEquals(message,data);
+                clientLatch.countDown();
+            }
+        });
+        _connection.write(message);
+
+        Assert.assertTrue(serverLatch.await(5,TimeUnit.SECONDS));
+        Assert.assertTrue(clientLatch.await(5,TimeUnit.SECONDS));
     }
 }

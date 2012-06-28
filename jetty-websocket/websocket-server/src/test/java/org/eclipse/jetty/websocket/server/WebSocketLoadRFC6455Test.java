@@ -37,7 +37,6 @@ import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -45,42 +44,13 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class WebSocketLoadRFC6455Test
 {
-    private static class EchoWebSocket implements WebSocket.OnTextMessage
-    {
-        private volatile Connection outbound;
-
-        @Override
-        public void onClose(int closeCode, String message)
-        {
-        }
-
-        @Override
-        public void onMessage(String data)
-        {
-            try
-            {
-                // System.err.println(">> "+data);
-                outbound.sendMessage(data);
-            }
-            catch (IOException x)
-            {
-                outbound.disconnect();
-            }
-        }
-
-        @Override
-        public void onOpen(Connection outbound)
-        {
-            this.outbound = outbound;
-        }
-    }
-
     private class WebSocketClient implements Runnable
     {
         private final Socket socket;
@@ -198,7 +168,7 @@ public class WebSocketLoadRFC6455Test
         threadPool.setMaxStopTimeMs(1000);
         _server.setThreadPool(threadPool);
 
-        WebSocketHandler wsHandler = new WebSocketHandler.Simple(EchoWebSocket.class);
+        WebSocketHandler wsHandler = new WebSocketHandler.Simple(MyEchoSocket.class);
         wsHandler.setHandler(new DefaultHandler());
         _server.setHandler(wsHandler);
 
