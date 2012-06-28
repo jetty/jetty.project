@@ -127,7 +127,7 @@ public class WebSocketEventDriver implements Parser.Listener
                 return;
             }
 
-            if (!frameType.getSuperclass().isAssignableFrom(BaseFrame.class))
+            if (!BaseFrame.class.isAssignableFrom(frameType.getSuperclass()))
             {
                 // not assignable
                 return;

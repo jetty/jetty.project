@@ -2,11 +2,13 @@ package org.eclipse.jetty.websocket.api;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.samples.AdapterConnectCloseSocket;
-import org.eclipse.jetty.websocket.api.samples.AnnotatedBasicSocket;
 import org.eclipse.jetty.websocket.api.samples.AnnotatedByteArraySocket;
+import org.eclipse.jetty.websocket.api.samples.AnnotatedByteBufferSocket;
+import org.eclipse.jetty.websocket.api.samples.AnnotatedFramesSocket;
 import org.eclipse.jetty.websocket.api.samples.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,7 +64,7 @@ public class WebSocketEventDriverTest
     @Test
     public void testAnnotated_ByteBuffer()
     {
-        AnnotatedBasicSocket socket = new AnnotatedBasicSocket();
+        AnnotatedByteBufferSocket socket = new AnnotatedByteBufferSocket();
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
@@ -75,6 +77,28 @@ public class WebSocketEventDriverTest
         socket.capture.assertEventStartsWith(0,"onConnect");
         socket.capture.assertEvent(1,"onBinary(java.nio.HeapByteBuffer[pos=0 lim=11 cap=11])");
         socket.capture.assertEventStartsWith(2,"onClose(1000,");
+    }
+
+    @Test
+    public void testAnnotated_Frames()
+    {
+        AnnotatedFramesSocket socket = new AnnotatedFramesSocket();
+        WebSocketEventDriver driver = newDriver(socket);
+
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        driver.setConnection(conn);
+        driver.onConnect();
+        driver.onFrame(new PingFrame(StringUtil.getUtf8Bytes("PING")));
+        driver.onFrame(new TextFrame("Text Me"));
+        driver.onFrame(new BinaryFrame(StringUtil.getUtf8Bytes("Hello Bin")));
+        driver.onFrame(new CloseFrame(StatusCode.SHUTDOWN));
+
+        socket.capture.assertEventCount(5);
+        socket.capture.assertEventStartsWith(0,"onConnect(");
+        socket.capture.assertEventStartsWith(1,"onPingFrame(");
+        socket.capture.assertEventStartsWith(2,"onTextFrame(");
+        socket.capture.assertEventStartsWith(3,"onBaseFrame(BinaryFrame");
+        socket.capture.assertEventStartsWith(4,"onClose(1001,");
     }
 
     @Test

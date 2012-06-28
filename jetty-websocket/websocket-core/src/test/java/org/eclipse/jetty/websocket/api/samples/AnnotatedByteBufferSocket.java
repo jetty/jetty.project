@@ -10,7 +10,7 @@ import org.eclipse.jetty.websocket.api.EventCapture;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 
 @WebSocket
-public class AnnotatedBasicSocket
+public class AnnotatedByteBufferSocket
 {
     public EventCapture capture = new EventCapture();
 
