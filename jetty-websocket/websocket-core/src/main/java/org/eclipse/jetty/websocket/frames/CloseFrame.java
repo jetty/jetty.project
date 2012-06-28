@@ -10,7 +10,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 public class CloseFrame extends ControlFrame
 {
     private int statusCode = 0;
-    private String reason;
+    private String reason = "";
 
     public CloseFrame()
     {
@@ -51,6 +51,36 @@ public class CloseFrame extends ControlFrame
         }
         
         this.statusCode = statusCode;
+    }
+
+    @Override
+    public int getPayloadLength()
+    {
+        /*
+         * issue here is that the parser can set the payload length and then rely on it when parsing payload
+         * 
+         * but generator doesn't have a payload length without calculating it via the statuscode and reason
+         * 
+         */
+        if (super.getPayloadLength() == 0)
+        {
+            int length = 0;
+            if (getStatusCode() != 0)
+            {
+                length = length + 2;
+
+                if (hasReason())
+                {
+                    length = length + getReason().getBytes().length;
+                }
+            }
+
+            return length;
+        }
+        else
+        {
+            return super.getPayloadLength();
+        }
     }
 
     @Override

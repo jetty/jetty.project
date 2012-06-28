@@ -83,21 +83,13 @@ public class TestABCase7_3
     @Test
     public void testParse1BytePayloadCloseCase7_3_2()
     {      
-        //Debug.enableDebugLogging(Parser.class);
+        Debug.enableDebugLogging(Parser.class);
         
-        String message = "*";
-        byte[] messageBytes = message.getBytes();
-
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
-                { (byte)0x88 });
-        
-        byte b = 0x00; // no masking
-        b |= messageBytes.length & 0x7F;
-        expected.put(b);
-        expected.put(messageBytes);
-        
+                { (byte)0x88, 0x01, 0x00 });
+                
         expected.flip();
         
         Parser parser = new Parser(policy);
@@ -111,4 +103,49 @@ public class TestABCase7_3
         
         Assert.assertTrue("invalid payload should be in message",known.getMessage().contains("invalid payload length"));
     }
+    
+    @Test
+    public void testGenerateCloseWithStatusCase7_3_3()
+    {
+        CloseFrame closeFrame = new CloseFrame(1000);    
+
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(32);
+        generator.generate(actual, closeFrame);
+
+        ByteBuffer expected = ByteBuffer.allocate(5);
+
+        expected.put(new byte[]
+                { (byte)0x88, (byte)0x02, 0x03, (byte)0xe8 });
+        
+        actual.flip();
+        expected.flip();
+        
+        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+    }
+    
+    @Test
+    public void testParseCloseWithStatusCase7_3_3()
+    {        
+        ByteBuffer expected = ByteBuffer.allocate(5);
+
+        expected.put(new byte[]
+                { (byte)0x88, (byte)0x00 });
+        
+        expected.flip();
+        
+        Parser parser = new Parser(policy);
+        FrameParseCapture capture = new FrameParseCapture();
+        parser.addListener(capture);
+        parser.parse(expected);
+        
+        capture.assertNoErrors();
+        capture.assertHasFrame(CloseFrame.class,1);
+        
+        CloseFrame pActual = (CloseFrame)capture.getFrames().get(0);
+        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        ByteBufferAssert.assertSize("CloseFrame.payload",0,pActual.getPayload());        
+        
+    }
+    
 }
