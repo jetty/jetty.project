@@ -102,6 +102,28 @@ public class EventMethodsCacheTest
     }
 
     /**
+     * Test Case for no exceptions and 4 methods (3 methods from parent)
+     */
+    @Test
+    public void testDiscoverMyEchoBinarySocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        EventMethods methods = cache.getMethods(MyEchoBinarySocket.class);
+
+        String classId = MyEchoBinarySocket.class.getSimpleName();
+
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
+
+        assertHasEventMethod(classId + ".onBinary",methods.onBinary);
+        assertHasEventMethod(classId + ".onClose",methods.onClose);
+        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onText",methods.onText);
+
+        Assert.assertThat(".getOnFrames()",methods.getOnFrames().size(),is(0));
+    }
+
+    /**
      * Test Case for no exceptions and 3 methods
      */
     @Test

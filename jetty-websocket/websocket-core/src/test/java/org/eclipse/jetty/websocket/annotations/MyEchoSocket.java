@@ -14,6 +14,11 @@ public class MyEchoSocket
 {
     private WebSocketConnection conn;
 
+    public WebSocketConnection getConnection()
+    {
+        return conn;
+    }
+
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {

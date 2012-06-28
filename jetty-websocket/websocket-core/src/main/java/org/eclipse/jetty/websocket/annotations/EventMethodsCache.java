@@ -269,25 +269,6 @@ public class EventMethodsCache
         return methods;
     }
 
-    private boolean isNotPublicVoid(Method method)
-    {
-        // validate modifiers
-        int mods = method.getModifiers();
-        if (!Modifier.isPublic(mods) || Modifier.isStatic(mods))
-        {
-            return true;
-        }
-
-        // validate return
-        if (!Void.TYPE.isAssignableFrom(method.getReturnType()))
-        {
-            return true;
-        }
-
-        // we have a public void method
-        return true;
-    }
-
     private boolean isSameParameters(Class<?>[] actual, Class<?>[] params)
     {
         if(actual.length != params.length) {
@@ -320,51 +301,59 @@ public class EventMethodsCache
 
     private EventMethods scanAnnotatedMethods(Class<?> pojo)
     {
+        Class<?> clazz = pojo;
         EventMethods events = new EventMethods(pojo,true);
 
-        for (Method method : pojo.getDeclaredMethods())
+        clazz = pojo;
+        while (clazz.getAnnotation(WebSocket.class) != null)
         {
-            if (method.getAnnotation(OnWebSocketConnect.class) != null)
+            for (Method method : clazz.getDeclaredMethods())
             {
-                assertValidSignature(method,OnWebSocketConnect.class,validConnectParams);
-                assertUnset(events.onConnect,OnWebSocketConnect.class,method);
-                events.onConnect = new EventMethod(pojo,method);
-                continue;
+                if (method.getAnnotation(OnWebSocketConnect.class) != null)
+                {
+                    assertValidSignature(method,OnWebSocketConnect.class,validConnectParams);
+                    assertUnset(events.onConnect,OnWebSocketConnect.class,method);
+                    events.onConnect = new EventMethod(pojo,method);
+                    continue;
+                }
+
+                if (method.getAnnotation(OnWebSocketBinary.class) != null)
+                {
+                    assertValidSignature(method,OnWebSocketBinary.class,validBinaryParams);
+                    assertUnset(events.onBinary,OnWebSocketBinary.class,method);
+                    events.onBinary = new EventMethod(pojo,method);
+                    continue;
+                }
+
+                if (method.getAnnotation(OnWebSocketClose.class) != null)
+                {
+                    assertValidSignature(method,OnWebSocketClose.class,validCloseParams);
+                    assertUnset(events.onClose,OnWebSocketClose.class,method);
+                    events.onClose = new EventMethod(pojo,method);
+                    continue;
+                }
+
+                if (method.getAnnotation(OnWebSocketText.class) != null)
+                {
+                    assertValidSignature(method,OnWebSocketText.class,validTextParams);
+                    assertUnset(events.onText,OnWebSocketText.class,method);
+                    events.onText = new EventMethod(pojo,method);
+                    continue;
+                }
+
+                if (method.getAnnotation(OnWebSocketFrame.class) != null)
+                {
+                    assertValidSignature(method,OnWebSocketFrame.class,validFrameParams);
+                    assertFrameUnset(events,method);
+                    events.addOnFrame(new EventMethod(pojo,method));
+                    continue;
+                }
+
+                // Not a tagged method we are interested in, ignore
             }
 
-            if (method.getAnnotation(OnWebSocketBinary.class) != null)
-            {
-                assertValidSignature(method,OnWebSocketBinary.class,validBinaryParams);
-                assertUnset(events.onBinary,OnWebSocketBinary.class,method);
-                events.onBinary = new EventMethod(pojo,method);
-                continue;
-            }
-
-            if (method.getAnnotation(OnWebSocketClose.class) != null)
-            {
-                assertValidSignature(method,OnWebSocketClose.class,validCloseParams);
-                assertUnset(events.onClose,OnWebSocketClose.class,method);
-                events.onClose = new EventMethod(pojo,method);
-                continue;
-            }
-
-            if (method.getAnnotation(OnWebSocketText.class) != null)
-            {
-                assertValidSignature(method,OnWebSocketText.class,validTextParams);
-                assertUnset(events.onText,OnWebSocketText.class,method);
-                events.onText = new EventMethod(pojo,method);
-                continue;
-            }
-
-            if (method.getAnnotation(OnWebSocketFrame.class) != null)
-            {
-                assertValidSignature(method,OnWebSocketFrame.class,validFrameParams);
-                assertFrameUnset(events,method);
-                events.addOnFrame(new EventMethod(pojo,method));
-                continue;
-            }
-
-            // Not a tagged method we are interested in, ignore
+            // try superclass now
+            clazz = clazz.getSuperclass();
         }
 
         return events;
@@ -373,6 +362,7 @@ public class EventMethodsCache
     private EventMethods scanListenerMethods(Class<?> pojo)
     {
         EventMethods events = new EventMethods(pojo,false);
+
         // This is a WebSocketListener object
         events.onConnect = new EventMethod(pojo,"onWebSocketConnect",WebSocketConnection.class);
         events.onClose = new EventMethod(pojo,"onWebSocketClose",Integer.TYPE,String.class);
