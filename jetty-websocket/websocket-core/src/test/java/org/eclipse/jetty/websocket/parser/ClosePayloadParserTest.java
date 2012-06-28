@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.*;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.Debug;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -20,9 +19,6 @@ public class ClosePayloadParserTest
     public void testGameOver()
     {
         String expectedReason = "Game Over";
-
-        Debug.enableDebugLogging(Parser.class);
-        Debug.enableDebugLogging(ClosePayloadParser.class);
 
         byte utf[] = expectedReason.getBytes(StringUtil.__UTF8_CHARSET);
         ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
