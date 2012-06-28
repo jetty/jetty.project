@@ -23,7 +23,7 @@ public class ByteBufferAssert
     {
         byte expectedBytes[] = BufferUtil.toArray(expectedBuffer);
         byte actualBytes[] = BufferUtil.toArray(actualBuffer);
-        assertEquals(message, expectedBytes, actualBytes);
+        assertEquals(message,expectedBytes,actualBytes);
     }
 
     public static void assertEquals(String message, String expectedString, ByteBuffer actualBuffer)
@@ -34,13 +34,10 @@ public class ByteBufferAssert
 
     public static void assertSize(String message, int expectedSize, ByteBuffer buffer)
     {
-        if (expectedSize == 0)
+        if ((expectedSize == 0) && (buffer == null))
         {
-            Assert.assertThat(message + " buffer",buffer,nullValue());
+            return;
         }
-        else
-        {
-            Assert.assertThat(message + " buffer.remaining",buffer.remaining(),is(expectedSize));
-        }
+        Assert.assertThat(message + " buffer.remaining",buffer.remaining(),is(expectedSize));
     }
 }
