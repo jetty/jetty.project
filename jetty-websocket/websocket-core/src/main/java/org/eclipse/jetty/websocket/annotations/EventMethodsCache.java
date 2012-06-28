@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.annotations;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -116,6 +117,49 @@ public class EventMethodsCache
         }
     }
 
+    private void assertIsPublicNonStatic(Method method)
+    {
+        int mods = method.getModifiers();
+        if (!Modifier.isPublic(mods))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Invalid declaration of ");
+            err.append(method);
+            err.append(StringUtil.__LINE_SEPARATOR);
+
+            err.append("Method modifier must be public");
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+
+        if (Modifier.isStatic(mods))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Invalid declaration of ");
+            err.append(method);
+            err.append(StringUtil.__LINE_SEPARATOR);
+
+            err.append("Method modifier may not be static");
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+    }
+
+    private void assertIsReturn(Method method, Class<?> type)
+    {
+        if (!type.equals(method.getReturnType()))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("Invalid declaration of ");
+            err.append(method);
+            err.append(StringUtil.__LINE_SEPARATOR);
+
+            err.append("Return type must be ").append(type);
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+    }
+
     private void assertUnset(EventMethod event, Class<? extends Annotation> annoClass, Method method)
     {
         if (event != null)
@@ -133,12 +177,16 @@ public class EventMethodsCache
         }
     }
 
-    private void assertValidParams(Method method, Class<? extends Annotation> annoClass, ParamList validParams)
+    private void assertValidSignature(Method method, Class<? extends Annotation> annoClass, ParamList validParams)
     {
+        assertIsPublicNonStatic(method);
+        assertIsReturn(method,Void.TYPE);
+
         boolean valid = false;
 
+        // validate parameters
         Class<?> actual[] = method.getParameterTypes();
-        for (Class<?> params[] : validParams)
+        for (Class<?>[] params : validParams)
         {
             if (isSameParameters(actual,params))
             {
@@ -158,7 +206,7 @@ public class EventMethodsCache
             err.append("Acceptable method declarations for @");
             err.append(annoClass.getSimpleName());
             err.append(" are:");
-            for (Class<?> params[] : validParams)
+            for (Class<?>[] params : validParams)
             {
                 err.append(StringUtil.__LINE_SEPARATOR);
                 err.append("public void ").append(method.getName());
@@ -221,6 +269,25 @@ public class EventMethodsCache
         return methods;
     }
 
+    private boolean isNotPublicVoid(Method method)
+    {
+        // validate modifiers
+        int mods = method.getModifiers();
+        if (!Modifier.isPublic(mods) || Modifier.isStatic(mods))
+        {
+            return true;
+        }
+
+        // validate return
+        if (!Void.TYPE.isAssignableFrom(method.getReturnType()))
+        {
+            return true;
+        }
+
+        // we have a public void method
+        return true;
+    }
+
     private boolean isSameParameters(Class<?>[] actual, Class<?>[] params)
     {
         if(actual.length != params.length) {
@@ -259,7 +326,7 @@ public class EventMethodsCache
         {
             if (method.getAnnotation(OnWebSocketConnect.class) != null)
             {
-                assertValidParams(method,OnWebSocketConnect.class,validConnectParams);
+                assertValidSignature(method,OnWebSocketConnect.class,validConnectParams);
                 assertUnset(events.onConnect,OnWebSocketConnect.class,method);
                 events.onConnect = new EventMethod(pojo,method);
                 continue;
@@ -267,7 +334,7 @@ public class EventMethodsCache
 
             if (method.getAnnotation(OnWebSocketBinary.class) != null)
             {
-                assertValidParams(method,OnWebSocketBinary.class,validBinaryParams);
+                assertValidSignature(method,OnWebSocketBinary.class,validBinaryParams);
                 assertUnset(events.onBinary,OnWebSocketBinary.class,method);
                 events.onBinary = new EventMethod(pojo,method);
                 continue;
@@ -275,7 +342,7 @@ public class EventMethodsCache
 
             if (method.getAnnotation(OnWebSocketClose.class) != null)
             {
-                assertValidParams(method,OnWebSocketClose.class,validCloseParams);
+                assertValidSignature(method,OnWebSocketClose.class,validCloseParams);
                 assertUnset(events.onClose,OnWebSocketClose.class,method);
                 events.onClose = new EventMethod(pojo,method);
                 continue;
@@ -283,7 +350,7 @@ public class EventMethodsCache
 
             if (method.getAnnotation(OnWebSocketText.class) != null)
             {
-                assertValidParams(method,OnWebSocketText.class,validTextParams);
+                assertValidSignature(method,OnWebSocketText.class,validTextParams);
                 assertUnset(events.onText,OnWebSocketText.class,method);
                 events.onText = new EventMethod(pojo,method);
                 continue;
@@ -291,7 +358,7 @@ public class EventMethodsCache
 
             if (method.getAnnotation(OnWebSocketFrame.class) != null)
             {
-                assertValidParams(method,OnWebSocketFrame.class,validFrameParams);
+                assertValidSignature(method,OnWebSocketFrame.class,validFrameParams);
                 assertFrameUnset(events,method);
                 events.addOnFrame(new EventMethod(pojo,method));
                 continue;

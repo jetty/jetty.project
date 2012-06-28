@@ -32,6 +32,7 @@ public class EventMethodsCacheTest
         {
             // Should toss exception
             cache.getMethods(BadDuplicateBinarySocket.class);
+            Assert.fail("Should have thrown " + InvalidWebSocketException.class);
         }
         catch (InvalidWebSocketException e)
         {
@@ -51,11 +52,52 @@ public class EventMethodsCacheTest
         {
             // Should toss exception
             cache.getMethods(BadDuplicateFrameSocket.class);
+            Assert.fail("Should have thrown " + InvalidWebSocketException.class);
         }
         catch (InvalidWebSocketException e)
         {
             // Validate that we have clear error message to the developer
             Assert.assertThat(e.getMessage(),containsString("Duplicate Frame Type"));
+        }
+    }
+
+    /**
+     * Test Case for bad declaration a method with a non-void return type
+     */
+    @Test
+    public void testDiscoverBadSignature_NonVoidReturn()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        try
+        {
+            // Should toss exception
+            cache.getMethods(BadBinarySignatureSocket.class);
+            Assert.fail("Should have thrown " + InvalidWebSocketException.class);
+        }
+        catch (InvalidWebSocketException e)
+        {
+            // Validate that we have clear error message to the developer
+            Assert.assertThat(e.getMessage(),containsString("must be void"));
+        }
+    }
+
+    /**
+     * Test Case for bad declaration a method with a public static method
+     */
+    @Test
+    public void testDiscoverBadSignature_Static()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        try
+        {
+            // Should toss exception
+            cache.getMethods(BadTextSignatureSocket.class);
+            Assert.fail("Should have thrown " + InvalidWebSocketException.class);
+        }
+        catch (InvalidWebSocketException e)
+        {
+            // Validate that we have clear error message to the developer
+            Assert.assertThat(e.getMessage(),containsString("may not be static"));
         }
     }
 
