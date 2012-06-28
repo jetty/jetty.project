@@ -1,7 +1,7 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
@@ -44,7 +44,7 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
-    public InetAddress getRemoteAddress()
+    public InetSocketAddress getRemoteAddress()
     {
         return null;
     }

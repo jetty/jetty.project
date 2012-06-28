@@ -32,7 +32,6 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
  * </pre>
  */
 public class Generator {
-
     private final EnumMap<OpCode, FrameGenerator<?>> generators = new EnumMap<>(OpCode.class);
 
     public Generator(WebSocketPolicy policy)

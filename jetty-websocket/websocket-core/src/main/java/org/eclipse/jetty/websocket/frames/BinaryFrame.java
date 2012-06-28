@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket.frames;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 
@@ -16,12 +18,33 @@ public class BinaryFrame extends DataFrame
         super(OpCode.BINARY);
     }
 
+    /**
+     * Construct with byte array payload data
+     */
     public BinaryFrame( byte[] payload )
     {
         this();
         setPayload(payload);
     }
-    
+
+    /**
+     * Construct with partial byte array payload data support
+     */
+    public BinaryFrame(byte[] data, int offset, int length)
+    {
+        this();
+        setPayload(ByteBuffer.wrap(data,offset,length));
+    }
+
+    /**
+     * Construct with ByteBuffer payload data
+     */
+    public BinaryFrame(ByteBuffer payload)
+    {
+        this();
+        setPayload(payload);
+    }
+
     @Override
     public String toString()
     {
