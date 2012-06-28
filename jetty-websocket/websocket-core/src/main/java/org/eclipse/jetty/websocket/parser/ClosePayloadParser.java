@@ -47,9 +47,9 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
         /*
          * invalid payload length.
          */
-        if (payloadLength == 1)
+        if ((payloadLength == 1) || (payloadLength > 125))
         {
-            throw new WebSocketException("Close: invalid payload length: 1");
+            throw new WebSocketException("Close: invalid payload length: " + payloadLength);
         }
 
         if (payload == null)

@@ -20,10 +20,10 @@ public class CloseFrameGenerator extends FrameGenerator<CloseFrame>
         if ( close.getStatusCode() != 0 )
         {
             buffer.putChar((char)close.getStatusCode()); // char is unsigned 16
-         
+
             // payload requires a status code in order to be written
             if ( close.hasPayload() )
-            {                       
+            {
                 if (close.hasReason())
                 {
                     byte utf[] = close.getReason().getBytes(StringUtil.__UTF8_CHARSET);
@@ -31,7 +31,7 @@ public class CloseFrameGenerator extends FrameGenerator<CloseFrame>
                 }
             }
         }
-        else if ( close.hasPayload() )
+        else if (close.hasPayload())
         {
             throw new WebSocketException("Close frames require setting a status code if using payload.");
         }
