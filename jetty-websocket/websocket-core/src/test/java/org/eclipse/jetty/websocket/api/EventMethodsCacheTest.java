@@ -1,9 +1,20 @@
-package org.eclipse.jetty.websocket.annotations;
+package org.eclipse.jetty.websocket.api;
 
 import static org.hamcrest.Matchers.*;
 
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.annotations.BadBinarySignatureSocket;
+import org.eclipse.jetty.websocket.annotations.BadDuplicateBinarySocket;
+import org.eclipse.jetty.websocket.annotations.BadDuplicateFrameSocket;
+import org.eclipse.jetty.websocket.annotations.BadTextSignatureSocket;
+import org.eclipse.jetty.websocket.annotations.FrameSocket;
+import org.eclipse.jetty.websocket.annotations.MyEchoBinarySocket;
+import org.eclipse.jetty.websocket.annotations.MyEchoSocket;
+import org.eclipse.jetty.websocket.annotations.MyStatelessEchoSocket;
+import org.eclipse.jetty.websocket.annotations.NoopSocket;
+import org.eclipse.jetty.websocket.annotations.NotASocket;
+import org.eclipse.jetty.websocket.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.samples.AdapterConnectCloseSocket;
+import org.eclipse.jetty.websocket.api.samples.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.junit.Assert;
@@ -13,19 +24,47 @@ public class EventMethodsCacheTest
 {
     private void assertHasEventMethod(String message, EventMethod actual)
     {
-        Assert.assertThat(message + "Event method should have been discovered",actual,notNullValue());
+        Assert.assertThat(message + " EventMethod",actual,notNullValue());
+
+        Assert.assertThat(message + " EventMethod.pojo",actual.pojo,notNullValue());
+        Assert.assertThat(message + " EventMethod.method",actual.method,notNullValue());
     }
 
     private void assertNoEventMethod(String message, EventMethod actual)
     {
-        Assert.assertThat(message + "Event method should have been NOOP",actual,nullValue());
+        Assert.assertThat(message + "Event method",actual,nullValue());
+    }
+
+    /**
+     * Test Case for no exceptions and 5 methods (extends WebSocketAdapter)
+     */
+    @Test
+    public void testAdapterConnectCloseSocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        EventMethods methods = cache.getMethods(AdapterConnectCloseSocket.class);
+
+        String classId = AdapterConnectCloseSocket.class.getSimpleName();
+
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
+
+        // Directly Declared
+        assertHasEventMethod(classId + ".onClose",methods.onClose);
+        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
+
+        // From WebSocketAdapter
+        assertHasEventMethod(classId + ".onBinary",methods.onBinary);
+        assertHasEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onText",methods.onText);
+
+        Assert.assertThat(".getOnFrames()",methods.getOnFrames().size(),is(0));
     }
 
     /**
      * Test Case for bad declaration (duplicate OnWebSocketBinary declarations)
      */
     @Test
-    public void testDiscoverBadDuplicateBinarySocket()
+    public void testAnnotatedBadDuplicateBinarySocket()
     {
         EventMethodsCache cache = new EventMethodsCache();
         try
@@ -45,7 +84,7 @@ public class EventMethodsCacheTest
      * Test Case for bad declaration (duplicate frame type methods)
      */
     @Test
-    public void testDiscoverBadDuplicateFrameSocket()
+    public void testAnnotatedBadDuplicateFrameSocket()
     {
         EventMethodsCache cache = new EventMethodsCache();
         try
@@ -65,7 +104,7 @@ public class EventMethodsCacheTest
      * Test Case for bad declaration a method with a non-void return type
      */
     @Test
-    public void testDiscoverBadSignature_NonVoidReturn()
+    public void testAnnotatedBadSignature_NonVoidReturn()
     {
         EventMethodsCache cache = new EventMethodsCache();
         try
@@ -85,7 +124,7 @@ public class EventMethodsCacheTest
      * Test Case for bad declaration a method with a public static method
      */
     @Test
-    public void testDiscoverBadSignature_Static()
+    public void testAnnotatedBadSignature_Static()
     {
         EventMethodsCache cache = new EventMethodsCache();
         try
@@ -105,7 +144,7 @@ public class EventMethodsCacheTest
      * Test Case for no exceptions and 4 methods (3 methods from parent)
      */
     @Test
-    public void testDiscoverMyEchoBinarySocket()
+    public void testAnnotatedMyEchoBinarySocket()
     {
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(MyEchoBinarySocket.class);
@@ -127,7 +166,7 @@ public class EventMethodsCacheTest
      * Test Case for no exceptions and 3 methods
      */
     @Test
-    public void testDiscoverMyEchoSocket()
+    public void testAnnotatedMyEchoSocket()
     {
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(MyEchoSocket.class);
@@ -147,7 +186,7 @@ public class EventMethodsCacheTest
      * Test Case for no exceptions and 1 method
      */
     @Test
-    public void testDiscoverMyStatelessEchoSocket()
+    public void testAnnotatedMyStatelessEchoSocket()
     {
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(MyStatelessEchoSocket.class);
@@ -167,7 +206,7 @@ public class EventMethodsCacheTest
      * Test Case for no exceptions and no methods
      */
     @Test
-    public void testDiscoverNoop()
+    public void testAnnotatedNoop()
     {
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(NoopSocket.class);
@@ -184,29 +223,10 @@ public class EventMethodsCacheTest
     }
 
     /**
-     * Test Case for bad declaration (duplicate OnWebSocketBinary declarations)
-     */
-    @Test
-    public void testDiscoverNotASocket()
-    {
-        EventMethodsCache cache = new EventMethodsCache();
-        try
-        {
-            // Should toss exception
-            cache.getMethods(NotASocket.class);
-        }
-        catch (InvalidWebSocketException e)
-        {
-            // Validate that we have clear error message to the developer
-            Assert.assertThat(e.getMessage(),allOf(containsString(WebSocketListener.class.getSimpleName()),containsString(WebSocket.class.getSimpleName())));
-        }
-    }
-
-    /**
      * Test Case for no exceptions and 3 methods
      */
     @Test
-    public void testDiscoverOnFrame()
+    public void testAnnotatedOnFrame()
     {
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(FrameSocket.class);
@@ -222,5 +242,46 @@ public class EventMethodsCacheTest
         Assert.assertThat("MyEchoSocket.getOnFrames()",methods.getOnFrames().size(),is(2));
         assertHasEventMethod("MyEchoSocket.onFrame(BaseFrame)",methods.getOnFrame(BaseFrame.class));
         assertHasEventMethod("MyEchoSocket.onFrame(BaseFrame)",methods.getOnFrame(TextFrame.class));
+    }
+
+    /**
+     * Test Case for bad declaration (duplicate OnWebSocketBinary declarations)
+     */
+    @Test
+    public void testBadNotASocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        try
+        {
+            // Should toss exception
+            cache.getMethods(NotASocket.class);
+        }
+        catch (InvalidWebSocketException e)
+        {
+            // Validate that we have clear error message to the developer
+            Assert.assertThat(e.getMessage(),allOf(containsString(WebSocketListener.class.getSimpleName()),containsString(WebSocket.class.getSimpleName())));
+        }
+    }
+
+    /**
+     * Test Case for no exceptions and 5 methods (implement WebSocketListener)
+     */
+    @Test
+    public void testListenerBasicSocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        EventMethods methods = cache.getMethods(ListenerBasicSocket.class);
+
+        String classId = AdapterConnectCloseSocket.class.getSimpleName();
+
+        Assert.assertThat("ListenerBasicSocket for " + classId,methods,notNullValue());
+
+        assertHasEventMethod(classId + ".onClose",methods.onClose);
+        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
+        assertHasEventMethod(classId + ".onBinary",methods.onBinary);
+        assertHasEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onText",methods.onText);
+
+        Assert.assertThat(".getOnFrames()",methods.getOnFrames().size(),is(0));
     }
 }

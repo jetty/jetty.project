@@ -1,9 +1,10 @@
 package org.eclipse.jetty.websocket.api;
 
-import org.eclipse.jetty.websocket.annotations.EventMethods;
-import org.eclipse.jetty.websocket.annotations.EventMethodsCache;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.parser.Parser;
 
 /**
@@ -72,18 +73,61 @@ public class WebSocketEventDriver implements Parser.Listener
      * @param frame
      *            the frame that appeared
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void onFrame(BaseFrame frame)
     {
-        // TODO Auto-generated method stub
+        // Specified Close Case
+        if ((frame instanceof CloseFrame) && (events.onClose != null))
+        {
+            CloseFrame close = (CloseFrame)frame;
+            events.onClose.call(websocket,connection,close.getStatusCode(),close.getReason());
+            return;
+        }
 
+        // Specified Text Case
+        if ((frame instanceof TextFrame) && (events.onText != null))
+        {
+            TextFrame text = (TextFrame)frame;
+            events.onText.call(websocket,connection,text.getPayloadUTF8());
+            return;
+        }
+
+        // Specified Binary Case
+        if ((frame instanceof BinaryFrame) && (events.onBinary != null))
+        {
+            BinaryFrame bin = (BinaryFrame)frame;
+            events.onBinary.call(websocket,connection,bin.getPayload());
+            return;
+        }
+
+        // Basic Hierarchy Case
+        Class<? extends BaseFrame> frameType = frame.getClass();
+        while (true)
+        {
+            EventMethod event = events.getOnFrame(frameType);
+            if (event != null)
+            {
+                event.call(websocket,connection,frame);
+                return;
+            }
+
+            if (!frameType.getSuperclass().isAssignableFrom(BaseFrame.class))
+            {
+                // not assignable
+                return;
+            }
+            frameType = (Class<? extends BaseFrame>)frameType.getSuperclass();
+        }
     }
 
     @Override
     public void onWebSocketException(WebSocketException e)
     {
-        // TODO Auto-generated method stub
-
+        if (events.onException != null)
+        {
+            events.onException.call(websocket,connection,e);
+        }
     }
 
     /**

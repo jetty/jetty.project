@@ -1,9 +1,8 @@
-package org.eclipse.jetty.websocket.annotations;
+package org.eclipse.jetty.websocket.api;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 /**

@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.annotations;
+package org.eclipse.jetty.websocket.api;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -16,7 +16,7 @@ public class EventMethod
     {
         if (args.length == 1)
         {
-            return null;
+            return new Object[0];
         }
         Object ret[] = new Object[args.length - 1];
         System.arraycopy(args,1,ret,0,ret.length);
@@ -40,10 +40,8 @@ public class EventMethod
         return NOOP;
     }
 
-    private Class<?> pojo;
-
-    private Method method;
-
+    protected Class<?> pojo;
+    protected Method method;
     private Class<?>[] paramTypes;
 
     private EventMethod()
@@ -64,11 +62,11 @@ public class EventMethod
         {
             this.pojo = pojo;
             this.paramTypes = paramTypes;
-            this.method = pojo.getClass().getMethod(methodName,paramTypes);
+            this.method = pojo.getMethod(methodName,paramTypes);
         }
         catch (NoSuchMethodException | SecurityException e)
         {
-            LOG.debug("Cannot use method {}({}): {}",methodName,paramTypes,e.getMessage(),e);
+            LOG.warn("Cannot use method {}({}): {}",methodName,paramTypes,e.getMessage());
             this.method = null;
         }
     }
@@ -77,6 +75,7 @@ public class EventMethod
     {
         if ((this.pojo == null) || (this.method == null))
         {
+            LOG.warn("Cannot execute call: pojo={}, method={}",pojo,method);
             return; // no call event method determined
         }
         if (obj == null)
@@ -87,12 +86,13 @@ public class EventMethod
         if (args.length > paramTypes.length)
         {
             Object trimArgs[] = dropFirstArg(args);
-            call(trimArgs);
+            call(obj,trimArgs);
             return;
         }
         if (args.length < paramTypes.length)
         {
-            throw new IllegalArgumentException("Call arguments length must always be greater than or equal to captured args length");
+            throw new IllegalArgumentException("Call arguments length [" + args.length + "] must always be greater than or equal to captured args length ["
+                    + paramTypes.length + "]");
         }
         try
         {

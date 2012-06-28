@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.annotations;
+package org.eclipse.jetty.websocket.api;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -8,10 +8,12 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketBinary;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketText;
+import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
@@ -243,7 +245,7 @@ public class EventMethodsCache
      */
     private EventMethods discoverMethods(Class<?> pojo) throws InvalidWebSocketException
     {
-        if (WebSocketListener.class.isInstance(pojo))
+        if (WebSocketListener.class.isAssignableFrom(pojo))
         {
             return scanListenerMethods(pojo);
         }
@@ -365,9 +367,9 @@ public class EventMethodsCache
 
         // This is a WebSocketListener object
         events.onConnect = new EventMethod(pojo,"onWebSocketConnect",WebSocketConnection.class);
-        events.onClose = new EventMethod(pojo,"onWebSocketClose",Integer.TYPE,String.class);
-        events.onBinary = new EventMethod(pojo,"onWebSocketBinary",byte[].class,Integer.TYPE,Integer.TYPE);
-        events.onText = new EventMethod(pojo,"onWebSocketText",WebSocketConnection.class);
+        events.onClose = new EventMethod(pojo,"onWebSocketClose",int.class,String.class);
+        events.onBinary = new EventMethod(pojo,"onWebSocketBinary",byte[].class,int.class,int.class);
+        events.onText = new EventMethod(pojo,"onWebSocketText",String.class);
         events.onException = new EventMethod(pojo,"onWebSocketException",WebSocketException.class);
 
         return events;
