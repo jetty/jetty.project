@@ -2,7 +2,6 @@ package org.eclipse.jetty.websocket.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
 
@@ -17,8 +16,6 @@ public class CloseFrame extends ControlFrame
     public CloseFrame()
     {
         super(OpCode.CLOSE);
-        // no status code, no reason
-        setPayload(BufferUtil.EMPTY_BUFFER);
     }
 
     /**
@@ -44,6 +41,11 @@ public class CloseFrame extends ControlFrame
         if ((statusCode <= 999) || (statusCode > 65535))
         {
             throw new IllegalArgumentException("Status Codes must be in the range 1000 - 65535");
+        }
+
+        if ((reason != null) && (reason.length() > 123))
+        {
+            throw new IllegalArgumentException("Reason must not exceed 123 characters.");
         }
 
         byte utf[] = null;
