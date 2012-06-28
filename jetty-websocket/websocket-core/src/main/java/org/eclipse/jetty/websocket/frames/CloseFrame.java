@@ -55,7 +55,7 @@ public class CloseFrame extends ControlFrame
         }
 
         ByteBuffer payload = ByteBuffer.allocate(len);
-        payload.putShort((short)statusCode);
+        payload.putChar((char)statusCode);
         if (utf != null)
         {
             payload.put(utf,0,utf.length);
