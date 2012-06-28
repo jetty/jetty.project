@@ -89,15 +89,51 @@ public class EventMethodsCache
         cache = new ConcurrentHashMap<>();
     }
 
-    private void assertUnset(EventMethod event, Class<? extends Annotation> annoClass, Class<?> pojo, Method method)
+    private void assertFrameUnset(EventMethods events, Method method)
     {
-        if (event == EventMethod.NOOP)
+        Class<?> paramTypes[] = method.getParameterTypes();
+        Class<?> lastType = paramTypes[paramTypes.length - 1];
+        if (!BaseFrame.class.isAssignableFrom(lastType))
         {
-            return;
+            throw new InvalidWebSocketException("Unrecognized @OnWebSocketFrame frame type " + lastType);
+        }
+        @SuppressWarnings("unchecked")
+        Class<? extends BaseFrame> frameType = (Class<? extends BaseFrame>)lastType;
+
+        EventMethod dup = events.getOnFrame(frameType);
+        if (dup != null)
+        {
+            // Attempt to add duplicate frame type (a no-no)
+            StringBuilder err = new StringBuilder();
+            err.append("Duplicate Frame Type declaration on ");
+            err.append(method);
+            err.append(StringUtil.__LINE_SEPARATOR);
+
+            err.append("Type ").append(frameType.getSimpleName()).append(" previously declared at ");
+            err.append(dup.getMethod());
+
+            throw new InvalidWebSocketException(err.toString());
         }
     }
 
-    private void assertValidParams(Class<?> pojo, Method method, Class<? extends Annotation> annoClass, ParamList validParams)
+    private void assertUnset(EventMethod event, Class<? extends Annotation> annoClass, Method method)
+    {
+        if (event != null)
+        {
+            // Attempt to add duplicate frame type (a no-no)
+            StringBuilder err = new StringBuilder();
+            err.append("Duplicate @").append(annoClass.getSimpleName()).append(" declaration on ");
+            err.append(method);
+            err.append(StringUtil.__LINE_SEPARATOR);
+
+            err.append("@").append(annoClass.getSimpleName()).append(" previously declared at ");
+            err.append(event.getMethod());
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+    }
+
+    private void assertValidParams(Method method, Class<? extends Annotation> annoClass, ParamList validParams)
     {
         boolean valid = false;
 
@@ -223,39 +259,40 @@ public class EventMethodsCache
         {
             if (method.getAnnotation(OnWebSocketConnect.class) != null)
             {
-                assertUnset(events.onConnect,OnWebSocketConnect.class,pojo,method);
-                assertValidParams(pojo,method,OnWebSocketConnect.class,validConnectParams);
+                assertValidParams(method,OnWebSocketConnect.class,validConnectParams);
+                assertUnset(events.onConnect,OnWebSocketConnect.class,method);
                 events.onConnect = new EventMethod(pojo,method);
                 continue;
             }
 
             if (method.getAnnotation(OnWebSocketBinary.class) != null)
             {
-                assertUnset(events.onBinary,OnWebSocketBinary.class,pojo,method);
-                assertValidParams(pojo,method,OnWebSocketBinary.class,validBinaryParams);
+                assertValidParams(method,OnWebSocketBinary.class,validBinaryParams);
+                assertUnset(events.onBinary,OnWebSocketBinary.class,method);
                 events.onBinary = new EventMethod(pojo,method);
                 continue;
             }
 
             if (method.getAnnotation(OnWebSocketClose.class) != null)
             {
-                assertUnset(events.onClose,OnWebSocketClose.class,pojo,method);
-                assertValidParams(pojo,method,OnWebSocketClose.class,validCloseParams);
+                assertValidParams(method,OnWebSocketClose.class,validCloseParams);
+                assertUnset(events.onClose,OnWebSocketClose.class,method);
                 events.onClose = new EventMethod(pojo,method);
                 continue;
             }
 
             if (method.getAnnotation(OnWebSocketText.class) != null)
             {
-                assertUnset(events.onText,OnWebSocketText.class,pojo,method);
-                assertValidParams(pojo,method,OnWebSocketText.class,validTextParams);
+                assertValidParams(method,OnWebSocketText.class,validTextParams);
+                assertUnset(events.onText,OnWebSocketText.class,method);
                 events.onText = new EventMethod(pojo,method);
                 continue;
             }
 
             if (method.getAnnotation(OnWebSocketFrame.class) != null)
             {
-                assertValidParams(pojo,method,OnWebSocketFrame.class,validFrameParams);
+                assertValidParams(method,OnWebSocketFrame.class,validFrameParams);
+                assertFrameUnset(events,method);
                 events.addOnFrame(new EventMethod(pojo,method));
                 continue;
             }

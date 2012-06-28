@@ -21,6 +21,25 @@ public class EventMethodsCacheTest
     }
 
     /**
+     * Test Case for bad declaration (duplicate OnWebSocketBinary declarations)
+     */
+    @Test
+    public void testDiscoverBadDuplicateBinarySocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        try
+        {
+            // Should toss exception
+            cache.getMethods(BadDuplicateBinarySocket.class);
+        }
+        catch (InvalidWebSocketException e)
+        {
+            // Validate that we have clear error message to the developer
+            Assert.assertThat(e.getMessage(),containsString("Duplicate @OnWebSocketBinary declaration"));
+        }
+    }
+
+    /**
      * Test Case for bad declaration (duplicate frame type methods)
      */
     @Test

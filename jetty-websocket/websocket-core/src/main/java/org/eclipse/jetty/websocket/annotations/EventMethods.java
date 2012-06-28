@@ -3,7 +3,6 @@ package org.eclipse.jetty.websocket.annotations;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 
@@ -34,24 +33,13 @@ public class EventMethods
     public void addOnFrame(EventMethod eventMethod)
     {
         Class<?> paramTypes[] = eventMethod.getParamTypes();
-        @SuppressWarnings("unchecked")
-        Class<? extends BaseFrame> frameType = (Class<? extends BaseFrame>)((paramTypes.length == 1)?paramTypes[0]:paramTypes[1]);
-
-        if (onFrames.containsKey(frameType))
+        Class<?> lastType = paramTypes[paramTypes.length - 1];
+        if (!BaseFrame.class.isAssignableFrom(lastType))
         {
-            // Attempt to add duplicate frame type (a no-no)
-            StringBuilder err = new StringBuilder();
-            err.append("Duplicate Frame Type declaration on ");
-            err.append(eventMethod.getMethod());
-            err.append(StringUtil.__LINE_SEPARATOR);
-
-            EventMethod dup = onFrames.get(frameType);
-            err.append("Type ").append(frameType.getSimpleName()).append(" previously declared at ");
-            err.append(dup.getMethod());
-
-            throw new InvalidWebSocketException(err.toString());
+            throw new InvalidWebSocketException("Unrecognized @OnWebSocketFrame frame type " + lastType);
         }
-
+        @SuppressWarnings("unchecked")
+        Class<? extends BaseFrame> frameType = (Class<? extends BaseFrame>)lastType;
         onFrames.put(frameType,eventMethod);
     }
 
