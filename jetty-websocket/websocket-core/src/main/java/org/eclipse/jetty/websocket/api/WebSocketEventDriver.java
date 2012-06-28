@@ -1,5 +1,8 @@
 package org.eclipse.jetty.websocket.api;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
@@ -97,7 +100,19 @@ public class WebSocketEventDriver implements Parser.Listener
         if ((frame instanceof BinaryFrame) && (events.onBinary != null))
         {
             BinaryFrame bin = (BinaryFrame)frame;
-            events.onBinary.call(websocket,connection,bin.getPayload());
+
+            if (events.onBinary.isParameterPresent(ByteBuffer.class))
+            {
+                // Byte buffer approach
+                events.onBinary.call(websocket,connection,bin.getPayload());
+            }
+            else
+            {
+                // Byte array approach
+                byte buf[] = BufferUtil.toArray(bin.getPayload());
+                events.onBinary.call(websocket,connection,buf,0,buf.length);
+            }
+
             return;
         }
 

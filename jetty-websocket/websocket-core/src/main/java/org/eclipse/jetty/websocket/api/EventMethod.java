@@ -113,4 +113,16 @@ public class EventMethod
     {
         return this.paramTypes;
     }
+
+    public boolean isParameterPresent(Class<?> type)
+    {
+        for (Class<?> param : paramTypes)
+        {
+            if (param.equals(type))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }
