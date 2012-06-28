@@ -2,8 +2,6 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
@@ -45,34 +43,28 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
             // no status code. no reason.
             return true;
         }
-        
-        /* invalid payload length and protects payload.getShort() call below from
-         * pulling too many bytes from buffer.
+
+        /*
+         * invalid payload length.
          */
-        if ( payloadLength == 1 )
+        if (payloadLength == 1)
         {
             throw new WebSocketException("Close: invalid payload length: 1");
         }
 
+        if (payload == null)
+        {
+            getPolicy().assertValidTextMessageSize(payloadLength);
+            payload = ByteBuffer.allocate(payloadLength);
+        }
+
         while (buffer.hasRemaining())
         {
-            if (payload == null)
-            {
-                getPolicy().assertValidBinaryMessageSize(payloadLength);
-                payload = ByteBuffer.allocate(payloadLength);
-            }
-
             copyBuffer(buffer,payload,payload.remaining());
 
             if (payload.position() >= payloadLength)
             {
-                payload.flip();
-                frame.setStatusCode(payload.getShort());
-                if (payload.remaining() > 0)
-                {
-                    String reason = BufferUtil.toString(payload,StringUtil.__UTF8_CHARSET);
-                    frame.setReason(reason);
-                }
+                frame.setPayload(payload);
                 return true;
             }
         }
@@ -83,6 +75,7 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
     public void reset()
     {
         super.reset();
-
+        payloadLength = 0;
+        payload = null;
     }
 }

@@ -5,6 +5,8 @@ import static org.hamcrest.Matchers.*;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.Debug;
+import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -19,6 +21,9 @@ public class ClosePayloadParserTest
     {
         String expectedReason = "Game Over";
 
+        Debug.enableDebugLogging(Parser.class);
+        Debug.enableDebugLogging(ClosePayloadParser.class);
+
         byte utf[] = expectedReason.getBytes(StringUtil.__UTF8_CHARSET);
         ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
         payload.putShort(StatusCode.NORMAL);
@@ -26,7 +31,7 @@ public class ClosePayloadParserTest
         payload.flip();
 
         ByteBuffer buf = ByteBuffer.allocate(24);
-        buf.put((byte)(0x80 | 0x08)); // fin + close
+        buf.put((byte)(0x80 | OpCode.CLOSE.getCode())); // fin + close
         buf.put((byte)(0x80 | payload.remaining()));
         MaskedByteBuffer.putMask(buf);
         MaskedByteBuffer.putPayload(buf,payload);
@@ -40,8 +45,8 @@ public class ClosePayloadParserTest
 
         capture.assertNoErrors();
         capture.assertHasFrame(CloseFrame.class,1);
-        CloseFrame txt = (CloseFrame)capture.getFrames().get(0);
-        Assert.assertThat("CloseFrame.statusCode",(short)txt.getStatusCode(),is(StatusCode.NORMAL));
-        Assert.assertThat("CloseFrame.data",txt.getReason(),is(expectedReason));
+        CloseFrame close = (CloseFrame)capture.getFrames().get(0);
+        Assert.assertThat("CloseFrame.statusCode",(short)close.getStatusCode(),is((short)0));
+        Assert.assertThat("CloseFrame.data",close.getReason(),is(expectedReason));
     }
 }

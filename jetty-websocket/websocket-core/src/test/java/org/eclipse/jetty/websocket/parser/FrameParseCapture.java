@@ -5,12 +5,15 @@ import static org.hamcrest.Matchers.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.junit.Assert;
 
 public class FrameParseCapture implements Parser.Listener
 {
+    private static final Logger LOG = Log.getLogger(FrameParseCapture.class);
     private List<BaseFrame> frames = new ArrayList<>();
     private List<WebSocketException> errors = new ArrayList<>();
 
@@ -82,6 +85,7 @@ public class FrameParseCapture implements Parser.Listener
     @Override
     public void onWebSocketException(WebSocketException e)
     {
+        LOG.warn(e);
         errors.add(e);
     }
 }

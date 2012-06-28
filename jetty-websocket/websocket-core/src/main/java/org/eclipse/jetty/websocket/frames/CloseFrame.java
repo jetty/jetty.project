@@ -1,86 +1,100 @@
 package org.eclipse.jetty.websocket.frames;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
-import org.eclipse.jetty.websocket.api.StatusCode;
 
 /**
  * Representation of a <a href="https://tools.ietf.org/html/rfc6455#section-5.5.1">Close Frame (0x08)</a>.
  */
 public class CloseFrame extends ControlFrame
 {
-    private int statusCode = 0;
-    private String reason = "";
-
+    /**
+     * Construct CloseFrame with no status code or reason
+     */
     public CloseFrame()
     {
         super(OpCode.CLOSE);
+        // no status code, no reason
+        setPayload(BufferUtil.EMPTY_BUFFER);
     }
 
+    /**
+     * Construct CloseFrame with status code and no reason
+     */
     public CloseFrame(int statusCode)
     {
         super(OpCode.CLOSE);
-        setStatusCode(statusCode);
+        constructPayload(statusCode,null);
+    }
+
+    /**
+     * Construct CloseFrame with status code and reason
+     */
+    public CloseFrame(int statusCode, String reason)
+    {
+        super(OpCode.CLOSE);
+        constructPayload(statusCode,reason);
+    }
+
+    private void constructPayload(int statusCode, String reason)
+    {
+        if ((statusCode <= 999) || (statusCode > 65535))
+        {
+            throw new IllegalArgumentException("Status Codes must be in the range 1000 - 65535");
+        }
+
+        byte utf[] = null;
+        int len = 2; // status code
+        if (StringUtil.isNotBlank(reason))
+        {
+            utf = reason.getBytes(StringUtil.__UTF8_CHARSET);
+            len += utf.length;
+        }
+
+        ByteBuffer payload = ByteBuffer.allocate(len);
+        payload.putShort((short)statusCode);
+        if (utf != null)
+        {
+            payload.put(utf,0,utf.length);
+        }
+        setPayload(payload);
     }
 
     public String getReason()
     {
-        return reason;
+        if (getPayloadLength() <= 2)
+        {
+            return null;
+        }
+        ByteBuffer payload = getPayload();
+        int len = getPayloadLength() - 2;
+        byte utf[] = new byte[len];
+        for (int i = 2; i < len; i++)
+        {
+            utf[i - 2] = payload.get(i);
+        }
+        return StringUtil.toUTF8String(utf,0,utf.length);
     }
 
     public int getStatusCode()
     {
+        if (getPayloadLength() < 2)
+        {
+            return 0; // no status code
+        }
+
+        int statusCode = 0;
+        ByteBuffer payload = getPayload();
+        statusCode = (payload.get(0) << 8) & payload.get(1);
         return statusCode;
     }
 
     public boolean hasReason()
     {
-        return StringUtil.isBlank(reason);
-    }
-
-    public void setReason(String reason)
-    {
-        this.reason = reason;
-    }
-
-    public void setStatusCode(int statusCode)
-    {
-        if ( ( statusCode <= 999) || ( statusCode > 65535 ) )
-        {
-            throw new IllegalArgumentException("Status Codes must be in the range 1000 - 65535");
-        }
-        
-        this.statusCode = statusCode;
-    }
-
-    @Override
-    public int getPayloadLength()
-    {
-        /*
-         * issue here is that the parser can set the payload length and then rely on it when parsing payload
-         * 
-         * but generator doesn't have a payload length without calculating it via the statuscode and reason
-         * 
-         */
-        if (super.getPayloadLength() == 0)
-        {
-            int length = 0;
-            if (getStatusCode() != 0)
-            {
-                length = length + 2;
-
-                if (hasReason())
-                {
-                    length = length + getReason().getBytes().length;
-                }
-            }
-
-            return length;
-        }
-        else
-        {
-            return super.getPayloadLength();
-        }
+        return getPayloadLength() > 2;
     }
 
     @Override
@@ -89,8 +103,8 @@ public class CloseFrame extends ControlFrame
         StringBuilder b = new StringBuilder();
         b.append("CloseFrame[");
         b.append("len=").append(getPayloadLength());
-        b.append(",statusCode=").append(statusCode);
-        b.append(",reason=").append(reason);
+        b.append(",statusCode=").append(getStatusCode());
+        b.append(",reason=").append(getReason());
         b.append("]");
         return b.toString();
     }

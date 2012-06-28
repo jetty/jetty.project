@@ -61,5 +61,6 @@ public class TextPayloadParser extends FrameParser<TextFrame>
     {
         super.reset();
         payloadLength = 0;
+        payload = null;
     }
 }

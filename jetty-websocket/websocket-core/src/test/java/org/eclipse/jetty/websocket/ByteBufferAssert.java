@@ -34,6 +34,13 @@ public class ByteBufferAssert
 
     public static void assertSize(String message, int expectedSize, ByteBuffer buffer)
     {
-        Assert.assertThat(message + " buffer.remaining",buffer.remaining(),is(expectedSize));
+        if (expectedSize == 0)
+        {
+            Assert.assertThat(message + " buffer",buffer,nullValue());
+        }
+        else
+        {
+            Assert.assertThat(message + " buffer.remaining",buffer.remaining(),is(expectedSize));
+        }
     }
 }
