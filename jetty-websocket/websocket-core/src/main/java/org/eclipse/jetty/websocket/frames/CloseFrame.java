@@ -72,9 +72,9 @@ public class CloseFrame extends ControlFrame
         ByteBuffer payload = getPayload();
         int len = getPayloadLength() - 2;
         byte utf[] = new byte[len];
-        for (int i = 2; i < len; i++)
+        for (int i = 0; i < len; i++)
         {
-            utf[i - 2] = payload.get(i);
+            utf[i] = payload.get(i + 2);
         }
         return StringUtil.toUTF8String(utf,0,utf.length);
     }
@@ -88,7 +88,8 @@ public class CloseFrame extends ControlFrame
 
         int statusCode = 0;
         ByteBuffer payload = getPayload();
-        statusCode = (payload.get(0) << 8) & payload.get(1);
+        statusCode |= (payload.get(0) & 0xFF) << 8;
+        statusCode |= (payload.get(1) & 0xFF);
         return statusCode;
     }
 
