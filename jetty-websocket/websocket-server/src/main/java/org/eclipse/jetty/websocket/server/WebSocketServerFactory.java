@@ -32,6 +32,8 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.annotations.EventMethodsCache;
+import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -65,11 +67,14 @@ public class WebSocketServerFactory extends AbstractLifeCycle
     }
 
     private final String supportedVersions;
-    private WebSocketPolicy policy;
+    private WebSocketPolicy basePolicy;
+    private WebSocketCreator creator;
+    private EventMethodsCache methodsCache;
 
     public WebSocketServerFactory(WebSocketPolicy policy)
     {
-        this.policy = policy;
+        this.basePolicy = policy;
+        this.methodsCache = new EventMethodsCache();
 
         // Create supportedVersions
         List<Integer> versions = new ArrayList<>();
@@ -109,7 +114,8 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         // TODO: discover type, create proxy
 
         // Send the upgrade
-        WebSocketEventDriver websocket = new WebSocketEventDriver(websocketPojo);
+        WebSocketPolicy objPolicy = this.basePolicy.clonePolicy();
+        WebSocketEventDriver websocket = new WebSocketEventDriver(methodsCache,objPolicy,websocketPojo);
         return upgrade(sockreq,sockresp,websocket);
     }
 
@@ -134,8 +140,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle
 
     public WebSocketCreator getCreator()
     {
-        // TODO: implement
-        return null;
+        return this.creator;
     }
 
     /**
@@ -147,13 +152,15 @@ public class WebSocketServerFactory extends AbstractLifeCycle
     }
 
     /**
-     * Get the policy in use for WebSockets.
+     * Get the base policy in use for WebSockets.
+     * <p>
+     * Note: individual WebSocket implementations can override some of the values in here by using the {@link WebSocket &#064;WebSocket} annotation.
      * 
-     * @return
+     * @return the base policy
      */
     public WebSocketPolicy getPolicy()
     {
-        return policy;
+        return basePolicy;
     }
 
     public List<Extension> initExtensions(List<ExtensionConfig> requested)
@@ -179,12 +186,26 @@ public class WebSocketServerFactory extends AbstractLifeCycle
 
     public boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response)
     {
-        // TODO: other checks against the spec?
+        String upgrade = request.getHeader("Upgrade");
+        if (upgrade == null)
+        {
+            // Quietly fail
+            return false;
+        }
+
+        if (!"websocket".equalsIgnoreCase(upgrade))
+        {
+            LOG.warn("Not a 'Upgrade: WebSocket' (was [Upgrade: " + upgrade + "])");
+            return false;
+        }
+
         if (!"HTTP/1.1".equals(request.getProtocol()))
         {
-            throw new IllegalStateException("Not a 'HTTP/1.1' request");
+            LOG.warn("Not a 'HTTP/1.1' request (was [" + request.getProtocol() + "])");
+            return false;
         }
-        return ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")));
+
+        return true;
     }
 
     private Extension newExtension(String name)
@@ -226,7 +247,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle
 
     public void register(Class<?> websocketClass)
     {
-        // TODO: implement
+        methodsCache.register(websocketClass);
     }
 
     protected boolean removeConnection(AsyncWebSocketConnection connection)
@@ -236,7 +257,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle
 
     public void setCreator(WebSocketCreator creator)
     {
-        // TODO: implement
+        this.creator = creator;
     }
 
     /**
@@ -287,7 +308,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         HttpConnection http = HttpConnection.getCurrentConnection();
         AsyncEndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().findExecutor();
-        final AsyncWebSocketConnection connection = new AsyncWebSocketConnection(endp,executor,policy);
+        final AsyncWebSocketConnection connection = new AsyncWebSocketConnection(endp,executor,websocket.getPolicy());
         endp.setAsyncConnection(connection);
 
         // Notify POJO of connection

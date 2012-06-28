@@ -84,6 +84,17 @@ public class WebSocketPolicy
         }
     }
 
+    public WebSocketPolicy clonePolicy()
+    {
+        WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
+        clone.bufferSize = this.bufferSize;
+        clone.masker = this.masker;
+        clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
+        clone.maxIdleTime = this.maxIdleTime;
+        clone.maxTextMessageSize = this.maxTextMessageSize;
+        return clone;
+    }
+
     public WebSocketBehavior getBehavior()
     {
         return behavior;

@@ -19,5 +19,7 @@ public @interface WebSocket
 
     int maxBufferSize() default 8192;
 
+    int maxIdleTime() default 300000;
+
     int maxTextSize() default 8192;
 }
