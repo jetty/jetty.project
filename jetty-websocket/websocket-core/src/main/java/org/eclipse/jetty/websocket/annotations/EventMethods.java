@@ -1,5 +1,12 @@
 package org.eclipse.jetty.websocket.annotations;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
+
 /**
  * A representation of the methods available to call for a particular class.
  * <p>
@@ -9,17 +16,43 @@ public class EventMethods
 {
     private Class<?> pojoClass;
     private boolean isAnnotated = false;
-    public EventMethod onConnect = EventMethod.NOOP;
-    public EventMethod onClose = EventMethod.NOOP;
-    public EventMethod onBinary = EventMethod.NOOP;
-    public EventMethod onText = EventMethod.NOOP;
-    public EventMethod onFrame = EventMethod.NOOP;
-    public EventMethod onException = EventMethod.NOOP;
+    public EventMethod onConnect = null;
+    public EventMethod onClose = null;
+    public EventMethod onBinary = null;
+    public EventMethod onText = null;
+    public EventMethod onException = null;
+
+    // special case, multiple methods allowed
+    private Map<Class<? extends BaseFrame>, EventMethod> onFrames = new HashMap<Class<? extends BaseFrame>, EventMethod>();
 
     public EventMethods(Class<?> pojoClass, boolean annotated)
     {
         this.pojoClass = pojoClass;
         this.isAnnotated = annotated;
+    }
+
+    public void addOnFrame(EventMethod eventMethod)
+    {
+        Class<?> paramTypes[] = eventMethod.getParamTypes();
+        @SuppressWarnings("unchecked")
+        Class<? extends BaseFrame> frameType = (Class<? extends BaseFrame>)((paramTypes.length == 1)?paramTypes[0]:paramTypes[1]);
+
+        if (onFrames.containsKey(frameType))
+        {
+            // Attempt to add duplicate frame type (a no-no)
+            StringBuilder err = new StringBuilder();
+            err.append("Duplicate Frame Type declaration on ");
+            err.append(eventMethod.getMethod());
+            err.append(StringUtil.__LINE_SEPARATOR);
+
+            EventMethod dup = onFrames.get(frameType);
+            err.append("Type ").append(frameType.getSimpleName()).append(" previously declared at ");
+            err.append(dup.getMethod());
+
+            throw new InvalidWebSocketException(err.toString());
+        }
+
+        onFrames.put(frameType,eventMethod);
     }
 
     @Override
@@ -50,6 +83,16 @@ public class EventMethods
             return false;
         }
         return true;
+    }
+
+    public EventMethod getOnFrame(Class<? extends BaseFrame> frameType)
+    {
+        return onFrames.get(frameType);
+    }
+
+    public Map<Class<? extends BaseFrame>, EventMethod> getOnFrames()
+    {
+        return onFrames;
     }
 
     public Class<?> getPojoClass()

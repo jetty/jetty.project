@@ -103,4 +103,14 @@ public class EventMethod
             LOG.warn("Cannot call method {} on {} with {}",method,pojo,args,e);
         }
     }
+
+    protected Method getMethod()
+    {
+        return method;
+    }
+
+    protected Class<?>[] getParamTypes()
+    {
+        return this.paramTypes;
+    }
 }

@@ -255,9 +255,8 @@ public class EventMethodsCache
 
             if (method.getAnnotation(OnWebSocketFrame.class) != null)
             {
-                assertUnset(events.onFrame,OnWebSocketFrame.class,pojo,method);
                 assertValidParams(pojo,method,OnWebSocketFrame.class,validFrameParams);
-                events.onFrame = new EventMethod(pojo,method);
+                events.addOnFrame(new EventMethod(pojo,method));
                 continue;
             }
 
