@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.annotations;
 import static org.hamcrest.Matchers.*;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.junit.Assert;
@@ -111,11 +112,30 @@ public class EventMethodsCacheTest
 
         assertNoEventMethod("NoopSocket.onBinary",methods.onBinary);
         assertNoEventMethod("NoopSocket.onClose",methods.onClose);
-        assertNoEventMethod("NoopSocket.onConnect", methods.onConnect);
+        assertNoEventMethod("NoopSocket.onConnect",methods.onConnect);
         assertNoEventMethod("NoopSocket.onException",methods.onException);
         assertNoEventMethod("NoopSocket.onText",methods.onText);
 
         Assert.assertThat("MyEchoSocket.getOnFrames()",methods.getOnFrames().size(),is(0));
+    }
+
+    /**
+     * Test Case for bad declaration (duplicate OnWebSocketBinary declarations)
+     */
+    @Test
+    public void testDiscoverNotASocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        try
+        {
+            // Should toss exception
+            cache.getMethods(NotASocket.class);
+        }
+        catch (InvalidWebSocketException e)
+        {
+            // Validate that we have clear error message to the developer
+            Assert.assertThat(e.getMessage(),allOf(containsString(WebSocketListener.class.getSimpleName()),containsString(WebSocket.class.getSimpleName())));
+        }
     }
 
     /**
