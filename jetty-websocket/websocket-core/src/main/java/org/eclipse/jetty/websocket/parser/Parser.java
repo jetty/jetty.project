@@ -75,9 +75,14 @@ public class Parser
             {
                 listener.onFrame(f);
             }
+            catch (WebSocketException e)
+            {
+                notifyWebSocketException(e);
+            }
             catch (Throwable t)
             {
                 LOG.warn(t);
+                notifyWebSocketException(new WebSocketException(t));
             }
         }
     }
@@ -115,6 +120,8 @@ public class Parser
                         {
                             throw new WebSocketException("Unknown opcode: " + opc);
                         }
+
+                        LOG.debug("OpCode {}, fin={}",opcode.name(),fin);
 
                         if (opcode.isControlFrame() && !fin)
                         {

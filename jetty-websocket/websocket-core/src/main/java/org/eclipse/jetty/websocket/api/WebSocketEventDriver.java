@@ -1,5 +1,6 @@
 package org.eclipse.jetty.websocket.api;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -100,51 +101,58 @@ public class WebSocketEventDriver implements Parser.Listener
             return;
         }
 
-        // Specified Text Case
-        if ((frame instanceof TextFrame) && (events.onText != null))
+        try
         {
-            TextFrame text = (TextFrame)frame;
-            events.onText.call(websocket,connection,text.getPayloadUTF8());
-            return;
-        }
-
-        // Specified Binary Case
-        if ((frame instanceof BinaryFrame) && (events.onBinary != null))
-        {
-            BinaryFrame bin = (BinaryFrame)frame;
-
-            if (events.onBinary.isParameterPresent(ByteBuffer.class))
+            // Specified Text Case
+            if ((frame instanceof TextFrame) && (events.onText != null))
             {
-                // Byte buffer approach
-                events.onBinary.call(websocket,connection,bin.getPayload());
-            }
-            else
-            {
-                // Byte array approach
-                byte buf[] = BufferUtil.toArray(bin.getPayload());
-                events.onBinary.call(websocket,connection,buf,0,buf.length);
-            }
-
-            return;
-        }
-
-        // Basic Hierarchy Case
-        Class<? extends BaseFrame> frameType = frame.getClass();
-        while (true)
-        {
-            EventMethod event = events.getOnFrame(frameType);
-            if (event != null)
-            {
-                event.call(websocket,connection,frame);
+                TextFrame text = (TextFrame)frame;
+                events.onText.call(websocket,connection,text.getPayloadUTF8());
                 return;
             }
 
-            if (!BaseFrame.class.isAssignableFrom(frameType.getSuperclass()))
+            // Specified Binary Case
+            if ((frame instanceof BinaryFrame) && (events.onBinary != null))
             {
-                // not assignable
+                BinaryFrame bin = (BinaryFrame)frame;
+
+                if (events.onBinary.isParameterPresent(ByteBuffer.class))
+                {
+                    // Byte buffer approach
+                    events.onBinary.call(websocket,connection,bin.getPayload());
+                }
+                else
+                {
+                    // Byte array approach
+                    byte buf[] = BufferUtil.toArray(bin.getPayload());
+                    events.onBinary.call(websocket,connection,buf,0,buf.length);
+                }
+
                 return;
             }
-            frameType = (Class<? extends BaseFrame>)frameType.getSuperclass();
+
+            // Basic Hierarchy Case
+            Class<? extends BaseFrame> frameType = frame.getClass();
+            while (true)
+            {
+                EventMethod event = events.getOnFrame(frameType);
+                if (event != null)
+                {
+                    event.call(websocket,connection,frame);
+                    return;
+                }
+
+                if (!BaseFrame.class.isAssignableFrom(frameType.getSuperclass()))
+                {
+                    // not assignable
+                    return;
+                }
+                frameType = (Class<? extends BaseFrame>)frameType.getSuperclass();
+            }
+        }
+        catch (Throwable t)
+        {
+            unhandled(t);
         }
     }
 
@@ -171,5 +179,29 @@ public class WebSocketEventDriver implements Parser.Listener
     public void setConnection(WebSocketConnection conn)
     {
         this.connection = conn;
+    }
+
+    private void unhandled(Throwable t)
+    {
+        LOG.warn("Unhandled Error (closing connection)",t);
+
+        // Unhandled Error, close the connection.
+        try
+        {
+
+            switch (policy.getBehavior())
+            {
+                case SERVER:
+                    connection.close(StatusCode.SERVER_ERROR,t.getClass().getSimpleName());
+                    break;
+                case CLIENT:
+                    connection.close(StatusCode.POLICY_VIOLATION,t.getClass().getSimpleName());
+                    break;
+            }
+        }
+        catch (IOException e)
+        {
+            LOG.debug(e);
+        }
     }
 }

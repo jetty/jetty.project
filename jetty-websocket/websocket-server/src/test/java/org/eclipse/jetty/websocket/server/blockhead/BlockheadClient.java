@@ -277,7 +277,7 @@ public class BlockheadClient implements Parser.Listener
         }
         req.append("Sec-WebSocket-Version: ").append(version).append("\r\n");
         req.append("\r\n");
-        write(req.toString());
+        writeRaw(req.toString());
     }
 
     public void setExtensions(String extensions)
@@ -331,7 +331,7 @@ public class BlockheadClient implements Parser.Listener
             BufferUtil.flipToFill(buf);
             generator.generate(buf,frame);
             BufferUtil.flipToFlush(buf,0);
-            out.write(BufferUtil.toArray(buf));
+            BufferUtil.writeTo(buf,out);
         }
         finally
         {
@@ -339,7 +339,13 @@ public class BlockheadClient implements Parser.Listener
         }
     }
 
-    public void write(String str) throws IOException
+    public void writeRaw(ByteBuffer buf) throws IOException
+    {
+        LOG.debug("write(ByteBuffer->{})",BufferUtil.toDetailString(buf));
+        BufferUtil.writeTo(buf,out);
+    }
+
+    public void writeRaw(String str) throws IOException
     {
         LOG.debug("write(String->{})",str);
         out.write(StringUtil.getBytes(str,StringUtil.__ISO_8859_1));

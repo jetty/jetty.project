@@ -100,8 +100,8 @@ public class EventMethod
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            LOG.warn("Cannot call method {} on {} with {}",method,pojo,args);
-            LOG.warn(e);
+            String err = String.format("Cannot call method %s on %s with args: %s",method,pojo,args);
+            throw new WebSocketException(err,e);
         }
     }
 

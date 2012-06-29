@@ -18,7 +18,6 @@ import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -51,7 +50,6 @@ public class WebSocketServletRFCTest
             // trigger a WebSocket server terminated close.
             if (message.equals("CRASH"))
             {
-                System.out.printf("Got OnTextMessage");
                 throw new RuntimeException("Something bad happened");
             }
 
@@ -111,10 +109,9 @@ public class WebSocketServletRFCTest
 
     /**
      * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal server error) being produced by the
-     * extended WebSocketServlet.
+     * WebSocket POJO.
      */
     @Test
-    @Ignore("temporary, want to focus on onFillable first")
     public void testInternalError() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());

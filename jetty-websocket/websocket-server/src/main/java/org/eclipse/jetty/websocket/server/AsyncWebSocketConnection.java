@@ -68,13 +68,13 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
     @Override
     public void close() throws IOException
     {
-        write(new CloseFrame(StatusCode.NORMAL));
+        terminateConnection(StatusCode.NORMAL,null);
     }
 
     @Override
     public void close(int statusCode, String reason) throws IOException
     {
-        write(new CloseFrame(statusCode,reason));
+        terminateConnection(statusCode,reason);
     }
 
     private int fill(AsyncEndPoint endPoint, ByteBuffer buffer)
@@ -207,16 +207,18 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
      * @param statusCode
      *            the WebSocket status code.
      * @param reason
-     *            the (optiona) reason string. (null is allowed)
+     *            the (optional) reason string. (null is allowed)
      * @see StatusCode
      */
-    private void terminateConnection(short statusCode, String reason)
+    private void terminateConnection(int statusCode, String reason)
     {
         CloseFrame close = new CloseFrame(statusCode,reason);
 
         // fire and forget -> close frame
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
+        BufferUtil.clearToFill(buf);
         generator.generate(buf,close);
+        BufferUtil.flipToFlush(buf,0);
         getEndPoint().write(null,new WebSocketCloseCallback(this,buf),buf);
     }
 
@@ -226,6 +228,9 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void write(BaseFrame frame) throws IOException
     {
@@ -252,6 +257,9 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         getEndPoint().write(null,nop,raw);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void write(byte[] data, int offset, int length) throws IOException
     {
@@ -262,6 +270,9 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         write(new BinaryFrame(data,offset,length));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void write(ByteBuffer... buffers) throws IOException
     {
@@ -288,6 +299,9 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         getEndPoint().write(null,nop,raw);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <C> void write(C context, Callback<C> callback, BaseFrame... frames) throws IOException
     {
@@ -312,6 +326,9 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         getEndPoint().write(context,callback,raw);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IOException
     {
@@ -337,6 +354,9 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         getEndPoint().write(context,callback,raw);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <C> void write(C context, Callback<C> callback, String... messages) throws IOException
     {
@@ -358,6 +378,9 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         write(context,callback,frames);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void write(String message) throws IOException
     {
