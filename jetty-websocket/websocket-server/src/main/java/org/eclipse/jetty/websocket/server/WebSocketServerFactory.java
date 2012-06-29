@@ -342,6 +342,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         endp.setAsyncConnection(connection);
         connection.getParser().addListener(websocket);
         LOG.debug("EndPoint: {}",endp);
+        LOG.debug("Connection: {}",connection);
 
         // Notify POJO of connection
         websocket.setConnection(connection);
@@ -351,6 +352,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
         // Process (version specific) handshake response
         handshaker.doHandshakeResponse(request,response,extensions);
+        LOG.debug("Connection: {}",connection);
 
         // Add connection
         addConnection(connection);

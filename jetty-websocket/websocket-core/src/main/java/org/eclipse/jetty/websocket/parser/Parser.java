@@ -210,4 +210,10 @@ public class Parser
         }
         parser = null;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s(state=%s, parser=%s)", getClass().getSimpleName(), state, parser);
+    }
 }

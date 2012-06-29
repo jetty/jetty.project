@@ -221,6 +221,12 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
     }
 
     @Override
+    public String toString()
+    {
+        return String.format("%s{generator=%s,parser=%s}",super.toString(),generator,parser);
+    }
+
+    @Override
     public void write(BaseFrame frame) throws IOException
     {
         if (frame == null)
