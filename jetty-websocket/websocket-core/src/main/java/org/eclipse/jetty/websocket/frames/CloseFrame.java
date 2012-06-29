@@ -36,17 +36,42 @@ public class CloseFrame extends ControlFrame
         constructPayload(statusCode,reason);
     }
 
-    private void constructPayload(int statusCode, String reason)
+    public void assertValidPayload(int statusCode, String reason)
     {
         if ((statusCode <= 999) || (statusCode > 65535))
         {
             throw new IllegalArgumentException("Status Codes must be in the range 1000 - 65535");
         }
 
+        if ((statusCode >= 1004) && (statusCode <= 1006))
+        {
+            throw new IllegalArgumentException("Status Code " + statusCode + " is reserved according to RFC6455 and can not be used in a close frame.");
+
+        }
+
+        if ((statusCode >= 1012) && (statusCode <= 1016))
+        {
+            throw new IllegalArgumentException("Status Code " + statusCode + " is reserved according to RFC6455 and can not be used in a close frame.");
+
+        }
+
+        if ((statusCode == 1100) || (statusCode == 2000) || (statusCode == 2999))
+        {
+            throw new IllegalArgumentException("Status Code " + statusCode + " is reserved according to RFC6455 and can not be used in a close frame.");
+
+        }
+
         if ((reason != null) && (reason.length() > 123))
         {
             throw new IllegalArgumentException("Reason must not exceed 123 characters.");
         }
+
+        // TODO add check for invalid utf-8
+    }
+
+    private void constructPayload(int statusCode, String reason)
+    {
+        assertValidPayload(statusCode,reason);
 
         byte utf[] = null;
         int len = 2; // status code
@@ -95,9 +120,26 @@ public class CloseFrame extends ControlFrame
         return statusCode;
     }
 
+
+
     public boolean hasReason()
     {
         return getPayloadLength() > 2;
+    }
+
+    @Override
+    public void setPayload(byte[] buf)
+    {
+        super.setPayload(buf);
+        assertValidPayload(getStatusCode(),getReason());
+    }
+
+
+    @Override
+    public void setPayload(ByteBuffer payload)
+    {
+        super.setPayload(payload);
+        assertValidPayload(getStatusCode(),getReason());
     }
 
     @Override

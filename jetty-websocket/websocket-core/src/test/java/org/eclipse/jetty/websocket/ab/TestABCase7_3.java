@@ -23,12 +23,12 @@ public class TestABCase7_3
     @Test (expected = WebSocketException.class)
     public void testGenerate1BytePayloadCloseCase7_3_2()
     {
-        CloseFrame pingFrame = new CloseFrame();
-        pingFrame.setPayload(new byte[] {0x00});
+        CloseFrame closeFrame = new CloseFrame();
+        closeFrame.setPayload(new byte[] {0x00});
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual, pingFrame);
+        generator.generate(actual, closeFrame);
     }
 
     @Test
