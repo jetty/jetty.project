@@ -28,6 +28,7 @@ public class TextFrame extends DataFrame
     public TextFrame(String message)
     {
         this();
+        setFin(true); // assume a final message with this constructor
         setPayload(message);
     }
 
