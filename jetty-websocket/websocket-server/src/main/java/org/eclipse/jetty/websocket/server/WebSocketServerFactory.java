@@ -342,11 +342,8 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         endp.setAsyncConnection(connection);
         connection.getParser().addListener(websocket);
 
-        LOG.debug("EndPoint: {}",endp);
-        LOG.debug("Connection: {}",connection);
-
-        // Notify POJO of connection
-        websocket.setConnection(connection);
+        LOG.debug("HttpConnection: {}",http);
+        LOG.debug("AsyncWebSocketConnection: {}",connection);
 
         // Initialize / Negotiate Extensions
         List<Extension> extensions = initExtensions(request.getExtensions());
@@ -355,12 +352,14 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         LOG.debug("Handshake Response: {}",handshaker);
         handshaker.doHandshakeResponse(request,response,extensions);
         connection.fillInterested();
+        LOG.debug("EndPoint: {}",endp);
         LOG.debug("Handshake Complete: {}",connection);
 
         // Add connection
         addConnection(connection);
 
-        // Notify POJO of connect
+        // Notify POJO of connection
+        websocket.setConnection(connection);
         websocket.onConnect();
 
         // Tell jetty about the new connection

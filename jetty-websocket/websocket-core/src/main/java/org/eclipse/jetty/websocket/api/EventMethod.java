@@ -100,7 +100,8 @@ public class EventMethod
         }
         catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            LOG.warn("Cannot call method {} on {} with {}",method,pojo,args,e);
+            LOG.warn("Cannot call method {} on {} with {}",method,pojo,args);
+            LOG.warn(e);
         }
     }
 

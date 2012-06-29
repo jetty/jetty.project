@@ -174,6 +174,7 @@ public class BlockheadClient implements Parser.Listener
     @Override
     public void onFrame(BaseFrame frame)
     {
+        LOG.debug("onFrame({})",frame);
         if (!incomingFrameQueue.offerLast(frame))
         {
             throw new RuntimeException("Unable to queue incoming frame: " + frame);
@@ -204,12 +205,17 @@ public class BlockheadClient implements Parser.Listener
         long expireOn = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
 
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
+        BufferUtil.clearToFill(buf);
         try
         {
+            int len = 0;
             while (incomingFrameQueue.size() < (startCount + expectedCount))
             {
-                if (read(buf) > 0)
+                len = read(buf);
+                if (len > 0)
                 {
+                    LOG.debug("Read {} bytes",len);
+                    BufferUtil.flipToFlush(buf,0);
                     parser.parse(buf);
                 }
                 if (System.currentTimeMillis() > expireOn)
@@ -318,6 +324,7 @@ public class BlockheadClient implements Parser.Listener
 
     public void write(BaseFrame frame) throws IOException
     {
+        LOG.debug("write(BaseFrame->{})",frame);
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
@@ -334,6 +341,7 @@ public class BlockheadClient implements Parser.Listener
 
     public void write(String str) throws IOException
     {
+        LOG.debug("write(String->{})",str);
         out.write(StringUtil.getBytes(str,StringUtil.__ISO_8859_1));
     }
 }

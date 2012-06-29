@@ -240,9 +240,15 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
             LOG.debug("write(BaseFrame->{})",frame);
         }
 
-        ByteBuffer raw = ByteBuffer.allocate(frame.getPayloadLength() + FrameGenerator.OVERHEAD);
+        ByteBuffer raw = bufferPool.acquire(frame.getPayloadLength() + FrameGenerator.OVERHEAD,false);
+        BufferUtil.clearToFill(raw);
         generator.generate(raw,frame);
+        BufferUtil.flipToFlush(raw,0);
         Callback<Void> nop = new FutureCallback<>(); // TODO: add buffer release callback?
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Raw Buffer: {}",BufferUtil.toDetailString(raw));
+        }
         getEndPoint().write(null,nop,raw);
     }
 
@@ -273,8 +279,10 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         for (int i = 0; i < len; i++)
         {
             raw[i] = bufferPool.acquire(buffers[i].remaining() + FrameGenerator.OVERHEAD,false);
+            BufferUtil.clearToFill(raw[i]);
             BinaryFrame frame = new BinaryFrame(buffers[i]);
             generator.generate(raw[i],frame);
+            BufferUtil.flipToFlush(raw[i],0);
         }
         Callback<Void> nop = new FutureCallback<>(); // TODO: add buffer release callback?
         getEndPoint().write(null,nop,raw);
@@ -297,7 +305,9 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         for (int i = 0; i < len; i++)
         {
             raw[i] = bufferPool.acquire(frames[i].getPayloadLength() + FrameGenerator.OVERHEAD,false);
+            BufferUtil.clearToFill(raw[i]);
             generator.generate(raw[i],frames[i]);
+            BufferUtil.flipToFlush(raw[i],0);
         }
         getEndPoint().write(context,callback,raw);
     }
@@ -319,8 +329,10 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         for (int i = 0; i < len; i++)
         {
             raw[i] = bufferPool.acquire(buffers[i].remaining() + FrameGenerator.OVERHEAD,false);
+            BufferUtil.clearToFill(raw[i]);
             BinaryFrame frame = new BinaryFrame(buffers[i]);
             generator.generate(raw[i],frame);
+            BufferUtil.flipToFlush(raw[i],0);
         }
         getEndPoint().write(context,callback,raw);
     }

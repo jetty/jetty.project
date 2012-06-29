@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.OpCode;
@@ -52,6 +53,10 @@ public class Generator
             { "unchecked", "rawtypes" })
     public ByteBuffer generate(ByteBuffer buffer, BaseFrame frame)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Buffer: {}",BufferUtil.toDetailString(buffer));
+        }
         FrameGenerator generator = generators.get(frame.getOpCode());
         LOG.debug(generator.getClass().getSimpleName() + " active");
         return generator.generate(buffer,frame);
