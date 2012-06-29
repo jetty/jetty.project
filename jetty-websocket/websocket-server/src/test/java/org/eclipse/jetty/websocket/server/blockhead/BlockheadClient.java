@@ -17,6 +17,8 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -102,8 +104,17 @@ public class BlockheadClient implements Parser.Listener
         socket = new Socket(destAddr,port);
 
         out = socket.getOutputStream();
-        socket.setSoTimeout(1000);
+        // socket.setSoTimeout(1000);
         in = socket.getInputStream();
+    }
+
+    public String expectUpgradeResponse() throws IOException
+    {
+        String respHeader = readResponseHeader();
+        Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
+        Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
+        Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
+        return respHeader;
     }
 
     public String getExtensions()
@@ -175,25 +186,36 @@ public class BlockheadClient implements Parser.Listener
         LOG.warn(e);
     }
 
-    private void read(ByteBuffer buf) throws IOException
+    public int read(ByteBuffer buf) throws IOException
     {
+        int len = 0;
         while ((in.available() > 0) && (buf.remaining() > 0))
         {
             buf.put((byte)in.read());
+            len++;
         }
+        return len;
     }
 
-    public Queue<BaseFrame> readFrames(int expectedCount) throws IOException
+    public Queue<BaseFrame> readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
     {
         int startCount = incomingFrameQueue.size();
+
+        long expireOn = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
 
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
             while (incomingFrameQueue.size() < (startCount + expectedCount))
             {
-                read(buf);
-                parser.parse(buf);
+                if (read(buf) > 0)
+                {
+                    parser.parse(buf);
+                }
+                if (System.currentTimeMillis() > expireOn)
+                {
+                    throw new TimeoutException("Timeout reading all of the desired frames");
+                }
             }
         }
         finally
@@ -299,7 +321,9 @@ public class BlockheadClient implements Parser.Listener
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
+            BufferUtil.flipToFill(buf);
             generator.generate(buf,frame);
+            BufferUtil.flipToFlush(buf,0);
             out.write(BufferUtil.toArray(buf));
         }
         finally

@@ -2,34 +2,19 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.nio.ByteBuffer;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
-import org.eclipse.jetty.server.SelectChannelConnector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455Test;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
-import org.eclipse.jetty.websocket.generator.Generator;
-import org.eclipse.jetty.websocket.parser.Parser;
-import org.eclipse.jetty.websocket.server.helper.FrameParseCapture;
+import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -55,9 +40,12 @@ public class WebSocketServletRFCTest
 
     public static class RFCSocket extends WebSocketAdapter
     {
+        private static Logger LOG = Log.getLogger(RFCSocket.class);
+
         @Override
         public void onWebSocketText(String message)
         {
+            LOG.debug("onWebSocketText({})",message);
             // Test the RFC 6455 close code 1011 that should close
             // trigger a WebSocket server terminated close.
             if (message.equals("CRASH"))
@@ -78,78 +66,46 @@ public class WebSocketServletRFCTest
         }
     }
 
-    private static Server server;
-    private static SelectChannelConnector connector;
-    private static URI serverUri;
+    private static SimpleServletServer server;
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        // Configure Server
-        server = new Server();
-        connector = new SelectChannelConnector();
-        server.addConnector(connector);
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        server.setHandler(context);
-
-        // Serve capture servlet
-        context.addServlet(new ServletHolder(new RFCServlet()),"/*");
-
-        // Start Server
+        server = new SimpleServletServer(new RFCServlet());
         server.start();
-
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
-        System.out.printf("Server URI: %s%n",serverUri);
     }
 
     @AfterClass
     public static void stopServer()
     {
+        server.stop();
+    }
+
+    /**
+     * Test the requirement of issuing
+     */
+    @Test
+    public void testEcho() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
         try
         {
-            server.stop();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-        }
-    }
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
 
-    private void read(InputStream in, ByteBuffer buf) throws IOException
-    {
-        while ((in.available() > 0) && (buf.remaining() > 0))
-        {
-            buf.put((byte)in.read());
-        }
-    }
+            // Generate text frame
+            client.write(new TextFrame("Hello World"));
 
-    private String readResponseHeader(InputStream in) throws IOException
-    {
-        InputStreamReader isr = new InputStreamReader(in);
-        BufferedReader reader = new BufferedReader(isr);
-        StringBuilder header = new StringBuilder();
-        // Read the response header
-        String line = reader.readLine();
-        Assert.assertNotNull(line);
-        Assert.assertThat(line,startsWith("HTTP/1.1 "));
-        header.append(line).append("\r\n");
-        while ((line = reader.readLine()) != null)
-        {
-            if (line.trim().length() == 0)
-            {
-                break;
-            }
-            header.append(line).append("\r\n");
+            // Read frame (hopefully text frame)
+            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            TextFrame tf = (TextFrame)frames.remove();
+            Assert.assertThat("Text Frame.status code",tf.getPayloadUTF8(),is("Hello World"));
         }
-        return header.toString();
+        finally
+        {
+            client.close();
+        }
     }
 
     /**
@@ -157,137 +113,27 @@ public class WebSocketServletRFCTest
      * extended WebSocketServlet.
      */
     @Test
-    public void testResponseOnInternalError() throws Exception
+    public void testInternalError() throws Exception
     {
-        Socket socket = new Socket();
-        SocketAddress endpoint = new InetSocketAddress(serverUri.getHost(),serverUri.getPort());
-        socket.connect(endpoint);
-
-        // acting as client
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        ByteBufferPool bufferPool = new StandardByteBufferPool(policy.getBufferSize());
-        Generator generator = new Generator(policy);
-        Parser parser = new Parser(policy);
-        FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
-
-        StringBuilder req = new StringBuilder();
-        req.append("GET / HTTP/1.1\r\n");
-        req.append(String.format("Host: %s:%d\r\n",serverUri.getHost(),serverUri.getPort()));
-        req.append("Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n");
-        req.append("Upgrade: WebSocket\r\n");
-        req.append("Connection: Upgrade\r\n");
-        req.append("Sec-WebSocket-Version: 13\r\n"); // RFC 6455
-        req.append("\r\n");
-
-        OutputStream out = null;
-        InputStream in = null;
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
         try
         {
-            out = socket.getOutputStream();
-            in = socket.getInputStream();
-
-            // Write request
-            out.write(req.toString().getBytes());
-            out.flush();
-
-            // Read response header
-            String respHeader = readResponseHeader(in);
-            // System.out.println("RESPONSE: " + respHeader);
-
-            Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
-            Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
-            Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
 
             // Generate text frame
-            TextFrame txt = new TextFrame("CRASH");
-            ByteBuffer txtbuf = bufferPool.acquire(policy.getBufferSize(),false);
-            try
-            {
-                BufferUtil.flipToFill(txtbuf);
-                generator.generate(txtbuf,txt);
-                BufferUtil.flipToFlush(txtbuf,0);
-
-                // Write Text Frame
-                BufferUtil.writeTo(txtbuf,out);
-            }
-            finally
-            {
-                bufferPool.release(txtbuf);
-            }
+            client.write(new TextFrame("CRASH"));
 
             // Read frame (hopefully close frame)
-            ByteBuffer rbuf = bufferPool.acquire(policy.getBufferSize(),false);
-            try
-            {
-                BufferUtil.flipToFill(rbuf);
-                read(in,rbuf);
-
-                // Parse Frame
-                BufferUtil.flipToFlush(rbuf,0);
-                parser.parse(rbuf);
-            }
-            finally
-            {
-                bufferPool.release(rbuf);
-            }
-
-            // Validate responses
-            capture.assertNoErrors();
-            capture.assertHasFrame(CloseFrame.class,1);
-
-            CloseFrame cf = (CloseFrame)capture.getFrames().get(0);
+            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            CloseFrame cf = (CloseFrame)frames.remove();
             Assert.assertThat("Close Frame.status code",cf.getStatusCode(),is((int)StatusCode.SERVER_ERROR));
         }
         finally
         {
-            IO.close(in);
-            IO.close(out);
-            socket.close();
+            client.close();
         }
     }
 
-    /**
-     * Test the requirement of responding with an http 400 when using a Sec-WebSocket-Version that is unsupported.
-     */
-    @Test
-    public void testResponseOnInvalidVersion() throws Exception
-    {
-        Socket socket = new Socket();
-        SocketAddress endpoint = new InetSocketAddress(serverUri.getHost(),serverUri.getPort());
-        socket.connect(endpoint);
-
-        StringBuilder req = new StringBuilder();
-        req.append("GET / HTTP/1.1\r\n");
-        req.append(String.format("Host: %s:%d\r\n",serverUri.getHost(),serverUri.getPort()));
-        req.append("Upgrade: WebSocket\r\n");
-        req.append("Connection: Upgrade\r\n");
-        req.append("Sec-WebSocket-Version: 29\r\n"); // bad version
-        req.append("\r\n");
-
-        OutputStream out = null;
-        InputStream in = null;
-        try
-        {
-            out = socket.getOutputStream();
-            in = socket.getInputStream();
-
-            // Write request
-            out.write(req.toString().getBytes());
-            out.flush();
-
-            // Read response
-            String respHeader = readResponseHeader(in);
-            // System.out.println("RESPONSE: " + respHeader);
-
-            Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 400 Unsupported websocket version specification"));
-            Assert.assertThat("Response Header Versions",respHeader,containsString("Sec-WebSocket-Version: 13, 0\r\n"));
-        }
-        finally
-        {
-            IO.close(in);
-            IO.close(out);
-            socket.close();
-        }
-    }
 }

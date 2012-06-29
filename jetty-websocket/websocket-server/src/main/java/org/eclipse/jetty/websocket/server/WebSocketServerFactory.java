@@ -338,8 +338,10 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         HttpConnection http = HttpConnection.getCurrentConnection();
         AsyncEndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().findExecutor();
-        final AsyncWebSocketConnection connection = new AsyncWebSocketConnection(endp,executor,websocket.getPolicy());
+        AsyncWebSocketConnection connection = new AsyncWebSocketConnection(endp,executor,websocket.getPolicy());
         endp.setAsyncConnection(connection);
+        connection.getParser().addListener(websocket);
+        LOG.debug("EndPoint: {}",endp);
 
         // Notify POJO of connection
         websocket.setConnection(connection);

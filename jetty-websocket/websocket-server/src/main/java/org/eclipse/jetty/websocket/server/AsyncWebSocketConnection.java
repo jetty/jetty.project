@@ -107,6 +107,11 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         return extensions;
     }
 
+    public Parser getParser()
+    {
+        return parser;
+    }
+
     @Override
     public WebSocketPolicy getPolicy()
     {
@@ -133,6 +138,13 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
     }
 
     @Override
+    public void onClose()
+    {
+        LOG.debug("onClose()");
+        super.onClose();
+    }
+
+    @Override
     public void onFillable()
     {
         LOG.debug("onFillable");
@@ -148,6 +160,13 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
             setCurrentConnection(null);
             bufferPool.release(buffer);
         }
+    }
+
+    @Override
+    public void onOpen()
+    {
+        LOG.debug("onOpen()");
+        super.onOpen();
     }
 
     private void read(ByteBuffer buffer)
@@ -210,6 +229,11 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
             return;
         }
 
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(BaseFrame->{})",frame);
+        }
+
         ByteBuffer raw = ByteBuffer.allocate(frame.getPayloadLength() + FrameGenerator.OVERHEAD);
         generator.generate(raw,frame);
         Callback<Void> nop = new FutureCallback<>(); // TODO: add buffer release callback?
@@ -219,6 +243,10 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
     @Override
     public void write(byte[] data, int offset, int length) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(byte[]->{})",data);
+        }
         write(new BinaryFrame(data,offset,length));
     }
 
@@ -230,6 +258,10 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         {
             // nothing to write
             return;
+        }
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(ByteBuffers->{})",buffers.length);
         }
         ByteBuffer raw[] = new ByteBuffer[len];
         for (int i = 0; i < len; i++)
@@ -251,6 +283,10 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
             // nothing to write
             return;
         }
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(context,{},BaseFrames->{})",callback,frames.length);
+        }
         ByteBuffer raw[] = new ByteBuffer[len];
         for (int i = 0; i < len; i++)
         {
@@ -268,6 +304,10 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
         {
             // nothing to write
             return;
+        }
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(context,{},ByteBuffers->{})",callback,buffers.length);
         }
         ByteBuffer raw[] = new ByteBuffer[len];
         for (int i = 0; i < len; i++)
@@ -288,6 +328,10 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
             // nothing to write
             return;
         }
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(context,{},Strings->{})",callback,messages.length);
+        }
         TextFrame frames[] = new TextFrame[len];
         for (int i = 0; i < len; i++)
         {
@@ -305,6 +349,10 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
             return;
         }
 
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(String->{})",message);
+        }
         write(new TextFrame(message));
     }
 }
