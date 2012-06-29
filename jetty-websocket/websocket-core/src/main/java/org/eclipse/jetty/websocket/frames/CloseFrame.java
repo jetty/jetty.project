@@ -43,24 +43,6 @@ public class CloseFrame extends ControlFrame
             throw new IllegalArgumentException("Status Codes must be in the range 1000 - 65535");
         }
 
-        if ((statusCode >= 1004) && (statusCode <= 1006))
-        {
-            throw new IllegalArgumentException("Status Code " + statusCode + " is reserved according to RFC6455 and can not be used in a close frame.");
-
-        }
-
-        if ((statusCode >= 1012) && (statusCode <= 1016))
-        {
-            throw new IllegalArgumentException("Status Code " + statusCode + " is reserved according to RFC6455 and can not be used in a close frame.");
-
-        }
-
-        if ((statusCode == 1100) || (statusCode == 2000) || (statusCode == 2999))
-        {
-            throw new IllegalArgumentException("Status Code " + statusCode + " is reserved according to RFC6455 and can not be used in a close frame.");
-
-        }
-
         if ((reason != null) && (reason.length() > 123))
         {
             throw new IllegalArgumentException("Reason must not exceed 123 characters.");
