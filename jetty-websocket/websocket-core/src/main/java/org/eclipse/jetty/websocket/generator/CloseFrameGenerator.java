@@ -3,7 +3,7 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 
@@ -33,7 +33,7 @@ public class CloseFrameGenerator extends FrameGenerator<CloseFrame>
         }
         else if (close.hasPayload())
         {
-            throw new WebSocketException("Close frames require setting a status code if using payload.");
+            throw new ProtocolException("Close frames require setting a status code if using payload.");
         }
     }
 }

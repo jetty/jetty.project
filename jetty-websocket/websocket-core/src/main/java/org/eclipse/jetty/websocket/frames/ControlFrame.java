@@ -3,10 +3,13 @@ package org.eclipse.jetty.websocket.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 
 public abstract class ControlFrame extends BaseFrame
 {
+    public static final int MAX_PAYLOAD = 125;
+
     public ControlFrame()
     {
         super();
@@ -24,7 +27,38 @@ public abstract class ControlFrame extends BaseFrame
     {
         return false; // no control frames can be continuation
     }
-    
+
+    @Override
+    public void setFin(boolean fin)
+    {
+        if (!fin)
+        {
+            throw new IllegalArgumentException("Cannot set FIN to off on a " + getOpCode().name());
+        }
+    }
+
+    @Override
+    public void setPayload(byte[] buf)
+    {
+        if ( buf.length > 125 )
+        {
+            throw new WebSocketException("Control Payloads can not exceed 125 bytes in length.");
+        }
+
+        super.setPayload(buf);
+    }
+
+    @Override
+    public void setPayload(ByteBuffer payload)
+    {
+        if (payload.position() > MAX_PAYLOAD)
+        {
+            throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
+        }
+
+        super.setPayload(payload);
+    }
+
     @Override
     public void setRsv1(boolean rsv1)
     {
@@ -49,37 +83,6 @@ public abstract class ControlFrame extends BaseFrame
         if (rsv3)
         {
             throw new IllegalArgumentException("Cannot set RSV3 to true on a " + getOpCode().name());
-        }
-    }
-
-    @Override
-    public void setPayload(ByteBuffer payload)
-    {
-        if ( payload.position() > 125 )
-        {
-            throw new WebSocketException("Control Payloads can not exceed 125 bytes in length.");
-        }
-        
-        super.setPayload(payload);
-    }
-
-    @Override
-    public void setPayload(byte[] buf)
-    {
-        if ( buf.length > 125 )
-        {
-            throw new WebSocketException("Control Payloads can not exceed 125 bytes in length.");
-        }
-        
-        super.setPayload(buf);      
-    }
-    
-    @Override
-    public void setFin(boolean fin)
-    {
-        if (!fin)
-        {
-            throw new IllegalArgumentException("Cannot set FIN to off on a " + getOpCode().name());
         }
     }
 }

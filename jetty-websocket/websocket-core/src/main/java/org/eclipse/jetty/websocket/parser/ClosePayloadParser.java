@@ -2,7 +2,8 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import javax.xml.ws.ProtocolException;
+
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 
@@ -49,7 +50,7 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
          */
         if ((payloadLength == 1) || (payloadLength > 125))
         {
-            throw new WebSocketException("Close: invalid payload length: " + payloadLength);
+            throw new ProtocolException("Close: invalid payload length: " + payloadLength);
         }
 
         if (payload == null)
@@ -65,6 +66,7 @@ public class ClosePayloadParser extends FrameParser<CloseFrame>
             if (payload.position() >= payloadLength)
             {
                 frame.setPayload(payload);
+                frame.assertValidPerPolicy(getPolicy().getBehavior());
                 return true;
             }
         }

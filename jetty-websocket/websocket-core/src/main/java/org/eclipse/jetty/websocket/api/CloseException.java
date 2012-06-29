@@ -3,29 +3,29 @@ package org.eclipse.jetty.websocket.api;
 @SuppressWarnings("serial")
 public class CloseException extends WebSocketException
 {
-    private short closeCode;
+    private short statusCode;
 
     public CloseException(short closeCode, String message)
     {
         super(message);
-        this.closeCode = closeCode;
+        this.statusCode = closeCode;
     }
 
     public CloseException(short closeCode, String message, Throwable cause)
     {
         super(message,cause);
-        this.closeCode = closeCode;
+        this.statusCode = closeCode;
     }
 
     public CloseException(short closeCode, Throwable cause)
     {
         super(cause);
-        this.closeCode = closeCode;
+        this.statusCode = closeCode;
     }
 
-    public short getCloseCode()
+    public short getStatusCode()
     {
-        return closeCode;
+        return statusCode;
     }
 
 }

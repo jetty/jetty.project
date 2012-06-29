@@ -43,7 +43,7 @@ public class TextPayloadParserTest
         capture.assertHasNoFrames();
 
         PolicyViolationException err = (PolicyViolationException)capture.getErrors().get(0);
-        Assert.assertThat("Error.closeCode",err.getCloseCode(),is(StatusCode.POLICY_VIOLATION));
+        Assert.assertThat("Error.closeCode",err.getStatusCode(),is(StatusCode.POLICY_VIOLATION));
     }
 
     @Test

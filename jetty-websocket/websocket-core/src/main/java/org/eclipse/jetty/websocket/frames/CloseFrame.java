@@ -4,12 +4,17 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 
 /**
  * Representation of a <a href="https://tools.ietf.org/html/rfc6455#section-5.5.1">Close Frame (0x08)</a>.
  */
 public class CloseFrame extends ControlFrame
 {
+    public static final int MAX_REASON = ControlFrame.MAX_PAYLOAD - 2;
+
     /**
      * Construct CloseFrame with no status code or reason
      */
@@ -38,17 +43,27 @@ public class CloseFrame extends ControlFrame
 
     public void assertValidPayload(int statusCode, String reason)
     {
-        if ((statusCode <= 999) || (statusCode > 65535))
+        if ((statusCode < StatusCode.NORMAL) || (statusCode >= 5000))
         {
-            throw new IllegalArgumentException("Status Codes must be in the range 1000 - 65535");
+            throw new ProtocolException("Status Codes must be in the range 1000 - 5000");
         }
 
         if ((reason != null) && (reason.length() > 123))
         {
-            throw new IllegalArgumentException("Reason must not exceed 123 characters.");
+            throw new ProtocolException("Reason must not exceed 123 characters.");
         }
 
         // TODO add check for invalid utf-8
+    }
+
+    public void assertValidPerPolicy(WebSocketBehavior behavior)
+    {
+        int code = getStatusCode();
+        if ((code < StatusCode.NORMAL) || (code == StatusCode.UNDEFINED) || (code == StatusCode.NO_CLOSE) || (code == StatusCode.NO_CODE)
+                || ((code > 1011) && (code <= 2999)) || (code >= 5000))
+        {
+            throw new ProtocolException("Invalid close code: " + code);
+        }
     }
 
     private void constructPayload(int statusCode, String reason)
@@ -103,7 +118,6 @@ public class CloseFrame extends ControlFrame
     }
 
 
-
     public boolean hasReason()
     {
         return getPayloadLength() > 2;
@@ -115,7 +129,6 @@ public class CloseFrame extends ControlFrame
         super.setPayload(buf);
         assertValidPayload(getStatusCode(),getReason());
     }
-
 
     @Override
     public void setPayload(ByteBuffer payload)

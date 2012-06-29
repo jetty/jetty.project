@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
@@ -164,6 +165,12 @@ public class WebSocketEventDriver implements Parser.Listener
             LOG.debug("{}.onWebSocketException({})",websocket.getClass().getSimpleName(),e);
         }
 
+        if (e instanceof CloseException)
+        {
+            CloseException close = (CloseException)e;
+            terminateConnection(close.getStatusCode(),close.getMessage());
+        }
+
         if (events.onException != null)
         {
             events.onException.call(websocket,connection,e);
@@ -181,27 +188,41 @@ public class WebSocketEventDriver implements Parser.Listener
         this.connection = conn;
     }
 
+    private void terminateConnection(int statusCode, String rawreason)
+    {
+        try
+        {
+            String reason = rawreason;
+            if (StringUtil.isNotBlank(reason))
+            {
+                // Trim big exception messages here.
+                if (reason.length() > CloseFrame.MAX_REASON)
+                {
+                    reason = reason.substring(0,CloseFrame.MAX_REASON);
+                }
+            }
+            LOG.debug("terminateConnection({},{})",statusCode,reason);
+            connection.close(statusCode,reason);
+        }
+        catch (IOException e)
+        {
+            LOG.debug(e);
+        }
+    }
+
     private void unhandled(Throwable t)
     {
         LOG.warn("Unhandled Error (closing connection)",t);
 
         // Unhandled Error, close the connection.
-        try
+        switch (policy.getBehavior())
         {
-
-            switch (policy.getBehavior())
-            {
-                case SERVER:
-                    connection.close(StatusCode.SERVER_ERROR,t.getClass().getSimpleName());
-                    break;
-                case CLIENT:
-                    connection.close(StatusCode.POLICY_VIOLATION,t.getClass().getSimpleName());
-                    break;
-            }
-        }
-        catch (IOException e)
-        {
-            LOG.debug(e);
+            case SERVER:
+                terminateConnection(StatusCode.SERVER_ERROR,t.getClass().getSimpleName());
+                break;
+            case CLIENT:
+                terminateConnection(StatusCode.POLICY_VIOLATION,t.getClass().getSimpleName());
+                break;
         }
     }
 }
