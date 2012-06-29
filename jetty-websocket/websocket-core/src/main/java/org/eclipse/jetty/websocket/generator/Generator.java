@@ -50,4 +50,11 @@ public class Generator {
         FrameGenerator generator = generators.get(frame.getOpCode());
         return generator.generate(buffer,frame);
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("Generator {%s registered}",generators.size());
+    }
+
 }
