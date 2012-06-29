@@ -351,8 +351,9 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         List<Extension> extensions = initExtensions(request.getExtensions());
 
         // Process (version specific) handshake response
+        LOG.debug("Handshake Response: {}",handshaker);
         handshaker.doHandshakeResponse(request,response,extensions);
-        LOG.debug("Connection: {}",connection);
+        LOG.debug("Handshake Complete: {}",connection);
 
         // Add connection
         addConnection(connection);

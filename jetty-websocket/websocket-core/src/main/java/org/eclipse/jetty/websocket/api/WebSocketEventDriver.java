@@ -3,6 +3,8 @@ package org.eclipse.jetty.websocket.api;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
@@ -20,6 +22,7 @@ import org.eclipse.jetty.websocket.parser.Parser;
  */
 public class WebSocketEventDriver implements Parser.Listener
 {
+    private static final Logger LOG = Log.getLogger(WebSocketEventDriver.class);
     private Object websocket;
     private WebSocketPolicy policy;
     private WebSocketConnection connection;
@@ -67,6 +70,10 @@ public class WebSocketEventDriver implements Parser.Listener
      */
     public void onConnect()
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{}.onConnect()",websocket.getClass().getSimpleName());
+        }
         events.onConnect.call(websocket,connection);
     }
 
@@ -80,6 +87,11 @@ public class WebSocketEventDriver implements Parser.Listener
     @Override
     public void onFrame(BaseFrame frame)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{}.onFrame({})",websocket.getClass().getSimpleName(),frame);
+        }
+
         // Specified Close Case
         if ((frame instanceof CloseFrame) && (events.onClose != null))
         {
@@ -139,6 +151,11 @@ public class WebSocketEventDriver implements Parser.Listener
     @Override
     public void onWebSocketException(WebSocketException e)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{}.onWebSocketException({})",websocket.getClass().getSimpleName(),e);
+        }
+
         if (events.onException != null)
         {
             events.onException.call(websocket,connection,e);
