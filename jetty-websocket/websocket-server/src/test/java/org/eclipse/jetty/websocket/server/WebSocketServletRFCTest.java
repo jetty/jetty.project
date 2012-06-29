@@ -44,7 +44,7 @@ import org.junit.Test;
 public class WebSocketServletRFCTest
 {
     @SuppressWarnings("serial")
-    private static class RFCServlet extends WebSocketServlet
+    public static class RFCServlet extends WebSocketServlet
     {
         @Override
         public void registerWebSockets(WebSocketServerFactory factory)
@@ -53,7 +53,7 @@ public class WebSocketServletRFCTest
         }
     }
 
-    private static class RFCSocket extends WebSocketAdapter
+    public static class RFCSocket extends WebSocketAdapter
     {
         @Override
         public void onWebSocketText(String message)
@@ -204,8 +204,9 @@ public class WebSocketServletRFCTest
             ByteBuffer txtbuf = bufferPool.acquire(policy.getBufferSize(),false);
             try
             {
+                BufferUtil.flipToFill(txtbuf);
                 generator.generate(txtbuf,txt);
-                txtbuf.flip();
+                BufferUtil.flipToFlush(txtbuf,0);
 
                 // Write Text Frame
                 BufferUtil.writeTo(txtbuf,out);
@@ -219,10 +220,11 @@ public class WebSocketServletRFCTest
             ByteBuffer rbuf = bufferPool.acquire(policy.getBufferSize(),false);
             try
             {
+                BufferUtil.flipToFill(rbuf);
                 read(in,rbuf);
 
                 // Parse Frame
-                rbuf.flip();
+                BufferUtil.flipToFlush(rbuf,0);
                 parser.parse(rbuf);
             }
             finally

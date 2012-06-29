@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.EventMethodsCache;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.WebSocketEventDriver;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.extensions.Extension;
 import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
@@ -47,7 +48,7 @@ import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends AbstractLifeCycle
+public class WebSocketServerFactory extends AbstractLifeCycle implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
     private final Queue<AsyncWebSocketConnection> connections = new ConcurrentLinkedQueue<AsyncWebSocketConnection>();
@@ -70,11 +71,13 @@ public class WebSocketServerFactory extends AbstractLifeCycle
     private WebSocketPolicy basePolicy;
     private WebSocketCreator creator;
     private EventMethodsCache methodsCache;
+    private Class<?> firstRegisteredClass;
 
     public WebSocketServerFactory(WebSocketPolicy policy)
     {
         this.basePolicy = policy;
         this.methodsCache = new EventMethodsCache();
+        this.creator = this;
 
         // Create supportedVersions
         List<Integer> versions = new ArrayList<>();
@@ -129,6 +132,29 @@ public class WebSocketServerFactory extends AbstractLifeCycle
         for (AsyncWebSocketConnection connection : connections)
         {
             connection.getEndPoint().close();
+        }
+    }
+
+    @Override
+    public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
+    {
+        if (methodsCache.count() < 1)
+        {
+            throw new WebSocketException("No WebSockets have been registered with the factory.  Cannot use default implementation of WebSocketCreator.");
+        }
+
+        if (methodsCache.count() > 1)
+        {
+            LOG.warn("You have registered more than 1 websocket object, and are using the default WebSocketCreator! Using first registered websocket.");
+        }
+
+        try
+        {
+            return firstRegisteredClass.newInstance();
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new WebSocketException("Unable to create instance of " + firstRegisteredClass,e);
         }
     }
 
@@ -247,6 +273,10 @@ public class WebSocketServerFactory extends AbstractLifeCycle
 
     public void register(Class<?> websocketClass)
     {
+        if (firstRegisteredClass == null)
+        {
+            firstRegisteredClass = websocketClass;
+        }
         methodsCache.register(websocketClass);
     }
 
