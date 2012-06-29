@@ -223,7 +223,7 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
     @Override
     public String toString()
     {
-        return String.format("%s{generator=%s,parser=%s}",super.toString(),generator,parser);
+        return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
     @Override
