@@ -235,6 +235,11 @@ public class EventMethodsCache
         }
     }
 
+    public int count()
+    {
+        return cache.size();
+    }
+
     /**
      * Perform the basic discovery mechanism for WebSocket events from the provided pojo.
      * 
@@ -298,7 +303,7 @@ public class EventMethodsCache
      */
     public void register(Class<?> pojo) throws InvalidWebSocketException
     {
-        discoverMethods(pojo);
+        getMethods(pojo);
     }
 
     private EventMethods scanAnnotatedMethods(Class<?> pojo)
@@ -373,5 +378,11 @@ public class EventMethodsCache
         events.onException = new EventMethod(pojo,"onWebSocketException",WebSocketException.class);
 
         return events;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("EventMethodsCache [cache.count=%d]",cache.size());
     }
 }

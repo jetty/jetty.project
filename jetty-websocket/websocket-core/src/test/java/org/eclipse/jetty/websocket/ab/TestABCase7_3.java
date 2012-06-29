@@ -1,11 +1,10 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
-import org.eclipse.jetty.websocket.Debug;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -156,8 +155,6 @@ public class TestABCase7_3
     @Test
     public void testParse1BytePayloadCloseCase7_3_2()
     {
-        Debug.enableDebugLogging(Parser.class);
-
         ByteBuffer expected = ByteBuffer.allocate(32);
 
         expected.put(new byte[]
