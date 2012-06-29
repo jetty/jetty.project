@@ -2,6 +2,8 @@ package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -33,6 +35,8 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
  */
 public abstract class FrameGenerator<T extends BaseFrame>
 {
+    private static final Logger LOG = Log.getLogger(FrameGenerator.class);
+
     /**
      * The overhead (maximum) for a framing header. Assuming a maximum sized payload with masking key.
      */
@@ -48,6 +52,9 @@ public abstract class FrameGenerator<T extends BaseFrame>
 
     public ByteBuffer generate(ByteBuffer buffer, T frame)
     {
+        LOG.debug(String.format("Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d]",frame.getOpCode().toString(),
+                frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame.getPayloadLength()));
+
         byte b;
 
         // Setup fin thru opcode

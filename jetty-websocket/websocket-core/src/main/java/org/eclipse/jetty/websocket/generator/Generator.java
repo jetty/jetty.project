@@ -3,6 +3,8 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
@@ -31,7 +33,10 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public class Generator {
+public class Generator
+{
+    private static final Logger LOG = Log.getLogger(Generator.class);
+
     private final EnumMap<OpCode, FrameGenerator<?>> generators = new EnumMap<>(OpCode.class);
 
     public Generator(WebSocketPolicy policy)
@@ -48,6 +53,7 @@ public class Generator {
     public ByteBuffer generate(ByteBuffer buffer, BaseFrame frame)
     {
         FrameGenerator generator = generators.get(frame.getOpCode());
+        LOG.debug(generator.getClass().getSimpleName() + " active");
         return generator.generate(buffer,frame);
     }
 
