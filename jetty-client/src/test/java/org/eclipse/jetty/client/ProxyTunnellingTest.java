@@ -1,7 +1,6 @@
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -229,7 +228,7 @@ public class ProxyTunnellingTest
             exchange.setURL("https://localhost:" + serverPort + "/echo?body=" + URLEncoder.encode(body, "UTF-8"));
 
             httpClient.send(exchange);
-            assertTrue(latch.await(serverConnectTimeout * 2, TimeUnit.MILLISECONDS));
+            assertTrue("Server connect exception should have occurred", latch.await(serverConnectTimeout * 2, TimeUnit.MILLISECONDS));
         }
         finally
         {
