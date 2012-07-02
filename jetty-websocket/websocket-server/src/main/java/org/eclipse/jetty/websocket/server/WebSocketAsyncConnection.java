@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.AbstractAsyncConnection;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -30,18 +31,20 @@ import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.server.callbacks.WebSocketCloseCallback;
 
-// TODO: implement WebSocket.Connection (for API access)?
-public class AsyncWebSocketConnection extends AbstractAsyncConnection implements WebSocketConnection
+/**
+ * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io
+ */
+public class WebSocketAsyncConnection extends AbstractAsyncConnection implements WebSocketConnection
 {
-    private static final Logger LOG = Log.getLogger(AsyncWebSocketConnection.class);
-    private static final ThreadLocal<AsyncWebSocketConnection> CURRENT_CONNECTION = new ThreadLocal<AsyncWebSocketConnection>();
+    private static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
+    private static final ThreadLocal<WebSocketAsyncConnection> CURRENT_CONNECTION = new ThreadLocal<WebSocketAsyncConnection>();
 
-    public static AsyncWebSocketConnection getCurrentConnection()
+    public static WebSocketAsyncConnection getCurrentConnection()
     {
         return CURRENT_CONNECTION.get();
     }
 
-    protected static void setCurrentConnection(AsyncWebSocketConnection connection)
+    protected static void setCurrentConnection(WebSocketAsyncConnection connection)
     {
         CURRENT_CONNECTION.set(connection);
     }
@@ -55,7 +58,7 @@ public class AsyncWebSocketConnection extends AbstractAsyncConnection implements
     // TODO: are extensions going to layer the connection?
     private List<ExtensionConfig> extensions;
 
-    public AsyncWebSocketConnection(AsyncEndPoint endp, Executor executor, WebSocketPolicy policy)
+    public WebSocketAsyncConnection(AsyncEndPoint endp, Executor executor, WebSocketPolicy policy)
     {
         super(endp,executor);
         this.policy = policy;

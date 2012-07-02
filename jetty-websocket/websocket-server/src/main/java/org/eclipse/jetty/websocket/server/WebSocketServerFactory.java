@@ -51,7 +51,7 @@ import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 public class WebSocketServerFactory extends AbstractLifeCycle implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
-    private final Queue<AsyncWebSocketConnection> connections = new ConcurrentLinkedQueue<AsyncWebSocketConnection>();
+    private final Queue<WebSocketAsyncConnection> connections = new ConcurrentLinkedQueue<WebSocketAsyncConnection>();
 
     // TODO: replace with ExtensionRegistry in websocket-core
     private final Map<String, Class<? extends Extension>> extensionClasses = new HashMap<>();
@@ -122,14 +122,14 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         return upgrade(sockreq,sockresp,websocket);
     }
 
-    protected boolean addConnection(AsyncWebSocketConnection connection)
+    protected boolean addConnection(WebSocketAsyncConnection connection)
     {
         return isRunning() && connections.add(connection);
     }
 
     protected void closeConnections()
     {
-        for (AsyncWebSocketConnection connection : connections)
+        for (WebSocketAsyncConnection connection : connections)
         {
             connection.getEndPoint().close();
         }
@@ -280,7 +280,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         methodsCache.register(websocketClass);
     }
 
-    protected boolean removeConnection(AsyncWebSocketConnection connection)
+    protected boolean removeConnection(WebSocketAsyncConnection connection)
     {
         return connections.remove(connection);
     }
@@ -338,7 +338,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         HttpConnection http = HttpConnection.getCurrentConnection();
         AsyncEndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().findExecutor();
-        AsyncWebSocketConnection connection = new AsyncWebSocketConnection(endp,executor,websocket.getPolicy());
+        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,websocket.getPolicy());
         endp.setAsyncConnection(connection);
         connection.getParser().addListener(websocket);
 
