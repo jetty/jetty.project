@@ -14,7 +14,7 @@
 
     <modules>
       <module>websocket-core</module>
-      <module>websocket-client</module>
+      <!-- <module>websocket-client</module> -->
       <module>websocket-server</module>
     </modules>
 

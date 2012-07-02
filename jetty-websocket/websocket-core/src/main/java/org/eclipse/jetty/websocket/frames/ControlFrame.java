@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.ProtocolException;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 
 public abstract class ControlFrame extends BaseFrame
 {
@@ -40,9 +39,9 @@ public abstract class ControlFrame extends BaseFrame
     @Override
     public void setPayload(byte[] buf)
     {
-        if ( buf.length > 125 )
+        if (buf.length > MAX_PAYLOAD)
         {
-            throw new WebSocketException("Control Payloads can not exceed 125 bytes in length.");
+            throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
         }
 
         super.setPayload(buf);

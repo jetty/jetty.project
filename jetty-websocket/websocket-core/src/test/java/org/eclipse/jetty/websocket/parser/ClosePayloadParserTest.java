@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket.parser;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
@@ -22,7 +22,7 @@ public class ClosePayloadParserTest
 
         byte utf[] = expectedReason.getBytes(StringUtil.__UTF8_CHARSET);
         ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
-        payload.putShort(StatusCode.NORMAL);
+        payload.putChar((char)StatusCode.NORMAL);
         payload.put(utf,0,utf.length);
         payload.flip();
 
@@ -42,7 +42,7 @@ public class ClosePayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(CloseFrame.class,1);
         CloseFrame close = (CloseFrame)capture.getFrames().get(0);
-        Assert.assertThat("CloseFrame.statusCode",(short)close.getStatusCode(),is(StatusCode.NORMAL));
+        Assert.assertThat("CloseFrame.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
         Assert.assertThat("CloseFrame.data",close.getReason(),is(expectedReason));
     }
 }
