@@ -201,7 +201,7 @@ public class WebSocketEventDriver implements Parser.Listener
                     reason = reason.substring(0,CloseFrame.MAX_REASON);
                 }
             }
-            LOG.debug("terminateConnection({},{})",statusCode,reason);
+            LOG.debug("terminateConnection({},{})",statusCode,rawreason);
             connection.close(statusCode,reason);
         }
         catch (IOException e)

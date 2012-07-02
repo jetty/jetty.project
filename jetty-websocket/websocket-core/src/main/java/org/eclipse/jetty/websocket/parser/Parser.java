@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
@@ -125,14 +126,14 @@ public class Parser
 
                         if (opcode.isControlFrame() && !fin)
                         {
-                            throw new WebSocketException("Fragmented Control Frame [" + opcode.name() + "]");
+                            throw new ProtocolException("Fragmented Control Frame [" + opcode.name() + "]");
                         }
 
                         if (opcode == OpCode.CONTINUATION)
                         {
                             if (parser == null)
                             {
-                                throw new WebSocketException("Fragment continuation frame without prior !FIN");
+                                throw new ProtocolException("Fragment continuation frame without prior !FIN");
                             }
                         }
 

@@ -17,7 +17,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -186,6 +188,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
                 terminateConnection(StatusCode.PROTOCOL,null);
                 break;
             }
+            
             parser.parse(buffer);
         }
     }
