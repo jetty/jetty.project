@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -338,7 +339,8 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         HttpConnection http = HttpConnection.getCurrentConnection();
         AsyncEndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().findExecutor();
-        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,websocket.getPolicy());
+        ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
+        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,websocket.getPolicy(),bufferPool);
         endp.setAsyncConnection(connection);
         connection.getParser().addListener(websocket);
 

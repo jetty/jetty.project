@@ -12,7 +12,6 @@ import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -58,11 +57,11 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     // TODO: are extensions going to layer the connection?
     private List<ExtensionConfig> extensions;
 
-    public WebSocketAsyncConnection(AsyncEndPoint endp, Executor executor, WebSocketPolicy policy)
+    public WebSocketAsyncConnection(AsyncEndPoint endp, Executor executor, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor);
         this.policy = policy;
-        this.bufferPool = new StandardByteBufferPool(policy.getBufferSize());
+        this.bufferPool = bufferPool;
         this.generator = new Generator(policy);
         this.parser = new Parser(policy);
         this.extensions = new ArrayList<>();
