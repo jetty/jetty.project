@@ -107,6 +107,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         WebSocketCreator creator = getCreator();
 
         Object websocketPojo = creator.createWebSocket(sockreq,sockresp);
+        // TODO: Handle forbidden?
 
         if (websocketPojo == null)
         {
@@ -342,13 +343,17 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
         WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,websocket.getPolicy(),bufferPool);
         endp.setAsyncConnection(connection);
-        connection.getParser().addListener(websocket);
 
         LOG.debug("HttpConnection: {}",http);
         LOG.debug("AsyncWebSocketConnection: {}",connection);
 
         // Initialize / Negotiate Extensions
         List<Extension> extensions = initExtensions(request.getExtensions());
+        // TODO : bind extensions? layer extensions? how?
+        // TODO : wrap websocket with extension processing Parser.Listener list
+        connection.getParser().addListener(websocket);
+        // TODO : connection.setWriteExtensions(extensions);
+        // TODO : implement endpoint.write() layer for outgoing extension frames.
 
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);

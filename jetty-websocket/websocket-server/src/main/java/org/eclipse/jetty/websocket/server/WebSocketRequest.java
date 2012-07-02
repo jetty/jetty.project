@@ -6,6 +6,10 @@ import org.eclipse.jetty.websocket.api.ExtensionConfig;
 
 public interface WebSocketRequest
 {
+    // TODO: getSession
+    // TODO: getCookies
+    // TODO: getRequestAttributes ?
+
     public List<ExtensionConfig> getExtensions();
 
     public String getHeader(String name);

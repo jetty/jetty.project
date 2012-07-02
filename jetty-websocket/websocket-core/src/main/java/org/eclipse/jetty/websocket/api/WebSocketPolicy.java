@@ -18,6 +18,11 @@ public class WebSocketPolicy
     }
 
     /**
+     * TODO: Should the generators and parsers auto-fragment large frames?
+     */
+    private boolean autoFragment = true;
+
+    /**
      * The maximum size of a text message during parsing/generating.
      * <p>
      * Default: 16384 (16 K)
