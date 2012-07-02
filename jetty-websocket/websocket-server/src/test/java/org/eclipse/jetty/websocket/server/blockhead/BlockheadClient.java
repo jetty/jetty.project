@@ -257,10 +257,10 @@ public class BlockheadClient implements Parser.Listener
     {
         StringBuilder req = new StringBuilder();
         req.append("GET /chat HTTP/1.1\r\n");
-        req.append("Host: ").append(destWebsocketURI.getHost());
-        if (destWebsocketURI.getPort() > 0)
+        req.append("Host: ").append(destHttpURI.getHost());
+        if (destHttpURI.getPort() > 0)
         {
-            req.append(':').append(destWebsocketURI.getPort());
+            req.append(':').append(destHttpURI.getPort());
         }
         req.append("\r\n");
         req.append("Upgrade: websocket\r\n");
