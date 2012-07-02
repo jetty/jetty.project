@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.extensions.Extension;
 import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
 import org.eclipse.jetty.websocket.extensions.fragment.FragmentExtension;
 import org.eclipse.jetty.websocket.extensions.identity.IdentityExtension;
+import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeHixie76;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 

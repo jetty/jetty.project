@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.io;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -21,6 +21,7 @@ import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.callbacks.WebSocketCloseCallback;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
@@ -28,7 +29,6 @@ import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
-import org.eclipse.jetty.websocket.server.callbacks.WebSocketCloseCallback;
 
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io

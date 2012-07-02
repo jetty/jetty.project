@@ -33,8 +33,8 @@ import org.eclipse.jetty.websocket.WebSocketConnectionRFC6455;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
+import org.eclipse.jetty.websocket.client.OldWebSocketClient;
+import org.eclipse.jetty.websocket.client.OldWebSocketClientFactory;
 
 /**
  * This is not a general purpose websocket client.
@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
  */
 public class TestClient implements WebSocket.OnFrame
 {
-    private static WebSocketClientFactory __clientFactory = new WebSocketClientFactory();
+    private static OldWebSocketClientFactory __clientFactory = new OldWebSocketClientFactory();
     private static boolean _verbose=false;
 
     private static final Random __random = new Random();
@@ -141,7 +141,7 @@ public class TestClient implements WebSocket.OnFrame
 
     private void open() throws Exception
     {
-        WebSocketClient client = new WebSocketClient(__clientFactory);
+        OldWebSocketClient client = new OldWebSocketClient(__clientFactory);
         client.setProtocol(_protocol);
         client.setMaxIdleTime(_timeout);
         client.open(new URI("ws://"+_host+":"+_port+"/"),this).get(10,TimeUnit.SECONDS);
