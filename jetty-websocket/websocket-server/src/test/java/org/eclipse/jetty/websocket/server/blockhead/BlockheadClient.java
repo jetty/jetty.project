@@ -42,8 +42,8 @@ import org.junit.Assert;
  * <p>
  * This client will use {@link HttpURLConnection} and {@link HttpsURLConnection} with standard blocking calls to perform websocket requests.
  * <p>
- * This client is intended to be performant or follow the websocket spec religiously. In fact, being able to deviate from the websocket spec at will is desired
- * for this client to operate properly for the unit testing within this module.
+ * This client is <u>NOT</u> intended to be performant or follow the websocket spec religiously. In fact, being able to deviate from the websocket spec at will
+ * is desired for this client to operate properly for the unit testing within this module.
  */
 public class BlockheadClient implements Parser.Listener
 {
