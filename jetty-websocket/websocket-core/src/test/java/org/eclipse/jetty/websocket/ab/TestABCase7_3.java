@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.*;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -87,7 +88,7 @@ public class TestABCase7_3
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
     }
 
-    @Test (expected = IllegalArgumentException.class )
+    @Test(expected = ProtocolException.class)
     public void testGenerateCloseWithStatusMaxReasonCase7_3_6()
     {
         StringBuilder message = new StringBuilder();
