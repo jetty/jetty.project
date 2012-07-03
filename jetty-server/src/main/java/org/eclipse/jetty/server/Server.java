@@ -352,7 +352,7 @@ public class Server extends HandlerWrapper implements Attributes
         {
             LOG.debug("REQUEST "+target+" on "+connection);
             handle(target, request, request, response);
-            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
+            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
         }
         else
             handle(target, request, request, response);
