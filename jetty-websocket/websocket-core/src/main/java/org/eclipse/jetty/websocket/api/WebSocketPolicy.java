@@ -22,6 +22,9 @@ public class WebSocketPolicy
      */
     private boolean autoFragment = true;
 
+    private int maxPayloadSize;
+    private int autoFragmentSize;
+
     /**
      * The maximum size of a text message during parsing/generating.
      * <p>
