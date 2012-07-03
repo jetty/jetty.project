@@ -68,12 +68,18 @@ public abstract class WebSocketHandler extends HandlerWrapper
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         configurePolicy(policy);
         webSocketFactory = new WebSocketServerFactory(policy);
-        registerWebSockets(webSocketFactory);
     }
 
     public void configurePolicy(WebSocketPolicy policy)
     {
         /* leave at default */
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        registerWebSockets(webSocketFactory);
     }
 
     public WebSocketServerFactory getWebSocketFactory()
