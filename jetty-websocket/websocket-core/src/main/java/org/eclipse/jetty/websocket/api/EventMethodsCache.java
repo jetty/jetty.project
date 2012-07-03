@@ -267,12 +267,16 @@ public class EventMethodsCache
 
     public EventMethods getMethods(Class<?> pojo) throws InvalidWebSocketException
     {
-        EventMethods methods = cache.get(pojo);
-        if (methods == null)
+        if (pojo == null)
         {
-            methods = discoverMethods(pojo);
-            cache.put(pojo,methods);
+            throw new InvalidWebSocketException("Cannot get methods for null class");
         }
+        if (cache.containsKey(pojo))
+        {
+            return cache.get(pojo);
+        }
+        EventMethods methods = discoverMethods(pojo);
+        cache.put(pojo,methods);
         return methods;
     }
 

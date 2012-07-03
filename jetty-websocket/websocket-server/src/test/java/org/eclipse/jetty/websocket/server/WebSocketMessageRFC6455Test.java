@@ -86,7 +86,7 @@ public class WebSocketMessageRFC6455Test
         }
 
         @OnWebSocketFrame
-        public boolean onFrame(BaseFrame frame)
+        public void onFrame(BaseFrame frame)
         {
             if (_echo)
             {
@@ -102,7 +102,6 @@ public class WebSocketMessageRFC6455Test
                     }
                 }
             }
-            return false;
         }
 
         @OnWebSocketBinary

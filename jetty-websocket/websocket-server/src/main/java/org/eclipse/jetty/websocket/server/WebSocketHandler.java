@@ -50,6 +50,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
 
         public Simple(Class<?> websocketClass)
         {
+            super();
             this.websocketPojo = websocketClass;
         }
 
