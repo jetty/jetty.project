@@ -267,7 +267,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     // will be left in !idle state so our outer loop will exit.
                     if (!_parser.isPersistent())
                         _generator.setPersistent(false);
-                    _channel.process();
+                    _channel.handle();
                     
                     // Return if the channel is still processing the request
                     if (_channel.isSuspended())
@@ -418,6 +418,8 @@ public class HttpConnection extends AbstractAsyncConnection
             
             LOG.debug("{} completed");
                 
+            // TODO handle connection upgrade!
+            
             // Reset everything for the next cycle.
             HttpConnection.this.reset();
             

@@ -607,6 +607,7 @@ package org.eclipse.jetty.http;
  */
 public class HttpStatus
 {
+    public final static int NOT_SET_000 = 0;
     public final static int CONTINUE_100 = 100;
     public final static int SWITCHING_PROTOCOLS_101 = 101;
     public final static int PROCESSING_102 = 102;

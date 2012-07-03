@@ -73,7 +73,7 @@ public class Response implements HttpServletResponse
     private final HttpChannel _channel;
     private final HttpFields _fields;
     private final AtomicBoolean _committed = new AtomicBoolean(false);
-    private int _status=SC_OK;
+    private int _status=HttpStatus.NOT_SET_000;
     private String _reason;
     private Locale _locale;
     private MimeTypes.Type _mimeType;
@@ -82,8 +82,6 @@ public class Response implements HttpServletResponse
     private OutputState _outputState=OutputState.NONE;
     private PrintWriter _writer;
     private long _contentLength=-1;
-
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -107,7 +105,7 @@ public class Response implements HttpServletResponse
      */
     protected void recycle()
     {
-        _status=SC_OK;
+        _status=HttpStatus.NOT_SET_000;
         _reason=null;
         _locale=null;
         _mimeType=null;
@@ -1050,6 +1048,9 @@ public class Response implements HttpServletResponse
     {
         if (!_committed.compareAndSet(false,true))
             throw new IllegalStateException();
+        
+        if (_status==HttpStatus.NOT_SET_000)
+            _status=HttpStatus.OK_200;
         
         return new ResponseInfo(_channel.getRequest().getHttpVersion(),_fields,getLongContentLength(),getStatus(),getReason(),_channel.getRequest().isHead());
     }

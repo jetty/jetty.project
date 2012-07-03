@@ -149,6 +149,12 @@ public class StatisticsHandler extends HandlerWrapper
         Response response = request.getResponse();
         switch (response.getStatus() / 100)
         {
+            case 0: 
+                if (request.isHandled())
+                    _responses2xx.incrementAndGet();
+                else
+                    _responses4xx.incrementAndGet();
+                break;
             case 1:
                 _responses1xx.incrementAndGet();
                 break;
