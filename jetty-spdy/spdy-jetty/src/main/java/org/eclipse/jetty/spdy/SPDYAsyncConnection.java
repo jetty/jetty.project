@@ -236,4 +236,9 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     {
         this.session = session;
     }
+
+    public String toString()
+    {
+        return String.format("%s@%x{endp=%s@%x}",getClass().getSimpleName(),hashCode(),getEndPoint().getClass().getSimpleName(),getEndPoint().hashCode());
+    }
 }

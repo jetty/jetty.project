@@ -16,6 +16,7 @@
 
 package org.eclipse.jetty.spdy;
 
+import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -312,4 +314,14 @@ public class SPDYServerConnector extends SelectChannelConnector
             threadPool.dispatch(command);
         }
     }
+
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        super.dump(out,indent);
+        AggregateLifeCycle.dump(out, indent, new ArrayList<Session>(sessions));
+    }
+    
+    
 }
