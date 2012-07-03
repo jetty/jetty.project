@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.WebSocketGeneratorRFC6455Test;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
@@ -23,8 +22,7 @@ import org.junit.Test;
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
  * <p>
- * This test serves a different purpose than than the {@link WebSocketGeneratorRFC6455Test}, {@link WebSocketMessageRFC6455Test}, and
- * {@link WebSocketParserRFC6455Test} tests.
+ * This test serves a different purpose than than the {@link WebSocketMessageRFC6455Test}, and {@link WebSocketParserRFC6455Test} tests.
  */
 public class WebSocketServletRFCTest
 {
@@ -127,7 +125,7 @@ public class WebSocketServletRFCTest
             // Read frame (hopefully close frame)
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
             CloseFrame cf = (CloseFrame)frames.remove();
-            Assert.assertThat("Close Frame.status code",cf.getStatusCode(),is((int)StatusCode.SERVER_ERROR));
+            Assert.assertThat("Close Frame.status code",cf.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }
         finally
         {
