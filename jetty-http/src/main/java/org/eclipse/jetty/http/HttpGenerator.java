@@ -329,14 +329,14 @@ public class HttpGenerator
                         {
                             _noContent=true;
 
-                            if (status!=101 )
+                            if (status!=HttpStatus.SWITCHING_PROTOCOLS_101 )
                             {
                                 header.put(HttpTokens.CRLF);
                                 _state=State.COMPLETING_1XX;
                                 return Result.FLUSH;
                             }
                         }
-                        else if (status==204 || status==304)
+                        else if (status==HttpStatus.NO_CONTENT_204 || status==HttpStatus.NOT_MODIFIED_304)
                         {
                             _noContent=true;
                         }

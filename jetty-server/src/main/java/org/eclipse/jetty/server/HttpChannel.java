@@ -303,7 +303,7 @@ public abstract class HttpChannel
     }
 
     /* ------------------------------------------------------------ */
-    protected void process()
+    protected void handle()
     {
         LOG.debug("{} process",this);
 
@@ -414,7 +414,7 @@ public abstract class HttpChannel
                 }
                 finally
                 {
-                    _state.doComplete();
+                    _state.completed();
                     _request.setHandled(true);
                     completed();
                 }

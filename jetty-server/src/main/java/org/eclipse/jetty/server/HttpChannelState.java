@@ -49,10 +49,10 @@ public class HttpChannelState implements AsyncContext, Continuation
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
     
     // STATES:
-    //                handling()    suspend()     unhandle()    resume()       complete()     doComplete()
+    //                handling()    suspend()     unhandle()    resume()       complete()     completed()
     //                              startAsync()                dispatch()   
     // IDLE           DISPATCHED                                               COMPLETECALLED
-    // DISPATCHED                   ASYNCSTARTED  UNCOMPLETED
+    // DISPATCHED                   ASYNCSTARTED  COMPLETING
     // ASYNCSTARTED                               ASYNCWAIT     REDISPATCHING  COMPLETECALLED
     // REDISPATCHING                              REDISPATCHED  
     // ASYNCWAIT                                                REDISPATCH     COMPLETECALLED
@@ -613,7 +613,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#complete()
      */
-    protected void doComplete()
+    protected void completed()
     {
         final List<ContinuationListener> cListeners;
         final List<AsyncListener> aListeners;
@@ -1053,7 +1053,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         @Override
         public void run() 
         {
-            _channel.process();
+            _channel.handle();
         }
     };
 }
