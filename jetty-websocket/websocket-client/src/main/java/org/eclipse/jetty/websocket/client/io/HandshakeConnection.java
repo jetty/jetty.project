@@ -103,9 +103,8 @@ public class HandshakeConnection extends AbstractAsyncConnection implements Asyn
         {
             FutureCallback<ConnectFuture> callback = new FutureCallback<>();
             getEndPoint().write(future,callback,buf);
-            // TODO: block on read?
             // TODO: read response & upgrade via async callback
-            callback.get();
+            callback.get(); // TODO: block on read?
         }
         finally
         {

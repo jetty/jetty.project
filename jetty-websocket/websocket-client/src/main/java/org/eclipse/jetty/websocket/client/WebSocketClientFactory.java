@@ -33,7 +33,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketClientFactory()
     {
-        this(null,null);
+        this(new QueuedThreadPool(),null);
     }
 
     public WebSocketClientFactory(Executor threadPool)
@@ -41,14 +41,14 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         this(threadPool,null);
     }
 
-    public WebSocketClientFactory(Executor threadPool, SslContextFactory sslContextFactory)
+    public WebSocketClientFactory(Executor executor, SslContextFactory sslContextFactory)
     {
-        if (threadPool == null)
+        if (executor == null)
         {
-            threadPool = new QueuedThreadPool();
+            throw new IllegalArgumentException("Executor is required");
         }
-        this.executor = threadPool;
-        addBean(threadPool);
+        this.executor = executor;
+        addBean(executor);
 
         if (sslContextFactory != null)
         {
@@ -117,7 +117,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         return selector;
     }
 
-    public WebSocketClient newSPDYClient()
+    public WebSocketClient newWebSocketClient()
     {
         return new WebSocketClient(this);
     }

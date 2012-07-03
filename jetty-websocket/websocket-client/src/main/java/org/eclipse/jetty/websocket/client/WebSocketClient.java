@@ -74,9 +74,15 @@ public class WebSocketClient
         }
     }
 
-    private final WebSocketClientFactory factory;
+    public static InetSocketAddress toSocketAddress(URI uri)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
+    private final WebSocketClientFactory factory;
     private SocketAddress bindAddress;
+
     private WebSocketPolicy policy;
 
     public WebSocketClient(WebSocketClientFactory factory)
@@ -133,5 +139,11 @@ public class WebSocketClient
     public void setBindAddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
+    }
+
+    public void setProtocol(String protocol)
+    {
+        // TODO Auto-generated method stub
+
     }
 }

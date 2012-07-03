@@ -15,16 +15,12 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.client;
 
-import java.io.BufferedReader;
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URI;
-import java.sql.Connection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -37,10 +33,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
-import org.eclipse.jetty.websocket.masks.ZeroMasker;
+import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,62 +46,83 @@ import org.junit.Test;
 
 public class WebSocketClientTest
 {
+    public static class TrackingSocket extends WebSocketAdapter
+    {
+        public AtomicBoolean open = new AtomicBoolean(false);
+        public AtomicInteger close = new AtomicInteger(-1);
+        public StringBuilder closeMessage = new StringBuilder();
+        public CountDownLatch openLatch = new CountDownLatch(1);
+        public CountDownLatch closeLatch = new CountDownLatch(1);
+        public CountDownLatch dataLatch = new CountDownLatch(1);
+        public BlockingQueue<String> messageQueue = new BlockingArrayQueue<String>();
+
+        public void assertClose(int expectedStatusCode, String expectedReason)
+        {
+            assertCloseCode(expectedStatusCode);
+            assertCloseReason(expectedReason);
+        }
+
+        public void assertCloseCode(int expectedCode)
+        {
+            Assert.assertThat("Close Code",close.get(),is(expectedCode));
+        }
+
+        private void assertCloseReason(String expectedReason)
+        {
+            Assert.assertThat("Close Reaosn",closeMessage.toString(),is(expectedReason));
+        }
+
+        public void assertIsOpen()
+        {
+            assertWasOpened();
+            assertNotClosed();
+        }
+
+        public void assertNotClosed()
+        {
+            Assert.assertThat("Close Code",close.get(),is(-1));
+        }
+
+        public void assertNotOpened()
+        {
+            Assert.assertThat("Opened State",open.get(),is(false));
+        }
+
+        public void assertWasOpened()
+        {
+            Assert.assertThat("Opened State",open.get(),is(true));
+        }
+
+        @Override
+        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        {
+            dataLatch.countDown();
+        }
+
+        @Override
+        public void onWebSocketClose(int statusCode, String reason)
+        {
+            close.set(statusCode);
+            closeMessage.append(reason);
+            closeLatch.countDown();
+        }
+
+        @Override
+        public void onWebSocketConnect(WebSocketConnection connection)
+        {
+            open.set(true);
+            openLatch.countDown();
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            dataLatch.countDown();
+            messageQueue.add(message);
+        }
+    }
+
     private BlockheadServer server;
-
-    private void accept(Socket connection) throws IOException
-    {
-        String key = "not sent";
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        for (String line = in.readLine(); line != null; line = in.readLine())
-        {
-            if (line.length() == 0)
-            {
-                break;
-            }
-            if (line.startsWith("Sec-WebSocket-Key:"))
-            {
-                key = line.substring(18).trim();
-            }
-        }
-        connection.getOutputStream().write(
-                ("HTTP/1.1 101 Upgrade\r\n" + "Sec-WebSocket-Accept: " + WebSocketConnectionRFC6455.hashKey(key) + "\r\n" + "\r\n").getBytes());
-    }
-
-    private void respondToClient(Socket connection, String serverResponse) throws IOException
-    {
-        InputStream in = null;
-        InputStreamReader isr = null;
-        BufferedReader buf = null;
-        OutputStream out = null;
-        try
-        {
-            in = connection.getInputStream();
-            isr = new InputStreamReader(in);
-            buf = new BufferedReader(isr);
-            String line;
-            while ((line = buf.readLine()) != null)
-            {
-                // System.err.println(line);
-                if (line.length() == 0)
-                {
-                    // Got the "\r\n" line.
-                    break;
-                }
-            }
-
-            // System.out.println("[Server-Out] " + serverResponse);
-            out = connection.getOutputStream();
-            out.write(serverResponse.getBytes());
-            out.flush();
-        }
-        finally
-        {
-            IO.close(buf);
-            IO.close(isr);
-            IO.close(in);
-            IO.close(out);
-        }
-    }
 
     @Before
     public void startServer() throws Exception
@@ -121,63 +140,44 @@ public class WebSocketClientTest
     @Test
     public void testAsyncConnectionRefused() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
+        TrackingSocket wsocket = new TrackingSocket();
 
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:1"),new WebSocket()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-            }
-
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        // Intentionally bad port
+        URI wsUri = new URI("ws://127.0.0.1:1");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         Throwable error = null;
         try
         {
             future.get(1,TimeUnit.SECONDS);
-            Assert.fail();
+            Assert.fail("Expected ExecutionException");
         }
         catch (ExecutionException e)
         {
             error = e.getCause();
         }
 
-        Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,close.get());
+        wsocket.assertNotOpened();
+        wsocket.assertCloseCode(StatusCode.NO_CLOSE);
         Assert.assertTrue(error instanceof ConnectException);
-
     }
 
     @Test
     public void testBadHandshake() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"),new WebSocket()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-        Socket connection = _server.accept();
-        respondToClient(connection,"HTTP/1.1 404 NOT FOUND\r\n\r\n");
+        ServerConnection connection = server.accept();
+        connection.respond("HTTP/1.1 404 NOT FOUND\r\n\r\n");
 
         Throwable error = null;
         try
@@ -190,8 +190,8 @@ public class WebSocketClientTest
             error = e.getCause();
         }
 
-        Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,close.get());
+        wsocket.assertNotOpened();
+        wsocket.assertCloseCode(StatusCode.PROTOCOL);
         Assert.assertTrue(error instanceof IOException);
         Assert.assertTrue(error.getMessage().indexOf("404 NOT FOUND") > 0);
 
@@ -200,25 +200,16 @@ public class WebSocketClientTest
     @Test
     public void testBadUpgrade() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"),new WebSocket()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-        Socket connection = _server.accept();
-        respondToClient(connection,"HTTP/1.1 101 Upgrade\r\n" + "Sec-WebSocket-Accept: rubbish\r\n" + "\r\n");
+        ServerConnection connection = server.accept();
+        connection.respond("HTTP/1.1 101 Upgrade\r\n" + "Sec-WebSocket-Accept: rubbish\r\n" + "\r\n");
 
         Throwable error = null;
         try
@@ -230,86 +221,86 @@ public class WebSocketClientTest
         {
             error = e.getCause();
         }
-        Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,close.get());
+
+        wsocket.assertNotOpened();
+        wsocket.assertCloseCode(StatusCode.PROTOCOL);
         Assert.assertTrue(error instanceof IOException);
-        Assert.assertTrue(error.getMessage().indexOf("Bad Sec-WebSocket-Accept") >= 0);
+        Assert.assertThat("Error Message",error.getMessage(),containsString("Bad Sec-WebSocket-Accept"));
     }
 
     @Test
     public void testBadURL() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
 
-        boolean bad = false;
-        final AtomicBoolean open = new AtomicBoolean();
+        TrackingSocket wsocket = new TrackingSocket();
         try
         {
-            client.open(new URI("http://localhost:8080"),new WebSocket()
-            {
-                public void onClose(int closeCode, String message)
-                {
-                }
+            // Intentionally bad scheme in URI
+            URI wsUri = new URI("http://localhost:8080");
 
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                }
-            });
+            client.connect(wsUri,wsocket); // should toss exception
 
-            Assert.fail();
+            Assert.fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e)
         {
-            bad = true;
+            // expected path
+            wsocket.assertNotOpened();
         }
-        Assert.assertTrue(bad);
-        Assert.assertFalse(open.get());
     }
 
     @Test
     public void testBlockReceiving() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
-        client.setMaxIdleTime(60000);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
+        client.getPolicy().setMaxIdleTime(60000);
 
-        final AtomicBoolean open = new AtomicBoolean();
+        final AtomicBoolean open = new AtomicBoolean(false);
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch _latch = new CountDownLatch(1);
         final StringBuilder closeMessage = new StringBuilder();
         final Exchanger<String> exchanger = new Exchanger<String>();
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"),new WebSocket.OnTextMessage()
+
+        WebSocketListener socket = new WebSocketAdapter()
         {
-            public void onClose(int closeCode, String message)
+            @Override
+            public void onWebSocketClose(int statusCode, String reason)
             {
-                close.set(closeCode);
-                closeMessage.append(message);
+                close.set(statusCode);
+                closeMessage.append(reason);
                 _latch.countDown();
             }
 
-            public void onMessage(String data)
+            @Override
+            public void onWebSocketConnect(WebSocketConnection connection)
+            {
+                open.set(true);
+            }
+
+            @Override
+            public void onWebSocketText(String message)
             {
                 try
                 {
-                    exchanger.exchange(data);
+                    exchanger.exchange(message);
                 }
                 catch (InterruptedException e)
                 {
                     // e.printStackTrace();
                 }
             }
+        };
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,socket);
 
-        Socket socket = _server.accept();
-        socket.setSoTimeout(60000);
-        accept(socket);
+        ServerConnection sconnection = server.accept();
+        sconnection.setSoTimeout(60000);
 
-        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        WebSocketConnection connection = future.get(250,TimeUnit.MILLISECONDS);
         Assert.assertNotNull(connection);
         Assert.assertTrue(open.get());
         Assert.assertEquals(0,close.get());
@@ -362,8 +353,8 @@ public class WebSocketClientTest
         long start = System.currentTimeMillis();
         for (int i = 0; i < messages; i++)
         {
-            socket.getOutputStream().write(send,0,send.length);
-            socket.getOutputStream().flush();
+            sconnection.write(send,0,send.length);
+            sconnection.flush();
         }
 
         while (consumer.isAlive())
@@ -379,9 +370,9 @@ public class WebSocketClientTest
 
         // Close with code
         start = System.currentTimeMillis();
-        socket.getOutputStream().write(new byte[]
+        sconnection.write(new byte[]
         { (byte)0x88, (byte)0x02, (byte)4, (byte)87 },0,4);
-        socket.getOutputStream().flush();
+        sconnection.flush();
 
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue((System.currentTimeMillis() - start) < 5000);
@@ -392,37 +383,22 @@ public class WebSocketClientTest
     @Test
     public void testBlockSending() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
-        client.setMaxIdleTime(10000);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
+        client.getPolicy().setMaxIdleTime(10000);
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch _latch = new CountDownLatch(1);
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"),new WebSocket.OnTextMessage()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-                _latch.countDown();
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onMessage(String data)
-            {
-            }
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        final ServerConnection ssocket = server.accept();
+        ssocket.upgrade();
 
-        final Socket socket = _server.accept();
-        accept(socket);
-
-        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        WebSocketConnection connection = future.get(250,TimeUnit.MILLISECONDS);
         Assert.assertNotNull(connection);
-        Assert.assertTrue(open.get());
-        Assert.assertEquals(0,close.get());
+        wsocket.assertWasOpened();
+        wsocket.assertNotClosed();
 
         final int messages = 200000;
         final AtomicLong totalB = new AtomicLong();
@@ -442,7 +418,7 @@ public class WebSocketClientTest
                     while (len >= 0)
                     {
                         totalB.addAndGet(len);
-                        len = socket.getInputStream().read(recv,0,recv.length);
+                        len = ssocket.getInputStream().read(recv,0,recv.length);
                         Thread.sleep(10);
                     }
                 }
@@ -463,7 +439,7 @@ public class WebSocketClientTest
         String mesg = "This is a test message to send";
         for (int i = 0; i < messages; i++)
         {
-            connection.sendMessage(mesg);
+            connection.write(mesg);
         }
 
         // Duration for the write phase
@@ -484,210 +460,136 @@ public class WebSocketClientTest
     @Test
     public void testConnectionNotAccepted() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort),new WebSocket()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-        Throwable error = null;
+        // Intentionally not accept incoming socket.
+        // server.accept();
+
         try
         {
             future.get(250,TimeUnit.MILLISECONDS);
-            Assert.fail();
+            Assert.fail("Should have Timed Out");
         }
         catch (TimeoutException e)
         {
-            error = e;
+            // Expected Path
+            wsocket.assertNotOpened();
+            wsocket.assertCloseCode(StatusCode.NO_CLOSE);
         }
-
-        Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,close.get());
-        Assert.assertTrue(error instanceof TimeoutException);
-
     }
 
     @Test
     public void testConnectionTimeout() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort),new WebSocket()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-        Assert.assertNotNull(_server.accept());
+        ServerConnection ssocket = server.accept();
+        Assert.assertNotNull(ssocket);
+        // Intentionally don't upgrade
+        // ssocket.upgrade();
 
-        Throwable error = null;
         try
         {
             future.get(250,TimeUnit.MILLISECONDS);
-            Assert.fail();
+            Assert.fail("Expected Timeout Exception");
         }
         catch (TimeoutException e)
         {
-            error = e;
+            // Expected path
+            wsocket.assertNotOpened();
+            wsocket.assertCloseCode(StatusCode.NO_CLOSE);
         }
-
-        Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,close.get());
-        Assert.assertTrue(error instanceof TimeoutException);
-
     }
 
     @Test
     public void testIdle() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
-        client.setMaxIdleTime(500);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
+        client.getPolicy().setMaxIdleTime(500);
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch _latch = new CountDownLatch(1);
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"),new WebSocket()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-                _latch.countDown();
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-        Socket socket = _server.accept();
-        accept(socket);
+        ServerConnection ssocket = server.accept();
+        ssocket.upgrade();
 
-        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        WebSocketConnection connection = future.get(250,TimeUnit.MILLISECONDS);
         Assert.assertNotNull(connection);
-        Assert.assertTrue(open.get());
-        Assert.assertEquals(0,close.get());
+        wsocket.assertWasOpened();
+        wsocket.assertNotClosed();
 
         long start = System.currentTimeMillis();
-        _latch.await(10,TimeUnit.SECONDS);
+        wsocket.closeLatch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue((System.currentTimeMillis() - start) < 5000);
-        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NORMAL,close.get());
+        wsocket.assertCloseCode(StatusCode.NORMAL);
     }
 
     @Test
     public void testMessageBiggerThanBufferSize() throws Exception
     {
-        OldWebSocketClientFactory factory = new OldWebSocketClientFactory();
-
-        QueuedThreadPool threadPool = new QueuedThreadPool();
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         int bufferSize = 512;
-        OldWebSocketClientFactory factory = new OldWebSocketClientFactory(threadPool,new ZeroMasker(),bufferSize);
-        threadPool.start();
-        factory.start();
-        OldWebSocketClient client = new OldWebSocketClient(factory);
+        factory.getPolicy().setBufferSize(512);
+        WebSocketClient client = factory.newWebSocketClient();
 
-        final CountDownLatch openLatch = new CountDownLatch(1);
-        final CountDownLatch dataLatch = new CountDownLatch(1);
-        WebSocket.OnTextMessage websocket = new WebSocket.OnTextMessage()
-        {
-            public void onClose(int closeCode, String message)
-            {
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onMessage(String data)
-            {
-                // System.out.println("data = " + data);
-                dataLatch.countDown();
-            }
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-            public void onOpen(Connection connection)
-            {
-                openLatch.countDown();
-            }
-        };
-        client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"),websocket);
+        ServerConnection ssocket = server.accept();
+        ssocket.upgrade();
 
-        Socket socket = _server.accept();
-        accept(socket);
+        Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
-        Assert.assertTrue(openLatch.await(1,TimeUnit.SECONDS));
-        OutputStream serverOutput = socket.getOutputStream();
-
-        int length = bufferSize + (bufferSize / 2);
-        serverOutput.write(0x80 | 0x01); // FIN + TEXT
-        serverOutput.write(0x7E); // No MASK and 2 bytes length
-        serverOutput.write(length >> 8); // first length byte
-        serverOutput.write(length & 0xFF); // second length byte
+        int length = bufferSize + (bufferSize / 2); // 1.5 times buffer size
+        ssocket.write(0x80 | 0x01); // FIN + TEXT
+        ssocket.write(0x7E); // No MASK and 2 bytes length
+        ssocket.write(length >> 8); // first length byte
+        ssocket.write(length & 0xFF); // second length byte
         for (int i = 0; i < length; ++i)
         {
-            serverOutput.write('x');
+            ssocket.write('x');
         }
-        serverOutput.flush();
+        ssocket.flush();
 
-        Assert.assertTrue(dataLatch.await(1000,TimeUnit.SECONDS));
-
-        factory.stop();
-        threadPool.stop();
+        Assert.assertTrue(wsocket.dataLatch.await(1000,TimeUnit.SECONDS));
     }
 
     @Test
     public void testNotIdle() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
-        client.setMaxIdleTime(500);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
+        client.getPolicy().setMaxIdleTime(500);
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch _latch = new CountDownLatch(1);
-        final BlockingQueue<String> queue = new BlockingArrayQueue<String>();
-        final StringBuilder closeMessage = new StringBuilder();
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"),new WebSocket.OnTextMessage()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-                closeMessage.append(message);
-                _latch.countDown();
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onMessage(String data)
-            {
-                queue.add(data);
-            }
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        ServerConnection ssocket = server.accept();
+        ssocket.upgrade();
 
-        Socket socket = _server.accept();
-        accept(socket);
-
-        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        WebSocketConnection connection = future.get(250,TimeUnit.MILLISECONDS);
         Assert.assertNotNull(connection);
-        Assert.assertTrue(open.get());
-        Assert.assertEquals(0,close.get());
+
+        wsocket.assertIsOpen();
 
         // Send some messages client to server
         byte[] recv = new byte[1024];
@@ -695,8 +597,8 @@ public class WebSocketClientTest
         for (int i = 0; i < 10; i++)
         {
             Thread.sleep(250);
-            connection.sendMessage("Hello");
-            len = socket.getInputStream().read(recv,0,recv.length);
+            connection.write("Hello");
+            len = ssocket.getInputStream().read(recv,0,recv.length);
             Assert.assertTrue(len > 0);
         }
 
@@ -707,65 +609,53 @@ public class WebSocketClientTest
         for (int i = 0; i < 10; i++)
         {
             Thread.sleep(250);
-            socket.getOutputStream().write(send,0,send.length);
-            socket.getOutputStream().flush();
-            Assert.assertEquals("Hi",queue.poll(1,TimeUnit.SECONDS));
+            ssocket.write(send,0,send.length);
+            ssocket.flush();
+            Assert.assertEquals("Hi",wsocket.messageQueue.poll(1,TimeUnit.SECONDS));
         }
 
         // Close with code
         long start = System.currentTimeMillis();
-        socket.getOutputStream().write(new byte[]
+        ssocket.write(new byte[]
         { (byte)0x88, (byte)0x02, (byte)4, (byte)87 },0,4);
-        socket.getOutputStream().flush();
+        ssocket.flush();
 
-        _latch.await(10,TimeUnit.SECONDS);
+        wsocket.closeLatch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue((System.currentTimeMillis() - start) < 5000);
-        Assert.assertEquals(1002,close.get());
-        Assert.assertEquals("Invalid close code 1111",closeMessage.toString());
+        wsocket.assertClose(StatusCode.PROTOCOL,"Invalid close code 1111");
     }
 
     @Test
     public void testUpgradeThenTCPClose() throws Exception
     {
-        OldWebSocketClient client = new OldWebSocketClient(_factory);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketClient client = factory.newWebSocketClient();
 
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch _latch = new CountDownLatch(1);
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"),new WebSocket()
-        {
-            public void onClose(int closeCode, String message)
-            {
-                close.set(closeCode);
-                _latch.countDown();
-            }
+        TrackingSocket wsocket = new TrackingSocket();
 
-            public void onOpen(Connection connection)
-            {
-                open.set(true);
-            }
-        });
+        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
-        Socket socket = _server.accept();
-        accept(socket);
+        ServerConnection ssocket = server.accept();
+        ssocket.upgrade();
 
-        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        WebSocketConnection connection = future.get(250,TimeUnit.MILLISECONDS);
         Assert.assertNotNull(connection);
-        Assert.assertTrue(open.get());
-        Assert.assertEquals(0,close.get());
 
-        socket.close();
-        _latch.await(10,TimeUnit.SECONDS);
+        wsocket.assertIsOpen();
 
-        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,close.get());
+        ssocket.close();
+        wsocket.openLatch.await(10,TimeUnit.SECONDS);
 
+        wsocket.assertCloseCode(StatusCode.NO_CLOSE);
     }
 
     @Test
     public void testURIWithDefaultPort() throws Exception
     {
         URI uri = new URI("ws://localhost");
-        InetSocketAddress addr = OldWebSocketClient.toSocketAddress(uri);
+
+        InetSocketAddress addr = WebSocketClient.toSocketAddress(uri);
         Assert.assertThat("URI (" + uri + ").host",addr.getHostName(),is("localhost"));
         Assert.assertThat("URI (" + uri + ").port",addr.getPort(),is(80));
     }
@@ -774,7 +664,7 @@ public class WebSocketClientTest
     public void testURIWithDefaultWSSPort() throws Exception
     {
         URI uri = new URI("wss://localhost");
-        InetSocketAddress addr = OldWebSocketClient.toSocketAddress(uri);
+        InetSocketAddress addr = WebSocketClient.toSocketAddress(uri);
         Assert.assertThat("URI (" + uri + ").host",addr.getHostName(),is("localhost"));
         Assert.assertThat("URI (" + uri + ").port",addr.getPort(),is(443));
     }
