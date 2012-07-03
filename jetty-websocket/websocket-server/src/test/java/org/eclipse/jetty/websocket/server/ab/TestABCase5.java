@@ -192,7 +192,7 @@ public class TestABCase5
     
     
     @Test
-    @Ignore ("not re-assembling the strings, something odd with echo socket")
+    @Ignore ("not re-assembling the strings yet on server side echo")
     public void testCase5_3TextIn2Packets() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
