@@ -403,7 +403,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         if (!stream.isUnidirectional())
             stream.reply(replyInfo);
         if (replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") &&
-                !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
+                !stream.isClosed())
         {
             // We have a 200 OK with some content to send
 
@@ -436,11 +436,6 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 });
             }
         }
-    }
-
-    private boolean isIfModifiedSinceHeaderPresent()
-    {
-        return headers.get("if-modified-since") != null;
     }
 
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
