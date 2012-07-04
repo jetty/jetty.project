@@ -35,12 +35,14 @@ import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.DataFrame;
+import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -65,6 +67,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class StandardSessionTest
 {
+    public static final short VERSION = SPDY.V3;
     @Mock
     private Controller<FrameBytes> controller;
 
@@ -82,12 +85,12 @@ public class StandardSessionTest
         threadPool = Executors.newCachedThreadPool();
         scheduler = Executors.newSingleThreadScheduledExecutor();
         generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory.StandardCompressor());
-        session = new StandardSession(SPDY.V2,bufferPool,threadPool,scheduler,controller,null,1,null,generator,new FlowControlStrategy.None());
+        session = new StandardSession(VERSION,bufferPool,threadPool,scheduler,controller,null,1,null,generator,new FlowControlStrategy.None());
         headers = new Headers();
     }
 
     @SuppressWarnings("unchecked")
-    private void setControllerWriteExpectationToFail(final boolean fail)
+    private void setControllerWriteExpectation(final boolean fail)
     {
         when(controller.write(any(ByteBuffer.class),any(Handler.class),any(StandardSession.FrameBytes.class))).thenAnswer(new Answer<Integer>()
         {
@@ -110,7 +113,7 @@ public class StandardSessionTest
     @Test
     public void testStreamIsRemovedFromSessionWhenReset() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         assertThatStreamIsInSession(stream);
@@ -123,12 +126,12 @@ public class StandardSessionTest
     @Test
     public void testStreamIsAddedAndRemovedFromSession() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         assertThatStreamIsInSession(stream);
         stream.updateCloseState(true,true);
-        session.onControlFrame(new SynReplyFrame(SPDY.V2,SynInfo.FLAG_CLOSE,stream.getId(),null));
+        session.onControlFrame(new SynReplyFrame(VERSION,SynInfo.FLAG_CLOSE,stream.getId(),null));
         assertThatStreamIsClosed(stream);
         assertThatStreamIsNotInSession(stream);
     }
@@ -136,7 +139,7 @@ public class StandardSessionTest
     @Test
     public void testStreamIsRemovedWhenHeadersWithCloseFlagAreSent() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         assertThatStreamIsInSession(stream);
@@ -149,7 +152,7 @@ public class StandardSessionTest
     @Test
     public void testStreamIsUnidirectional() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         assertThat("stream is not unidirectional",stream.isUnidirectional(),not(true));
@@ -160,7 +163,7 @@ public class StandardSessionTest
     @Test
     public void testPushStreamCreation() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         Stream stream = createStream();
         IStream pushStream = createPushStream(stream);
@@ -171,7 +174,7 @@ public class StandardSessionTest
     @Test
     public void testPushStreamIsNotClosedWhenAssociatedStreamIsClosed() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         Stream pushStream = createPushStream(stream);
@@ -186,7 +189,7 @@ public class StandardSessionTest
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatPushStreamIsNotClosed(pushStream);
 
-        session.onControlFrame(new SynReplyFrame(SPDY.V2,SynInfo.FLAG_CLOSE,stream.getId(),null));
+        session.onControlFrame(new SynReplyFrame(VERSION,SynInfo.FLAG_CLOSE,stream.getId(),null));
         assertThatStreamIsClosed(stream);
         assertThatPushStreamIsNotClosed(pushStream);
     }
@@ -194,7 +197,7 @@ public class StandardSessionTest
     @Test
     public void testCreatePushStreamOnClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         stream.updateCloseState(true,true);
@@ -222,7 +225,7 @@ public class StandardSessionTest
     @Test
     public void testPushStreamIsAddedAndRemovedFromParentAndSessionWhenClosed() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         IStream pushStream = createPushStream(stream);
@@ -238,7 +241,7 @@ public class StandardSessionTest
     @Test
     public void testPushStreamIsRemovedWhenReset() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         IStream pushStream = (IStream)stream.syn(new SynInfo(false)).get();
@@ -252,7 +255,7 @@ public class StandardSessionTest
     @Test
     public void testPushStreamWithSynInfoClosedTrue() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         SynInfo synInfo = new SynInfo(headers,true,stream.getPriority());
@@ -267,7 +270,7 @@ public class StandardSessionTest
     public void testPushStreamSendHeadersWithCloseFlagIsRemovedFromSessionAndDisassociateFromParent() throws InterruptedException, ExecutionException,
             TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = createStream();
         SynInfo synInfo = new SynInfo(headers,false,stream.getPriority());
@@ -284,7 +287,7 @@ public class StandardSessionTest
     @Test
     public void testCreatedAndClosedListenersAreCalledForNewStream() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         final CountDownLatch createdListenerCalledLatch = new CountDownLatch(1);
         final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
@@ -299,7 +302,7 @@ public class StandardSessionTest
     @Test
     public void testListenerIsCalledForResetStream() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
         session.addListener(new TestStreamListener(null,closedListenerCalledLatch));
@@ -311,7 +314,7 @@ public class StandardSessionTest
     @Test
     public void testCreatedAndClosedListenersAreCalledForNewPushStream() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         final CountDownLatch createdListenerCalledLatch = new CountDownLatch(2);
         final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
@@ -327,7 +330,7 @@ public class StandardSessionTest
     @Test
     public void testListenerIsCalledForResetPushStream() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
         session.addListener(new TestStreamListener(null,closedListenerCalledLatch));
@@ -369,7 +372,7 @@ public class StandardSessionTest
     @Ignore("In V3 we need to rst the stream if we receive data on a remotely half closed stream.")
     public void receiveDataOnRemotelyHalfClosedStreamResetsStreamInV3() throws InterruptedException, ExecutionException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         IStream stream = (IStream)session.syn(new SynInfo(false),new StreamFrameListener.Adapter()).get();
         stream.updateCloseState(true,false);
@@ -380,7 +383,7 @@ public class StandardSessionTest
     @Test
     public void testReceiveDataOnRemotelyClosedStreamIsIgnored() throws InterruptedException, ExecutionException, TimeoutException
     {
-        setControllerWriteExpectationToFail(false);
+        setControllerWriteExpectation(false);
 
         final CountDownLatch onDataCalledLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(false),new StreamFrameListener.Adapter()
@@ -392,7 +395,7 @@ public class StandardSessionTest
                 super.onData(stream,dataInfo);
             }
         }).get(5,TimeUnit.SECONDS);
-        session.onControlFrame(new SynReplyFrame(SPDY.V2,SynInfo.FLAG_CLOSE,stream.getId(),headers));
+        session.onControlFrame(new SynReplyFrame(VERSION,SynInfo.FLAG_CLOSE,stream.getId(),headers));
         session.onDataFrame(new DataFrame(stream.getId(),(byte)0,0),ByteBuffer.allocate(128));
         assertThat("onData is never called",onDataCalledLatch.await(1,TimeUnit.SECONDS),not(true));
     }
@@ -401,10 +404,10 @@ public class StandardSessionTest
     @Test
     public void testControllerWriteFailsInEndPointFlush() throws InterruptedException
     {
-        setControllerWriteExpectationToFail(true);
+        setControllerWriteExpectation(true);
 
         final CountDownLatch failedCalledLatch = new CountDownLatch(2);
-        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
+        SynStreamFrame synStreamFrame = new SynStreamFrame(VERSION, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
         IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
         stream.updateWindowSize(8192);
         Handler.Adapter<Void> handler = new Handler.Adapter<Void>()
@@ -425,10 +428,41 @@ public class StandardSessionTest
         assertThat("Handler.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
+    @Test
+    public void testNoMoreStreamsCanBeInitiatedFromSessionWhenGoAwayReceived() throws ExecutionException, TimeoutException, InterruptedException
+    {
+        setControllerWriteExpectation(false);
+
+        final CountDownLatch openPushStreamFailedLatch = new CountDownLatch(1);
+        final CountDownLatch synStreamAfterGoAwayFailedLatch = new CountDownLatch(1);
+        IStream stream = createStream();
+        session.onControlFrame(new GoAwayFrame(VERSION, stream.getId(), SessionStatus.PROTOCOL_ERROR.getCode()));
+        stream.syn(new SynInfo(false), 5, TimeUnit.SECONDS, new Handler.Adapter()
+        {
+            @Override
+            public void failed(Object context, Throwable x)
+            {
+                openPushStreamFailedLatch.countDown();
+            }
+        });
+
+        session.syn(new SynInfo(false), null, 5, TimeUnit.SECONDS, new Handler.Adapter()
+        {
+            @Override
+            public void failed(Object context, Throwable x)
+            {
+                synStreamAfterGoAwayFailedLatch.countDown();
+            }
+        });
+
+        assertThat("Opening push stream failed after GoAway", openPushStreamFailedLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("Opening a stream failed after GoAway", synStreamAfterGoAwayFailedLatch.await(5, TimeUnit.SECONDS), is(true));
+    }
+
     private IStream createStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         SynInfo synInfo = new SynInfo(headers,false,(byte)0);
-        return (IStream)session.syn(synInfo,new StreamFrameListener.Adapter()).get(50,TimeUnit.SECONDS);
+        return (IStream)session.syn(synInfo,new StreamFrameListener.Adapter()).get(5,TimeUnit.SECONDS);
     }
 
     private IStream createPushStream(Stream stream) throws InterruptedException, ExecutionException, TimeoutException

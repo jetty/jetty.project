@@ -68,7 +68,6 @@ import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Atomics;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -153,6 +152,14 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler)
     {
+        if(goAwayReceived.get())
+        {
+            String msg = "Can't syn as GoAway has been received.";
+            logger.debug(msg);
+            handler.failed(null, new SPDYException(msg));
+            return;
+        }
+
         // Synchronization is necessary.
         // SPEC v3, 2.3.1 requires that the stream creation be monotonically crescent
         // so we cannot allow thread1 to create stream1 and thread2 create stream3 and
@@ -645,10 +652,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             GoAwayInfo goAwayInfo = new GoAwayInfo(frame.getLastStreamId(),SessionStatus.from(frame.getStatusCode()));
             notifyOnGoAway(listener,goAwayInfo);
             flush();
-            // SPDY does not require to send back a response to a GO_AWAY.
-            // We notified the application of the last good stream id,
-            // tried our best to flush remaining data, and close.
-            close();
         }
     }
 
@@ -1101,8 +1104,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         return String.format("%s@%x{v=%d,q=%d}",getClass().getSimpleName(),hashCode(),version,queue.size());
     }
-    
-    
+
+
     @Override
     public String dump()
     {
