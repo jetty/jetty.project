@@ -343,7 +343,8 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         Executor executor = http.getConnector().findExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
         WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,websocket.getPolicy(),bufferPool);
-        endp.setAsyncConnection(connection);
+        // Tell jetty about the new connection
+        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTR,connection);
 
         LOG.debug("HttpConnection: {}",http);
         LOG.debug("AsyncWebSocketConnection: {}",connection);
@@ -359,7 +360,6 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);
         handshaker.doHandshakeResponse(request,response,extensions);
-        connection.fillInterested();
         LOG.debug("EndPoint: {}",endp);
         LOG.debug("Handshake Complete: {}",connection);
 
@@ -367,12 +367,11 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         addConnection(connection);
 
         // Notify POJO of connection
+        // TODO move to WebSocketAsyncConnection.onOpen
         websocket.setConnection(connection);
         websocket.onConnect();
 
-        // Tell jetty about the new connection
         LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),version,response.getAcceptedSubProtocol(),connection);
-        request.setAttribute("org.eclipse.jetty.io.Connection",connection); // TODO: this still needed?
         return true;
     }
 }

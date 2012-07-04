@@ -171,6 +171,8 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     {
         LOG.debug("onOpen()");
         super.onOpen();
+        fillInterested();
+        xx
     }
 
     private void read(ByteBuffer buffer)
