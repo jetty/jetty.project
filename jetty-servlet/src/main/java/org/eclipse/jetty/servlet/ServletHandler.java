@@ -281,6 +281,7 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletMapping getServletMapping(String pattern)
     {
+        ServletMapping theMapping = null;
         if (_servletMappings!=null)
         {
             for (ServletMapping m:_servletMappings)
@@ -291,12 +292,12 @@ public class ServletHandler extends ScopedHandler
                     for (String path:paths)
                     {
                         if (pattern.equals(path))
-                            return m;
+                            theMapping = m;
                     }
                 }
             }
         }
-        return null;
+        return theMapping;
     }
         
     /* ------------------------------------------------------------ */

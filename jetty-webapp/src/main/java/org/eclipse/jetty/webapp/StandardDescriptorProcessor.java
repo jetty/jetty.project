@@ -621,7 +621,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //no servlet mappings
                 context.getMetaData().setOrigin(servlet_name+".servlet.mappings", descriptor);
-                addServletMapping(servlet_name, node, context);
+                ServletMapping mapping = addServletMapping(servlet_name, node, context);
+                mapping.setDefault(context.getMetaData().getOrigin(servlet_name+".servlet.mappings") == Origin.WebDefaults);
                 break;
             }
             case WebXml:
@@ -1164,7 +1165,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      * @param context
      */
-    protected void addServletMapping (String servletName, XmlParser.Node node, WebAppContext context)
+    protected ServletMapping addServletMapping (String servletName, XmlParser.Node node, WebAppContext context)
     {
         ServletMapping mapping = new ServletMapping();
         mapping.setServletName(servletName);
@@ -1179,6 +1180,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
         context.getServletHandler().addServletMapping(mapping);
+        return mapping;
     }
     
     /**

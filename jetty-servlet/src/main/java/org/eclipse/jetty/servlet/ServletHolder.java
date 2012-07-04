@@ -705,17 +705,24 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             Set<String> clash=null;
             for (String pattern : urlPatterns)
             {
-                if (_servletHandler.getServletMapping(pattern)!=null)
+                ServletMapping mapping = _servletHandler.getServletMapping(pattern);
+                if (mapping!=null)
                 {
-                    if (clash==null)
-                        clash=new HashSet<String>();
-                    clash.add(pattern);
+                    //if the servlet mapping was from a default descriptor, then allow it to be overridden
+                    if (!mapping.isDefault())
+                    {
+                        if (clash==null)
+                            clash=new HashSet<String>();
+                        clash.add(pattern);
+                    }
                 }
             }
             
+            //if there were any clashes amongst the urls, return them
             if (clash!=null)
                 return clash;
             
+            //otherwise apply all of them
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(ServletHolder.this.getName());
             mapping.setPathSpecs(urlPatterns);
