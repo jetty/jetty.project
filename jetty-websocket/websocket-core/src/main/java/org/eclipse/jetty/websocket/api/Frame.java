@@ -7,11 +7,11 @@ public interface Frame
 {
     public byte[] getMask();
 
-    public int getOpCode();
+    public OpCode getOpCode();
 
-    public byte[] getPayload();
+    public byte[] getPayloadData();
 
-    public long getPayloadLength();
+    public int getPayloadLength();
 
     public boolean isFin();
 

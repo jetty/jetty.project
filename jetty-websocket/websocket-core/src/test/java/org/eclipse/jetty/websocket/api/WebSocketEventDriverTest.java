@@ -85,12 +85,13 @@ public class WebSocketEventDriverTest
         driver.onFrame(new BinaryFrame(StringUtil.getUtf8Bytes("Hello Bin")));
         driver.onFrame(new CloseFrame(StatusCode.SHUTDOWN));
 
-        socket.capture.assertEventCount(5);
+        socket.capture.assertEventCount(6);
         socket.capture.assertEventStartsWith(0,"onConnect(");
         socket.capture.assertEventStartsWith(1,"onFrame(Ping");
         socket.capture.assertEventStartsWith(2,"onFrame(Text");
         socket.capture.assertEventStartsWith(3,"onFrame(Binary");
-        socket.capture.assertEventStartsWith(4,"onClose(1001,");
+        socket.capture.assertEventStartsWith(4,"onFrame(Close");
+        socket.capture.assertEventStartsWith(5,"onClose(1001,");
     }
 
     @Test

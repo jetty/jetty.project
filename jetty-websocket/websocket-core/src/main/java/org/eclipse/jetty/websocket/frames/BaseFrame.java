@@ -2,6 +2,8 @@ package org.eclipse.jetty.websocket.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.OpCode;
 
 /**
@@ -28,7 +30,7 @@ import org.eclipse.jetty.websocket.api.OpCode;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public class BaseFrame
+public class BaseFrame implements Frame
 {
     private boolean fin = false;
     private boolean rsv1 = false;
@@ -55,6 +57,7 @@ public class BaseFrame
         this.opcode = opcode;
     }
 
+    @Override
     public byte[] getMask()
     {
         if (!masked)
@@ -64,6 +67,7 @@ public class BaseFrame
         return mask;
     }
 
+    @Override
     public final OpCode getOpCode()
     {
         return opcode;
@@ -79,6 +83,13 @@ public class BaseFrame
         return payload;
     }
 
+    @Override
+    public byte[] getPayloadData()
+    {
+        return BufferUtil.toArray(payload);
+    }
+
+    @Override
     public int getPayloadLength()
     {
         return payloadLength;
@@ -94,6 +105,7 @@ public class BaseFrame
         return false; // always false here
     }
 
+    @Override
     public boolean isFin()
     {
         return fin;
@@ -104,21 +116,25 @@ public class BaseFrame
         return fin;
     }
 
+    @Override
     public boolean isMasked()
     {
         return masked;
     }
 
+    @Override
     public boolean isRsv1()
     {
         return rsv1;
     }
 
+    @Override
     public boolean isRsv2()
     {
         return rsv2;
     }
 
+    @Override
     public boolean isRsv3()
     {
         return rsv3;
