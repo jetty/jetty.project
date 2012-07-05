@@ -464,11 +464,6 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         return pushHeaders;
     }
 
-    private boolean isIfModifiedSinceHeaderPresent()
-    {
-        return headers.get("if-modified-since") != null;
-    }
-
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
     {
         while (true)
