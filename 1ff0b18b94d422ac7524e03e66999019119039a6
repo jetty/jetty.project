@@ -1,0 +1,9 @@
+Change-Id: I1ff0b18b94d422ac7524e03e66999019119039a6
+Code-Review+2: Simone Bordet <simone.bordet@gmail.com>
+IP-Clean+1: Simone Bordet <simone.bordet@gmail.com>
+Verified+1: Simone Bordet <simone.bordet@gmail.com>
+Submitted-by: Simone Bordet <simone.bordet@gmail.com>
+Submitted-at: Thu, 05 Jul 2012 09:52:10 -0400
+Reviewed-on: https://git.eclipse.org/r/6615
+Project: jetty/org.eclipse.jetty.project
+Branch: refs/heads/master
