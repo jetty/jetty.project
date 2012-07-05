@@ -16,6 +16,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.frames.FrameBuilder;
 import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
@@ -168,4 +169,46 @@ public class TestABCase7_9
         }
     }
 
+    /**
+     * Test the requirement of issuing
+     */
+    @Test
+    public void testCase7_9_XInvalidCloseStatusCodesWithBuilder() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        try
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            ByteBuffer frame = FrameBuilder.closeFrame().withMask(new byte[]
+            { 0x44, 0x44, 0x44, 0x44 }).asByteBuffer();
+            
+            ByteBuffer buf = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
+            BufferUtil.clearToFill(buf);
+
+            // Create Close Frame manually, as we are testing the server's behavior of a bad client.
+            buf.put((byte)(0x80 | OpCode.CLOSE.getCode()));
+            buf.put((byte)(0x80 | 2));
+            byte mask[] = new byte[]
+            { 0x44, 0x44, 0x44, 0x44 };
+            buf.put(mask);
+            int position = buf.position();
+            buf.putChar((char)this.invalidStatusCode);
+            remask(buf,position,mask);
+            BufferUtil.flipToFlush(buf,0);
+            client.writeRaw(buf);
+
+            // Read frame (hopefully text frame)
+            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            CloseFrame closeFrame = (CloseFrame)frames.remove();
+            Assert.assertThat("CloseFrame.status code",closeFrame.getStatusCode(),is(1002));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
 }
