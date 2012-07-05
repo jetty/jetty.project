@@ -15,8 +15,6 @@ import org.eclipse.jetty.websocket.annotations.NotASocket;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.samples.AdapterConnectCloseSocket;
 import org.eclipse.jetty.websocket.api.samples.ListenerBasicSocket;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -57,7 +55,8 @@ public class EventMethodsCacheTest
         assertHasEventMethod(classId + ".onException",methods.onException);
         assertHasEventMethod(classId + ".onText",methods.onText);
 
-        Assert.assertThat(".getOnFrames()",methods.getOnFrames().size(),is(0));
+        // Advanced, only available from @OnWebSocketFrame annotation
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
 
     /**
@@ -158,8 +157,7 @@ public class EventMethodsCacheTest
         assertHasEventMethod(classId + ".onConnect",methods.onConnect);
         assertNoEventMethod(classId + ".onException",methods.onException);
         assertHasEventMethod(classId + ".onText",methods.onText);
-
-        Assert.assertThat(".getOnFrames()",methods.getOnFrames().size(),is(0));
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
 
     /**
@@ -171,15 +169,16 @@ public class EventMethodsCacheTest
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(MyEchoSocket.class);
 
-        Assert.assertThat("EventMethods for MyEchoSocket",methods,notNullValue());
+        String classId = MyEchoSocket.class.getSimpleName();
 
-        assertNoEventMethod("MyEchoSocket.onBinary",methods.onBinary);
-        assertHasEventMethod("MyEchoSocket.onClose",methods.onClose);
-        assertHasEventMethod("MyEchoSocket.onConnect",methods.onConnect);
-        assertNoEventMethod("MyEchoSocket.onException",methods.onException);
-        assertHasEventMethod("MyEchoSocket.onText",methods.onText);
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
 
-        Assert.assertThat("MyEchoSocket.getOnFrames()",methods.getOnFrames().size(),is(0));
+        assertNoEventMethod(classId + ".onBinary",methods.onBinary);
+        assertHasEventMethod(classId + ".onClose",methods.onClose);
+        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onText",methods.onText);
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
 
     /**
@@ -191,15 +190,16 @@ public class EventMethodsCacheTest
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(MyStatelessEchoSocket.class);
 
-        Assert.assertThat("EventMethods for MyStatelessEchoSocket",methods,notNullValue());
+        String classId = MyStatelessEchoSocket.class.getSimpleName();
 
-        assertNoEventMethod("MyStatelessEchoSocket.onBinary",methods.onBinary);
-        assertNoEventMethod("MyStatelessEchoSocket.onClose",methods.onClose);
-        assertNoEventMethod("MyStatelessEchoSocket.onConnect",methods.onConnect);
-        assertNoEventMethod("MyStatelessEchoSocket.onException",methods.onException);
-        assertHasEventMethod("MyStatelessEchoSocket.onText",methods.onText);
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
 
-        Assert.assertThat("MyEchoSocket.getOnFrames()",methods.getOnFrames().size(),is(0));
+        assertNoEventMethod(classId + ".onBinary",methods.onBinary);
+        assertNoEventMethod(classId + ".onClose",methods.onClose);
+        assertNoEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onText",methods.onText);
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
 
     /**
@@ -211,19 +211,20 @@ public class EventMethodsCacheTest
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(NoopSocket.class);
 
-        Assert.assertThat("Methods for NoopSocket",methods,notNullValue());
+        String classId = NoopSocket.class.getSimpleName();
 
-        assertNoEventMethod("NoopSocket.onBinary",methods.onBinary);
-        assertNoEventMethod("NoopSocket.onClose",methods.onClose);
-        assertNoEventMethod("NoopSocket.onConnect",methods.onConnect);
-        assertNoEventMethod("NoopSocket.onException",methods.onException);
-        assertNoEventMethod("NoopSocket.onText",methods.onText);
+        Assert.assertThat("Methods for " + classId,methods,notNullValue());
 
-        Assert.assertThat("MyEchoSocket.getOnFrames()",methods.getOnFrames().size(),is(0));
+        assertNoEventMethod(classId + ".onBinary",methods.onBinary);
+        assertNoEventMethod(classId + ".onClose",methods.onClose);
+        assertNoEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onText",methods.onText);
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
 
     /**
-     * Test Case for no exceptions and 3 methods
+     * Test Case for no exceptions and 1 methods
      */
     @Test
     public void testAnnotatedOnFrame()
@@ -231,17 +232,16 @@ public class EventMethodsCacheTest
         EventMethodsCache cache = new EventMethodsCache();
         EventMethods methods = cache.getMethods(FrameSocket.class);
 
-        Assert.assertThat("EventMethods for MyEchoSocket",methods,notNullValue());
+        String classId = FrameSocket.class.getSimpleName();
 
-        assertNoEventMethod("MyEchoSocket.onBinary",methods.onBinary);
-        assertNoEventMethod("MyEchoSocket.onClose",methods.onClose);
-        assertNoEventMethod("MyEchoSocket.onConnect",methods.onConnect);
-        assertNoEventMethod("MyEchoSocket.onException",methods.onException);
-        assertNoEventMethod("MyEchoSocket.onText",methods.onText);
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
 
-        Assert.assertThat("MyEchoSocket.getOnFrames()",methods.getOnFrames().size(),is(2));
-        assertHasEventMethod("MyEchoSocket.onFrame(BaseFrame)",methods.getOnFrame(BaseFrame.class));
-        assertHasEventMethod("MyEchoSocket.onFrame(BaseFrame)",methods.getOnFrame(TextFrame.class));
+        assertNoEventMethod(classId + ".onBinary",methods.onBinary);
+        assertNoEventMethod(classId + ".onClose",methods.onClose);
+        assertNoEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onText",methods.onText);
+        assertHasEventMethod(classId + ".onFrame",methods.onFrame);
     }
 
     /**
@@ -281,7 +281,6 @@ public class EventMethodsCacheTest
         assertHasEventMethod(classId + ".onBinary",methods.onBinary);
         assertHasEventMethod(classId + ".onException",methods.onException);
         assertHasEventMethod(classId + ".onText",methods.onText);
-
-        Assert.assertThat(".getOnFrames()",methods.getOnFrames().size(),is(0));
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
 }

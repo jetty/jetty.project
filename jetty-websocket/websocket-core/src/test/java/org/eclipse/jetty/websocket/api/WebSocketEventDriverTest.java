@@ -2,8 +2,8 @@ package org.eclipse.jetty.websocket.api;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.samples.AdapterConnectCloseSocket;
-import org.eclipse.jetty.websocket.api.samples.AnnotatedByteArraySocket;
-import org.eclipse.jetty.websocket.api.samples.AnnotatedByteBufferSocket;
+import org.eclipse.jetty.websocket.api.samples.AnnotatedBinaryArraySocket;
+import org.eclipse.jetty.websocket.api.samples.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.api.samples.AnnotatedFramesSocket;
 import org.eclipse.jetty.websocket.api.samples.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
@@ -46,7 +46,7 @@ public class WebSocketEventDriverTest
     @Test
     public void testAnnotated_ByteArray()
     {
-        AnnotatedByteArraySocket socket = new AnnotatedByteArraySocket();
+        AnnotatedBinaryArraySocket socket = new AnnotatedBinaryArraySocket();
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
@@ -64,7 +64,7 @@ public class WebSocketEventDriverTest
     @Test
     public void testAnnotated_ByteBuffer()
     {
-        AnnotatedByteBufferSocket socket = new AnnotatedByteBufferSocket();
+        AnnotatedBinaryStreamSocket socket = new AnnotatedBinaryStreamSocket();
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);

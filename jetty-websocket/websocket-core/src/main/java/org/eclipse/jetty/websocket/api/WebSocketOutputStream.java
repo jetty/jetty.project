@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.io;
+package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
 import java.io.OutputStream;

@@ -1,5 +1,6 @@
 package org.eclipse.jetty.websocket.annotations;
 
+import java.io.Reader;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,13 +10,27 @@ import java.lang.annotation.Target;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 
 /**
- * Annotation for tagging methods to receive Text message events.
+ * Annotation for tagging methods to receive Binary or Text Message events.
  * <p>
  * Acceptable method patterns.<br>
  * Note: <code>methodName</code> can be any name you want to use.
+ * <p>
+ * <u>Text Message Versions</u>
  * <ol>
  * <li><code>public void methodName(String text)</code></li>
  * <li><code>public void methodName({@link WebSocketConnection} conn, String text)</code></li>
+ * <li><code>public void methodName(Reader reader)</code></li>
+ * <li><code>public void methodName({@link WebSocketConnection} conn, Reader reader)</code></li>
+ * </ol>
+ * Note: that the {@link Reader} in this case will always use UTF-8 encoding/charset (this is dictated by the RFC 6455 spec for Text Messages. If you need to
+ * use a non-UTF-8 encoding/charset, you are instructed to use the binary messaging techniques.
+ * <p>
+ * <u>Binary Message Versions</u>
+ * <ol>
+ * <li><code>public void methodName(byte buf[], int offset, int length)</code></li>
+ * <li><code>public void methodName({@link WebSocketConnection} conn, byte buf[], int offset, int length)</code></li>
+ * <li><code>public void methodName(InputStream stream)</code></li>
+ * <li><code>public void methodName({@link WebSocketConnection} conn, InputStream stream)</code></li>
  * </ol>
  */
 @Documented

@@ -1,9 +1,5 @@
 package org.eclipse.jetty.websocket.api;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 /**
  * A representation of the methods available to call for a particular class.
@@ -17,29 +13,16 @@ public class EventMethods
     public EventMethod onConnect = null;
     public EventMethod onClose = null;
     public EventMethod onBinary = null;
+    public EventMethod onBinaryStream = null;
     public EventMethod onText = null;
+    public EventMethod onTextStream = null;
     public EventMethod onException = null;
-
-    // special case, multiple methods allowed
-    private Map<Class<? extends BaseFrame>, EventMethod> onFrames = new HashMap<Class<? extends BaseFrame>, EventMethod>();
+    public EventMethod onFrame = null;
 
     public EventMethods(Class<?> pojoClass, boolean annotated)
     {
         this.pojoClass = pojoClass;
         this.isAnnotated = annotated;
-    }
-
-    public void addOnFrame(EventMethod eventMethod)
-    {
-        Class<?> paramTypes[] = eventMethod.getParamTypes();
-        Class<?> lastType = paramTypes[paramTypes.length - 1];
-        if (!BaseFrame.class.isAssignableFrom(lastType))
-        {
-            throw new InvalidWebSocketException("Unrecognized @OnWebSocketFrame frame type " + lastType);
-        }
-        @SuppressWarnings("unchecked")
-        Class<? extends BaseFrame> frameType = (Class<? extends BaseFrame>)lastType;
-        onFrames.put(frameType,eventMethod);
     }
 
     @Override
@@ -70,16 +53,6 @@ public class EventMethods
             return false;
         }
         return true;
-    }
-
-    public EventMethod getOnFrame(Class<? extends BaseFrame> frameType)
-    {
-        return onFrames.get(frameType);
-    }
-
-    public Map<Class<? extends BaseFrame>, EventMethod> getOnFrames()
-    {
-        return onFrames;
     }
 
     public Class<?> getPojoClass()
@@ -119,8 +92,8 @@ public class EventMethods
         builder.append(onText);
         builder.append(", onException=");
         builder.append(onException);
-        builder.append(", onFrames=");
-        builder.append(onFrames);
+        builder.append(", onFrame=");
+        builder.append(onFrame);
         builder.append("]");
         return builder.toString();
     }

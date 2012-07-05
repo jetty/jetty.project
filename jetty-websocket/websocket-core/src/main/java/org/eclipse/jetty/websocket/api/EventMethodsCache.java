@@ -1,30 +1,70 @@
 package org.eclipse.jetty.websocket.api;
 
+import java.io.InputStream;
+import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketBinary;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketText;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.ControlFrame;
-import org.eclipse.jetty.websocket.frames.DataFrame;
-import org.eclipse.jetty.websocket.frames.PingFrame;
-import org.eclipse.jetty.websocket.frames.PongFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
 
 public class EventMethodsCache
 {
+    @SuppressWarnings("serial")
+    public static class InvalidSignatureException extends InvalidWebSocketException
+    {
+        public static InvalidSignatureException build(Method method, Class<? extends Annotation> annoClass, ParamList... paramlists)
+        {
+            // Build big detailed exception to help the developer
+            StringBuilder err = new StringBuilder();
+            err.append("Invalid declaration of ");
+            err.append(method);
+            err.append(StringUtil.__LINE_SEPARATOR);
+
+            err.append("Acceptable method declarations for @");
+            err.append(annoClass.getSimpleName());
+            err.append(" are:");
+            for (ParamList validParams : paramlists)
+            {
+                for (Class<?>[] params : validParams)
+                {
+                    err.append(StringUtil.__LINE_SEPARATOR);
+                    err.append("public void ").append(method.getName());
+                    err.append('(');
+                    boolean delim = false;
+                    for (Class<?> type : params)
+                    {
+                        if (delim)
+                        {
+                            err.append(',');
+                        }
+                        err.append(' ');
+                        err.append(type.getName());
+                        if (type.isArray())
+                        {
+                            err.append("[]");
+                        }
+                        delim = true;
+                    }
+                    err.append(')');
+                }
+            }
+            return new InvalidSignatureException(err.toString());
+        }
+
+        public InvalidSignatureException(String message)
+        {
+            super(message);
+        }
+    }
+
     @SuppressWarnings("serial")
     private static class ParamList extends ArrayList<Class<?>[]>
     {
@@ -33,27 +73,30 @@ public class EventMethodsCache
             this.add(paramTypes);
         }
     }
-
     /**
-     * Parameter list for &#064;OnWebSocketBinary
+     * Parameter list for &#064;OnWebSocketMessage (Binary mode)
      */
     private static final ParamList validBinaryParams;
     /**
      * Parameter list for &#064;OnWebSocketConnect
      */
     private static final ParamList validConnectParams;
+    /**
+     * Parameter list for &#064;OnWebSocketClose
+     */
     private static final ParamList validCloseParams;
+    /**
+     * Parameter list for &#064;OnWebSocketFrame
+     */
     private static final ParamList validFrameParams;
+
+    /**
+     * Parameter list for &#064;OnWebSocketMessage (Text mode)
+     */
     private static final ParamList validTextParams;
 
     static
     {
-        validBinaryParams = new ParamList();
-        validBinaryParams.addParams(ByteBuffer.class);
-        validBinaryParams.addParams(byte[].class,int.class,int.class);
-        validBinaryParams.addParams(WebSocketConnection.class,ByteBuffer.class);
-        validBinaryParams.addParams(WebSocketConnection.class,byte[].class,int.class,int.class);
-
         validConnectParams = new ParamList();
         validConnectParams.addParams(WebSocketConnection.class);
 
@@ -64,25 +107,18 @@ public class EventMethodsCache
         validTextParams = new ParamList();
         validTextParams.addParams(String.class);
         validTextParams.addParams(WebSocketConnection.class,String.class);
+        validTextParams.addParams(Reader.class);
+        validTextParams.addParams(WebSocketConnection.class,Reader.class);
+
+        validBinaryParams = new ParamList();
+        validBinaryParams.addParams(byte[].class,int.class,int.class);
+        validBinaryParams.addParams(WebSocketConnection.class,byte[].class,int.class,int.class);
+        validBinaryParams.addParams(InputStream.class);
+        validBinaryParams.addParams(WebSocketConnection.class,InputStream.class);
 
         validFrameParams = new ParamList();
-        validFrameParams.addParams(BaseFrame.class);
-        validFrameParams.addParams(BinaryFrame.class);
-        validFrameParams.addParams(CloseFrame.class);
-        validFrameParams.addParams(ControlFrame.class);
-        validFrameParams.addParams(DataFrame.class);
-        validFrameParams.addParams(PingFrame.class);
-        validFrameParams.addParams(PongFrame.class);
-        validFrameParams.addParams(TextFrame.class);
-
-        validFrameParams.addParams(WebSocketConnection.class,BaseFrame.class);
-        validFrameParams.addParams(WebSocketConnection.class,BinaryFrame.class);
-        validFrameParams.addParams(WebSocketConnection.class,CloseFrame.class);
-        validFrameParams.addParams(WebSocketConnection.class,ControlFrame.class);
-        validFrameParams.addParams(WebSocketConnection.class,DataFrame.class);
-        validFrameParams.addParams(WebSocketConnection.class,PingFrame.class);
-        validFrameParams.addParams(WebSocketConnection.class,PongFrame.class);
-        validFrameParams.addParams(WebSocketConnection.class,TextFrame.class);
+        validFrameParams.addParams(Frame.class);
+        validFrameParams.addParams(WebSocketConnection.class,Frame.class);
     }
 
     private ConcurrentHashMap<Class<?>, EventMethods> cache;
@@ -90,33 +126,6 @@ public class EventMethodsCache
     public EventMethodsCache()
     {
         cache = new ConcurrentHashMap<>();
-    }
-
-    private void assertFrameUnset(EventMethods events, Method method)
-    {
-        Class<?> paramTypes[] = method.getParameterTypes();
-        Class<?> lastType = paramTypes[paramTypes.length - 1];
-        if (!BaseFrame.class.isAssignableFrom(lastType))
-        {
-            throw new InvalidWebSocketException("Unrecognized @OnWebSocketFrame frame type " + lastType);
-        }
-        @SuppressWarnings("unchecked")
-        Class<? extends BaseFrame> frameType = (Class<? extends BaseFrame>)lastType;
-
-        EventMethod dup = events.getOnFrame(frameType);
-        if (dup != null)
-        {
-            // Attempt to add duplicate frame type (a no-no)
-            StringBuilder err = new StringBuilder();
-            err.append("Duplicate Frame Type declaration on ");
-            err.append(method);
-            err.append(StringUtil.__LINE_SEPARATOR);
-
-            err.append("Type ").append(frameType.getSimpleName()).append(" previously declared at ");
-            err.append(dup.getMethod());
-
-            throw new InvalidWebSocketException(err.toString());
-        }
     }
 
     private void assertIsPublicNonStatic(Method method)
@@ -199,39 +208,7 @@ public class EventMethodsCache
 
         if (!valid)
         {
-            // Build big detailed exception to help the developer
-            StringBuilder err = new StringBuilder();
-            err.append("Invalid declaration of ");
-            err.append(method);
-            err.append(StringUtil.__LINE_SEPARATOR);
-
-            err.append("Acceptable method declarations for @");
-            err.append(annoClass.getSimpleName());
-            err.append(" are:");
-            for (Class<?>[] params : validParams)
-            {
-                err.append(StringUtil.__LINE_SEPARATOR);
-                err.append("public void ").append(method.getName());
-                err.append('(');
-                boolean delim = false;
-                for (Class<?> type : params)
-                {
-                    if (delim)
-                    {
-                        err.append(',');
-                    }
-                    err.append(' ');
-                    err.append(type.getName());
-                    if (type.isArray())
-                    {
-                        err.append("[]");
-                    }
-                    delim = true;
-                }
-                err.append(')');
-            }
-
-            throw new InvalidWebSocketException(err.toString());
+            throw InvalidSignatureException.build(method,annoClass,validParams);
         }
     }
 
@@ -297,6 +274,12 @@ public class EventMethodsCache
         return true;
     }
 
+    private boolean isSignatureMatch(Method method, ParamList validbinaryparams2)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
     /**
      * Register a pojo with the cache.
      * 
@@ -328,12 +311,28 @@ public class EventMethodsCache
                     continue;
                 }
 
-                if (method.getAnnotation(OnWebSocketBinary.class) != null)
+                if (method.getAnnotation(OnWebSocketMessage.class) != null)
                 {
-                    assertValidSignature(method,OnWebSocketBinary.class,validBinaryParams);
-                    assertUnset(events.onBinary,OnWebSocketBinary.class,method);
-                    events.onBinary = new EventMethod(pojo,method);
-                    continue;
+                    if (isSignatureMatch(method,validTextParams))
+                    {
+                        // Text mode
+                        // TODO
+
+                        assertUnset(events.onText,OnWebSocketMessage.class,method);
+                        events.onText = new EventMethod(pojo,method);
+                        continue;
+                    }
+
+                    if (isSignatureMatch(method,validBinaryParams))
+                    {
+                        // Binary Mode
+                        // TODO
+                        assertUnset(events.onBinary,OnWebSocketMessage.class,method);
+                        events.onBinary = new EventMethod(pojo,method);
+                        continue;
+                    }
+
+                    throw InvalidSignatureException.build(method,OnWebSocketMessage.class,validTextParams,validBinaryParams);
                 }
 
                 if (method.getAnnotation(OnWebSocketClose.class) != null)
@@ -344,19 +343,11 @@ public class EventMethodsCache
                     continue;
                 }
 
-                if (method.getAnnotation(OnWebSocketText.class) != null)
-                {
-                    assertValidSignature(method,OnWebSocketText.class,validTextParams);
-                    assertUnset(events.onText,OnWebSocketText.class,method);
-                    events.onText = new EventMethod(pojo,method);
-                    continue;
-                }
-
                 if (method.getAnnotation(OnWebSocketFrame.class) != null)
                 {
                     assertValidSignature(method,OnWebSocketFrame.class,validFrameParams);
-                    assertFrameUnset(events,method);
-                    events.addOnFrame(new EventMethod(pojo,method));
+                    assertUnset(events.onFrame,OnWebSocketFrame.class,method);
+                    events.onFrame = new EventMethod(pojo,method);
                     continue;
                 }
 

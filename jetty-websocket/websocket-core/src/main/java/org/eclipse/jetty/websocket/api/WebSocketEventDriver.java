@@ -1,7 +1,6 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -94,6 +93,13 @@ public class WebSocketEventDriver implements Parser.Listener
             LOG.debug("{}.onFrame({})",websocket.getClass().getSimpleName(),frame);
         }
 
+        // Generic Read-Only Frame version
+        if ((frame instanceof Frame) && (events.onFrame != null))
+        {
+            events.onFrame.call(websocket,connection,frame);
+            // DO NOT return; - as this is just a read-only notification.
+        }
+
         // Specified Close Case
         if ((frame instanceof CloseFrame) && (events.onClose != null))
         {
@@ -105,50 +111,40 @@ public class WebSocketEventDriver implements Parser.Listener
         try
         {
             // Specified Text Case
-            if ((frame instanceof TextFrame) && (events.onText != null))
+            if (frame instanceof TextFrame)
             {
-                TextFrame text = (TextFrame)frame;
-                events.onText.call(websocket,connection,text.getPayloadUTF8());
+                if (events.onText != null)
+                {
+                    TextFrame text = (TextFrame)frame;
+                    events.onText.call(websocket,connection,text.getPayloadUTF8());
+                    return;
+                }
+
+                // TODO
+                // if (events.onTextStream != null)
+                // {
+                // }
+
                 return;
             }
 
             // Specified Binary Case
-            if ((frame instanceof BinaryFrame) && (events.onBinary != null))
+            if (frame instanceof BinaryFrame)
             {
-                BinaryFrame bin = (BinaryFrame)frame;
-
-                if (events.onBinary.isParameterPresent(ByteBuffer.class))
+                if (events.onBinary != null)
                 {
-                    // Byte buffer approach
-                    events.onBinary.call(websocket,connection,bin.getPayload());
-                }
-                else
-                {
+                    BinaryFrame bin = (BinaryFrame)frame;
                     // Byte array approach
                     byte buf[] = BufferUtil.toArray(bin.getPayload());
                     events.onBinary.call(websocket,connection,buf,0,buf.length);
                 }
 
+                // TODO
+                // if (events.onBinaryStream != null)
+                // {
+                // }
+
                 return;
-            }
-
-            // Basic Hierarchy Case
-            Class<? extends BaseFrame> frameType = frame.getClass();
-            while (true)
-            {
-                EventMethod event = events.getOnFrame(frameType);
-                if (event != null)
-                {
-                    event.call(websocket,connection,frame);
-                    return;
-                }
-
-                if (!BaseFrame.class.isAssignableFrom(frameType.getSuperclass()))
-                {
-                    // not assignable
-                    return;
-                }
-                frameType = (Class<? extends BaseFrame>)frameType.getSuperclass();
             }
         }
         catch (Throwable t)

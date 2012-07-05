@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.parser.Parser;
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io
  */
-public class WebSocketAsyncConnection extends AbstractAsyncConnection implements WebSocketConnection
+public class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, WebSocketConnection
 {
     private static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
     private static final ThreadLocal<WebSocketAsyncConnection> CURRENT_CONNECTION = new ThreadLocal<WebSocketAsyncConnection>();
@@ -90,9 +90,16 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         }
     }
 
+    @Override
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        return getExecutor();
     }
 
     /**
@@ -280,5 +287,11 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
             frames[i] = new TextFrame(messages[i]);
         }
         // TODO write(context,callback,frames);
+    }
+
+    @Override
+    public <C> void writeRaw(C context, Callback<C> callback, ByteBuffer... buf) throws IOException
+    {
+        getEndPoint().write(context,callback,buf);
     }
 }

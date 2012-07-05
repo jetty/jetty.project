@@ -2,8 +2,8 @@ package org.eclipse.jetty.websocket.annotations;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.websocket.api.WebSocketBlockingConnection;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.io.WebSocketBlockingConnection;
 
 /**
  * The most common websocket implementation.
@@ -34,7 +34,7 @@ public class MyEchoSocket
         this.blocking = new WebSocketBlockingConnection(conn);
     }
 
-    @OnWebSocketText
+    @OnWebSocketMessage
     public void onText(String message)
     {
         if (conn == null)

@@ -16,7 +16,7 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
 @WebSocket
 public class MyStatelessEchoSocket
 {
-    @OnWebSocketText
+    @OnWebSocketMessage
     public void onText(WebSocketConnection conn, String text)
     {
         try
