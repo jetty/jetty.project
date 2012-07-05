@@ -1,7 +1,9 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -10,7 +12,10 @@ import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame;
+import org.eclipse.jetty.websocket.io.MessageInputStream;
+import org.eclipse.jetty.websocket.io.MessageReader;
+import org.eclipse.jetty.websocket.io.StreamAppender;
 import org.eclipse.jetty.websocket.parser.Parser;
 
 /**
@@ -24,21 +29,25 @@ import org.eclipse.jetty.websocket.parser.Parser;
 public class WebSocketEventDriver implements Parser.Listener
 {
     private static final Logger LOG = Log.getLogger(WebSocketEventDriver.class);
-    private Object websocket;
-    private WebSocketPolicy policy;
+    private final Object websocket;
+    private final WebSocketPolicy policy;
+    private final EventMethods events;
+    private final ByteBufferPool bufferPool;
     private WebSocketConnection connection;
-    private EventMethods events;
+    private ByteBuffer activeMessage;
+    private StreamAppender activeStream;
 
     /**
      * Establish the driver for the Websocket POJO
      * 
      * @param websocket
      */
-    public WebSocketEventDriver(EventMethodsCache methodsCache, WebSocketPolicy policy, Object websocket)
+    public WebSocketEventDriver(Object websocket, EventMethodsCache methodsCache, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this.policy = policy;
         this.websocket = websocket;
         this.events = methodsCache.getMethods(websocket.getClass());
+        this.bufferPool = bufferPool;
 
         if (events.isAnnotated())
         {
@@ -49,6 +58,15 @@ public class WebSocketEventDriver implements Parser.Listener
             policy.setMaxTextMessageSize(anno.maxTextSize());
             policy.setMaxIdleTime(anno.maxIdleTime());
         }
+    }
+
+    private void appendBuffer(ByteBuffer msgBuf, ByteBuffer payloadBuf)
+    {
+        if (msgBuf.remaining() < payloadBuf.remaining())
+        {
+            throw new CloseException(StatusCode.MESSAGE_TOO_LARGE,"Message exceeded maximum buffer of " + msgBuf.limit());
+        }
+        BufferUtil.put(payloadBuf,msgBuf);
     }
 
     public WebSocketPolicy getPolicy()
@@ -84,7 +102,6 @@ public class WebSocketEventDriver implements Parser.Listener
      * @param frame
      *            the frame that appeared
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void onFrame(BaseFrame frame)
     {
@@ -110,42 +127,167 @@ public class WebSocketEventDriver implements Parser.Listener
 
         try
         {
-            // Specified Text Case
-            if (frame instanceof TextFrame)
+            // Work a Data Frame
+            if (frame instanceof DataFrame)
             {
-                if (events.onText != null)
+                DataFrame data = (DataFrame)frame;
+
+                if ((events.onText == null) && (events.onBinary == null))
                 {
-                    TextFrame text = (TextFrame)frame;
-                    events.onText.call(websocket,connection,text.getPayloadUTF8());
+                    // skip
                     return;
                 }
 
-                // TODO
-                // if (events.onTextStream != null)
-                // {
-                // }
+                switch (data.getOpCode())
+                {
+                    case BINARY:
+                    {
+                        if (events.onBinary.isStreaming())
+                        {
+                            boolean needsNotification = false;
 
-                return;
+                            // Streaming Approach
+                            if (activeStream == null)
+                            {
+                                // Allocate directly, not via ByteBufferPool, as this buffer
+                                // is ultimately controlled by the end user, and we can't know
+                                // when they are done using the stream in order to release any
+                                // buffer allocated from the ByteBufferPool.
+                                ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
+                                this.activeStream = new MessageInputStream(buf);
+                                needsNotification = true;
+                            }
+
+                            activeStream.appendBuffer(data.getPayload());
+
+                            if (needsNotification)
+                            {
+                                events.onBinary.call(websocket,connection,activeStream);
+                            }
+
+                            if (data.isFin())
+                            {
+                                // close the stream.
+                                activeStream.bufferComplete();
+                                activeStream = null; // work with a new one
+                            }
+                        }
+                        else
+                        {
+                            if (activeMessage == null)
+                            {
+                                // Acquire from ByteBufferPool is safe here, as the return
+                                // from the notification is a good place to release the
+                                // buffer.
+                                activeMessage = bufferPool.acquire(policy.getBufferSize(),false);
+                                BufferUtil.clearToFill(activeMessage);
+                            }
+
+                            appendBuffer(activeMessage,data.getPayload());
+
+                            // normal case
+                            if (frame.isFin())
+                            {
+                                // Notify using simple message approach.
+                                try
+                                {
+                                    BufferUtil.flipToFlush(activeMessage,0);
+                                    byte buf[] = BufferUtil.toArray(activeMessage);
+                                    events.onBinary.call(websocket,connection,buf,0,buf.length);
+                                }
+                                finally
+                                {
+                                    bufferPool.release(activeMessage);
+                                    activeMessage = null;
+                                }
+                            }
+
+                        }
+                        return;
+                    }
+                    case TEXT:
+                    {
+                        if (events.onText.isStreaming())
+                        {
+                            boolean needsNotification = false;
+
+                            // Streaming Approach
+                            if (activeStream == null)
+                            {
+                                // Allocate directly, not via ByteBufferPool, as this buffer
+                                // is ultimately controlled by the end user, and we can't know
+                                // when they are done using the stream in order to release any
+                                // buffer allocated from the ByteBufferPool.
+                                ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
+                                this.activeStream = new MessageReader(buf);
+                                needsNotification = true;
+                            }
+
+                            activeStream.appendBuffer(data.getPayload());
+
+                            if (needsNotification)
+                            {
+                                events.onText.call(websocket,connection,activeStream);
+                            }
+
+                            if (data.isFin())
+                            {
+                                // close the stream.
+                                activeStream.bufferComplete();
+                                activeStream = null; // work with a new one
+                            }
+                        }
+                        else
+                        {
+                            if (activeMessage == null)
+                            {
+                                // Acquire from ByteBufferPool is safe here, as the return
+                                // from the notification is a good place to release the
+                                // buffer.
+                                activeMessage = bufferPool.acquire(policy.getBufferSize(),false);
+                                BufferUtil.clearToFill(activeMessage);
+                            }
+
+                            appendBuffer(activeMessage,data.getPayload());
+
+                            // normal case
+                            if (frame.isFin())
+                            {
+                                // Notify using simple message approach.
+                                try
+                                {
+                                    BufferUtil.flipToFlush(activeMessage,0);
+                                    events.onText.call(websocket,connection,BufferUtil.toUTF8String(activeMessage));
+                                }
+                                finally
+                                {
+                                    bufferPool.release(activeMessage);
+                                    activeMessage = null;
+                                }
+                            }
+                        }
+                        return;
+                    }
+                }
             }
 
             // Specified Binary Case
-            if (frame instanceof BinaryFrame)
+            if ((frame instanceof BinaryFrame) && (events.onBinary != null))
             {
-                if (events.onBinary != null)
+                BinaryFrame bin = (BinaryFrame)frame;
+                if (events.onBinary.isStreaming())
                 {
-                    BinaryFrame bin = (BinaryFrame)frame;
+                    // Streaming Approach
+                }
+                else
+                {
                     // Byte array approach
                     byte buf[] = BufferUtil.toArray(bin.getPayload());
                     events.onBinary.call(websocket,connection,buf,0,buf.length);
                 }
-
-                // TODO
-                // if (events.onBinaryStream != null)
-                // {
-                // }
-
                 return;
             }
+
         }
         catch (Throwable t)
         {

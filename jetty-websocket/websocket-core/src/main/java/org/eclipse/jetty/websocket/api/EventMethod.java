@@ -1,6 +1,7 @@
 package org.eclipse.jetty.websocket.api;
 
-import java.lang.annotation.Annotation;
+import java.io.InputStream;
+import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -9,7 +10,6 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class EventMethod
 {
-    public static final EventMethod NOOP = new EventMethod();
     private static final Logger LOG = Log.getLogger(EventMethod.class);
 
     private static Object[] dropFirstArg(Object[] args)
@@ -23,37 +23,18 @@ public class EventMethod
         return ret;
     }
 
-    public static EventMethod findAnnotatedMethod(Object pojo, Class<? extends Annotation> annoClass, Class<?>... paramTypes)
-    {
-        Class<?>[] possibleParams = new Class<?>[paramTypes.length];
-        System.arraycopy(paramTypes,0,possibleParams,0,possibleParams.length);
-
-        for (Method method : pojo.getClass().getDeclaredMethods())
-        {
-            if (method.getAnnotation(annoClass) == null)
-            {
-                // skip, not interested
-                continue;
-            }
-
-        }
-        return NOOP;
-    }
-
     protected Class<?> pojo;
     protected Method method;
+    private boolean hasConnection = false;
+    private boolean isStreaming = false;
     private Class<?>[] paramTypes;
-
-    private EventMethod()
-    {
-        this.method = null;
-    }
 
     public EventMethod(Class<?> pojo, Method method)
     {
         this.pojo = pojo;
         this.paramTypes = method.getParameterTypes();
         this.method = method;
+        identifyPresentParamTypes();
     }
 
     public EventMethod(Class<?> pojo, String methodName, Class<?>... paramTypes)
@@ -63,6 +44,7 @@ public class EventMethod
             this.pojo = pojo;
             this.paramTypes = paramTypes;
             this.method = pojo.getMethod(methodName,paramTypes);
+            identifyPresentParamTypes();
         }
         catch (NoSuchMethodException | SecurityException e)
         {
@@ -113,5 +95,36 @@ public class EventMethod
     protected Class<?>[] getParamTypes()
     {
         return this.paramTypes;
+    }
+
+    private void identifyPresentParamTypes()
+    {
+        this.hasConnection = false;
+        this.isStreaming = false;
+
+        if (paramTypes == null)
+        {
+            return;
+        }
+        for(Class<?> paramType: paramTypes)
+        {
+            if(WebSocketConnection.class.isAssignableFrom(paramType)) {
+                this.hasConnection = true;
+            }
+            if(Reader.class.isAssignableFrom(paramType)||
+                    InputStream.class.isAssignableFrom(paramType)) {
+                this.isStreaming = true;
+            }
+        }
+    }
+
+    public boolean isHasConnection()
+    {
+        return hasConnection;
+    }
+
+    public boolean isStreaming()
+    {
+        return isStreaming;
     }
 }

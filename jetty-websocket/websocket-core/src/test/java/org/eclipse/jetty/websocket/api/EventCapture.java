@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.api;
 import static org.hamcrest.Matchers.*;
 
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 import org.junit.Assert;
 
@@ -27,6 +28,12 @@ public class EventCapture extends ArrayList<String>
     public void assertEventCount(int expectedCount)
     {
         Assert.assertThat("Event Count",size(),is(expectedCount));
+    }
+
+    public void assertEventRegex(int eventNum, String regex)
+    {
+        String event = get(eventNum);
+        Assert.assertTrue("Event[" + eventNum + "]: regex:[" + regex + "] in [" + event + "]",Pattern.matches(regex,event));
     }
 
     public void assertEventStartsWith(int eventNum, String expected)

@@ -5,22 +5,13 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.EventCapture;
+import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.ControlFrame;
-import org.eclipse.jetty.websocket.frames.PingFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
 
 @WebSocket
 public class AnnotatedFramesSocket
 {
     public EventCapture capture = new EventCapture();
-
-    @OnWebSocketFrame
-    public void onBaseFrame(BaseFrame frame)
-    {
-        capture.add("onBaseFrame(%s)",frame);
-    }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
@@ -35,20 +26,8 @@ public class AnnotatedFramesSocket
     }
 
     @OnWebSocketFrame
-    public void onControlFrame(ControlFrame ping)
+    public void onFrame(Frame frame)
     {
-        capture.add("onControlFrame(%s)",ping);
-    }
-
-    @OnWebSocketFrame
-    public void onPing(PingFrame ping)
-    {
-        capture.add("onPingFrame(%s)",ping);
-    }
-
-    @OnWebSocketFrame
-    public void onTextFrame(TextFrame text)
-    {
-        capture.add("onTextFrame(%s)",text);
+        capture.add("onFrame(%s)",frame);
     }
 }
