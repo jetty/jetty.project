@@ -333,9 +333,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         if (l==0 && ( header!=null && header.hasContent() || buffer!=null && buffer.hasContent() || trailer!=null && trailer.hasContent()))
         {
             synchronized (this)
-            {
-                if (_dispatched)
-                    _writable=false;
+            {   
+                _writable=false;
+                if (!_dispatched)
+                    updateKey();
             }
         }
         else if (l>0)
@@ -358,9 +359,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         if (l==0 && buffer!=null && buffer.hasContent())
         {
             synchronized (this)
-            {
-                if (_dispatched)
-                    _writable=false;
+            {   
+                _writable=false;
+                if (!_dispatched)
+                    updateKey();
             }
         }
         else if (l>0)
