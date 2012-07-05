@@ -2,8 +2,8 @@ package org.eclipse.jetty.websocket.annotations;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.api.WebSocketBlockingConnection;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.io.WebSocketBlockingConnection;
 
 /**
  * The most common websocket implementation.

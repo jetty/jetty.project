@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket.frames;
 
-import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 
 public class DataFrame extends BaseFrame
 {

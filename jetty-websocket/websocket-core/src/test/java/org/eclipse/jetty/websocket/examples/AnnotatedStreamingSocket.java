@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.api.samples;
+package org.eclipse.jetty.websocket.examples;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -8,9 +8,9 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.EventCapture;
-import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.driver.EventCapture;
+import org.eclipse.jetty.websocket.protocol.Frame;
 
 @WebSocket
 public class AnnotatedStreamingSocket

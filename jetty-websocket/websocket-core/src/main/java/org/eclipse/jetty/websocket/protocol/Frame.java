@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.protocol;
 
 /**
  * The immutable frame details.

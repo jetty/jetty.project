@@ -1,17 +1,24 @@
-package org.eclipse.jetty.websocket.api.samples;
+package org.eclipse.jetty.websocket.examples;
+
+import java.io.InputStream;
 
 import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.EventCapture;
-import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.driver.EventCapture;
 
 @WebSocket
-public class AnnotatedFramesSocket
+public class AnnotatedBinaryStreamSocket
 {
     public EventCapture capture = new EventCapture();
+
+    @OnWebSocketMessage
+    public void onBinary(InputStream stream)
+    {
+        capture.add("onBinary(%s)",stream);
+    }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
@@ -22,12 +29,7 @@ public class AnnotatedFramesSocket
     @OnWebSocketConnect
     public void onConnect(WebSocketConnection conn)
     {
-        capture.add("onConnect(%s)",conn);
+        capture.add("onConnect(%s)", conn);
     }
 
-    @OnWebSocketFrame
-    public void onFrame(Frame frame)
-    {
-        capture.add("onFrame(%s)",frame);
-    }
 }

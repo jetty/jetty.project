@@ -1,14 +1,16 @@
-package org.eclipse.jetty.websocket.api.samples;
+package org.eclipse.jetty.websocket.examples;
+
+import java.io.Reader;
 
 import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.EventCapture;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.driver.EventCapture;
 
 @WebSocket
-public class AnnotatedTextSocket
+public class AnnotatedTextStreamSocket
 {
     public EventCapture capture = new EventCapture();
 
@@ -25,9 +27,8 @@ public class AnnotatedTextSocket
     }
 
     @OnWebSocketMessage
-    public void onText(String message)
+    public void onText(Reader reader)
     {
-        capture.add("onText(%s)",capture.q(message));
+        capture.add("onText(%s)",reader);
     }
-
 }

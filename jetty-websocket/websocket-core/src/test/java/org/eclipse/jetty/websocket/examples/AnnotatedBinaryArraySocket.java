@@ -1,23 +1,21 @@
-package org.eclipse.jetty.websocket.api.samples;
-
-import java.io.InputStream;
+package org.eclipse.jetty.websocket.examples;
 
 import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.EventCapture;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.driver.EventCapture;
 
 @WebSocket
-public class AnnotatedBinaryStreamSocket
+public class AnnotatedBinaryArraySocket
 {
     public EventCapture capture = new EventCapture();
 
     @OnWebSocketMessage
-    public void onBinary(InputStream stream)
+    public void onBinary(byte payload[], int offset, int length)
     {
-        capture.add("onBinary(%s)",stream);
+        capture.add("onBinary([%d],%d,%d)",payload.length,offset,length);
     }
 
     @OnWebSocketClose

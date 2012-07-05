@@ -5,11 +5,11 @@ import static org.hamcrest.Matchers.is;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.junit.Assert;
 import org.junit.Test;
 

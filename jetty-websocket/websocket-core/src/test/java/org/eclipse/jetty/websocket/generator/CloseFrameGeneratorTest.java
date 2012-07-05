@@ -1,7 +1,9 @@
 package org.eclipse.jetty.websocket.generator;
 
-import org.eclipse.jetty.websocket.asserts.CloseFrameAssert;
+import junit.framework.Assert;
+
 import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.junit.Test;
 
 public class CloseFrameGeneratorTest
@@ -10,8 +12,7 @@ public class CloseFrameGeneratorTest
     public void testGenerator() throws Exception
     {
         CloseFrame close = new CloseFrame();
-        
-        CloseFrameAssert.assertValidCloseFrame(close);
+
+        Assert.assertEquals(OpCode.CLOSE,close.getOpCode());
     }
-    
 }

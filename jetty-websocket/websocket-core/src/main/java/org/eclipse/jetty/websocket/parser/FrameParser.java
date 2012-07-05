@@ -4,9 +4,9 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 
 /**
  * Base Framing Protocol handling

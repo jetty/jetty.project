@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.driver;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -9,6 +9,12 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
@@ -17,6 +23,7 @@ import org.eclipse.jetty.websocket.io.MessageInputStream;
 import org.eclipse.jetty.websocket.io.MessageReader;
 import org.eclipse.jetty.websocket.io.StreamAppender;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.Frame;
 
 /**
  * Responsible for routing the internally generated events destined for a specific WebSocket instance to whatever choice of development style the developer has

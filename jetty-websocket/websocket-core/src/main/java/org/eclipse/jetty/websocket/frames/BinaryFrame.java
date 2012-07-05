@@ -3,7 +3,7 @@ package org.eclipse.jetty.websocket.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 
 /**
  * Representation of a <a href="https://tools.ietf.org/html/rfc6455#section-5.6">Binary Data Frame (0x02)</a>.

@@ -2,8 +2,8 @@ package org.eclipse.jetty.websocket.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 
 public abstract class ControlFrame extends BaseFrame
 {

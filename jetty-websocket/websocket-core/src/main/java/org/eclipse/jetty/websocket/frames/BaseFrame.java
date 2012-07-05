@@ -3,8 +3,8 @@ package org.eclipse.jetty.websocket.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.OpCode;
+import org.eclipse.jetty.websocket.protocol.Frame;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>

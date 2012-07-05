@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * Support class for reading binary message data as an InputStream.
+ */
 public class MessageInputStream extends InputStream implements StreamAppender
 {
     private final ByteBuffer buffer;

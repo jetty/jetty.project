@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket.annotations;
 
-import org.eclipse.jetty.websocket.api.Frame;
+import org.eclipse.jetty.websocket.protocol.Frame;
 
 @WebSocket
 public class FrameSocket

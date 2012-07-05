@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.driver;
 
 import static org.hamcrest.Matchers.*;
 
@@ -13,12 +13,17 @@ import org.eclipse.jetty.websocket.annotations.MyStatelessEchoSocket;
 import org.eclipse.jetty.websocket.annotations.NoopSocket;
 import org.eclipse.jetty.websocket.annotations.NotASocket;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.samples.AdapterConnectCloseSocket;
-import org.eclipse.jetty.websocket.api.samples.AnnotatedBinaryArraySocket;
-import org.eclipse.jetty.websocket.api.samples.AnnotatedBinaryStreamSocket;
-import org.eclipse.jetty.websocket.api.samples.AnnotatedTextSocket;
-import org.eclipse.jetty.websocket.api.samples.AnnotatedTextStreamSocket;
-import org.eclipse.jetty.websocket.api.samples.ListenerBasicSocket;
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.driver.EventMethod;
+import org.eclipse.jetty.websocket.driver.EventMethods;
+import org.eclipse.jetty.websocket.driver.EventMethodsCache;
+import org.eclipse.jetty.websocket.examples.AdapterConnectCloseSocket;
+import org.eclipse.jetty.websocket.examples.AnnotatedBinaryArraySocket;
+import org.eclipse.jetty.websocket.examples.AnnotatedBinaryStreamSocket;
+import org.eclipse.jetty.websocket.examples.AnnotatedTextSocket;
+import org.eclipse.jetty.websocket.examples.AnnotatedTextStreamSocket;
+import org.eclipse.jetty.websocket.examples.ListenerBasicSocket;
 import org.junit.Assert;
 import org.junit.Test;
 

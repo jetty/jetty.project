@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+/**
+ * Support class for reading text message data as an Reader.
+ * <p>
+ * Due to the spec, this reader is forced to use the UTF8 charset.
+ */
 public class MessageReader extends Reader implements StreamAppender
 {
     private ByteBuffer buffer;

@@ -1,10 +1,12 @@
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.io;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.junit.rules.TestName;
 
 public class LocalWebSocketConnection implements WebSocketConnection

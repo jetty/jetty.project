@@ -5,8 +5,8 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.api.AcceptHash;
 import org.eclipse.jetty.websocket.extensions.Extension;
+import org.eclipse.jetty.websocket.protocol.AcceptHash;
 import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.ServletWebSocketResponse;
 import org.eclipse.jetty.websocket.server.WebSocketHandshake;

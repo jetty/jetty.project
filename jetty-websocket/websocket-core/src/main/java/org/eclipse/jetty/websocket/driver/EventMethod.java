@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.driver;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -7,6 +7,8 @@ import java.lang.reflect.Method;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 
 public class EventMethod
 {

@@ -1,8 +1,8 @@
-package org.eclipse.jetty.websocket.api.samples;
+package org.eclipse.jetty.websocket.examples;
 
-import org.eclipse.jetty.websocket.api.EventCapture;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.driver.EventCapture;
 
 public class AdapterConnectCloseSocket extends WebSocketAdapter
 {

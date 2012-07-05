@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.api.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.generator.Generator;

@@ -18,12 +18,21 @@ public class WebSocketPolicy
     }
 
     /**
-     * TODO: Should the generators and parsers auto-fragment large frames?
+     * Automatically fragment large frames.
+     * <p>
+     * If frames are encountered at size larger than {@link #maxPayloadSize} then they are automatically fragmented into pieces fitting within the
+     * maxPayloadSize.
+     * <p>
+     * Default: false
      */
-    private boolean autoFragment = true;
+    private boolean autoFragment = false;
 
-    private int maxPayloadSize;
-    private int autoFragmentSize;
+    /**
+     * The maximum allowed payload size (validated in both directions)
+     * <p>
+     * Default: 65535 (64K)
+     */
+    private int maxPayloadSize = 65535;
 
     /**
      * The maximum size of a text message during parsing/generating.
@@ -40,7 +49,7 @@ public class WebSocketPolicy
     private int maxBinaryMessageSize = -1;
 
     /**
-     * Buffer size, which is also the max frame byte size.
+     * Maximum Message Buffer size, which is also the max frame byte size.
      * <p>
      * Default: 65535 (64 K)
      */
@@ -128,9 +137,24 @@ public class WebSocketPolicy
         return maxIdleTime;
     }
 
+    public int getMaxPayloadSize()
+    {
+        return maxPayloadSize;
+    }
+
     public int getMaxTextMessageSize()
     {
         return maxTextMessageSize;
+    }
+
+    public boolean isAutoFragment()
+    {
+        return autoFragment;
+    }
+
+    public void setAutoFragment(boolean autoFragment)
+    {
+        this.autoFragment = autoFragment;
     }
 
     public void setBufferSize(int bufferSize)
@@ -151,6 +175,11 @@ public class WebSocketPolicy
     public void setMaxIdleTime(int maxIdleTime)
     {
         this.maxIdleTime = maxIdleTime;
+    }
+
+    public void setMaxPayloadSize(int maxPayloadSize)
+    {
+        this.maxPayloadSize = maxPayloadSize;
     }
 
     public void setMaxTextMessageSize(int maxTextMessageSize)

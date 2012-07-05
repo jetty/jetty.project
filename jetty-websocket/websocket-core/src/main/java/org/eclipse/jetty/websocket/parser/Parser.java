@@ -8,11 +8,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.OpCode;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 
 /**
  * Parsing of a frames in WebSocket land.

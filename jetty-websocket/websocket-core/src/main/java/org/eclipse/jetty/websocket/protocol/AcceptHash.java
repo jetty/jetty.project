@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.protocol;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
