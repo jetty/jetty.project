@@ -14,6 +14,10 @@ import org.eclipse.jetty.websocket.annotations.NoopSocket;
 import org.eclipse.jetty.websocket.annotations.NotASocket;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.samples.AdapterConnectCloseSocket;
+import org.eclipse.jetty.websocket.api.samples.AnnotatedBinaryArraySocket;
+import org.eclipse.jetty.websocket.api.samples.AnnotatedBinaryStreamSocket;
+import org.eclipse.jetty.websocket.api.samples.AnnotatedTextSocket;
+import org.eclipse.jetty.websocket.api.samples.AnnotatedTextStreamSocket;
 import org.eclipse.jetty.websocket.api.samples.ListenerBasicSocket;
 import org.junit.Assert;
 import org.junit.Test;
@@ -75,7 +79,7 @@ public class EventMethodsCacheTest
         catch (InvalidWebSocketException e)
         {
             // Validate that we have clear error message to the developer
-            Assert.assertThat(e.getMessage(),containsString("Duplicate @OnWebSocketBinary declaration"));
+            Assert.assertThat(e.getMessage(),containsString("Duplicate @OnWebSocketMessage declaration"));
         }
     }
 
@@ -95,7 +99,7 @@ public class EventMethodsCacheTest
         catch (InvalidWebSocketException e)
         {
             // Validate that we have clear error message to the developer
-            Assert.assertThat(e.getMessage(),containsString("Duplicate Frame Type"));
+            Assert.assertThat(e.getMessage(),containsString("Duplicate @OnWebSocketFrame"));
         }
     }
 
@@ -137,6 +141,48 @@ public class EventMethodsCacheTest
             // Validate that we have clear error message to the developer
             Assert.assertThat(e.getMessage(),containsString("may not be static"));
         }
+    }
+
+    /**
+     * Test Case for socket for binary array messages
+     */
+    @Test
+    public void testAnnotatedBinaryArraySocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        EventMethods methods = cache.getMethods(AnnotatedBinaryArraySocket.class);
+
+        String classId = AnnotatedBinaryArraySocket.class.getSimpleName();
+
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
+
+        assertHasEventMethod(classId + ".onBinary",methods.onBinary);
+        assertHasEventMethod(classId + ".onClose",methods.onClose);
+        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onText",methods.onText);
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
+    }
+
+    /**
+     * Test Case for socket for binary stream messages
+     */
+    @Test
+    public void testAnnotatedBinaryStreamSocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        EventMethods methods = cache.getMethods(AnnotatedBinaryStreamSocket.class);
+
+        String classId = AnnotatedBinaryStreamSocket.class.getSimpleName();
+
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
+
+        assertHasEventMethod(classId + ".onBinary",methods.onBinary);
+        assertHasEventMethod(classId + ".onClose",methods.onClose);
+        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertNoEventMethod(classId + ".onText",methods.onText);
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
 
     /**
@@ -242,6 +288,48 @@ public class EventMethodsCacheTest
         assertNoEventMethod(classId + ".onException",methods.onException);
         assertNoEventMethod(classId + ".onText",methods.onText);
         assertHasEventMethod(classId + ".onFrame",methods.onFrame);
+    }
+
+    /**
+     * Test Case for socket for simple text messages
+     */
+    @Test
+    public void testAnnotatedTextSocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        EventMethods methods = cache.getMethods(AnnotatedTextSocket.class);
+
+        String classId = AnnotatedTextSocket.class.getSimpleName();
+
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
+
+        assertNoEventMethod(classId + ".onBinary",methods.onBinary);
+        assertHasEventMethod(classId + ".onClose",methods.onClose);
+        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onText",methods.onText);
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
+    }
+
+    /**
+     * Test Case for socket for text stream messages
+     */
+    @Test
+    public void testAnnotatedTextStreamSocket()
+    {
+        EventMethodsCache cache = new EventMethodsCache();
+        EventMethods methods = cache.getMethods(AnnotatedTextStreamSocket.class);
+
+        String classId = AnnotatedTextStreamSocket.class.getSimpleName();
+
+        Assert.assertThat("EventMethods for " + classId,methods,notNullValue());
+
+        assertNoEventMethod(classId + ".onBinary",methods.onBinary);
+        assertHasEventMethod(classId + ".onClose",methods.onClose);
+        assertHasEventMethod(classId + ".onConnect",methods.onConnect);
+        assertNoEventMethod(classId + ".onException",methods.onException);
+        assertHasEventMethod(classId + ".onText",methods.onText);
+        assertNoEventMethod(classId + ".onFrame",methods.onFrame);
     }
 
     /**

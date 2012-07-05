@@ -1,25 +1,15 @@
 package org.eclipse.jetty.websocket.annotations;
 
-import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.api.Frame;
 
 @WebSocket
 public class BadDuplicateFrameSocket
 {
     /**
-     * The most basic frame type
+     * The get a frame
      */
     @OnWebSocketFrame
-    public void frameMe(BaseFrame frame)
-    {
-        /* ignore */
-    }
-
-    /**
-     * Should allow for a more specific frame type as well.
-     */
-    @OnWebSocketFrame
-    public void messageMe(TextFrame frame)
+    public void frameMe(Frame frame)
     {
         /* ignore */
     }
@@ -28,7 +18,7 @@ public class BadDuplicateFrameSocket
      * This is a duplicate frame type (should throw an exception attempting to use)
      */
     @OnWebSocketFrame
-    public void textMe(TextFrame frame)
+    public void watchMe(Frame frame)
     {
         /* ignore */
     }

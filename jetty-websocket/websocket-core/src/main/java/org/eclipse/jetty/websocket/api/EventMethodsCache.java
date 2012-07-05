@@ -274,9 +274,21 @@ public class EventMethodsCache
         return true;
     }
 
-    private boolean isSignatureMatch(Method method, ParamList validbinaryparams2)
+    private boolean isSignatureMatch(Method method, ParamList validParams)
     {
-        // TODO Auto-generated method stub
+        assertIsPublicNonStatic(method);
+        assertIsReturn(method,Void.TYPE);
+
+        // validate parameters
+        Class<?> actual[] = method.getParameterTypes();
+        for (Class<?>[] params : validParams)
+        {
+            if (isSameParameters(actual,params))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 

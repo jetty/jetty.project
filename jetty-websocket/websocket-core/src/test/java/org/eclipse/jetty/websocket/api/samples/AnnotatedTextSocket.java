@@ -12,12 +12,6 @@ public class AnnotatedTextSocket
 {
     public EventCapture capture = new EventCapture();
 
-    @OnWebSocketMessage
-    public void onBinary(byte payload[], int offset, int length)
-    {
-        capture.add("onBinary([%d],%d,%d)",payload.length,offset,length);
-    }
-
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
@@ -28,6 +22,12 @@ public class AnnotatedTextSocket
     public void onConnect(WebSocketConnection conn)
     {
         capture.add("onConnect(%s)", conn);
+    }
+
+    @OnWebSocketMessage
+    public void onText(String message)
+    {
+        capture.add("onText(%s)",capture.q(message));
     }
 
 }
