@@ -5,7 +5,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.junit.rules.TestName;
 
 public class LocalWebSocketConnection implements WebSocketConnection
@@ -68,37 +67,12 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
-    public void write(BaseFrame frame) throws IOException
-    {
-    }
-
-    @Override
-    public void write(byte[] data, int offset, int length) throws IOException
-    {
-    }
-
-    @Override
-    public void write(ByteBuffer... buffers) throws IOException
-    {
-    }
-
-    @Override
-    public <C> void write(C context, Callback<C> callback, BaseFrame... frames) throws IOException
-    {
-    }
-
-    @Override
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IOException
     {
     }
 
     @Override
     public <C> void write(C context, Callback<C> callback, String... messages) throws IOException
-    {
-    }
-
-    @Override
-    public void write(String message) throws IOException
     {
     }
 }

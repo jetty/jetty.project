@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.annotations;
 import java.io.IOException;
 
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.io.WebSocketBlockingConnection;
 
 /**
  * The most common websocket implementation.
@@ -13,10 +14,11 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
 public class MyEchoSocket
 {
     private WebSocketConnection conn;
+    private WebSocketBlockingConnection blocking;
 
-    public WebSocketConnection getConnection()
+    public WebSocketBlockingConnection getConnection()
     {
-        return conn;
+        return blocking;
     }
 
     @OnWebSocketClose
@@ -29,6 +31,7 @@ public class MyEchoSocket
     public void onConnect(WebSocketConnection conn)
     {
         this.conn = conn;
+        this.blocking = new WebSocketBlockingConnection(conn);
     }
 
     @OnWebSocketText
@@ -43,7 +46,7 @@ public class MyEchoSocket
 
         try
         {
-            conn.write(message);
+            blocking.write(message);
         }
         catch (IOException e)
         {

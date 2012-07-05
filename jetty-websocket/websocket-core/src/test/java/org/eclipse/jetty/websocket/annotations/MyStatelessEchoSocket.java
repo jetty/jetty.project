@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.annotations;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 
 /**
@@ -20,7 +21,7 @@ public class MyStatelessEchoSocket
     {
         try
         {
-            conn.write(text);
+            conn.write(null,new FutureCallback<Void>(),text);
         }
         catch (IOException e)
         {

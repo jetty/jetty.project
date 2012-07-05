@@ -14,17 +14,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.callbacks.WebSocketCloseCallback;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
@@ -188,7 +184,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
                 terminateConnection(StatusCode.PROTOCOL,null);
                 break;
             }
-            
+
             parser.parse(buffer);
         }
     }
@@ -231,104 +227,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     public String toString()
     {
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void write(BaseFrame frame) throws IOException
-    {
-        if (frame == null)
-        {
-            // nothing to write
-            return;
-        }
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write(BaseFrame->{})",frame);
-        }
-
-        ByteBuffer raw = bufferPool.acquire(frame.getPayloadLength() + FrameGenerator.OVERHEAD,false);
-        BufferUtil.clearToFill(raw);
-        generator.generate(raw,frame);
-        BufferUtil.flipToFlush(raw,0);
-        Callback<Void> nop = new FutureCallback<>(); // TODO: add buffer release callback?
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Raw Buffer: {}",BufferUtil.toDetailString(raw));
-        }
-        getEndPoint().write(null,nop,raw);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void write(byte[] data, int offset, int length) throws IOException
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write(byte[]->{})",data);
-        }
-        write(new BinaryFrame(data,offset,length));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void write(ByteBuffer... buffers) throws IOException
-    {
-        int len = buffers.length;
-        if (len == 0)
-        {
-            // nothing to write
-            return;
-        }
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write(ByteBuffers->{})",buffers.length);
-        }
-        ByteBuffer raw[] = new ByteBuffer[len];
-        for (int i = 0; i < len; i++)
-        {
-            raw[i] = bufferPool.acquire(buffers[i].remaining() + FrameGenerator.OVERHEAD,false);
-            BufferUtil.clearToFill(raw[i]);
-            BinaryFrame frame = new BinaryFrame(buffers[i]);
-            generator.generate(raw[i],frame);
-            BufferUtil.flipToFlush(raw[i],0);
-        }
-        Callback<Void> nop = new FutureCallback<>(); // TODO: add buffer release callback?
-        getEndPoint().write(null,nop,raw);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <C> void write(C context, Callback<C> callback, BaseFrame... frames) throws IOException
-    {
-        int len = frames.length;
-        if (len == 0)
-        {
-            // nothing to write
-            return;
-        }
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write(context,{},BaseFrames->{})",callback,frames.length);
-        }
-        ByteBuffer raw[] = new ByteBuffer[len];
-        for (int i = 0; i < len; i++)
-        {
-            raw[i] = bufferPool.acquire(frames[i].getPayloadLength() + FrameGenerator.OVERHEAD,false);
-            BufferUtil.clearToFill(raw[i]);
-            generator.generate(raw[i],frames[i]);
-            BufferUtil.flipToFlush(raw[i],0);
-        }
-        getEndPoint().write(context,callback,raw);
     }
 
     /**
@@ -380,25 +278,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         {
             frames[i] = new TextFrame(messages[i]);
         }
-        write(context,callback,frames);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void write(String message) throws IOException
-    {
-        if (message == null)
-        {
-            // nothing to write
-            return;
-        }
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write(String->{})",message);
-        }
-        write(new TextFrame(message));
+        // TODO write(context,callback,frames);
     }
 }
