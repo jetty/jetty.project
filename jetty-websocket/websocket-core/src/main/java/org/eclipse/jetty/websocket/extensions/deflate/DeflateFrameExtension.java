@@ -20,8 +20,8 @@ import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.extensions.ExtensionConfig;
 
 /**
  * @TODO Implement proposed deflate frame draft

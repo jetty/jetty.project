@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.extensions;
 
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
 
 public interface Extension
 {

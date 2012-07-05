@@ -15,8 +15,8 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.extensions.fragment;
 
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.extensions.ExtensionConfig;
 
 public class FragmentExtension extends AbstractExtension
 {
