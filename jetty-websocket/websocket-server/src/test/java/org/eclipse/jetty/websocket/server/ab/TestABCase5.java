@@ -2,11 +2,13 @@ package org.eclipse.jetty.websocket.server.ab;
 
 import static org.hamcrest.Matchers.*;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -58,14 +60,14 @@ public class TestABCase5
             }
 
             // echo the message back.
-            // try
-            // {
-            // getConnection().write(message);
-            // }
-            // catch (IOException e)
-            // {
-            // e.printStackTrace(System.err);
-            // }
+            try
+            {
+                getConnection().write(null,new FutureCallback<Void>(),message);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace(System.err);
+            }
         }
     }
 
