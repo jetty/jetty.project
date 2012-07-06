@@ -30,9 +30,9 @@ public class WebSocketPolicy
     /**
      * The maximum allowed payload size (validated in both directions)
      * <p>
-     * Default: 65535 (64K)
+     * Default: 65536 (64K)
      */
-    private int maxPayloadSize = 65535;
+    private int maxPayloadSize = 65536;
 
     /**
      * The maximum size of a text message during parsing/generating.
@@ -51,9 +51,9 @@ public class WebSocketPolicy
     /**
      * Maximum Message Buffer size, which is also the max frame byte size.
      * <p>
-     * Default: 65535 (64 K)
+     * Default: 65536 (64 K)
      */
-    private int bufferSize = 65535;
+    private int bufferSize = 65536;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
@@ -92,9 +92,9 @@ public class WebSocketPolicy
     public void assertValidPayloadLength(int payloadLength)
     {
         // validate to buffer sizes
-        if (payloadLength > bufferSize)
+        if (payloadLength > payloadLength)
         {
-            throw new MessageTooLargeException("Requested payload length [" + payloadLength + "] exceeds maximum size [" + bufferSize + "]");
+            throw new MessageTooLargeException("Requested payload length [" + payloadLength + "] exceeds maximum size [" + payloadLength + "]");
         }
     }
 
@@ -188,6 +188,10 @@ public class WebSocketPolicy
 
     public void setMaxPayloadSize(int maxPayloadSize)
     {
+        if (maxPayloadSize < bufferSize)
+        {
+            throw new IllegalStateException("Cannot have payload size be smaller than buffer size");
+        }
         this.maxPayloadSize = maxPayloadSize;
     }
 

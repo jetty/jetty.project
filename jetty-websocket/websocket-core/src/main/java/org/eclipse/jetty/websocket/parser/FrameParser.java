@@ -229,6 +229,13 @@ public class FrameParser
                     }
                     else
                     {
+                        // special case for empty payloads (no more bytes left in buffer)
+                        if (payloadLength == 0)
+                        {
+                            state = State.START;
+                            return true;
+                        }
+
                         state = State.PAYLOAD;
                     }
 
@@ -248,6 +255,13 @@ public class FrameParser
                         }
                         else
                         {
+                            // special case for empty payloads (no more bytes left in buffer)
+                            if (payloadLength == 0)
+                            {
+                                state = State.START;
+                                return true;
+                            }
+
                             state = State.PAYLOAD;
                         }
                     }
@@ -260,6 +274,13 @@ public class FrameParser
                     if (buffer.remaining() >= 4)
                     {
                         buffer.get(m,0,4);
+                        // special case for empty payloads (no more bytes left in buffer)
+                        if (payloadLength == 0)
+                        {
+                            state = State.START;
+                            return true;
+                        }
+
                         state = State.PAYLOAD;
                     }
                     else
@@ -276,6 +297,13 @@ public class FrameParser
                     getFrame().getMask()[cursor] = b;
                     if (cursor == 0)
                     {
+                        // special case for empty payloads (no more bytes left in buffer)
+                        if (payloadLength == 0)
+                        {
+                            state = State.START;
+                            return true;
+                        }
+
                         state = State.PAYLOAD;
                     }
                     break;
@@ -310,6 +338,11 @@ public class FrameParser
      */
     public boolean parsePayload(ByteBuffer buffer)
     {
+        if (payloadLength == 0)
+        {
+            return true;
+        }
+
         while (buffer.hasRemaining())
         {
             if (payload == null)

@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
@@ -542,6 +542,6 @@ public class TestABCase1_2
 
         WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
-        Assert.assertEquals("BinaryFrame.payload",0,pActual.getPayloadData().length);
+        Assert.assertNull("BinaryFrame.payload",pActual.getPayloadData());
     }
 }
