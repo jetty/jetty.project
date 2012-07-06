@@ -65,26 +65,6 @@ public class ReferrerPushStrategyUnitTest
         assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
     }
 
-    @Test
-    public void testDisablePushByVersion() throws InterruptedException
-    {
-        referrerPushStrategy.removeSPDYVersionSupport(SPDY.V2);
-        
-        Headers requestHeaders = getBaseHeaders(VERSION);
-        setMockExpectations();
-
-        String referrerUrl = fillPushStrategyCache(requestHeaders);
-
-        requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
-        Set<String> pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
-        assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
-
-        requestHeaders = getBaseHeaders(SPDY.V2);
-        when(session.getVersion()).thenReturn(SPDY.V2);
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
-        assertThat("no push resources are returned for SPDY.V2", pushResources.size(), is(0));
-    }
-
     private Headers getBaseHeaders(short version)
     {
         Headers requestHeaders = new Headers();
