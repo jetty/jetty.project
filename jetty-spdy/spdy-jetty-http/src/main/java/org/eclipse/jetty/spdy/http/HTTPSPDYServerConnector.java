@@ -16,6 +16,9 @@
 
 package org.eclipse.jetty.spdy.http;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -23,32 +26,49 @@ public class HTTPSPDYServerConnector extends AbstractHTTPSPDYServerConnector
 {
     public HTTPSPDYServerConnector()
     {
-        this(null, new PushStrategy.None());
+        this(null, Collections.<Short, PushStrategy>emptyMap());
     }
 
-    public HTTPSPDYServerConnector(PushStrategy pushStrategy)
+    public HTTPSPDYServerConnector(Map<Short, PushStrategy> pushStrategies)
     {
-        this(null, pushStrategy);
+        this(null, pushStrategies);
     }
 
     public HTTPSPDYServerConnector(SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory, new PushStrategy.None());
+        this(sslContextFactory, Collections.<Short, PushStrategy>emptyMap());
     }
 
-    public HTTPSPDYServerConnector(SslContextFactory sslContextFactory, PushStrategy pushStrategy)
+    public HTTPSPDYServerConnector(SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
     {
         // We pass a null ServerSessionFrameListener because for
         // HTTP over SPDY we need one that references the endPoint
         super(null, sslContextFactory);
         clearAsyncConnectionFactories();
+        PushStrategy.None pushStrategy = new PushStrategy.None();
         // The "spdy/3" protocol handles HTTP over SPDY
-        putAsyncConnectionFactory("spdy/3", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
+        putAsyncConnectionFactory(SPDY.V3, pushStrategy);
         // The "spdy/2" protocol handles HTTP over SPDY
-        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
+        putAsyncConnectionFactory(SPDY.V2, pushStrategy);
+        // Immediately overwrite the defaults if PushStrategies have been provided. The LinkedHashMap will preserve the right order of the protocols
+        addPushStrategies(pushStrategies);
         // The "http/1.1" protocol handles browsers that support NPN but not SPDY
         putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
         // The default connection factory handles plain HTTP on non-SSL or non-NPN connections
         setDefaultAsyncConnectionFactory(getAsyncConnectionFactory("http/1.1"));
+    }
+
+    private void putAsyncConnectionFactory(short version, PushStrategy pushStrategy)
+    {
+        String protocol = version == SPDY.V2 ? "spdy/2" : "spdy/3";
+        putAsyncConnectionFactory(protocol, new ServerHTTPSPDYAsyncConnectionFactory(version, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
+    }
+
+    public void addPushStrategies(Map<Short, PushStrategy> pushStrategies)
+    {
+        for (Short version : pushStrategies.keySet())
+        {
+            putAsyncConnectionFactory(version, pushStrategies.get(version));
+        }
     }
 }
