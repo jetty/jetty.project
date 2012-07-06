@@ -338,7 +338,7 @@ public class BlockheadClient implements Parser.Listener
 
     public void write(WebSocketFrame frame) throws IOException
     {
-        LOG.debug("write(BaseFrame->{})",frame);
+        LOG.debug("write(Frame->{})",frame);
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
