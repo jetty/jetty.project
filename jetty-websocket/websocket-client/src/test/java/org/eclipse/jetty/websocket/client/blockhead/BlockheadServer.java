@@ -8,7 +8,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.api.AcceptHash;
+import org.eclipse.jetty.websocket.protocol.AcceptHash;
 
 /**
  * A overly simplistic websocket server used during testing.

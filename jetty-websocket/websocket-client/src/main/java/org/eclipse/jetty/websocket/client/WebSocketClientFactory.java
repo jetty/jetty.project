@@ -15,11 +15,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.api.EventMethodsCache;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.io.WebSocketClientSelectorManager;
+import org.eclipse.jetty.websocket.driver.EventMethodsCache;
+import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 
 public class WebSocketClientFactory extends AggregateLifeCycle
 {
@@ -124,6 +124,6 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketEventDriver newWebSocketDriver(Object websocketPojo)
     {
-        return new WebSocketEventDriver(methodsCache,policy,websocketPojo);
+        return new WebSocketEventDriver(websocketPojo,methodsCache,policy,getBufferPool());
     }
 }
