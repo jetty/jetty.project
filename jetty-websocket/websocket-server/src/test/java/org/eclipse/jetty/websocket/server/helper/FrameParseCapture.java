@@ -8,14 +8,14 @@ import java.util.List;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
 public class FrameParseCapture implements Parser.Listener
 {
     private static final Logger LOG = Log.getLogger(FrameParseCapture.class);
-    private List<BaseFrame> frames = new ArrayList<>();
+    private List<WebSocketFrame> frames = new ArrayList<>();
     private List<WebSocketException> errors = new ArrayList<>();
 
     public void assertHasErrors(Class<? extends WebSocketException> errorType, int expectedCount)
@@ -23,12 +23,12 @@ public class FrameParseCapture implements Parser.Listener
         Assert.assertThat(errorType.getSimpleName(),getErrorCount(errorType),is(expectedCount));
     }
 
-    public void assertHasFrame(Class<? extends BaseFrame> frameType)
+    public void assertHasFrame(Class<? extends WebSocketFrame> frameType)
     {
         Assert.assertThat(frameType.getSimpleName(),getFrameCount(frameType),greaterThanOrEqualTo(1));
     }
 
-    public void assertHasFrame(Class<? extends BaseFrame> frameType, int expectedCount)
+    public void assertHasFrame(Class<? extends WebSocketFrame> frameType, int expectedCount)
     {
         Assert.assertThat(frameType.getSimpleName(),getFrameCount(frameType),is(expectedCount));
     }
@@ -61,10 +61,10 @@ public class FrameParseCapture implements Parser.Listener
         return errors;
     }
 
-    public int getFrameCount(Class<? extends BaseFrame> frameType)
+    public int getFrameCount(Class<? extends WebSocketFrame> frameType)
     {
         int count = 0;
-        for (BaseFrame frame : frames)
+        for (WebSocketFrame frame : frames)
         {
             if (frameType.isInstance(frame))
             {
@@ -74,13 +74,13 @@ public class FrameParseCapture implements Parser.Listener
         return count;
     }
 
-    public List<BaseFrame> getFrames()
+    public List<WebSocketFrame> getFrames()
     {
         return frames;
     }
 
     @Override
-    public void onFrame(BaseFrame frame)
+    public void onFrame(WebSocketFrame frame)
     {
         frames.add(frame);
     }

@@ -3,7 +3,7 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.util.CloseUtil;
 
 public class CloseFrameGenerator extends FrameGenerator
@@ -14,7 +14,7 @@ public class CloseFrameGenerator extends FrameGenerator
     }
 
     @Override
-    public void fillPayload(ByteBuffer buffer, BaseFrame close)
+    public void fillPayload(ByteBuffer buffer, WebSocketFrame close)
     {
         CloseUtil.assertValidPayload(close.getPayload());
         super.fillPayload(buffer,close);

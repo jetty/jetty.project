@@ -15,10 +15,10 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -154,7 +154,7 @@ public class WebSocketServletRFCTest
             client.write(bin); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
             BinaryFrame binmsg = (BinaryFrame)frames.remove();
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
@@ -209,7 +209,7 @@ public class WebSocketServletRFCTest
             client.write(frame);
 
             // Read frame (hopefully text frame)
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
             TextFrame tf = (TextFrame)frames.remove();
             Assert.assertThat("Text Frame.status code",tf.getPayloadUTF8(),is("Hello World"));
         }
@@ -239,7 +239,7 @@ public class WebSocketServletRFCTest
             client.write(frame);
 
             // Read frame (hopefully close frame)
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
             CloseFrame cf = (CloseFrame)frames.remove();
             Assert.assertThat("Close Frame.status code",cf.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }

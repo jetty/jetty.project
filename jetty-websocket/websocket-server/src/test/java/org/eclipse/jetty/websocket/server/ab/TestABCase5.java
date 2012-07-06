@@ -12,13 +12,13 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.DataFrame.TextFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
@@ -126,8 +126,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Read frame
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = frames.remove();
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = frames.remove();
 
             Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
 
@@ -159,8 +159,8 @@ public class TestABCase5
             client.writeRaw(frame2);
 
             // Read frame
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = frames.remove();
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = frames.remove();
 
             Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
 
@@ -212,8 +212,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Read frame
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = frames.remove();
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = frames.remove();
 
             Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
 
@@ -249,8 +249,8 @@ public class TestABCase5
             client.writeRaw(frame2);
 
             // Read frame
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = frames.remove();
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = frames.remove();
 
             Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
 
@@ -303,8 +303,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Read frame
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = frames.remove();
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = frames.remove();
 
             Assert.assertTrue("frame should be text frame",frame instanceof TextFrame);
 
@@ -378,8 +378,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Should be 2 frames, pong frame followed by combined echo'd text frame
-            Queue<BaseFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = frames.remove();
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = frames.remove();
 
             Assert.assertTrue("first frame should be pong frame",frame instanceof PongFrame);
 
@@ -435,8 +435,8 @@ public class TestABCase5
             client.writeRaw(frame3);
 
             // Should be 2 frames, pong frame followed by combined echo'd text frame
-            Queue<BaseFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = frames.remove();
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = frames.remove();
 
             Assert.assertTrue("first frame should be pong frame",frame instanceof PongFrame);
 
@@ -488,8 +488,8 @@ public class TestABCase5
             client.writeRaw(buf);
 
             // Read frame
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = frames.remove();
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = frames.remove();
 
             Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
 

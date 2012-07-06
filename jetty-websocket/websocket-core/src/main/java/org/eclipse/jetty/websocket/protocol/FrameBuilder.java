@@ -5,24 +5,23 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 
 public class FrameBuilder
 {
     public static FrameBuilder binary()
     {
-        return new FrameBuilder(new BaseFrame(OpCode.BINARY));
+        return new FrameBuilder(new WebSocketFrame(OpCode.BINARY));
     }
 
     public static FrameBuilder binary(byte[] payload)
     {
-        return new FrameBuilder(new BaseFrame(OpCode.BINARY)).payload(payload);
+        return new FrameBuilder(new WebSocketFrame(OpCode.BINARY)).payload(payload);
     }
 
     public static FrameBuilder binary(byte[] payload, int offset, int length)
     {
-        return new FrameBuilder(new BaseFrame(OpCode.BINARY)).payload(payload,offset,length);
+        return new FrameBuilder(new WebSocketFrame(OpCode.BINARY)).payload(payload,offset,length);
     }
 
     public static FrameBuilder close()
@@ -39,56 +38,56 @@ public class FrameBuilder
     {
         if (statusCode != (-1))
         {
-            ByteBuffer buf = ByteBuffer.allocate(BaseFrame.MAX_CONTROL_PAYLOAD);
+            ByteBuffer buf = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD);
             buf.putChar((char)statusCode);
             if (StringUtil.isNotBlank(reason))
             {
                 byte utf[] = StringUtil.getUtf8Bytes(reason);
                 buf.put(utf,0,utf.length);
             }
-            return new FrameBuilder(new BaseFrame(OpCode.CLOSE)).payload(buf);
+            return new FrameBuilder(new WebSocketFrame(OpCode.CLOSE)).payload(buf);
         }
-        return new FrameBuilder(new BaseFrame(OpCode.CLOSE));
+        return new FrameBuilder(new WebSocketFrame(OpCode.CLOSE));
     }
 
     public static FrameBuilder continuation()
     {
-        return new FrameBuilder(new BaseFrame(OpCode.CONTINUATION));
+        return new FrameBuilder(new WebSocketFrame(OpCode.CONTINUATION));
     }
 
     public static FrameBuilder continuation(byte[] payload)
     {
-        return new FrameBuilder(new BaseFrame(OpCode.CONTINUATION)).payload(payload);
+        return new FrameBuilder(new WebSocketFrame(OpCode.CONTINUATION)).payload(payload);
     }
 
     public static FrameBuilder continuation(String payload)
     {
-        return new FrameBuilder(new BaseFrame(OpCode.CONTINUATION)).payload(payload);
+        return new FrameBuilder(new WebSocketFrame(OpCode.CONTINUATION)).payload(payload);
     }
 
     public static FrameBuilder ping()
     {
-        return new FrameBuilder(new BaseFrame(OpCode.PING));
+        return new FrameBuilder(new WebSocketFrame(OpCode.PING));
     }
 
     public static FrameBuilder pong()
     {
-        return new FrameBuilder(new BaseFrame(OpCode.PONG));
+        return new FrameBuilder(new WebSocketFrame(OpCode.PONG));
     }
 
     public static FrameBuilder text()
     {
-        return new FrameBuilder(new BaseFrame(OpCode.TEXT));
+        return new FrameBuilder(new WebSocketFrame(OpCode.TEXT));
     }
 
     public static FrameBuilder text(String text)
     {
-        return new FrameBuilder(new BaseFrame(OpCode.TEXT)).payload(text.getBytes());
+        return new FrameBuilder(new WebSocketFrame(OpCode.TEXT)).payload(text.getBytes());
     }
 
-    private BaseFrame frame;
+    private WebSocketFrame frame;
 
-    public FrameBuilder(BaseFrame frame)
+    public FrameBuilder(WebSocketFrame frame)
     {
         this.frame = frame;
         this.frame.setFin(true); // default
@@ -106,7 +105,7 @@ public class FrameBuilder
         return buffer;
     }
 
-    public BaseFrame asFrame()
+    public WebSocketFrame asFrame()
     {
         return frame;
     }

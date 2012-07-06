@@ -7,8 +7,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * Generating a frame in WebSocket land.
@@ -47,7 +47,7 @@ public class Generator
         basicGenerator = new FrameGenerator(policy);
     }
 
-    public ByteBuffer generate(ByteBuffer buffer, BaseFrame frame)
+    public ByteBuffer generate(ByteBuffer buffer, WebSocketFrame frame)
     {
         if (LOG.isDebugEnabled())
         {

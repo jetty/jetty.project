@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * Base Framing Protocol handling
@@ -50,7 +50,7 @@ public class FrameParser
     private long length = 0;
     private int cursor = 0;
     // Frame
-    private BaseFrame frame;
+    private WebSocketFrame frame;
     // payload specific
     private ByteBuffer payload;
     private int payloadLength;
@@ -99,7 +99,7 @@ public class FrameParser
      * 
      * @return the frame that is being parsed. should always return an object (never null)
      */
-    public BaseFrame getFrame()
+    public WebSocketFrame getFrame()
     {
         return frame;
     }
@@ -120,7 +120,7 @@ public class FrameParser
      */
     public final void initFrame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, OpCode opcode)
     {
-        BaseFrame frame = new BaseFrame();
+        WebSocketFrame frame = new WebSocketFrame();
         frame.setFin(fin);
         frame.setRsv1(rsv1);
         frame.setRsv2(rsv2);

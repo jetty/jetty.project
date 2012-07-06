@@ -32,9 +32,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
 /**
@@ -56,7 +56,7 @@ public class BlockheadClient implements Parser.Listener
     private final WebSocketPolicy policy;
     private final Generator generator;
     private final Parser parser;
-    private final LinkedBlockingDeque<BaseFrame> incomingFrameQueue;
+    private final LinkedBlockingDeque<WebSocketFrame> incomingFrameQueue;
 
     private Socket socket;
     private OutputStream out;
@@ -176,7 +176,7 @@ public class BlockheadClient implements Parser.Listener
     }
 
     @Override
-    public void onFrame(BaseFrame frame)
+    public void onFrame(WebSocketFrame frame)
     {
         LOG.debug("onFrame({})",frame);
         if (!incomingFrameQueue.offerLast(frame))
@@ -202,7 +202,7 @@ public class BlockheadClient implements Parser.Listener
         return len;
     }
 
-    public Queue<BaseFrame> readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
+    public Queue<WebSocketFrame> readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
     {
         int startCount = incomingFrameQueue.size();
 
@@ -336,7 +336,7 @@ public class BlockheadClient implements Parser.Listener
         }
     }
 
-    public void write(BaseFrame frame) throws IOException
+    public void write(WebSocketFrame frame) throws IOException
     {
         LOG.debug("write(BaseFrame->{})",frame);
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);

@@ -7,17 +7,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * (ADVANCED) Annotation for tagging methods to receive frame events.
  * <p>
- * Note: any frame derived from {@link BaseFrame} is acceptable to use as the last parameter here.
+ * Note: any frame derived from {@link WebSocketFrame} is acceptable to use as the last parameter here.
  * <p>
  * Acceptable method patterns.<br>
  * Note: <code>methodName</code> can be any name you want to use.
  * <ol>
- * <li><code>public void methodName({@link BaseFrame} frame)</code></li>
+ * <li><code>public void methodName({@link WebSocketFrame} frame)</code></li>
  * <li><code>public void methodName(BinaryFrame frame)</code></li>
  * <li><code>public void methodName(CloseFrame frame)</code></li>
  * <li><code>public void methodName(ControlFrame frame)</code></li>
@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.frames.BaseFrame;
  * <li><code>public void methodName(PingFrame frame)</code></li>
  * <li><code>public void methodName(PongFrame frame)</code></li>
  * <li><code>public void methodName(TextFrame frame)</code></li>
- * <li><code>public void methodName({@link WebSocketConnection} conn, {@link BaseFrame} frame)</code></li>
+ * <li><code>public void methodName({@link WebSocketConnection} conn, {@link WebSocketFrame} frame)</code></li>
  * <li><code>public void methodName({@link WebSocketConnection} conn, BinaryFrame frame)</code></li>
  * <li><code>public void methodName({@link WebSocketConnection} conn, CloseFrame frame)</code></li>
  * <li><code>public void methodName({@link WebSocketConnection} conn, ControlFrame frame)</code></li>

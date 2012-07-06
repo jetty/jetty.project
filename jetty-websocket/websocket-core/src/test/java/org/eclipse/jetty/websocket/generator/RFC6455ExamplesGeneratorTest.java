@@ -7,10 +7,10 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest
@@ -19,8 +19,8 @@ public class RFC6455ExamplesGeneratorTest
     public void testFragmentedUnmaskedTextMessage()
     {
 
-        BaseFrame text1 = FrameBuilder.text("Hel").fin(false).asFrame();
-        BaseFrame text2 = FrameBuilder.continuation("lo").asFrame();
+        WebSocketFrame text1 = FrameBuilder.text("Hel").fin(false).asFrame();
+        WebSocketFrame text2 = FrameBuilder.continuation("lo").asFrame();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 
@@ -83,7 +83,7 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleMaskedTextMessage()
     {
-        BaseFrame text = FrameBuilder.text("Hello").mask(new byte[]
+        WebSocketFrame text = FrameBuilder.text("Hello").mask(new byte[]
                 { 0x37, (byte)0xfa, 0x21, 0x3d }).asFrame();
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
@@ -112,7 +112,7 @@ public class RFC6455ExamplesGeneratorTest
     {
         int dataSize = 256;
 
-        BaseFrame binary = FrameBuilder.binary().asFrame();
+        WebSocketFrame binary = FrameBuilder.binary().asFrame();
         ByteBuffer payload = ByteBuffer.allocate(dataSize);
         for (int i = 0; i < dataSize; i++)
         {
@@ -149,7 +149,7 @@ public class RFC6455ExamplesGeneratorTest
     {
         int dataSize = 1024 * 64;
 
-        BaseFrame binary = FrameBuilder.binary().asFrame();
+        WebSocketFrame binary = FrameBuilder.binary().asFrame();
         ByteBuffer payload = ByteBuffer.allocate(dataSize);
         for (int i = 0; i < dataSize; i++)
         {
@@ -223,7 +223,7 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleUnmaskedTextMessage()
     {
-        BaseFrame text = FrameBuilder.text("Hello").asFrame();
+        WebSocketFrame text = FrameBuilder.text("Hello").asFrame();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 

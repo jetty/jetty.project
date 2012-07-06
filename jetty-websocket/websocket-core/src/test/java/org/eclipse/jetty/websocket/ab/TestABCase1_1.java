@@ -7,12 +7,12 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.DataFrame.TextFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,7 +35,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
+        WebSocketFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -74,7 +74,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
+        WebSocketFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -117,7 +117,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
+        WebSocketFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -160,7 +160,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
+        WebSocketFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -203,7 +203,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
+        WebSocketFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -244,7 +244,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
+        WebSocketFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);

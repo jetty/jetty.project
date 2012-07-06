@@ -40,10 +40,10 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -71,7 +71,7 @@ public class WebSocketLoadRFC6455Test
              */
 
             @Override
-            public void onFrame(BaseFrame frame)
+            public void onFrame(WebSocketFrame frame)
             {
                 // TODO Auto-generated method stub
             }

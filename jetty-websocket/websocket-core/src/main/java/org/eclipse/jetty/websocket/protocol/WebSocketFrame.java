@@ -1,12 +1,10 @@
-package org.eclipse.jetty.websocket.frames;
+package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
 
 import javax.xml.ws.ProtocolException;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.protocol.Frame;
-import org.eclipse.jetty.websocket.protocol.OpCode;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
@@ -32,7 +30,7 @@ import org.eclipse.jetty.websocket.protocol.OpCode;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public class BaseFrame implements Frame
+public class WebSocketFrame implements Frame
 {
     /** Maximum size of Control frame, per RFC 6455 */
     public static final int MAX_CONTROL_PAYLOAD = 125;
@@ -53,7 +51,7 @@ public class BaseFrame implements Frame
     /**
      * Default constructor
      */
-    public BaseFrame()
+    public WebSocketFrame()
     {
         reset();
     }
@@ -61,7 +59,7 @@ public class BaseFrame implements Frame
     /**
      * Construct form opcode
      */
-    public BaseFrame(OpCode opcode)
+    public WebSocketFrame(OpCode opcode)
     {
         reset();
         this.opcode = opcode;
@@ -71,7 +69,7 @@ public class BaseFrame implements Frame
     {
         if (opcode.isControlFrame())
         {
-            if (payloadLength > BaseFrame.MAX_CONTROL_PAYLOAD)
+            if (payloadLength > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
                 throw new ProtocolException("Desired payload length [" + payloadLength + "] exceeds maximum control payload length [" + MAX_CONTROL_PAYLOAD
                         + "]");
@@ -105,7 +103,7 @@ public class BaseFrame implements Frame
     }
 
     @Override
-    public BaseFrame clone()
+    public WebSocketFrame clone()
     {
         // TODO: impl
         return null;
@@ -263,7 +261,7 @@ public class BaseFrame implements Frame
     {
         if (opcode.isControlFrame())
         {
-            if (buf.length > BaseFrame.MAX_CONTROL_PAYLOAD)
+            if (buf.length > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
                 throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
             }
@@ -285,7 +283,7 @@ public class BaseFrame implements Frame
     {
         if (opcode.isControlFrame())
         {
-            if (len > BaseFrame.MAX_CONTROL_PAYLOAD)
+            if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
                 throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
             }
@@ -307,7 +305,7 @@ public class BaseFrame implements Frame
     {
         if (opcode.isControlFrame())
         {
-            if (payload.position() > BaseFrame.MAX_CONTROL_PAYLOAD)
+            if (payload.position() > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
                 throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
             }

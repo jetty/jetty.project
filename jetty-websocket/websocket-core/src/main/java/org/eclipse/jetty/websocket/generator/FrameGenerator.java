@@ -7,8 +7,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * <pre>
@@ -49,12 +49,12 @@ public class FrameGenerator
         this.policy = policy;
     }
 
-    public void fillPayload(ByteBuffer buffer, BaseFrame frame)
+    public void fillPayload(ByteBuffer buffer, WebSocketFrame frame)
     {
         BufferUtil.put(frame.getPayload(),buffer);
     }
 
-    public ByteBuffer generate(ByteBuffer buffer, BaseFrame frame)
+    public ByteBuffer generate(ByteBuffer buffer, WebSocketFrame frame)
     {
         LOG.debug(String.format("Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d]",frame.getOpCode().toString(),
                 frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame.getPayloadLength()));

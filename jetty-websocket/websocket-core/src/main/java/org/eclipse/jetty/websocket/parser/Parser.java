@@ -10,8 +10,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.util.CloseUtil;
 
 /**
@@ -21,7 +21,7 @@ public class Parser
 {
     public interface Listener extends EventListener
     {
-        public void onFrame(final BaseFrame frame);
+        public void onFrame(final WebSocketFrame frame);
 
         public void onWebSocketException(WebSocketException e);
     }
@@ -66,7 +66,7 @@ public class Parser
         return policy;
     }
 
-    protected void notifyFrame(final BaseFrame f)
+    protected void notifyFrame(final WebSocketFrame f)
     {
         LOG.debug("Notify Frame: {}",f);
         for (Listener listener : listeners)

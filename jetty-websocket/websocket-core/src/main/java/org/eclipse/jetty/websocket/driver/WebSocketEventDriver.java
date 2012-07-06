@@ -15,12 +15,12 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.io.MessageInputStream;
 import org.eclipse.jetty.websocket.io.MessageReader;
 import org.eclipse.jetty.websocket.io.StreamAppender;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.Frame;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.util.CloseUtil;
 
 /**
@@ -108,7 +108,7 @@ public class WebSocketEventDriver implements Parser.Listener
      *            the frame that appeared
      */
     @Override
-    public void onFrame(BaseFrame frame)
+    public void onFrame(WebSocketFrame frame)
     {
         if (LOG.isDebugEnabled())
         {
@@ -312,9 +312,9 @@ public class WebSocketEventDriver implements Parser.Listener
             if (StringUtil.isNotBlank(reason))
             {
                 // Trim big exception messages here.
-                if (reason.length() > (BaseFrame.MAX_CONTROL_PAYLOAD - 2))
+                if (reason.length() > (WebSocketFrame.MAX_CONTROL_PAYLOAD - 2))
                 {
-                    reason = reason.substring(0,BaseFrame.MAX_CONTROL_PAYLOAD - 2);
+                    reason = reason.substring(0,WebSocketFrame.MAX_CONTROL_PAYLOAD - 2);
                 }
             }
             LOG.debug("terminateConnection({},{})",statusCode,rawreason);

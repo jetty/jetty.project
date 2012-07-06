@@ -15,11 +15,11 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.server.WebSocketServlet;
@@ -160,7 +160,7 @@ public class TestABCase7_9
             client.writeRaw(buf);
 
             // Read frame (hopefully text frame)
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
             CloseFrame closeFrame = (CloseFrame)frames.remove();
             Assert.assertThat("CloseFrame.status code",closeFrame.getStatusCode(),is(1002));
         }
@@ -202,7 +202,7 @@ public class TestABCase7_9
             client.writeRaw(buf);
 
             // Read frame (hopefully text frame)
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
             CloseFrame closeFrame = (CloseFrame)frames.remove();
             Assert.assertThat("CloseFrame.status code",closeFrame.getStatusCode(),is(1002));
         }

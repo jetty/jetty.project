@@ -8,10 +8,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.io.RawConnection;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * For working with the {@link WebSocketConnection} in a blocking technique.
@@ -47,7 +47,7 @@ public class WebSocketBlockingConnection
      */
     public void write(byte[] data, int offset, int length) throws IOException
     {
-        BaseFrame frame = FrameBuilder.binary(data,offset,length).asFrame();
+        WebSocketFrame frame = FrameBuilder.binary(data,offset,length).asFrame();
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
@@ -77,7 +77,7 @@ public class WebSocketBlockingConnection
      */
     public void write(String message) throws IOException
     {
-        BaseFrame frame = FrameBuilder.text(message).asFrame();
+        WebSocketFrame frame = FrameBuilder.text(message).asFrame();
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
