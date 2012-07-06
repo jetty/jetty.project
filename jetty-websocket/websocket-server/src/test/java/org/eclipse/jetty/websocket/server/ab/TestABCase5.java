@@ -2,27 +2,22 @@ package org.eclipse.jetty.websocket.server.ab;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.ByteBufferAssert;
-import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.FrameBuilder;
-import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.generator.FrameGenerator;
+import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.server.WebSocketServlet;
@@ -33,9 +28,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 public class TestABCase5
 {
@@ -66,14 +58,14 @@ public class TestABCase5
             }
 
             // echo the message back.
-            //try
-           // {
-              //  getConnection().write(message);
-           // }
-            //catch (IOException e)
-           // {
-           //     e.printStackTrace(System.err);
-           // }
+            // try
+            // {
+            // getConnection().write(message);
+            // }
+            // catch (IOException e)
+            // {
+            // e.printStackTrace(System.err);
+            // }
         }
     }
 
@@ -106,15 +98,15 @@ public class TestABCase5
             BufferUtil.clearToFill(buf);
 
             String fragment1 = "fragment1";
-            
+
             buf.put((byte)(0x00 | OpCode.PING.getCode()));
-            
-            byte b = 0x00; // no masking 
+
+            byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
             buf.put(b);
             buf.put(fragment1.getBytes());
             BufferUtil.flipToFlush(buf,0);
-            
+
             client.writeRaw(buf);
 
             ByteBuffer buf2 = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
@@ -123,20 +115,20 @@ public class TestABCase5
             String fragment2 = "fragment2";
 
             buf2.put((byte)(0x80 | OpCode.PING.getCode()));
-            b = 0x00; // no masking 
+            b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
             buf2.put(fragment2.getBytes());
             BufferUtil.flipToFlush(buf2,0);
 
             client.writeRaw(buf2);
-            
-         // Read frame
+
+            // Read frame
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = (BaseFrame)frames.remove();
-            
-            Assert.assertTrue("frame should be close frame", frame instanceof CloseFrame);
-            
+            BaseFrame frame = frames.remove();
+
+            Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
+
             Assert.assertThat("CloseFrame.status code",((CloseFrame)frame).getStatusCode(),is(1002));
         }
         finally
@@ -144,7 +136,7 @@ public class TestABCase5
             client.close();
         }
     }
-    
+
     @Test
     public void testCase5_1PingIn2PacketsWithBuilder() throws Exception
     {
@@ -157,19 +149,19 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
             ByteBuffer frame1 = FrameBuilder.pingFrame().isFin(false).withPayload(fragment1.getBytes()).asByteBuffer();
-          
+
             client.writeRaw(frame1);
 
             String fragment2 = "fragment2";
             ByteBuffer frame2 = FrameBuilder.pingFrame().withPayload(fragment2.getBytes()).asByteBuffer();
             client.writeRaw(frame2);
-            
+
             // Read frame
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = (BaseFrame)frames.remove();
-            
-            Assert.assertTrue("frame should be close frame", frame instanceof CloseFrame);
-            
+            BaseFrame frame = frames.remove();
+
+            Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
+
             Assert.assertThat("CloseFrame.status code",((CloseFrame)frame).getStatusCode(),is(1002));
         }
         finally
@@ -177,7 +169,7 @@ public class TestABCase5
             client.close();
         }
     }
-    
+
     @Test
     public void testCase5_2PongIn2Packets() throws Exception
     {
@@ -192,15 +184,15 @@ public class TestABCase5
             BufferUtil.clearToFill(buf);
 
             String fragment1 = "fragment1";
-            
+
             buf.put((byte)(0x00 | OpCode.PONG.getCode()));
-            
-            byte b = 0x00; // no masking 
+
+            byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
             buf.put(b);
             buf.put(fragment1.getBytes());
             BufferUtil.flipToFlush(buf,0);
-            
+
             client.writeRaw(buf);
 
             ByteBuffer buf2 = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
@@ -209,7 +201,7 @@ public class TestABCase5
             String fragment2 = "fragment2";
 
             buf2.put((byte)(0x80 | OpCode.CONTINUATION.getCode()));
-            b = 0x00; // no masking 
+            b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
             buf2.put(fragment2.getBytes());
@@ -219,10 +211,10 @@ public class TestABCase5
 
             // Read frame
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = (BaseFrame)frames.remove();
-            
-            Assert.assertTrue("frame should be close frame", frame instanceof CloseFrame);
-            
+            BaseFrame frame = frames.remove();
+
+            Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
+
             Assert.assertThat("CloseFrame.status code",((CloseFrame)frame).getStatusCode(),is(1002));
         }
         finally
@@ -231,7 +223,6 @@ public class TestABCase5
         }
     }
 
-    
     @Test
     public void testCase5_2PongIn2PacketsWithBuilder() throws Exception
     {
@@ -245,21 +236,21 @@ public class TestABCase5
             String fragment1 = "fragment1";
 
             ByteBuffer frame1 = FrameBuilder.pongFrame().isFin(false).withPayload(fragment1.getBytes()).asByteBuffer();
-                        
+
             client.writeRaw(frame1);
 
             String fragment2 = "fragment2";
 
             ByteBuffer frame2 = FrameBuilder.continuationFrame().isFin(false).withPayload(fragment2.getBytes()).asByteBuffer();
-          
+
             client.writeRaw(frame2);
 
             // Read frame
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = (BaseFrame)frames.remove();
-            
-            Assert.assertTrue("frame should be close frame", frame instanceof CloseFrame);
-            
+            BaseFrame frame = frames.remove();
+
+            Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
+
             Assert.assertThat("CloseFrame.status code",((CloseFrame)frame).getStatusCode(),is(1002));
         }
         finally
@@ -267,10 +258,9 @@ public class TestABCase5
             client.close();
         }
     }
-    
-    
+
     @Test
-    @Ignore ("not supported in implementation yet, requires server side message aggregation")
+    @Ignore("not supported in implementation yet, requires server side message aggregation")
     public void testCase5_3TextIn2Packets() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
@@ -284,15 +274,15 @@ public class TestABCase5
             BufferUtil.clearToFill(buf);
 
             String fragment1 = "fragment1";
-            
+
             buf.put((byte)(0x00 | OpCode.TEXT.getCode()));
-            
-            byte b = 0x00; // no masking 
+
+            byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
             buf.put(b);
             buf.put(fragment1.getBytes());
             BufferUtil.flipToFlush(buf,0);
-            
+
             client.writeRaw(buf);
 
             ByteBuffer buf2 = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
@@ -301,7 +291,7 @@ public class TestABCase5
             String fragment2 = "fragment2";
 
             buf2.put((byte)(0x80 | OpCode.CONTINUATION.getCode()));
-            b = 0x00; // no masking 
+            b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
             buf2.put(fragment2.getBytes());
@@ -309,12 +299,12 @@ public class TestABCase5
 
             client.writeRaw(buf2);
 
-         // Read frame
+            // Read frame
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = (BaseFrame)frames.remove();
-            
-            Assert.assertTrue("frame should be text frame", frame instanceof TextFrame);
-            
+            BaseFrame frame = frames.remove();
+
+            Assert.assertTrue("frame should be text frame",frame instanceof TextFrame);
+
             Assert.assertThat("TextFrame.payload",((TextFrame)frame).getPayloadUTF8(),is(fragment1 + fragment2));
         }
         finally
@@ -322,9 +312,9 @@ public class TestABCase5
             client.close();
         }
     }
-    
+
     @Test
-    @Ignore ("not supported in implementation yet, requires server side message aggregation")
+    @Ignore("not supported in implementation yet, requires server side message aggregation")
     public void testCase5_6TextPingRemainingText() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
@@ -335,48 +325,48 @@ public class TestABCase5
             client.expectUpgradeResponse();
 
             // Send a text packet
-            
+
             ByteBuffer buf = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
             BufferUtil.clearToFill(buf);
 
             String fragment1 = "fragment1";
-            
+
             buf.put((byte)(0x00 | OpCode.TEXT.getCode()));
-            
-            byte b = 0x00; // no masking 
+
+            byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
             buf.put(b);
             buf.put(fragment1.getBytes());
             BufferUtil.flipToFlush(buf,0);
-            
+
             client.writeRaw(buf);
 
             // Send a ping with payload
-            
+
             ByteBuffer pingBuf = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
             BufferUtil.clearToFill(pingBuf);
-            
+
             String pingPayload = "ping payload";
-            
+
             pingBuf.put((byte)(0x00 | OpCode.PING.getCode()));
-            
-            b = 0x00; // no masking 
+
+            b = 0x00; // no masking
             b |= pingPayload.length() & 0x7F;
             pingBuf.put(b);
             pingBuf.put(pingPayload.getBytes());
             BufferUtil.flipToFlush(pingBuf,0);
-            
+
             client.writeRaw(buf);
-            
+
             // Send remaining text as continuation
-            
+
             ByteBuffer buf2 = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
             BufferUtil.clearToFill(buf2);
 
             String fragment2 = "fragment2";
 
             buf2.put((byte)(0x80 | OpCode.CONTINUATION.getCode()));
-            b = 0x00; // no masking 
+            b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
             buf2.put(fragment2.getBytes());
@@ -387,19 +377,18 @@ public class TestABCase5
             // Should be 2 frames, pong frame followed by combined echo'd text frame
             Queue<BaseFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
             BaseFrame frame = frames.remove();
-            
-            Assert.assertTrue("first frame should be pong frame", frame instanceof PongFrame );
-            
-            ByteBuffer payload1 = ByteBuffer.allocate(pingPayload.length());
-            payload1.flip();           
-            
-            ByteBufferAssert.assertEquals("payloads should be equal" , payload1, ((PongFrame)frame).getPayload() );
-            
-            frame = (BaseFrame)frames.remove();
-            
-            Assert.assertTrue("second frame should be text frame", frame instanceof TextFrame );
 
-            
+            Assert.assertTrue("first frame should be pong frame",frame instanceof PongFrame);
+
+            ByteBuffer payload1 = ByteBuffer.allocate(pingPayload.length());
+            payload1.flip();
+
+            ByteBufferAssert.assertEquals("payloads should be equal",payload1,((PongFrame)frame).getPayload());
+
+            frame = frames.remove();
+
+            Assert.assertTrue("second frame should be text frame",frame instanceof TextFrame);
+
             Assert.assertThat("TextFrame.payload",((TextFrame)frame).getPayloadUTF8(),is(fragment1 + fragment2));
         }
         finally
@@ -407,10 +396,9 @@ public class TestABCase5
             client.close();
         }
     }
-    
-    
+
     @Test
-    @Ignore ("not supported in implementation yet, requires server side message aggregation")
+    @Ignore("not supported in implementation yet, requires server side message aggregation")
     public void testCase5_6TextPingRemainingTextWithBuilder() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
@@ -428,13 +416,13 @@ public class TestABCase5
             client.writeRaw(frame1);
 
             // Send a ping with payload
-            
+
             String pingPayload = "ping payload";
             ByteBuffer frame2 = FrameBuilder.pingFrame().withPayload(pingPayload.getBytes()).asByteBuffer();
             BufferUtil.flipToFlush(frame2,0);
 
             client.writeRaw(frame2);
-            
+
             // Send remaining text as continuation
             String textPayload2 = "fragment2";
 
@@ -446,19 +434,18 @@ public class TestABCase5
             // Should be 2 frames, pong frame followed by combined echo'd text frame
             Queue<BaseFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
             BaseFrame frame = frames.remove();
-            
-            Assert.assertTrue("first frame should be pong frame", frame instanceof PongFrame );
-            
-            ByteBuffer payload1 = ByteBuffer.allocate(pingPayload.length());
-            payload1.flip();           
-            
-            ByteBufferAssert.assertEquals("payloads should be equal" , payload1, ((PongFrame)frame).getPayload() );
-            
-            frame = (BaseFrame)frames.remove();
-            
-            Assert.assertTrue("second frame should be text frame", frame instanceof TextFrame );
 
-            
+            Assert.assertTrue("first frame should be pong frame",frame instanceof PongFrame);
+
+            ByteBuffer payload1 = ByteBuffer.allocate(pingPayload.length());
+            payload1.flip();
+
+            ByteBufferAssert.assertEquals("payloads should be equal",payload1,((PongFrame)frame).getPayload());
+
+            frame = frames.remove();
+
+            Assert.assertTrue("second frame should be text frame",frame instanceof TextFrame);
+
             Assert.assertThat("TextFrame.payload",((TextFrame)frame).getPayloadUTF8(),is(textPayload1 + textPayload2));
         }
         finally
@@ -466,9 +453,9 @@ public class TestABCase5
             client.close();
         }
     }
-    
+
     @Test
-    @Ignore ("AB tests have chop concepts currently unsupported by test...I think, also the string being returns is not Bad Continuation")
+    @Ignore("AB tests have chop concepts currently unsupported by test...I think, also the string being returns is not Bad Continuation")
     public void testCase5_9BadContinuation() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
@@ -479,34 +466,35 @@ public class TestABCase5
             client.expectUpgradeResponse();
 
             // Send a text packet
-            
+
             ByteBuffer buf = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
             BufferUtil.clearToFill(buf);
 
             String fragment1 = "fragment";
-            
+
             // continutation w / FIN
-            
+
             buf.put((byte)(0x80 | OpCode.CONTINUATION.getCode()));
-            
-            byte b = 0x00; // no masking 
+
+            byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
             buf.put(b);
             buf.put(fragment1.getBytes());
             BufferUtil.flipToFlush(buf,0);
-            
+
             client.writeRaw(buf);
-            
+
             // Read frame
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            BaseFrame frame = (BaseFrame)frames.remove();
-            
-            Assert.assertTrue("frame should be close frame", frame instanceof CloseFrame);
-            
+            BaseFrame frame = frames.remove();
+
+            Assert.assertTrue("frame should be close frame",frame instanceof CloseFrame);
+
             Assert.assertThat("CloseFrame.status code",((CloseFrame)frame).getStatusCode(),is(1002));
-            
-            Assert.assertThat("CloseFrame.reason", ((CloseFrame)frame).getReason(),is("Bad Continuation") ); // TODO put close reasons into public strings in impl someplace
-            
+
+            Assert.assertThat("CloseFrame.reason",((CloseFrame)frame).getReason(),is("Bad Continuation")); // TODO put close reasons into public strings in impl
+                                                                                                           // someplace
+
         }
         finally
         {
