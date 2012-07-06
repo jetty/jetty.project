@@ -243,14 +243,14 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     @Override
     public <C> void write(C context, Callback<C> callback, byte buf[], int offset, int len) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
+        }
         if (len == 0)
         {
             // nothing to write
             return;
-        }
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
         }
         ByteBuffer raw = bufferPool.acquire(len + FrameGenerator.OVERHEAD,false);
         BufferUtil.clearToFill(raw);

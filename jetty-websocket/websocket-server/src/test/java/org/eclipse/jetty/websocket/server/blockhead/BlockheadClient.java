@@ -206,12 +206,14 @@ public class BlockheadClient implements Parser.Listener
     {
         int startCount = incomingFrameQueue.size();
 
-        long expireOn = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
-
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         BufferUtil.clearToFill(buf);
         try
         {
+            long now = System.currentTimeMillis();
+            long expireOn = now + TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
+            LOG.debug("Now: {} - expireOn: {}",now,expireOn);
+
             int len = 0;
             while (incomingFrameQueue.size() < (startCount + expectedCount))
             {
@@ -221,6 +223,14 @@ public class BlockheadClient implements Parser.Listener
                     LOG.debug("Read {} bytes",len);
                     BufferUtil.flipToFlush(buf,0);
                     parser.parse(buf);
+                }
+                try
+                {
+                    TimeUnit.MILLISECONDS.sleep(20);
+                }
+                catch (InterruptedException gnore)
+                {
+                    /* ignore */
                 }
                 if (!DEBUG && (System.currentTimeMillis() > expireOn))
                 {

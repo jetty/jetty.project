@@ -154,9 +154,35 @@ public class WebSocketServletRFCTest
             client.write(bin); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
-            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
             BinaryFrame binmsg = (BinaryFrame)frames.remove();
-            Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(128 * 3));
+            int expectedSize = buf1.length + buf2.length + buf3.length;
+            Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
+
+            int aaCount = 0;
+            int bbCount = 0;
+            int ccCount = 0;
+            byte echod[] = binmsg.getPayloadData();
+            for (byte b : echod)
+            {
+                switch (b)
+                {
+                    case (byte)0xAA:
+                        aaCount++;
+                        break;
+                    case (byte)0xBB:
+                        bbCount++;
+                        break;
+                    case (byte)0xCC:
+                        ccCount++;
+                        break;
+                    default:
+                        Assert.fail(String.format("Encountered invalid byte 0x%02X",(byte)(0xFF & b)));
+                }
+            }
+            Assert.assertThat("Echoed data count for 0xAA",aaCount,is(buf1.length));
+            Assert.assertThat("Echoed data count for 0xBB",bbCount,is(buf2.length));
+            Assert.assertThat("Echoed data count for 0xCC",ccCount,is(buf3.length));
         }
         finally
         {
