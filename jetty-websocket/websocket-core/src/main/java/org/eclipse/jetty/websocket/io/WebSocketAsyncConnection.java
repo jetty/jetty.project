@@ -20,12 +20,12 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.callbacks.WebSocketCloseCallback;
-import org.eclipse.jetty.websocket.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.DataFrame;
 import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io
@@ -242,14 +242,14 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     @Override
     public <C> void write(C context, Callback<C> callback, byte buf[], int offset, int len) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
+        }
         if (len == 0)
         {
             // nothing to write
             return;
-        }
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
         }
         ByteBuffer raw = bufferPool.acquire(len + FrameGenerator.OVERHEAD,false);
         BufferUtil.clearToFill(raw);
@@ -284,7 +284,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
             frame.setPayload(ByteBuffer.wrap(messages[i].getBytes()));
             frame.setFin(true);
             raw[i] = bufferPool.acquire(policy.getBufferSize(),false);
-            BufferUtil.clear(raw[i]);
+            BufferUtil.clearToFill(raw[i]);
             generator.generate(raw[i],frame);
             BufferUtil.flipToFlush(raw[i],0);
         }

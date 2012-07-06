@@ -55,11 +55,15 @@ public class Generator
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Buffer: {}",BufferUtil.toDetailString(buffer));
+            LOG.debug("To Generate: {}",frame);
         }
         FrameGenerator generator = generators.get(frame.getOpCode());
-        LOG.debug(generator.getClass().getSimpleName() + " active");
-        return generator.generate(buffer,frame);
+        ByteBuffer ret = generator.generate(buffer,frame);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Generated[{}]: {}",generator.getClass().getSimpleName(),BufferUtil.toDetailString(buffer));
+        }
+        return ret;
     }
 
     @Override

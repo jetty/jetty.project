@@ -277,24 +277,6 @@ public class WebSocketEventDriver implements Parser.Listener
                     }
                 }
             }
-
-            // Specified Binary Case
-            if ((frame instanceof BinaryFrame) && (events.onBinary != null))
-            {
-                BinaryFrame bin = (BinaryFrame)frame;
-                if (events.onBinary.isStreaming())
-                {
-                    // Streaming Approach
-                }
-                else
-                {
-                    // Byte array approach
-                    byte buf[] = BufferUtil.toArray(bin.getPayload());
-                    events.onBinary.call(websocket,connection,buf,0,buf.length);
-                }
-                return;
-            }
-
         }
         catch (Throwable t)
         {

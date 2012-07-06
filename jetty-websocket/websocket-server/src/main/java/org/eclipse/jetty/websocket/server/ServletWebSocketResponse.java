@@ -7,7 +7,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.websocket.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
 public class ServletWebSocketResponse extends HttpServletResponseWrapper implements WebSocketResponse
 {

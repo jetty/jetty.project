@@ -3,7 +3,7 @@ package org.eclipse.jetty.websocket.server;
 import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.jetty.websocket.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
 public interface WebSocketResponse
 {

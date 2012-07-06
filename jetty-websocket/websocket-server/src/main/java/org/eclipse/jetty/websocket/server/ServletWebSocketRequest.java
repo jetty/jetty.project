@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.websocket.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
 public class ServletWebSocketRequest extends HttpServletRequestWrapper implements WebSocketRequest
 {

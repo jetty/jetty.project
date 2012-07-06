@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.extensions;
 
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
+
 
 public class AbstractExtension implements Extension
 {

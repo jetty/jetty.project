@@ -7,7 +7,7 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * Logic for working with the <code>Sec-WebSocket-Accept</code> and <code>Sec-WebSocket-Accept</code> headers.
+ * Logic for working with the <code>Sec-WebSocket-Key</code> and <code>Sec-WebSocket-Accept</code> headers.
  * <p>
  * This is kept separate from Connection objects to facilitate difference in behavior between client and server, as well as making testing easier.
  */
