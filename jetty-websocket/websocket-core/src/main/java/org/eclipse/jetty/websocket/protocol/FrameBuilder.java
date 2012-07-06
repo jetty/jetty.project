@@ -4,17 +4,36 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.PolicyViolationException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.generator.FrameGenerator;
 
 
 /**
  * The FrameBuilder applies a builder pattern to constructing WebSocketFrame classes.
  * 
- * WARNING: It is possible to build bad frames using this builder which is the intent
+ * WARNING: It is possible to build bad frames using this builder which is intended
  * 
  */
 public class FrameBuilder
 {
+    public class DirtyGenerator extends FrameGenerator
+    {
+
+        public DirtyGenerator()
+        {
+            super(WebSocketPolicy.newServerPolicy());
+        }
+
+        @Override
+        public void assertFrameValid(WebSocketFrame frame)
+        {
+            /*
+             * we desire the ability to craft bad frames so ignore frame validation
+             */
+        }
+
+    }
+
     public static FrameBuilder binary()
     {
         return new FrameBuilder(new WebSocketFrame(OpCode.BINARY));
@@ -102,6 +121,8 @@ public class FrameBuilder
         return new FrameBuilder(new WebSocketFrame(OpCode.TEXT)).payload(text.getBytes(StringUtil.__UTF8_CHARSET));
     }
 
+    DirtyGenerator generator = new DirtyGenerator();
+
     private WebSocketFrame frame;
 
     public FrameBuilder(WebSocketFrame frame)
@@ -129,122 +150,7 @@ public class FrameBuilder
 
     public void fill(ByteBuffer buffer)
     {
-        byte b;
-
-        // Setup fin thru opcode
-        b = 0x00;
-        if (frame.isFin())
-        {
-            b |= 0x80; // 1000_0000
-        }
-        if (frame.isRsv1())
-        {
-            b |= 0x40; // 0100_0000
-            // TODO: extensions can negotiate this (somehow)
-            throw new PolicyViolationException("RSV1 not allowed to be set");
-        }
-        if (frame.isRsv2())
-        {
-            b |= 0x20; // 0010_0000
-            // TODO: extensions can negotiate this (somehow)
-            throw new PolicyViolationException("RSV2 not allowed to be set");
-        }
-        if (frame.isRsv3())
-        {
-            b |= 0x10;
-            // TODO: extensions can negotiate this (somehow)
-            throw new PolicyViolationException("RSV3 not allowed to be set");
-        }
-
-        byte opcode = frame.getOpCode().getCode();
-
-        if (frame.isContinuation())
-        {
-            // Continuations are not the same OPCODE
-            opcode = OpCode.CONTINUATION.getCode();
-        }
-
-        b |= opcode & 0x0F;
-
-        buffer.put(b);
-
-        // is masked
-        b = 0x00;
-        b |= (frame.isMasked()?0x80:0x00);
-
-        // payload lengths
-        int payloadLength = frame.getPayloadLength();
-
-        /*
-         * if length is over 65535 then its a 7 + 64 bit length
-         */
-        if (payloadLength > 0xFF_FF)
-        {
-            // we have a 64 bit length
-            b |= 0x7F;
-            buffer.put(b); // indicate 8 byte length
-            buffer.put((byte)0); //
-            buffer.put((byte)0); // anything over an
-            buffer.put((byte)0); // int is just
-            buffer.put((byte)0); // intsane!
-            buffer.put((byte)((payloadLength >> 24) & 0xFF));
-            buffer.put((byte)((payloadLength >> 16) & 0xFF));
-            buffer.put((byte)((payloadLength >> 8) & 0xFF));
-            buffer.put((byte)(payloadLength & 0xFF));
-        }
-        /*
-         * if payload is ge 126 we have a 7 + 16 bit length
-         */
-        else if (payloadLength >= 0x7E)
-        {
-            b |= 0x7E;
-            buffer.put(b); // indicate 2 byte length
-            buffer.put((byte)(payloadLength >> 8));
-            buffer.put((byte)(payloadLength & 0xFF));
-        }
-        /*
-         * we have a 7 bit length
-         */
-        else
-        {
-            b |= (payloadLength & 0x7F);
-            buffer.put(b);
-        }
-
-        // masking key
-        if (frame.isMasked())
-        {
-            // TODO: figure out maskgen
-            buffer.put(frame.getMask());
-        }
-
-        // now the payload itself
-
-        // remember the position
-        int positionPrePayload = buffer.position();
-
-        // generate payload
-        if (frame.getPayloadLength() > 0)
-        {
-            buffer.put(frame.getPayloadData());
-        }
-
-        int positionPostPayload = buffer.position();
-
-        // mask it if needed
-        if (frame.isMasked())
-        {
-            // move back to remembered position.
-            int size = positionPostPayload - positionPrePayload;
-            byte[] mask = frame.getMask();
-            int pos;
-            for (int i = 0; i < size; i++)
-            {
-                pos = positionPrePayload + i;
-                // Mask each byte by its absolute position in the bytebuffer
-                buffer.put(pos,(byte)(buffer.get(pos) ^ mask[i % 4]));
-            }
-        }
+        generator.generate(buffer,frame);
 
         BufferUtil.flipToFlush(buffer,0);
     }

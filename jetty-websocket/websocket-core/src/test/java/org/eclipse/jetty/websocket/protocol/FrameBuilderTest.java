@@ -48,4 +48,5 @@ public class FrameBuilderTest
 
         Assert.assertArrayEquals(expected,actual);
     }
+
 }
