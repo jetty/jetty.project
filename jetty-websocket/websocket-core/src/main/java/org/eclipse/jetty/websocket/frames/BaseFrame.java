@@ -179,11 +179,25 @@ public class BaseFrame implements Frame
      * @param buf
      *            the bytebuffer to set
      */
-    protected void setPayload(byte buf[])
+    public void setPayload(byte buf[])
     {
         int len = buf.length;
         this.payload = ByteBuffer.allocate(len);
         this.payload.put(buf,0,len);
+        this.payload.flip(); // make payload readable
+        this.setPayloadLength(len);
+    }
+
+    /**
+     * Set the data and payload length.
+     * 
+     * @param buf
+     *            the bytebuffer to set
+     */
+    public void setPayload(byte buf[], int offset, int len)
+    {
+        this.payload = ByteBuffer.allocate(len);
+        this.payload.put(buf,offset,len);
         this.payload.flip(); // make payload readable
         this.setPayloadLength(len);
     }
