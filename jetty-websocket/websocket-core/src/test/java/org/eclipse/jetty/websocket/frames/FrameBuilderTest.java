@@ -6,13 +6,6 @@ import org.junit.Test;
 
 public class FrameBuilderTest
 {
-    public void testSimpleAsFrame()
-    {
-        PingFrame frame = (PingFrame)FrameBuilder.ping().asFrame();
-
-        Assert.assertTrue(frame instanceof PingFrame);
-    }
-
     @Test
     public void testSimpleInvalidCloseFrameBuilder()
     {
@@ -38,10 +31,10 @@ public class FrameBuilderTest
     @Test
     public void testSimpleValidCloseFrame()
     {
-        byte[] actual = FrameBuilder.close().asByteArray();
+        byte[] actual = FrameBuilder.close(1000).asByteArray();
 
         byte[] expected = new byte[]
-                { (byte)0x88, (byte)0x00 };
+                { (byte)0x89, (byte)0x02, (byte)0x03, (byte)0xe8 };
 
         Assert.assertArrayEquals(expected,actual);
     }
@@ -49,7 +42,7 @@ public class FrameBuilderTest
     @Test
     public void testSimpleValidPingFrame()
     {
-        byte[] actual = FrameBuilder.ping().asByteArray();
+        byte[] actual = FrameBuilder.close(1000).asByteArray();
 
         byte[] expected = new byte[]
                 { (byte)0x89, (byte)0x00 };
