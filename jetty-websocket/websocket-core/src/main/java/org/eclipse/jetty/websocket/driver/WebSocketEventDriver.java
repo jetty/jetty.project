@@ -136,7 +136,7 @@ public class WebSocketEventDriver implements Parser.Listener
                     }
                     CloseInfo close = new CloseInfo(frame);
                     events.onClose.call(websocket,connection,close.getStatusCode(),close.getReason());
-                    return;
+                    throw new CloseException(close.getStatusCode(),close.getReason());
                 }
                 case BINARY:
                 {
@@ -277,6 +277,10 @@ public class WebSocketEventDriver implements Parser.Listener
                     return;
                 }
             }
+        }
+        catch (CloseException e)
+        {
+            terminateConnection(e.getStatusCode(),e.getMessage());
         }
         catch (Throwable t)
         {
