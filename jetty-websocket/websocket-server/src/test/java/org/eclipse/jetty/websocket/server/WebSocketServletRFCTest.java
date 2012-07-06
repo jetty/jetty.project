@@ -3,15 +3,20 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
@@ -37,14 +42,39 @@ public class WebSocketServletRFCTest
         }
     }
 
-    public static class RFCSocket extends WebSocketAdapter
+    @WebSocket
+    public static class RFCSocket
     {
         private static Logger LOG = Log.getLogger(RFCSocket.class);
 
-        @Override
-        public void onWebSocketText(String message)
+        private WebSocketConnection conn;
+
+        @OnWebSocketMessage
+        public void onBinary(byte buf[], int offset, int len)
         {
-            LOG.debug("onWebSocketText({})",message);
+            LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
+
+            // echo the message back.
+            try
+            {
+                this.conn.write(null,new FutureCallback<Void>(),buf,offset,len);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace(System.err);
+            }
+        }
+
+        @OnWebSocketConnect
+        public void onOpen(WebSocketConnection conn)
+        {
+            this.conn = conn;
+        }
+
+        @OnWebSocketMessage
+        public void onText(String message)
+        {
+            LOG.debug("onText({})",message);
             // Test the RFC 6455 close code 1011 that should close
             // trigger a WebSocket server terminated close.
             if (message.equals("CRASH"))
@@ -55,7 +85,7 @@ public class WebSocketServletRFCTest
             // echo the message back.
             try
             {
-                getConnection().write(null,new FutureCallback<Void>(),message);
+                this.conn.write(null,new FutureCallback<Void>(),message);
             }
             catch (IOException e)
             {
@@ -80,6 +110,61 @@ public class WebSocketServletRFCTest
     }
 
     /**
+     * Test that aggregation of binary frames into a single message occurs
+     */
+    @Test
+    public void testBinaryAggregate() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        try
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            // Generate binary frames
+            byte buf1[] = new byte[128];
+            byte buf2[] = new byte[128];
+            byte buf3[] = new byte[128];
+
+            Arrays.fill(buf1,(byte)0xAA);
+            Arrays.fill(buf2,(byte)0xBB);
+            Arrays.fill(buf3,(byte)0xCC);
+
+            BinaryFrame bin;
+
+            bin = new BinaryFrame();
+            bin.setPayload(buf1);
+            bin.setFin(false);
+
+            client.write(bin); // write buf1 (fin=false)
+
+            bin = new BinaryFrame();
+            bin.setPayload(buf2);
+            bin.setContinuation(true);
+            bin.setFin(false);
+
+            client.write(bin); // write buf2 (fin=false)
+
+            bin = new BinaryFrame();
+            bin.setPayload(buf3);
+            bin.setContinuation(true);
+            bin.setFin(true);
+
+            client.write(bin); // write buf3 (fin=true)
+
+            // Read frame echo'd back (hopefully a single binary frame)
+            Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            BinaryFrame binmsg = (BinaryFrame)frames.remove();
+            Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(128 * 3));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    /**
      * Test the requirement of issuing
      */
     @Test
@@ -93,7 +178,9 @@ public class WebSocketServletRFCTest
             client.expectUpgradeResponse();
 
             // Generate text frame
-            client.write(new TextFrame("Hello World"));
+            TextFrame frame = new TextFrame("Hello World");
+            frame.setFin(true);
+            client.write(frame);
 
             // Read frame (hopefully text frame)
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -121,7 +208,9 @@ public class WebSocketServletRFCTest
             client.expectUpgradeResponse();
 
             // Generate text frame
-            client.write(new TextFrame("CRASH"));
+            TextFrame frame = new TextFrame("CRASH");
+            frame.setFin(true);
+            client.write(frame);
 
             // Read frame (hopefully close frame)
             Queue<BaseFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
