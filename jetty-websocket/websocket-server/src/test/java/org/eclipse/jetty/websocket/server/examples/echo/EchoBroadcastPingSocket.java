@@ -30,7 +30,7 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
                     System.err.println("Ping " + pinger);
                     byte data[] = new byte[]
                     { (byte)1, (byte)2, (byte)3 };
-                    pinger.sendPing(data,0,3);
+                    pinger.sendPing(data);
                 }
             }
             catch (Exception e)

@@ -33,7 +33,7 @@ public class WebSocketBlockingConnection
         }
         else
         {
-            throw new IllegalArgumentException("Unsupported implementation of WebSocketConnection");
+            throw new IllegalArgumentException("WebSocketConnection must implement internal RawConnection interface");
         }
         this.bufferPool = this.conn.getBufferPool();
         this.policy = conn.getPolicy();
