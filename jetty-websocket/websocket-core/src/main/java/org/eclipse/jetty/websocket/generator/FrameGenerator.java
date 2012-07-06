@@ -165,9 +165,12 @@ public class FrameGenerator
             // validate the close
             new CloseInfo(frame.getPayloadData(),true);
         }
-        // copy payload
-        buffer.put(frame.getPayloadData());
 
+        // copy payload
+        if (frame.hasPayload())
+        {
+            buffer.put(frame.getPayloadData());
+        }
         int positionPostPayload = buffer.position();
 
         // mask it if needed
