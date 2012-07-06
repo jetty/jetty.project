@@ -49,17 +49,70 @@ public class FrameGenerator
         this.policy = policy;
     }
 
+    public void assertFrameValid(WebSocketFrame frame)
+    {
+        /*
+         * RFC 6455 Section 5.2
+         * 
+         * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
+         * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+         */
+        if (frame.isRsv1())
+        {
+            // TODO: extensions can negotiate this (somehow)
+            throw new ProtocolException("RSV1 not allowed to be set");
+        }
+
+        if (frame.isRsv2())
+        {
+            // TODO: extensions can negotiate this (somehow)
+            throw new ProtocolException("RSV2 not allowed to be set");
+        }
+
+        if (frame.isRsv3())
+        {
+            // TODO: extensions can negotiate this (somehow)
+            throw new ProtocolException("RSV3 not allowed to be set");
+        }
+
+        if (frame.getOpCode().isControlFrame())
+        {
+            /*
+             * RFC 6455 Section 5.5
+             * 
+             * All control frames MUST have a payload length of 125 bytes or less and MUST NOT be fragmented.
+             */
+            if (frame.getPayloadLength() > 125)
+            {
+                throw new ProtocolException("Invalid control frame payload length");
+            }
+
+            if (!frame.isFin())
+            {
+                throw new ProtocolException("Control Frames must be FIN=true");
+            }
+
+            /*
+             * RFC 6455 Section 5.5.1
+             * 
+             * close frame payload is specially formatted which is checked in CloseInfo
+             */
+            if (frame.getOpCode() == OpCode.CLOSE)
+            {
+                new CloseInfo(frame.getPayloadData(),true);
+            }
+        }
+
+    }
+
     public ByteBuffer generate(ByteBuffer buffer, WebSocketFrame frame)
     {
         LOG.debug(String.format("Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d]",frame.getOpCode().toString(),
                 frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame.getPayloadLength()));
 
-        byte b;
+        assertFrameValid(frame);
 
-        if ( frame.getOpCode().isControlFrame() && !frame.isFin() )
-        {
-            throw new ProtocolException("Control Frames must be FIN=true");
-        }
+        byte b;
 
         // Setup fin thru opcode
         b = 0x00;
@@ -70,20 +123,14 @@ public class FrameGenerator
         if (frame.isRsv1())
         {
             b |= 0x40; // 0100_0000
-            // TODO: extensions can negotiate this (somehow)
-            throw new ProtocolException("RSV1 not allowed to be set");
         }
         if (frame.isRsv2())
         {
             b |= 0x20; // 0010_0000
-            // TODO: extensions can negotiate this (somehow)
-            throw new ProtocolException("RSV2 not allowed to be set");
         }
         if (frame.isRsv3())
         {
             b |= 0x10;
-            // TODO: extensions can negotiate this (somehow)
-            throw new ProtocolException("RSV3 not allowed to be set");
         }
 
         byte opcode = frame.getOpCode().getCode();
@@ -145,30 +192,11 @@ public class FrameGenerator
         // masking key
         if (frame.isMasked())
         {
-            // TODO: figure out maskgen
             buffer.put(frame.getMask());
         }
 
-        // now the payload itself
-
-        // call back into masking check/method on this class?
-
         // remember the position
         int positionPrePayload = buffer.position();
-
-        if (frame.getOpCode().isControlFrame())
-        {
-            if (frame.getPayloadLength() > 125)
-            {
-                throw new ProtocolException("Invalid control frame payload length");
-            }
-        }
-
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            // validate the close
-            new CloseInfo(frame.getPayloadData(),true);
-        }
 
         // copy payload
         if (frame.hasPayload())

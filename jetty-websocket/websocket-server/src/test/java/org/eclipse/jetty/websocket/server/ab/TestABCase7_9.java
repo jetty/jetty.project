@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -174,8 +175,10 @@ public class TestABCase7_9
      * Test the requirement of issuing
      */
     @Test
-    public void testCase7_9_XInvalidCloseStatusCodesWithBuilder() throws Exception
+    public void testCase7_9_XInvalidCloseStatusCodesWithReason() throws Exception
     {
+        String reason = "closing time";
+        
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         try
         {
@@ -191,12 +194,13 @@ public class TestABCase7_9
 
             // Create Close Frame manually, as we are testing the server's behavior of a bad client.
             buf.put((byte)(0x80 | OpCode.CLOSE.getCode()));
-            buf.put((byte)(0x80 | 2));
+            buf.put((byte)(0x80 | 2 + reason.length()));
             byte mask[] = new byte[]
             { 0x44, 0x44, 0x44, 0x44 };
             buf.put(mask);
             int position = buf.position();
             buf.putChar((char)this.invalidStatusCode);
+            buf.put(reason.getBytes(StringUtil.__UTF8_CHARSET));
             remask(buf,position,mask);
             BufferUtil.flipToFlush(buf,0);
             client.writeRaw(buf);
