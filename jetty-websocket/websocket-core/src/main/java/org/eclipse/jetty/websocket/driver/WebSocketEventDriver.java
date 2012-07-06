@@ -20,9 +20,9 @@ import org.eclipse.jetty.websocket.io.MessageInputStream;
 import org.eclipse.jetty.websocket.io.MessageReader;
 import org.eclipse.jetty.websocket.io.StreamAppender;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Frame;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.util.CloseUtil;
 
 /**
  * Responsible for routing the internally generated events destined for a specific WebSocket instance to whatever choice of development style the developer has
@@ -134,10 +134,8 @@ public class WebSocketEventDriver implements Parser.Listener
                         // not interested in close events
                         return;
                     }
-                    byte payload[] = frame.getPayloadData();
-                    int statusCode = CloseUtil.getStatusCode(payload);
-                    String reason = CloseUtil.getReason(payload);
-                    events.onClose.call(websocket,connection,statusCode,reason);
+                    CloseInfo close = new CloseInfo(frame);
+                    events.onClose.call(websocket,connection,close.getStatusCode(),close.getReason());
                     return;
                 }
                 case BINARY:

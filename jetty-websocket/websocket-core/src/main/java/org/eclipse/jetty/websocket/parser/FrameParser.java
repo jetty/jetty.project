@@ -77,13 +77,22 @@ public class FrameParser
         }
         policy.assertValidPayloadLength((int)len);
 
-        if (frame.getOpCode().isControlFrame())
+        switch (frame.getOpCode())
         {
-            if (payloadLength > WebSocketFrame.MAX_CONTROL_PAYLOAD)
-            {
-                throw new ProtocolException("Invalid Control Frame payload length, [" + payloadLength + "] cannot exceed ["
-                        + WebSocketFrame.MAX_CONTROL_PAYLOAD + "]");
-            }
+            case CLOSE:
+                if (payloadLength == 1)
+                {
+                    throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
+                }
+                // fall thru
+            case PING:
+            case PONG:
+                if (payloadLength > WebSocketFrame.MAX_CONTROL_PAYLOAD)
+                {
+                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
+                            + WebSocketFrame.MAX_CONTROL_PAYLOAD + "]");
+                }
+                break;
         }
     }
 

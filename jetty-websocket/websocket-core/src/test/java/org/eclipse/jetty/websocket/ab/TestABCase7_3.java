@@ -1,8 +1,9 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
@@ -93,11 +94,11 @@ public class TestABCase7_3
         parser.addListener(capture);
         parser.parse(expected);
 
-        Assert.assertEquals( "error on invalid close payload", 1, capture.getErrorCount(WebSocketException.class)) ;
+        Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
 
-        WebSocketException known = capture.getErrors().get(0);
+        ProtocolException known = (ProtocolException)capture.getErrors().get(0);
 
-        Assert.assertTrue("invalid payload should be in message",known.getMessage().contains("invalid payload length"));
+        Assert.assertThat("Payload.message",known.getMessage(),containsString("Invalid close frame payload length"));
     }
 
     @Test
@@ -307,25 +308,32 @@ public class TestABCase7_3
     @Test
     public void testCase7_3_6ParseCloseWithInvalidStatusReason()
     {
-        StringBuilder message = new StringBuilder();
-        for ( int i = 0 ; i < 124 ; ++i )
-        {
-            message.append("*");
-        }
+        byte[] messageBytes = new byte[124];
+        Arrays.fill(messageBytes,(byte)'*');
 
-        byte[] messageBytes = message.toString().getBytes();
+        ByteBuffer expected = ByteBuffer.allocate(256);
 
-        ByteBuffer expected = ByteBuffer.allocate(132);
+        byte b;
 
-        expected.put(new byte[]
-                { (byte)0x88 });
-        byte b = 0x00; // no masking
-
-        b |= (messageBytes.length + 2) & 0x7F;
+        // fin + op
+        b = 0x00;
+        b |= 0x80; // fin on
+        b |= 0x08; // close
         expected.put(b);
-        expected.putShort((short)1000);
 
-        expected.put(messageBytes);
+        // mask + len
+        b = 0x00;
+        b |= 0x00; // no masking
+        b |= 0x7E; // 2 byte len
+        expected.put(b);
+
+        // 2 byte len
+        expected.putChar((char)(messageBytes.length + 2));
+
+        // payload
+        expected.putShort((short)1000); // status code
+        expected.put(messageBytes); // reason
+
         expected.flip();
 
         Parser parser = new Parser(policy);
@@ -333,10 +341,10 @@ public class TestABCase7_3
         parser.addListener(capture);
         parser.parse(expected);
 
-        Assert.assertEquals( "error on invalid close payload", 1, capture.getErrorCount(WebSocketException.class)) ;
+        Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
 
-        WebSocketException known = capture.getErrors().get(0);
+        ProtocolException known = (ProtocolException)capture.getErrors().get(0);
 
-        Assert.assertTrue("invalid payload should be in message",known.getMessage().contains("invalid payload length"));
+        Assert.assertThat("Payload.message",known.getMessage(),containsString("Invalid control frame payload length"));
     }
 }
