@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.Headers;
@@ -213,8 +214,8 @@ public class ReferrerPushStrategy implements PushStrategy
     private class MainResource
     {
         private final String name;
-        private final long created = System.nanoTime();
         private final Set<String> resources = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+        private AtomicLong firstResourceAdded = new AtomicLong(-1);
 
         MainResource(String name)
         {
@@ -223,7 +224,10 @@ public class ReferrerPushStrategy implements PushStrategy
 
         public boolean addResource(String url, String origin, String referrer)
         {
-            long delay = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - created);
+            if (firstResourceAdded.get() == -1)
+                firstResourceAdded.set(System.nanoTime());
+
+            long delay = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - firstResourceAdded.get());
             if (!referrer.startsWith(origin) && !isPushOriginAllowed(origin))
             {
                 logger.debug("Skipped store of push metadata {} for {}: Origin: {} doesn't match or origin not allowed",
