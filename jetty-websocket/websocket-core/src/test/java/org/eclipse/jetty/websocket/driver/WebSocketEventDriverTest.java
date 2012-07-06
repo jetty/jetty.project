@@ -5,17 +5,15 @@ import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.driver.EventMethodsCache;
-import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.examples.AdapterConnectCloseSocket;
 import org.eclipse.jetty.websocket.examples.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.examples.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.examples.AnnotatedFramesSocket;
 import org.eclipse.jetty.websocket.examples.ListenerBasicSocket;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame.BinaryFrame;
+import org.eclipse.jetty.websocket.frames.FrameBuilder;
 import org.eclipse.jetty.websocket.frames.PingFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.io.LocalWebSocketConnection;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,8 +26,7 @@ public class WebSocketEventDriverTest
 
     private BinaryFrame makeBinaryFrame(String content, boolean fin)
     {
-        BinaryFrame bin = new BinaryFrame(content.getBytes(StringUtil.__UTF8_CHARSET));
-        bin.setFin(fin);
+        BinaryFrame bin = (BinaryFrame)FrameBuilder.binary().fin(fin).payload((content.getBytes(StringUtil.__UTF8_CHARSET))).asFrame();
         return bin;
     }
 
@@ -86,8 +83,8 @@ public class WebSocketEventDriverTest
         driver.setConnection(conn);
         driver.onConnect();
         driver.onFrame(new PingFrame(StringUtil.getUtf8Bytes("PING")));
-        driver.onFrame(new TextFrame("Text Me"));
-        driver.onFrame(new BinaryFrame(StringUtil.getUtf8Bytes("Hello Bin")));
+        driver.onFrame(FrameBuilder.text().payload("Text Me").asFrame());
+        driver.onFrame(FrameBuilder.binary().payload(StringUtil.getUtf8Bytes("Hello Bin")).asFrame());
         driver.onFrame(new CloseFrame(StatusCode.SHUTDOWN));
 
         socket.capture.assertEventCount(6);
@@ -126,7 +123,7 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(new TextFrame("Hello World"));
+        driver.onFrame(FrameBuilder.text("Hello World").asFrame());
         driver.onFrame(new CloseFrame(StatusCode.NORMAL));
 
         socket.capture.assertEventCount(3);

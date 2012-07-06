@@ -42,8 +42,8 @@ public class Generator
 
     public Generator(WebSocketPolicy policy)
     {
-        generators.put(OpCode.BINARY,new BinaryFrameGenerator(policy));
-        generators.put(OpCode.TEXT,new TextFrameGenerator(policy));
+        generators.put(OpCode.TEXT,new DataFrameGenerator(policy));
+        generators.put(OpCode.BINARY,new DataFrameGenerator(policy));
         generators.put(OpCode.PING,new PingFrameGenerator(policy));
         generators.put(OpCode.PONG,new PongFrameGenerator(policy));
         generators.put(OpCode.CLOSE,new CloseFrameGenerator(policy));

@@ -1,13 +1,14 @@
 package org.eclipse.jetty.websocket;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame.TextFrame;
+import org.eclipse.jetty.websocket.frames.FrameBuilder;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.masks.FixedMasker;
 import org.eclipse.jetty.websocket.masks.RandomMasker;
@@ -40,7 +41,7 @@ public class GeneratorParserRoundtripTest
         {
             // Generate Buffer
             BufferUtil.flipToFill(out);
-            gen.generate(out,new TextFrame(message));
+            gen.generate(out,FrameBuilder.text().payload(message.getBytes()).asFrame());
 
             // Parse Buffer
             BufferUtil.flipToFlush(out,0);
@@ -82,7 +83,7 @@ public class GeneratorParserRoundtripTest
         try
         {
             // Setup Frame
-            TextFrame txt = new TextFrame(message);
+            TextFrame txt = (TextFrame)FrameBuilder.text().payload(message.getBytes()).asFrame();
 
             // Add masking
             byte mask[] = new byte[4];

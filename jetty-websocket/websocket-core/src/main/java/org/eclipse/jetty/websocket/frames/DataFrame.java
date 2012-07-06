@@ -1,11 +1,44 @@
 package org.eclipse.jetty.websocket.frames;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 
 public class DataFrame extends BaseFrame
 {
+    public class BinaryFrame extends DataFrame
+    {
+        public BinaryFrame(byte[] payload)
+        {
+            super(OpCode.BINARY);
+            super.setPayload(payload);
+        }
+
+        public BinaryFrame(ByteBuffer payload)
+        {
+            super(OpCode.BINARY);
+            super.setPayload(payload);
+        }
+    }
+
+    public class TextFrame extends DataFrame
+    {
+        public TextFrame(String message)
+        {
+            super(OpCode.TEXT);
+            super.setPayload(message.getBytes());
+        }
+
+        public String getPayloadUTF8()
+        {
+            return new String(getPayloadData(),StringUtil.__UTF8_CHARSET);
+        }
+    }
+
     // internal tracking
     private int continuationIndex = 0;
+
     private boolean continuation = false;
 
     public DataFrame()

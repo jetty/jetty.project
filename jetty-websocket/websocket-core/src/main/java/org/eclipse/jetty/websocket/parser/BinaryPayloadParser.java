@@ -3,33 +3,33 @@ package org.eclipse.jetty.websocket.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame;
 
 /**
  * Parsing for the {@link BinaryFrame}.
  */
-public class BinaryPayloadParser extends FrameParser<BinaryFrame>
+public class BinaryPayloadParser extends FrameParser<DataFrame>
 {
-    private BinaryFrame frame;
+    private DataFrame frame;
     private ByteBuffer payload;
     private int payloadLength;
 
     public BinaryPayloadParser(WebSocketPolicy policy)
     {
         super(policy);
-        frame = new BinaryFrame();
+        frame = new DataFrame();
     }
 
     @Override
-    public BinaryFrame getFrame()
+    public DataFrame getFrame()
     {
         return frame;
     }
 
     @Override
-    public BinaryFrame newFrame()
+    public DataFrame newFrame()
     {
-        frame = new BinaryFrame();
+        frame = new DataFrame();
         return frame;
     }
 

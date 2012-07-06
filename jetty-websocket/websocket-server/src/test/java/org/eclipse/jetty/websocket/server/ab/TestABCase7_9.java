@@ -183,7 +183,7 @@ public class TestABCase7_9
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            ByteBuffer frame = FrameBuilder.closeFrame().withMask(new byte[]
+            ByteBuffer frame = FrameBuilder.close().mask(new byte[]
             { 0x44, 0x44, 0x44, 0x44 }).asByteBuffer();
 
             ByteBuffer buf = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);

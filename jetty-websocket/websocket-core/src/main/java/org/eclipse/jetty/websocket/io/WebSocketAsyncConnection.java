@@ -21,9 +21,8 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.callbacks.WebSocketCloseCallback;
 import org.eclipse.jetty.websocket.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame;
 import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
@@ -254,7 +253,8 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         }
         ByteBuffer raw = bufferPool.acquire(len + FrameGenerator.OVERHEAD,false);
         BufferUtil.clearToFill(raw);
-        BinaryFrame frame = new BinaryFrame(buf,offset,len);
+        DataFrame frame = new DataFrame();
+        frame.setPayload(ByteBuffer.wrap(buf,offset,len));
         frame.setFin(true);
         generator.generate(raw,frame);
         BufferUtil.flipToFlush(raw,0);
@@ -280,7 +280,8 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         ByteBuffer raw[] = new ByteBuffer[messages.length];
         for (int i = 0; i < len; i++)
         {
-            TextFrame frame = new TextFrame(messages[i]);
+            DataFrame frame = new DataFrame();
+            frame.setPayload(ByteBuffer.wrap(messages[i].getBytes()));
             frame.setFin(true);
             raw[i] = bufferPool.acquire(policy.getBufferSize(),false);
             BufferUtil.clear(raw[i]);

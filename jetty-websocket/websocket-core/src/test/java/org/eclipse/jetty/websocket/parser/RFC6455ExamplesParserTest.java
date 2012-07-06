@@ -1,16 +1,16 @@
 package org.eclipse.jetty.websocket.parser;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame.BinaryFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame.TextFrame;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 

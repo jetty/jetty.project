@@ -2,33 +2,31 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame;
 
-public class TextPayloadParser extends FrameParser<TextFrame>
+public class TextPayloadParser extends FrameParser<DataFrame>
 {
-    private TextFrame frame;
+    private DataFrame frame;
     private ByteBuffer payload;
     private int payloadLength;
 
     public TextPayloadParser(WebSocketPolicy policy)
     {
         super(policy);
-        frame = new TextFrame();
+        frame = new DataFrame();
     }
 
     @Override
-    public TextFrame getFrame()
+    public DataFrame getFrame()
     {
         return frame;
     }
 
     @Override
-    public TextFrame newFrame()
+    public DataFrame newFrame()
     {
-        frame = new TextFrame();
+        frame = new DataFrame();
         return frame;
     }
 
@@ -49,7 +47,7 @@ public class TextPayloadParser extends FrameParser<TextFrame>
             if (payload.position() >= payloadLength)
             {
                 payload.flip();
-                frame.setPayload(BufferUtil.toString(payload,StringUtil.__UTF8_CHARSET));
+                frame.setPayload(payload);
                 return true;
             }
         }

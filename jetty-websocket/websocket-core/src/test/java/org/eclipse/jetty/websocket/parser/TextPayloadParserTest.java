@@ -1,6 +1,9 @@
 package org.eclipse.jetty.websocket.parser;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -10,7 +13,7 @@ import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 

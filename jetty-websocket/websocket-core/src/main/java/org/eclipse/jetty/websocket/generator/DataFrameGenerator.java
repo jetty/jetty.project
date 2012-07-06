@@ -4,17 +4,17 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame;
 
-public class BinaryFrameGenerator extends FrameGenerator<BinaryFrame>
+public class DataFrameGenerator extends FrameGenerator<DataFrame>
 {
-    public BinaryFrameGenerator(WebSocketPolicy policy)
+    public DataFrameGenerator(WebSocketPolicy policy)
     {
         super(policy);
     }
 
     @Override
-    public void fillPayload(ByteBuffer buffer, BinaryFrame binary)
+    public void fillPayload(ByteBuffer buffer, DataFrame binary)
     {
         BufferUtil.put(binary.getPayload(),buffer);
     }

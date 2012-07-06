@@ -156,12 +156,12 @@ public class TestABCase5
             client.expectUpgradeResponse();
 
             String fragment1 = "fragment1";
-            ByteBuffer frame1 = FrameBuilder.pingFrame().isFin(false).withPayload(fragment1.getBytes()).asByteBuffer();
+            ByteBuffer frame1 = FrameBuilder.ping().fin(false).payload(fragment1.getBytes()).asByteBuffer();
           
             client.writeRaw(frame1);
 
             String fragment2 = "fragment2";
-            ByteBuffer frame2 = FrameBuilder.pingFrame().withPayload(fragment2.getBytes()).asByteBuffer();
+            ByteBuffer frame2 = FrameBuilder.ping().payload(fragment2.getBytes()).asByteBuffer();
             client.writeRaw(frame2);
             
             // Read frame
@@ -244,13 +244,13 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
-            ByteBuffer frame1 = FrameBuilder.pongFrame().isFin(false).withPayload(fragment1.getBytes()).asByteBuffer();
+            ByteBuffer frame1 = FrameBuilder.pong().fin(false).payload(fragment1.getBytes()).asByteBuffer();
                         
             client.writeRaw(frame1);
 
             String fragment2 = "fragment2";
 
-            ByteBuffer frame2 = FrameBuilder.continuationFrame().isFin(false).withPayload(fragment2.getBytes()).asByteBuffer();
+            ByteBuffer frame2 = FrameBuilder.continuation().fin(false).payload(fragment2.getBytes()).asByteBuffer();
           
             client.writeRaw(frame2);
 
@@ -423,14 +423,14 @@ public class TestABCase5
             // Send a text packet
             String textPayload1 = "fragment1";
 
-            ByteBuffer frame1 = FrameBuilder.textFrame().isFin(false).withPayload(textPayload1.getBytes()).asByteBuffer();
+            ByteBuffer frame1 = FrameBuilder.text().fin(false).payload(textPayload1.getBytes()).asByteBuffer();
             BufferUtil.flipToFlush(frame1,0);
             client.writeRaw(frame1);
 
             // Send a ping with payload
             
             String pingPayload = "ping payload";
-            ByteBuffer frame2 = FrameBuilder.pingFrame().withPayload(pingPayload.getBytes()).asByteBuffer();
+            ByteBuffer frame2 = FrameBuilder.ping().payload(pingPayload.getBytes()).asByteBuffer();
             BufferUtil.flipToFlush(frame2,0);
 
             client.writeRaw(frame2);
@@ -438,7 +438,7 @@ public class TestABCase5
             // Send remaining text as continuation
             String textPayload2 = "fragment2";
 
-            ByteBuffer frame3 = FrameBuilder.continuationFrame().withPayload(textPayload2.getBytes()).asByteBuffer();
+            ByteBuffer frame3 = FrameBuilder.continuation().payload(textPayload2.getBytes()).asByteBuffer();
             BufferUtil.flipToFlush(frame3,0);
 
             client.writeRaw(frame3);

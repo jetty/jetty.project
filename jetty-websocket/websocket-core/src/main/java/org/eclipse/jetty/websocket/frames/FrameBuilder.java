@@ -9,34 +9,59 @@ import org.eclipse.jetty.websocket.protocol.OpCode;
 
 public class FrameBuilder
 {
-    public static FrameBuilder binaryFrame()
+    public static FrameBuilder binary()
     {
         return new FrameBuilder(new BaseFrame(OpCode.BINARY));
     }
 
-    public static FrameBuilder closeFrame()
+    public static FrameBuilder binary(byte[] payload)
+    {
+        return new FrameBuilder(new BaseFrame(OpCode.BINARY)).payload(payload);
+    }
+
+    public static FrameBuilder binary(byte[] payload, int offset, int length)
+    {
+        return new FrameBuilder(new BaseFrame(OpCode.BINARY)).payload(payload,offset,length);
+    }
+
+    public static FrameBuilder close()
     {
         return new FrameBuilder(new BaseFrame(OpCode.CLOSE));
     }
 
-    public static FrameBuilder continuationFrame()
+    public static FrameBuilder continuation()
     {
         return new FrameBuilder(new BaseFrame(OpCode.CONTINUATION));
     }
 
-    public static FrameBuilder pingFrame()
+    public static FrameBuilder continuation(byte[] payload)
+    {
+        return new FrameBuilder(new BaseFrame(OpCode.CONTINUATION)).payload(payload);
+    }
+
+    public static FrameBuilder continuation(String payload)
+    {
+        return new FrameBuilder(new BaseFrame(OpCode.CONTINUATION)).payload(payload);
+    }
+
+    public static FrameBuilder ping()
     {
         return new FrameBuilder(new BaseFrame(OpCode.PING));
     }
 
-    public static FrameBuilder pongFrame()
+    public static FrameBuilder pong()
     {
         return new FrameBuilder(new BaseFrame(OpCode.PONG));
     }
 
-    public static FrameBuilder textFrame()
+    public static FrameBuilder text()
     {
         return new FrameBuilder(new BaseFrame(OpCode.TEXT));
+    }
+
+    public static FrameBuilder text(String text)
+    {
+        return new FrameBuilder(new BaseFrame(OpCode.TEXT)).payload(text.getBytes());
     }
 
     private BaseFrame frame;
@@ -146,8 +171,6 @@ public class FrameBuilder
 
         // now the payload itself
 
-        // call back into masking check/method on this class?
-
         // remember the position
         int positionPrePayload = buffer.position();
 
@@ -184,35 +207,14 @@ public class FrameBuilder
         return frame;
     }
 
-    public FrameBuilder isFin( boolean fin )
+    public FrameBuilder fin( boolean fin )
     {
         frame.setFin(fin);
 
         return this;
     }
 
-    public FrameBuilder isRsv1(boolean rsv1)
-    {
-        frame.setRsv1(rsv1);
-
-        return this;
-    }
-
-    public FrameBuilder isRsv2(boolean rsv2)
-    {
-        frame.setRsv2(rsv2);
-
-        return this;
-    }
-
-    public FrameBuilder isRsv3(boolean rsv3)
-    {
-        frame.setRsv3(rsv3);
-
-        return this;
-    }
-
-    public FrameBuilder withMask(byte[] mask)
+    public FrameBuilder mask(byte[] mask)
     {
         frame.setMasked(true);
         frame.setMask(mask);
@@ -220,15 +222,50 @@ public class FrameBuilder
         return this;
     }
 
-    public FrameBuilder withPayload(byte[] bytes)
+    public FrameBuilder payload(byte[] payload)
     {
-        frame.setPayload(bytes);
+        frame.setPayload(payload);
         return this;
     }
 
-    public FrameBuilder withPayload(ByteBuffer payload)
+    public FrameBuilder payload(byte[] payload, int offset, int length)
+    {
+        ByteBuffer bb = ByteBuffer.allocate(length);
+        bb.put(payload,offset,length);
+        frame.setPayload(bb);
+        return this;
+    }
+
+    public FrameBuilder payload(ByteBuffer payload)
     {
         frame.setPayload(payload);
+        return this;
+    }
+
+    public FrameBuilder payload(String payload)
+    {
+        frame.setPayload(payload.getBytes());
+        return this;
+    }
+
+    public FrameBuilder rsv1(boolean rsv1)
+    {
+        frame.setRsv1(rsv1);
+
+        return this;
+    }
+
+    public FrameBuilder rsv2(boolean rsv2)
+    {
+        frame.setRsv2(rsv2);
+
+        return this;
+    }
+
+    public FrameBuilder rsv3(boolean rsv3)
+    {
+        frame.setRsv3(rsv3);
+
         return this;
     }
 }

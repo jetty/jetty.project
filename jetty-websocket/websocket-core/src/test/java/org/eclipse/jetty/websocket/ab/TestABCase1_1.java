@@ -1,13 +1,15 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.DataFrame.TextFrame;
+import org.eclipse.jetty.websocket.frames.FrameBuilder;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
@@ -33,8 +35,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -73,8 +74,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -117,8 +117,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -161,8 +160,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -205,8 +203,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -247,8 +244,7 @@ public class TestABCase1_1
             builder.append("*");
         }
 
-        TextFrame textFrame = new TextFrame(builder.toString());
-        textFrame.setFin(true);
+        BaseFrame textFrame = FrameBuilder.text(builder.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(length + 16);
@@ -280,8 +276,7 @@ public class TestABCase1_1
     @Test
     public void testGenerateEmptyTextCase1_1_1()
     {
-        TextFrame textFrame = new TextFrame("");
-        textFrame.setFin(true);
+        TextFrame textFrame = (TextFrame)FrameBuilder.text("").asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(10);

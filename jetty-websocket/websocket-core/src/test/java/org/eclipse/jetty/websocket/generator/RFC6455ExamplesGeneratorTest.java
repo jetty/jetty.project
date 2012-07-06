@@ -7,10 +7,10 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
+import org.eclipse.jetty.websocket.frames.FrameBuilder;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest
@@ -19,18 +19,12 @@ public class RFC6455ExamplesGeneratorTest
     public void testFragmentedUnmaskedTextMessage()
     {
 
-        TextFrame text1 = new TextFrame();
-        TextFrame text2 = new TextFrame();
-
-        text1.setFin(false);
-        text2.setFin(true);
-        text2.setContinuation(true);
-        text1.setPayload("Hel");
-        text2.setPayload("lo");
+        BaseFrame text1 = FrameBuilder.text("Hel").fin(false).asFrame();
+        BaseFrame text2 = FrameBuilder.continuation("lo").asFrame();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 
-        TextFrameGenerator generator = new TextFrameGenerator(policy);
+        Generator generator = new Generator(policy);
 
         ByteBuffer actual1 = ByteBuffer.allocate(32);
         ByteBuffer actual2 = ByteBuffer.allocate(32);
@@ -89,15 +83,12 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleMaskedTextMessage()
     {
-        TextFrame text = new TextFrame();
-        text.setPayload("Hello");
-        text.setFin(true);
-        text.setMask(new byte[]
-                { 0x37, (byte)0xfa, 0x21, 0x3d });
+        BaseFrame text = FrameBuilder.text("Hello").mask(new byte[]
+                { 0x37, (byte)0xfa, 0x21, 0x3d }).asFrame();
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
-        TextFrameGenerator gen = new TextFrameGenerator(policy);
+        Generator gen = new Generator(policy);
 
         ByteBuffer actual = ByteBuffer.allocate(32);
         gen.generate(actual,text);
@@ -121,8 +112,7 @@ public class RFC6455ExamplesGeneratorTest
     {
         int dataSize = 256;
 
-        BinaryFrame binary = new BinaryFrame();
-        binary.setFin(true);
+        BaseFrame binary = FrameBuilder.binary().asFrame();
         ByteBuffer payload = ByteBuffer.allocate(dataSize);
         for (int i = 0; i < dataSize; i++)
         {
@@ -131,7 +121,7 @@ public class RFC6455ExamplesGeneratorTest
         binary.setPayload(payload);
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        BinaryFrameGenerator gen = new BinaryFrameGenerator(policy);
+        Generator gen = new Generator(policy);
 
         ByteBuffer actual = ByteBuffer.allocate(dataSize + 32);
         gen.generate(actual,binary);
@@ -159,8 +149,7 @@ public class RFC6455ExamplesGeneratorTest
     {
         int dataSize = 1024 * 64;
 
-        BinaryFrame binary = new BinaryFrame();
-        binary.setFin(true);
+        BaseFrame binary = FrameBuilder.binary().asFrame();
         ByteBuffer payload = ByteBuffer.allocate(dataSize);
         for (int i = 0; i < dataSize; i++)
         {
@@ -169,7 +158,7 @@ public class RFC6455ExamplesGeneratorTest
         binary.setPayload(payload);
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        BinaryFrameGenerator gen = new BinaryFrameGenerator(policy);
+        Generator gen = new Generator(policy);
 
         ByteBuffer actual = ByteBuffer.allocate(dataSize + 10);
         gen.generate(actual,binary);
@@ -234,12 +223,11 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleUnmaskedTextMessage()
     {
-        TextFrame text = new TextFrame("Hello");
-        text.setFin(true);
+        BaseFrame text = FrameBuilder.text("Hello").asFrame();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
 
-        TextFrameGenerator generator = new TextFrameGenerator(policy);
+        Generator generator = new Generator(policy);
 
         ByteBuffer actual = ByteBuffer.allocate(32);
         generator.generate(actual,text);
