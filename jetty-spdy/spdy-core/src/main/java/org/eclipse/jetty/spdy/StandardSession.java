@@ -68,7 +68,6 @@ import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Atomics;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -1099,7 +1098,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     public String toString()
     {
-        return String.format("%s@%x{v=%d,q=%d}",getClass().getSimpleName(),hashCode(),version,queue.size());
+        return String.format("%s@%x{v%d,queuSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(), hashCode(), version, queue.size(), getWindowSize(), streams.size());
     }
     
     
