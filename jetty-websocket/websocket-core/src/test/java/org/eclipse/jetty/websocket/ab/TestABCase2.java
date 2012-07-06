@@ -1,13 +1,15 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
@@ -287,13 +289,9 @@ public class TestABCase2
     public void testParseOversizedBinaryPingCase2_5()
     {
         byte[] bytes = new byte[126];
+        Arrays.fill(bytes,(byte)0x00);
 
-        for ( int i = 0 ; i < bytes.length ; ++i )
-        {
-            bytes[i] = 0x00;
-        }
-
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
+        ByteBuffer expected = ByteBuffer.allocate(bytes.length + FrameGenerator.OVERHEAD);
 
         expected.put(new byte[]
                 { (byte)0x89 });

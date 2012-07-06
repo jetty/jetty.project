@@ -5,9 +5,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
@@ -73,9 +72,18 @@ public class FrameParser
         if (len > Integer.MAX_VALUE)
         {
             // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
-            throw new CloseException(StatusCode.MESSAGE_TOO_LARGE,"[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
+            throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
         }
         policy.assertValidPayloadLength((int)len);
+
+        if (frame.getOpCode().isControlFrame())
+        {
+            if (payloadLength > WebSocketFrame.MAX_CONTROL_PAYLOAD)
+            {
+                throw new ProtocolException("Invalid Control Frame payload length, [" + payloadLength + "] cannot exceed ["
+                        + WebSocketFrame.MAX_CONTROL_PAYLOAD + "]");
+            }
+        }
     }
 
     /**
