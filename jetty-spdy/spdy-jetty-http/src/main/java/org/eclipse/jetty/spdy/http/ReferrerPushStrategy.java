@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.Headers;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -62,7 +61,6 @@ public class ReferrerPushStrategy implements PushStrategy
     private final Set<Pattern> pushRegexps = new HashSet<>();
     private final Set<String> pushContentTypes = new HashSet<>();
     private final Set<Pattern> allowedPushOrigins = new HashSet<>();
-    private final HashSet<Short> supportedSPDYVersions = new HashSet<Short>();
     private volatile int maxAssociatedResources = 32;
     private volatile int referrerPushPeriod = 5000;
 
@@ -94,9 +92,6 @@ public class ReferrerPushStrategy implements PushStrategy
         this.pushContentTypes.addAll(pushContentTypes);
         for (String allowedPushOrigin : allowedPushOrigins)
             this.allowedPushOrigins.add(Pattern.compile(allowedPushOrigin.replace(".", "\\.").replace("*", ".*")));
-        // by default we support v2 and v3
-        supportedSPDYVersions.add(SPDY.V2);
-        supportedSPDYVersions.add(SPDY.V3);
     }
 
     public int getMaxAssociatedResources()
@@ -119,29 +114,11 @@ public class ReferrerPushStrategy implements PushStrategy
         this.referrerPushPeriod = referrerPushPeriod;
     }
 
-    public void removeSPDYVersionSupport(Short version)
-    {
-        supportedSPDYVersions.remove(version);
-    }
-
-    public void addSPDYVersionSupport(Short version)
-    {
-        // consider to make SPDY.Vx an enum when we add support for more than two drafts
-        if (version == SPDY.V2 || version == SPDY.V3)
-            supportedSPDYVersions.add(version);
-    }
-
     @Override
     public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
     {
         Set<String> result = Collections.<String>emptySet();
         short version = stream.getSession().getVersion();
-        if (!supportedSPDYVersions.contains(version))
-        {
-            logger.debug("SPDY version {} not supported. Returning empty Set.", version);
-            return result;
-        }
-
         if (!isIfModifiedSinceHeaderPresent(requestHeaders) && isValidMethod(requestHeaders.get(HTTPSPDYHeader.METHOD.name(version)).value()))
         {
             String scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version)).value();
