@@ -74,6 +74,7 @@ public class TextPayloadParserTest
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         policy.setBufferSize(100000);
+        policy.setMaxPayloadSize(100000);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
         parser.addListener(capture);
