@@ -171,6 +171,7 @@ public class FrameGenerator
         {
             buffer.put(frame.getPayloadData());
         }
+
         int positionPostPayload = buffer.position();
 
         // mask it if needed
