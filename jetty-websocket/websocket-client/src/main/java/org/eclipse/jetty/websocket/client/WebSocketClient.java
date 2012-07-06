@@ -9,8 +9,8 @@ import java.util.Map;
 
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 
 public class WebSocketClient
 {

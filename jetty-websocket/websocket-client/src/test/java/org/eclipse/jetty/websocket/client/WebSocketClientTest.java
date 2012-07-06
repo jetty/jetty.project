@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
@@ -439,7 +440,7 @@ public class WebSocketClientTest
         String mesg = "This is a test message to send";
         for (int i = 0; i < messages; i++)
         {
-            connection.write(mesg);
+            connection.write(null,new FutureCallback<Void>(),mesg);
         }
 
         // Duration for the write phase
@@ -597,7 +598,7 @@ public class WebSocketClientTest
         for (int i = 0; i < 10; i++)
         {
             Thread.sleep(250);
-            connection.write("Hello");
+            connection.write(null,new FutureCallback<Void>(),"Hello");
             len = ssocket.getInputStream().read(recv,0,recv.length);
             Assert.assertTrue(len > 0);
         }
