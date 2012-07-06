@@ -1,4 +1,4 @@
-package org.eclipse.jetty.websocket.extensions;
+package org.eclipse.jetty.websocket.protocol;
 
 import java.util.HashMap;
 import java.util.Map;
