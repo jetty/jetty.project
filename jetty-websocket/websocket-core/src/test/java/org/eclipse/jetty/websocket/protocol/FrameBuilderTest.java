@@ -1,6 +1,5 @@
-package org.eclipse.jetty.websocket.frames;
+package org.eclipse.jetty.websocket.protocol;
 
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,7 +33,7 @@ public class FrameBuilderTest
         byte[] actual = FrameBuilder.close(1000).asByteArray();
 
         byte[] expected = new byte[]
-                { (byte)0x89, (byte)0x02, (byte)0x03, (byte)0xe8 };
+                { (byte)0x88, (byte)0x02, (byte)0x03, (byte)0xe8 };
 
         Assert.assertArrayEquals(expected,actual);
     }
@@ -42,7 +41,7 @@ public class FrameBuilderTest
     @Test
     public void testSimpleValidPingFrame()
     {
-        byte[] actual = FrameBuilder.close(1000).asByteArray();
+        byte[] actual = FrameBuilder.ping().asByteArray();
 
         byte[] expected = new byte[]
                 { (byte)0x89, (byte)0x00 };

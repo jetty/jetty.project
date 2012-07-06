@@ -45,7 +45,8 @@ public class FrameBuilder
                 byte utf[] = StringUtil.getUtf8Bytes(reason);
                 buf.put(utf,0,utf.length);
             }
-            return new FrameBuilder(new WebSocketFrame(OpCode.CLOSE)).payload(buf);
+            BufferUtil.flipToFlush(buf,0);
+            return new FrameBuilder(new WebSocketFrame(OpCode.CLOSE)).payload(BufferUtil.toArray(buf));
         }
         return new FrameBuilder(new WebSocketFrame(OpCode.CLOSE));
     }
