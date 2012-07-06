@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.eclipse.jetty.websocket.api.PolicyViolationException;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
@@ -25,17 +25,23 @@ public class TestABCase3
         List<WebSocketFrame[]> data = new ArrayList<>();
         // @formatter:off
         data.add(new WebSocketFrame[]
+                { FrameBuilder.ping().fin(false).asFrame() });
+        data.add(new WebSocketFrame[]
                 { FrameBuilder.ping().rsv1(true).asFrame() });
         data.add(new WebSocketFrame[]
                 { FrameBuilder.ping().rsv2(true).asFrame() });
         data.add(new WebSocketFrame[]
                 { FrameBuilder.ping().rsv3(true).asFrame() });
         data.add(new WebSocketFrame[]
-        { FrameBuilder.pong().rsv1(true).asFrame() });
+                { FrameBuilder.pong().fin(false).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.ping().rsv1(true).asFrame() });
         data.add(new WebSocketFrame[]
                 { FrameBuilder.pong().rsv2(true).asFrame() });
         data.add(new WebSocketFrame[]
                 { FrameBuilder.pong().rsv3(true).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.close().fin(false).asFrame() });
         data.add(new WebSocketFrame[]
                 { FrameBuilder.close().rsv1(true).asFrame() });
         data.add(new WebSocketFrame[]
@@ -53,8 +59,8 @@ public class TestABCase3
         this.invalidFrame = invalidFrame;
     }
 
-    @Test(expected = PolicyViolationException.class)
-    public void testGenerateRSV1CloseFrame()
+    @Test(expected = ProtocolException.class)
+    public void testGenerateInvalidControlFrame()
     {
         Generator generator = new Generator(WebSocketPolicy.newServerPolicy());
 

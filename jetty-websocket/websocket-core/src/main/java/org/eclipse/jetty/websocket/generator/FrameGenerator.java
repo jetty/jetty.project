@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
@@ -57,6 +56,11 @@ public class FrameGenerator
 
         byte b;
 
+        if ( frame.getOpCode().isControlFrame() && !frame.isFin() )
+        {
+            throw new ProtocolException("Control Frames must be FIN=true");
+        }
+
         // Setup fin thru opcode
         b = 0x00;
         if (frame.isFin())
@@ -67,19 +71,19 @@ public class FrameGenerator
         {
             b |= 0x40; // 0100_0000
             // TODO: extensions can negotiate this (somehow)
-            throw new PolicyViolationException("RSV1 not allowed to be set");
+            throw new ProtocolException("RSV1 not allowed to be set");
         }
         if (frame.isRsv2())
         {
             b |= 0x20; // 0010_0000
             // TODO: extensions can negotiate this (somehow)
-            throw new PolicyViolationException("RSV2 not allowed to be set");
+            throw new ProtocolException("RSV2 not allowed to be set");
         }
         if (frame.isRsv3())
         {
             b |= 0x10;
             // TODO: extensions can negotiate this (somehow)
-            throw new PolicyViolationException("RSV3 not allowed to be set");
+            throw new ProtocolException("RSV3 not allowed to be set");
         }
 
         byte opcode = frame.getOpCode().getCode();
