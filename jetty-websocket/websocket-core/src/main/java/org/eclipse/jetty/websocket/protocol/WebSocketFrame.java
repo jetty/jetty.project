@@ -316,4 +316,25 @@ public class WebSocketFrame implements Frame
     {
         this.rsv3 = rsv3;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder b = new StringBuilder();
+        if (opcode != null)
+        {
+            b.append(opcode.name());
+        }
+        else
+        {
+            b.append("NO-OP");
+        }
+        b.append('[');
+        b.append("len=").append(getPayloadLength());
+        b.append(",fin=").append(fin);
+        b.append(",masked=").append(masked);
+        b.append(",continuation=").append(continuation);
+        b.append(']');
+        return b.toString();
+    }
 }

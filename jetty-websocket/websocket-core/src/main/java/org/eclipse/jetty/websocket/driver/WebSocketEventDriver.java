@@ -129,17 +129,24 @@ public class WebSocketEventDriver implements Parser.Listener
             {
                 case CLOSE:
                 {
-                    if (events.onClose != null)
+                    if (events.onClose == null)
                     {
-                        byte payload[] = frame.getPayloadData();
-                        int statusCode = CloseUtil.getStatusCode(payload);
-                        String reason = CloseUtil.getReason(payload);
-                        events.onClose.call(websocket,connection,statusCode,reason);
+                        // not interested in close events
+                        return;
                     }
+                    byte payload[] = frame.getPayloadData();
+                    int statusCode = CloseUtil.getStatusCode(payload);
+                    String reason = CloseUtil.getReason(payload);
+                    events.onClose.call(websocket,connection,statusCode,reason);
                     return;
                 }
                 case BINARY:
                 {
+                    if (events.onBinary == null)
+                    {
+                        // not interested in binary events
+                        return;
+                    }
                     if (events.onBinary.isStreaming())
                     {
                         boolean needsNotification = false;
@@ -205,6 +212,11 @@ public class WebSocketEventDriver implements Parser.Listener
                 }
                 case TEXT:
                 {
+                    if (events.onText == null)
+                    {
+                        // not interested in text events
+                        return;
+                    }
                     if (events.onText.isStreaming())
                     {
                         boolean needsNotification = false;

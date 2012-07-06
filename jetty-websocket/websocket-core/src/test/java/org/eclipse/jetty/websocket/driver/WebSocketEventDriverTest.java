@@ -86,10 +86,10 @@ public class WebSocketEventDriverTest
 
         socket.capture.assertEventCount(6);
         socket.capture.assertEventStartsWith(0,"onConnect(");
-        socket.capture.assertEventStartsWith(1,"onFrame(Ping");
-        socket.capture.assertEventStartsWith(2,"onFrame(Text");
-        socket.capture.assertEventStartsWith(3,"onFrame(Binary");
-        socket.capture.assertEventStartsWith(4,"onFrame(Close");
+        socket.capture.assertEventStartsWith(1,"onFrame(PING[");
+        socket.capture.assertEventStartsWith(2,"onFrame(TEXT[");
+        socket.capture.assertEventStartsWith(3,"onFrame(BINARY[");
+        socket.capture.assertEventStartsWith(4,"onFrame(CLOSE[");
         socket.capture.assertEventStartsWith(5,"onClose(1001,");
     }
 
