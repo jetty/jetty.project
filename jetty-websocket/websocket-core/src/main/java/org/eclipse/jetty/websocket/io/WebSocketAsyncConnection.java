@@ -20,12 +20,12 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.callbacks.WebSocketCloseCallback;
-import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.DataFrame;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io
@@ -220,7 +220,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
      */
     private void terminateConnection(int statusCode, String reason)
     {
-        CloseFrame close = new CloseFrame(statusCode,reason);
+        BaseFrame close = FrameBuilder.close(statusCode,reason).asFrame();
 
         // fire and forget -> close frame
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
@@ -253,9 +253,8 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         }
         ByteBuffer raw = bufferPool.acquire(len + FrameGenerator.OVERHEAD,false);
         BufferUtil.clearToFill(raw);
-        DataFrame frame = new DataFrame();
-        frame.setPayload(ByteBuffer.wrap(buf,offset,len));
-        frame.setFin(true);
+
+        BaseFrame frame = FrameBuilder.binary(buf,offset,len).fin(true).asFrame();
         generator.generate(raw,frame);
         BufferUtil.flipToFlush(raw,0);
         writeRaw(context,callback,raw);
@@ -280,9 +279,8 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         ByteBuffer raw[] = new ByteBuffer[messages.length];
         for (int i = 0; i < len; i++)
         {
-            DataFrame frame = new DataFrame();
-            frame.setPayload(ByteBuffer.wrap(messages[i].getBytes()));
-            frame.setFin(true);
+            BaseFrame frame = FrameBuilder.text(messages[i]).fin(true).asFrame();
+
             raw[i] = bufferPool.acquire(policy.getBufferSize(),false);
             BufferUtil.clearToFill(raw[i]);
             generator.generate(raw[i],frame);

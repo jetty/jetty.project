@@ -1,7 +1,6 @@
 package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
-import java.util.EnumMap;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -13,6 +12,7 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.util.CloseUtil;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -35,8 +35,7 @@ public class Parser
 
     private static final Logger LOG = Log.getLogger(Parser.class);
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
-    private final EnumMap<OpCode, FrameParser<?>> parsers = new EnumMap<>(OpCode.class);
-    private FrameParser<?> parser;
+    private final FrameParser parser;
     private WebSocketPolicy policy;
     private State state = State.FINOP;
 
@@ -47,19 +46,19 @@ public class Parser
          */
 
         this.policy = wspolicy;
-
+        this.parser = new FrameParser(wspolicy);
         reset();
-
-        parsers.put(OpCode.TEXT,new TextPayloadParser(policy));
-        parsers.put(OpCode.BINARY,new BinaryPayloadParser(policy));
-        parsers.put(OpCode.CLOSE,new ClosePayloadParser(policy));
-        parsers.put(OpCode.PING,new PingPayloadParser(policy));
-        parsers.put(OpCode.PONG,new PongPayloadParser(policy));
     }
 
     public void addListener(Listener listener)
     {
         listeners.add(listener);
+    }
+
+    private void assertValidClose()
+    {
+        ByteBuffer payload = parser.getFrame().getPayload();
+        CloseUtil.assertValidPayload(payload);
     }
 
     public WebSocketPolicy getPolicy()
@@ -131,7 +130,7 @@ public class Parser
 
                         if (opcode == OpCode.CONTINUATION)
                         {
-                            if (parser == null)
+                            if (parser.getFrame() == null)
                             {
                                 throw new ProtocolException("Fragment continuation frame without prior !FIN");
                             }
@@ -139,11 +138,6 @@ public class Parser
                             opcode = parser.getFrame().getOpCode();
                         }
 
-                        if (parser == null)
-                        {
-                            // Establish specific type parser and hand off to them.
-                            parser = parsers.get(opcode);
-                        }
                         parser.reset();
                         parser.initFrame(fin,rsv1,rsv2,rsv3,opcode);
 
@@ -162,6 +156,11 @@ public class Parser
                     {
                         if (parser.parsePayload(buffer))
                         {
+                            // special check for close
+                            if (parser.getFrame().getOpCode() == OpCode.CLOSE)
+                            {
+                                assertValidClose();
+                            }
                             notifyFrame(parser.getFrame());
                             parser.reset();
                             if (parser.getFrame().isFin())
@@ -176,12 +175,11 @@ public class Parser
             }
 
             /*
-             * if the payload was empty we could end up in this state
-             * because there was no remaining bits to process
+             * if the payload was empty we could end up in this state because there was no remaining bits to process
              */
-            if ( state == State.PAYLOAD )
+            if (state == State.PAYLOAD)
             {
-                notifyFrame( parser.getFrame() );
+                notifyFrame(parser.getFrame());
                 parser.reset();
                 if (parser.getFrame().isFin())
                 {
@@ -214,11 +212,7 @@ public class Parser
     public void reset()
     {
         state = State.FINOP;
-        if (parser != null)
-        {
-            parser.reset();
-        }
-        parser = null;
+        parser.reset();
     }
 
     @Override

@@ -8,9 +8,9 @@ import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.FrameBuilder;
 import org.eclipse.jetty.websocket.frames.PingFrame;
 import org.eclipse.jetty.websocket.frames.PongFrame;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest

@@ -8,9 +8,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.PingFrame;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.io.RawConnection;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 
 public class WebSocketPing
 {
@@ -36,7 +37,7 @@ public class WebSocketPing
 
     public void sendPing(byte data[]) throws IOException
     {
-        PingFrame frame = new PingFrame(data);
+        BaseFrame frame = FrameBuilder.ping().payload(data).asFrame();
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {

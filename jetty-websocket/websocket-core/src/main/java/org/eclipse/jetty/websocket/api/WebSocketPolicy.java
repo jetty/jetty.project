@@ -89,6 +89,15 @@ public class WebSocketPolicy
         }
     }
 
+    public void assertValidPayloadLength(int payloadLength)
+    {
+        // validate to buffer sizes
+        if (payloadLength > bufferSize)
+        {
+            throw new PolicyViolationException("Requested payload length [" + payloadLength + "] exceeds maximum size [" + bufferSize + "]");
+        }
+    }
+
     public void assertValidTextMessageSize(int requestedSize)
     {
         if (maxTextMessageSize > 0)

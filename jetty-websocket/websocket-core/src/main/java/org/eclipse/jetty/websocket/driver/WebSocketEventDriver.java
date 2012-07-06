@@ -16,14 +16,12 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.DataFrame;
-import org.eclipse.jetty.websocket.frames.DataFrame.BinaryFrame;
 import org.eclipse.jetty.websocket.io.MessageInputStream;
 import org.eclipse.jetty.websocket.io.MessageReader;
 import org.eclipse.jetty.websocket.io.StreamAppender;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.Frame;
+import org.eclipse.jetty.websocket.util.CloseUtil;
 
 /**
  * Responsible for routing the internally generated events destined for a specific WebSocket instance to whatever choice of development style the developer has
@@ -124,157 +122,148 @@ public class WebSocketEventDriver implements Parser.Listener
             // DO NOT return; - as this is just a read-only notification.
         }
 
-        // Specified Close Case
-        if ((frame instanceof CloseFrame) && (events.onClose != null))
-        {
-            CloseFrame close = (CloseFrame)frame;
-            events.onClose.call(websocket,connection,close.getStatusCode(),close.getReason());
-            return;
-        }
-
         try
         {
-            // Work a Data Frame
-            if (frame instanceof DataFrame)
+            switch (frame.getOpCode())
             {
-                DataFrame data = (DataFrame)frame;
-
-                if ((events.onText == null) && (events.onBinary == null))
+                case CLOSE:
                 {
-                    // skip
+                    if (events.onClose != null)
+                    {
+                        byte payload[] = frame.getPayloadData();
+                        int statusCode = CloseUtil.getStatusCode(payload);
+                        String reason = CloseUtil.getReason(payload);
+                        events.onClose.call(websocket,connection,statusCode,reason);
+                    }
                     return;
                 }
-
-                switch (data.getOpCode())
+                case BINARY:
                 {
-                    case BINARY:
+                    if (events.onBinary.isStreaming())
                     {
-                        if (events.onBinary.isStreaming())
+                        boolean needsNotification = false;
+
+                        // Streaming Approach
+                        if (activeStream == null)
                         {
-                            boolean needsNotification = false;
-
-                            // Streaming Approach
-                            if (activeStream == null)
-                            {
-                                // Allocate directly, not via ByteBufferPool, as this buffer
-                                // is ultimately controlled by the end user, and we can't know
-                                // when they are done using the stream in order to release any
-                                // buffer allocated from the ByteBufferPool.
-                                ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
-                                this.activeStream = new MessageInputStream(buf);
-                                needsNotification = true;
-                            }
-
-                            activeStream.appendBuffer(data.getPayload());
-
-                            if (needsNotification)
-                            {
-                                events.onBinary.call(websocket,connection,activeStream);
-                            }
-
-                            if (data.isFin())
-                            {
-                                // close the stream.
-                                activeStream.bufferComplete();
-                                activeStream = null; // work with a new one
-                            }
+                            // Allocate directly, not via ByteBufferPool, as this buffer
+                            // is ultimately controlled by the end user, and we can't know
+                            // when they are done using the stream in order to release any
+                            // buffer allocated from the ByteBufferPool.
+                            ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
+                            this.activeStream = new MessageInputStream(buf);
+                            needsNotification = true;
                         }
-                        else
+
+                        activeStream.appendBuffer(frame.getPayload());
+
+                        if (needsNotification)
                         {
-                            if (activeMessage == null)
-                            {
-                                // Acquire from ByteBufferPool is safe here, as the return
-                                // from the notification is a good place to release the
-                                // buffer.
-                                activeMessage = bufferPool.acquire(policy.getBufferSize(),false);
-                                BufferUtil.clearToFill(activeMessage);
-                            }
-
-                            appendBuffer(activeMessage,data.getPayload());
-
-                            // normal case
-                            if (frame.isFin())
-                            {
-                                // Notify using simple message approach.
-                                try
-                                {
-                                    BufferUtil.flipToFlush(activeMessage,0);
-                                    byte buf[] = BufferUtil.toArray(activeMessage);
-                                    events.onBinary.call(websocket,connection,buf,0,buf.length);
-                                }
-                                finally
-                                {
-                                    bufferPool.release(activeMessage);
-                                    activeMessage = null;
-                                }
-                            }
-
+                            events.onBinary.call(websocket,connection,activeStream);
                         }
-                        return;
+
+                        if (frame.isFin())
+                        {
+                            // close the stream.
+                            activeStream.bufferComplete();
+                            activeStream = null; // work with a new one
+                        }
                     }
-                    case TEXT:
+                    else
                     {
-                        if (events.onText.isStreaming())
+                        if (activeMessage == null)
                         {
-                            boolean needsNotification = false;
+                            // Acquire from ByteBufferPool is safe here, as the return
+                            // from the notification is a good place to release the
+                            // buffer.
+                            activeMessage = bufferPool.acquire(policy.getBufferSize(),false);
+                            BufferUtil.clearToFill(activeMessage);
+                        }
 
-                            // Streaming Approach
-                            if (activeStream == null)
+                        appendBuffer(activeMessage,frame.getPayload());
+
+                        // normal case
+                        if (frame.isFin())
+                        {
+                            // Notify using simple message approach.
+                            try
                             {
-                                // Allocate directly, not via ByteBufferPool, as this buffer
-                                // is ultimately controlled by the end user, and we can't know
-                                // when they are done using the stream in order to release any
-                                // buffer allocated from the ByteBufferPool.
-                                ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
-                                this.activeStream = new MessageReader(buf);
-                                needsNotification = true;
+                                BufferUtil.flipToFlush(activeMessage,0);
+                                byte buf[] = BufferUtil.toArray(activeMessage);
+                                events.onBinary.call(websocket,connection,buf,0,buf.length);
                             }
-
-                            activeStream.appendBuffer(data.getPayload());
-
-                            if (needsNotification)
+                            finally
                             {
-                                events.onText.call(websocket,connection,activeStream);
-                            }
-
-                            if (data.isFin())
-                            {
-                                // close the stream.
-                                activeStream.bufferComplete();
-                                activeStream = null; // work with a new one
+                                bufferPool.release(activeMessage);
+                                activeMessage = null;
                             }
                         }
-                        else
-                        {
-                            if (activeMessage == null)
-                            {
-                                // Acquire from ByteBufferPool is safe here, as the return
-                                // from the notification is a good place to release the
-                                // buffer.
-                                activeMessage = bufferPool.acquire(policy.getBufferSize(),false);
-                                BufferUtil.clearToFill(activeMessage);
-                            }
 
-                            appendBuffer(activeMessage,data.getPayload());
-
-                            // normal case
-                            if (frame.isFin())
-                            {
-                                // Notify using simple message approach.
-                                try
-                                {
-                                    BufferUtil.flipToFlush(activeMessage,0);
-                                    events.onText.call(websocket,connection,BufferUtil.toUTF8String(activeMessage));
-                                }
-                                finally
-                                {
-                                    bufferPool.release(activeMessage);
-                                    activeMessage = null;
-                                }
-                            }
-                        }
-                        return;
                     }
+                    return;
+                }
+                case TEXT:
+                {
+                    if (events.onText.isStreaming())
+                    {
+                        boolean needsNotification = false;
+
+                        // Streaming Approach
+                        if (activeStream == null)
+                        {
+                            // Allocate directly, not via ByteBufferPool, as this buffer
+                            // is ultimately controlled by the end user, and we can't know
+                            // when they are done using the stream in order to release any
+                            // buffer allocated from the ByteBufferPool.
+                            ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
+                            this.activeStream = new MessageReader(buf);
+                            needsNotification = true;
+                        }
+
+                        activeStream.appendBuffer(frame.getPayload());
+
+                        if (needsNotification)
+                        {
+                            events.onText.call(websocket,connection,activeStream);
+                        }
+
+                        if (frame.isFin())
+                        {
+                            // close the stream.
+                            activeStream.bufferComplete();
+                            activeStream = null; // work with a new one
+                        }
+                    }
+                    else
+                    {
+                        if (activeMessage == null)
+                        {
+                            // Acquire from ByteBufferPool is safe here, as the return
+                            // from the notification is a good place to release the
+                            // buffer.
+                            activeMessage = bufferPool.acquire(policy.getBufferSize(),false);
+                            BufferUtil.clearToFill(activeMessage);
+                        }
+
+                        appendBuffer(activeMessage,frame.getPayload());
+
+                        // normal case
+                        if (frame.isFin())
+                        {
+                            // Notify using simple message approach.
+                            try
+                            {
+                                BufferUtil.flipToFlush(activeMessage,0);
+                                events.onText.call(websocket,connection,BufferUtil.toUTF8String(activeMessage));
+                            }
+                            finally
+                            {
+                                bufferPool.release(activeMessage);
+                                activeMessage = null;
+                            }
+                        }
+                    }
+                    return;
                 }
             }
         }
@@ -323,9 +312,9 @@ public class WebSocketEventDriver implements Parser.Listener
             if (StringUtil.isNotBlank(reason))
             {
                 // Trim big exception messages here.
-                if (reason.length() > CloseFrame.MAX_REASON)
+                if (reason.length() > (BaseFrame.MAX_CONTROL_PAYLOAD - 2))
                 {
-                    reason = reason.substring(0,CloseFrame.MAX_REASON);
+                    reason = reason.substring(0,BaseFrame.MAX_CONTROL_PAYLOAD - 2);
                 }
             }
             LOG.debug("terminateConnection({},{})",statusCode,rawreason);

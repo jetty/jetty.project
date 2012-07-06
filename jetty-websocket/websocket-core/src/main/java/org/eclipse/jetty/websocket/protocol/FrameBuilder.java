@@ -1,10 +1,11 @@
-package org.eclipse.jetty.websocket.frames;
+package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
-import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.frames.BaseFrame;
 
 
 public class FrameBuilder
@@ -26,6 +27,27 @@ public class FrameBuilder
 
     public static FrameBuilder close()
     {
+        return close(-1,null);
+    }
+
+    public static FrameBuilder close(int statusCode)
+    {
+        return close(statusCode,null);
+    }
+
+    public static FrameBuilder close(int statusCode, String reason)
+    {
+        if (statusCode != (-1))
+        {
+            ByteBuffer buf = ByteBuffer.allocate(BaseFrame.MAX_CONTROL_PAYLOAD);
+            buf.putChar((char)statusCode);
+            if (StringUtil.isNotBlank(reason))
+            {
+                byte utf[] = StringUtil.getUtf8Bytes(reason);
+                buf.put(utf,0,utf.length);
+            }
+            return new FrameBuilder(new BaseFrame(OpCode.CLOSE)).payload(buf);
+        }
         return new FrameBuilder(new BaseFrame(OpCode.CLOSE));
     }
 
@@ -80,6 +102,17 @@ public class FrameBuilder
     public ByteBuffer asByteBuffer()
     {
         ByteBuffer buffer = ByteBuffer.allocate(frame.getPayloadLength() + 32 );
+        fill(buffer);
+        return buffer;
+    }
+
+    public BaseFrame asFrame()
+    {
+        return frame;
+    }
+
+    public void fill(ByteBuffer buffer)
+    {
         byte b;
 
         // Setup fin thru opcode
@@ -198,13 +231,6 @@ public class FrameBuilder
         }
 
         BufferUtil.flipToFlush(buffer,0);
-
-        return buffer;
-    }
-
-    public BaseFrame asFrame()
-    {
-        return frame;
     }
 
     public FrameBuilder fin( boolean fin )

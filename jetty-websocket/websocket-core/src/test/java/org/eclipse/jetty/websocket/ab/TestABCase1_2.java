@@ -10,10 +10,10 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
 import org.eclipse.jetty.websocket.frames.DataFrame.BinaryFrame;
-import org.eclipse.jetty.websocket.frames.FrameBuilder;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 

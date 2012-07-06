@@ -3,9 +3,26 @@ package org.eclipse.jetty.websocket.util;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.ProtocolException;
+import org.eclipse.jetty.websocket.api.StatusCode;
 
 public class CloseUtil
 {
+    public static void assertValidPayload(ByteBuffer payload)
+    {
+        int statusCode = getStatusCode(payload);
+
+        // Validate value
+        if ((statusCode < StatusCode.NORMAL) || (statusCode == StatusCode.UNDEFINED) || (statusCode == StatusCode.NO_CLOSE)
+                || (statusCode == StatusCode.NO_CODE) || ((statusCode > 1011) && (statusCode <= 2999)) || (statusCode >= 5000))
+        {
+            throw new ProtocolException("Invalid close code: " + statusCode);
+        }
+
+        // validate reason
+        getReason(payload);
+    }
+
     public static String getReason(byte[] payload)
     {
         if (payload.length <= 2)

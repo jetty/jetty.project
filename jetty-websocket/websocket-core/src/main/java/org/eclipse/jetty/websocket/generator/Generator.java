@@ -38,19 +38,15 @@ public class Generator
 {
     private static final Logger LOG = Log.getLogger(Generator.class);
 
-    private final EnumMap<OpCode, FrameGenerator<?>> generators = new EnumMap<>(OpCode.class);
+    private final EnumMap<OpCode, FrameGenerator> generators = new EnumMap<>(OpCode.class);
+    private final FrameGenerator basicGenerator;
 
     public Generator(WebSocketPolicy policy)
     {
-        generators.put(OpCode.TEXT,new DataFrameGenerator(policy));
-        generators.put(OpCode.BINARY,new DataFrameGenerator(policy));
-        generators.put(OpCode.PING,new PingFrameGenerator(policy));
-        generators.put(OpCode.PONG,new PongFrameGenerator(policy));
         generators.put(OpCode.CLOSE,new CloseFrameGenerator(policy));
+        basicGenerator = new FrameGenerator(policy);
     }
 
-    @SuppressWarnings(
-            { "unchecked", "rawtypes" })
     public ByteBuffer generate(ByteBuffer buffer, BaseFrame frame)
     {
         if (LOG.isDebugEnabled())
@@ -58,6 +54,11 @@ public class Generator
             LOG.debug("To Generate: {}",frame);
         }
         FrameGenerator generator = generators.get(frame.getOpCode());
+        if (generator == null)
+        {
+            // no specific generator? use default
+            generator = basicGenerator;
+        }
         ByteBuffer ret = generator.generate(buffer,frame);
         if (LOG.isDebugEnabled())
         {

@@ -2,6 +2,8 @@ package org.eclipse.jetty.websocket.frames;
 
 import java.nio.ByteBuffer;
 
+import javax.xml.ws.ProtocolException;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.protocol.Frame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -32,6 +34,9 @@ import org.eclipse.jetty.websocket.protocol.OpCode;
  */
 public class BaseFrame implements Frame
 {
+    /** Maximum size of Control frame, per RFC 6455 */
+    public static final int MAX_CONTROL_PAYLOAD = 125;
+
     private boolean fin = false;
     private boolean rsv1 = false;
     private boolean rsv2 = false;
@@ -41,20 +46,83 @@ public class BaseFrame implements Frame
     private int payloadLength = 0;
     private byte mask[];
     private ByteBuffer payload = null;
+    private boolean continuation = false;
+
+    protected int continuationIndex = 0;
 
     /**
      * Default constructor
      */
-    public BaseFrame() {
+    public BaseFrame()
+    {
         reset();
     }
 
     /**
      * Construct form opcode
      */
-    public BaseFrame(OpCode opcode) {
+    public BaseFrame(OpCode opcode)
+    {
         reset();
         this.opcode = opcode;
+    }
+
+    public void assertValid()
+    {
+        if (opcode.isControlFrame())
+        {
+            if (payloadLength > BaseFrame.MAX_CONTROL_PAYLOAD)
+            {
+                throw new ProtocolException("Desired payload length [" + payloadLength + "] exceeds maximum control payload length [" + MAX_CONTROL_PAYLOAD
+                        + "]");
+            }
+
+            if (fin == false)
+            {
+                throw new ProtocolException("Cannot have FIN==false on Control frames");
+            }
+
+            if (rsv1 == false)
+            {
+                throw new ProtocolException("Cannot have RSV1==false on Control frames");
+            }
+
+            if (rsv2 == false)
+            {
+                throw new ProtocolException("Cannot have RSV2==false on Control frames");
+            }
+
+            if (rsv3 == false)
+            {
+                throw new ProtocolException("Cannot have RSV3==false on Control frames");
+            }
+
+            if (isContinuation())
+            {
+                throw new ProtocolException("Control frames cannot be Continuations");
+            }
+        }
+    }
+
+    @Override
+    public BaseFrame clone()
+    {
+        // TODO: impl
+        return null;
+    }
+
+    /**
+     * The number of fragments this frame consists of.
+     * <p>
+     * For every {@link OpCode#CONTINUATION} opcode encountered, this increments by one.
+     * <p>
+     * Note: Not part of the Base Framing Protocol / header information.
+     * 
+     * @return the number of continuation fragments encountered.
+     */
+    public int getContinuationIndex()
+    {
+        return continuationIndex;
     }
 
     @Override
@@ -102,7 +170,7 @@ public class BaseFrame implements Frame
 
     public boolean isContinuation()
     {
-        return false; // always false here
+        return continuation;
     }
 
     @Override
@@ -150,6 +218,18 @@ public class BaseFrame implements Frame
         masked = false;
         payloadLength = 0;
         mask = null;
+        continuationIndex = 0;
+        continuation = false;
+    }
+
+    public void setContinuation(boolean continuation)
+    {
+        this.continuation = continuation;
+    }
+
+    public void setContinuationIndex(int continuationIndex)
+    {
+        this.continuationIndex = continuationIndex;
     }
 
     public void setFin(boolean fin)
@@ -181,6 +261,13 @@ public class BaseFrame implements Frame
      */
     public void setPayload(byte buf[])
     {
+        if (opcode.isControlFrame())
+        {
+            if (buf.length > BaseFrame.MAX_CONTROL_PAYLOAD)
+            {
+                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
+            }
+        }
         int len = buf.length;
         this.payload = ByteBuffer.allocate(len);
         this.payload.put(buf,0,len);
@@ -196,6 +283,14 @@ public class BaseFrame implements Frame
      */
     public void setPayload(byte buf[], int offset, int len)
     {
+        if (opcode.isControlFrame())
+        {
+            if (len > BaseFrame.MAX_CONTROL_PAYLOAD)
+            {
+                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
+            }
+        }
+
         this.payload = ByteBuffer.allocate(len);
         this.payload.put(buf,offset,len);
         this.payload.flip(); // make payload readable
@@ -210,6 +305,14 @@ public class BaseFrame implements Frame
      */
     public void setPayload(ByteBuffer payload)
     {
+        if (opcode.isControlFrame())
+        {
+            if (payload.position() > BaseFrame.MAX_CONTROL_PAYLOAD)
+            {
+                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
+            }
+        }
+
         this.payload = payload;
         this.payload.flip(); // make payload readable
         setPayloadLength(this.payload.remaining());

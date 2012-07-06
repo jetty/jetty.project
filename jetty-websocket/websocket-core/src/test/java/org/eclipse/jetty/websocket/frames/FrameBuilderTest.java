@@ -1,5 +1,6 @@
 package org.eclipse.jetty.websocket.frames;
 
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 

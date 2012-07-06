@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.websocket.protocol.OpCode;
  * 
  * @param <T>
  */
-public abstract class FrameGenerator<T extends BaseFrame>
+public class FrameGenerator
 {
     private static final Logger LOG = Log.getLogger(FrameGenerator.class);
 
@@ -43,14 +44,17 @@ public abstract class FrameGenerator<T extends BaseFrame>
     public static final int OVERHEAD = 28;
     private final WebSocketPolicy policy;
 
-    protected FrameGenerator(WebSocketPolicy policy)
+    public FrameGenerator(WebSocketPolicy policy)
     {
         this.policy = policy;
     }
 
-    public abstract void fillPayload(ByteBuffer buffer, T frame);
+    public void fillPayload(ByteBuffer buffer, BaseFrame frame)
+    {
+        BufferUtil.put(frame.getPayload(),buffer);
+    }
 
-    public ByteBuffer generate(ByteBuffer buffer, T frame)
+    public ByteBuffer generate(ByteBuffer buffer, BaseFrame frame)
     {
         LOG.debug(String.format("Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d]",frame.getOpCode().toString(),
                 frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame.getPayloadLength()));

@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.protocol.OpCode;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public abstract class FrameParser<T extends BaseFrame>
+public class FrameParser
 {
     private enum State
     {
@@ -45,9 +45,15 @@ public abstract class FrameParser<T extends BaseFrame>
 
     private static final Logger LOG = Log.getLogger(FrameParser.class);
     private WebSocketPolicy policy;
+    // State specific
     private State state = State.PAYLOAD_LEN;
     private long length = 0;
     private int cursor = 0;
+    // Frame
+    private BaseFrame frame;
+    // payload specific
+    private ByteBuffer payload;
+    private int payloadLength;
 
     public FrameParser(WebSocketPolicy policy)
     {
@@ -68,7 +74,7 @@ public abstract class FrameParser<T extends BaseFrame>
     protected int copyBuffer(ByteBuffer src, ByteBuffer dest, int length)
     {
         int amt = Math.min(length,src.remaining());
-        if (getFrame().isMasked())
+        if (frame.isMasked())
         {
             // Demask the content 1 byte at a time
             byte mask[] = getFrame().getMask();
@@ -93,7 +99,10 @@ public abstract class FrameParser<T extends BaseFrame>
      * 
      * @return the frame that is being parsed. should always return an object (never null)
      */
-    public abstract T getFrame();
+    public BaseFrame getFrame()
+    {
+        return frame;
+    }
 
     protected WebSocketPolicy getPolicy()
     {
@@ -111,15 +120,13 @@ public abstract class FrameParser<T extends BaseFrame>
      */
     public final void initFrame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, OpCode opcode)
     {
-        T frame = newFrame();
+        BaseFrame frame = new BaseFrame();
         frame.setFin(fin);
         frame.setRsv1(rsv1);
         frame.setRsv2(rsv2);
         frame.setRsv3(rsv3);
         frame.setOpCode(opcode);
     }
-
-    public abstract T newFrame();
 
     /**
      * Parse the base framing protocol buffer.
@@ -238,7 +245,29 @@ public abstract class FrameParser<T extends BaseFrame>
      *            the payload buffer
      * @return true if payload is done reading, false if incomplete
      */
-    public abstract boolean parsePayload(ByteBuffer buffer);
+    public boolean parsePayload(ByteBuffer buffer)
+    {
+        payloadLength = getFrame().getPayloadLength();
+        while (buffer.hasRemaining())
+        {
+            if (payload == null)
+            {
+                getPolicy().assertValidPayloadLength(payloadLength);
+                frame.assertValid();
+                payload = ByteBuffer.allocate(payloadLength);
+            }
+
+            copyBuffer(buffer,payload,payload.remaining());
+
+            if (payload.position() >= payloadLength)
+            {
+                frame.setPayload(payload);
+                this.payload = null;
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Reset the frame and parser states

@@ -8,12 +8,12 @@ import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.DataFrame.TextFrame;
-import org.eclipse.jetty.websocket.frames.FrameBuilder;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.masks.FixedMasker;
 import org.eclipse.jetty.websocket.masks.RandomMasker;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
