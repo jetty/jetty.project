@@ -283,7 +283,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
             TextFrame frame = new TextFrame(messages[i]);
             frame.setFin(true);
             raw[i] = bufferPool.acquire(policy.getBufferSize(),false);
-            BufferUtil.clear(raw[i]);
+            BufferUtil.clearToFill(raw[i]);
             generator.generate(raw[i],frame);
             BufferUtil.flipToFlush(raw[i],0);
         }
