@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -287,7 +288,16 @@ public class TestABCase7_3
 
         byte[] messageBytes = message.toString().getBytes();
 
-        WebSocketFrame closeFrame = FrameBuilder.close(1000,message.toString()).asFrame();
+        WebSocketFrame closeFrame = FrameBuilder.close().asFrame();
+
+        ByteBuffer bb = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD + 1); // 126 which is too big for control
+
+        bb.putChar((char)1000);
+        bb.put(messageBytes);
+
+        BufferUtil.flipToFlush(bb,0);
+
+        closeFrame.setPayload(BufferUtil.toArray(bb));
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(32);
@@ -295,7 +305,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_6ParseCloseWithStatusMaxReason()
+    public void testCase7_3_6ParseCloseWithInvalidStatusReason()
     {
         StringBuilder message = new StringBuilder();
         for ( int i = 0 ; i < 124 ; ++i )

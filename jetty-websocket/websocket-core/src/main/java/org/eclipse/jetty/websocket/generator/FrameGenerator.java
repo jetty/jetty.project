@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -150,6 +151,14 @@ public class FrameGenerator
 
         // remember the position
         int positionPrePayload = buffer.position();
+
+        if (frame.getOpCode().isControlFrame())
+        {
+            if (frame.getPayloadLength() > 125)
+            {
+                throw new ProtocolException("Invalid control frame payload length");
+            }
+        }
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
