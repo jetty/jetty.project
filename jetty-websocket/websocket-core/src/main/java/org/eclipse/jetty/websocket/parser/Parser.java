@@ -135,6 +135,8 @@ public class Parser
                             {
                                 throw new ProtocolException("Fragment continuation frame without prior !FIN");
                             }
+                            // Be careful to use the original opcode
+                            opcode = parser.getFrame().getOpCode();
                         }
 
                         if (parser == null)

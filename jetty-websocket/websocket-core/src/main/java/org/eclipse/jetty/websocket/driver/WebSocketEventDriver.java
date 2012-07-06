@@ -16,7 +16,6 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.frames.DataFrame;
 import org.eclipse.jetty.websocket.io.MessageInputStream;
@@ -277,24 +276,6 @@ public class WebSocketEventDriver implements Parser.Listener
                     }
                 }
             }
-
-            // Specified Binary Case
-            if ((frame instanceof BinaryFrame) && (events.onBinary != null))
-            {
-                BinaryFrame bin = (BinaryFrame)frame;
-                if (events.onBinary.isStreaming())
-                {
-                    // Streaming Approach
-                }
-                else
-                {
-                    // Byte array approach
-                    byte buf[] = BufferUtil.toArray(bin.getPayload());
-                    events.onBinary.call(websocket,connection,buf,0,buf.length);
-                }
-                return;
-            }
-
         }
         catch (Throwable t)
         {

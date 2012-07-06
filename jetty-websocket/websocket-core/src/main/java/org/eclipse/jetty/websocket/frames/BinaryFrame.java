@@ -33,7 +33,7 @@ public class BinaryFrame extends DataFrame
     public BinaryFrame(byte[] data, int offset, int length)
     {
         this();
-        setPayload(ByteBuffer.wrap(data,offset,length));
+        setPayload(data,offset,length);
     }
 
     /**
