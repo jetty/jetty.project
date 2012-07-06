@@ -7,11 +7,11 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.DataFrame.TextFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
@@ -276,7 +276,7 @@ public class TestABCase1_1
     @Test
     public void testGenerateEmptyTextCase1_1_1()
     {
-        TextFrame textFrame = (TextFrame)FrameBuilder.text("").asFrame();
+        WebSocketFrame textFrame = FrameBuilder.text("").asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(10);
@@ -320,11 +320,11 @@ public class TestABCase1_1
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());
+        Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -354,11 +354,11 @@ public class TestABCase1_1
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());
+        Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -388,11 +388,11 @@ public class TestABCase1_1
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());
+        Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -422,11 +422,11 @@ public class TestABCase1_1
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());
+        Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -461,11 +461,11 @@ public class TestABCase1_1
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());
+        Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -498,11 +498,11 @@ public class TestABCase1_1
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        ByteBufferAssert.assertSize("TextFrame.payload",length,pActual.getPayload());
+        Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -522,10 +522,9 @@ public class TestABCase1_1
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame pActual = (TextFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(0));
-        ByteBufferAssert.assertSize("TextFrame.payload",0,pActual.getPayload());
     }
 }
