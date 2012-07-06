@@ -40,9 +40,9 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.TextFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.AfterClass;
@@ -135,7 +135,7 @@ public class WebSocketLoadRFC6455Test
                 String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
                 for (int i = 0; i < iterations; ++i)
                 {
-                    TextFrame txt = new TextFrame(message);
+                    WebSocketFrame txt = FrameBuilder.text(message).asFrame();
                     ByteBuffer buf = ByteBuffer.allocate((message.length() * iterations) + 32);
                     _generator.generate(buf,txt);
 

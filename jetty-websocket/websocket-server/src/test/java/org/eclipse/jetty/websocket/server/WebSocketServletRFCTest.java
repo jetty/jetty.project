@@ -15,9 +15,8 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.TextFrame;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.junit.AfterClass;
@@ -131,31 +130,23 @@ public class WebSocketServletRFCTest
             Arrays.fill(buf2,(byte)0xBB);
             Arrays.fill(buf3,(byte)0xCC);
 
-            BinaryFrame bin;
+            WebSocketFrame bin;
 
-            bin = new BinaryFrame();
-            bin.setPayload(buf1);
-            bin.setFin(false);
+            bin = FrameBuilder.binary(buf1).fin(false).asFrame();
 
             client.write(bin); // write buf1 (fin=false)
 
-            bin = new BinaryFrame();
-            bin.setPayload(buf2);
-            bin.setContinuation(true);
-            bin.setFin(false);
+            bin = FrameBuilder.continuation(buf2).fin(false).asFrame();
 
             client.write(bin); // write buf2 (fin=false)
 
-            bin = new BinaryFrame();
-            bin.setPayload(buf3);
-            bin.setContinuation(true);
-            bin.setFin(true);
+            bin = FrameBuilder.continuation(buf3).fin(true).asFrame();
 
             client.write(bin); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            BinaryFrame binmsg = (BinaryFrame)frames.remove();
+            WebSocketFrame binmsg = frames.remove();
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
 
@@ -204,14 +195,12 @@ public class WebSocketServletRFCTest
             client.expectUpgradeResponse();
 
             // Generate text frame
-            TextFrame frame = new TextFrame("Hello World");
-            frame.setFin(true);
-            client.write(frame);
+            client.write(FrameBuilder.text("Hello World").asFrame());
 
             // Read frame (hopefully text frame)
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            TextFrame tf = (TextFrame)frames.remove();
-            Assert.assertThat("Text Frame.status code",tf.getPayloadUTF8(),is("Hello World"));
+            WebSocketFrame tf = frames.remove();
+            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is("Hello World"));
         }
         finally
         {
@@ -234,14 +223,13 @@ public class WebSocketServletRFCTest
             client.expectUpgradeResponse();
 
             // Generate text frame
-            TextFrame frame = new TextFrame("CRASH");
-            frame.setFin(true);
-            client.write(frame);
+            client.write(FrameBuilder.text("CRASH").asFrame());
 
             // Read frame (hopefully close frame)
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            CloseFrame cf = (CloseFrame)frames.remove();
-            Assert.assertThat("Close Frame.status code",cf.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            WebSocketFrame cf = frames.remove();
+            CloseInfo close = new CloseInfo(cf);
+            Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }
         finally
         {
