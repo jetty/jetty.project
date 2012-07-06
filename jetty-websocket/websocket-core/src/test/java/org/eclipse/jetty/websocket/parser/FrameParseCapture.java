@@ -8,6 +8,7 @@ import java.util.List;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
@@ -22,14 +23,14 @@ public class FrameParseCapture implements Parser.Listener
         Assert.assertThat(errorType.getSimpleName(),getErrorCount(errorType),is(expectedCount));
     }
 
-    public void assertHasFrame(Class<? extends WebSocketFrame> frameType)
+    public void assertHasFrame(OpCode op)
     {
-        Assert.assertThat(frameType.getSimpleName(),getFrameCount(frameType),greaterThanOrEqualTo(1));
+        Assert.assertThat(op.name(),getFrameCount(op),greaterThanOrEqualTo(1));
     }
 
-    public void assertHasFrame(Class<? extends WebSocketFrame> frameType, int expectedCount)
+    public void assertHasFrame(OpCode op, int expectedCount)
     {
-        Assert.assertThat(frameType.getSimpleName(),getFrameCount(frameType),is(expectedCount));
+        Assert.assertThat(op.name(),getFrameCount(op),is(expectedCount));
     }
 
     public void assertHasNoFrames()
@@ -59,11 +60,11 @@ public class FrameParseCapture implements Parser.Listener
         return errors;
     }
 
-    public int getFrameCount(Class<? extends WebSocketFrame> frameType)
+    public int getFrameCount(OpCode op)
     {
         int count = 0;
         for(WebSocketFrame frame: frames) {
-            if (frameType.isInstance(frame))
+            if (frame.getOpCode() == op)
             {
                 count++;
             }

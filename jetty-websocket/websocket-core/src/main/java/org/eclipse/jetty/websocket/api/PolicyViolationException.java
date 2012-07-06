@@ -1,5 +1,10 @@
 package org.eclipse.jetty.websocket.api;
 
+/**
+ * Exception when a violation of policy occurs and should trigger a connection close.
+ * 
+ * @see StatusCode#POLICY_VIOLATION
+ */
 @SuppressWarnings("serial")
 public class PolicyViolationException extends CloseException
 {

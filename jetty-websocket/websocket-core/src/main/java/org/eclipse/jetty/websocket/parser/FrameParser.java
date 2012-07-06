@@ -2,8 +2,11 @@ package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
@@ -58,6 +61,17 @@ public class FrameParser
     public FrameParser(WebSocketPolicy policy)
     {
         this.policy = policy;
+    }
+
+    private void assertSanePayloadLength(long len)
+    {
+        // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
+        if (len > Integer.MAX_VALUE)
+        {
+            // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
+            throw new CloseException(StatusCode.MESSAGE_TOO_LARGE,"[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
+        }
+        policy.assertValidPayloadLength((int)len);
     }
 
     /**
@@ -169,7 +183,7 @@ public class FrameParser
                         break; // continue onto next state
                     }
 
-                    getFrame().setPayloadLength(length);
+                    assertSanePayloadLength(length);
                     if (getFrame().isMasked())
                     {
                         state = State.MASK;
@@ -188,7 +202,7 @@ public class FrameParser
                     length |= (b & 0xFF) << (8 * cursor);
                     if (cursor == 0)
                     {
-                        getFrame().setPayloadLength(length);
+                        assertSanePayloadLength(length);
                         if (getFrame().isMasked())
                         {
                             state = State.MASK;
@@ -261,7 +275,8 @@ public class FrameParser
 
             if (payload.position() >= payloadLength)
             {
-                frame.setPayload(payload);
+                BufferUtil.flipToFlush(payload,0);
+                frame.setPayload(BufferUtil.toArray(payload));
                 this.payload = null;
                 return true;
             }

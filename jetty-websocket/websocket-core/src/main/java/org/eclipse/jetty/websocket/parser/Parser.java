@@ -57,8 +57,7 @@ public class Parser
 
     private void assertValidClose()
     {
-        ByteBuffer payload = parser.getFrame().getPayload();
-        CloseUtil.assertValidPayload(payload);
+        CloseUtil.assertValidPayload(parser.getFrame());
     }
 
     public WebSocketPolicy getPolicy()

@@ -209,7 +209,7 @@ public class FrameBuilder
         // generate payload
         if (frame.getPayloadLength() > 0)
         {
-            BufferUtil.put(frame.getPayload(),buffer);
+            buffer.put(frame.getPayloadData());
         }
 
         int positionPostPayload = buffer.position();
@@ -255,15 +255,13 @@ public class FrameBuilder
 
     public FrameBuilder payload(byte[] payload, int offset, int length)
     {
-        ByteBuffer bb = ByteBuffer.allocate(length);
-        bb.put(payload,offset,length);
-        frame.setPayload(bb);
+        frame.setPayload(payload,offset,length);
         return this;
     }
 
     public FrameBuilder payload(ByteBuffer payload)
     {
-        frame.setPayload(payload);
+        frame.setPayload(BufferUtil.toArray(payload));
         return this;
     }
 

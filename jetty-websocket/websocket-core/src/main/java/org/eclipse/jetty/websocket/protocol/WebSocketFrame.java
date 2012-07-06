@@ -1,10 +1,8 @@
 package org.eclipse.jetty.websocket.protocol;
 
-import java.nio.ByteBuffer;
-
 import javax.xml.ws.ProtocolException;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
@@ -41,12 +39,10 @@ public class WebSocketFrame implements Frame
     private boolean rsv3 = false;
     private OpCode opcode = null;
     private boolean masked = false;
-    private int payloadLength = 0;
     private byte mask[];
-    private ByteBuffer payload = null;
+    private byte payload[];
     private boolean continuation = false;
-
-    protected int continuationIndex = 0;
+    private int continuationIndex = 0;
 
     /**
      * Default constructor
@@ -69,10 +65,10 @@ public class WebSocketFrame implements Frame
     {
         if (opcode.isControlFrame())
         {
-            if (payloadLength > WebSocketFrame.MAX_CONTROL_PAYLOAD)
+            if (getPayloadLength() > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
-                throw new ProtocolException("Desired payload length [" + payloadLength + "] exceeds maximum control payload length [" + MAX_CONTROL_PAYLOAD
-                        + "]");
+                throw new ProtocolException("Desired payload length [" + getPayloadLength() + "] exceeds maximum control payload length ["
+                        + MAX_CONTROL_PAYLOAD + "]");
             }
 
             if (fin == false)
@@ -139,26 +135,29 @@ public class WebSocketFrame implements Frame
         return opcode;
     }
 
-    /**
-     * Get the data
-     * 
-     * @return the raw bytebuffer data (can be null)
-     */
-    public ByteBuffer getPayload()
+    public String getPayloadAsUTF8()
     {
-        return payload;
+        if (payload == null)
+        {
+            return null;
+        }
+        return StringUtil.toUTF8String(payload,0,payload.length);
     }
 
     @Override
     public byte[] getPayloadData()
     {
-        return BufferUtil.toArray(payload);
+        return payload;
     }
 
     @Override
     public int getPayloadLength()
     {
-        return payloadLength;
+        if (payload == null)
+        {
+            return 0;
+        }
+        return payload.length;
     }
 
     public boolean hasPayload()
@@ -214,7 +213,7 @@ public class WebSocketFrame implements Frame
         rsv3 = false;
         opcode = null;
         masked = false;
-        payloadLength = 0;
+        payload = null;
         mask = null;
         continuationIndex = 0;
         continuation = false;
@@ -259,6 +258,12 @@ public class WebSocketFrame implements Frame
      */
     public void setPayload(byte buf[])
     {
+        if (buf == null)
+        {
+            payload = null;
+            return;
+        }
+
         if (opcode.isControlFrame())
         {
             if (buf.length > WebSocketFrame.MAX_CONTROL_PAYLOAD)
@@ -267,10 +272,8 @@ public class WebSocketFrame implements Frame
             }
         }
         int len = buf.length;
-        this.payload = ByteBuffer.allocate(len);
-        this.payload.put(buf,0,len);
-        this.payload.flip(); // make payload readable
-        this.setPayloadLength(len);
+        payload = new byte[len];
+        System.arraycopy(buf,0,payload,0,len);
     }
 
     /**
@@ -281,6 +284,12 @@ public class WebSocketFrame implements Frame
      */
     public void setPayload(byte buf[], int offset, int len)
     {
+        if (buf == null)
+        {
+            payload = null;
+            return;
+        }
+
         if (opcode.isControlFrame())
         {
             if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
@@ -289,47 +298,8 @@ public class WebSocketFrame implements Frame
             }
         }
 
-        this.payload = ByteBuffer.allocate(len);
-        this.payload.put(buf,offset,len);
-        this.payload.flip(); // make payload readable
-        this.setPayloadLength(len);
-    }
-
-    /**
-     * Set the data and payload length.
-     * 
-     * @param buf
-     *            the byte array to set
-     */
-    public void setPayload(ByteBuffer payload)
-    {
-        if (opcode.isControlFrame())
-        {
-            if (payload.position() > WebSocketFrame.MAX_CONTROL_PAYLOAD)
-            {
-                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
-            }
-        }
-
-        this.payload = payload;
-        this.payload.flip(); // make payload readable
-        setPayloadLength(this.payload.remaining());
-    }
-
-    public void setPayloadLength(int length)
-    {
-        this.payloadLength = length;
-    }
-
-    public void setPayloadLength(long length)
-    {
-        // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
-        if (length > Integer.MAX_VALUE)
-        {
-            // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
-            throw new IllegalArgumentException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
-        }
-        this.payloadLength = (int)length;
+        payload = new byte[len];
+        System.arraycopy(buf,offset,payload,0,len);
     }
 
     public void setRsv1(boolean rsv1)

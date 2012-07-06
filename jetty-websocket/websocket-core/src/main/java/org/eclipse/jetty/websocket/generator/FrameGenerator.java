@@ -2,13 +2,13 @@ package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.util.CloseUtil;
 
 /**
  * <pre>
@@ -47,11 +47,6 @@ public class FrameGenerator
     public FrameGenerator(WebSocketPolicy policy)
     {
         this.policy = policy;
-    }
-
-    public void fillPayload(ByteBuffer buffer, WebSocketFrame frame)
-    {
-        BufferUtil.put(frame.getPayload(),buffer);
     }
 
     public ByteBuffer generate(ByteBuffer buffer, WebSocketFrame frame)
@@ -156,8 +151,12 @@ public class FrameGenerator
         // remember the position
         int positionPrePayload = buffer.position();
 
-        // generate payload
-        fillPayload(buffer, frame);
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            CloseUtil.assertValidPayload(frame);
+        }
+        // copy payload
+        buffer.put(frame.getPayloadData());
 
         int positionPostPayload = buffer.position();
 

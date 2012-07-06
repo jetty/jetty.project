@@ -84,7 +84,7 @@ public class WebSocketPolicy
             // validate it
             if (requestedSize > maxBinaryMessageSize)
             {
-                throw new PolicyViolationException("Requested binary message size [" + requestedSize + "] exceeds maximum size [" + maxBinaryMessageSize + "]");
+                throw new MessageTooLargeException("Requested binary message size [" + requestedSize + "] exceeds maximum size [" + maxBinaryMessageSize + "]");
             }
         }
     }
@@ -94,7 +94,7 @@ public class WebSocketPolicy
         // validate to buffer sizes
         if (payloadLength > bufferSize)
         {
-            throw new PolicyViolationException("Requested payload length [" + payloadLength + "] exceeds maximum size [" + bufferSize + "]");
+            throw new MessageTooLargeException("Requested payload length [" + payloadLength + "] exceeds maximum size [" + bufferSize + "]");
         }
     }
 
@@ -105,7 +105,7 @@ public class WebSocketPolicy
             // validate it
             if (requestedSize > maxTextMessageSize)
             {
-                throw new PolicyViolationException("Requested text message size [" + requestedSize + "] exceeds maximum size [" + maxTextMessageSize + "]");
+                throw new MessageTooLargeException("Requested text message size [" + requestedSize + "] exceeds maximum size [" + maxTextMessageSize + "]");
             }
         }
     }

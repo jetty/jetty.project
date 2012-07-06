@@ -1,13 +1,11 @@
 package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
-import java.util.EnumMap;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
@@ -38,12 +36,10 @@ public class Generator
 {
     private static final Logger LOG = Log.getLogger(Generator.class);
 
-    private final EnumMap<OpCode, FrameGenerator> generators = new EnumMap<>(OpCode.class);
     private final FrameGenerator basicGenerator;
 
     public Generator(WebSocketPolicy policy)
     {
-        generators.put(OpCode.CLOSE,new CloseFrameGenerator(policy));
         basicGenerator = new FrameGenerator(policy);
     }
 
@@ -53,16 +49,10 @@ public class Generator
         {
             LOG.debug("To Generate: {}",frame);
         }
-        FrameGenerator generator = generators.get(frame.getOpCode());
-        if (generator == null)
-        {
-            // no specific generator? use default
-            generator = basicGenerator;
-        }
-        ByteBuffer ret = generator.generate(buffer,frame);
+        ByteBuffer ret = basicGenerator.generate(buffer,frame);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Generated[{}]: {}",generator.getClass().getSimpleName(),BufferUtil.toDetailString(buffer));
+            LOG.debug("Generated[{}]: {}",basicGenerator.getClass().getSimpleName(),BufferUtil.toDetailString(buffer));
         }
         return ret;
     }
@@ -70,7 +60,7 @@ public class Generator
     @Override
     public String toString()
     {
-        return String.format("Generator {%s registered}",generators.size());
+        return String.format("Generator [basic=%s]",basicGenerator.getClass().getSimpleName());
     }
 
 }

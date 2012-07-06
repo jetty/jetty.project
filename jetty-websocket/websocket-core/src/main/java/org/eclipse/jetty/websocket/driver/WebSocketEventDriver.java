@@ -10,6 +10,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -65,13 +66,13 @@ public class WebSocketEventDriver implements Parser.Listener
         }
     }
 
-    private void appendBuffer(ByteBuffer msgBuf, ByteBuffer payloadBuf)
+    private void appendBuffer(ByteBuffer msgBuf, byte payload[])
     {
-        if (msgBuf.remaining() < payloadBuf.remaining())
+        if (msgBuf.remaining() < payload.length)
         {
-            throw new CloseException(StatusCode.MESSAGE_TOO_LARGE,"Message exceeded maximum buffer of " + msgBuf.limit());
+            throw new MessageTooLargeException("Message exceeded maximum buffer of " + msgBuf.limit());
         }
-        BufferUtil.put(payloadBuf,msgBuf);
+        msgBuf.put(payload);
     }
 
     public WebSocketPolicy getPolicy()
@@ -155,7 +156,7 @@ public class WebSocketEventDriver implements Parser.Listener
                             needsNotification = true;
                         }
 
-                        activeStream.appendBuffer(frame.getPayload());
+                        activeStream.appendBuffer(frame.getPayloadData());
 
                         if (needsNotification)
                         {
@@ -180,7 +181,7 @@ public class WebSocketEventDriver implements Parser.Listener
                             BufferUtil.clearToFill(activeMessage);
                         }
 
-                        appendBuffer(activeMessage,frame.getPayload());
+                        appendBuffer(activeMessage,frame.getPayloadData());
 
                         // normal case
                         if (frame.isFin())
@@ -220,7 +221,7 @@ public class WebSocketEventDriver implements Parser.Listener
                             needsNotification = true;
                         }
 
-                        activeStream.appendBuffer(frame.getPayload());
+                        activeStream.appendBuffer(frame.getPayloadData());
 
                         if (needsNotification)
                         {
@@ -245,7 +246,7 @@ public class WebSocketEventDriver implements Parser.Listener
                             BufferUtil.clearToFill(activeMessage);
                         }
 
-                        appendBuffer(activeMessage,frame.getPayload());
+                        appendBuffer(activeMessage,frame.getPayloadData());
 
                         // normal case
                         if (frame.isFin())
