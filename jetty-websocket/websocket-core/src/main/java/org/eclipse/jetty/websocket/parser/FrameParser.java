@@ -6,8 +6,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
@@ -39,6 +42,8 @@ public class FrameParser
 {
     private enum State
     {
+        START,
+        FINOP,
         PAYLOAD_LEN,
         PAYLOAD_LEN_BYTES,
         MASK,
@@ -49,8 +54,7 @@ public class FrameParser
     private static final Logger LOG = Log.getLogger(FrameParser.class);
     private WebSocketPolicy policy;
     // State specific
-    private State state = State.PAYLOAD_LEN;
-    private long length = 0;
+    private State state = State.START;
     private int cursor = 0;
     // Frame
     private WebSocketFrame frame;
@@ -124,25 +128,6 @@ public class FrameParser
     }
 
     /**
-     * Initialize the base framing values.
-     * 
-     * @param fin
-     * @param rsv1
-     * @param rsv2
-     * @param rsv3
-     * @param opcode
-     */
-    public final void initFrame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, OpCode opcode)
-    {
-        WebSocketFrame frame = new WebSocketFrame();
-        frame.setFin(fin);
-        frame.setRsv1(rsv1);
-        frame.setRsv2(rsv2);
-        frame.setRsv3(rsv3);
-        frame.setOpCode(opcode);
-    }
-
-    /**
      * Parse the base framing protocol buffer.
      * <p>
      * Note the first byte (fin,rsv1,rsv2,rsv3,opcode) are parsed by the {@link Parser#parse(ByteBuffer)} method
@@ -153,37 +138,91 @@ public class FrameParser
      *            the buffer to parse from.
      * @return true if done parsing base framing protocol and ready for parsing of the payload. false if incomplete parsing of base framing protocol.
      */
-    public final boolean parseBaseFraming(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         LOG.debug("Parsing {} bytes",buffer.remaining());
         while (buffer.hasRemaining())
         {
             switch (state)
             {
+                case START:
+                {
+                    if ((frame != null) && (frame.isFin()))
+                    {
+                        frame.reset();
+                    }
+
+                    state = State.FINOP;
+                    break;
+                }
+                case FINOP:
+                {
+                    // peek at byte
+                    byte b = buffer.get();
+                    boolean fin = ((b & 0x80) != 0);
+                    boolean rsv1 = ((b & 0x40) != 0);
+                    boolean rsv2 = ((b & 0x20) != 0);
+                    boolean rsv3 = ((b & 0x10) != 0);
+                    byte opc = (byte)(b & 0x0F);
+                    OpCode opcode = OpCode.from(opc);
+
+                    if (opcode == null)
+                    {
+                        throw new WebSocketException("Unknown opcode: " + opc);
+                    }
+
+                    LOG.debug("OpCode {}, fin={}",opcode.name(),fin);
+
+                    if (opcode.isControlFrame() && !fin)
+                    {
+                        throw new ProtocolException("Fragmented Control Frame [" + opcode.name() + "]");
+                    }
+
+                    if (opcode == OpCode.CONTINUATION)
+                    {
+                        if (frame == null)
+                        {
+                            throw new ProtocolException("Fragment continuation frame without prior !FIN");
+                        }
+                        // Be careful to use the original opcode
+                        opcode = frame.getOpCode();
+                    }
+
+                    // base framing flags
+                    frame = new WebSocketFrame();
+                    frame.setFin(fin);
+                    frame.setRsv1(rsv1);
+                    frame.setRsv2(rsv2);
+                    frame.setRsv3(rsv3);
+                    frame.setOpCode(opcode);
+
+                    state = State.PAYLOAD_LEN;
+                    break;
+                }
                 case PAYLOAD_LEN:
                 {
                     byte b = buffer.get();
                     getFrame().setMasked((b & 0x80) != 0);
-                    length = (byte)(0x7F & b);
+                    payloadLength = (byte)(0x7F & b);
 
-                    if (length == 127)
+                    if (payloadLength == 127)
                     {
                         // length 8 bytes (extended payload length)
-                        length = 0;
+                        payloadLength = 0;
                         state = State.PAYLOAD_LEN_BYTES;
                         cursor = 8;
                         break; // continue onto next state
                     }
-                    else if (length == 126)
+                    else if (payloadLength == 126)
                     {
                         // length 2 bytes (extended payload length)
-                        length = 0;
+                        payloadLength = 0;
                         state = State.PAYLOAD_LEN_BYTES;
                         cursor = 2;
                         break; // continue onto next state
                     }
 
-                    assertSanePayloadLength(length);
+                    assertSanePayloadLength(payloadLength);
                     if (getFrame().isMasked())
                     {
                         state = State.MASK;
@@ -199,10 +238,10 @@ public class FrameParser
                 {
                     byte b = buffer.get();
                     --cursor;
-                    length |= (b & 0xFF) << (8 * cursor);
+                    payloadLength |= (b & 0xFF) << (8 * cursor);
                     if (cursor == 0)
                     {
-                        assertSanePayloadLength(length);
+                        assertSanePayloadLength(payloadLength);
                         if (getFrame().isMasked())
                         {
                             state = State.MASK;
@@ -241,11 +280,21 @@ public class FrameParser
                     }
                     break;
                 }
-            }
-
-            if (state == State.PAYLOAD)
-            {
-                return true;
+                case PAYLOAD:
+                {
+                    if (parsePayload(buffer))
+                    {
+                        // special check for close
+                        if (frame.getOpCode() == OpCode.CLOSE)
+                        {
+                            new CloseInfo(frame);
+                        }
+                        state = State.START;
+                        // we have a frame!
+                        return true;
+                    }
+                    break;
+                }
             }
         }
 
@@ -261,7 +310,6 @@ public class FrameParser
      */
     public boolean parsePayload(ByteBuffer buffer)
     {
-        payloadLength = getFrame().getPayloadLength();
         while (buffer.hasRemaining())
         {
             if (payload == null)
@@ -282,13 +330,5 @@ public class FrameParser
             }
         }
         return false;
-    }
-
-    /**
-     * Reset the frame and parser states
-     */
-    public void reset() {
-        // reset parser
-        state = State.PAYLOAD_LEN;
     }
 }

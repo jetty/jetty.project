@@ -76,19 +76,19 @@ public class WebSocketFrame implements Frame
                 throw new ProtocolException("Cannot have FIN==false on Control frames");
             }
 
-            if (rsv1 == false)
+            if (rsv1 == true)
             {
-                throw new ProtocolException("Cannot have RSV1==false on Control frames");
+                throw new ProtocolException("Cannot have RSV1==true on Control frames");
             }
 
-            if (rsv2 == false)
+            if (rsv2 == true)
             {
-                throw new ProtocolException("Cannot have RSV2==false on Control frames");
+                throw new ProtocolException("Cannot have RSV2==true on Control frames");
             }
 
-            if (rsv3 == false)
+            if (rsv3 == true)
             {
-                throw new ProtocolException("Cannot have RSV3==false on Control frames");
+                throw new ProtocolException("Cannot have RSV3==true on Control frames");
             }
 
             if (isContinuation())
