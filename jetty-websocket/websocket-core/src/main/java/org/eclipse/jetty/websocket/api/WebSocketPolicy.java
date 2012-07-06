@@ -92,9 +92,9 @@ public class WebSocketPolicy
     public void assertValidPayloadLength(int payloadLength)
     {
         // validate to buffer sizes
-        if (payloadLength > payloadLength)
+        if (payloadLength > maxPayloadSize)
         {
-            throw new MessageTooLargeException("Requested payload length [" + payloadLength + "] exceeds maximum size [" + payloadLength + "]");
+            throw new MessageTooLargeException("Requested payload length [" + payloadLength + "] exceeds maximum size [" + maxPayloadSize + "]");
         }
     }
 

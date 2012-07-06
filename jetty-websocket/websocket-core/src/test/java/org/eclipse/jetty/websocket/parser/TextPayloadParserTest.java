@@ -21,7 +21,9 @@ public class TextPayloadParserTest
     public void testFrameTooLargeDueToPolicy() throws Exception
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        policy.setBufferSize(1024); // set policy to something TEENY
+        // Artificially small buffer/payload
+        policy.setBufferSize(512);
+        policy.setMaxPayloadSize(1024);
         byte utf[] = new byte[2048];
         Arrays.fill(utf,(byte)'a');
 
