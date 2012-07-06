@@ -440,7 +440,7 @@ public class StandardStream implements IStream
     @Override
     public String toString()
     {
-        return String.format("stream=%d v%d windowSize=%db reset=%s %s %s", getId(), session.getVersion(), windowSize, isReset(), openState, closeState);
+        return String.format("stream=%d v%d windowSize=%db reset=%s %s %s", getId(), session.getVersion(), getWindowSize(), isReset(), openState, closeState);
     }
 
     private boolean canSend()

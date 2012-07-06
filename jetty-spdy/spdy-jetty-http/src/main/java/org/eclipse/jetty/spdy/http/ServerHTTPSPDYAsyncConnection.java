@@ -444,6 +444,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         requestHeaders.put("referer", referrer);
         // Remember support for gzip encoding
         requestHeaders.put(headers.get("accept-encoding"));
+        requestHeaders.put("x-spdy-push", "true");
         return requestHeaders;
     }
 
@@ -460,7 +461,6 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         }
         pushHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200");
         pushHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-        pushHeaders.put("x-spdy-push", "true");
         return pushHeaders;
     }
 

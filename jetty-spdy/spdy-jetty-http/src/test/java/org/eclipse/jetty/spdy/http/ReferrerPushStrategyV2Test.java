@@ -748,8 +748,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     {
         if (validateHeader(headers, HTTPSPDYHeader.STATUS.name(version()), "200")
                 && validateHeader(headers, HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1")
-                && validateUriHeader(headers)
-                && validateHeader(headers, "x-spdy-push", "true"))
+                && validateUriHeader(headers))
             pushSynHeadersValid.countDown();
     }
 
