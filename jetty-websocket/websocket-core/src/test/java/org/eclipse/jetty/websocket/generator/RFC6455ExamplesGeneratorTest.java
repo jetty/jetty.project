@@ -1,9 +1,8 @@
 package org.eclipse.jetty.websocket.generator;
 
-
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -13,10 +12,11 @@ import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest
 {
+    private static final int FUDGE = 32;
+
     @Test
     public void testFragmentedUnmaskedTextMessage()
     {
-
         WebSocketFrame text1 = FrameBuilder.text("Hel").fin(false).asFrame();
         WebSocketFrame text2 = FrameBuilder.continuation("lo").asFrame();
 
@@ -45,8 +45,8 @@ public class RFC6455ExamplesGeneratorTest
         expected2.flip();
         actual2.flip();
 
-        ByteBufferAssert.assertEquals("t1 buffers are not equal", expected1, actual1);
-        ByteBufferAssert.assertEquals("t2 buffers are not equal", expected2, actual2);
+        ByteBufferAssert.assertEquals("t1 buffers are not equal",expected1,actual1);
+        ByteBufferAssert.assertEquals("t2 buffers are not equal",expected2,actual2);
     }
 
     @Test
@@ -96,29 +96,23 @@ public class RFC6455ExamplesGeneratorTest
         ByteBufferAssert.assertEquals("masked text buffers are not equal",expected,actual);
     }
 
-
-
-
     @Test
     public void testSingleUnmasked256ByteBinaryMessage()
     {
         int dataSize = 256;
 
         WebSocketFrame binary = FrameBuilder.binary().asFrame();
-        ByteBuffer payload = ByteBuffer.allocate(dataSize);
-        for (int i = 0; i < dataSize; i++)
-        {
-            payload.put((byte)0x44);
-        }
-        binary.setPayload(BufferUtil.toArray(payload));
+        byte payload[] = new byte[dataSize];
+        Arrays.fill(payload,(byte)0x44);
+        binary.setPayload(payload);
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Generator gen = new Generator(policy);
 
-        ByteBuffer actual = ByteBuffer.allocate(dataSize + 32);
+        ByteBuffer actual = ByteBuffer.allocate(dataSize + FUDGE);
         gen.generate(actual,binary);
 
-        ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
+        ByteBuffer expected = ByteBuffer.allocate(dataSize + FUDGE);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         expected.put(new byte[]
@@ -133,7 +127,7 @@ public class RFC6455ExamplesGeneratorTest
         actual.flip();
         expected.flip();
 
-        ByteBufferAssert.assertEquals("binary buffers are not equal", expected, actual);
+        ByteBufferAssert.assertEquals("binary buffers are not equal",expected,actual);
     }
 
     @Test
@@ -142,12 +136,9 @@ public class RFC6455ExamplesGeneratorTest
         int dataSize = 1024 * 64;
 
         WebSocketFrame binary = FrameBuilder.binary().asFrame();
-        ByteBuffer payload = ByteBuffer.allocate(dataSize);
-        for (int i = 0; i < dataSize; i++)
-        {
-            payload.put((byte)0x44);
-        }
-        binary.setPayload(BufferUtil.toArray(payload));
+        byte payload[] = new byte[dataSize];
+        Arrays.fill(payload,(byte)0x44);
+        binary.setPayload(payload);
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Generator gen = new Generator(policy);
@@ -171,19 +162,7 @@ public class RFC6455ExamplesGeneratorTest
         actual.flip();
         expected.flip();
 
-        // System.out.println(binary);
-
-        // System.out.println(BufferUtil.toDetailString(expected));
-        // System.out.println(BufferUtil.toDetailString(actual));
-
-        // for (int i = 0; i < 20; ++i)
-        // {
-        // System.out.printf("a [%2d] 0x%02x%n",i,actual.get());
-        // System.out.printf("e [%2d] 0x%02x%n",i,expected.get());
-        // }
-
-        ByteBufferAssert.assertEquals("binary buffers are not equal", expected, actual);
-
+        ByteBufferAssert.assertEquals("binary buffers are not equal",expected,actual);
     }
 
     @Test
@@ -206,7 +185,6 @@ public class RFC6455ExamplesGeneratorTest
         ByteBufferAssert.assertEquals("Ping buffers",expected,actual);
     }
 
-
     @Test
     public void testSingleUnmaskedTextMessage()
     {
@@ -227,8 +205,6 @@ public class RFC6455ExamplesGeneratorTest
         expected.flip();
         actual.flip();
 
-        ByteBufferAssert.assertEquals("t1 buffers are not equal", expected, actual);
+        ByteBufferAssert.assertEquals("t1 buffers are not equal",expected,actual);
     }
 }
-
-
