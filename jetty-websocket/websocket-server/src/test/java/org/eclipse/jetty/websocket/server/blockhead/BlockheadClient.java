@@ -48,6 +48,8 @@ import org.junit.Assert;
 public class BlockheadClient implements Parser.Listener
 {
     private static final Logger LOG = Log.getLogger(BlockheadClient.class);
+    /** Set to true to disable timeouts (for debugging reasons) */
+    private static final boolean DEBUG = false;
     private final URI destHttpURI;
     private final URI destWebsocketURI;
     private final ByteBufferPool bufferPool;
@@ -62,6 +64,8 @@ public class BlockheadClient implements Parser.Listener
     private int version = 13; // default to RFC-6455
     private String protocols;
     private String extensions;
+    private byte[] clientmask = new byte[]
+    { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
@@ -218,7 +222,7 @@ public class BlockheadClient implements Parser.Listener
                     BufferUtil.flipToFlush(buf,0);
                     parser.parse(buf);
                 }
-                if (System.currentTimeMillis() > expireOn)
+                if (!DEBUG && (System.currentTimeMillis() > expireOn))
                 {
                     throw new TimeoutException("Timeout reading all of the desired frames");
                 }
@@ -328,6 +332,7 @@ public class BlockheadClient implements Parser.Listener
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
+            frame.setMask(clientmask);
             BufferUtil.flipToFill(buf);
             generator.generate(buf,frame);
             BufferUtil.flipToFlush(buf,0);
