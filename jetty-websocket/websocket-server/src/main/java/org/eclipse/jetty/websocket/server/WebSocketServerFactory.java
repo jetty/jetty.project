@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -70,15 +71,22 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     }
 
     private final String supportedVersions;
-    private WebSocketPolicy basePolicy;
+    private final WebSocketPolicy basePolicy;
+    private final EventMethodsCache methodsCache;
+    private final ByteBufferPool bufferPool;
     private WebSocketCreator creator;
-    private EventMethodsCache methodsCache;
     private Class<?> firstRegisteredClass;
 
     public WebSocketServerFactory(WebSocketPolicy policy)
     {
+        this(policy,new StandardByteBufferPool());
+    }
+
+    public WebSocketServerFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    {
         this.basePolicy = policy;
         this.methodsCache = new EventMethodsCache();
+        this.bufferPool = bufferPool;
         this.creator = this;
 
         // Create supportedVersions
@@ -121,7 +129,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
         // Send the upgrade
         WebSocketPolicy objPolicy = this.basePolicy.clonePolicy();
-        WebSocketEventDriver websocket = new WebSocketEventDriver(methodsCache,objPolicy,websocketPojo);
+        WebSocketEventDriver websocket = new WebSocketEventDriver(websocketPojo,methodsCache,objPolicy,bufferPool);
         return upgrade(sockreq,sockresp,websocket);
     }
 

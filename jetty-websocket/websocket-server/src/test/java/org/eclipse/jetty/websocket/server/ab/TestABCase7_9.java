@@ -11,6 +11,7 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -64,7 +65,7 @@ public class TestABCase7_9
             // echo the message back.
             try
             {
-                getConnection().write(message);
+                getConnection().write(null,new FutureCallback<Void>(),message);
             }
             catch (IOException e)
             {
@@ -184,7 +185,7 @@ public class TestABCase7_9
 
             ByteBuffer frame = FrameBuilder.closeFrame().withMask(new byte[]
             { 0x44, 0x44, 0x44, 0x44 }).asByteBuffer();
-            
+
             ByteBuffer buf = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
             BufferUtil.clearToFill(buf);
 
@@ -210,5 +211,5 @@ public class TestABCase7_9
             client.close();
         }
     }
-    
+
 }

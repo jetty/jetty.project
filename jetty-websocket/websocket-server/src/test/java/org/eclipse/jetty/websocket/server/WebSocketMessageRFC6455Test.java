@@ -34,21 +34,17 @@ import java.util.zip.Inflater;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketBinary;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketText;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.frames.BaseFrame;
-import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.PingFrame;
-import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.protocol.AcceptHash;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.junit.AfterClass;
@@ -85,33 +81,14 @@ public class WebSocketMessageRFC6455Test
             disconnected.countDown();
         }
 
-        @OnWebSocketFrame
-        public void onFrame(BaseFrame frame)
-        {
-            if (_echo)
-            {
-                if (!(frame instanceof PingFrame) && !(frame instanceof PongFrame) && !(frame instanceof CloseFrame))
-                {
-                    try
-                    {
-                        connection.write(frame);
-                    }
-                    catch (IOException e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-
-        @OnWebSocketBinary
+        @OnWebSocketMessage
         public void onMessage(byte[] data, int offset, int length)
         {
             if (_aggregate)
             {
                 try
                 {
-                    connection.write(data,offset,length);
+                    connection.write(null,fnf(),data,offset,length);
                 }
                 catch (IOException e)
                 {
@@ -120,7 +97,7 @@ public class WebSocketMessageRFC6455Test
             }
         }
 
-        @OnWebSocketText
+        @OnWebSocketMessage
         public void onMessage(String data)
         {
             __textCount.incrementAndGet();
@@ -140,7 +117,7 @@ public class WebSocketMessageRFC6455Test
             {
                 try
                 {
-                    connection.write(data);
+                    connection.write(null,fnf(),data);
                 }
                 catch (IOException e)
                 {
@@ -157,7 +134,7 @@ public class WebSocketMessageRFC6455Test
             {
                 try
                 {
-                    connection.write("sent on connect");
+                    connection.write(null,fnf(),"sent on connect");
                 }
                 catch (IOException e)
                 {
@@ -170,12 +147,18 @@ public class WebSocketMessageRFC6455Test
     }
 
     private static final int WSVERSION = 13; // RFC-6455 version
+
     private static Server __server;
     private static SelectChannelConnector __connector;
     private static TestWebSocket __serverWebSocket;
     private static CountDownLatch __latch;
-
     private static AtomicInteger __textCount = new AtomicInteger(0);
+
+    // Fire and Forget callback
+    public static Callback<Void> fnf()
+    {
+        return new FutureCallback<Void>();
+    }
 
     @BeforeClass
     public static void startServer() throws Exception
@@ -489,7 +472,7 @@ public class WebSocketMessageRFC6455Test
         String mesg = "How Now Brown Cow";
         for (int i = 0; i < count; i++)
         {
-            __serverWebSocket.connection.write(mesg);
+            __serverWebSocket.connection.write(null,fnf(),mesg);
             if ((i % 100) == 0)
             {
                 output.flush();
@@ -911,7 +894,7 @@ public class WebSocketMessageRFC6455Test
         assertTrue(__serverWebSocket.awaitDisconnected(5000));
         try
         {
-            __serverWebSocket.connection.write("Don't send");
+            __serverWebSocket.connection.write(null,fnf(),"Don't send");
             Assert.fail("Should have thrown IOException");
         }
         catch (IOException e)
@@ -1292,7 +1275,7 @@ public class WebSocketMessageRFC6455Test
             message.append(text);
         }
         String data = message.toString();
-        __serverWebSocket.connection.write(data);
+        __serverWebSocket.connection.write(null,fnf(),data);
 
         assertEquals(OpCode.TEXT.getCode(),input.read());
         assertEquals(0x7e,input.read());
@@ -1364,7 +1347,7 @@ public class WebSocketMessageRFC6455Test
 
         try
         {
-            __serverWebSocket.connection.write("Don't send");
+            __serverWebSocket.connection.write(null,fnf(),"Don't send");
             Assert.fail("Should have thrown IOException");
         }
         catch (IOException e)

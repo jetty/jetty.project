@@ -2,7 +2,6 @@ package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 
@@ -67,22 +66,17 @@ public interface WebSocketConnection
     boolean isOpen();
 
     /**
-     * Send a series of binary messages.
+     * Send a a binary message.
      * <p>
-     * Note: each buffer results in its own binary message frame.
-     * <p>
-     * Advanced usage, with callbacks, allows for concurrent NIO style results of the entire write operation. (Callback is only called once at the end of
-     * processing all of the buffers)
+     * NIO style with callbacks, allows for concurrent results of the write operation.
      */
-    <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IOException;
+    <C> void write(C context, Callback<C> callback, byte buf[], int offset, int len) throws IOException;
 
     /**
      * Send a series of text messages.
      * <p>
-     * Note: each messages results in its own text message frame.
-     * <p>
-     * Advanced usage, with callbacks, allows for concurrent NIO style results of the entire write operation. (Callback is only called once at the end of
-     * processing all of the messages)
+     * NIO style with callbacks, allows for concurrent results of the entire write operation. (Callback is only called once at the end of processing all of the
+     * messages)
      */
     <C> void write(C context, Callback<C> callback, String... messages) throws IOException;
 }

@@ -3,10 +3,10 @@ package org.eclipse.jetty.websocket.server.examples.echo;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.eclipse.jetty.websocket.annotations.OnWebSocketBinary;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketText;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 
@@ -17,14 +17,14 @@ public class EchoBroadcastSocket
 
     protected WebSocketConnection conn;
 
-    @OnWebSocketBinary
+    @OnWebSocketMessage
     public void onBinary(byte buf[], int offset, int len)
     {
         for (EchoBroadcastSocket sock : BROADCAST)
         {
             try
             {
-                sock.conn.write(buf,offset,len);
+                sock.conn.write(null,new FutureCallback<Void>(),buf,offset,len);
             }
             catch (IOException e)
             {
@@ -47,14 +47,14 @@ public class EchoBroadcastSocket
         BROADCAST.add(this);
     }
 
-    @OnWebSocketText
+    @OnWebSocketMessage
     public void onText(String text)
     {
         for (EchoBroadcastSocket sock : BROADCAST)
         {
             try
             {
-                sock.conn.write(text);
+                sock.conn.write(null,new FutureCallback<Void>(),text);
             }
             catch (IOException e)
             {

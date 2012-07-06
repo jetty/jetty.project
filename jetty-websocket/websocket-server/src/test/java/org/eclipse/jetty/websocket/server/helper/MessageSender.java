@@ -72,6 +72,6 @@ public class MessageSender extends WebSocketAdapter
 
     public void sendMessage(String format, Object... args) throws IOException
     {
-        getConnection().write(String.format(format,args));
+        getBlockingConnection().write(String.format(format,args));
     }
 }

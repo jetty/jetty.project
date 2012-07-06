@@ -2,7 +2,6 @@ package org.eclipse.jetty.websocket.io;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
@@ -69,7 +68,7 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IOException
+    public <C> void write(C context, Callback<C> callback, byte[] buf, int offset, int len) throws IOException
     {
     }
 

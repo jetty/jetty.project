@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -54,7 +55,7 @@ public class WebSocketServletRFCTest
             // echo the message back.
             try
             {
-                getConnection().write(message);
+                getConnection().write(null,new FutureCallback<Void>(),message);
             }
             catch (IOException e)
             {

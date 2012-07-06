@@ -1,10 +1,9 @@
 package org.eclipse.jetty.websocket.server.examples.echo;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.annotations.OnWebSocketBinary;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketText;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 
@@ -14,8 +13,8 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
 @WebSocket(maxTextSize = 64 * 1024, maxBinarySize = 64 * 1024)
 public class BigEchoSocket
 {
-    @OnWebSocketBinary
-    public void onBinary(WebSocketConnection conn, ByteBuffer buffer)
+    @OnWebSocketMessage
+    public void onBinary(WebSocketConnection conn, byte buf[], int offset, int length)
     {
         if (conn.isOpen())
         {
@@ -23,8 +22,7 @@ public class BigEchoSocket
         }
         try
         {
-            buffer.flip(); // flip the incoming buffer to write mode
-            conn.write(buffer);
+            conn.write(null,new FutureCallback<Void>(),buf,offset,length);
         }
         catch (IOException e)
         {
@@ -32,7 +30,7 @@ public class BigEchoSocket
         }
     }
 
-    @OnWebSocketText
+    @OnWebSocketMessage
     public void onText(WebSocketConnection conn, String message)
     {
         if (conn.isOpen())
@@ -41,7 +39,7 @@ public class BigEchoSocket
         }
         try
         {
-            conn.write(message);
+            conn.write(null,new FutureCallback<Void>(),message);
         }
         catch (IOException e)
         {

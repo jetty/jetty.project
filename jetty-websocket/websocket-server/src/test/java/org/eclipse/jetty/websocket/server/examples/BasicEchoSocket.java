@@ -15,7 +15,7 @@ public class BasicEchoSocket extends WebSocketAdapter
         }
         try
         {
-            getConnection().write(payload,offset,len);
+            getBlockingConnection().write(payload,offset,len);
         }
         catch (IOException e)
         {
@@ -32,7 +32,7 @@ public class BasicEchoSocket extends WebSocketAdapter
         }
         try
         {
-            getConnection().write(message);
+            getBlockingConnection().write(message);
         }
         catch (IOException e)
         {

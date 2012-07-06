@@ -17,7 +17,7 @@ public class MyEchoSocket extends WebSocketAdapter
         try
         {
             // echo the data back
-            getConnection().write(message);
+            getBlockingConnection().write(message);
         }
         catch (IOException e)
         {

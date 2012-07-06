@@ -1,23 +1,23 @@
 package org.eclipse.jetty.websocket.server.examples.echo;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.frames.PingFrame;
+import org.eclipse.jetty.websocket.api.io.WebSocketPing;
 
 @WebSocket
 public class EchoBroadcastPingSocket extends EchoBroadcastSocket
 {
-    private class KeepAlive extends Thread
+    private static class KeepAlive extends Thread
     {
         private CountDownLatch latch;
+        private WebSocketPing pinger;
 
-        private WebSocketConnection getConnection()
+        public KeepAlive(WebSocketConnection conn)
         {
-            return EchoBroadcastPingSocket.this.conn;
+            this.pinger = new WebSocketPing(conn);
         }
 
         @Override
@@ -27,14 +27,10 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
             {
                 while (!latch.await(10,TimeUnit.SECONDS))
                 {
-                    System.err.println("Ping " + getConnection());
-                    PingFrame ping = new PingFrame();
-                    ByteBuffer payload = ByteBuffer.allocate(3);
-                    payload.put((byte)1);
-                    payload.put((byte)2);
-                    payload.put((byte)3);
-                    ping.setPayload(payload);
-                    getConnection().write(ping);
+                    System.err.println("Ping " + pinger);
+                    byte data[] = new byte[]
+                    { (byte)1, (byte)2, (byte)3 };
+                    pinger.sendPing(data,0,3);
                 }
             }
             catch (Exception e)
@@ -59,11 +55,10 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
         }
     }
 
-    private final KeepAlive keepAlive; // A dedicated thread is not a good way to do this
+    private KeepAlive keepAlive; // A dedicated thread is not a good way to do this
 
     public EchoBroadcastPingSocket()
     {
-        keepAlive = new KeepAlive();
     }
 
     @Override
@@ -76,6 +71,10 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
     @Override
     public void onOpen(WebSocketConnection conn)
     {
+        if (keepAlive == null)
+        {
+            keepAlive = new KeepAlive(conn);
+        }
         keepAlive.start();
         super.onOpen(conn);
     }

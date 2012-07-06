@@ -241,9 +241,8 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
      * {@inheritDoc}
      */
     @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IOException
+    public <C> void write(C context, Callback<C> callback, byte buf[], int offset, int len) throws IOException
     {
-        int len = buffers.length;
         if (len == 0)
         {
             // nothing to write
@@ -251,18 +250,15 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         }
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("write(context,{},ByteBuffers->{})",callback,buffers.length);
+            LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
         }
-        ByteBuffer raw[] = new ByteBuffer[len];
-        for (int i = 0; i < len; i++)
-        {
-            raw[i] = bufferPool.acquire(buffers[i].remaining() + FrameGenerator.OVERHEAD,false);
-            BufferUtil.clearToFill(raw[i]);
-            BinaryFrame frame = new BinaryFrame(buffers[i]);
-            generator.generate(raw[i],frame);
-            BufferUtil.flipToFlush(raw[i],0);
-        }
-        getEndPoint().write(context,callback,raw);
+        ByteBuffer raw = bufferPool.acquire(len + FrameGenerator.OVERHEAD,false);
+        BufferUtil.clearToFill(raw);
+        BinaryFrame frame = new BinaryFrame(buf,offset,len);
+        frame.setFin(true);
+        generator.generate(raw,frame);
+        BufferUtil.flipToFlush(raw,0);
+        writeRaw(context,callback,raw);
     }
 
     /**
@@ -281,12 +277,17 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         {
             LOG.debug("write(context,{},Strings->{})",callback,messages.length);
         }
-        TextFrame frames[] = new TextFrame[len];
+        ByteBuffer raw[] = new ByteBuffer[messages.length];
         for (int i = 0; i < len; i++)
         {
-            frames[i] = new TextFrame(messages[i]);
+            TextFrame frame = new TextFrame(messages[i]);
+            frame.setFin(true);
+            raw[i] = bufferPool.acquire(policy.getBufferSize(),false);
+            BufferUtil.clear(raw[i]);
+            generator.generate(raw[i],frame);
+            BufferUtil.flipToFlush(raw[i],0);
         }
-        // TODO write(context,callback,frames);
+        writeRaw(context,callback,raw);
     }
 
     @Override
