@@ -3,12 +3,10 @@ package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.PingFrame;
-import org.eclipse.jetty.websocket.frames.PongFrame;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Test;
@@ -54,17 +52,11 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleMaskedPongRequest()
     {
-        PongFrame pong = new PongFrame();
-        pong.setMask(new byte[]
-                { 0x37, (byte)0xfa, 0x21, 0x3d });
-
-        byte msg[] = "Hello".getBytes(StringUtil.__UTF8_CHARSET);
-        ByteBuffer payload = ByteBuffer.allocate(msg.length);
-        payload.put(msg);
-        pong.setPayload(payload);
+        WebSocketFrame pong = FrameBuilder.pong("Hello").mask(new byte[]
+                { 0x37, (byte)0xfa, 0x21, 0x3d }).asFrame();
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        PongFrameGenerator gen = new PongFrameGenerator(policy);
+        Generator gen = new Generator(policy);
 
         ByteBuffer actual = ByteBuffer.allocate(32);
         gen.generate(actual,pong);
@@ -118,7 +110,7 @@ public class RFC6455ExamplesGeneratorTest
         {
             payload.put((byte)0x44);
         }
-        binary.setPayload(payload);
+        binary.setPayload(BufferUtil.toArray(payload));
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Generator gen = new Generator(policy);
@@ -155,7 +147,7 @@ public class RFC6455ExamplesGeneratorTest
         {
             payload.put((byte)0x44);
         }
-        binary.setPayload(payload);
+        binary.setPayload(BufferUtil.toArray(payload));
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Generator gen = new Generator(policy);
@@ -197,16 +189,11 @@ public class RFC6455ExamplesGeneratorTest
     @Test
     public void testSingleUnmaskedPingRequest() throws Exception
     {
-        PingFrame ping = new PingFrame();
-
-        byte msg[] = "Hello".getBytes(StringUtil.__UTF8_CHARSET);
-        ByteBuffer payload = ByteBuffer.allocate(msg.length);
-        payload.put(msg);
-        ping.setPayload(payload);
+        WebSocketFrame ping = FrameBuilder.ping("Hello").asFrame();
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
-        PingFrameGenerator gen = new PingFrameGenerator(policy);
+        Generator gen = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(32);
         gen.generate(actual,ping);
         actual.flip(); // make readable

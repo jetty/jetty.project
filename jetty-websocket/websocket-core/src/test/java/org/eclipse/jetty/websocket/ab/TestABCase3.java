@@ -1,81 +1,65 @@
 package org.eclipse.jetty.websocket.ab;
 
-import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.PingFrame;
-import org.eclipse.jetty.websocket.frames.PongFrame;
-import org.junit.Test;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
+import org.eclipse.jetty.websocket.api.PolicyViolationException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.generator.Generator;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+@RunWith(value = Parameterized.class)
 public class TestABCase3
 {
-    @Test( expected=IllegalArgumentException.class )
-    public void testGenerateRSV1PingFrame()
+
+    @Parameters
+    public static Collection<WebSocketFrame[]> data()
     {
-        PingFrame pingFrame = new PingFrame();
-        
-        pingFrame.setRsv1(true);
+        List<WebSocketFrame[]> data = new ArrayList<>();
+        // @formatter:off
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.ping().rsv1(true).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.ping().rsv2(true).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.ping().rsv3(true).asFrame() });
+        data.add(new WebSocketFrame[]
+        { FrameBuilder.pong().rsv1(true).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.pong().rsv2(true).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.pong().rsv3(true).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.close().rsv1(true).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.close().rsv2(true).asFrame() });
+        data.add(new WebSocketFrame[]
+                { FrameBuilder.close().rsv3(true).asFrame() });
+        // @formatter:on
+        return data;
     }
-    
-    @Test( expected=IllegalArgumentException.class )
-    public void testGenerateRSV2PingFrame()
+
+    private WebSocketFrame invalidFrame;
+
+    public TestABCase3(WebSocketFrame invalidFrame)
     {
-        PingFrame pingFrame = new PingFrame();
-        
-        pingFrame.setRsv2(true);
+        this.invalidFrame = invalidFrame;
     }
-    
-    @Test( expected=IllegalArgumentException.class )
-    public void testGenerateRSV3PingFrame()
-    {
-        PingFrame pingFrame = new PingFrame();
-        
-        pingFrame.setRsv3(true);
-    }
-    
-    @Test( expected=IllegalArgumentException.class )
-    public void testGenerateRSV1PongFrame()
-    {
-        PongFrame pongFrame = new PongFrame();
-        
-        pongFrame.setRsv1(true);
-    }
-    
-    @Test( expected=IllegalArgumentException.class )
-    public void testGenerateRSV2PongFrame()
-    {
-        PongFrame pongFrame = new PongFrame();
-        
-        pongFrame.setRsv2(true);
-    }
-    
-    @Test( expected=IllegalArgumentException.class )
-    public void testGenerateRSV3PongFrame()
-    {
-        PongFrame pongFrame = new PongFrame();
-        
-        pongFrame.setRsv3(true);
-    }
-    
-    @Test( expected=IllegalArgumentException.class )
+
+    @Test(expected = PolicyViolationException.class)
     public void testGenerateRSV1CloseFrame()
     {
-        CloseFrame closeFrame = new CloseFrame();
-        
-        closeFrame.setRsv1(true);
+        Generator generator = new Generator(WebSocketPolicy.newServerPolicy());
+
+        generator.generate(ByteBuffer.allocate(32),invalidFrame);
     }
-    
-    @Test( expected=IllegalArgumentException.class )
-    public void testGenerateRSV2CloseFrame()
-    {
-        CloseFrame closeFrame = new CloseFrame();
-        
-        closeFrame.setRsv2(true);
-    }
-    
-    @Test( expected=IllegalArgumentException.class )
-    public void testGenerateRSV3CloseFrame()
-    {
-        CloseFrame closeFrame = new CloseFrame();
-        
-        closeFrame.setRsv3(true);
-    }
+
+
 }

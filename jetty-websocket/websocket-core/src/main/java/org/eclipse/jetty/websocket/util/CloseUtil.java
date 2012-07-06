@@ -12,6 +12,12 @@ public class CloseUtil
     public static void assertValidPayload(WebSocketFrame frame)
     {
         byte payload[] = frame.getPayloadData();
+
+        if (payload.length < 2)
+        {
+            return; // no status code
+        }
+
         int statusCode = getStatusCode(payload);
 
         // Validate value
@@ -43,10 +49,6 @@ public class CloseUtil
 
     public static int getStatusCode(byte[] payload)
     {
-        if (payload.length < 2)
-        {
-            return 0; // no status code
-        }
 
         int statusCode = 0;
         ByteBuffer bb = ByteBuffer.wrap(payload);
