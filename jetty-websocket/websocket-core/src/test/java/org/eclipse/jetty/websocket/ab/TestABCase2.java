@@ -110,7 +110,7 @@ public class TestABCase2
         String message = "Hello, world!";
         byte[] messageBytes = message.getBytes();
 
-        WebSocketFrame pingFrame = FrameBuilder.text(message).asFrame();
+        WebSocketFrame pingFrame = FrameBuilder.ping(message).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(32);
@@ -248,7 +248,6 @@ public class TestABCase2
         WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(0));
         Assert.assertEquals("PingFrame.payload",0,pActual.getPayloadLength());
-
     }
 
     @Test
