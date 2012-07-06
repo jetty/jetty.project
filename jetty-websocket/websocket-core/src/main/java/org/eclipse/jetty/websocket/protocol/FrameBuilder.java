@@ -7,6 +7,12 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
 
 
+/**
+ * The FrameBuilder applies a builder pattern to constructing WebSocketFrame classes.
+ * 
+ * WARNING: It is possible to build bad frames using this builder which is the intent
+ * 
+ */
 public class FrameBuilder
 {
     public static FrameBuilder binary()
