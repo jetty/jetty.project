@@ -3,10 +3,12 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -15,13 +17,16 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -208,6 +213,32 @@ public class WebSocketServletRFCTest
         }
     }
 
+    @Test
+    @Ignore("Idle Timeouts not working (yet)")
+    public void testIdle() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        client.setProtocols("onConnect");
+        try
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(FrameBuilder.text("Hello").asFrame());
+
+            // now wait for the server to time out
+            // should be 2 frames, the TextFrame echo, and then the Close on disconnect
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,5);
+            Assert.assertThat("frames[0].opcode",frames.remove().getOpCode(),is(OpCode.TEXT));
+            Assert.assertThat("frames[1].opcode",frames.remove().getOpCode(),is(OpCode.CLOSE));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
     /**
      * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal server error) being produced by the
      * WebSocket POJO.
@@ -230,6 +261,36 @@ public class WebSocketServletRFCTest
             WebSocketFrame cf = frames.remove();
             CloseInfo close = new CloseInfo(cf);
             Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void testMaxBinarySize() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        client.setProtocols("other");
+        try
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            int dataSize = 1024 * 100;
+            byte buf[] = new byte[dataSize];
+            Arrays.fill(buf,(byte)0x44);
+            ByteBuffer bb = ByteBuffer.allocate(dataSize + FrameGenerator.OVERHEAD);
+            BufferUtil.clearToFill(bb);
+            FrameBuilder.binary(buf).fill(bb);
+            BufferUtil.flipToFlush(bb,0);
+            client.writeRaw(bb);
+
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,1);
+            Assert.assertThat("frames[0].opcode",frames.remove().getOpCode(),is(OpCode.BINARY));
+            Assert.assertThat("frames[1].opcode",frames.remove().getOpCode(),is(OpCode.CLOSE));
         }
         finally
         {

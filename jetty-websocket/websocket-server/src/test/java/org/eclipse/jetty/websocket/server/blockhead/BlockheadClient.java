@@ -15,6 +15,8 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -63,9 +65,10 @@ public class BlockheadClient implements Parser.Listener
     private InputStream in;
     private int version = 13; // default to RFC-6455
     private String protocols;
-    private String extensions;
+    private List<String> extensions = new ArrayList<>();
     private byte[] clientmask = new byte[]
     { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
+    private int timeout = 1000;
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
@@ -85,6 +88,16 @@ public class BlockheadClient implements Parser.Listener
         parser.addListener(this);
 
         incomingFrameQueue = new LinkedBlockingDeque<>();
+    }
+
+    public void addExtensions(String xtension)
+    {
+        this.extensions.add(xtension);
+    }
+
+    public void clearExtensions()
+    {
+        extensions.clear();
     }
 
     public void close()
@@ -108,7 +121,7 @@ public class BlockheadClient implements Parser.Listener
         socket = new Socket(destAddr,port);
 
         out = socket.getOutputStream();
-        // socket.setSoTimeout(1000);
+        socket.setSoTimeout(timeout);
         in = socket.getInputStream();
     }
 
@@ -121,7 +134,7 @@ public class BlockheadClient implements Parser.Listener
         return respHeader;
     }
 
-    public String getExtensions()
+    public List<String> getExtensions()
     {
         return extensions;
     }
@@ -285,23 +298,24 @@ public class BlockheadClient implements Parser.Listener
         {
             req.append("Sec-WebSocket-Protocol: ").append(protocols).append("\r\n");
         }
-        if (StringUtil.isNotBlank(extensions))
+
+        for (String xtension : extensions)
         {
-            req.append("Sec-WebSocket-Extensions: ").append(extensions).append("\r\n");
+            req.append("Sec-WebSocket-Extensions: ").append(xtension).append("\r\n");
         }
         req.append("Sec-WebSocket-Version: ").append(version).append("\r\n");
         req.append("\r\n");
         writeRaw(req.toString());
     }
 
-    public void setExtensions(String extensions)
-    {
-        this.extensions = extensions;
-    }
-
     public void setProtocols(String protocols)
     {
         this.protocols = protocols;
+    }
+
+    public void setTimeout(TimeUnit unit, int duration)
+    {
+        this.timeout = (int)TimeUnit.MILLISECONDS.convert(duration,unit);
     }
 
     public void setVersion(int version)
