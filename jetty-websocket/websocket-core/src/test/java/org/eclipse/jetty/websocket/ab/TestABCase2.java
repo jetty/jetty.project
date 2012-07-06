@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -293,12 +294,24 @@ public class TestABCase2
 
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + FrameGenerator.OVERHEAD);
 
-        expected.put(new byte[]
-                { (byte)0x89 });
+        byte b;
 
-        byte b = 0x00; // no masking
-        b |= bytes.length & 0x7F;
+        // fin + op
+        b = 0x00;
+        b |= 0x80; // fin on
+        b |= 0x09; // ping
         expected.put(b);
+
+        // mask + len
+        b = 0x00;
+        b |= 0x00; // no masking
+        b |= 0x7E; // 2 byte len
+        expected.put(b);
+
+        // 2 byte len
+        expected.putChar((char)bytes.length);
+
+        // payload
         expected.put(bytes);
 
         expected.flip();
@@ -308,7 +321,7 @@ public class TestABCase2
         parser.addListener(capture);
         parser.parse(expected);
 
-        Assert.assertEquals( "error should be returned for too large of ping payload", 1, capture.getErrorCount(WebSocketException.class)) ;
+        Assert.assertEquals("error should be returned for too large of ping payload",1,capture.getErrorCount(ProtocolException.class));
     }
 
 }

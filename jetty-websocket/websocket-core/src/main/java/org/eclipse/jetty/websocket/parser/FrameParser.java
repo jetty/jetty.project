@@ -68,6 +68,7 @@ public class FrameParser
 
     private void assertSanePayloadLength(long len)
     {
+        LOG.debug("Payload Length: " + len);
         // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
         if (len > Integer.MAX_VALUE)
         {
