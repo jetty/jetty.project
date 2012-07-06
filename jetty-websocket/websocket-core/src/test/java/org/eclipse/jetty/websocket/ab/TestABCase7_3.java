@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
@@ -9,10 +9,12 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.CloseFrame;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,8 +25,8 @@ public class TestABCase7_3
     @Test (expected = WebSocketException.class)
     public void testGenerate1BytePayloadCloseCase7_3_2()
     {
-        CloseFrame closeFrame = new CloseFrame();
-        closeFrame.setPayload(new byte[] {0x00});
+        WebSocketFrame closeFrame = FrameBuilder.close().payload(new byte[]
+                { 0x00 }).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(32);
@@ -34,7 +36,7 @@ public class TestABCase7_3
     @Test
     public void testGenerateCloseWithStatusCase7_3_3()
     {
-        CloseFrame closeFrame = new CloseFrame(1000);
+        WebSocketFrame closeFrame = FrameBuilder.close(1000).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(32);
@@ -63,7 +65,7 @@ public class TestABCase7_3
 
         byte[] messageBytes = message.toString().getBytes();
 
-        CloseFrame closeFrame = new CloseFrame(1000, message.toString());
+        WebSocketFrame closeFrame = FrameBuilder.close(1000,message.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(132);
@@ -99,8 +101,11 @@ public class TestABCase7_3
 
         byte[] messageBytes = message.toString().getBytes();
 
-        CloseFrame closeFrame = new CloseFrame(1000, message.toString());
+        WebSocketFrame closeFrame = FrameBuilder.close(1000,message.toString()).asFrame();
 
+        Generator generator = new Generator(policy);
+        ByteBuffer actual = ByteBuffer.allocate(32);
+        generator.generate(actual,closeFrame);
     }
 
     @Test
@@ -109,7 +114,7 @@ public class TestABCase7_3
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
 
-        CloseFrame closeFrame = new CloseFrame(1000, message);
+        WebSocketFrame closeFrame = FrameBuilder.close(1000,message.toString()).asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(32);
@@ -135,7 +140,7 @@ public class TestABCase7_3
     @Test
     public void testGenerateEmptyCloseCase7_3_1()
     {
-        CloseFrame closeFrame = new CloseFrame();
+        WebSocketFrame closeFrame = FrameBuilder.close().asFrame();
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = ByteBuffer.allocate(32);
@@ -191,11 +196,10 @@ public class TestABCase7_3
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(CloseFrame.class,1);
+        capture.assertHasFrame(OpCode.CLOSE,1);
 
-        CloseFrame pActual = (CloseFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
-        ByteBufferAssert.assertSize("CloseFrame.payload",2,pActual.getPayload());
 
     }
 
@@ -230,11 +234,10 @@ public class TestABCase7_3
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(CloseFrame.class,1);
+        capture.assertHasFrame(OpCode.CLOSE,1);
 
-        CloseFrame pActual = (CloseFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
-        ByteBufferAssert.assertSize("CloseFrame.payload", 125,pActual.getPayload());
 
     }
 
@@ -297,11 +300,10 @@ public class TestABCase7_3
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(CloseFrame.class,1);
+        capture.assertHasFrame(OpCode.CLOSE,1);
 
-        CloseFrame pActual = (CloseFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
-        ByteBufferAssert.assertSize("CloseFrame.payload",messageBytes.length + 2,pActual.getPayload());
 
     }
 
@@ -321,11 +323,10 @@ public class TestABCase7_3
         parser.parse(expected);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(CloseFrame.class,1);
+        capture.assertHasFrame(OpCode.CLOSE,1);
 
-        CloseFrame pActual = (CloseFrame)capture.getFrames().get(0);
+        WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
-        ByteBufferAssert.assertSize("CloseFrame.payload",0,pActual.getPayload());
 
     }
 }

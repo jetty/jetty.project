@@ -6,9 +6,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.PolicyViolationException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.util.CloseUtil;
 
 /**
  * <pre>
@@ -153,7 +153,8 @@ public class FrameGenerator
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            CloseUtil.assertValidPayload(frame);
+            // validate the close
+            new CloseInfo(frame.getPayloadData(),true);
         }
         // copy payload
         buffer.put(frame.getPayloadData());

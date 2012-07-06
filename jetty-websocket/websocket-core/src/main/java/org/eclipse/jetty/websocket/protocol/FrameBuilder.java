@@ -71,9 +71,19 @@ public class FrameBuilder
         return new FrameBuilder(new WebSocketFrame(OpCode.PING));
     }
 
+    public static FrameBuilder ping(String message)
+    {
+        return new FrameBuilder(new WebSocketFrame(OpCode.PING)).payload(message.getBytes(StringUtil.__UTF8_CHARSET));
+    }
+
     public static FrameBuilder pong()
     {
         return new FrameBuilder(new WebSocketFrame(OpCode.PONG));
+    }
+
+    public static FrameBuilder pong(String message)
+    {
+        return new FrameBuilder(new WebSocketFrame(OpCode.PONG)).payload(message.getBytes(StringUtil.__UTF8_CHARSET));
     }
 
     public static FrameBuilder text()
@@ -83,7 +93,7 @@ public class FrameBuilder
 
     public static FrameBuilder text(String text)
     {
-        return new FrameBuilder(new WebSocketFrame(OpCode.TEXT)).payload(text.getBytes());
+        return new FrameBuilder(new WebSocketFrame(OpCode.TEXT)).payload(text.getBytes(StringUtil.__UTF8_CHARSET));
     }
 
     private WebSocketFrame frame;
