@@ -3,49 +3,45 @@ package org.eclipse.jetty.websocket.protocol;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.websocket.frames.CloseFrame;
-import org.eclipse.jetty.websocket.frames.PingFrame;
-import org.eclipse.jetty.websocket.frames.PongFrame;
-
 public enum OpCode
 {
     /**
-     * OpCode for a {@link ContinuationFrame}
+     * OpCode for a Continuation Frame
      * 
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
     CONTINUATION((byte)0x00),
 
     /**
-     * OpCode for a {@link TextFrame}
+     * OpCode for a Text Frame
      * 
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
     TEXT((byte)0x01),
 
     /**
-     * OpCode for a {@link BinaryFrame}
+     * OpCode for a Binary Frame
      * 
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
     BINARY((byte)0x02),
 
     /**
-     * OpCode for a {@link CloseFrame}
+     * OpCode for a Close Frame
      * 
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
     CLOSE((byte)0x08),
 
     /**
-     * OpCode for a {@link PingFrame}
+     * OpCode for a Ping Frame
      * 
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
     PING((byte)0x09),
 
     /**
-     * OpCode for a {@link PongFrame}
+     * OpCode for a Pong Frame
      * 
      * @see <a href="https://tools.ietf.org/html/rfc6455#section-11.8">RFC 6455, Section 11.8 (WebSocket Opcode Registry</a>
      */
