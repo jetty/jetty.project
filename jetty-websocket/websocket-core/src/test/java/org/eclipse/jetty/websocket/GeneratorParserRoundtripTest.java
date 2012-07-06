@@ -74,7 +74,7 @@ public class GeneratorParserRoundtripTest
         try
         {
             // Setup Frame
-            TextFrame txt = (TextFrame)FrameBuilder.text().payload(message.getBytes()).asFrame();
+            WebSocketFrame txt = FrameBuilder.text().payload(message.getBytes()).asFrame();
 
             // Add masking
             byte mask[] = new byte[4];
@@ -96,10 +96,10 @@ public class GeneratorParserRoundtripTest
 
         // Validate
         capture.assertNoErrors();
-        capture.assertHasFrame(TextFrame.class,1);
+        capture.assertHasFrame(OpCode.TEXT,1);
 
-        TextFrame txt = (TextFrame)capture.getFrames().get(0);
+        WebSocketFrame txt = capture.getFrames().get(0);
         Assert.assertTrue("Text.isMasked",txt.isMasked());
-        Assert.assertThat("Text parsed",txt.getPayloadUTF8(),is(message));
+        Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
     }
 }
