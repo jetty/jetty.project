@@ -1,11 +1,14 @@
 package org.eclipse.jetty.websocket.parser;
 
+import static org.hamcrest.Matchers.*;
+
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.frames.PingFrame;
+import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class PingPayloadParserTest
@@ -25,8 +28,9 @@ public class PingPayloadParserTest
         parser.parse(buf);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(PingFrame.class,1);
-        PingFrame ping = (PingFrame)capture.getFrames().get(0);
-        ByteBufferAssert.assertEquals("PingFrame.payload","Hello",ping.getPayload());
+        capture.assertHasFrame(OpCode.PING,1);
+        WebSocketFrame ping = capture.getFrames().get(0);
+
+        Assert.assertThat("PingFrame.payload",ping.getPayloadAsUTF8(),is("Hello"));
     }
 }
