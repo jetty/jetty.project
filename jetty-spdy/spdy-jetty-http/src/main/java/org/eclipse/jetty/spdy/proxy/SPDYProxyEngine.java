@@ -130,8 +130,6 @@ public class SPDYProxyEngine extends ProxyEngine
             return null;
         }
 
-        // TODO: give a chance to modify headers and rewrite URI
-
         short serverVersion = proxyInfo.getVersion();
         InetSocketAddress address = proxyInfo.getAddress();
         Session serverSession = produceSession(host, serverVersion, address);
@@ -145,9 +143,9 @@ public class SPDYProxyEngine extends ProxyEngine
         Set<Session> sessions = (Set<Session>)serverSession.getAttribute(CLIENT_SESSIONS_ATTRIBUTE);
         sessions.add(clientSession);
 
+        addRequestProxyHeaders(clientStream, headers);
+        customizeRequestHeaders(clientStream, headers);
         convert(clientVersion, serverVersion, headers);
-
-        addRequestProxyHeaders(headers);
 
         SynInfo serverSynInfo = new SynInfo(headers, clientSynInfo.isClose());
         StreamFrameListener listener = new ProxyStreamFrameListener(clientStream);
@@ -256,10 +254,11 @@ public class SPDYProxyEngine extends ProxyEngine
 
             short serverVersion = stream.getSession().getVersion();
             Headers headers = new Headers(replyInfo.getHeaders(), false);
+
+            addResponseProxyHeaders(stream, headers);
+            customizeResponseHeaders(stream, headers);
             short clientVersion = this.clientStream.getSession().getVersion();
             convert(serverVersion, clientVersion, headers);
-
-            addResponseProxyHeaders(headers);
 
             this.replyInfo = new ReplyInfo(headers, replyInfo.isClose());
             if (replyInfo.isClose())
@@ -484,14 +483,15 @@ public class SPDYProxyEngine extends ProxyEngine
 
             Headers headers = new Headers(serverSynInfo.getHeaders(), false);
 
+            addResponseProxyHeaders(serverStream, headers);
+            customizeResponseHeaders(serverStream, headers);
             Stream clientStream = (Stream)serverStream.getAssociatedStream().getAttribute(CLIENT_STREAM_ATTRIBUTE);
             convert(serverStream.getSession().getVersion(), clientStream.getSession().getVersion(), headers);
-
-            addResponseProxyHeaders(headers);
 
             StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
             serverStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
             clientStream.syn(new SynInfo(headers, serverSynInfo.isClose()), getTimeout(), TimeUnit.MILLISECONDS, handler);
+
             return this;
         }
 
