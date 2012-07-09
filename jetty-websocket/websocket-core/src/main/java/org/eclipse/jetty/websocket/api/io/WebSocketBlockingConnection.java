@@ -37,7 +37,7 @@ public class WebSocketBlockingConnection
         }
         this.bufferPool = this.conn.getBufferPool();
         this.policy = conn.getPolicy();
-        this.generator = new Generator(this.policy);
+        this.generator = new Generator(this.policy,bufferPool);
     }
 
     /**

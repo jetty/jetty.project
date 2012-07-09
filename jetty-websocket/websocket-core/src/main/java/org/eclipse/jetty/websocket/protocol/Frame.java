@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket.protocol;
 
+import java.nio.ByteBuffer;
+
 /**
  * The immutable frame details.
  * <p>
@@ -11,10 +13,7 @@ public interface Frame
 
     public OpCode getOpCode();
 
-    /**
-     * @return a copy of the payload data
-     */
-    public byte[] getPayloadData();
+    public ByteBuffer getPayload();
 
     public int getPayloadLength();
 

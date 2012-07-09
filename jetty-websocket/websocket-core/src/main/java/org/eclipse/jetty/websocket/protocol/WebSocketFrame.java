@@ -1,9 +1,8 @@
 package org.eclipse.jetty.websocket.protocol;
 
-
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 
 /**
@@ -42,7 +41,7 @@ public class WebSocketFrame implements Frame
     private OpCode opcode = null;
     private boolean masked = false;
     private byte mask[];
-    private byte payload[];
+    private ByteBuffer data;
     private boolean continuation = false;
     private int continuationIndex = 0;
 
@@ -100,13 +99,6 @@ public class WebSocketFrame implements Frame
         }
     }
 
-    @Override
-    public WebSocketFrame clone()
-    {
-        // TODO: impl
-        return null;
-    }
-
     /**
      * The number of fragments this frame consists of.
      * <p>
@@ -137,39 +129,34 @@ public class WebSocketFrame implements Frame
         return opcode;
     }
 
+    @Override
     public ByteBuffer getPayload()
     {
-        return payload.slice();
+        return data.slice();
     }
 
     public String getPayloadAsUTF8()
     {
-        if (payload == null)
+        if (data == null)
         {
             return null;
         }
-        return StringUtil.toUTF8String(payload,0,payload.length);
-    }
-
-    @Override
-    public byte[] getPayloadData()
-    {
-        return payload;
+        return BufferUtil.toUTF8String(data);
     }
 
     @Override
     public int getPayloadLength()
     {
-        if (payload == null)
+        if (data == null)
         {
             return 0;
         }
-        return payload.length;
+        return data.remaining();
     }
 
     public boolean hasPayload()
     {
-        return payload != null;
+        return ((data != null) && (data.remaining() > 0));
     }
 
     public boolean isContinuation()
@@ -212,6 +199,13 @@ public class WebSocketFrame implements Frame
         return rsv3;
     }
 
+    public int remaining() {
+        if(data == null) {
+            return 0;
+        }
+        return data.remaining();
+    }
+
     public void reset()
     {
         fin = false;
@@ -220,7 +214,7 @@ public class WebSocketFrame implements Frame
         rsv3 = false;
         opcode = null;
         masked = false;
-        payload = null;
+        data = null;
         mask = null;
         continuationIndex = 0;
         continuation = false;
@@ -267,7 +261,7 @@ public class WebSocketFrame implements Frame
     {
         if (buf == null)
         {
-            payload = null;
+            data = null;
             return;
         }
 
@@ -278,9 +272,11 @@ public class WebSocketFrame implements Frame
                 throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
             }
         }
+
         int len = buf.length;
-        payload = new byte[len];
-        System.arraycopy(buf,0,payload,0,len);
+        data = ByteBuffer.allocate(len);
+        BufferUtil.clearToFill(data);
+        data.put(buf,0,len);
     }
 
     /**
@@ -293,7 +289,7 @@ public class WebSocketFrame implements Frame
     {
         if (buf == null)
         {
-            payload = null;
+            data = null;
             return;
         }
 
@@ -305,8 +301,38 @@ public class WebSocketFrame implements Frame
             }
         }
 
-        payload = new byte[len];
-        System.arraycopy(buf,offset,payload,0,len);
+        data = ByteBuffer.allocate(len);
+        BufferUtil.clearToFill(data);
+        data.put(buf,0,len);
+    }
+
+    /**
+     * Set the data payload.
+     * <p>
+     * The provided buffer will be used as is, no copying of bytes performed.
+     * <p>
+     * The provided buffer should be flipped and ready to READ from.
+     * 
+     * @param buf
+     *            the bytebuffer to set
+     */
+    public void setPayload(ByteBuffer buf)
+    {
+        if (buf == null)
+        {
+            data = null;
+            return;
+        }
+
+        if (opcode.isControlFrame())
+        {
+            if (buf.remaining() > WebSocketFrame.MAX_CONTROL_PAYLOAD)
+            {
+                throw new ProtocolException("Control Payloads can not exceed 125 bytes in length.");
+            }
+        }
+
+        data = buf.slice();
     }
 
     public void setRsv1(boolean rsv1)

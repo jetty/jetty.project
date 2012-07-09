@@ -75,7 +75,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         {
             bufferPool.release(buffer);
 
-            if (frame.available() > 0)
+            if (frame.remaining() > 0)
             {
                 // We have written a frame out of this DataInfo, but there is more to write.
                 // We need to keep the correct ordering of frames, to avoid that another
@@ -118,7 +118,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         private final Callback<C> callback;
         protected final C context;
         protected final WebSocketFrame frame;
-        protected final ByteBuffer buffer;
+        protected ByteBuffer buffer;
         // Task used to timeout the bytes
         protected volatile ScheduledFuture<?> task;
 
@@ -206,7 +206,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         super(endp,executor);
         this.policy = policy;
         this.bufferPool = bufferPool;
-        this.generator = new Generator(policy);
+        this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy);
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();

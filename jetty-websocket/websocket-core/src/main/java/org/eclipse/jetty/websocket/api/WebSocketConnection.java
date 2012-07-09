@@ -87,5 +87,5 @@ public interface WebSocketConnection
      * NIO style with callbacks, allows for concurrent results of the entire write operation. (Callback is only called once at the end of processing all of the
      * messages)
      */
-    <C> void write(C context, Callback<C> callback, String... messages) throws IOException;
+    <C> void write(C context, Callback<C> callback, String message) throws IOException;
 }
