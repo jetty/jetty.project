@@ -178,6 +178,10 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     logger.debug("HTTP > {} {} {}", m, u, v);
                     startRequest(new ByteArrayBuffer(m), new ByteArrayBuffer(u), new ByteArrayBuffer(v));
 
+                    Headers.Header schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(this.version));
+                    if(schemeHeader != null)
+                        _request.setScheme(schemeHeader.value());
+
                     updateState(State.HEADERS);
                     handle();
                     break;
