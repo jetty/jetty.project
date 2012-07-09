@@ -2,10 +2,12 @@ package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.generator.FrameGenerator;
+import org.eclipse.jetty.websocket.generator.Generator;
 
 
 /**
@@ -16,12 +18,12 @@ import org.eclipse.jetty.websocket.generator.FrameGenerator;
  */
 public class FrameBuilder
 {
-    public class DirtyGenerator extends FrameGenerator
+    public class DirtyGenerator extends Generator
     {
 
         public DirtyGenerator()
         {
-            super(WebSocketPolicy.newServerPolicy());
+            super(WebSocketPolicy.newServerPolicy(),bufferPool);
         }
 
         @Override
@@ -33,6 +35,8 @@ public class FrameBuilder
         }
 
     }
+
+    private static ByteBufferPool bufferPool = new StandardByteBufferPool();
 
     public static FrameBuilder binary()
     {
@@ -138,21 +142,12 @@ public class FrameBuilder
 
     public ByteBuffer asByteBuffer()
     {
-        ByteBuffer buffer = ByteBuffer.allocate(frame.getPayloadLength() + 32 );
-        fill(buffer);
-        return buffer;
+        return generator.generate(frame);
     }
 
     public WebSocketFrame asFrame()
     {
         return frame;
-    }
-
-    public void fill(ByteBuffer buffer)
-    {
-        generator.generate(buffer,frame);
-
-        BufferUtil.flipToFlush(buffer,0);
     }
 
     public FrameBuilder fin( boolean fin )
