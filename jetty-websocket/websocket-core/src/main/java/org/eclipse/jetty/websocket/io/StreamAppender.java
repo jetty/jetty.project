@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 
 public interface StreamAppender
 {
-    void appendBuffer(byte buf[]);
+    void appendBuffer(ByteBuffer byteBuffer);
 
     void bufferComplete() throws IOException;
 

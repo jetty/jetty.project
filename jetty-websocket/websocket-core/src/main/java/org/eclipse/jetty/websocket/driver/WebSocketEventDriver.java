@@ -66,13 +66,13 @@ public class WebSocketEventDriver implements Parser.Listener
         }
     }
 
-    private void appendBuffer(ByteBuffer msgBuf, byte payload[])
+    private void appendBuffer(ByteBuffer msgBuf, ByteBuffer byteBuffer)
     {
-        if (msgBuf.remaining() < payload.length)
+        if (msgBuf.remaining() < byteBuffer.remaining())
         {
-            throw new MessageTooLargeException("Message exceeded maximum buffer of " + msgBuf.limit());
+            throw new MessageTooLargeException("Message exceeded maximum buffer");
         }
-        msgBuf.put(payload);
+        msgBuf.put(byteBuffer);
     }
 
     public WebSocketPolicy getPolicy()
@@ -161,7 +161,7 @@ public class WebSocketEventDriver implements Parser.Listener
                             needsNotification = true;
                         }
 
-                        activeStream.appendBuffer(frame.getPayloadData());
+                        activeStream.appendBuffer(frame.getPayload());
 
                         if (needsNotification)
                         {
@@ -186,7 +186,7 @@ public class WebSocketEventDriver implements Parser.Listener
                             BufferUtil.clearToFill(activeMessage);
                         }
 
-                        appendBuffer(activeMessage,frame.getPayloadData());
+                        appendBuffer(activeMessage,frame.getPayload());
 
                         // normal case
                         if (frame.isFin())
@@ -231,7 +231,7 @@ public class WebSocketEventDriver implements Parser.Listener
                             needsNotification = true;
                         }
 
-                        activeStream.appendBuffer(frame.getPayloadData());
+                        activeStream.appendBuffer(frame.getPayload());
 
                         if (needsNotification)
                         {
@@ -256,7 +256,7 @@ public class WebSocketEventDriver implements Parser.Listener
                             BufferUtil.clearToFill(activeMessage);
                         }
 
-                        appendBuffer(activeMessage,frame.getPayloadData());
+                        appendBuffer(activeMessage,frame.getPayload());
 
                         // normal case
                         if (frame.isFin())

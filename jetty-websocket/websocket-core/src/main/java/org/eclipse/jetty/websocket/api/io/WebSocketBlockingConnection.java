@@ -1,14 +1,11 @@
 package org.eclipse.jetty.websocket.api.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.generator.Generator;
+import org.eclipse.jetty.websocket.io.DataFrameBytes;
 import org.eclipse.jetty.websocket.io.RawConnection;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
@@ -21,9 +18,6 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public class WebSocketBlockingConnection
 {
     private final RawConnection conn;
-    private final ByteBufferPool bufferPool;
-    private final WebSocketPolicy policy;
-    private final Generator generator;
 
     public WebSocketBlockingConnection(WebSocketConnection conn)
     {
@@ -35,9 +29,6 @@ public class WebSocketBlockingConnection
         {
             throw new IllegalArgumentException("WebSocketConnection must implement internal RawConnection interface");
         }
-        this.bufferPool = this.conn.getBufferPool();
-        this.policy = conn.getPolicy();
-        this.generator = new Generator(this.policy,bufferPool);
     }
 
     /**
@@ -48,12 +39,11 @@ public class WebSocketBlockingConnection
     public void write(byte[] data, int offset, int length) throws IOException
     {
         WebSocketFrame frame = FrameBuilder.binary(data,offset,length).asFrame();
-        ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
-            generator.generate(buf,frame);
             FutureCallback<Void> blocking = new FutureCallback<>();
-            this.conn.writeRaw(null,blocking,buf);
+            DataFrameBytes<Void> bytes = new DataFrameBytes<>(conn,blocking,null,frame);
+            this.conn.getQueue().append(bytes);
             blocking.get(); // block till finished
         }
         catch (InterruptedException e)
@@ -63,10 +53,6 @@ public class WebSocketBlockingConnection
         catch (ExecutionException e)
         {
             FutureCallback.rethrow(e);
-        }
-        finally
-        {
-            bufferPool.release(buf);
         }
     }
 
@@ -78,12 +64,11 @@ public class WebSocketBlockingConnection
     public void write(String message) throws IOException
     {
         WebSocketFrame frame = FrameBuilder.text(message).asFrame();
-        ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         try
         {
-            generator.generate(buf,frame);
             FutureCallback<Void> blocking = new FutureCallback<>();
-            this.conn.writeRaw(null,blocking,buf);
+            DataFrameBytes<Void> bytes = new DataFrameBytes<>(conn,blocking,null,frame);
+            this.conn.getQueue().append(bytes);
             blocking.get(); // block till finished
         }
         catch (InterruptedException e)
@@ -93,10 +78,6 @@ public class WebSocketBlockingConnection
         catch (ExecutionException e)
         {
             FutureCallback.rethrow(e);
-        }
-        finally
-        {
-            bufferPool.release(buf);
         }
     }
 }

@@ -17,7 +17,7 @@ public class MessageInputStream extends InputStream implements StreamAppender
     }
 
     @Override
-    public void appendBuffer(byte buf[])
+    public void appendBuffer(ByteBuffer buf)
     {
         // TODO Auto-generated method stub
     }
