@@ -200,12 +200,13 @@ public class WebSocketServletRFCTest
             client.expectUpgradeResponse();
 
             // Generate text frame
-            client.write(FrameBuilder.text("Hello World").asFrame());
+            String msg = "this is an echo ... cho ... ho ... o";
+            client.write(FrameBuilder.text(msg).asFrame());
 
             // Read frame (hopefully text frame)
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
             WebSocketFrame tf = frames.remove();
-            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is("Hello World"));
+            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
         {
@@ -279,18 +280,87 @@ public class WebSocketServletRFCTest
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
+            // Choose a size for a single frame larger than the
+            // server side policy
             int dataSize = 1024 * 100;
             byte buf[] = new byte[dataSize];
             Arrays.fill(buf,(byte)0x44);
             ByteBuffer bb = ByteBuffer.allocate(dataSize + FrameGenerator.OVERHEAD);
             BufferUtil.clearToFill(bb);
-            FrameBuilder.binary(buf).fill(bb);
+            FrameBuilder.binary(buf).fin(true).fill(bb);
             BufferUtil.flipToFlush(bb,0);
             client.writeRaw(bb);
 
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,1);
-            Assert.assertThat("frames[0].opcode",frames.remove().getOpCode(),is(OpCode.BINARY));
-            Assert.assertThat("frames[1].opcode",frames.remove().getOpCode(),is(OpCode.CLOSE));
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
+            WebSocketFrame frame = frames.remove();
+            Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            CloseInfo close = new CloseInfo(frame);
+            Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void testMaxTextSize() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        client.setProtocols("other");
+        try
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            // Choose a size for a single frame larger than the
+            // server side policy
+            int dataSize = 1024 * 100;
+            byte buf[] = new byte[dataSize];
+            Arrays.fill(buf,(byte)'z');
+            ByteBuffer bb = ByteBuffer.allocate(dataSize + FrameGenerator.OVERHEAD);
+            BufferUtil.clearToFill(bb);
+            FrameBuilder.text().payload(buf).fin(true).fill(bb);
+            BufferUtil.flipToFlush(bb,0);
+            client.writeRaw(bb);
+
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
+            WebSocketFrame frame = frames.remove();
+            Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            CloseInfo close = new CloseInfo(frame);
+            Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    @Test
+    public void testTextNotUTF8() throws Exception
+    {
+        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        client.setProtocols("other");
+        try
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            byte buf[] = new byte[]
+            { (byte)0xC3, 0x28 };
+            ByteBuffer bb = ByteBuffer.allocate(buf.length + FrameGenerator.OVERHEAD);
+            BufferUtil.clearToFill(bb);
+            FrameBuilder.text().payload(buf).fin(true).fill(bb);
+            BufferUtil.flipToFlush(bb,0);
+            client.writeRaw(bb);
+
+            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
+            WebSocketFrame frame = frames.remove();
+            Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            CloseInfo close = new CloseInfo(frame);
+            Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
         }
         finally
         {
