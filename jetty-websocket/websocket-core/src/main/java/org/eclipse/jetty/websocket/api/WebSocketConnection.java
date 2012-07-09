@@ -66,6 +66,15 @@ public interface WebSocketConnection
     boolean isOpen();
 
     /**
+     * Send a single ping messages.
+     * <p>
+     * NIO style with callbacks, allows for knowledge of successful ping send.
+     * <p>
+     * Use @OnWebSocketFrame and monitor Pong frames
+     */
+    <C> void ping(C context, Callback<C> callback, byte payload[]) throws IOException;
+
+    /**
      * Send a a binary message.
      * <p>
      * NIO style with callbacks, allows for concurrent results of the write operation.

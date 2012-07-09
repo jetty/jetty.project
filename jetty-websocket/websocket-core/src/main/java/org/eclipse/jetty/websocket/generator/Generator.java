@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -38,9 +39,9 @@ public class Generator
 
     private final FrameGenerator basicGenerator;
 
-    public Generator(WebSocketPolicy policy)
+    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        basicGenerator = new FrameGenerator(policy);
+        basicGenerator = new FrameGenerator(policy,bufferPool);
     }
 
     public ByteBuffer generate(ByteBuffer buffer, WebSocketFrame frame)
@@ -55,6 +56,21 @@ public class Generator
             LOG.debug("Generated[{}]: {}",basicGenerator.getClass().getSimpleName(),BufferUtil.toDetailString(buffer));
         }
         return ret;
+    }
+
+    public ByteBuffer generate(int size, WebSocketFrame frame)
+    {
+        // NEW ONE - allocate and fill only to param size
+        // note: size is the buffer size to generate into, not related to the payload size
+        // note: size cannot be less than framing overhead
+        // TODO: update frame.setAvailable() to indicate how much of payload is left to be generated
+        return basicGenerator.generate(frame);
+    }
+
+    public ByteBuffer generate(WebSocketFrame frame)
+    {
+        // NEW ONE - allocate as much as needed
+        return basicGenerator.generate(frame);
     }
 
     @Override

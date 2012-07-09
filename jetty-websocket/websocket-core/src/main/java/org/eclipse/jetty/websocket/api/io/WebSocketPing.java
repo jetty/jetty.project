@@ -13,9 +13,10 @@ import org.eclipse.jetty.websocket.io.RawConnection;
 import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
+@Deprecated
 public class WebSocketPing
 {
-    private RawConnection conn;
+    private Raw Connection conn;
     private ByteBufferPool bufferPool;
     private WebSocketPolicy policy;
     private Generator generator;

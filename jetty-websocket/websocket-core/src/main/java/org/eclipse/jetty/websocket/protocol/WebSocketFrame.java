@@ -1,6 +1,8 @@
 package org.eclipse.jetty.websocket.protocol;
 
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 
@@ -133,6 +135,11 @@ public class WebSocketFrame implements Frame
     public final OpCode getOpCode()
     {
         return opcode;
+    }
+
+    public ByteBuffer getPayload()
+    {
+        return payload.slice();
     }
 
     public String getPayloadAsUTF8()

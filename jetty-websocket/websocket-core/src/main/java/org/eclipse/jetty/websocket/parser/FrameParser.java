@@ -113,6 +113,7 @@ public class FrameParser
         if (frame.isMasked())
         {
             // Demask the content 1 byte at a time
+            // FIXME: on partially parsed frames this needs an offset from prior parse
             byte mask[] = getFrame().getMask();
             for (int i = 0; i < amt; i++)
             {
