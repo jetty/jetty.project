@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.protocol;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 
 /**
@@ -34,6 +35,26 @@ public class WebSocketFrame implements Frame
     /** Maximum size of Control frame, per RFC 6455 */
     public static final int MAX_CONTROL_PAYLOAD = 125;
 
+    public static WebSocketFrame binar(byte buf[])
+    {
+        return new WebSocketFrame(OpCode.BINARY).setPayload(buf);
+    }
+
+    public static WebSocketFrame binary()
+    {
+        return new WebSocketFrame(OpCode.BINARY);
+    }
+
+    public static WebSocketFrame text()
+    {
+        return new WebSocketFrame(OpCode.TEXT);
+    }
+
+    public static WebSocketFrame text(String msg)
+    {
+        return new WebSocketFrame(OpCode.TEXT).setPayload(msg);
+    }
+
     private boolean fin = true;
     private boolean rsv1 = false;
     private boolean rsv2 = false;
@@ -42,7 +63,9 @@ public class WebSocketFrame implements Frame
     private boolean masked = false;
     private byte mask[];
     private ByteBuffer data;
+
     private boolean continuation = false;
+
     private int continuationIndex = 0;
 
     /**
@@ -206,8 +229,10 @@ public class WebSocketFrame implements Frame
         return rsv3;
     }
 
-    public int remaining() {
-        if(data == null) {
+    public int remaining()
+    {
+        if (data == null)
+        {
             return 0;
         }
         return data.remaining();
@@ -348,6 +373,12 @@ public class WebSocketFrame implements Frame
         }
 
         data = buf.slice();
+        return this;
+    }
+
+    private WebSocketFrame setPayload(String str)
+    {
+        setPayload(BufferUtil.toBuffer(str,StringUtil.__UTF8_CHARSET));
         return this;
     }
 
