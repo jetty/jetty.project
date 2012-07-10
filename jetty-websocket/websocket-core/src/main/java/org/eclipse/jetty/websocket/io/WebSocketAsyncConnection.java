@@ -101,8 +101,9 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         }
         catch (IOException e)
         {
+            LOG.warn(e);
             terminateConnection(StatusCode.PROTOCOL,e.getMessage());
-            return 0;
+            return -1;
         }
     }
 
@@ -214,10 +215,9 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     @Override
     public void onFillable()
     {
-        LOG.debug("onFillable");
         setCurrentConnection(this);
         ByteBuffer buffer = bufferPool.acquire(policy.getBufferSize(),false);
-        BufferUtil.clearToFill(buffer);
+        BufferUtil.clear(buffer);
         try
         {
             read(buffer);
@@ -264,6 +264,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
                 break;
             }
 
+            LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
             parser.parse(buffer);
         }
     }

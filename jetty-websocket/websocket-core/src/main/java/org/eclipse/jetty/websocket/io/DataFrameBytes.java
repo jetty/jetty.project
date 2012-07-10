@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.io;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
@@ -48,6 +49,7 @@ public class DataFrameBytes<C> extends FrameBytes<C>
             }
 
             buffer = connection.getGenerator().generate(size,frame);
+            BufferUtil.flipToFlush(buffer,0);
             return buffer;
         }
         catch (Throwable x)

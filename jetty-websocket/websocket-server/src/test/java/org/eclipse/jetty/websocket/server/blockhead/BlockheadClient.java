@@ -355,9 +355,16 @@ public class BlockheadClient implements Parser.Listener
     {
         LOG.debug("write(Frame->{})",frame);
         frame.setMask(clientmask);
+        // frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
         ByteBuffer buf = generator.generate(frame);
         BufferUtil.flipToFlush(buf,0);
-        BufferUtil.writeTo(buf,out);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
+        }
+        byte arr[] = BufferUtil.toArray(buf);
+        out.write(arr,0,arr.length);
+        out.flush();
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException
