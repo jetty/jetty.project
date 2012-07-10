@@ -17,10 +17,8 @@
 package org.eclipse.jetty.spdy.proxy;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -32,9 +30,9 @@ import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
-import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -47,21 +45,22 @@ import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
  * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by
  * clients into SPDY events for the servers.</p>
  */
-public class SPDYProxyEngine extends ProxyEngine
+public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 {
     private static final String STREAM_HANDLER_ATTRIBUTE = "org.eclipse.jetty.spdy.http.proxy.streamHandler";
     private static final String CLIENT_STREAM_ATTRIBUTE = "org.eclipse.jetty.spdy.http.proxy.clientStream";
-    private static final String CLIENT_SESSIONS_ATTRIBUTE = "org.eclipse.jetty.spdy.http.proxy.clientSessions";
 
+    private final String protocol;
     private final ConcurrentMap<String, Session> serverSessions = new ConcurrentHashMap<>();
     private final SessionFrameListener sessionListener = new ProxySessionFrameListener();
     private final SPDYClient.Factory factory;
     private volatile long connectTimeout = 15000;
     private volatile long timeout = 60000;
 
-    public SPDYProxyEngine(SPDYClient.Factory factory)
+    public SPDYProxyEngine(String protocol, SPDYClient.Factory factory)
     {
         this.factory = factory;
+        this.protocol = protocol;
     }
 
     public long getConnectTimeout()
@@ -84,68 +83,24 @@ public class SPDYProxyEngine extends ProxyEngine
         this.timeout = timeout;
     }
 
-    @Override
-    public void onPing(Session clientSession, PingInfo pingInfo)
+    public StreamFrameListener proxy(final Stream clientStream, SynInfo clientSynInfo, ProxyEngineSelector.ProxyServerInfo proxyServerInfo)
     {
-        // We do not know to which upstream server
-        // to send the PING so we just ignore it
-    }
-
-    @Override
-    public void onGoAway(Session clientSession, GoAwayInfo goAwayInfo)
-    {
-        for (Session serverSession : serverSessions.values())
-        {
-            @SuppressWarnings("unchecked")
-            Set<Session> sessions = (Set<Session>)serverSession.getAttribute(CLIENT_SESSIONS_ATTRIBUTE);
-            if (sessions.remove(clientSession))
-                break;
-        }
-    }
-
-    @Override
-    public StreamFrameListener onSyn(final Stream clientStream, SynInfo clientSynInfo)
-    {
-        logger.debug("C -> P {} on {}", clientSynInfo, clientStream);
-
-        final Session clientSession = clientStream.getSession();
-        short clientVersion = clientSession.getVersion();
         Headers headers = new Headers(clientSynInfo.getHeaders(), false);
 
-        Headers.Header hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
-        if (hostHeader == null)
-        {
-            rst(clientStream);
-            return null;
-        }
-
-        String host = hostHeader.value();
-        int colon = host.indexOf(':');
-        if (colon >= 0)
-            host = host.substring(0, colon);
-        ProxyInfo proxyInfo = getProxyInfo(host);
-        if (proxyInfo == null)
-        {
-            rst(clientStream);
-            return null;
-        }
-
-        short serverVersion = proxyInfo.getVersion();
-        InetSocketAddress address = proxyInfo.getAddress();
-        Session serverSession = produceSession(host, serverVersion, address);
+        short serverVersion = getVersion(protocol);
+        InetSocketAddress address = proxyServerInfo.getAddress();
+        Session serverSession = produceSession(proxyServerInfo.getHost(), serverVersion, address);
         if (serverSession == null)
         {
             rst(clientStream);
             return null;
         }
 
-        @SuppressWarnings("unchecked")
-        Set<Session> sessions = (Set<Session>)serverSession.getAttribute(CLIENT_SESSIONS_ATTRIBUTE);
-        sessions.add(clientSession);
+        final Session clientSession = clientStream.getSession();
 
         addRequestProxyHeaders(clientStream, headers);
         customizeRequestHeaders(clientStream, headers);
-        convert(clientVersion, serverVersion, headers);
+        convert(clientSession.getVersion(), serverVersion, headers);
 
         SynInfo serverSynInfo = new SynInfo(headers, clientSynInfo.isClose());
         StreamFrameListener listener = new ProxyStreamFrameListener(clientStream);
@@ -153,6 +108,25 @@ public class SPDYProxyEngine extends ProxyEngine
         clientStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
         serverSession.syn(serverSynInfo, listener, timeout, TimeUnit.MILLISECONDS, handler);
         return this;
+    }
+
+    @Override
+    public String getProtocol()
+    {
+        return protocol;
+    }
+
+    private static short getVersion(String protocol)
+    {
+        switch (protocol)
+        {
+            case "spdy/2":
+                return SPDY.V2;
+            case "spdy/3":
+                return SPDY.V3;
+            default:
+                throw new IllegalArgumentException("Procotol: " + protocol + " is not a known SPDY protocol");
+        }
     }
 
     @Override
@@ -196,7 +170,6 @@ public class SPDYProxyEngine extends ProxyEngine
             {
                 SPDYClient client = factory.newSPDYClient(version);
                 session = client.connect(address, sessionListener).get(getConnectTimeout(), TimeUnit.MILLISECONDS);
-                session.setAttribute(CLIENT_SESSIONS_ATTRIBUTE, Collections.newSetFromMap(new ConcurrentHashMap<Session, Boolean>()));
                 logger.debug("Proxy session connected to {}", address);
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
@@ -515,10 +488,6 @@ public class SPDYProxyEngine extends ProxyEngine
         public void onGoAway(Session serverSession, GoAwayInfo goAwayInfo)
         {
             serverSessions.values().remove(serverSession);
-            @SuppressWarnings("unchecked")
-            Set<Session> sessions = (Set<Session>)serverSession.removeAttribute(CLIENT_SESSIONS_ATTRIBUTE);
-            for (Session session : sessions)
-                session.goAway(getTimeout(), TimeUnit.MILLISECONDS, new Handler.Adapter<Void>());
         }
 
         @Override
@@ -530,7 +499,7 @@ public class SPDYProxyEngine extends ProxyEngine
         @Override
         public void onHeaders(Stream stream, HeadersInfo headersInfo)
         {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException(); //TODO
         }
 
         @Override

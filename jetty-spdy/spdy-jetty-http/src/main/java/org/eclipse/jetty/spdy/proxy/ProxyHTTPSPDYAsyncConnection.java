@@ -48,6 +48,7 @@ import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 
@@ -55,17 +56,17 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
 {
     private final Headers headers = new Headers();
     private final short version;
-    private final ProxyEngine proxyEngine;
+    private final ProxyEngineSelector proxyEngineSelector;
     private final HttpGenerator generator;
     private final ISession session;
-    private Stream stream;
+    private HTTPStream stream;
     private Buffer content;
 
-    public ProxyHTTPSPDYAsyncConnection(SPDYServerConnector connector, EndPoint endpoint, short version, ProxyEngine proxyEngine)
+    public ProxyHTTPSPDYAsyncConnection(SPDYServerConnector connector, EndPoint endpoint, short version, ProxyEngineSelector proxyEngineSelector)
     {
         super(connector, endpoint, connector.getServer());
         this.version = version;
-        this.proxyEngine = proxyEngine;
+        this.proxyEngineSelector = proxyEngineSelector;
         this.generator = (HttpGenerator)_generator;
         this.session = new HTTPSession(version, connector);
     }
@@ -118,7 +119,7 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
         }
         else
         {
-            proxyEngine.onData(stream, toDataInfo(buffer, false));
+            stream.getStreamFrameListener().onData(stream, toDataInfo(buffer, false));
         }
     }
 
@@ -129,23 +130,24 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
         {
             assert content == null;
             if (headers.isEmpty())
-                proxyEngine.onGoAway(session, new GoAwayInfo(0, SessionStatus.OK));
+                proxyEngineSelector.onGoAway(session, new GoAwayInfo(0, SessionStatus.OK));
             else
                 syn(true);
         }
         else
         {
-            proxyEngine.onData(stream, toDataInfo(content, true));
+            stream.getStreamFrameListener().onData(stream, toDataInfo(content, true));
         }
         headers.clear();
         stream = null;
         content = null;
     }
 
-    private Stream syn(boolean close)
+    private HTTPStream syn(boolean close)
     {
-        Stream stream = new HTTPStream(1, (byte)0, session, null);
-        proxyEngine.onSyn(stream, new SynInfo(headers, close));
+        HTTPStream stream = new HTTPStream(1, (byte)0, session, null);
+        StreamFrameListener streamFrameListener = proxyEngineSelector.onSyn(stream, new SynInfo(headers, close));
+        stream.setStreamFrameListener(streamFrameListener);
         return stream;
     }
 
@@ -169,7 +171,7 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
     {
         private HTTPSession(short version, SPDYServerConnector connector)
         {
-            super(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), null, null, 1, proxyEngine, null, null);
+            super(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), null, null, 1, proxyEngineSelector, null, null);
         }
 
         @Override

@@ -26,18 +26,18 @@ import org.eclipse.jetty.spdy.http.ServerHTTPAsyncConnectionFactory;
 public class ProxyHTTPAsyncConnectionFactory extends ServerHTTPAsyncConnectionFactory
 {
     private final short version;
-    private final ProxyEngine proxyEngine;
+    private final ProxyEngineSelector proxyEngineSelector;
 
-    public ProxyHTTPAsyncConnectionFactory(SPDYServerConnector connector, short version, ProxyEngine proxyEngine)
+    public ProxyHTTPAsyncConnectionFactory(SPDYServerConnector connector, short version, ProxyEngineSelector proxyEngineSelector)
     {
         super(connector);
         this.version = version;
-        this.proxyEngine = proxyEngine;
+        this.proxyEngineSelector = proxyEngineSelector;
     }
 
     @Override
     public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
     {
-        return new ProxyHTTPSPDYAsyncConnection(getConnector(), endPoint, version, proxyEngine);
+        return new ProxyHTTPSPDYAsyncConnection(getConnector(), endPoint, version, proxyEngineSelector);
     }
 }

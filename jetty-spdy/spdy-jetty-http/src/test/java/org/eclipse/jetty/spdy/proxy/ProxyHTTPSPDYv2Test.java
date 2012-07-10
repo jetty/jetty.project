@@ -94,9 +94,11 @@ public class ProxyHTTPSPDYv2Test
     protected InetSocketAddress startProxy(InetSocketAddress address) throws Exception
     {
         proxy = new Server();
-        SPDYProxyEngine proxyEngine = new SPDYProxyEngine(factory);
-        proxyEngine.putProxyInfo("localhost", new ProxyEngine.ProxyInfo(version(), address.getHostName(), address.getPort()));
-        proxyConnector = new HTTPSPDYProxyConnector(proxyEngine);
+        ProxyEngineSelector proxyEngineSelector = new ProxyEngineSelector();
+        SPDYProxyEngine spdyProxyEngine = new SPDYProxyEngine("spdy/" + version(), factory);
+        proxyEngineSelector.putProxyEngine(spdyProxyEngine);
+        proxyEngineSelector.putProxyServerInfo("localhost", new ProxyEngineSelector.ProxyServerInfo("spdy/" + version(), address.getHostName(), address.getPort()));
+        proxyConnector = new HTTPSPDYProxyConnector(proxyEngineSelector);
         proxyConnector.setPort(0);
         proxy.addConnector(proxyConnector);
         proxy.start();
@@ -172,96 +174,6 @@ public class ProxyHTTPSPDYv2Test
 
         // Must not close, other clients may still be connected
         Assert.assertFalse(closeLatch.await(1, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void testClosingServerClosesHTTPClient() throws Exception
-    {
-        InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
-        {
-            @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
-            {
-                Headers responseHeaders = new Headers();
-                responseHeaders.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-                responseHeaders.put(HTTPSPDYHeader.STATUS.name(version()), "200 OK");
-                stream.reply(new ReplyInfo(responseHeaders, true));
-                stream.getSession().goAway();
-                return null;
-            }
-        }));
-
-        Socket client = new Socket();
-        client.connect(proxyAddress);
-        OutputStream output = client.getOutputStream();
-
-        String request = "" +
-                "GET / HTTP/1.1\r\n" +
-                "Host: localhost:" + proxyAddress.getPort() + "\r\n" +
-                "\r\n";
-        output.write(request.getBytes("UTF-8"));
-        output.flush();
-
-        client.setSoTimeout(1000);
-        InputStream input = client.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
-        String line = reader.readLine();
-        Assert.assertTrue(line.contains(" 200"));
-        while (line.length() > 0)
-            line = reader.readLine();
-        Assert.assertFalse(reader.ready());
-
-        Assert.assertNull(reader.readLine());
-
-        client.close();
-    }
-
-    @Test
-    public void testClosingServerClosesSPDYClient() throws Exception
-    {
-        InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()
-        {
-            @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
-            {
-                Headers responseHeaders = new Headers();
-                responseHeaders.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-                responseHeaders.put(HTTPSPDYHeader.STATUS.name(version()), "200 OK");
-                stream.reply(new ReplyInfo(responseHeaders, true));
-                stream.getSession().goAway();
-                return null;
-            }
-        }));
-        proxyConnector.setDefaultAsyncConnectionFactory(proxyConnector.getAsyncConnectionFactory("spdy/" + version()));
-
-        final CountDownLatch goAwayLatch = new CountDownLatch(1);
-        Session client = factory.newSPDYClient(version()).connect(proxyAddress, new SessionFrameListener.Adapter()
-        {
-            @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
-            {
-                goAwayLatch.countDown();
-            }
-        }).get(5, TimeUnit.SECONDS);
-
-        final CountDownLatch replyLatch = new CountDownLatch(1);
-        Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + proxyAddress.getPort());
-        client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
-        {
-            @Override
-            public void onReply(Stream stream, ReplyInfo replyInfo)
-            {
-                replyLatch.countDown();
-            }
-        });
-
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
