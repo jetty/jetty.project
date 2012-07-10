@@ -376,7 +376,7 @@ public class FrameParser
             if (payload.position() >= payloadLength)
             {
                 BufferUtil.flipToFlush(payload,0);
-                frame.setPayload(BufferUtil.toArray(payload));
+                frame.setPayload(payload);
                 this.payload = null;
                 return true;
             }

@@ -128,12 +128,13 @@ public class RFC6455ExamplesParserTest
         WebSocketFrame bin = capture.getFrames().get(0);
 
         Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
-        Assert.assertThat("BinaryFrame.payload.length",bin.getPayloadData().length,is(dataSize));
 
-        byte data[] = bin.getPayloadData();
+        ByteBuffer data = bin.getPayload();
+        Assert.assertThat("BinaryFrame.payload.length",data.remaining(),is(dataSize));
+
         for (int i = 0; i < dataSize; i++)
         {
-            Assert.assertThat("BinaryFrame.payload[" + i + "]",data[i],is((byte)0x44));
+            Assert.assertThat("BinaryFrame.payload[" + i + "]",data.get(i),is((byte)0x44));
         }
     }
 
@@ -167,12 +168,12 @@ public class RFC6455ExamplesParserTest
         WebSocketFrame bin = capture.getFrames().get(0);
 
         Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
-        Assert.assertThat("BinaryFrame.payload.length",bin.getPayloadData().length,is(dataSize));
+        ByteBuffer data = bin.getPayload();
+        Assert.assertThat("BinaryFrame.payload.length",data.remaining(),is(dataSize));
 
-        byte data[] = bin.getPayloadData();
         for (int i = 0; i < dataSize; i++)
         {
-            Assert.assertThat("BinaryFrame.payload[" + i + "]",data[i],is((byte)0x77));
+            Assert.assertThat("BinaryFrame.payload[" + i + "]",data.get(i),is((byte)0x77));
         }
     }
 

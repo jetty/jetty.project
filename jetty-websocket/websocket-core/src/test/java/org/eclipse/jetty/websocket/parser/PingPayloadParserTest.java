@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -17,9 +18,10 @@ public class PingPayloadParserTest
     public void testBasicPingParsing()
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
+        BufferUtil.clearToFill(buf);
         buf.put(new byte[]
                 { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
-        buf.flip();
+        BufferUtil.flipToFlush(buf,0);
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);

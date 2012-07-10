@@ -33,8 +33,8 @@ public class CloseInfo
         if (data.remaining() >= 2)
         {
             // Status Code
-            statusCode |= (data.get(0) & 0xFF) << 8;
-            statusCode |= (data.get(1) & 0xFF);
+            statusCode |= (data.get() & 0xFF) << 8;
+            statusCode |= (data.get() & 0xFF);
 
             if(validate) {
                 if ((statusCode < StatusCode.NORMAL) || (statusCode == StatusCode.UNDEFINED) || (statusCode == StatusCode.NO_CLOSE)
