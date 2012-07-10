@@ -145,7 +145,12 @@ public class Generator
              */
             if (frame.getOpCode() == OpCode.CLOSE)
             {
-                new CloseInfo(frame.getPayload(),true);
+
+                ByteBuffer payload = frame.getPayload();
+                if (payload != null)
+                {
+                    new CloseInfo(payload,true);
+                }
             }
         }
 

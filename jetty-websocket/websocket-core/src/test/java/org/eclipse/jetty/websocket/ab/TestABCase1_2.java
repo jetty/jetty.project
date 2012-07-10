@@ -12,6 +12,7 @@ import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.UnitGenerator;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
 
@@ -57,7 +58,7 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        actual.flip();
+        // BufferUtil.flipToFlush(actual,0);
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -80,7 +81,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -101,7 +102,6 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -125,7 +125,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -146,7 +146,6 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -169,7 +168,7 @@ public class TestABCase1_2
         bb.flip();
         WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -190,7 +189,6 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -214,7 +212,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -232,7 +230,6 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -256,7 +253,7 @@ public class TestABCase1_2
 
         WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
@@ -275,7 +272,6 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -287,7 +283,7 @@ public class TestABCase1_2
     {
         WebSocketFrame binaryFrame = WebSocketFrame.binary(new byte[] {});
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(binaryFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
@@ -295,7 +291,6 @@ public class TestABCase1_2
         expected.put(new byte[]
                 { (byte)0x82, (byte)0x00 });
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
