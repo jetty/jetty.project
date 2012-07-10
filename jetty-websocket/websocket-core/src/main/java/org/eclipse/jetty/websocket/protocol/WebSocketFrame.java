@@ -132,7 +132,14 @@ public class WebSocketFrame implements Frame
     @Override
     public ByteBuffer getPayload()
     {
-        return data.slice();
+        if (data != null)
+        {
+            return data.slice();
+        }
+        else
+        {
+            return null;
+        }
     }
 
     public String getPayloadAsUTF8()
