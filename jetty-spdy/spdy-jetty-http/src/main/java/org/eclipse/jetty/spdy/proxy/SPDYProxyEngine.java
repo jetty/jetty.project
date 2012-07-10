@@ -35,6 +35,7 @@ import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -47,7 +48,7 @@ import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
  * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by
  * clients into SPDY events for the servers.</p>
  */
-public class SPDYProxyEngine extends ProxyEngine
+public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 {
     private static final String STREAM_HANDLER_ATTRIBUTE = "org.eclipse.jetty.spdy.http.proxy.streamHandler";
     private static final String CLIENT_STREAM_ATTRIBUTE = "org.eclipse.jetty.spdy.http.proxy.clientStream";
@@ -103,41 +104,25 @@ public class SPDYProxyEngine extends ProxyEngine
         }
     }
 
-    @Override
-    public StreamFrameListener onSyn(final Stream clientStream, SynInfo clientSynInfo)
+    public StreamFrameListener onSyn(final Stream clientStream, SynInfo clientSynInfo, ProxyInfo proxyInfo)
     {
-        logger.debug("C -> P {} on {}", clientSynInfo, clientStream);
-
-        final Session clientSession = clientStream.getSession();
-        short clientVersion = clientSession.getVersion();
-        Headers headers = new Headers(clientSynInfo.getHeaders(), false);
-
-        Headers.Header hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
-        if (hostHeader == null)
-        {
-            rst(clientStream);
-            return null;
-        }
-
-        String host = hostHeader.value();
-        int colon = host.indexOf(':');
-        if (colon >= 0)
-            host = host.substring(0, colon);
-        ProxyInfo proxyInfo = getProxyInfo(host);
+        Headers headers = clientSynInfo.getHeaders();
         if (proxyInfo == null)
         {
             rst(clientStream);
             return null;
         }
 
-        short serverVersion = proxyInfo.getVersion();
+        short serverVersion = SPDY.getVersion(proxyInfo.getProtocol());
         InetSocketAddress address = proxyInfo.getAddress();
-        Session serverSession = produceSession(host, serverVersion, address);
+        Session serverSession = produceSession(proxyInfo.getHost(), serverVersion, address);
         if (serverSession == null)
         {
             rst(clientStream);
             return null;
         }
+
+        final Session clientSession = clientStream.getSession();
 
         @SuppressWarnings("unchecked")
         Set<Session> sessions = (Set<Session>)serverSession.getAttribute(CLIENT_SESSIONS_ATTRIBUTE);
@@ -145,7 +130,7 @@ public class SPDYProxyEngine extends ProxyEngine
 
         addRequestProxyHeaders(clientStream, headers);
         customizeRequestHeaders(clientStream, headers);
-        convert(clientVersion, serverVersion, headers);
+        convert(clientSession.getVersion(), serverVersion, headers);
 
         SynInfo serverSynInfo = new SynInfo(headers, clientSynInfo.isClose());
         StreamFrameListener listener = new ProxyStreamFrameListener(clientStream);

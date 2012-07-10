@@ -31,6 +31,15 @@ public class SPDY
      */
     public static final short V3 = 3;
 
+    public static final short getVersion(String protocol)
+    {
+        if ("spdy/2".equals(protocol))
+            return V2;
+        else if ("spdy/3".equals(protocol))
+            return V3;
+        throw new IllegalArgumentException("Procotol: " + protocol + " is not a known SPDY protocol");
+    }
+
     private SPDY()
     {
     }

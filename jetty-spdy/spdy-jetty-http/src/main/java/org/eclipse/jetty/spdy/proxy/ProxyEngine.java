@@ -24,10 +24,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -39,10 +44,11 @@ import org.eclipse.jetty.util.log.Logger;
  * protocol that is understood by the server.</p>
  * <p>This class also provides configuration for the proxy rules.</p>
  */
-public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter implements StreamFrameListener
+public class ProxyEngine extends ServerSessionFrameListener.Adapter
 {
     protected final Logger logger = Log.getLogger(getClass());
     private final ConcurrentMap<String, ProxyInfo> proxyInfos = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, SPDYProxyEngine> proxyEngines = new ConcurrentHashMap<>();
     private final String name;
 
     protected ProxyEngine()
@@ -70,6 +76,37 @@ public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter imp
     public String getName()
     {
         return name;
+    }
+
+    @Override
+    public void onPing(Session session, PingInfo pingInfo)
+    {
+        super.onPing(session, pingInfo);
+    }
+
+    @Override
+    public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+    {
+        super.onGoAway(session, goAwayInfo);
+    }
+
+    @Override
+    public final StreamFrameListener onSyn(final Stream clientStream, SynInfo clientSynInfo)
+    {
+        logger.debug("C -> P {} on {}", clientSynInfo, clientStream);
+
+        final Session clientSession = clientStream.getSession();
+        short clientVersion = clientSession.getVersion();
+        Headers headers = new Headers(clientSynInfo.getHeaders(), false);
+
+        Headers.Header hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
+
+        String host = hostHeader.value();
+        int colon = host.indexOf(':');
+        if (colon >= 0)
+            host = host.substring(0, colon);
+        ProxyInfo proxyInfo = getProxyInfo(host);
+        return proxyEngines.get(host).onSyn(clientStream,clientSynInfo,proxyInfo);
     }
 
     protected void addRequestProxyHeaders(Stream stream, Headers headers)
@@ -118,18 +155,25 @@ public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter imp
 
     public static class ProxyInfo
     {
-        private final short version;
+        private final String protocol;
+        private final String host;
         private final InetSocketAddress address;
 
-        public ProxyInfo(short version, String host, int port)
+        public ProxyInfo(String protocol, String host, int port)
         {
-            this.version = version;
+            this.protocol = protocol;
+            this.host = host;
             this.address = new InetSocketAddress(host, port);
         }
 
-        public short getVersion()
+        public String getProtocol()
         {
-            return version;
+            return protocol;
+        }
+
+        public String getHost()
+        {
+            return host;
         }
 
         public InetSocketAddress getAddress()
