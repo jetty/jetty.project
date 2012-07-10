@@ -160,7 +160,7 @@ public class WebSocketServletRFCTest
             int ccCount = 0;
 
             ByteBuffer echod = binmsg.getPayload();
-            while (echod.remaining() > 1)
+            while (echod.remaining() >= 1)
             {
                 byte b = echod.get();
                 switch (b)
