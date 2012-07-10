@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket.io;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
@@ -64,8 +65,6 @@ public class LocalWebSocketConnection implements WebSocketConnection
     @Override
     public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -80,9 +79,12 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
+    public <C> void write(C context, Callback<C> callback, ByteBuffer buffer) throws IOException
+    {
+    }
+
+    @Override
     public <C> void write(C context, Callback<C> callback, String message) throws IOException
     {
-        // TODO Auto-generated method stub
-
     }
 }

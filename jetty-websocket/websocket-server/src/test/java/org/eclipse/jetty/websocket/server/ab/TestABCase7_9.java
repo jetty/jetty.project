@@ -16,9 +16,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.generator.FrameGenerator;
+import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
@@ -145,7 +144,7 @@ public class TestABCase7_9
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            ByteBuffer buf = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
+            ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD + 2);
             BufferUtil.clearToFill(buf);
 
             // Create Close Frame manually, as we are testing the server's behavior of a bad client.
@@ -178,7 +177,7 @@ public class TestABCase7_9
     public void testCase7_9_XInvalidCloseStatusCodesWithReason() throws Exception
     {
         String reason = "closing time";
-        
+
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         try
         {
@@ -186,15 +185,12 @@ public class TestABCase7_9
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            ByteBuffer frame = FrameBuilder.close().mask(new byte[]
-            { 0x44, 0x44, 0x44, 0x44 }).asByteBuffer();
-
-            ByteBuffer buf = ByteBuffer.allocate(FrameGenerator.OVERHEAD + 2);
+            ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD + 2);
             BufferUtil.clearToFill(buf);
 
             // Create Close Frame manually, as we are testing the server's behavior of a bad client.
             buf.put((byte)(0x80 | OpCode.CLOSE.getCode()));
-            buf.put((byte)(0x80 | 2 + reason.length()));
+            buf.put((byte)(0x80 | (2 + reason.length())));
             byte mask[] = new byte[]
             { 0x44, 0x44, 0x44, 0x44 };
             buf.put(mask);

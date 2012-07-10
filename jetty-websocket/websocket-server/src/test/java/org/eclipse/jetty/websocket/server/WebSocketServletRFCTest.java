@@ -17,9 +17,8 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.generator.FrameGenerator;
+import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
@@ -98,6 +97,7 @@ public class WebSocketServletRFCTest
         }
     }
 
+    private static Generator generator = new UnitGenerator();
     private static SimpleServletServer server;
 
     @BeforeClass
@@ -137,15 +137,15 @@ public class WebSocketServletRFCTest
 
             WebSocketFrame bin;
 
-            bin = FrameBuilder.binary(buf1).fin(false).asFrame();
+            bin = WebSocketFrame.binary(buf1).setFin(false);
 
             client.write(bin); // write buf1 (fin=false)
 
-            bin = FrameBuilder.continuation(buf2).fin(false).asFrame();
+            bin = new WebSocketFrame(OpCode.CONTINUATION).setPayload(buf2).setFin(false);
 
             client.write(bin); // write buf2 (fin=false)
 
-            bin = FrameBuilder.continuation(buf3).fin(true).asFrame();
+            bin = new WebSocketFrame(OpCode.CONTINUATION).setPayload(buf3).setFin(true);
 
             client.write(bin); // write buf3 (fin=true)
 
@@ -158,9 +158,11 @@ public class WebSocketServletRFCTest
             int aaCount = 0;
             int bbCount = 0;
             int ccCount = 0;
-            byte echod[] = binmsg.getPayloadData();
-            for (byte b : echod)
+
+            ByteBuffer echod = binmsg.getPayload();
+            while (echod.remaining() > 1)
             {
+                byte b = echod.get();
                 switch (b)
                 {
                     case (byte)0xAA:
@@ -201,7 +203,7 @@ public class WebSocketServletRFCTest
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            client.write(FrameBuilder.text(msg).asFrame());
+            client.write(WebSocketFrame.text(msg));
 
             // Read frame (hopefully text frame)
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -226,7 +228,7 @@ public class WebSocketServletRFCTest
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            client.write(FrameBuilder.text("Hello").asFrame());
+            client.write(WebSocketFrame.text("Hello"));
 
             // now wait for the server to time out
             // should be 2 frames, the TextFrame echo, and then the Close on disconnect
@@ -255,7 +257,7 @@ public class WebSocketServletRFCTest
             client.expectUpgradeResponse();
 
             // Generate text frame
-            client.write(FrameBuilder.text("CRASH").asFrame());
+            client.write(WebSocketFrame.text("CRASH"));
 
             // Read frame (hopefully close frame)
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
@@ -285,9 +287,9 @@ public class WebSocketServletRFCTest
             int dataSize = 1024 * 100;
             byte buf[] = new byte[dataSize];
             Arrays.fill(buf,(byte)0x44);
-            ByteBuffer bb = ByteBuffer.allocate(dataSize + FrameGenerator.OVERHEAD);
-            BufferUtil.clearToFill(bb);
-            FrameBuilder.binary(buf).fin(true).fill(bb);
+
+            WebSocketFrame bin = WebSocketFrame.binary(buf).setFin(true);
+            ByteBuffer bb = generator.generate(bin);
             BufferUtil.flipToFlush(bb,0);
             client.writeRaw(bb);
 
@@ -319,9 +321,9 @@ public class WebSocketServletRFCTest
             int dataSize = 1024 * 100;
             byte buf[] = new byte[dataSize];
             Arrays.fill(buf,(byte)'z');
-            ByteBuffer bb = ByteBuffer.allocate(dataSize + FrameGenerator.OVERHEAD);
-            BufferUtil.clearToFill(bb);
-            FrameBuilder.text().payload(buf).fin(true).fill(bb);
+
+            WebSocketFrame text = WebSocketFrame.text().setPayload(buf).setFin(true);
+            ByteBuffer bb = generator.generate(text);
             BufferUtil.flipToFlush(bb,0);
             client.writeRaw(bb);
 
@@ -350,9 +352,9 @@ public class WebSocketServletRFCTest
 
             byte buf[] = new byte[]
             { (byte)0xC3, 0x28 };
-            ByteBuffer bb = ByteBuffer.allocate(buf.length + FrameGenerator.OVERHEAD);
-            BufferUtil.clearToFill(bb);
-            FrameBuilder.text().payload(buf).fin(true).fill(bb);
+
+            WebSocketFrame txt = WebSocketFrame.text().setPayload(buf);
+            ByteBuffer bb = generator.generate(txt);
             BufferUtil.flipToFlush(bb,0);
             client.writeRaw(bb);
 

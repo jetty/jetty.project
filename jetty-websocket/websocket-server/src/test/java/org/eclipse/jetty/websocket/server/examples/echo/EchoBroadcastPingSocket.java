@@ -3,9 +3,9 @@ package org.eclipse.jetty.websocket.server.examples.echo;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.io.WebSocketPing;
 
 @WebSocket
 public class EchoBroadcastPingSocket extends EchoBroadcastSocket
@@ -13,11 +13,11 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
     private static class KeepAlive extends Thread
     {
         private CountDownLatch latch;
-        private WebSocketPing pinger;
+        private WebSocketConnection conn;
 
         public KeepAlive(WebSocketConnection conn)
         {
-            this.pinger = new WebSocketPing(conn);
+            this.conn = conn;
         }
 
         @Override
@@ -27,10 +27,10 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
             {
                 while (!latch.await(10,TimeUnit.SECONDS))
                 {
-                    System.err.println("Ping " + pinger);
+                    System.err.println("Ping");
                     byte data[] = new byte[]
                     { (byte)1, (byte)2, (byte)3 };
-                    pinger.sendPing(data);
+                    conn.ping(null,new FutureCallback<Void>(),data);
                 }
             }
             catch (Exception e)

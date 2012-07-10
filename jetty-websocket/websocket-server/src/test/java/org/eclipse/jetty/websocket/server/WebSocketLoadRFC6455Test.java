@@ -42,7 +42,6 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.examples.MyEchoSocket;
 import org.junit.AfterClass;
@@ -97,7 +96,7 @@ public class WebSocketLoadRFC6455Test
             WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
             // _endp=new SocketEndPoint(socket);
-            _generator = new Generator(policy);
+            _generator = new UnitGenerator();
             _parser = new Parser(policy);
 
         }
@@ -135,9 +134,8 @@ public class WebSocketLoadRFC6455Test
                 String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
                 for (int i = 0; i < iterations; ++i)
                 {
-                    WebSocketFrame txt = FrameBuilder.text(message).asFrame();
-                    ByteBuffer buf = ByteBuffer.allocate((message.length() * iterations) + 32);
-                    _generator.generate(buf,txt);
+                    WebSocketFrame txt = WebSocketFrame.text(message);
+                    ByteBuffer buf = _generator.generate(txt);
 
                     // TODO: Send it
                     // TODO: Receive response

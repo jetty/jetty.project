@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.*;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.WebSocketServletRFCTest.RFCServlet;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
@@ -51,7 +50,7 @@ public class FragmentExtensionTest
             Assert.assertThat("Response",resp,containsString("fragment"));
 
             String msg = "Sent as a long message that should be split";
-            client.write(FrameBuilder.text(msg).asFrame());
+            client.write(WebSocketFrame.text(msg));
 
             // TODO: use socket that captures frame counts to verify fragmentation
 

@@ -345,6 +345,24 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
      * {@inheritDoc}
      */
     @Override
+    public <C> void write(C context, Callback<C> callback, ByteBuffer buffer) throws IOException
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("write(context,{},ByteBuffer->{})",callback,BufferUtil.toDetailString(buffer));
+        }
+
+        WebSocketFrame frame = WebSocketFrame.binary().setPayload(buffer);
+        DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
+        scheduleTimeout(bytes);
+        queue.append(bytes);
+        flush();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public <C> void write(C context, Callback<C> callback, String message) throws IOException
     {
         if (LOG.isDebugEnabled())

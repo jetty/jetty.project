@@ -37,6 +37,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.server.UnitGenerator;
 import org.junit.Assert;
 
 /**
@@ -83,7 +84,7 @@ public class BlockheadClient implements Parser.Listener
 
         policy = WebSocketPolicy.newClientPolicy();
         bufferPool = new StandardByteBufferPool(policy.getBufferSize());
-        generator = new Generator(policy);
+        generator = new UnitGenerator();
         parser = new Parser(policy);
         parser.addListener(this);
 
@@ -353,19 +354,10 @@ public class BlockheadClient implements Parser.Listener
     public void write(WebSocketFrame frame) throws IOException
     {
         LOG.debug("write(Frame->{})",frame);
-        ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
-        try
-        {
-            frame.setMask(clientmask);
-            BufferUtil.flipToFill(buf);
-            generator.generate(buf,frame);
-            BufferUtil.flipToFlush(buf,0);
-            BufferUtil.writeTo(buf,out);
-        }
-        finally
-        {
-            bufferPool.release(buf);
-        }
+        frame.setMask(clientmask);
+        ByteBuffer buf = generator.generate(frame);
+        BufferUtil.flipToFlush(buf,0);
+        BufferUtil.writeTo(buf,out);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

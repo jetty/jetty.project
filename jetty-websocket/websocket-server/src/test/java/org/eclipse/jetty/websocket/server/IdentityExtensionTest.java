@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.*;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.WebSocketServletRFCTest.RFCServlet;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
@@ -50,7 +49,7 @@ public class IdentityExtensionTest
 
             Assert.assertThat("Response",resp,containsString("identity"));
 
-            client.write(FrameBuilder.text("Hello").asFrame());
+            client.write(WebSocketFrame.text("Hello"));
 
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
             WebSocketFrame frame = frames.remove();
