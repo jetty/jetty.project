@@ -15,16 +15,17 @@ import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.callbacks.WebSocketCloseCallback;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
@@ -241,7 +242,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     @Override
     public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
     {
-        WebSocketFrame frame = FrameBuilder.ping().payload(payload).asFrame();
+        WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setPayload(payload);
         ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
         scheduleTimeout(bytes);
         queue.prepend(bytes);
@@ -298,11 +299,11 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
      */
     private void terminateConnection(int statusCode, String reason)
     {
-        WebSocketFrame close = FrameBuilder.close(statusCode,reason).asFrame();
-
-        ByteBuffer buf = generator.generate(close);
-        BufferUtil.flipToFlush(buf,0);
-        getEndPoint().write(null,new WebSocketCloseCallback(this,buf),buf);
+        CloseInfo close = new CloseInfo(statusCode,reason);
+        FutureCallback<Void> nop = new FutureCallback<>();
+        ControlFrameBytes<Void> frameBytes = new ControlFrameBytes<Void>(this,nop,null,close.asFrame());
+        queue.prepend(frameBytes);
+        flush();
     }
 
     @Override
@@ -333,10 +334,11 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
             return;
         }
 
-        WebSocketFrame frame = FrameBuilder.binary(buf,offset,len).fin(true).asFrame();
+        WebSocketFrame frame = WebSocketFrame.binary().setPayload(buf,offset,len);
         DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
         scheduleTimeout(bytes);
         queue.append(bytes);
+        flush();
     }
 
     /**
@@ -350,9 +352,10 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
             LOG.debug("write(context,{},message.length:{})",callback,message.length());
         }
 
-        WebSocketFrame frame = FrameBuilder.text(message).fin(true).asFrame();
+        WebSocketFrame frame = WebSocketFrame.text(message);
         DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
         scheduleTimeout(bytes);
         queue.append(bytes);
+        flush();
     }
 }

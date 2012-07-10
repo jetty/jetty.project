@@ -7,7 +7,6 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.io.DataFrameBytes;
 import org.eclipse.jetty.websocket.io.RawConnection;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
@@ -38,7 +37,7 @@ public class WebSocketBlockingConnection
      */
     public void write(byte[] data, int offset, int length) throws IOException
     {
-        WebSocketFrame frame = FrameBuilder.binary(data,offset,length).asFrame();
+        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data,offset,length);
         try
         {
             FutureCallback<Void> blocking = new FutureCallback<>();
@@ -63,7 +62,7 @@ public class WebSocketBlockingConnection
      */
     public void write(String message) throws IOException
     {
-        WebSocketFrame frame = FrameBuilder.text(message).asFrame();
+        WebSocketFrame frame = WebSocketFrame.text(message);
         try
         {
             FutureCallback<Void> blocking = new FutureCallback<>();
