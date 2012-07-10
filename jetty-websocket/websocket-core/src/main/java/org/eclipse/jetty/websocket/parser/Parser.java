@@ -170,6 +170,7 @@ public class Parser
             while (parseFrame(buffer))
             {
                 LOG.debug("Parsed Frame: " + frame);
+                notifyFrame(frame);
             }
 
         }
@@ -294,7 +295,7 @@ public class Parser
                         if (payloadLength == 0)
                         {
                             state = State.START;
-                            notifyFrame(frame);
+                            return true;
                         }
 
                         state = State.PAYLOAD;
@@ -320,7 +321,7 @@ public class Parser
                             if (payloadLength == 0)
                             {
                                 state = State.START;
-                                notifyFrame(frame);
+                                return true;
                             }
 
                             state = State.PAYLOAD;
@@ -339,7 +340,7 @@ public class Parser
                         if (payloadLength == 0)
                         {
                             state = State.START;
-                            notifyFrame(frame);
+                            return true;
                         }
 
                         state = State.PAYLOAD;
@@ -362,7 +363,7 @@ public class Parser
                         if (payloadLength == 0)
                         {
                             state = State.START;
-                            notifyFrame(frame);
+                            return true;
                         }
 
                         state = State.PAYLOAD;
@@ -380,7 +381,7 @@ public class Parser
                         }
                         state = State.START;
                         // we have a frame!
-                        notifyFrame(frame);
+                        return true;
                     }
                     break;
                 }
