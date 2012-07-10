@@ -103,14 +103,13 @@ public class Generator
              */
             if (frame.getOpCode() == OpCode.CLOSE)
             {
-                new CloseInfo(frame.getPayloadData(),true);
+                new CloseInfo(frame.getPayload(),true);
             }
         }
 
     }
 
-
-    public ByteBuffer generate(WebSocketFrame frame)
+    public ByteBuffer generate(int bufferSize, WebSocketFrame frame)
     {
         LOG.debug(String.format("Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d]",frame.getOpCode().toString(),
                 frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame.getPayloadLength()));
@@ -120,7 +119,7 @@ public class Generator
         /*
          * prepare the byte buffer to put frame into
          */
-        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength() + OVERHEAD,true);
+        ByteBuffer buffer = bufferPool.acquire(bufferSize,true);
         BufferUtil.clearToFill(buffer);
 
         /*
@@ -165,7 +164,6 @@ public class Generator
 
         // payload lengths
         int payloadLength = frame.getPayloadLength();
-
 
         /*
          * if length is over 65535 then its a 7 + 64 bit length
@@ -215,27 +213,42 @@ public class Generator
         // copy payload
         if (frame.hasPayload())
         {
-            buffer.put(frame.getPayloadData());
+            buffer.put(frame.getPayload());
         }
 
         int positionPostPayload = buffer.position();
 
         // mask it if needed
-        if ( frame.isMasked() )
+        if (frame.isMasked())
         {
             // move back to remembered position.
             int size = positionPostPayload - positionPrePayload;
             byte[] mask = frame.getMask();
             int pos;
-            for (int i=0;i<size;i++)
+            for (int i = 0; i < size; i++)
             {
                 pos = positionPrePayload + i;
                 // Mask each byte by its absolute position in the bytebuffer
-                buffer.put(pos, (byte)(buffer.get(pos) ^ mask[i % 4]));
+                buffer.put(pos,(byte)(buffer.get(pos) ^ mask[i % 4]));
             }
         }
 
         return buffer;
+    }
+
+    /**
+     * generate a byte buffer based on the frame being passed in
+     * 
+     * bufferSize is determined by the length of the payload + 28 for frame overhead
+     * 
+     * @param frame
+     * @return
+     */
+    public ByteBuffer generate(WebSocketFrame frame)
+    {
+        int bufferSize = frame.getPayloadLength() + OVERHEAD;
+
+        return generate(bufferSize,frame);
     }
 
     @Override

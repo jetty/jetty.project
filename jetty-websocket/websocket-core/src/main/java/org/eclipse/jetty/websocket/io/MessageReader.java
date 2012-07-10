@@ -19,7 +19,7 @@ public class MessageReader extends Reader implements StreamAppender
     }
 
     @Override
-    public void appendBuffer(byte buf[])
+    public void appendBuffer(ByteBuffer byteBuffer)
     {
         // TODO Auto-generated method stub
 

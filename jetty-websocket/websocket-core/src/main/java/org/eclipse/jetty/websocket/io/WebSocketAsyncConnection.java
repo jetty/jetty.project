@@ -254,10 +254,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     {
         WebSocketFrame close = FrameBuilder.close(statusCode,reason).asFrame();
 
-        // fire and forget -> close frame
-        ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
-        BufferUtil.clearToFill(buf);
-        generator.generate(buf,close);
+        ByteBuffer buf = generator.generate(close);
         BufferUtil.flipToFlush(buf,0);
         getEndPoint().write(null,new WebSocketCloseCallback(this,buf),buf);
     }

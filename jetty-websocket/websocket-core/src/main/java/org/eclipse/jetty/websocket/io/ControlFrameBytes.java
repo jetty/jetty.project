@@ -3,7 +3,7 @@ package org.eclipse.jetty.websocket.io;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.generator.FrameGenerator;
+import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
@@ -33,7 +33,7 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
     {
         if (buffer == null)
         {
-            buffer = connection.getBufferPool().acquire(frame.getPayloadLength() + FrameGenerator.OVERHEAD,false);
+            buffer = connection.getBufferPool().acquire(frame.getPayloadLength() + Generator.OVERHEAD,false);
             connection.getGenerator().generate(frame);
         }
         return buffer;
