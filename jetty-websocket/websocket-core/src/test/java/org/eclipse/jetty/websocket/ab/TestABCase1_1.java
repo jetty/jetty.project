@@ -11,6 +11,7 @@ import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.UnitGenerator;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,7 +37,7 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -74,7 +75,7 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -116,7 +117,7 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -158,7 +159,7 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -200,7 +201,8 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
+
         ByteBuffer actual = generator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 5);
@@ -240,7 +242,7 @@ public class TestABCase1_1
 
         WebSocketFrame textFrame = WebSocketFrame.text(builder.toString());
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(length + 11);
@@ -271,7 +273,7 @@ public class TestABCase1_1
     {
         WebSocketFrame textFrame = WebSocketFrame.text("");
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         ByteBuffer actual = generator.generate(textFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
