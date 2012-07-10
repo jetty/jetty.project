@@ -58,7 +58,7 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        // BufferUtil.flipToFlush(actual,0);
+        BufferUtil.flipToFlush(actual,0);
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
