@@ -45,6 +45,16 @@ public class WebSocketFrame implements Frame
         return new WebSocketFrame(OpCode.BINARY).setPayload(buf);
     }
 
+    public static WebSocketFrame ping()
+    {
+        return new WebSocketFrame(OpCode.PING);
+    }
+
+    public static WebSocketFrame pong()
+    {
+        return new WebSocketFrame(OpCode.PONG);
+    }
+
     public static WebSocketFrame text()
     {
         return new WebSocketFrame(OpCode.TEXT);
