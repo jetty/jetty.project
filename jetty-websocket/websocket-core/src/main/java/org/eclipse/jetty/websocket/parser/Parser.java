@@ -434,6 +434,16 @@ public class Parser
     @Override
     public String toString()
     {
-        return String.format("%s(parser=%s)",getClass().getSimpleName());
+        StringBuilder builder = new StringBuilder();
+        builder.append("Parser [state=");
+        builder.append(state);
+        builder.append(", cursor=");
+        builder.append(cursor);
+        builder.append(", payloadLength=");
+        builder.append(payloadLength);
+        builder.append(", frame=");
+        builder.append(frame);
+        builder.append("]");
+        return builder.toString();
     }
 }
