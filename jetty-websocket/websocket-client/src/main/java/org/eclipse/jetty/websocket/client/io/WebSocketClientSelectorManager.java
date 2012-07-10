@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLEngine;
@@ -79,8 +80,9 @@ public class WebSocketClientSelectorManager extends SelectorManager
         Executor executor = factory.getExecutor();
         WebSocketPolicy policy = factory.getPolicy();
         ByteBufferPool bufferPool = factory.getBufferPool();
+        ScheduledExecutorService scheduler = factory.getScheduler();
 
-        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endPoint,executor,policy,bufferPool);
+        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endPoint,executor,scheduler,policy,bufferPool);
         endPoint.setAsyncConnection(connection);
         connection.getParser().addListener(websocket);
 

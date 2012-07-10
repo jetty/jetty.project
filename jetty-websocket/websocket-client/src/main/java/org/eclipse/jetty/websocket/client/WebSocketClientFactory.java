@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
@@ -24,6 +26,10 @@ import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 public class WebSocketClientFactory extends AggregateLifeCycle
 {
     private static final Logger LOG = Log.getLogger(WebSocketClientFactory.class);
+    /**
+     * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
+     */
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final Queue<WebSocketConnection> connections = new ConcurrentLinkedQueue<>();
     private final ByteBufferPool bufferPool = new StandardByteBufferPool();
     private final Executor executor;
@@ -110,6 +116,11 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     public WebSocketPolicy getPolicy()
     {
         return policy;
+    }
+
+    public ScheduledExecutorService getScheduler()
+    {
+        return scheduler;
     }
 
     public SelectorManager getSelector()
