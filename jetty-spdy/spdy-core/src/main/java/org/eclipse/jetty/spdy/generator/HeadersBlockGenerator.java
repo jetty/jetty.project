@@ -40,7 +40,7 @@ public class HeadersBlockGenerator
         writeCount(version, buffer, headers.size());
         for (Headers.Header header : headers)
         {
-            String name = header.name();
+            String name = header.name().toLowerCase();
             byte[] nameBytes = name.getBytes(iso1);
             writeNameLength(version, buffer, nameBytes.length);
             buffer.write(nameBytes, 0, nameBytes.length);
