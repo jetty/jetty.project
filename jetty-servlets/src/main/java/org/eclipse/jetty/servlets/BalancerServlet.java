@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2012 Intalio, Inc.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 
 /**
- * 
+ * 6
  */
 public class BalancerServlet extends ProxyServlet
 {
