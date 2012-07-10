@@ -38,6 +38,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     public void completed(C context)
     {
         cancelTask();
+        connection.complete(this);
         callback.completed(context);
     }
 

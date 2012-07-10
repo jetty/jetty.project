@@ -1,10 +1,9 @@
 package org.eclipse.jetty.websocket.io;
 
-import java.io.IOException;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
 
@@ -13,9 +12,11 @@ import org.eclipse.jetty.websocket.parser.Parser;
  * <p>
  * This is abstracted out to allow for common access to connection internals regardless of physical vs virtual connections.
  */
-public interface RawConnection
+public interface RawConnection extends WebSocketConnection
 {
-    void close() throws IOException;
+    <C> void complete(FrameBytes<C> frameBytes);
+
+    void flush();
 
     ByteBufferPool getBufferPool();
 
@@ -24,8 +25,6 @@ public interface RawConnection
     Generator getGenerator();
 
     Parser getParser();
-
-    WebSocketPolicy getPolicy();
 
     FrameQueue getQueue();
 }

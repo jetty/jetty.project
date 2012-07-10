@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncConnection;
@@ -55,6 +56,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     // TODO: are extensions going to layer the endpoint?
     // TODO: are extensions going to layer the connection?
     private List<ExtensionConfig> extensions;
+    private boolean flushing;
 
     public WebSocketAsyncConnection(AsyncEndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -80,6 +82,16 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         terminateConnection(statusCode,reason);
     }
 
+    @Override
+    public <C> void complete(FrameBytes<C> frameBytes)
+    {
+        synchronized (queue)
+        {
+            LOG.debug("Completed Write of {} ({} frame(s) in queue)",frameBytes,queue.size());
+            flushing = false;
+        }
+    }
+
     private int fill(AsyncEndPoint endPoint, ByteBuffer buffer)
     {
         try
@@ -91,6 +103,32 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
             terminateConnection(StatusCode.PROTOCOL,e.getMessage());
             return 0;
         }
+    }
+
+    @Override
+    public void flush()
+    {
+        FrameBytes<?> frameBytes = null;
+        ByteBuffer buffer = null;
+        synchronized (queue)
+        {
+            if (flushing || queue.isEmpty())
+            {
+                return;
+            }
+
+            frameBytes = queue.pop();
+
+            buffer = frameBytes.getByteBuffer();
+
+            if (buffer == null)
+            {
+                return;
+            }
+
+            flushing = true;
+        }
+        write(buffer,this,frameBytes);
     }
 
     @Override
@@ -205,6 +243,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     {
         WebSocketFrame frame = FrameBuilder.ping().payload(payload).asFrame();
         ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
+        scheduleTimeout(bytes);
         queue.prepend(bytes);
     }
 
@@ -225,6 +264,13 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
             }
 
             parser.parse(buffer);
+        }
+    }
+
+    private <C> void scheduleTimeout(FrameBytes<C> bytes)
+    {
+        if(policy.getMaxIdleTime()>0) {
+            bytes.task = scheduler.schedule(bytes,policy.getMaxIdleTime(),TimeUnit.MILLISECONDS);
         }
     }
 
@@ -265,6 +311,12 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
+    private <C> void write(ByteBuffer buffer, WebSocketAsyncConnection webSocketAsyncConnection, FrameBytes<C> frameBytes)
+    {
+        LOG.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
+        getEndPoint().write(frameBytes.context,frameBytes.callback,buffer);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -283,6 +335,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
 
         WebSocketFrame frame = FrameBuilder.binary(buf,offset,len).fin(true).asFrame();
         DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
+        scheduleTimeout(bytes);
         queue.append(bytes);
     }
 
@@ -299,6 +352,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
 
         WebSocketFrame frame = FrameBuilder.text(message).fin(true).asFrame();
         DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
+        scheduleTimeout(bytes);
         queue.append(bytes);
     }
 }
