@@ -46,26 +46,57 @@ public class Generator
     public static final int OVERHEAD = 28;
 
     private final WebSocketPolicy policy;
-    private static ByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
+    private boolean validating;
 
+    /**
+     * 
+     * @param policy
+     * @deprecated discouraged usage form
+     */
+    @Deprecated
     public Generator(WebSocketPolicy policy)
     {
-        this.policy = policy;
-
-        if (this.bufferPool == null)
-        {
-            this.bufferPool = new StandardByteBufferPool();
-        }
+        this(policy,new StandardByteBufferPool());
     }
 
+    /**
+     * Construct Generator with provided policy and bufferPool
+     * 
+     * @param policy
+     *            the policy to use
+     * @param bufferPool
+     *            the buffer pool to use
+     */
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    {
+        this(policy,bufferPool,true);
+    }
+
+    /**
+     * Construct Generator with provided policy and bufferPool
+     * 
+     * @param policy
+     *            the policy to use
+     * @param bufferPool
+     *            the buffer pool to use
+     * @param validating
+     *            true to enable RFC frame validation
+     */
+    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating)
     {
         this.policy = policy;
         this.bufferPool = bufferPool;
+        this.validating = validating;
     }
 
     public void assertFrameValid(WebSocketFrame frame)
     {
+        if (!validating)
+        {
+            return;
+        }
+
         /*
          * RFC 6455 Section 5.2
          * 
@@ -260,11 +291,6 @@ public class Generator
         int bufferSize = frame.getPayloadLength() + OVERHEAD;
 
         return generate(bufferSize,frame);
-    }
-
-    public void init(ByteBufferPool pool)
-    {
-
     }
 
     @Override

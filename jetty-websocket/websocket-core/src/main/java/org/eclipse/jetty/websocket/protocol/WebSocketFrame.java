@@ -34,7 +34,7 @@ public class WebSocketFrame implements Frame
     /** Maximum size of Control frame, per RFC 6455 */
     public static final int MAX_CONTROL_PAYLOAD = 125;
 
-    private boolean fin = false;
+    private boolean fin = true;
     private boolean rsv1 = false;
     private boolean rsv2 = false;
     private boolean rsv3 = false;
@@ -215,7 +215,7 @@ public class WebSocketFrame implements Frame
 
     public void reset()
     {
-        fin = false;
+        fin = true;
         rsv1 = false;
         rsv2 = false;
         rsv3 = false;
@@ -227,35 +227,41 @@ public class WebSocketFrame implements Frame
         continuation = false;
     }
 
-    public void setContinuation(boolean continuation)
+    public WebSocketFrame setContinuation(boolean continuation)
     {
         this.continuation = continuation;
+        return this;
     }
 
-    public void setContinuationIndex(int continuationIndex)
+    public WebSocketFrame setContinuationIndex(int continuationIndex)
     {
         this.continuationIndex = continuationIndex;
+        return this;
     }
 
-    public void setFin(boolean fin)
+    public WebSocketFrame setFin(boolean fin)
     {
         this.fin = fin;
+        return this;
     }
 
-    public void setMask(byte[] maskingKey)
+    public WebSocketFrame setMask(byte[] maskingKey)
     {
         this.mask = maskingKey;
         this.masked = (mask != null);
+        return this;
     }
 
-    public void setMasked(boolean mask)
+    public WebSocketFrame setMasked(boolean mask)
     {
         this.masked = mask;
+        return this;
     }
 
-    public void setOpCode(OpCode opCode)
+    public WebSocketFrame setOpCode(OpCode opCode)
     {
         this.opcode = opCode;
+        return this;
     }
 
     /**
@@ -264,12 +270,12 @@ public class WebSocketFrame implements Frame
      * @param buf
      *            the bytebuffer to set
      */
-    public void setPayload(byte buf[])
+    public WebSocketFrame setPayload(byte buf[])
     {
         if (buf == null)
         {
             data = null;
-            return;
+            return this;
         }
 
         if (opcode.isControlFrame())
@@ -284,6 +290,7 @@ public class WebSocketFrame implements Frame
         data = ByteBuffer.allocate(len);
         BufferUtil.clearToFill(data);
         data.put(buf,0,len);
+        return this;
     }
 
     /**
@@ -292,12 +299,12 @@ public class WebSocketFrame implements Frame
      * @param buf
      *            the bytebuffer to set
      */
-    public void setPayload(byte buf[], int offset, int len)
+    public WebSocketFrame setPayload(byte buf[], int offset, int len)
     {
         if (buf == null)
         {
             data = null;
-            return;
+            return this;
         }
 
         if (opcode.isControlFrame())
@@ -311,6 +318,7 @@ public class WebSocketFrame implements Frame
         data = ByteBuffer.allocate(len);
         BufferUtil.clearToFill(data);
         data.put(buf,0,len);
+        return this;
     }
 
     /**
@@ -323,12 +331,12 @@ public class WebSocketFrame implements Frame
      * @param buf
      *            the bytebuffer to set
      */
-    public void setPayload(ByteBuffer buf)
+    public WebSocketFrame setPayload(ByteBuffer buf)
     {
         if (buf == null)
         {
             data = null;
-            return;
+            return this;
         }
 
         if (opcode.isControlFrame())
@@ -340,21 +348,25 @@ public class WebSocketFrame implements Frame
         }
 
         data = buf.slice();
+        return this;
     }
 
-    public void setRsv1(boolean rsv1)
+    public WebSocketFrame setRsv1(boolean rsv1)
     {
         this.rsv1 = rsv1;
+        return this;
     }
 
-    public void setRsv2(boolean rsv2)
+    public WebSocketFrame setRsv2(boolean rsv2)
     {
         this.rsv2 = rsv2;
+        return this;
     }
 
-    public void setRsv3(boolean rsv3)
+    public WebSocketFrame setRsv3(boolean rsv3)
     {
         this.rsv3 = rsv3;
+        return this;
     }
 
     @Override

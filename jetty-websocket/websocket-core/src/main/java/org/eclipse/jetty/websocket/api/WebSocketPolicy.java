@@ -199,4 +199,5 @@ public class WebSocketPolicy
     {
         this.maxTextMessageSize = maxTextMessageSize;
     }
+
 }

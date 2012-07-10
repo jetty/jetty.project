@@ -1,0 +1,87 @@
+package org.eclipse.jetty.websocket.protocol;
+
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.ByteBufferAssert;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.generator.Generator;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+public class WebSocketFrameTest
+{
+    private static Generator strictGenerator;
+    private static Generator laxGenerator;
+
+    @BeforeClass
+    public static void initGenerator()
+    {
+        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        ByteBufferPool bufferPool = new StandardByteBufferPool();
+        strictGenerator = new Generator(policy,bufferPool);
+        laxGenerator = new Generator(policy,bufferPool,false);
+    }
+
+    private void assertEqual(String message, ByteBuffer expected, ByteBuffer actual)
+    {
+
+        BufferUtil.flipToFlush(actual,0);
+        BufferUtil.flipToFlush(expected,0);
+
+        ByteBufferAssert.assertEquals(message,expected,actual);
+    }
+
+    @Test
+    public void testLaxInvalidClose()
+    {
+        WebSocketFrame frame = new WebSocketFrame(OpCode.CLOSE).setFin(false);
+        ByteBuffer actual = laxGenerator.generate(frame);
+        ByteBuffer expected = ByteBuffer.allocate(2);
+        expected.put((byte)0x08);
+        expected.put((byte)0x00);
+
+        assertEqual("Lax Invalid Close Frame",expected,actual);
+    }
+
+    @Test
+    public void testLaxInvalidPing()
+    {
+        WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setFin(false);
+        ByteBuffer actual = laxGenerator.generate(frame);
+        ByteBuffer expected = ByteBuffer.allocate(2);
+        expected.put((byte)0x09);
+        expected.put((byte)0x00);
+
+        assertEqual("Lax Invalid Ping Frame",expected,actual);
+    }
+
+    @Test
+    public void testStrictValidClose()
+    {
+        CloseInfo close = new CloseInfo(StatusCode.NORMAL,null);
+        ByteBuffer actual = strictGenerator.generate(close.asFrame());
+        ByteBuffer expected = ByteBuffer.allocate(4);
+        expected.put((byte)0x88);
+        expected.put((byte)0x02);
+        expected.put((byte)0x03);
+        expected.put((byte)0xE8);
+
+        assertEqual("Strict Valid Close Frame",expected,actual);
+    }
+
+    @Test
+    public void testStrictValidPing()
+    {
+        WebSocketFrame frame = new WebSocketFrame(OpCode.PING);
+        ByteBuffer actual = strictGenerator.generate(frame);
+        ByteBuffer expected = ByteBuffer.allocate(2);
+        expected.put((byte)0x89);
+        expected.put((byte)0x00);
+
+        assertEqual("Strict Valid Ping Frame",expected,actual);
+    }
+}

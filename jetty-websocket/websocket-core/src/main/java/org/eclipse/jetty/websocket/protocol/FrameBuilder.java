@@ -18,9 +18,11 @@ import org.eclipse.jetty.websocket.generator.Generator;
  */
 public class FrameBuilder
 {
+    /**
+     * A Generator that doesn't
+     */
     public class DirtyGenerator extends Generator
     {
-
         public DirtyGenerator()
         {
             super(WebSocketPolicy.newServerPolicy(),bufferPool);
@@ -30,10 +32,9 @@ public class FrameBuilder
         public void assertFrameValid(WebSocketFrame frame)
         {
             /*
-             * we desire the ability to craft bad frames so ignore frame validation
+             * Do no validation of the frame validity. <p> we desire the ability to craft bad frames so we'll ignore frame validation
              */
         }
-
     }
 
     private static ByteBufferPool bufferPool = new StandardByteBufferPool();

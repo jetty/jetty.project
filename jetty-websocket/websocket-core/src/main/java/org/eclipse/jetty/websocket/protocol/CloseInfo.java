@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.protocol;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.ProtocolException;
@@ -66,9 +67,40 @@ public class CloseInfo
         }
     }
 
+    public CloseInfo(int statusCode, String reason)
+    {
+        this.statusCode = statusCode;
+        this.reason = reason;
+    }
+
     public CloseInfo(WebSocketFrame frame)
     {
         this(frame.getPayload(),false);
+    }
+
+    public ByteBuffer asByteBuffer()
+    {
+        if (statusCode != (-1))
+        {
+            ByteBuffer buf = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD);
+            buf.putChar((char)statusCode);
+            if (StringUtil.isNotBlank(reason))
+            {
+                byte utf[] = StringUtil.getUtf8Bytes(reason);
+                buf.put(utf,0,utf.length);
+            }
+            BufferUtil.flipToFlush(buf,0);
+            return buf;
+        }
+        return null;
+    }
+
+    public WebSocketFrame asFrame()
+    {
+        WebSocketFrame frame = new WebSocketFrame(OpCode.CLOSE);
+        frame.setFin(true);
+        frame.setPayload(asByteBuffer());
+        return frame;
     }
 
     public String getReason()
