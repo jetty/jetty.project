@@ -6,6 +6,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
@@ -265,7 +267,12 @@ public class WebSocketEventDriver implements Parser.Listener
                             try
                             {
                                 BufferUtil.flipToFlush(activeMessage,0);
-                                events.onText.call(websocket,connection,BufferUtil.toUTF8String(activeMessage));
+                                byte data[] = BufferUtil.toArray(activeMessage);
+                                Utf8StringBuilder utf = new Utf8StringBuilder();
+                                // TODO: FIX EVIL COPY
+                                utf.append(data,0,data.length);
+
+                                events.onText.call(websocket,connection,utf.toString());
                             }
                             finally
                             {
@@ -277,6 +284,10 @@ public class WebSocketEventDriver implements Parser.Listener
                     return;
                 }
             }
+        }
+        catch (NotUtf8Exception e)
+        {
+            terminateConnection(StatusCode.BAD_PAYLOAD,e.getMessage());
         }
         catch (CloseException e)
         {

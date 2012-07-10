@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
@@ -188,6 +190,16 @@ public class WebSocketServletRFCTest
         }
     }
 
+    @Test(expected = NotUtf8Exception.class)
+    public void testDetectBadUTF8()
+    {
+        byte buf[] = new byte[]
+        { (byte)0xC2, (byte)0xC3 };
+
+        Utf8StringBuilder utf = new Utf8StringBuilder();
+        utf.append(buf,0,buf.length);
+    }
+
     /**
      * Test the requirement of issuing
      */
@@ -351,7 +363,7 @@ public class WebSocketServletRFCTest
             client.expectUpgradeResponse();
 
             byte buf[] = new byte[]
-            { (byte)0xC3, 0x28 };
+            { (byte)0xC2, (byte)0xC3 };
 
             WebSocketFrame txt = WebSocketFrame.text().setPayload(buf);
             ByteBuffer bb = generator.generate(txt);
