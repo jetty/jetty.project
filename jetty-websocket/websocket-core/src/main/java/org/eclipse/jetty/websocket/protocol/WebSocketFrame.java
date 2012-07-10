@@ -35,14 +35,14 @@ public class WebSocketFrame implements Frame
     /** Maximum size of Control frame, per RFC 6455 */
     public static final int MAX_CONTROL_PAYLOAD = 125;
 
-    public static WebSocketFrame binar(byte buf[])
-    {
-        return new WebSocketFrame(OpCode.BINARY).setPayload(buf);
-    }
-
     public static WebSocketFrame binary()
     {
         return new WebSocketFrame(OpCode.BINARY);
+    }
+
+    public static WebSocketFrame binary(byte buf[])
+    {
+        return new WebSocketFrame(OpCode.BINARY).setPayload(buf);
     }
 
     public static WebSocketFrame text()

@@ -11,7 +11,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
@@ -38,7 +37,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = FrameBuilder.binary(BufferUtil.toArray(bb)).asFrame();
+        WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = generator.generate(binaryFrame);
@@ -79,7 +78,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = FrameBuilder.binary(BufferUtil.toArray(bb)).asFrame();
+        WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = generator.generate(binaryFrame);
@@ -124,7 +123,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = FrameBuilder.binary(BufferUtil.toArray(bb)).asFrame();
+        WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = generator.generate(binaryFrame);
@@ -168,7 +167,7 @@ public class TestABCase1_2
         }
 
         bb.flip();
-        WebSocketFrame binaryFrame = FrameBuilder.binary(BufferUtil.toArray(bb)).asFrame();
+        WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = generator.generate(binaryFrame);
@@ -213,7 +212,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = FrameBuilder.binary(BufferUtil.toArray(bb)).asFrame();
+        WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = generator.generate(binaryFrame);
@@ -255,7 +254,7 @@ public class TestABCase1_2
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = FrameBuilder.binary(BufferUtil.toArray(bb)).asFrame();
+        WebSocketFrame binaryFrame = WebSocketFrame.binary(BufferUtil.toArray(bb));
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = generator.generate(binaryFrame);
@@ -286,7 +285,7 @@ public class TestABCase1_2
     @Test
     public void testGenerateEmptyBinaryCase1_2_1()
     {
-        WebSocketFrame binaryFrame = FrameBuilder.binary(new byte[] {}).asFrame();
+        WebSocketFrame binaryFrame = WebSocketFrame.binary(new byte[] {});
 
         Generator generator = new Generator(policy);
         ByteBuffer actual = generator.generate(binaryFrame);
