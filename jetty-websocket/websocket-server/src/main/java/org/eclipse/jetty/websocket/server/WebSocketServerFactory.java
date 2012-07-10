@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -70,6 +72,10 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         handshakes.put(HandshakeHixie76.VERSION,new HandshakeHixie76());
     }
 
+    /**
+     * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
+     */
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final String supportedVersions;
     private final WebSocketPolicy basePolicy;
     private final EventMethodsCache methodsCache;
@@ -350,7 +356,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         AsyncEndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().findExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
-        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,websocket.getPolicy(),bufferPool);
+        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,scheduler,websocket.getPolicy(),bufferPool);
         // Tell jetty about the new connection
         request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTR,connection);
 
