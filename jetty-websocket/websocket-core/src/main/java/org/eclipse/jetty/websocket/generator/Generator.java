@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -45,7 +46,17 @@ public class Generator
     public static final int OVERHEAD = 28;
 
     private final WebSocketPolicy policy;
-    private final ByteBufferPool bufferPool;
+    private static ByteBufferPool bufferPool;
+
+    public Generator(WebSocketPolicy policy)
+    {
+        this.policy = policy;
+
+        if (this.bufferPool == null)
+        {
+            this.bufferPool = new StandardByteBufferPool();
+        }
+    }
 
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -249,6 +260,11 @@ public class Generator
         int bufferSize = frame.getPayloadLength() + OVERHEAD;
 
         return generate(bufferSize,frame);
+    }
+
+    public void init(ByteBufferPool pool)
+    {
+
     }
 
     @Override

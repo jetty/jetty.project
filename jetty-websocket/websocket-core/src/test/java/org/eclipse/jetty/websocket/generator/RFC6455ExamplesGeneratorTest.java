@@ -24,11 +24,8 @@ public class RFC6455ExamplesGeneratorTest
 
         Generator generator = new Generator(policy);
 
-        ByteBuffer actual1 = ByteBuffer.allocate(32);
-        ByteBuffer actual2 = ByteBuffer.allocate(32);
-
-        generator.generate(actual1,text1);
-        generator.generate(actual2,text2);
+        ByteBuffer actual1 = generator.generate(text1);
+        ByteBuffer actual2 = generator.generate(text2);
 
         ByteBuffer expected1 = ByteBuffer.allocate(5);
 
@@ -58,8 +55,7 @@ public class RFC6455ExamplesGeneratorTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Generator gen = new Generator(policy);
 
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        gen.generate(actual,pong);
+        ByteBuffer actual = gen.generate(pong);
         actual.flip(); // make readable
 
         ByteBuffer expected = ByteBuffer.allocate(11);
@@ -81,9 +77,8 @@ public class RFC6455ExamplesGeneratorTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
         Generator gen = new Generator(policy);
+        ByteBuffer actual = gen.generate(text);
 
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        gen.generate(actual,text);
         actual.flip(); // make readable
 
         ByteBuffer expected = ByteBuffer.allocate(11);
@@ -109,8 +104,7 @@ public class RFC6455ExamplesGeneratorTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Generator gen = new Generator(policy);
 
-        ByteBuffer actual = ByteBuffer.allocate(dataSize + FUDGE);
-        gen.generate(actual,binary);
+        ByteBuffer actual = gen.generate(binary);
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + FUDGE);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -143,8 +137,7 @@ public class RFC6455ExamplesGeneratorTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Generator gen = new Generator(policy);
 
-        ByteBuffer actual = ByteBuffer.allocate(dataSize + 10);
-        gen.generate(actual,binary);
+        ByteBuffer actual = gen.generate(binary);
 
         ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -173,8 +166,7 @@ public class RFC6455ExamplesGeneratorTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
         Generator gen = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        gen.generate(actual,ping);
+        ByteBuffer actual = gen.generate(ping);
         actual.flip(); // make readable
 
         ByteBuffer expected = ByteBuffer.allocate(10);
@@ -194,8 +186,7 @@ public class RFC6455ExamplesGeneratorTest
 
         Generator generator = new Generator(policy);
 
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual,text);
+        ByteBuffer actual = generator.generate(text);
 
         ByteBuffer expected = ByteBuffer.allocate(10);
 

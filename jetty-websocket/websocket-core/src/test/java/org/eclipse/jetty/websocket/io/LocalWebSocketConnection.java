@@ -62,6 +62,13 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
+    public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
     public String toString()
     {
         return String.format("LocalWebSocketConnection[%s]",id);
@@ -73,7 +80,9 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
-    public <C> void write(C context, Callback<C> callback, String... messages) throws IOException
+    public <C> void write(C context, Callback<C> callback, String message) throws IOException
     {
+        // TODO Auto-generated method stub
+
     }
 }

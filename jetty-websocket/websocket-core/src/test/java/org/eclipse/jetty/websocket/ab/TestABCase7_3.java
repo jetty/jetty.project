@@ -1,6 +1,7 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -30,8 +31,7 @@ public class TestABCase7_3
         WebSocketFrame closeFrame = FrameBuilder.close().asFrame();
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual, closeFrame);
+        ByteBuffer actual = generator.generate(closeFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -75,8 +75,8 @@ public class TestABCase7_3
                 { 0x00 }).asFrame();
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual, closeFrame);
+        ByteBuffer actual = generator.generate(closeFrame);
+
     }
 
     @Test
@@ -107,8 +107,7 @@ public class TestABCase7_3
         WebSocketFrame closeFrame = FrameBuilder.close(1000).asFrame();
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual, closeFrame);
+        ByteBuffer actual = generator.generate(closeFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -154,8 +153,7 @@ public class TestABCase7_3
         WebSocketFrame closeFrame = FrameBuilder.close(1000,message.toString()).asFrame();
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual, closeFrame);
+        ByteBuffer actual = generator.generate(closeFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -219,8 +217,7 @@ public class TestABCase7_3
         WebSocketFrame closeFrame = FrameBuilder.close(1000,message.toString()).asFrame();
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(132);
-        generator.generate(actual, closeFrame);
+        ByteBuffer actual = generator.generate(closeFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(132);
 
@@ -301,8 +298,7 @@ public class TestABCase7_3
         closeFrame.setPayload(BufferUtil.toArray(bb));
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual,closeFrame);
+        generator.generate(closeFrame);
     }
 
     @Test

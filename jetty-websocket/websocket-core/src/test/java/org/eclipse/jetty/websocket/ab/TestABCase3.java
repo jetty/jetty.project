@@ -1,6 +1,5 @@
 package org.eclipse.jetty.websocket.ab;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -64,7 +63,7 @@ public class TestABCase3
     {
         Generator generator = new Generator(WebSocketPolicy.newServerPolicy());
 
-        generator.generate(ByteBuffer.allocate(32),invalidFrame);
+        generator.generate(invalidFrame);
     }
 
 

@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -10,7 +10,6 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.generator.FrameGenerator;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
@@ -37,8 +36,7 @@ public class TestABCase2
         WebSocketFrame pingFrame = FrameBuilder.ping().payload(bytes).asFrame();
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(bytes.length + 32);
-        generator.generate(actual, pingFrame);
+        ByteBuffer actual = generator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
 
@@ -65,8 +63,7 @@ public class TestABCase2
         WebSocketFrame pingFrame = FrameBuilder.ping().payload(bytes).asFrame();
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual, pingFrame);
+        ByteBuffer actual = generator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -93,8 +90,7 @@ public class TestABCase2
 
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual, pingFrame);
+        ByteBuffer actual = generator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -116,8 +112,7 @@ public class TestABCase2
         WebSocketFrame pingFrame = FrameBuilder.ping(message).asFrame();
 
         Generator generator = new Generator(policy);
-        ByteBuffer actual = ByteBuffer.allocate(32);
-        generator.generate(actual, pingFrame);
+        ByteBuffer actual = generator.generate(pingFrame);
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -162,7 +157,7 @@ public class TestABCase2
         WebSocketFrame pingFrame = FrameBuilder.ping().payload(bytes).asFrame();
 
         Generator generator = new Generator(WebSocketPolicy.newServerPolicy());
-        generator.generate(ByteBuffer.allocate(bytes.length + 32),pingFrame);
+        generator.generate(pingFrame);
     }
 
     @Test
@@ -292,7 +287,7 @@ public class TestABCase2
         byte[] bytes = new byte[126];
         Arrays.fill(bytes,(byte)0x00);
 
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + FrameGenerator.OVERHEAD);
+        ByteBuffer expected = ByteBuffer.allocate(bytes.length + Generator.OVERHEAD);
 
         byte b;
 
