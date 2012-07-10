@@ -5,9 +5,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.websocket.api.ProtocolException;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.generator.Generator;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.protocol.UnitGenerator;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,29 +24,29 @@ public class TestABCase3
         List<WebSocketFrame[]> data = new ArrayList<>();
         // @formatter:off
         data.add(new WebSocketFrame[]
-                { FrameBuilder.ping().fin(false).asFrame() });
+                { WebSocketFrame.ping().setFin(false) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.ping().rsv1(true).asFrame() });
+                { WebSocketFrame.ping().setRsv1(true) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.ping().rsv2(true).asFrame() });
+                { WebSocketFrame.ping().setRsv2(true) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.ping().rsv3(true).asFrame() });
+                { WebSocketFrame.ping().setRsv3(true) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.pong().fin(false).asFrame() });
+                { WebSocketFrame.pong().setFin(false) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.ping().rsv1(true).asFrame() });
+                { WebSocketFrame.ping().setRsv1(true) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.pong().rsv2(true).asFrame() });
+                { WebSocketFrame.pong().setRsv2(true) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.pong().rsv3(true).asFrame() });
+                { WebSocketFrame.pong().setRsv3(true) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.close().fin(false).asFrame() });
+                { new CloseInfo().asFrame().setFin(false) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.close().rsv1(true).asFrame() });
+                { new CloseInfo().asFrame().setRsv1(true) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.close().rsv2(true).asFrame() });
+                { new CloseInfo().asFrame().setRsv2(true) });
         data.add(new WebSocketFrame[]
-                { FrameBuilder.close().rsv3(true).asFrame() });
+                { new CloseInfo().asFrame().setRsv3(true) });
         // @formatter:on
         return data;
     }
@@ -61,7 +61,7 @@ public class TestABCase3
     @Test(expected = ProtocolException.class)
     public void testGenerateInvalidControlFrame()
     {
-        Generator generator = new Generator(WebSocketPolicy.newServerPolicy());
+        Generator generator = new UnitGenerator();
 
         generator.generate(invalidFrame);
     }
