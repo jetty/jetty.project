@@ -2,7 +2,6 @@ package org.eclipse.jetty.websocket.driver;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.examples.AdapterConnectCloseSocket;
@@ -11,7 +10,8 @@ import org.eclipse.jetty.websocket.examples.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.examples.AnnotatedFramesSocket;
 import org.eclipse.jetty.websocket.examples.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.io.LocalWebSocketConnection;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,7 +24,7 @@ public class WebSocketEventDriverTest
 
     private WebSocketFrame makeBinaryFrame(String content, boolean fin)
     {
-        return FrameBuilder.binary().fin(fin).payload((content.getBytes(StringUtil.__UTF8_CHARSET))).asFrame();
+        return WebSocketFrame.binary().setFin(fin).setPayload(content);
     }
 
     private WebSocketEventDriver newDriver(Object websocket)
@@ -45,7 +45,7 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(FrameBuilder.close(StatusCode.NORMAL).asFrame());
+        driver.onFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         socket.capture.assertEventCount(2);
         socket.capture.assertEventStartsWith(0,"onWebSocketConnect");
@@ -62,7 +62,7 @@ public class WebSocketEventDriverTest
         driver.setConnection(conn);
         driver.onConnect();
         driver.onFrame(makeBinaryFrame("Hello World",true));
-        driver.onFrame(FrameBuilder.close(StatusCode.NORMAL).asFrame());
+        driver.onFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         socket.capture.assertEventCount(3);
         socket.capture.assertEventStartsWith(0,"onConnect");
@@ -79,10 +79,10 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(FrameBuilder.ping("PING").asFrame());
-        driver.onFrame(FrameBuilder.text().payload("Text Me").asFrame());
-        driver.onFrame(FrameBuilder.binary().payload(StringUtil.getUtf8Bytes("Hello Bin")).asFrame());
-        driver.onFrame(FrameBuilder.close(StatusCode.SHUTDOWN).asFrame());
+        driver.onFrame(new WebSocketFrame(OpCode.PING).setPayload("PING"));
+        driver.onFrame(WebSocketFrame.text("Text Me"));
+        driver.onFrame(WebSocketFrame.binary().setPayload("Hello Bin"));
+        driver.onFrame(new CloseInfo(StatusCode.SHUTDOWN).asFrame());
 
         socket.capture.assertEventCount(6);
         socket.capture.assertEventStartsWith(0,"onConnect(");
@@ -103,7 +103,7 @@ public class WebSocketEventDriverTest
         driver.setConnection(conn);
         driver.onConnect();
         driver.onFrame(makeBinaryFrame("Hello World",true));
-        driver.onFrame(FrameBuilder.close(StatusCode.NORMAL).asFrame());
+        driver.onFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         socket.capture.assertEventCount(3);
         socket.capture.assertEventStartsWith(0,"onConnect");
@@ -120,8 +120,8 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(FrameBuilder.text("Hello World").asFrame());
-        driver.onFrame(FrameBuilder.close(StatusCode.NORMAL).asFrame());
+        driver.onFrame(WebSocketFrame.text("Hello World"));
+        driver.onFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         socket.capture.assertEventCount(3);
         socket.capture.assertEventStartsWith(0,"onWebSocketConnect");

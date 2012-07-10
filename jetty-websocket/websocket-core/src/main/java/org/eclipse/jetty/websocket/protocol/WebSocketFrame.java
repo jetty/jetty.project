@@ -376,7 +376,7 @@ public class WebSocketFrame implements Frame
         return this;
     }
 
-    private WebSocketFrame setPayload(String str)
+    public WebSocketFrame setPayload(String str)
     {
         setPayload(BufferUtil.toBuffer(str,StringUtil.__UTF8_CHARSET));
         return this;

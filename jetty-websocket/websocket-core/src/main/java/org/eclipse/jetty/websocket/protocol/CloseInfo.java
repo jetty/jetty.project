@@ -67,6 +67,11 @@ public class CloseInfo
         }
     }
 
+    public CloseInfo(int statusCode)
+    {
+        this(statusCode, null);
+    }
+
     public CloseInfo(int statusCode, String reason)
     {
         this.statusCode = statusCode;
