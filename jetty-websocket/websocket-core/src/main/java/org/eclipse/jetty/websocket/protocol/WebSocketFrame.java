@@ -315,6 +315,7 @@ public class WebSocketFrame implements Frame
         data = ByteBuffer.allocate(len);
         BufferUtil.clearToFill(data);
         data.put(buf,0,len);
+        BufferUtil.flipToFill(data);
         return this;
     }
 

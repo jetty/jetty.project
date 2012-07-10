@@ -1,22 +1,22 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.FrameParseCapture;
 import org.eclipse.jetty.websocket.parser.Parser;
-import org.eclipse.jetty.websocket.protocol.FrameBuilder;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.UnitGenerator;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,10 +28,10 @@ public class TestABCase7_3
     @Test
     public void testCase7_3_1GenerateEmptyClose()
     {
-        WebSocketFrame closeFrame = FrameBuilder.close().asFrame();
+        CloseInfo close = new CloseInfo();
 
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = generator.generate(closeFrame);
+        Generator generator = new UnitGenerator();
+        ByteBuffer actual = generator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -68,15 +68,14 @@ public class TestABCase7_3
     }
 
 
-    @Test (expected = WebSocketException.class)
+    @Test(expected = ProtocolException.class)
     public void testCase7_3_2Generate1BytePayloadClose()
     {
-        WebSocketFrame closeFrame = FrameBuilder.close().payload(new byte[]
-                { 0x00 }).asFrame();
+        WebSocketFrame closeFrame = new WebSocketFrame(OpCode.CLOSE).setPayload(new byte[]
+                { 0x00 });
 
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = generator.generate(closeFrame);
-
+        Generator generator = new UnitGenerator();
+        generator.generate(closeFrame);
     }
 
     @Test
@@ -104,10 +103,10 @@ public class TestABCase7_3
     @Test
     public void testCase7_3_3GenerateCloseWithStatus()
     {
-        WebSocketFrame closeFrame = FrameBuilder.close(1000).asFrame();
+        CloseInfo close = new CloseInfo(1000);
 
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = generator.generate(closeFrame);
+        Generator generator = new UnitGenerator();
+        ByteBuffer actual = generator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -150,10 +149,10 @@ public class TestABCase7_3
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
 
-        WebSocketFrame closeFrame = FrameBuilder.close(1000,message.toString()).asFrame();
+        CloseInfo close = new CloseInfo(1000,message);
 
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = generator.generate(closeFrame);
+        Generator generator = new UnitGenerator();
+        ByteBuffer actual = generator.generate(close.asFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -212,15 +211,13 @@ public class TestABCase7_3
             message.append("*");
         }
 
-        byte[] messageBytes = message.toString().getBytes();
+        CloseInfo close = new CloseInfo(1000,message.toString());
 
-        WebSocketFrame closeFrame = FrameBuilder.close(1000,message.toString()).asFrame();
-
-        Generator generator = new Generator(policy);
-        ByteBuffer actual = generator.generate(closeFrame);
-
+        Generator generator = new UnitGenerator();
+        ByteBuffer actual = generator.generate(close.asFrame());
         ByteBuffer expected = ByteBuffer.allocate(132);
 
+        byte messageBytes[] = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
 
         expected.put(new byte[]
                 { (byte)0x88 });
@@ -247,7 +244,7 @@ public class TestABCase7_3
             message.append("*");
         }
 
-        byte[] messageBytes = message.toString().getBytes();
+        byte[] messageBytes = message.toString().getBytes(StringUtil.__UTF8_CHARSET);
 
         ByteBuffer expected = ByteBuffer.allocate(132);
 
@@ -286,7 +283,7 @@ public class TestABCase7_3
 
         byte[] messageBytes = message.toString().getBytes();
 
-        WebSocketFrame closeFrame = FrameBuilder.close().asFrame();
+        WebSocketFrame closeFrame = new WebSocketFrame(OpCode.CLOSE);
 
         ByteBuffer bb = ByteBuffer.allocate(WebSocketFrame.MAX_CONTROL_PAYLOAD + 1); // 126 which is too big for control
 
@@ -297,7 +294,7 @@ public class TestABCase7_3
 
         closeFrame.setPayload(BufferUtil.toArray(bb));
 
-        Generator generator = new Generator(policy);
+        Generator generator = new UnitGenerator();
         generator.generate(closeFrame);
     }
 

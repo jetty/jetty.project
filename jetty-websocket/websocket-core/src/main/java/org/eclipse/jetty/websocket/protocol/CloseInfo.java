@@ -15,6 +15,11 @@ public class CloseInfo
     private int statusCode;
     private String reason;
 
+    public CloseInfo()
+    {
+        this(-1,null);
+    }
+
     public CloseInfo(ByteBuffer payload, boolean validate)
     {
         this.statusCode = 0;
