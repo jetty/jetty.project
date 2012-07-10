@@ -138,6 +138,11 @@ public class StandardStream implements IStream
         this.listener = listener;
     }
 
+    public StreamFrameListener getStreamFrameListener()
+    {
+        return listener;
+    }
+
     @Override
     public void updateCloseState(boolean close, boolean local)
     {
