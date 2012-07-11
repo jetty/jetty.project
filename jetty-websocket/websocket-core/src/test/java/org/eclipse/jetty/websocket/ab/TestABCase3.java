@@ -20,8 +20,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.websocket.api.ProtocolException;
-import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.UnitGenerator;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Test;

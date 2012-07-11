@@ -13,14 +13,14 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.generator;
+package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
+import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.UnitGenerator;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Test;
 

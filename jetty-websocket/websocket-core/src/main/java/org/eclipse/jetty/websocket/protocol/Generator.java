@@ -13,7 +13,7 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.generator;
+package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
 
@@ -24,9 +24,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * Generating a frame in WebSocket land.

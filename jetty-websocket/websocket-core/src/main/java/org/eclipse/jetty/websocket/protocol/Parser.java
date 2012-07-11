@@ -13,7 +13,7 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.parser;
+package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
 import java.util.EventListener;
@@ -27,9 +27,6 @@ import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * Parsing of a frames in WebSocket land.

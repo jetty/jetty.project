@@ -20,8 +20,8 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.generator.Generator;
-import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.Generator;
+import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**

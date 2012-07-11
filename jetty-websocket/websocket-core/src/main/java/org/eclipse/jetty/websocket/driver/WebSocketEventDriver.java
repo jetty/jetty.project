@@ -37,10 +37,10 @@ import org.eclipse.jetty.websocket.io.MessageInputStream;
 import org.eclipse.jetty.websocket.io.MessageReader;
 import org.eclipse.jetty.websocket.io.RawConnection;
 import org.eclipse.jetty.websocket.io.StreamAppender;
-import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Frame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**

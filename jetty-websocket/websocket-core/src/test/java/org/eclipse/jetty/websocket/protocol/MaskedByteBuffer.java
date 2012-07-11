@@ -13,7 +13,7 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.parser;
+package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
 

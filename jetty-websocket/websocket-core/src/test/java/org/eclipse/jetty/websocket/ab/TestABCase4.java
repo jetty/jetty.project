@@ -20,8 +20,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.parser.FrameParseCapture;
-import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.FrameParseCapture;
+import org.eclipse.jetty.websocket.protocol.Parser;
 import org.junit.Assert;
 import org.junit.Test;
 

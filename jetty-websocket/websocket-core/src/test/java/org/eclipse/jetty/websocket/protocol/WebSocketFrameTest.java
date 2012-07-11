@@ -23,7 +23,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.generator.Generator;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

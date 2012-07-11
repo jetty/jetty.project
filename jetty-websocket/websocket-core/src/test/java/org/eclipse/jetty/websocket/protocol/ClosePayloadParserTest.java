@@ -13,30 +13,41 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.parser;
+package org.eclipse.jetty.websocket.protocol;
 
 import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.protocol.Parser;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class PingPayloadParserTest
+public class ClosePayloadParserTest
 {
     @Test
-    public void testBasicPingParsing()
+    public void testGameOver()
     {
-        ByteBuffer buf = ByteBuffer.allocate(16);
-        BufferUtil.clearToFill(buf);
-        buf.put(new byte[]
-                { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
-        BufferUtil.flipToFlush(buf,0);
+        String expectedReason = "Game Over";
+
+        byte utf[] = expectedReason.getBytes(StringUtil.__UTF8_CHARSET);
+        ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
+        payload.putChar((char)StatusCode.NORMAL);
+        payload.put(utf,0,utf.length);
+        payload.flip();
+
+        ByteBuffer buf = ByteBuffer.allocate(24);
+        buf.put((byte)(0x80 | OpCode.CLOSE.getCode())); // fin + close
+        buf.put((byte)(0x80 | payload.remaining()));
+        MaskedByteBuffer.putMask(buf);
+        MaskedByteBuffer.putPayload(buf,payload);
+        buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
@@ -45,9 +56,9 @@ public class PingPayloadParserTest
         parser.parse(buf);
 
         capture.assertNoErrors();
-        capture.assertHasFrame(OpCode.PING,1);
-        WebSocketFrame ping = capture.getFrames().get(0);
-
-        Assert.assertThat("PingFrame.payload",ping.getPayloadAsUTF8(),is("Hello"));
+        capture.assertHasFrame(OpCode.CLOSE,1);
+        CloseInfo close = new CloseInfo(capture.getFrames().get(0));
+        Assert.assertThat("CloseFrame.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
+        Assert.assertThat("CloseFrame.data",close.getReason(),is(expectedReason));
     }
 }
