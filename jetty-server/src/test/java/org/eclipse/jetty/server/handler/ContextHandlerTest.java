@@ -1,5 +1,4 @@
 // ========================================================================
-// $Id$
 // Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
