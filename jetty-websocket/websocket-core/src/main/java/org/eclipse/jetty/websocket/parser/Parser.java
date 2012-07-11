@@ -1,3 +1,18 @@
+// ========================================================================
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+//     The Eclipse Public License is available at
+//     http://www.eclipse.org/legal/epl-v10.html
+//
+//     The Apache License v2.0 is available at
+//     http://www.opensource.org/licenses/apache2.0.php
+//
+// You may elect to redistribute this code under either of these licenses.
+//========================================================================
 package org.eclipse.jetty.websocket.parser;
 
 import java.nio.ByteBuffer;
@@ -16,21 +31,78 @@ import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
+;
+
 /**
  * Parsing of a frames in WebSocket land.
  */
 public class Parser
 {
-    public interface Listener extends EventListener
+    public static interface Listener extends EventListener
     {
         public void onFrame(final WebSocketFrame frame);
 
         public void onWebSocketException(WebSocketException e);
     }
 
+    public static class ListenerList implements Listener
+    {
+        private final List<Listener> listeners = new CopyOnWriteArrayList<>();
+
+        public void addListener(Listener listener)
+        {
+            listeners.add(listener);
+        }
+
+        @Override
+        public void onFrame(WebSocketFrame frame)
+        {
+            for (Listener listener : listeners)
+            {
+                try
+                {
+                    listener.onFrame(frame);
+                }
+                catch (WebSocketException e)
+                {
+                    throw e;
+                }
+                catch (Throwable t)
+                {
+                    throw new WebSocketException(t);
+                }
+            }
+        }
+
+        @Override
+        public void onWebSocketException(WebSocketException e)
+        {
+            for (Listener listener : listeners)
+            {
+                listener.onWebSocketException(e);
+            }
+        }
+
+        public void removeListener(Listener listener)
+        {
+            listeners.remove(listener);
+        }
+
+        public void setListeners(List<Listener> lsnrs)
+        {
+            listeners.addAll(lsnrs);
+        }
+    }
+
     private enum State
     {
-        START, FINOP, PAYLOAD_LEN, PAYLOAD_LEN_BYTES, MASK, MASK_BYTES, PAYLOAD
+        START,
+        FINOP,
+        PAYLOAD_LEN,
+        PAYLOAD_LEN_BYTES,
+        MASK,
+        MASK_BYTES,
+        PAYLOAD
     }
 
     // State specific
@@ -43,7 +115,7 @@ public class Parser
     private int payloadLength;
 
     private static final Logger LOG = Log.getLogger(Parser.class);
-    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
+    private Listener listener;
     private WebSocketPolicy policy;
 
     public Parser(WebSocketPolicy wspolicy)
@@ -53,11 +125,6 @@ public class Parser
          */
 
         this.policy = wspolicy;
-    }
-
-    public void addListener(Listener listener)
-    {
-        listeners.add(listener);
     }
 
     private void assertSanePayloadLength(long len)
@@ -125,6 +192,11 @@ public class Parser
         return amt;
     }
 
+    public Listener getListener()
+    {
+        return listener;
+    }
+
     public WebSocketPolicy getPolicy()
     {
         return policy;
@@ -133,35 +205,41 @@ public class Parser
     protected void notifyFrame(final WebSocketFrame f)
     {
         LOG.debug("Notify Frame: {}",f);
-        for (Listener listener : listeners)
+        if (listener == null)
         {
-            try
-            {
-                listener.onFrame(f);
-            }
-            catch (WebSocketException e)
-            {
-                notifyWebSocketException(e);
-            }
-            catch (Throwable t)
-            {
-                LOG.warn(t);
-                notifyWebSocketException(new WebSocketException(t));
-            }
+            return;
+        }
+        try
+        {
+            listener.onFrame(f);
+        }
+        catch (WebSocketException e)
+        {
+            notifyWebSocketException(e);
+        }
+        catch (Throwable t)
+        {
+            LOG.warn(t);
+            notifyWebSocketException(new WebSocketException(t));
         }
     }
 
     protected void notifyWebSocketException(WebSocketException e)
     {
         LOG.debug(e);
-        for (Listener listener : listeners)
+        if (listener == null)
         {
-            listener.onWebSocketException(e);
+            return;
         }
+        listener.onWebSocketException(e);
     }
 
     public void parse(ByteBuffer buffer)
     {
+        if (buffer.remaining() <= 0)
+        {
+            return;
+        }
         try
         {
             LOG.debug("Parsing {} bytes",buffer.remaining());
@@ -202,6 +280,11 @@ public class Parser
      */
     private boolean parseFrame(ByteBuffer buffer)
     {
+        if (buffer.remaining() <= 0)
+        {
+            return false;
+        }
+
         LOG.debug("Parsing {} bytes",buffer.remaining());
         while (buffer.hasRemaining())
         {
@@ -427,9 +510,9 @@ public class Parser
         return false;
     }
 
-    public void removeListener(Listener listener)
+    public void setListener(Listener listener)
     {
-        listeners.remove(listener);
+        this.listener = listener;
     }
 
     @Override

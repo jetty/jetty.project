@@ -22,7 +22,7 @@ public class RFC6455ExamplesParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
 
         ByteBuffer buf = ByteBuffer.allocate(16);
 
@@ -66,7 +66,7 @@ public class RFC6455ExamplesParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -89,7 +89,7 @@ public class RFC6455ExamplesParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -119,7 +119,7 @@ public class RFC6455ExamplesParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -159,7 +159,7 @@ public class RFC6455ExamplesParserTest
         policy.setBufferSize(80000);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -190,7 +190,7 @@ public class RFC6455ExamplesParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -213,7 +213,7 @@ public class RFC6455ExamplesParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();

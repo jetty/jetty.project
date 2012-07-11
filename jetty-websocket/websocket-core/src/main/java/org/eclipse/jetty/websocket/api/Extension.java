@@ -13,10 +13,9 @@
  *
  * You may elect to redistribute this code under either of these licenses.
  *******************************************************************************/
-package org.eclipse.jetty.websocket.extensions;
+package org.eclipse.jetty.websocket.api;
 
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
-
 
 public interface Extension
 {

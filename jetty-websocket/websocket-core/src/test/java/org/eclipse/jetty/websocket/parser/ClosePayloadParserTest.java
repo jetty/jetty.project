@@ -36,7 +36,7 @@ public class ClosePayloadParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();

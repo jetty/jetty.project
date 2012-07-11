@@ -27,7 +27,7 @@ public class GeneratorParserRoundtripTest
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
@@ -66,7 +66,7 @@ public class GeneratorParserRoundtripTest
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 

@@ -1,3 +1,18 @@
+// ========================================================================
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+//     The Eclipse Public License is available at
+//     http://www.eclipse.org/legal/epl-v10.html
+//
+//     The Apache License v2.0 is available at
+//     http://www.opensource.org/licenses/apache2.0.php
+//
+// You may elect to redistribute this code under either of these licenses.
+//========================================================================
 package org.eclipse.jetty.websocket.io;
 
 import java.io.IOException;
@@ -90,6 +105,21 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         {
             LOG.debug("Completed Write of {} ({} frame(s) in queue)",frameBytes,queue.size());
             flushing = false;
+        }
+    }
+
+    @Override
+    public void disconnect(boolean onlyOutput)
+    {
+        AsyncEndPoint endPoint = getEndPoint();
+        // We need to gently close first, to allow
+        // SSL close alerts to be sent by Jetty
+        LOG.debug("Shutting down output {}",endPoint);
+        endPoint.shutdownOutput();
+        if (!onlyOutput)
+        {
+            LOG.debug("Closing {}",endPoint);
+            endPoint.close();
         }
     }
 
@@ -270,7 +300,8 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
 
     private <C> void scheduleTimeout(FrameBytes<C> bytes)
     {
-        if(policy.getMaxIdleTime()>0) {
+        if (policy.getMaxIdleTime() > 0)
+        {
             bytes.task = scheduler.schedule(bytes,policy.getMaxIdleTime(),TimeUnit.MILLISECONDS);
         }
     }
@@ -302,7 +333,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         CloseInfo close = new CloseInfo(statusCode,reason);
         FutureCallback<Void> nop = new FutureCallback<>();
         ControlFrameBytes<Void> frameBytes = new ControlFrameBytes<Void>(this,nop,null,close.asFrame());
-        queue.prepend(frameBytes);
+        queue.append(frameBytes);
         flush();
     }
 
@@ -315,7 +346,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     private <C> void write(ByteBuffer buffer, WebSocketAsyncConnection webSocketAsyncConnection, FrameBytes<C> frameBytes)
     {
         LOG.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
-        getEndPoint().write(frameBytes.context,frameBytes.callback,buffer);
+        getEndPoint().write(frameBytes.context,frameBytes,buffer);
     }
 
     /**
@@ -375,5 +406,22 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         scheduleTimeout(bytes);
         queue.append(bytes);
         flush();
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, WebSocketFrame frame)
+    {
+        if (frame.getOpCode().isControlFrame())
+        {
+            ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
+            scheduleTimeout(bytes);
+            queue.prepend(bytes);
+        }
+        else
+        {
+            DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
+            scheduleTimeout(bytes);
+            queue.append(bytes);
+        }
     }
 }

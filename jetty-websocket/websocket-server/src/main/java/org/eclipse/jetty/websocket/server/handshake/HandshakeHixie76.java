@@ -3,7 +3,7 @@ package org.eclipse.jetty.websocket.server.handshake;
 import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.jetty.websocket.extensions.Extension;
+import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.ServletWebSocketResponse;
 import org.eclipse.jetty.websocket.server.WebSocketHandshake;

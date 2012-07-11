@@ -1,8 +1,24 @@
+// ========================================================================
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+//     The Eclipse Public License is available at
+//     http://www.eclipse.org/legal/epl-v10.html
+//
+//     The Apache License v2.0 is available at
+//     http://www.opensource.org/licenses/apache2.0.php
+//
+// You may elect to redistribute this code under either of these licenses.
+//========================================================================
 package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Queue;
@@ -306,7 +322,15 @@ public class WebSocketServletRFCTest
             WebSocketFrame bin = WebSocketFrame.binary(buf).setFin(true);
             ByteBuffer bb = generator.generate(bin);
             BufferUtil.flipToFlush(bb,0);
-            client.writeRaw(bb);
+            try
+            {
+                client.writeRaw(bb);
+                Assert.fail("Write should have failed due to terminated connection");
+            }
+            catch (SocketException e)
+            {
+                Assert.assertThat("Exception",e.getMessage(),containsString("Broken pipe"));
+            }
 
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
             WebSocketFrame frame = frames.remove();
@@ -340,7 +364,15 @@ public class WebSocketServletRFCTest
             WebSocketFrame text = WebSocketFrame.text().setPayload(buf).setFin(true);
             ByteBuffer bb = generator.generate(text);
             BufferUtil.flipToFlush(bb,0);
-            client.writeRaw(bb);
+            try
+            {
+                client.writeRaw(bb);
+                Assert.fail("Write should have failed due to terminated connection");
+            }
+            catch (SocketException e)
+            {
+                Assert.assertThat("Exception",e.getMessage(),containsString("Broken pipe"));
+            }
 
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
             WebSocketFrame frame = frames.remove();

@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
@@ -325,7 +325,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -359,7 +359,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -393,7 +393,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -427,7 +427,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -462,7 +462,7 @@ public class TestABCase1_2
         policy.setMaxTextMessageSize(length);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -499,7 +499,7 @@ public class TestABCase1_2
         policy.setMaxTextMessageSize(length);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -523,7 +523,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();

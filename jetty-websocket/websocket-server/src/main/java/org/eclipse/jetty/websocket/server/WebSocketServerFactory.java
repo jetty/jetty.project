@@ -1,15 +1,18 @@
 // ========================================================================
-// Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
+//
+//     The Eclipse Public License is available at
+//     http://www.eclipse.org/legal/epl-v10.html
+//
+//     The Apache License v2.0 is available at
+//     http://www.opensource.org/licenses/apache2.0.php
+//
 // You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//========================================================================
 
 package org.eclipse.jetty.websocket.server;
 
@@ -37,15 +40,18 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.Extension;
+import org.eclipse.jetty.websocket.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.driver.EventMethodsCache;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
-import org.eclipse.jetty.websocket.extensions.Extension;
+import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
 import org.eclipse.jetty.websocket.extensions.fragment.FragmentExtension;
 import org.eclipse.jetty.websocket.extensions.identity.IdentityExtension;
 import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
+import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeHixie76;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
@@ -80,6 +86,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     private final WebSocketPolicy basePolicy;
     private final EventMethodsCache methodsCache;
     private final ByteBufferPool bufferPool;
+    private final ExtensionRegistry extensionRegistry;
     private WebSocketCreator creator;
     private Class<?> firstRegisteredClass;
 
@@ -93,6 +100,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         this.basePolicy = policy;
         this.methodsCache = new EventMethodsCache();
         this.bufferPool = bufferPool;
+        this.extensionRegistry = new WebSocketExtensionRegistry();
         this.creator = this;
 
         // Create supportedVersions
@@ -212,14 +220,13 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
         for (ExtensionConfig cfg : requested)
         {
-            Extension extension = newExtension(cfg.getName());
+            Extension extension = extensionRegistry.newInstance(cfg);
 
             if (extension == null)
             {
                 continue;
             }
 
-            extension.setConfig(cfg);
             LOG.debug("added {}",extension);
             extensions.add(extension);
         }
@@ -249,24 +256,6 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         }
 
         return true;
-    }
-
-    private Extension newExtension(String name)
-    {
-        try
-        {
-            Class<? extends Extension> extClass = extensionClasses.get(name);
-            if (extClass != null)
-            {
-                return extClass.newInstance();
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn(e);
-        }
-
-        return null;
     }
 
     protected String[] parseProtocols(String protocol)
@@ -367,15 +356,17 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         List<Extension> extensions = initExtensions(request.getExtensions());
         // TODO : bind extensions? layer extensions? how?
         // TODO : wrap websocket with extension processing Parser.Listener list
-        connection.getParser().addListener(websocket);
+
+        Parser.ListenerList listenerList = new Parser.ListenerList();
+        listenerList.addListener(websocket);
+
+        connection.getParser().setListener(listenerList);
         // TODO : connection.setWriteExtensions(extensions);
         // TODO : implement endpoint.write() layer for outgoing extension frames.
 
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);
         handshaker.doHandshakeResponse(request,response,extensions);
-        LOG.debug("EndPoint: {}",endp);
-        LOG.debug("Handshake Complete: {}",connection);
 
         // Add connection
         addConnection(connection);

@@ -1,3 +1,18 @@
+// ========================================================================
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+//     The Eclipse Public License is available at
+//     http://www.eclipse.org/legal/epl-v10.html
+//
+//     The Apache License v2.0 is available at
+//     http://www.opensource.org/licenses/apache2.0.php
+//
+// You may elect to redistribute this code under either of these licenses.
+//========================================================================
 package org.eclipse.jetty.websocket.driver;
 
 import java.io.IOException;
@@ -5,6 +20,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -14,16 +30,17 @@ import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.io.MessageInputStream;
 import org.eclipse.jetty.websocket.io.MessageReader;
+import org.eclipse.jetty.websocket.io.RawConnection;
 import org.eclipse.jetty.websocket.io.StreamAppender;
 import org.eclipse.jetty.websocket.parser.Parser;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Frame;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
@@ -41,7 +58,7 @@ public class WebSocketEventDriver implements Parser.Listener
     private final WebSocketPolicy policy;
     private final EventMethods events;
     private final ByteBufferPool bufferPool;
-    private WebSocketConnection connection;
+    private RawConnection connection;
     private ByteBuffer activeMessage;
     private StreamAppender activeStream;
 
@@ -131,14 +148,19 @@ public class WebSocketEventDriver implements Parser.Listener
             {
                 case CLOSE:
                 {
-                    if (events.onClose == null)
-                    {
-                        // not interested in close events
-                        return;
-                    }
                     CloseInfo close = new CloseInfo(frame);
-                    events.onClose.call(websocket,connection,close.getStatusCode(),close.getReason());
+                    if (events.onClose != null)
+                    {
+                        events.onClose.call(websocket,connection,close.getStatusCode(),close.getReason());
+                    }
                     throw new CloseException(close.getStatusCode(),close.getReason());
+                }
+                case PONG:
+                {
+                    WebSocketFrame pong = new WebSocketFrame(OpCode.PONG);
+                    pong.setPayload(frame.getPayload());
+                    connection.write(null,new FutureCallback<Void>(),pong);
+                    break;
                 }
                 case BINARY:
                 {
@@ -325,7 +347,7 @@ public class WebSocketEventDriver implements Parser.Listener
      * @param conn
      *            the connection
      */
-    public void setConnection(WebSocketConnection conn)
+    public void setConnection(RawConnection conn)
     {
         this.connection = conn;
     }

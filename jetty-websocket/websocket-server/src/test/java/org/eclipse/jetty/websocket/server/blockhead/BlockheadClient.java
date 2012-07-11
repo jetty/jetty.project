@@ -1,3 +1,18 @@
+// ========================================================================
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+//     The Eclipse Public License is available at
+//     http://www.eclipse.org/legal/epl-v10.html
+//
+//     The Apache License v2.0 is available at
+//     http://www.opensource.org/licenses/apache2.0.php
+//
+// You may elect to redistribute this code under either of these licenses.
+//========================================================================
 package org.eclipse.jetty.websocket.server.blockhead;
 
 import static org.hamcrest.Matchers.*;
@@ -36,6 +51,8 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.generator.Generator;
 import org.eclipse.jetty.websocket.parser.Parser;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.UnitGenerator;
 import org.junit.Assert;
@@ -86,7 +103,7 @@ public class BlockheadClient implements Parser.Listener
         bufferPool = new StandardByteBufferPool(policy.getBufferSize());
         generator = new UnitGenerator();
         parser = new Parser(policy);
-        parser.addListener(this);
+        parser.setListener(this);
 
         incomingFrameQueue = new LinkedBlockingDeque<>();
     }
@@ -103,15 +120,21 @@ public class BlockheadClient implements Parser.Listener
 
     public void close()
     {
-        IO.close(in);
-        IO.close(out);
+        close(-1,null);
+    }
+
+    public void close(int statusCode, String message)
+    {
         try
         {
-            socket.close();
+            CloseInfo close = new CloseInfo(statusCode,message);
+            WebSocketFrame frame = close.asFrame();
+            LOG.debug("Issuing: {}",frame);
+            write(frame);
         }
-        catch (IOException ignore)
+        catch (IOException e)
         {
-            /* ignore */
+            LOG.debug(e);
         }
     }
 
@@ -124,6 +147,21 @@ public class BlockheadClient implements Parser.Listener
         out = socket.getOutputStream();
         socket.setSoTimeout(timeout);
         in = socket.getInputStream();
+    }
+
+    private void disconnect()
+    {
+        LOG.debug("disconnect");
+        IO.close(in);
+        IO.close(out);
+        try
+        {
+            socket.close();
+        }
+        catch (IOException ignore)
+        {
+            /* ignore */
+        }
     }
 
     public String expectUpgradeResponse() throws IOException
@@ -373,6 +411,12 @@ public class BlockheadClient implements Parser.Listener
         byte arr[] = BufferUtil.toArray(buf);
         out.write(arr,0,arr.length);
         out.flush();
+
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            // FIXME terminate the connection?
+            disconnect();
+        }
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException

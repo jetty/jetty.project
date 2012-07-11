@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -184,7 +184,7 @@ public class TestABCase2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -214,7 +214,7 @@ public class TestABCase2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -237,7 +237,7 @@ public class TestABCase2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -268,7 +268,7 @@ public class TestABCase2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -313,7 +313,7 @@ public class TestABCase2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.addListener(capture);
+        parser.setListener(capture);
         parser.parse(expected);
 
         Assert.assertEquals("error should be returned for too large of ping payload",1,capture.getErrorCount(ProtocolException.class));
