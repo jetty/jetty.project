@@ -221,7 +221,7 @@ public class BlockheadClient implements Parser.Listener
         int startCount = incomingFrameQueue.size();
 
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
-        BufferUtil.clearToFill(buf);
+        BufferUtil.clear(buf);
         try
         {
             long now = System.currentTimeMillis();
@@ -349,6 +349,13 @@ public class BlockheadClient implements Parser.Listener
                 state = 0;
             }
         }
+    }
+
+    public void sleep(TimeUnit unit, int duration) throws InterruptedException
+    {
+        LOG.info("Sleeping for {} {}",duration,unit);
+        unit.sleep(duration);
+        LOG.info("Waking up from sleep");
     }
 
     public void write(WebSocketFrame frame) throws IOException

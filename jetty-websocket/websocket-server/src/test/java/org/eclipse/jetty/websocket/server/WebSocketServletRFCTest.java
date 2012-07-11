@@ -44,6 +44,8 @@ public class WebSocketServletRFCTest
         public void registerWebSockets(WebSocketServerFactory factory)
         {
             factory.register(RFCSocket.class);
+
+            factory.getPolicy().setMaxIdleTime(800);
         }
     }
 
@@ -229,22 +231,25 @@ public class WebSocketServletRFCTest
     }
 
     @Test
-    @Ignore("Idle Timeouts not working (yet)")
+    @Ignore("Still not working")
     public void testIdle() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.setProtocols("onConnect");
+        client.setTimeout(TimeUnit.MILLISECONDS,800);
         try
         {
             client.connect();
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
+            client.sleep(TimeUnit.SECONDS,1);
+
             client.write(WebSocketFrame.text("Hello"));
 
             // now wait for the server to time out
             // should be 2 frames, the TextFrame echo, and then the Close on disconnect
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,5);
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,2);
             Assert.assertThat("frames[0].opcode",frames.remove().getOpCode(),is(OpCode.TEXT));
             Assert.assertThat("frames[1].opcode",frames.remove().getOpCode(),is(OpCode.CLOSE));
         }
