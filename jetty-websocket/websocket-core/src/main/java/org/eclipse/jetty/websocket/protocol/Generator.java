@@ -18,7 +18,6 @@ package org.eclipse.jetty.websocket.protocol;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -61,17 +60,6 @@ public class Generator
     private final WebSocketPolicy policy; // TODO: remove as unused?
     private final ByteBufferPool bufferPool;
     private boolean validating;
-
-    /**
-     * 
-     * @param policy
-     * @deprecated discouraged usage form
-     */
-    @Deprecated
-    public Generator(WebSocketPolicy policy)
-    {
-        this(policy,new StandardByteBufferPool());
-    }
 
     /**
      * Construct Generator with provided policy and bufferPool
