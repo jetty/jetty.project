@@ -221,12 +221,13 @@ public class BlockheadClient implements Parser.Listener
         int startCount = incomingFrameQueue.size();
 
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
-        BufferUtil.clear(buf);
+        BufferUtil.clearToFill(buf);
         try
         {
+            long msDur = TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
             long now = System.currentTimeMillis();
-            long expireOn = now + TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
-            LOG.debug("Now: {} - expireOn: {}",now,expireOn);
+            long expireOn = now + msDur;
+            LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
 
             int len = 0;
             while (incomingFrameQueue.size() < (startCount + expectedCount))

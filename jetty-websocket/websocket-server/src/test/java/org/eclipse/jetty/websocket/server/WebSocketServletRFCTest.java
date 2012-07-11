@@ -44,8 +44,6 @@ public class WebSocketServletRFCTest
         public void registerWebSockets(WebSocketServerFactory factory)
         {
             factory.register(RFCSocket.class);
-
-            factory.getPolicy().setMaxIdleTime(800);
         }
     }
 
