@@ -224,8 +224,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         }
         finally
         {
-            // TODO: does fillInterested need to be called again?
-            // fillInterested();
+            fillInterested();
             setCurrentConnection(null);
             bufferPool.release(buffer);
         }
