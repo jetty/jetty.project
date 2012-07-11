@@ -31,8 +31,6 @@ import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
-;
-
 /**
  * Parsing of a frames in WebSocket land.
  */
