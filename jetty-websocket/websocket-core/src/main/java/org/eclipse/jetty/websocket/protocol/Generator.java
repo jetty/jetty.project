@@ -57,7 +57,8 @@ public class Generator
      */
     public static final int OVERHEAD = 28;
 
-    private final WebSocketPolicy policy;
+    @SuppressWarnings("unused")
+    private final WebSocketPolicy policy; // TODO: remove as unused?
     private final ByteBufferPool bufferPool;
     private boolean validating;
 
