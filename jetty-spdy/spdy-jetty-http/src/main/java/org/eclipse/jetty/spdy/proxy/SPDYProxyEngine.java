@@ -130,8 +130,6 @@ public class SPDYProxyEngine extends ProxyEngine
             return null;
         }
 
-        // TODO: give a chance to modify headers and rewrite URI
-
         short serverVersion = proxyInfo.getVersion();
         InetSocketAddress address = proxyInfo.getAddress();
         Session serverSession = produceSession(host, serverVersion, address);
@@ -145,15 +143,13 @@ public class SPDYProxyEngine extends ProxyEngine
         Set<Session> sessions = (Set<Session>)serverSession.getAttribute(CLIENT_SESSIONS_ATTRIBUTE);
         sessions.add(clientSession);
 
+        addRequestProxyHeaders(clientStream, headers);
+        customizeRequestHeaders(clientStream, headers);
         convert(clientVersion, serverVersion, headers);
 
-        addRequestProxyHeaders(headers);
-
         SynInfo serverSynInfo = new SynInfo(headers, clientSynInfo.isClose());
-        logger.debug("P -> S {}", serverSynInfo);
-
         StreamFrameListener listener = new ProxyStreamFrameListener(clientStream);
-        StreamHandler handler = new StreamHandler(clientStream);
+        StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
         clientStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
         serverSession.syn(serverSynInfo, listener, timeout, TimeUnit.MILLISECONDS, handler);
         return this;
@@ -254,16 +250,19 @@ public class SPDYProxyEngine extends ProxyEngine
         @Override
         public void onReply(final Stream stream, ReplyInfo replyInfo)
         {
+            logger.debug("S -> P {} on {}", replyInfo, stream);
+
             short serverVersion = stream.getSession().getVersion();
             Headers headers = new Headers(replyInfo.getHeaders(), false);
+
+            addResponseProxyHeaders(stream, headers);
+            customizeResponseHeaders(stream, headers);
             short clientVersion = this.clientStream.getSession().getVersion();
             convert(serverVersion, clientVersion, headers);
 
-            addResponseProxyHeaders(headers);
-
             this.replyInfo = new ReplyInfo(headers, replyInfo.isClose());
             if (replyInfo.isClose())
-                reply();
+                reply(stream);
         }
 
         @Override
@@ -276,19 +275,29 @@ public class SPDYProxyEngine extends ProxyEngine
         @Override
         public void onData(final Stream stream, final DataInfo dataInfo)
         {
+            logger.debug("S -> P {} on {}", dataInfo, stream);
+
             if (replyInfo != null)
             {
                 if (dataInfo.isClose())
                     replyInfo.getHeaders().put("content-length", String.valueOf(dataInfo.available()));
-                reply();
+                reply(stream);
             }
-            data(dataInfo);
+            data(stream, dataInfo);
         }
 
-        private void reply()
+        private void reply(final Stream stream)
         {
-            clientStream.reply(replyInfo, getTimeout(), TimeUnit.MILLISECONDS, new Handler.Adapter<Void>()
+            final ReplyInfo replyInfo = this.replyInfo;
+            this.replyInfo = null;
+            clientStream.reply(replyInfo, getTimeout(), TimeUnit.MILLISECONDS, new Handler<Void>()
             {
+                @Override
+                public void completed(Void context)
+                {
+                    logger.debug("P -> C {} from {} to {}", replyInfo, stream, clientStream);
+                }
+
                 @Override
                 public void failed(Void context, Throwable x)
                 {
@@ -296,10 +305,9 @@ public class SPDYProxyEngine extends ProxyEngine
                     rst(clientStream);
                 }
             });
-            replyInfo = null;
         }
 
-        private void data(final DataInfo dataInfo)
+        private void data(final Stream stream, final DataInfo dataInfo)
         {
             clientStream.data(dataInfo, getTimeout(), TimeUnit.MILLISECONDS, new Handler<Void>()
             {
@@ -307,6 +315,7 @@ public class SPDYProxyEngine extends ProxyEngine
                 public void completed(Void context)
                 {
                     dataInfo.consume(dataInfo.length());
+                    logger.debug("P -> C {} from {} to {}", dataInfo, stream, clientStream);
                 }
 
                 @Override
@@ -331,16 +340,20 @@ public class SPDYProxyEngine extends ProxyEngine
     {
         private final Queue<DataInfoHandler> queue = new LinkedList<>();
         private final Stream clientStream;
+        private final SynInfo serverSynInfo;
         private Stream serverStream;
 
-        private StreamHandler(Stream clientStream)
+        private StreamHandler(Stream clientStream, SynInfo serverSynInfo)
         {
             this.clientStream = clientStream;
+            this.serverSynInfo = serverSynInfo;
         }
 
         @Override
         public void completed(Stream serverStream)
         {
+            logger.debug("P -> S {} from {} to {}", serverSynInfo, clientStream, serverStream);
+
             serverStream.setAttribute(CLIENT_STREAM_ATTRIBUTE, clientStream);
 
             DataInfoHandler dataInfoHandler;
@@ -470,14 +483,15 @@ public class SPDYProxyEngine extends ProxyEngine
 
             Headers headers = new Headers(serverSynInfo.getHeaders(), false);
 
+            addResponseProxyHeaders(serverStream, headers);
+            customizeResponseHeaders(serverStream, headers);
             Stream clientStream = (Stream)serverStream.getAssociatedStream().getAttribute(CLIENT_STREAM_ATTRIBUTE);
             convert(serverStream.getSession().getVersion(), clientStream.getSession().getVersion(), headers);
 
-            addResponseProxyHeaders(headers);
-
-            StreamHandler handler = new StreamHandler(clientStream);
+            StreamHandler handler = new StreamHandler(clientStream, serverSynInfo);
             serverStream.setAttribute(STREAM_HANDLER_ATTRIBUTE, handler);
             clientStream.syn(new SynInfo(headers, serverSynInfo.isClose()), getTimeout(), TimeUnit.MILLISECONDS, handler);
+
             return this;
         }
 

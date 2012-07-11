@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.log.Log;
@@ -71,19 +72,27 @@ public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter imp
         return name;
     }
 
-    protected void addRequestProxyHeaders(Headers headers)
+    protected void addRequestProxyHeaders(Stream stream, Headers headers)
     {
-        String newValue = "";
-        Headers.Header header = headers.get("via");
-        if (header != null)
-            newValue = header.valuesAsString() + ", ";
-        newValue += "http/1.1 " + getName();
-        headers.put("via", newValue);
+        addViaHeader(headers);
     }
 
-    protected void addResponseProxyHeaders(Headers headers)
+    protected void addResponseProxyHeaders(Stream stream, Headers headers)
     {
-        // TODO: add Via header
+        addViaHeader(headers);
+    }
+
+    private void addViaHeader(Headers headers)
+    {
+        headers.add("Via", "http/1.1 " + getName());
+    }
+
+    protected void customizeRequestHeaders(Stream stream, Headers headers)
+    {
+    }
+
+    protected void customizeResponseHeaders(Stream stream, Headers headers)
+    {
     }
 
     public Map<String, ProxyInfo> getProxyInfos()

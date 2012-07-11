@@ -233,21 +233,21 @@ public class ConnectHandler extends HandlerWrapper
         }
         catch (SocketException se)
         {
-            LOG.info("ConnectHandler: " + se.getMessage());
-            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
+            LOG.info("ConnectHandler: SocketException " + se.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             baseRequest.setHandled(true);
             return;
         }
         catch (SocketTimeoutException ste)
         {
-            LOG.info("ConnectHandler: " + ste.getMessage());
+            LOG.info("ConnectHandler: SocketTimeoutException" + ste.getMessage());
             response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
             baseRequest.setHandled(true);
             return;
         }
         catch (IOException ioe)
         {
-            LOG.info("ConnectHandler: " + ioe.getMessage());
+            LOG.info("ConnectHandler: IOException" + ioe.getMessage());
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             baseRequest.setHandled(true);
             return;

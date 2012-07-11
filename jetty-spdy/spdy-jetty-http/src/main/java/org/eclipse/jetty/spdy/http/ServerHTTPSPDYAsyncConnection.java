@@ -55,6 +55,7 @@ import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
@@ -176,6 +177,10 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     String v = version.value();
                     logger.debug("HTTP > {} {} {}", m, u, v);
                     startRequest(new ByteArrayBuffer(m), new ByteArrayBuffer(u), new ByteArrayBuffer(v));
+
+                    Headers.Header schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(this.version));
+                    if(schemeHeader != null)
+                        _request.setScheme(schemeHeader.value());
 
                     updateState(State.HEADERS);
                     handle();
@@ -403,7 +408,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         if (!stream.isUnidirectional())
             stream.reply(replyInfo);
         if (replyInfo.getHeaders().get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") &&
-                !stream.isClosed() && !isIfModifiedSinceHeaderPresent())
+                !stream.isClosed())
         {
             // We have a 200 OK with some content to send
 
@@ -411,19 +416,12 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             Headers.Header host = headers.get(HTTPSPDYHeader.HOST.name(version));
             Headers.Header uri = headers.get(HTTPSPDYHeader.URI.name(version));
             Set<String> pushResources = pushStrategy.apply(stream, headers, replyInfo.getHeaders());
-            String referrer = new StringBuilder(scheme.value()).append("://").append(host.value()).append(uri.value()).toString();
-            for (String pushURL : pushResources)
+
+            for (String pushResourcePath : pushResources)
             {
-                final Headers pushHeaders = new Headers();
-                pushHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
-                pushHeaders.put(HTTPSPDYHeader.URI.name(version), pushURL);
-                pushHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
-                pushHeaders.put(scheme);
-                pushHeaders.put(host);
-                pushHeaders.put("referer", referrer);
-                pushHeaders.put("x-spdy-push", "true");
-                // Remember support for gzip encoding
-                pushHeaders.put(headers.get("accept-encoding"));
+                final Headers requestHeaders = createRequestHeaders(scheme, host, uri, pushResourcePath);
+                final Headers pushHeaders = createPushHeaders(scheme, host, pushResourcePath);
+
                 stream.syn(new SynInfo(pushHeaders, false), getMaxIdleTime(), TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
                 {
                     @Override
@@ -431,16 +429,43 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     {
                         ServerHTTPSPDYAsyncConnection pushConnection =
                                 new ServerHTTPSPDYAsyncConnection(getConnector(), getEndPoint(), getServer(), version, connection, pushStrategy, pushStream);
-                        pushConnection.beginRequest(pushHeaders, true);
+                        pushConnection.beginRequest(requestHeaders, true);
                     }
                 });
             }
         }
     }
 
-    private boolean isIfModifiedSinceHeaderPresent()
+    private Headers createRequestHeaders(Headers.Header scheme, Headers.Header host, Headers.Header uri, String pushResourcePath)
     {
-        return headers.get("if-modified-since") != null;
+        final Headers requestHeaders = new Headers();
+        requestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        requestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        requestHeaders.put(scheme);
+        requestHeaders.put(host);
+        requestHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);
+        String referrer = scheme.value() + "://" + host.value() + uri.value();
+        requestHeaders.put("referer", referrer);
+        // Remember support for gzip encoding
+        requestHeaders.put(headers.get("accept-encoding"));
+        requestHeaders.put("x-spdy-push", "true");
+        return requestHeaders;
+    }
+
+    private Headers createPushHeaders(Headers.Header scheme, Headers.Header host, String pushResourcePath)
+    {
+        final Headers pushHeaders = new Headers();
+        if (version == SPDY.V2)
+            pushHeaders.put(HTTPSPDYHeader.URI.name(version), scheme.value() + "://" + host.value() + pushResourcePath);
+        else
+        {
+            pushHeaders.put(HTTPSPDYHeader.URI.name(version), pushResourcePath);
+            pushHeaders.put(scheme);
+            pushHeaders.put(host);
+        }
+        pushHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200");
+        pushHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        return pushHeaders;
     }
 
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException

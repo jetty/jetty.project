@@ -16,9 +16,11 @@
 
 package org.eclipse.jetty.spdy;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -66,10 +68,12 @@ import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Atomics;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class StandardSession implements ISession, Parser.Listener, Handler<StandardSession.FrameBytes>
+public class StandardSession implements ISession, Parser.Listener, Handler<StandardSession.FrameBytes>, Dumpable
 {
     private static final Logger logger = Log.getLogger(Session.class);
     private static final ThreadLocal<Integer> handlerInvocations = new ThreadLocal<Integer>()
@@ -1091,6 +1095,27 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         flowControlStrategy.setWindowSize(this, initialWindowSize);
     }
+
+    public String toString()
+    {
+        return String.format("%s@%x{v%d,queuSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(), hashCode(), version, queue.size(), getWindowSize(), streams.size());
+    }
+    
+    
+    @Override
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        AggregateLifeCycle.dumpObject(out,this);
+        AggregateLifeCycle.dump(out,indent,Collections.singletonList(controller),streams.values());
+    }
+
+
 
     public interface FrameBytes extends Comparable<FrameBytes>
     {

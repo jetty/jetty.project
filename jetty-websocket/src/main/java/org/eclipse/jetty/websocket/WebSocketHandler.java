@@ -51,7 +51,10 @@ public abstract class WebSocketHandler extends HandlerWrapper implements WebSock
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (_webSocketFactory.acceptWebSocket(request,response) || response.isCommitted())
+        {
+            baseRequest.setHandled(true);
             return;
+        }
         super.handle(target,baseRequest,request,response);
     }
     
