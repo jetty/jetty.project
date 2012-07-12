@@ -92,7 +92,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         
         MetaData metaData = _context.getMetaData();
 
-        //Find out if a <servlet>  of this type already exists with this name
+        //Find out if a <servlet> already exists with this name
         ServletHolder[] holders = _context.getServletHandler().getServlets();
         boolean isNew = true;
         ServletHolder holder = null;
@@ -100,7 +100,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         {
             for (ServletHolder h : holders)
             {
-                if (h.getClassName().equals(clazz.getName()) && h.getName() != null && servletName.equals(h.getName()))
+                if (h.getName() != null && servletName.equals(h.getName()))
                 {
                     holder = h;
                     isNew = false;
@@ -142,11 +142,19 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         }
         else
         {
+            //set the class according to the servlet that is annotated, if it wasn't already
+            //NOTE: this may be considered as "completing" an incomplete servlet registration, and it is
+            //not clear from servlet 3.0 spec whether this is intended, or if only a ServletContext.addServlet() call
+            //can complete it, see http://java.net/jira/browse/SERVLET_SPEC-42
+            if (holder.getClassName() == null) 
+                holder.setClassName(clazz.getName());
+            if (holder.getHeldClass() == null)
+                holder.setHeldClass(clazz);
+            
             //check if the existing servlet has each init-param from the annotation
             //if not, add it
             for (WebInitParam ip:annotation.initParams())
             {
-              //if (holder.getInitParameter(ip.name()) == null)
                 if (metaData.getOrigin(servletName+".servlet.init-param"+ip.name())==Origin.NotSet)
                 {
                     holder.setInitParameter(ip.name(), ip.value());

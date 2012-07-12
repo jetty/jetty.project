@@ -245,7 +245,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         {
             //Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to find it's class
             ServletHolder holder = _context.getServletHandler().getServlet(mapping.getServletName());
-            if (holder.getClassName().equals(className))
+            if (holder.getClassName() != null && holder.getClassName().equals(className))
               results.add(mapping);
         }
         return results;

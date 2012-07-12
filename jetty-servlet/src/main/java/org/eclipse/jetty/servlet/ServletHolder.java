@@ -287,16 +287,28 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _unavailable=0;
         if (!_enabled)
             return;
-        
+        //check servlet has a class (ie is not a preliminary registration). If preliminary, fail startup.
         try
         {
             super.doStart();
+        } 
+        catch (UnavailableException ue)
+        {
+            makeUnavailable(ue);
+            throw ue;
+        }
+        
+        try
+        {
             checkServletType();
         }
         catch (UnavailableException ue)
         {
             makeUnavailable(ue);
+            if (!_servletHandler.isStartWithUnavailable())
+                throw ue; //servlet is not an instance of javax.servlet.Servlet
         }
+        
 
         _identityService = _servletHandler.getIdentityService();
         if (_identityService!=null && _runAsRole!=null)
