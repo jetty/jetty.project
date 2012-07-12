@@ -1010,6 +1010,61 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     }
 
     @Test
+    public void testGETWithMultipleMediumContentByPassed() throws Exception
+    {
+        final byte[] data = new byte[2048];
+        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                // The sequence of write/flush/write/write below triggers a condition where
+                // HttpGenerator._bypass is set to true on the second write(), and the
+                // third write causes an infinite spin loop on the third write().
+                request.setHandled(true);
+                OutputStream output = httpResponse.getOutputStream();
+                output.write(data);
+                output.flush();
+                output.write(data);
+                output.write(data);
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        final AtomicInteger contentLength = new AtomicInteger();
+        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertFalse(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataInfo.consume(dataInfo.available());
+                contentLength.addAndGet(dataInfo.length());
+                if (dataInfo.isClose())
+                    dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(3 * data.length, contentLength.get());
+    }
+
+    @Test
     public void testPOSTThenSuspendRequestThenReadOneChunkThenComplete() throws Exception
     {
         final byte[] data = new byte[2000];

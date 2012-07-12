@@ -722,6 +722,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     logger.debug("HTTP < {} bytes of content", dataInfo.length());
                     stream.data(dataInfo).get(maxIdleTime, TimeUnit.MILLISECONDS);
                     content.clear();
+                    _bypass = false;
                     content = getContentBuffer();
                 }
             }
