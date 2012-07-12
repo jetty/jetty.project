@@ -53,6 +53,7 @@ public class IdentityExtensionTest
         client.addExtensions("identity;param=0");
         client.addExtensions("identity;param=1, identity ; param = '2' ; other = ' some = value '");
         client.setProtocols("onConnect");
+        client.setDebug(true);
 
         try
         {

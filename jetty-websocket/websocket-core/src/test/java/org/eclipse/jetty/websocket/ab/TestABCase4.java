@@ -41,7 +41,7 @@ public class TestABCase4
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
@@ -63,7 +63,7 @@ public class TestABCase4
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
@@ -86,7 +86,7 @@ public class TestABCase4
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;
@@ -108,7 +108,7 @@ public class TestABCase4
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         Assert.assertEquals( "error on undefined opcode", 1, capture.getErrorCount(WebSocketException.class)) ;

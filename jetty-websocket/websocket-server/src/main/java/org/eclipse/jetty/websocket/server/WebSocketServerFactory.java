@@ -47,12 +47,9 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.driver.EventMethodsCache;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
-import org.eclipse.jetty.websocket.extensions.fragment.FragmentExtension;
-import org.eclipse.jetty.websocket.extensions.identity.IdentityExtension;
+import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
-import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeHixie76;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 
@@ -63,14 +60,6 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
     private final Queue<WebSocketAsyncConnection> connections = new ConcurrentLinkedQueue<WebSocketAsyncConnection>();
-
-    // TODO: replace with ExtensionRegistry in websocket-core
-    private final Map<String, Class<? extends Extension>> extensionClasses = new HashMap<>();
-    {
-        extensionClasses.put("identity",IdentityExtension.class);
-        extensionClasses.put("fragment",FragmentExtension.class);
-        extensionClasses.put("x-deflate-frame",DeflateFrameExtension.class);
-    }
 
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     {
@@ -86,7 +75,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     private final WebSocketPolicy basePolicy;
     private final EventMethodsCache methodsCache;
     private final ByteBufferPool bufferPool;
-    private final ExtensionRegistry extensionRegistry;
+    private final WebSocketExtensionRegistry extensionRegistry;
     private WebSocketCreator creator;
     private Class<?> firstRegisteredClass;
 
@@ -100,7 +89,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         this.basePolicy = policy;
         this.methodsCache = new EventMethodsCache();
         this.bufferPool = bufferPool;
-        this.extensionRegistry = new WebSocketExtensionRegistry();
+        this.extensionRegistry = new WebSocketExtensionRegistry(basePolicy,bufferPool);
         this.creator = this;
 
         // Create supportedVersions
@@ -194,12 +183,9 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         return this.creator;
     }
 
-    /**
-     * @return A modifiable map of extension name to extension class
-     */
-    public Map<String, Class<? extends Extension>> getExtensionClassesMap()
+    public ExtensionRegistry getExtensionRegistry()
     {
-        return extensionClasses;
+        return extensionRegistry;
     }
 
     /**
@@ -296,6 +282,12 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         this.creator = creator;
     }
 
+    private IncomingFrames setupExtensionChain(WebSocketEventDriver websocket, List<Extension> extensions)
+    {
+        // TODO Auto-generated method stub
+        return websocket;
+    }
+
     /**
      * Upgrade the request/response to a WebSocket Connection.
      * <p>
@@ -354,19 +346,12 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
         // Initialize / Negotiate Extensions
         List<Extension> extensions = initExtensions(request.getExtensions());
-        // TODO : bind extensions? layer extensions? how?
-        // TODO : wrap websocket with extension processing Parser.Listener list
-
-        Parser.ListenerList listenerList = new Parser.ListenerList();
-        listenerList.addListener(websocket);
-
-        connection.getParser().setListener(listenerList);
-        // TODO : connection.setWriteExtensions(extensions);
-        // TODO : implement endpoint.write() layer for outgoing extension frames.
+        IncomingFrames incoming = setupExtensionChain(websocket,extensions);
+        connection.getParser().setIncomingFramesHandler(incoming);
 
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);
-        handshaker.doHandshakeResponse(request,response,extensions);
+        handshaker.doHandshakeResponse(request,response);
 
         // Add connection
         addConnection(connection);

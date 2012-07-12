@@ -16,9 +16,7 @@
 package org.eclipse.jetty.websocket.server.handshake;
 
 import java.io.IOException;
-import java.util.List;
 
-import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.ServletWebSocketResponse;
 import org.eclipse.jetty.websocket.server.WebSocketHandshake;
@@ -34,7 +32,7 @@ public class HandshakeHixie76 implements WebSocketHandshake
     public static final int VERSION = 0;
 
     @Override
-    public void doHandshakeResponse(ServletWebSocketRequest request, ServletWebSocketResponse response, List<Extension> extensions) throws IOException
+    public void doHandshakeResponse(ServletWebSocketRequest request, ServletWebSocketResponse response) throws IOException
     {
         // TODO: implement the Hixie76 handshake?
         throw new IOException("Not implemented yet");

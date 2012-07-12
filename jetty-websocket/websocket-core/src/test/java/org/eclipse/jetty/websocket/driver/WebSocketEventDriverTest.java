@@ -60,7 +60,7 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         socket.capture.assertEventCount(2);
         socket.capture.assertEventStartsWith(0,"onWebSocketConnect");
@@ -76,8 +76,8 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(makeBinaryFrame("Hello World",true));
-        driver.onFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        driver.incoming(makeBinaryFrame("Hello World",true));
+        driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         socket.capture.assertEventCount(3);
         socket.capture.assertEventStartsWith(0,"onConnect");
@@ -94,10 +94,10 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(new WebSocketFrame(OpCode.PING).setPayload("PING"));
-        driver.onFrame(WebSocketFrame.text("Text Me"));
-        driver.onFrame(WebSocketFrame.binary().setPayload("Hello Bin"));
-        driver.onFrame(new CloseInfo(StatusCode.SHUTDOWN).asFrame());
+        driver.incoming(new WebSocketFrame(OpCode.PING).setPayload("PING"));
+        driver.incoming(WebSocketFrame.text("Text Me"));
+        driver.incoming(WebSocketFrame.binary().setPayload("Hello Bin"));
+        driver.incoming(new CloseInfo(StatusCode.SHUTDOWN).asFrame());
 
         socket.capture.assertEventCount(6);
         socket.capture.assertEventStartsWith(0,"onConnect(");
@@ -117,8 +117,8 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(makeBinaryFrame("Hello World",true));
-        driver.onFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        driver.incoming(makeBinaryFrame("Hello World",true));
+        driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         socket.capture.assertEventCount(3);
         socket.capture.assertEventStartsWith(0,"onConnect");
@@ -135,8 +135,8 @@ public class WebSocketEventDriverTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
         driver.setConnection(conn);
         driver.onConnect();
-        driver.onFrame(WebSocketFrame.text("Hello World"));
-        driver.onFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+        driver.incoming(WebSocketFrame.text("Hello World"));
+        driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         socket.capture.assertEventCount(3);
         socket.capture.assertEventStartsWith(0,"onWebSocketConnect");

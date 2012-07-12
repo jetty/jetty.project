@@ -99,7 +99,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
 
         WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endPoint,executor,scheduler,policy,bufferPool);
         endPoint.setAsyncConnection(connection);
-        connection.getParser().setListener(websocket);
+        connection.getParser().setIncomingFramesHandler(websocket);
 
         // TODO: track open websockets? bind open websocket to connection?
 

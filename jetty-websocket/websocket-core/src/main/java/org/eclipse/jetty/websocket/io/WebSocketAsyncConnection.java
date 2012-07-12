@@ -46,7 +46,7 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io
  */
-public class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, WebSocketConnection
+public class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, WebSocketConnection, OutgoingFrames
 {
     static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
     private static final ThreadLocal<WebSocketAsyncConnection> CURRENT_CONNECTION = new ThreadLocal<WebSocketAsyncConnection>();
@@ -61,17 +61,14 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         CURRENT_CONNECTION.set(connection);
     }
 
-    final ByteBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final ScheduledExecutorService scheduler;
-    final Generator generator;
+    private final Generator generator;
     private final Parser parser;
-    final WebSocketPolicy policy;
-    final FrameQueue queue;
-
-    // TODO: track extensions? (only those that need to operate at this level?)
-    // TODO: are extensions going to layer the endpoint?
-    // TODO: are extensions going to layer the connection?
+    private final WebSocketPolicy policy;
+    private final FrameQueue queue;
     private List<ExtensionConfig> extensions;
+    private OutgoingFrames outgoingFramesHandler;
     private boolean flushing;
 
     public WebSocketAsyncConnection(AsyncEndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -266,6 +263,12 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         LOG.debug("onOpen()");
         super.onOpen();
         fillInterested();
+    }
+
+    @Override
+    public void output(WebSocketFrame frame)
+    {
+        // TODO Auto-generated method stub
     }
 
     @Override

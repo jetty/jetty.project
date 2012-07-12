@@ -49,6 +49,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -65,11 +66,11 @@ import org.junit.Assert;
  * This client is <u>NOT</u> intended to be performant or follow the websocket spec religiously. In fact, being able to deviate from the websocket spec at will
  * is desired for this client to operate properly for the unit testing within this module.
  */
-public class BlockheadClient implements Parser.Listener
+public class BlockheadClient implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(BlockheadClient.class);
     /** Set to true to disable timeouts (for debugging reasons) */
-    private static final boolean DEBUG = false;
+    private boolean debug = false;
     private final URI destHttpURI;
     private final URI destWebsocketURI;
     private final ByteBufferPool bufferPool;
@@ -103,7 +104,7 @@ public class BlockheadClient implements Parser.Listener
         bufferPool = new StandardByteBufferPool(policy.getBufferSize());
         generator = new UnitGenerator();
         parser = new Parser(policy);
-        parser.setListener(this);
+        parser.setIncomingFramesHandler(this);
 
         incomingFrameQueue = new LinkedBlockingDeque<>();
     }
@@ -198,6 +199,22 @@ public class BlockheadClient implements Parser.Listener
         return destWebsocketURI;
     }
 
+    @Override
+    public void incoming(WebSocketException e)
+    {
+        LOG.warn(e);
+    }
+
+    @Override
+    public void incoming(WebSocketFrame frame)
+    {
+        LOG.debug("incoming({})",frame);
+        if (!incomingFrameQueue.offerLast(frame))
+        {
+            throw new RuntimeException("Unable to queue incoming frame: " + frame);
+        }
+    }
+
     public void lookFor(String string) throws IOException
     {
         String orig = string;
@@ -225,22 +242,6 @@ public class BlockheadClient implements Parser.Listener
             System.err.println("IOE while looking for \"" + orig + "\" in '" + scanned + "'");
             throw e;
         }
-    }
-
-    @Override
-    public void onFrame(WebSocketFrame frame)
-    {
-        LOG.debug("onFrame({})",frame);
-        if (!incomingFrameQueue.offerLast(frame))
-        {
-            throw new RuntimeException("Unable to queue incoming frame: " + frame);
-        }
-    }
-
-    @Override
-    public void onWebSocketException(WebSocketException e)
-    {
-        LOG.warn(e);
     }
 
     public int read(ByteBuffer buf) throws IOException
@@ -285,7 +286,7 @@ public class BlockheadClient implements Parser.Listener
                 {
                     /* ignore */
                 }
-                if (!DEBUG && (System.currentTimeMillis() > expireOn))
+                if (!debug && (System.currentTimeMillis() > expireOn))
                 {
                     throw new TimeoutException("Timeout reading all of the desired frames");
                 }
@@ -346,6 +347,11 @@ public class BlockheadClient implements Parser.Listener
         req.append("Sec-WebSocket-Version: ").append(version).append("\r\n");
         req.append("\r\n");
         writeRaw(req.toString());
+    }
+
+    public void setDebug(boolean flag)
+    {
+        this.debug = flag;
     }
 
     public void setProtocols(String protocols)

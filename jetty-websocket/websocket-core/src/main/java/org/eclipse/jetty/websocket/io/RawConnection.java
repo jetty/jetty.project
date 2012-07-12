@@ -15,11 +15,13 @@
 //========================================================================
 package org.eclipse.jetty.websocket.io;
 
+import java.io.IOException;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
@@ -31,6 +33,8 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
  */
 public interface RawConnection extends WebSocketConnection
 {
+    void close() throws IOException;
+
     <C> void complete(FrameBytes<C> frameBytes);
 
     void disconnect(boolean onlyOutput);
@@ -44,6 +48,8 @@ public interface RawConnection extends WebSocketConnection
     Generator getGenerator();
 
     Parser getParser();
+
+    WebSocketPolicy getPolicy();
 
     FrameQueue getQueue();
 
