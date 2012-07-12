@@ -73,6 +73,9 @@ public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter imp
     protected void addRequestProxyHeaders(Stream stream, Headers headers)
     {
         addViaHeader(headers);
+        String address = (String)stream.getSession().getAttribute("org.eclipse.jetty.spdy.remoteAddress");
+        if (address != null)
+            headers.add("X-Forwarded-For", address);
     }
 
     protected void addResponseProxyHeaders(Stream stream, Headers headers)

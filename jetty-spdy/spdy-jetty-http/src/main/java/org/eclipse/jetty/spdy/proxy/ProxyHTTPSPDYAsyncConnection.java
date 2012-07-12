@@ -59,13 +59,14 @@ public class ProxyHTTPSPDYAsyncConnection extends AsyncHttpConnection
     private Stream stream;
     private Buffer content;
 
-    public ProxyHTTPSPDYAsyncConnection(SPDYServerConnector connector, EndPoint endpoint, short version, ProxyEngine proxyEngine)
+    public ProxyHTTPSPDYAsyncConnection(SPDYServerConnector connector, EndPoint endPoint, short version, ProxyEngine proxyEngine)
     {
-        super(connector, endpoint, connector.getServer());
+        super(connector, endPoint, connector.getServer());
         this.version = version;
         this.proxyEngine = proxyEngine;
         this.generator = (HttpGenerator)_generator;
         this.session = new HTTPSession(version, connector);
+        this.session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddr());
     }
 
     @Override
