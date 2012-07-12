@@ -456,15 +456,22 @@ public class Parser
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("Parser [");
-        builder.append(incomingFramesHandler.getClass().getSimpleName());
-        builder.append(", state=");
+        builder.append("Parser[");
+        if (incomingFramesHandler == null)
+        {
+            builder.append("NO_HANDLER");
+        }
+        else
+        {
+            builder.append(incomingFramesHandler.getClass().getSimpleName());
+        }
+        builder.append(",s=");
         builder.append(state);
-        builder.append(", cursor=");
+        builder.append(",c=");
         builder.append(cursor);
-        builder.append(", payloadLength=");
+        builder.append(",len=");
         builder.append(payloadLength);
-        builder.append(", frame=");
+        builder.append(",f=");
         builder.append(frame);
         builder.append("]");
         return builder.toString();
