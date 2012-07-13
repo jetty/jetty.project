@@ -414,7 +414,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "PUT");
         filterHolder.setInitParameter(CrossOriginFilter.FORWARD_PREFLIGHT_PARAM, "false");
-        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
+        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
