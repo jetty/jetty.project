@@ -239,46 +239,33 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String servlet_class = node.getString("servlet-class", false, true);
 
         // Handle JSP
-        String jspServletName=null;
         String jspServletClass=null;;
-        boolean hasJSP=false;
+
+        //Handle the default jsp servlet instance
         if (id != null && id.equals("jsp"))
         {
-            jspServletName = servlet_name;
             jspServletClass = servlet_class;
             try
             {
                 Loader.loadClass(this.getClass(), servlet_class);
-                hasJSP = true;
+                
+                //Ensure there is a scratch dir
+                if (holder.getInitParameter("scratchdir") == null)
+                {
+                    File tmp = context.getTempDirectory();
+                    File scratch = new File(tmp, "jsp");
+                    if (!scratch.exists()) scratch.mkdir();
+                    holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
+                }
             }
             catch (ClassNotFoundException e)
             {
                 LOG.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servlet_class);
                 jspServletClass = servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
             }
-            if (holder.getInitParameter("scratchdir") == null)
-            {
-                File tmp = context.getTempDirectory();
-                File scratch = new File(tmp, "jsp");
-                if (!scratch.exists()) scratch.mkdir();
-                holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
-
-                if ("?".equals(holder.getInitParameter("classpath")))
-                {
-                    String classpath = context.getClassPath();
-                    LOG.debug("classpath=" + classpath);
-                    if (classpath != null) 
-                        holder.setInitParameter("classpath", classpath);
-                }
-            }
-
-            /* Set the webapp's classpath for Jasper */
-            context.setAttribute("org.apache.catalina.jsp_classpath", context.getClassPath());
-
-            /* Set the system classpath for Jasper */
-            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
         }
         
+       
         //Set the servlet-class
         if (servlet_class != null) 
         {
@@ -316,14 +303,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }          
         }
 
-        // Handler JSP file
+        // Handle JSP file
         String jsp_file = node.getString("jsp-file", false, true);
         if (jsp_file != null)
         {
             holder.setForcedPath(jsp_file);
-            holder.setClassName(jspServletClass);
-            //set the system classpath explicitly for the holder that will represent the JspServlet instance
-            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
+            holder.setClassName(jspServletClass); //only use our default instance
         }
 
         // handle load-on-startup 
@@ -1431,46 +1416,5 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         return p;
     }
 
-    /**
-     * Generate the classpath (as a string) of all classloaders
-     * above the webapp's classloader.
-     * 
-     * This is primarily used for jasper.
-     * @return the system class path
-     */
-    protected String getSystemClassPath(WebAppContext context)
-    {
-        ClassLoader loader = context.getClassLoader();
-        if (loader.getParent() != null)
-            loader = loader.getParent();
-
-        StringBuilder classpath=new StringBuilder();
-        while (loader != null && (loader instanceof URLClassLoader))
-        {
-            URL[] urls = ((URLClassLoader)loader).getURLs();
-            if (urls != null)
-            {     
-                for (int i=0;i<urls.length;i++)
-                {
-                    try
-                    {
-                        Resource resource = context.newResource(urls[i]);
-                        File file=resource.getFile();
-                        if (file!=null && file.exists())
-                        {
-                            if (classpath.length()>0)
-                                classpath.append(File.pathSeparatorChar);
-                            classpath.append(file.getAbsolutePath());
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.debug(e);
-                    }
-                }
-            }
-            loader = loader.getParent();
-        }
-        return classpath.toString();
-    }
+  
 }

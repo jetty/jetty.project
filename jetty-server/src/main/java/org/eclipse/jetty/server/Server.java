@@ -135,11 +135,21 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     public void setStopAtShutdown(boolean stop)
     {
-        _stopAtShutdown=stop;
+        //if we now want to stop
         if (stop)
-            ShutdownThread.register(this);
+        {
+            //and we weren't stopping before
+            if (!_stopAtShutdown)
+            {  
+                //only register to stop if we're already started (otherwise we'll do it in doStart())
+                if (isStarted()) 
+                    ShutdownThread.register(this);
+            }
+        }
         else
             ShutdownThread.deregister(this);
+        
+        _stopAtShutdown=stop;
     }
 
     /* ------------------------------------------------------------ */
@@ -342,7 +352,7 @@ public class Server extends HandlerWrapper implements Attributes
         {
             LOG.debug("REQUEST "+target+" on "+connection);
             handle(target, request, request, response);
-            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
+            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
         }
         else
             handle(target, request, request, response);

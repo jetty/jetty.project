@@ -1,18 +1,16 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 
 package org.eclipse.jetty.spdy;
 
@@ -50,6 +48,11 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         this.listener = listener;
     }
 
+    public short getVersion()
+    {
+        return version;
+    }
+
     @Override
     public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
     {
@@ -57,16 +60,17 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         Parser parser = new Parser(compressionFactory.newDecompressor());
         Generator generator = new Generator(bufferPool, compressionFactory.newCompressor());
 
-        ServerSessionFrameListener listener = this.listener;
-        if (listener == null)
-            listener = newServerSessionFrameListener(endPoint, attachment);
-
         SPDYServerConnector connector = (SPDYServerConnector)attachment;
 
+        ServerSessionFrameListener listener = provideServerSessionFrameListener(endPoint, attachment);
         SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, bufferPool, parser, listener, connector);
         endPoint.setConnection(connection);
 
-        final StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator);
+        FlowControlStrategy flowControlStrategy = connector.newFlowControlStrategy(version);
+
+        StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator, flowControlStrategy);
+        session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddr());
+        session.setWindowSize(connector.getInitialWindowSize());
         parser.addListener(session);
         connection.setSession(session);
 
@@ -75,7 +79,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         return connection;
     }
 
-    protected ServerSessionFrameListener newServerSessionFrameListener(AsyncEndPoint endPoint, Object attachment)
+    protected ServerSessionFrameListener provideServerSessionFrameListener(AsyncEndPoint endPoint, Object attachment)
     {
         return listener;
     }

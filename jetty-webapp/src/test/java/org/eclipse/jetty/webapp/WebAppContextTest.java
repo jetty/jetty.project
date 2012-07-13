@@ -12,6 +12,7 @@
 // ========================================================================
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -166,6 +167,16 @@ public class WebAppContextTest
         assertTrue(Resource.newResource(context.getServletContext().getResource("/WEB-INF/classes/SomeClass.class")).exists());
         assertTrue(Resource.newResource(context.getServletContext().getResource("/classes/SomeClass.class")).exists());
 
+    }
+    
+    
+    @Test
+    public void testIsProtected() throws Exception
+    {
+        WebAppContext context = new WebAppContext();
+        assertTrue(context.isProtectedTarget("/web-inf/lib/foo.jar"));
+        assertTrue(context.isProtectedTarget("/meta-inf/readme.txt"));
+        assertFalse(context.isProtectedTarget("/something-else/web-inf"));
     }
     
     class ServletA extends GenericServlet

@@ -8,14 +8,14 @@
       <New class="org.eclipse.jetty.monitor.ThreadMonitor">
         <Set name="scanInterval">2000</Set>
         <Set name="busyThreshold">90</Set>
-        <Set name="stackDepth">3</Set>
+        <Set name="stackDepth">5</Set>
         <Set name="trailLength">2</Set>
         <!-- To enable logging CPU utilization for threads above specified threshold, -->
         <!-- uncomment the following lines, changing log interval (in milliseconds)  -->
         <!-- and log threshold (in percent) as desired.                              -->
         <!-- 
-        <Set name="logInterval">10000</Arg>
-        <Set name="logThreshold">1</Arg>
+        <Set name="logInterval">10000</Set>
+        <Set name="logThreshold">65</Set>
         -->
         
         <!-- To enable detail dump of the server whenever a thread is detected as spinning, -->

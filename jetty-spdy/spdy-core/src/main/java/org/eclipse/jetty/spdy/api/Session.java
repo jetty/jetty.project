@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 package org.eclipse.jetty.spdy.api;
 
@@ -75,7 +72,7 @@ public interface Session
      * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Handler)
      */
     public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
-    
+
     /**
      * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
      * <p>Callers may pass a non-null completion handler to be notified of when the
@@ -90,7 +87,7 @@ public interface Session
      */
     public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
 
-    
+
     /**
      * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
      * <p>Callers may use the returned future to wait for the reset to be sent.</p>
@@ -180,9 +177,39 @@ public interface Session
     public void goAway(long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
-     * @return the streams currently active in this session
+     * @return a snapshot of the streams currently active in this session
+     * @see #getStream(int)
      */
     public Set<Stream> getStreams();
+
+    /**
+     * @param streamId the id of the stream to retrieve
+     * @return the stream with the given stream id
+     * @see #getStreams()
+     */
+    public Stream getStream(int streamId);
+
+    /**
+     * @param key the attribute key
+     * @return an arbitrary object associated with the given key to this session
+     * @see #setAttribute(String, Object)
+     */
+    public Object getAttribute(String key);
+
+    /**
+     * @param key   the attribute key
+     * @param value an arbitrary object to associate with the given key to this session
+     * @see #getAttribute(String)
+     * @see #removeAttribute(String)
+     */
+    public void setAttribute(String key, Object value);
+
+    /**
+     * @param key the attribute key
+     * @return the arbitrary object associated with the given key to this session
+     * @see #setAttribute(String, Object)
+     */
+    public Object removeAttribute(String key);
 
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>

@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 package org.eclipse.jetty.spdy;
 
@@ -38,7 +35,6 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
-import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.RstStreamFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
@@ -145,14 +141,12 @@ public class ClosedStreamTest extends AbstractTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 replyReceivedLatch.countDown();
-                super.onReply(stream,replyInfo);
             }
 
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 clientReceivedDataLatch.countDown();
-                super.onData(stream,dataInfo);
             }
         }).get();
         assertThat("reply has been received by client",replyReceivedLatch.await(5,TimeUnit.SECONDS),is(true));
@@ -204,7 +198,6 @@ public class ClosedStreamTest extends AbstractTest
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         serverDataReceivedLatch.countDown();
-                        super.onData(stream,dataInfo);
                     }
                 };
             }
@@ -217,7 +210,7 @@ public class ClosedStreamTest extends AbstractTest
 
         final Generator generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory().newCompressor());
         int streamId = 1;
-        ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE, streamId,0,(byte)0,new Headers()));
+        ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE, streamId,0,(byte)0,(short)0,new Headers()));
 
         final SocketChannel socketChannel = SocketChannel.open(startServer);
         socketChannel.write(synData);
@@ -250,13 +243,6 @@ public class ClosedStreamTest extends AbstractTest
                 {
                     clientResetReceivedLatch.countDown();
                 }
-                super.onControlFrame(frame);
-            }
-
-            @Override
-            public void onDataFrame(DataFrame frame, ByteBuffer data)
-            {
-                super.onDataFrame(frame,data);
             }
         });
         ByteBuffer response = ByteBuffer.allocate(28);
@@ -272,7 +258,7 @@ public class ClosedStreamTest extends AbstractTest
         Assert.assertThat(buffer.hasRemaining(), is(false));
 
         assertThat("GoAway frame is received by server", goAwayReceivedLatch.await(5,TimeUnit.SECONDS), is(true));
-        
+
         socketChannel.close();
     }
 }
