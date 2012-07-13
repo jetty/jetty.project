@@ -17,6 +17,7 @@ package org.eclipse.jetty.websocket.protocol;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 
@@ -83,6 +84,11 @@ public class ExtensionConfig
             str.append(';').append(param).append('=').append(QuotedStringTokenizer.quoteIfNeeded(parameters.get(param),";="));
         }
         return str.toString();
+    }
+
+    public Set<String> getParameterKeys()
+    {
+        return parameters.keySet();
     }
 
     /**

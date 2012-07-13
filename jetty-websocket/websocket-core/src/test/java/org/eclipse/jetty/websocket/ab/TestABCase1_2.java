@@ -340,7 +340,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -374,7 +374,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -408,7 +408,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -442,7 +442,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -477,7 +477,7 @@ public class TestABCase1_2
         policy.setMaxTextMessageSize(length);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -514,7 +514,7 @@ public class TestABCase1_2
         policy.setMaxTextMessageSize(length);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -538,7 +538,7 @@ public class TestABCase1_2
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();

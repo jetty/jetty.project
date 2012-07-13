@@ -15,17 +15,83 @@
 //========================================================================
 package org.eclipse.jetty.websocket.extensions.fragment;
 
-import org.eclipse.jetty.websocket.extensions.AbstractExtension;
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
+import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
-public class FragmentExtension extends AbstractExtension
+public class FragmentExtension extends Extension
 {
-    private int _maxLength=-1;
-    private int _minFragments=1;
+    private int maxLength = -1;
+    private int minFragments = 1;
 
-    public FragmentExtension()
+    @Override
+    public void output(WebSocketFrame frame)
     {
-        super("fragment");
+        if (frame.getOpCode().isControlFrame())
+        {
+            // Cannot fragment Control Frames
+            getNextOutgoingFrames().output(frame);
+            return;
+        }
+
+        int fragments = 1;
+        int length = frame.getPayloadLength();
+
+        OpCode opcode = frame.getOpCode();
+        ByteBuffer payload = frame.getPayload().slice();
+        int originalLimit = payload.limit();
+
+        // break apart payload based on maxLength rules
+        if (maxLength > 0)
+        {
+            while (length > maxLength)
+            {
+                fragments++;
+
+                WebSocketFrame frag = new WebSocketFrame(frame);
+                frag.setOpCode(opcode);
+                frag.setFin(false);
+                payload.limit(Math.min(payload.limit() + maxLength,originalLimit));
+                frag.setPayload(payload);
+
+                nextOutput(frag);
+
+                length -= maxLength;
+                opcode = OpCode.CONTINUATION;
+            }
+        }
+
+        // break apart payload based on minimum # of fragments
+        if (fragments < minFragments)
+        {
+            int fragmentsLeft = (minFragments - fragments);
+            int fragLength = length / fragmentsLeft; // equal sized fragments
+
+            while (fragments < minFragments)
+            {
+                fragments++;
+
+                WebSocketFrame frag = new WebSocketFrame(frame);
+                frag.setOpCode(opcode);
+                frag.setFin(false);
+                frag.setPayload(payload);
+
+                nextOutput(frag);
+                length -= fragLength;
+                opcode = OpCode.CONTINUATION;
+            }
+        }
+
+        // output whatever is left
+        WebSocketFrame frag = new WebSocketFrame(frame);
+        frag.setOpCode(opcode);
+        payload.limit(originalLimit);
+        frag.setPayload(payload);
+
+        nextOutput(frag);
     }
 
     @Override
@@ -33,42 +99,7 @@ public class FragmentExtension extends AbstractExtension
     {
         super.setConfig(config);
 
-        _maxLength = config.getParameter("maxLength",_maxLength);
-        _minFragments = config.getParameter("minFragments",_minFragments);
-
+        maxLength = config.getParameter("maxLength",maxLength);
+        minFragments = config.getParameter("minFragments",minFragments);
     }
-
-    /* TODO: Migrate to new Jetty9 IO
-    public void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
-    {
-        if (getConnection().isControl(opcode))
-        {
-            super.addFrame(flags,opcode,content,offset,length);
-            return;
-        }
-
-        int fragments=1;
-
-        while (_maxLength>0 && length>_maxLength)
-        {
-            fragments++;
-            super.addFrame((byte)(flags&~getConnection().finMask()),opcode,content,offset,_maxLength);
-            length-=_maxLength;
-            offset+=_maxLength;
-            opcode=getConnection().continuationOpcode();
-        }
-
-        while (fragments<_minFragments)
-        {
-            int frag=length/2;
-            fragments++;
-            super.addFrame((byte)(flags&0x7),opcode,content,offset,frag);
-            length-=frag;
-            offset+=frag;
-            opcode=getConnection().continuationOpcode();
-        }
-
-        super.addFrame((byte)(flags|getConnection().finMask()),opcode,content,offset,length);
-    }
-     */
 }

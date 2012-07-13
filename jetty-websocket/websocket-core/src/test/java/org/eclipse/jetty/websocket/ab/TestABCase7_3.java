@@ -71,7 +71,7 @@ public class TestABCase7_3
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -105,7 +105,7 @@ public class TestABCase7_3
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
@@ -146,7 +146,7 @@ public class TestABCase7_3
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -205,7 +205,7 @@ public class TestABCase7_3
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -276,7 +276,7 @@ public class TestABCase7_3
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -346,7 +346,7 @@ public class TestABCase7_3
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(expected);
 
         Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));

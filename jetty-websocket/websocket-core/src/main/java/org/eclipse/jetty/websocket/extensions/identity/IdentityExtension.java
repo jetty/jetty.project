@@ -15,12 +15,32 @@
 //========================================================================
 package org.eclipse.jetty.websocket.extensions.identity;
 
-import org.eclipse.jetty.websocket.extensions.AbstractExtension;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.websocket.api.Extension;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
-public class IdentityExtension extends AbstractExtension
+public class IdentityExtension extends Extension
 {
-    public IdentityExtension()
+    private String id;
+
+    @Override
+    public void setConfig(ExtensionConfig config)
     {
-        super("identity");
+        super.setConfig(config);
+        StringBuilder s = new StringBuilder();
+        s.append(config.getName());
+        s.append("[");
+        for (String param : config.getParameterKeys())
+        {
+            s.append(';').append(param).append('=').append(QuotedStringTokenizer.quoteIfNeeded(config.getParameter(param,""),";="));
+        }
+        s.append("]");
+        id = s.toString();
+    }
+
+    @Override
+    public String toString()
+    {
+        return id;
     }
 }

@@ -16,12 +16,11 @@
 package org.eclipse.jetty.websocket.server.handshake;
 
 import java.io.IOException;
-import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.protocol.AcceptHash;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.ServletWebSocketResponse;
 import org.eclipse.jetty.websocket.server.WebSocketHandshake;
@@ -35,7 +34,7 @@ public class HandshakeRFC6455 implements WebSocketHandshake
     public static final int VERSION = 13;
 
     @Override
-    public void doHandshakeResponse(ServletWebSocketRequest request, ServletWebSocketResponse response, List<Extension> extensions) throws IOException
+    public void doHandshakeResponse(ServletWebSocketRequest request, ServletWebSocketResponse response) throws IOException
     {
         String key = request.getHeader("Sec-WebSocket-Key");
 
@@ -54,11 +53,11 @@ public class HandshakeRFC6455 implements WebSocketHandshake
             response.addHeader("Sec-WebSocket-Protocol",response.getAcceptedSubProtocol());
         }
 
-        if (extensions != null)
+        if (request.getExtensions() != null)
         {
-            for (Extension ext : extensions)
+            for (ExtensionConfig ext : request.getExtensions())
             {
-                response.addHeader("Sec-WebSocket-Extensions",ext.getConfig().getParameterizedName());
+                response.addHeader("Sec-WebSocket-Extensions",ext.getParameterizedName());
             }
         }
 

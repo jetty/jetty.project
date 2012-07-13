@@ -55,7 +55,7 @@ public class TextPayloadParserTest
 
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
         capture.assertHasErrors(MessageTooLargeException.class,1);
@@ -93,7 +93,7 @@ public class TextPayloadParserTest
         policy.setMaxPayloadSize(100000);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -128,7 +128,7 @@ public class TextPayloadParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -165,7 +165,7 @@ public class TextPayloadParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -192,7 +192,7 @@ public class TextPayloadParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -218,7 +218,7 @@ public class TextPayloadParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Parser parser = new Parser(policy);
         FrameParseCapture capture = new FrameParseCapture();
-        parser.setListener(capture);
+        parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
         capture.assertNoErrors();

@@ -33,6 +33,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.io.MessageInputStream;
 import org.eclipse.jetty.websocket.io.MessageReader;
 import org.eclipse.jetty.websocket.io.RawConnection;
@@ -40,7 +41,6 @@ import org.eclipse.jetty.websocket.io.StreamAppender;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Frame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
@@ -51,7 +51,7 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
  * <p>
  * There will be an instance of the WebSocketEventDriver per connection.
  */
-public class WebSocketEventDriver implements Parser.Listener
+public class WebSocketEventDriver implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketEventDriver.class);
     private final Object websocket;
@@ -109,16 +109,24 @@ public class WebSocketEventDriver implements Parser.Listener
         return websocket;
     }
 
-    /**
-     * Internal entry point for connection established
-     */
-    public void onConnect()
+    @Override
+    public void incoming(WebSocketException e)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{}.onConnect()",websocket.getClass().getSimpleName());
+            LOG.debug("{}.incoming({})",websocket.getClass().getSimpleName(),e);
         }
-        events.onConnect.call(websocket,connection);
+
+        if (e instanceof CloseException)
+        {
+            CloseException close = (CloseException)e;
+            terminateConnection(close.getStatusCode(),close.getMessage());
+        }
+
+        if (events.onException != null)
+        {
+            events.onException.call(websocket,connection,e);
+        }
     }
 
     /**
@@ -128,7 +136,7 @@ public class WebSocketEventDriver implements Parser.Listener
      *            the frame that appeared
      */
     @Override
-    public void onFrame(WebSocketFrame frame)
+    public void incoming(WebSocketFrame frame)
     {
         if (LOG.isDebugEnabled())
         {
@@ -321,24 +329,16 @@ public class WebSocketEventDriver implements Parser.Listener
         }
     }
 
-    @Override
-    public void onWebSocketException(WebSocketException e)
+    /**
+     * Internal entry point for connection established
+     */
+    public void onConnect()
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{}.onWebSocketException({})",websocket.getClass().getSimpleName(),e);
+            LOG.debug("{}.onConnect()",websocket.getClass().getSimpleName());
         }
-
-        if (e instanceof CloseException)
-        {
-            CloseException close = (CloseException)e;
-            terminateConnection(close.getStatusCode(),close.getMessage());
-        }
-
-        if (events.onException != null)
-        {
-            events.onException.call(websocket,connection,e);
-        }
+        events.onConnect.call(websocket,connection);
     }
 
     /**

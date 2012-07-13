@@ -21,19 +21,33 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.extensions.deflate.DeflateFrameExtension;
+import org.eclipse.jetty.websocket.extensions.fragment.FragmentExtension;
+import org.eclipse.jetty.websocket.extensions.identity.IdentityExtension;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
 public class WebSocketExtensionRegistry implements ExtensionRegistry
 {
     private Map<String, Class<? extends Extension>> registry;
+    private WebSocketPolicy policy;
+    private ByteBufferPool bufferPool;
 
-    public WebSocketExtensionRegistry()
+    public WebSocketExtensionRegistry(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        registry = new HashMap<String, Class<? extends Extension>>();
+        this.policy = policy;
+        this.bufferPool = bufferPool;
+
+        this.registry = new HashMap<>();
+
+        this.registry.put("identity",IdentityExtension.class);
+        this.registry.put("fragment",FragmentExtension.class);
+        this.registry.put("x-deflate-frame",DeflateFrameExtension.class);
     }
 
     @Override
@@ -56,7 +70,6 @@ public class WebSocketExtensionRegistry implements ExtensionRegistry
         }
     }
 
-    @Override
     public Extension newInstance(ExtensionConfig config)
     {
         if (config == null)
@@ -78,6 +91,8 @@ public class WebSocketExtensionRegistry implements ExtensionRegistry
         {
             Extension ext = extClass.newInstance();
             ext.setConfig(config);
+            ext.setPolicy(policy);
+            ext.setBufferPool(bufferPool);
             return ext;
         }
         catch (InstantiationException | IllegalAccessException e)

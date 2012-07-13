@@ -16,9 +16,6 @@
 package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
-import java.util.EventListener;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -27,68 +24,13 @@ import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.io.IncomingFrames;
 
 /**
  * Parsing of a frames in WebSocket land.
  */
 public class Parser
 {
-    public static interface Listener extends EventListener
-    {
-        public void onFrame(final WebSocketFrame frame);
-
-        public void onWebSocketException(WebSocketException e);
-    }
-
-    public static class ListenerList implements Listener
-    {
-        private final List<Listener> listeners = new CopyOnWriteArrayList<>();
-
-        public void addListener(Listener listener)
-        {
-            listeners.add(listener);
-        }
-
-        @Override
-        public void onFrame(WebSocketFrame frame)
-        {
-            for (Listener listener : listeners)
-            {
-                try
-                {
-                    listener.onFrame(frame);
-                }
-                catch (WebSocketException e)
-                {
-                    throw e;
-                }
-                catch (Throwable t)
-                {
-                    throw new WebSocketException(t);
-                }
-            }
-        }
-
-        @Override
-        public void onWebSocketException(WebSocketException e)
-        {
-            for (Listener listener : listeners)
-            {
-                listener.onWebSocketException(e);
-            }
-        }
-
-        public void removeListener(Listener listener)
-        {
-            listeners.remove(listener);
-        }
-
-        public void setListeners(List<Listener> lsnrs)
-        {
-            listeners.addAll(lsnrs);
-        }
-    }
-
     private enum State
     {
         START,
@@ -110,7 +52,7 @@ public class Parser
     private int payloadLength;
 
     private static final Logger LOG = Log.getLogger(Parser.class);
-    private Listener listener;
+    private IncomingFrames incomingFramesHandler;
     private WebSocketPolicy policy;
 
     public Parser(WebSocketPolicy wspolicy)
@@ -136,14 +78,14 @@ public class Parser
         switch (frame.getOpCode())
         {
             case CLOSE:
-                if (payloadLength == 1)
+                if (len == 1)
                 {
                     throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
                 }
                 // fall thru
             case PING:
             case PONG:
-                if (payloadLength > WebSocketFrame.MAX_CONTROL_PAYLOAD)
+                if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
                 {
                     throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
                             + WebSocketFrame.MAX_CONTROL_PAYLOAD + "]");
@@ -187,9 +129,9 @@ public class Parser
         return amt;
     }
 
-    public Listener getListener()
+    public IncomingFrames getIncomingFramesHandler()
     {
-        return listener;
+        return incomingFramesHandler;
     }
 
     public WebSocketPolicy getPolicy()
@@ -200,13 +142,13 @@ public class Parser
     protected void notifyFrame(final WebSocketFrame f)
     {
         LOG.debug("Notify Frame: {}",f);
-        if (listener == null)
+        if (incomingFramesHandler == null)
         {
             return;
         }
         try
         {
-            listener.onFrame(f);
+            incomingFramesHandler.incoming(f);
         }
         catch (WebSocketException e)
         {
@@ -222,11 +164,11 @@ public class Parser
     protected void notifyWebSocketException(WebSocketException e)
     {
         LOG.debug(e);
-        if (listener == null)
+        if (incomingFramesHandler == null)
         {
             return;
         }
-        listener.onWebSocketException(e);
+        incomingFramesHandler.incoming(e);
     }
 
     public void parse(ByteBuffer buffer)
@@ -345,7 +287,7 @@ public class Parser
                     frame.setMasked((b & 0x80) != 0);
                     payloadLength = (byte)(0x7F & b);
 
-                    if (payloadLength == 127)
+                    if (payloadLength == 127) // 0x7F
                     {
                         // length 8 bytes (extended payload length)
                         payloadLength = 0;
@@ -353,7 +295,7 @@ public class Parser
                         cursor = 8;
                         break; // continue onto next state
                     }
-                    else if (payloadLength == 126)
+                    else if (payloadLength == 126) // 0x7E
                     {
                         // length 2 bytes (extended payload length)
                         payloadLength = 0;
@@ -505,22 +447,31 @@ public class Parser
         return false;
     }
 
-    public void setListener(Listener listener)
+    public void setIncomingFramesHandler(IncomingFrames incoming)
     {
-        this.listener = listener;
+        this.incomingFramesHandler = incoming;
     }
 
     @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("Parser [state=");
+        builder.append("Parser[");
+        if (incomingFramesHandler == null)
+        {
+            builder.append("NO_HANDLER");
+        }
+        else
+        {
+            builder.append(incomingFramesHandler.getClass().getSimpleName());
+        }
+        builder.append(",s=");
         builder.append(state);
-        builder.append(", cursor=");
+        builder.append(",c=");
         builder.append(cursor);
-        builder.append(", payloadLength=");
+        builder.append(",len=");
         builder.append(payloadLength);
-        builder.append(", frame=");
+        builder.append(",f=");
         builder.append(frame);
         builder.append("]");
         return builder.toString();

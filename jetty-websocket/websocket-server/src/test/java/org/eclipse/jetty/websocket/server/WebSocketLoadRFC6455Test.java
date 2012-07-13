@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
@@ -61,7 +62,7 @@ public class WebSocketLoadRFC6455Test
         private/* final */AsyncEndPoint _endp;
         private final Generator _generator;
         private final Parser _parser;
-        private final Parser.Listener _handler = new Parser.Listener()
+        private final IncomingFrames _handler = new IncomingFrames()
         {
             /*
              * public void close(int code,String message) { }
@@ -70,16 +71,15 @@ public class WebSocketLoadRFC6455Test
              */
 
             @Override
-            public void onFrame(WebSocketFrame frame)
+            public void incoming(WebSocketException e)
             {
                 // TODO Auto-generated method stub
             }
 
             @Override
-            public void onWebSocketException(WebSocketException e)
+            public void incoming(WebSocketFrame frame)
             {
                 // TODO Auto-generated method stub
-
             }
         };
         private volatile ByteBuffer _response;
