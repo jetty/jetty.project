@@ -1,4 +1,29 @@
-jetty-8.1.5-SNAPSHOT
+jetty-8.1.5.v20120713 - 13 July 2012
+ + 376717 Balancer Servlet with round robin support, contribution, added
+   missing license
+ + 379250 Server is added to shutdown hook twice
+ + 380866 maxIdleTime set to 0 after session migration
+ + 381399 Unable to stop a jetty instance that has not finished starting
+ + 381401 Print log warning when stop attempt made with incorrect STOP.KEY
+ + 381402 Make ContextHandler take set of protected directories
+ + 381521 set Vary:Accept-Encoding header for content that might be compressed
+ + 381639 CrossOriginFilter does not support Access-Control-Expose-Headers.
+ + 381712 Support all declared servlets that implement
+   org.apache.jasper.servlet.JspServlet
+ + 381825 leave URI params in forwarded requestURI
+ + 381876 Monitor should wait for child to finish before exiting.
+ + 382343 Jetty XML support for Map is broken.
+ + 383251 500 for SocketExceptions
+ + 383881 WebSocketHandler sets request as handled
+ + 384254 revert change to writable when not dispatched
+ + 384280 Implement preliminary ServletRegistrations
+ + 384847 CrossOriginFilter is not working.
+ + 384980 Jetty client unable to recover from Time outs when connection count
+   per address hits max.
+ + JETTY-1523 It is imposible to map servlet to "/" using
+   WebApplicationInitializer
+ + JETTY-1525 Show handle status in response debug message
+ + JETTY-1530 refine search control on ldap login module
 
 jetty-8.1.4.v20120524 - 24 May 2012
  + 367608 ignore the aysncrequestreadtest as it is known to fail and is waiting
