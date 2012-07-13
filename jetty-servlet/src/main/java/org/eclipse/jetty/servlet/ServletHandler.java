@@ -259,44 +259,7 @@ public class ServletHandler extends ScopedHandler
             return null;
         return _servletPathMap.getMatch(pathInContext);
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param uriInContext uri to get dispatcher for
-     * @return A {@link RequestDispatcher dispatcher} wrapping the resource at <code>uriInContext</code>,
-     *  or <code>null</code> if the specified uri cannot be dispatched to.
-     */
-    public RequestDispatcher getRequestDispatcher(String uriInContext)
-    {
-        if (uriInContext == null || _contextHandler==null)
-            return null;
-
-        if (!uriInContext.startsWith("/"))
-            return null;
-        
-        try
-        {
-            String query=null;
-            int q;
-            if ((q=uriInContext.indexOf('?'))>0)
-            {
-                query=uriInContext.substring(q+1);
-                uriInContext=uriInContext.substring(0,q);
-            }
-            if ((q=uriInContext.indexOf(';'))>0)
-                uriInContext=uriInContext.substring(0,q);
-
-            String pathInContext=URIUtil.canonicalPath(URIUtil.decodePath(uriInContext));
-            String uri=URIUtil.addPaths(_contextHandler.getContextPath(), uriInContext);
-            return new Dispatcher(_contextHandler, uri, pathInContext, query);
-        }
-        catch(Exception e)
-        {
-            LOG.ignore(e);
-        }
-        return null;
-    }
-
+ 
     /* ------------------------------------------------------------ */
     public ServletContext getServletContext()
     {
@@ -318,6 +281,7 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletMapping getServletMapping(String pattern)
     {
+        ServletMapping theMapping = null;
         if (_servletMappings!=null)
         {
             for (ServletMapping m:_servletMappings)
@@ -328,12 +292,12 @@ public class ServletHandler extends ScopedHandler
                     for (String path:paths)
                     {
                         if (pattern.equals(path))
-                            return m;
+                            theMapping = m;
                     }
                 }
             }
         }
-        return null;
+        return theMapping;
     }
         
     /* ------------------------------------------------------------ */

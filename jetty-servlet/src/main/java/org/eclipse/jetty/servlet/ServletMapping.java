@@ -21,6 +21,8 @@ public class ServletMapping
 {
     private String[] _pathSpecs;
     private String _servletName;
+    private boolean _default;
+    
 
     /* ------------------------------------------------------------ */
     public ServletMapping()
@@ -72,6 +74,25 @@ public class ServletMapping
         _servletName = servletName;
     }
     
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
+    public boolean isDefault()
+    {
+        return _default;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param default1
+     */
+    public void setDefault(boolean fromDefault)
+    {
+        _default = fromDefault;
+    }
 
     /* ------------------------------------------------------------ */
     public String toString()

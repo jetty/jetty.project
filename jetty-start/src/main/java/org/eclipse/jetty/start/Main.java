@@ -31,6 +31,7 @@ import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,6 +54,9 @@ import java.util.Set;
  */
 public class Main
 {
+    private static final String START_LOG_FILENAME = "start.log";
+    private static final SimpleDateFormat START_LOG_ROLLOVER_DATEFORMAT = new SimpleDateFormat("yyyy_MM_dd-HHmmSSSSS.'" + START_LOG_FILENAME + "'");
+
     private static final int EXIT_USAGE = 1;
     private static final int ERR_LOGGING = -1;
     private static final int ERR_INVOKE_MAIN = -2;
@@ -71,7 +75,7 @@ public class Main
 
     private String _jettyHome;
 
-    public static void main(String[] args) 
+    public static void main(String[] args)
     {
         try
         {
@@ -107,7 +111,6 @@ public class Main
                 if (arg.length() > 6)
                 {
                     arguments.addAll(loadStartIni(new File(arg.substring(6))));
-                    continue;
                 }
             }
             else if (arg.startsWith("--config="))
@@ -152,7 +155,7 @@ public class Main
         }
         return ini_args;
     }
-    
+
     public List<String> processCommandLine(List<String> arguments) throws Exception
     {
         // The XML Configuration Files to initialize with
@@ -212,7 +215,9 @@ public class Main
                 File startDir = new File(System.getProperty("jetty.logs","logs"));
                 if (!startDir.exists() || !startDir.canWrite())
                     startDir = new File(".");
-                File startLog = new File(startDir,"start.log");
+
+                File startLog = new File(startDir, START_LOG_ROLLOVER_DATEFORMAT.format(new Date()));
+
                 if (!startLog.exists() && !startLog.createNewFile())
                 {
                     // Output about error is lost in majority of cases.
@@ -231,7 +236,7 @@ public class Main
                 PrintStream logger = new PrintStream(new FileOutputStream(startLog,false));
                 System.setOut(logger);
                 System.setErr(logger);
-                System.out.println("Establishing start.log on " + new Date());
+                System.out.println("Establishing "+ START_LOG_FILENAME + " on " + new Date());
                 continue;
             }
 
@@ -475,7 +480,7 @@ public class Main
     }
 
     /* ------------------------------------------------------------ */
-    public void start(List<String> xmls) throws FileNotFoundException, IOException, InterruptedException
+    public void start(List<String> xmls) throws IOException, InterruptedException
     {
         // Setup Start / Stop Monitoring
         int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
@@ -528,7 +533,7 @@ public class Main
         // Show all options with version information
         if (_listOptions)
         {
-            showAllOptionsWithVersions(classpath);
+            showAllOptionsWithVersions();
             return;
         }
 
@@ -550,7 +555,7 @@ public class Main
         if (_exec)
         {
             CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
-            
+
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread()
@@ -562,13 +567,13 @@ public class Main
                     process.destroy();
                 }
             });
-            
+
             copyInThread(process.getErrorStream(),System.err);
             copyInThread(process.getInputStream(),System.out);
             copyInThread(System.in,process.getOutputStream());
             monitor.setProcess(process);
             process.waitFor();
-            
+
             return;
         }
 
@@ -734,7 +739,7 @@ public class Main
         return exe;
     }
 
-    private void showAllOptionsWithVersions(Classpath classpath)
+    private void showAllOptionsWithVersions()
     {
         Set<String> sectionIds = _config.getSectionIds();
 
@@ -1046,19 +1051,15 @@ public class Main
         System.err.println("       java -jar start.jar --help  # for more information");
         System.exit(exit);
     }
-    
+
     /**
      * Convert a start.ini format file into an argument list.
      */
     static List<String> loadStartIni(File ini)
     {
-        File startIniFile = ini;
-        if (!startIniFile.exists())
+        if (!ini.exists())
         {
-            if (ini != null)
-            {
-                System.err.println("Warning - can't find ini file: " + ini);
-            }
+            System.err.println("Warning - can't find ini file: " + ini);
             // No start.ini found, skip load.
             return Collections.emptyList();
         }

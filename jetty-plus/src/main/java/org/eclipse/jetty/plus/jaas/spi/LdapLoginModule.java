@@ -327,6 +327,7 @@ public class LdapLoginModule extends AbstractLoginModule
         SearchControls ctls = new SearchControls();
         ctls.setDerefLinkFlag(true);
         ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        ctls.setReturningAttributes(new String[]{_roleNameAttribute});
 
         String filter = "(&(objectClass={0})({1}={2}))";
         Object[] filterArguments = {_roleObjectClass, _roleMemberAttribute, userDn};

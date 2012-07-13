@@ -1,10 +1,17 @@
-package org.eclipse.jetty.spdy;
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+package org.eclipse.jetty.spdy;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -23,12 +30,18 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class ResetStreamTest extends AbstractTest
 {
     @Test
     public void testResetStreamIsRemoved() throws Exception
     {
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()),null);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()/*TODO, true*/),null);
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
         session.rst(new RstInfo(stream.getId(),StreamStatus.CANCEL_STREAM)).get(5,TimeUnit.SECONDS);
@@ -169,7 +182,7 @@ public class ResetStreamTest extends AbstractTest
         stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Handler.Adapter<Void>()
         {
             @Override
-            public void failed(Throwable x)
+            public void failed(Void context, Throwable x)
             {
                 failLatch.countDown();
             }
