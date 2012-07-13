@@ -69,6 +69,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         FlowControlStrategy flowControlStrategy = connector.newFlowControlStrategy(version);
 
         StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator, flowControlStrategy);
+        session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddr());
         session.setWindowSize(connector.getInitialWindowSize());
         parser.addListener(session);
         connection.setSession(session);

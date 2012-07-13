@@ -21,19 +21,19 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTPSPDYProxyConnector extends AbstractHTTPSPDYServerConnector
 {
-    public HTTPSPDYProxyConnector(SPDYProxyEngine proxyEngine)
+    public HTTPSPDYProxyConnector(ProxyEngineSelector proxyEngineSelector)
     {
-        this(proxyEngine, null);
+        this(proxyEngineSelector, null);
     }
 
-    public HTTPSPDYProxyConnector(SPDYProxyEngine proxyEngine, SslContextFactory sslContextFactory)
+    public HTTPSPDYProxyConnector(ProxyEngineSelector proxyEngineSelector, SslContextFactory sslContextFactory)
     {
-        super(proxyEngine, sslContextFactory);
+        super(proxyEngineSelector, sslContextFactory);
         clearAsyncConnectionFactories();
 
-        putAsyncConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), proxyEngine));
-        putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), proxyEngine));
-        putAsyncConnectionFactory("http/1.1", new ProxyHTTPAsyncConnectionFactory(this, SPDY.V3, proxyEngine));
+        putAsyncConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), proxyEngineSelector));
+        putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), proxyEngineSelector));
+        putAsyncConnectionFactory("http/1.1", new ProxyHTTPAsyncConnectionFactory(this, SPDY.V2, proxyEngineSelector));
         setDefaultAsyncConnectionFactory(getAsyncConnectionFactory("http/1.1"));
     }
 }

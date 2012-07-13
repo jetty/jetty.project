@@ -1,16 +1,17 @@
+// ========================================================================
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
+
 package org.eclipse.jetty.servlets;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -405,6 +406,30 @@ public class CrossOriginFilterTest
         Assert.assertTrue(response.contains("HTTP/1.1 200"));
         Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_EXPOSE_HEADERS_HEADER));
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testForwardPreflightRequest() throws Exception
+    {
+        FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
+        filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "PUT");
+        filterHolder.setInitParameter(CrossOriginFilter.FORWARD_PREFLIGHT_PARAM, "false");
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
+
+        // Preflight request
+        String request = "" +
+                "OPTIONS / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
+                "Origin: http://localhost\r\n" +
+                "\r\n";
+        String response = tester.getResponses(request);
+        Assert.assertTrue(response.contains("HTTP/1.1 200"));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_METHODS_HEADER));
+        Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
 
     public static class ResourceServlet extends HttpServlet

@@ -32,24 +32,34 @@
     </Call>
 
     <!--
-    The ProxyEngine receives SPDY/x(HTTP) requests from proxy connectors below
-    and is configured to process requests for host "localhost".
-    Such requests are converted from SPDY/x(HTTP) to SPDY/2(HTTP) and forwarded
-    to 127.0.0.1:9090, where they are served by the upstream server above.
+    This ProxyEngine translates the incoming SPDY/x(HTTP) request to SPDY/2(HTTP)
     -->
-    <New id="proxyEngine" class="org.eclipse.jetty.spdy.proxy.SPDYProxyEngine">
+    <New id="spdyProxyEngine" class="org.eclipse.jetty.spdy.proxy.SPDYProxyEngine">
         <Arg>
             <New class="org.eclipse.jetty.spdy.SPDYClient$Factory">
-                <Call name="start" />
+                <Call name="start"/>
             </New>
         </Arg>
-        <Set name="proxyInfos">
+    </New>
+
+    <!--
+    The ProxyEngineSelector receives SPDY/x(HTTP) requests from proxy connectors below
+    and is configured to process requests for host "localhost".
+    Such requests are converted from SPDY/x(HTTP) to SPDY/2(HTTP) by the configured ProxyEngine
+    and forwarded to 127.0.0.1:9090, where they are served by the upstream server above.
+    -->
+    <New id="proxyEngineSelector" class="org.eclipse.jetty.spdy.proxy.ProxyEngineSelector">
+        <Call name="putProxyEngine">
+            <Arg>spdy/2</Arg>
+            <Arg><Ref id="spdyProxyEngine" /></Arg>
+        </Call>
+        <Set name="proxyServerInfos">
             <Map>
                 <Entry>
                     <Item>localhost</Item>
                     <Item>
-                        <New class="org.eclipse.jetty.spdy.proxy.ProxyEngine$ProxyInfo">
-                            <Arg type="short">2</Arg>
+                        <New class="org.eclipse.jetty.spdy.proxy.ProxyEngineSelector$ProxyServerInfo">
+                            <Arg type="String">spdy/2</Arg>
                             <Arg>127.0.0.1</Arg>
                             <Arg type="int">9090</Arg>
                         </New>
@@ -69,7 +79,7 @@
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.spdy.proxy.HTTPSPDYProxyConnector">
-                <Arg><Ref id="proxyEngine" /></Arg>
+                <Arg><Ref id="proxyEngineSelector" /></Arg>
                 <Set name="Port">8080</Set>
             </New>
         </Arg>
@@ -77,7 +87,7 @@
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.spdy.proxy.HTTPSPDYProxyConnector">
-                <Arg><Ref id="proxyEngine" /></Arg>
+                <Arg><Ref id="proxyEngineSelector" /></Arg>
                 <Arg><Ref id="sslContextFactory" /></Arg>
                 <Set name="Port">8443</Set>
             </New>

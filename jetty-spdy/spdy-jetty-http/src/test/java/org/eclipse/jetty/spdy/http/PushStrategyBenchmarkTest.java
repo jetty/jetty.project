@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,6 +38,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -331,13 +334,36 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
     }
 
+    private void addPushedResource(String pushedURI)
+    {
+        switch (version())
+        {
+            case SPDY.V2:
+            {
+                Matcher matcher = Pattern.compile("https?://[^:]+:\\d+(/.*)").matcher(pushedURI);
+                Assert.assertTrue(matcher.matches());
+                pushedResources.add(matcher.group(1));
+                break;
+            }
+            case SPDY.V3:
+            {
+                pushedResources.add(pushedURI);
+                break;
+            }
+            default:
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
     private class ClientSessionFrameListener extends SessionFrameListener.Adapter
     {
         @Override
         public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
         {
             String path = synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version())).value();
-            pushedResources.add(path);
+            addPushedResource(path);
             return new DataListener();
         }
     }

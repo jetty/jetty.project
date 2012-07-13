@@ -216,13 +216,15 @@ public class Headers implements Iterable<Headers.Header>
             if (obj == null || getClass() != obj.getClass())
                 return false;
             Header that = (Header)obj;
-            return name.equals(that.name) && Arrays.equals(values, that.values);
+            // Header names must be lowercase, thus we lowercase them before transmission, but keep them as is
+            // internally. That's why we've to compare them case insensitive.
+            return name.equalsIgnoreCase(that.name) && Arrays.equals(values, that.values);
         }
 
         @Override
         public int hashCode()
         {
-            int result = name.hashCode();
+            int result = name.toLowerCase().hashCode();
             result = 31 * result + Arrays.hashCode(values);
             return result;
         }

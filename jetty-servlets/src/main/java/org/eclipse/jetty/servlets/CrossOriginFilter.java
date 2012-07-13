@@ -105,6 +105,7 @@ public class CrossOriginFilter implements Filter
     public static final String PREFLIGHT_MAX_AGE_PARAM = "preflightMaxAge";
     public static final String ALLOW_CREDENTIALS_PARAM = "allowCredentials";
     public static final String EXPOSED_HEADERS_PARAM = "exposedHeaders";
+    public static final String FORWARD_PREFLIGHT_PARAM = "forwardPreflight";
     private static final String ANY_ORIGIN = "*";
     private static final List<String> SIMPLE_HTTP_METHODS = Arrays.asList("GET", "POST", "HEAD");
 
@@ -113,8 +114,9 @@ public class CrossOriginFilter implements Filter
     private List<String> allowedMethods = new ArrayList<String>();
     private List<String> allowedHeaders = new ArrayList<String>();
     private List<String> exposedHeaders = new ArrayList<String>();
-    private int preflightMaxAge = 0;
+    private int preflightMaxAge;
     private boolean allowCredentials;
+    private boolean forwardPreflight;
 
     public void init(FilterConfig config) throws ServletException
     {
@@ -172,6 +174,11 @@ public class CrossOriginFilter implements Filter
             exposedHeadersConfig = "";
         exposedHeaders.addAll(Arrays.asList(exposedHeadersConfig.split(",")));
 
+        String forwardPreflightConfig = config.getInitParameter(FORWARD_PREFLIGHT_PARAM);
+        if (forwardPreflightConfig == null)
+            forwardPreflightConfig = "true";
+        forwardPreflight = Boolean.parseBoolean(forwardPreflightConfig);
+
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Cross-origin filter configuration: " +
@@ -180,7 +187,8 @@ public class CrossOriginFilter implements Filter
                     ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
                     PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
                     ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
-                    EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig
+                    EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
+                    FORWARD_PREFLIGHT_PARAM + " = " + forwardPreflightConfig
             );
         }
     }
@@ -207,6 +215,10 @@ public class CrossOriginFilter implements Filter
                 {
                     LOG.debug("Cross-origin request to {} is a preflight cross-origin request", request.getRequestURI());
                     handlePreflightResponse(request, response, origin);
+                    if (forwardPreflight)
+                        LOG.debug("Preflight cross-origin request to {} forwarded to application", request.getRequestURI());
+                    else
+                        return;
                 }
                 else
                 {
