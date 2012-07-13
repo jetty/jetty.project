@@ -34,8 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.testing.HttpTester;
-import org.eclipse.jetty.testing.ServletTester;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
@@ -56,12 +56,11 @@ public class MultipartFilterTest
         _dir.deleteOnExit();
         assertTrue(_dir.isDirectory());
 
-        tester=new ServletTester();
-        tester.setContextPath("/context");
-        tester.setResourceBase(_dir.getCanonicalPath());
-        tester.addServlet(DumpServlet.class, "/");
-        tester.setAttribute("javax.servlet.context.tempdir", _dir);
-        FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
+        tester=new ServletTester("/context");
+        tester.getContext().setResourceBase(_dir.getCanonicalPath());
+        tester.getContext().addServlet(DumpServlet.class, "/");
+        tester.getContext().setAttribute("javax.servlet.context.tempdir", _dir);
+        FilterHolder multipartFilter = tester.getContext().addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
         tester.start();
     }

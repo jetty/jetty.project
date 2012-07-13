@@ -6,9 +6,9 @@
     <version>9.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-servlets</artifactId>
-  <name>Jetty :: Utility Servlets and Filters</name>
-  <description>Utility Servlets from Jetty</description>
+  <artifactId>jetty-proxy</artifactId>
+  <name>Jetty :: Proxy</name>
+  <description>Jetty Proxy</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlets</bundle-symbolic-name>
   </properties>
@@ -73,6 +73,11 @@
       <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

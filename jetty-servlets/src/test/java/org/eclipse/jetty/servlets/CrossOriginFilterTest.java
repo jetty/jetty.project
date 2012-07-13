@@ -12,9 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.testing.ServletTester;
+import org.eclipse.jetty.servlet.ServletTester;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

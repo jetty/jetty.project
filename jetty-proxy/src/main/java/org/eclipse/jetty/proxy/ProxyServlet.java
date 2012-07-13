@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.io.InputStream;

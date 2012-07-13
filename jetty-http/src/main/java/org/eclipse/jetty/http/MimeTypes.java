@@ -250,6 +250,8 @@ public class MimeTypes
     /* ------------------------------------------------------------ */
     public static String getCharsetFromContentType(String value)
     {
+        if (value==null)
+            return null;
         int end=value.length();
         int state=0;
         int start=0;

@@ -22,15 +22,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.testing.HttpTester;
-import org.eclipse.jetty.testing.ServletTester;
+import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
@@ -69,11 +70,10 @@ public class IncludableGzipFilterTest
         IO.copy(testIn,testOut);
         testOut.close();
         
-        tester=new ServletTester();
-        tester.setContextPath("/context");
-        tester.setResourceBase(testdir.getDir().getCanonicalPath());
-        tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        FilterHolder holder = tester.addFilter(IncludableGzipFilter.class,"/*",null);
+        tester=new ServletTester("/context");
+        tester.getContext().setResourceBase(testdir.getDir().getCanonicalPath());
+        tester.getContext().addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
+        FilterHolder holder = tester.getContext().addFilter(IncludableGzipFilter.class,"/*",null);
         holder.setInitParameter("mimeTypes","text/plain");
         tester.start();
     }
@@ -89,22 +89,18 @@ public class IncludableGzipFilterTest
     public void testGzipFilter() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+       
+        ByteBuffer request=BufferUtil.toBuffer(
+            "GET /context/file.txt HTTP/1.0\r\n"+
+            "Host: tester\r\n"+
+            "Accept-Encoding: gzip\r\n"+
+            "\r\n");
 
-        request.setMethod("GET");
-        request.setVersion("HTTP/1.0");
-        request.setHeader("Host","tester");
-        request.setHeader("accept-encoding","gzip");
-        request.setURI("/context/file.txt");
         
-        ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
-        ByteArrayBuffer respBuff = tester.getResponses(reqsBuff);
-        response.parse(respBuff.asArray());
-                
-        assertTrue(response.getMethod()==null);
-        assertTrue(response.getHeader("Content-Encoding").equalsIgnoreCase("gzip"));
+        HttpTester.Response response=HttpTester.parseResponse(tester.getResponses(request));
+        
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertEquals("gzip",response.get("Content-Encoding"));
         
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();

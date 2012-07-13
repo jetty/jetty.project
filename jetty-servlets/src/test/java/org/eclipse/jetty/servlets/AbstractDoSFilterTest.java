@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.testing.ServletTester;
+import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -37,15 +37,14 @@ public abstract class AbstractDoSFilterTest
 
     public static void startServer(Class<? extends Filter> filter) throws Exception
     {
-        _tester = new ServletTester();
-        HttpURI uri = new HttpURI(_tester.createChannelConnector(true));
+        _tester = new ServletTester("/ctx");
+        HttpURI uri = new HttpURI(_tester.createConnector(true));
         _host = uri.getHost();
         _port = uri.getPort();
 
-        _tester.setContextPath("/ctx");
-        _tester.addServlet(TestServlet.class, "/*");
+        _tester.getContext().addServlet(TestServlet.class, "/*");
 
-        _dosFilter = _tester.addFilter(filter, "/dos/*", EnumSet.allOf(DispatcherType.class));
+        _dosFilter = _tester.getContext().addFilter(filter, "/dos/*", EnumSet.allOf(DispatcherType.class));
         _dosFilter.setInitParameter("maxRequestsPerSec", "4");
         _dosFilter.setInitParameter("delayMs", "200");
         _dosFilter.setInitParameter("throttledRequests", "1");
@@ -54,7 +53,7 @@ public abstract class AbstractDoSFilterTest
         _dosFilter.setInitParameter("remotePort", "false");
         _dosFilter.setInitParameter("insertHeaders", "true");
 
-        _timeoutFilter = _tester.addFilter(filter, "/timeout/*", EnumSet.allOf(DispatcherType.class));
+        _timeoutFilter = _tester.getContext().addFilter(filter, "/timeout/*", EnumSet.allOf(DispatcherType.class));
         _timeoutFilter.setInitParameter("maxRequestsPerSec", "4");
         _timeoutFilter.setInitParameter("delayMs", "200");
         _timeoutFilter.setInitParameter("throttledRequests", "1");

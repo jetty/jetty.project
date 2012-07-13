@@ -1,4 +1,4 @@
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.proxy;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,6 +20,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.proxy.ProxyServlet;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
