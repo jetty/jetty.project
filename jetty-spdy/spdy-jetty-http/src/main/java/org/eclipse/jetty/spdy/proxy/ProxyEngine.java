@@ -15,32 +15,25 @@
 package org.eclipse.jetty.spdy.proxy;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>{@link ProxyEngine} is the base class for SPDY proxy functionalities, that is a proxy that
- * accepts SPDY from its client side and converts to any protocol to its server side.</p>
+ * <p>{@link ProxyEngine} is the class for SPDY proxy functionalities that receives a SPDY request and converts it to
+ * any protocol to its server side.</p>
  * <p>This class listens for SPDY events sent by clients; subclasses are responsible for translating
  * these SPDY client events into appropriate events to forward to the server, in the appropriate
  * protocol that is understood by the server.</p>
- * <p>This class also provides configuration for the proxy rules.</p>
  */
-public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter implements StreamFrameListener
+public abstract class ProxyEngine
 {
     protected final Logger logger = Log.getLogger(getClass());
-    private final ConcurrentMap<String, ProxyInfo> proxyInfos = new ConcurrentHashMap<>();
     private final String name;
 
     protected ProxyEngine()
@@ -59,6 +52,8 @@ public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter imp
             return "localhost";
         }
     }
+
+    public abstract StreamFrameListener proxy(Stream clientStream, SynInfo clientSynInfo, ProxyEngineSelector.ProxyServerInfo proxyServerInfo);
 
     protected ProxyEngine(String name)
     {
@@ -96,46 +91,4 @@ public abstract class ProxyEngine extends ServerSessionFrameListener.Adapter imp
     {
     }
 
-    public Map<String, ProxyInfo> getProxyInfos()
-    {
-        return new HashMap<>(proxyInfos);
-    }
-
-    public void setProxyInfos(Map<String, ProxyInfo> proxyInfos)
-    {
-        this.proxyInfos.clear();
-        this.proxyInfos.putAll(proxyInfos);
-    }
-
-    public void putProxyInfo(String host, ProxyInfo proxyInfo)
-    {
-        proxyInfos.put(host, proxyInfo);
-    }
-
-    protected ProxyInfo getProxyInfo(String host)
-    {
-        return proxyInfos.get(host);
-    }
-
-    public static class ProxyInfo
-    {
-        private final short version;
-        private final InetSocketAddress address;
-
-        public ProxyInfo(short version, String host, int port)
-        {
-            this.version = version;
-            this.address = new InetSocketAddress(host, port);
-        }
-
-        public short getVersion()
-        {
-            return version;
-        }
-
-        public InetSocketAddress getAddress()
-        {
-            return address;
-        }
-    }
 }
