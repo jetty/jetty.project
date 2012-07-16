@@ -197,6 +197,13 @@ public class ServletTester extends AggregateLifeCycle
             InetAddress.getLocalHost().getHostAddress()
         )+":"+connector.getLocalPort();
     }
+
+    public LocalHttpConnector createLocalConnector()
+    {
+        LocalHttpConnector connector = new LocalHttpConnector();
+        _server.addConnector(connector);
+        return connector;
+    }
     
     
     

@@ -75,8 +75,8 @@ public class MultipartFilterTest
     public void testBadPost() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -97,8 +97,7 @@ public class MultipartFilterTest
         request.setContent(content);
         
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
     }
     
@@ -107,8 +106,8 @@ public class MultipartFilterTest
     public void testPost() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -128,8 +127,7 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -139,8 +137,8 @@ public class MultipartFilterTest
     public void testEncodedPost() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -160,8 +158,7 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -172,8 +169,8 @@ public class MultipartFilterTest
     @Test
     public void testPostWithContentTransferEncodingBase64() throws Exception {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -194,8 +191,7 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -206,8 +202,8 @@ public class MultipartFilterTest
     @Test
     public void testPostWithContentTransferEncodingQuotedPrintable() throws Exception {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -231,8 +227,7 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }

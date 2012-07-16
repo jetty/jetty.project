@@ -323,7 +323,10 @@ public class Server extends HandlerWrapper implements Attributes
         if (_connectors!=null)
         {
             for (int i=_connectors.length;i-->0;)
-                try{_connectors[i].stop();}catch(Throwable e){mex.add(e);}
+            {
+                if (_connectors[i]!=null)
+                    try{_connectors[i].stop();}catch(Throwable e){mex.add(e);}
+            }
         }
 
         try {super.doStop(); } catch(Throwable e) { mex.add(e);}
