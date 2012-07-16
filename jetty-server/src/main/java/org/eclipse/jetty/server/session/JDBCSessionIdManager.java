@@ -85,7 +85,6 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     
     protected  String _insertSession;
     protected  String _deleteSession;
-    protected  String _selectSession;
     protected  String _updateSession;
     protected  String _updateSessionNode;
     protected  String _updateSessionAccessTime;
@@ -110,6 +109,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         String _dbName;
         boolean _isLower;
         boolean _isUpper;
+
         
         
         public DatabaseAdaptor (DatabaseMetaData dbMeta)
@@ -188,6 +188,39 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 return "srowId";
             
             return "rowId";
+        }
+        
+        
+        public boolean isEmptyStringNull ()
+        {
+            return (_dbName.startsWith("oracle"));
+        }
+        
+        public PreparedStatement getLoadStatement (Connection connection, String rowId, String contextPath, String virtualHosts) 
+        throws SQLException
+        {
+            if (contextPath == null || "".equals(contextPath))
+            {
+                if (isEmptyStringNull())
+                {
+                    PreparedStatement statement = connection.prepareStatement("select * from "+_sessionTable+
+                    " where sessionId = ? and contextPath is null and virtualHost = ?");
+                    statement.setString(1, rowId);
+                    statement.setString(2, virtualHosts);
+
+                    return statement;
+                }
+            }
+           
+
+
+            PreparedStatement statement = connection.prepareStatement("select * from "+_sessionTable+
+            " where sessionId = ? and contextPath = ? and virtualHost = ?");
+            statement.setString(1, rowId);
+            statement.setString(2, contextPath);
+            statement.setString(3, virtualHosts);
+
+            return statement;
         }
     }
     
@@ -628,10 +661,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
             _deleteSession = "delete from "+_sessionTable+
             " where "+_sessionTableRowId+" = ?";
-
-            _selectSession = "select * from "+_sessionTable+
-            " where sessionId = ? and contextPath = ? and virtualHost = ?";
-
+            
             _updateSession = "update "+_sessionTable+
             " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where "+_sessionTableRowId+" = ?";
 

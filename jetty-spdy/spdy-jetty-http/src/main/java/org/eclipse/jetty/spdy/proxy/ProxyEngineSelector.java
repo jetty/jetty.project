@@ -47,6 +47,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         Headers.Header hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
         if (hostHeader == null)
         {
+            logger.debug("No host header found: " + headers);
             rst(clientStream);
             return null;
         }
@@ -59,6 +60,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         ProxyServerInfo proxyServerInfo = getProxyServerInfo(host);
         if (proxyServerInfo == null)
         {
+            logger.debug("No matching ProxyServerInfo found for: " + host);
             rst(clientStream);
             return null;
         }
@@ -67,6 +69,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         ProxyEngine proxyEngine = proxyEngines.get(protocol);
         if (proxyEngine == null)
         {
+            logger.debug("No matching ProxyEngine found for: " + protocol);
             rst(clientStream);
             return null;
         }
