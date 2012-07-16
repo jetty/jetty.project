@@ -353,9 +353,11 @@
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-deploy</module>
-    
+
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
+
+    <module>jetty-client-new</module>
 
     <module>test-continuation</module>
     <module>test-jetty-webapp</module>
@@ -540,7 +542,7 @@
                 <requireJavaVersion>
                   <version>[1.7,)</version>
                 </requireJavaVersion>
-              </rules>    
+              </rules>
             </configuration>
           </execution>
         </executions>
