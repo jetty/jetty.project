@@ -28,11 +28,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.testing.HttpTester;
-import org.eclipse.jetty.testing.ServletTester;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
@@ -44,7 +45,7 @@ public class QoSFilterTest
     private static final Logger LOG = Log.getLogger(QoSFilterTest.class);
 
     private ServletTester _tester;
-    private LocalConnector[] _connectors;
+    private LocalHttpConnector[] _connectors;
     private CountDownLatch _doneRequests;
     private final int NUM_CONNECTIONS = 8;
     private final int NUM_LOOPS = 6;
@@ -59,7 +60,7 @@ public class QoSFilterTest
         TestServlet.__maxSleepers=0;
         TestServlet.__sleepers=0;
 
-        _connectors = new LocalConnector[NUM_CONNECTIONS];
+        _connectors = new LocalHttpConnector[NUM_CONNECTIONS];
         for(int i = 0; i < _connectors.length; ++i)
             _connectors[i] = _tester.createLocalConnector();
 
@@ -134,7 +135,7 @@ public class QoSFilterTest
         {
             for (int i=0;i<NUM_LOOPS;i++)
             {
-                HttpTester request = new HttpTester();
+                HttpTester.Request request = HttpTester.newRequest();
 
                 request.setMethod("GET");
                 request.setHeader("host", "tester");
@@ -142,7 +143,7 @@ public class QoSFilterTest
                 request.setHeader("num", _num+"");
                 try
                 {
-                    String responseString = _tester.getResponses(request.generate(), _connectors[_num]);
+                    String responseString = _connectors[_num].getResponses(BufferUtil.toString(request.generate()));
                     if(responseString.indexOf("HTTP")!=-1)
                     {
                         _doneRequests.countDown();
@@ -168,7 +169,7 @@ public class QoSFilterTest
             URL url=null;
             try
             {
-                String addr = _tester.createSocketConnector(true);
+                String addr = _tester.createConnector(true);
                 for (int i=0;i<NUM_LOOPS;i++)
                 {
                     url=new URL(addr+"/context/test?priority="+(_num%QoSFilter.__DEFAULT_MAX_PRIORITY)+"&n="+_num+"&l="+i);

@@ -13,15 +13,11 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Closeable DoS Filter.
@@ -31,18 +27,10 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class CloseableDoSFilter extends DoSFilter
 {
-    private static final Logger LOG = Log.getLogger(CloseableDoSFilter.class);
-
+    @Override
     protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
     {
-        try
-        {
-            Request base_request=(request instanceof Request)?(Request)request:AbstractHttpConnection.getCurrentConnection().getRequest();
-            base_request.getConnection().getEndPoint().close();
-        }
-        catch(IOException e)
-        {
-            LOG.warn(e);
-        }
+        Request base_request=(request instanceof Request)?(Request)request:HttpChannel.getCurrentHttpChannel().getRequest();
+        base_request.getHttpChannel().getConnection().getEndPoint().close();
     }
 }

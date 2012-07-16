@@ -34,8 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.testing.HttpTester;
-import org.eclipse.jetty.testing.ServletTester;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
@@ -56,12 +56,11 @@ public class MultipartFilterTest
         _dir.deleteOnExit();
         assertTrue(_dir.isDirectory());
 
-        tester=new ServletTester();
-        tester.setContextPath("/context");
-        tester.setResourceBase(_dir.getCanonicalPath());
-        tester.addServlet(DumpServlet.class, "/");
-        tester.setAttribute("javax.servlet.context.tempdir", _dir);
-        FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
+        tester=new ServletTester("/context");
+        tester.getContext().setResourceBase(_dir.getCanonicalPath());
+        tester.getContext().addServlet(DumpServlet.class, "/");
+        tester.getContext().setAttribute("javax.servlet.context.tempdir", _dir);
+        FilterHolder multipartFilter = tester.getContext().addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
         tester.start();
     }
@@ -76,8 +75,8 @@ public class MultipartFilterTest
     public void testBadPost() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -98,8 +97,7 @@ public class MultipartFilterTest
         request.setContent(content);
         
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
     }
     
@@ -108,8 +106,8 @@ public class MultipartFilterTest
     public void testPost() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -129,8 +127,7 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -140,8 +137,8 @@ public class MultipartFilterTest
     public void testEncodedPost() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -161,8 +158,7 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -173,8 +169,8 @@ public class MultipartFilterTest
     @Test
     public void testPostWithContentTransferEncodingBase64() throws Exception {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -195,8 +191,7 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
@@ -207,8 +202,8 @@ public class MultipartFilterTest
     @Test
     public void testPostWithContentTransferEncodingQuotedPrintable() throws Exception {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("POST");
@@ -232,8 +227,7 @@ public class MultipartFilterTest
         
         request.setContent(content);
         
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }

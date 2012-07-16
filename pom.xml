@@ -355,6 +355,7 @@
     <module>jetty-deploy</module>
     
     <module>jetty-websocket</module>
+    <module>jetty-servlets</module>
 
     <module>test-continuation</module>
     <module>test-jetty-webapp</module>
@@ -362,7 +363,6 @@
     <!--
     <module>jetty-jaspi</module>
     <module>jetty-client</module>
-    <module>jetty-servlets</module>
     <module>jetty-ajp</module>
     <module>jetty-jndi</module>
     <module>jetty-annotations</module>

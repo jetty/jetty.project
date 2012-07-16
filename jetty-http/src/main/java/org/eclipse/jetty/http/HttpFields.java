@@ -382,7 +382,19 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     public String getStringField(HttpHeader header)
     {
-        return getStringField(header.toString());
+        return getStringField(header.asString());
+    }
+
+    /* -------------------------------------------------------------- */
+    public String get(HttpHeader header)
+    {
+        return getStringField(header.asString());
+    }
+
+    /* -------------------------------------------------------------- */
+    public String get(String header)
+    {
+        return getStringField(header);
     }
 
     /* -------------------------------------------------------------- */

@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -108,6 +108,7 @@ public class GzipFilter extends UserAgentFilter
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#destroy()
      */
+    @Override
     public void destroy()
     {
     }
@@ -116,6 +117,7 @@ public class GzipFilter extends UserAgentFilter
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
+    @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) 
         throws IOException, ServletException
     {
@@ -124,7 +126,7 @@ public class GzipFilter extends UserAgentFilter
 
         String ae = request.getHeader("accept-encoding");
         if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
-                && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
+                && !HttpMethod.HEAD.is(request.getMethod()))
         {
             if (_excluded!=null)
             {

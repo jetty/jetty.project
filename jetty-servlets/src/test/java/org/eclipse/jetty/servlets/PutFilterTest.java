@@ -30,8 +30,9 @@ import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.testing.HttpTester;
-import org.eclipse.jetty.testing.ServletTester;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.servlet.ServletTester;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
@@ -51,8 +52,7 @@ public class PutFilterTest
         _dir.deleteOnExit();
         assertTrue(_dir.isDirectory());
 
-        tester=new ServletTester();
-        tester.setContextPath("/context");
+        tester=new ServletTester("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
         FilterHolder holder = tester.addFilter(PutFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
@@ -74,16 +74,15 @@ public class PutFilterTest
     public void testHandlePut() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test GET
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/file.txt");
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_NOT_FOUND,response.getStatus());
 
         // test PUT0
@@ -92,8 +91,7 @@ public class PutFilterTest
         request.setHeader("Content-Type","text/plain");
         String data0="Now is the time for all good men to come to the aid of the party";
         request.setContent(data0);
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_CREATED,response.getStatus());
 
         File file=new File(_dir,"file.txt");
@@ -105,8 +103,7 @@ public class PutFilterTest
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/file.txt");
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertEquals(data0,response.getContent());
 
@@ -116,8 +113,7 @@ public class PutFilterTest
         request.setHeader("Content-Type","text/plain");
         String data1="How Now BROWN COW!!!!";
         request.setContent(data1);
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
         file=new File(_dir,"file.txt");
@@ -130,8 +126,8 @@ public class PutFilterTest
         request.setHeader("Content-Type","text/plain");
         String data2="Blah blah blah Blah blah";
         request.setContent(data2);
-        String to_send = request.generate();
-        URL url = new URL(tester.createSocketConnector(true));
+        String to_send = BufferUtil.toString(request.generate());
+        URL url = new URL(tester.createConnector(true));
         Socket socket=new Socket(url.getHost(),url.getPort());
         OutputStream out = socket.getOutputStream();
         int l = to_send.length();
@@ -153,10 +149,9 @@ public class PutFilterTest
             request.setVersion("HTTP/1.0");
             request.setHeader("Host","tester");
             request.setURI("/context/file.txt");
-            response.parse(tester.getResponses(request.generate()));
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         }
         while(response.getStatus()==200);
-        assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_NOT_FOUND,response.getStatus());
 
         out.write(to_send.substring(l-5).getBytes());
@@ -167,8 +162,7 @@ public class PutFilterTest
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setURI("/context/file.txt");
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertEquals(data2,response.getContent());
     }
@@ -177,8 +171,8 @@ public class PutFilterTest
     public void testHandleDelete() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test PUT1
         request.setMethod("PUT");
@@ -188,8 +182,7 @@ public class PutFilterTest
         request.setHeader("Content-Type","text/plain");
         String data1="How Now BROWN COW!!!!";
         request.setContent(data1);
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_CREATED,response.getStatus());
 
         File file=new File(_dir,"file.txt");
@@ -200,16 +193,14 @@ public class PutFilterTest
 
         request.setMethod("DELETE");
         request.setURI("/context/file.txt");
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_NO_CONTENT,response.getStatus());
 
         assertTrue(!file.exists());
 
         request.setMethod("DELETE");
         request.setURI("/context/file.txt");
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_FORBIDDEN,response.getStatus());
     }
 
@@ -217,8 +208,8 @@ public class PutFilterTest
     public void testHandleMove() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test PUT1
         request.setMethod("PUT");
@@ -228,8 +219,9 @@ public class PutFilterTest
         request.setHeader("Content-Type","text/plain");
         String data1="How Now BROWN COW!!!!";
         request.setContent(data1);
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        System.err.println(request);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        
         assertEquals(HttpServletResponse.SC_CREATED,response.getStatus());
 
         File file=new File(_dir,"file.txt");
@@ -241,8 +233,7 @@ public class PutFilterTest
         request.setMethod("MOVE");
         request.setURI("/context/file.txt");
         request.setHeader("new-uri","/context/blah.txt");
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_NO_CONTENT,response.getStatus());
 
         assertTrue(!file.exists());
@@ -255,20 +246,19 @@ public class PutFilterTest
     public void testHandleOptions() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         // test PUT1
         request.setMethod("OPTIONS");
         request.setVersion("HTTP/1.0");
-        request.setHeader("Host","tester");
+        request.put("Host","tester");
         request.setURI("/context/file.txt");
-        response.parse(tester.getResponses(request.generate()));
-        assertTrue(response.getMethod()==null);
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
         Set<String> options = new HashSet<String>();
-        options.addAll(Arrays.asList(response.getHeader("Allow").split(" *, *")));
+        options.addAll(Arrays.asList(response.get("Allow").split(" *, *")));
 
         assertTrue(options.contains("GET"));
         assertTrue(options.contains("POST"));

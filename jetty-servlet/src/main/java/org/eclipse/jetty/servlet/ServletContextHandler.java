@@ -84,7 +84,7 @@ public class ServletContextHandler extends ContextHandler
     protected JspConfigDescriptor _jspConfig;
     protected Object _restrictedContextListeners;
     private boolean _restrictListeners = true;
-
+    
     /* ------------------------------------------------------------ */
     public ServletContextHandler()
     {
