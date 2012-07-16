@@ -17,6 +17,7 @@ package org.eclipse.jetty.websocket.extensions.fragment;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -27,13 +28,14 @@ public class FragmentExtension extends Extension
     private int maxLength = -1;
     private int minFragments = 1;
 
+
     @Override
-    public void output(WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
     {
         if (frame.getOpCode().isControlFrame())
         {
             // Cannot fragment Control Frames
-            getNextOutgoingFrames().output(frame);
+            nextOutput(context,callback,frame);
             return;
         }
 
@@ -57,7 +59,7 @@ public class FragmentExtension extends Extension
                 payload.limit(Math.min(payload.limit() + maxLength,originalLimit));
                 frag.setPayload(payload);
 
-                nextOutput(frag);
+                nextOutputNoCallback(frag);
 
                 length -= maxLength;
                 opcode = OpCode.CONTINUATION;
@@ -79,7 +81,7 @@ public class FragmentExtension extends Extension
                 frag.setFin(false);
                 frag.setPayload(payload);
 
-                nextOutput(frag);
+                nextOutputNoCallback(frag);
                 length -= fragLength;
                 opcode = OpCode.CONTINUATION;
             }
@@ -91,7 +93,7 @@ public class FragmentExtension extends Extension
         payload.limit(originalLimit);
         frag.setPayload(payload);
 
-        nextOutput(frag);
+        nextOutput(context,callback,frag);
     }
 
     @Override

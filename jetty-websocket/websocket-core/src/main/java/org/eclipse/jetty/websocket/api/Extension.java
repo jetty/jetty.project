@@ -16,6 +16,8 @@
 package org.eclipse.jetty.websocket.api;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
@@ -106,16 +108,21 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
      * @param frame
      *            the frame to send to the next output
      */
-    public void nextOutput(WebSocketFrame frame)
+    public <C> void nextOutput(C context, Callback<C> callback, WebSocketFrame frame)
     {
-        nextOutgoingFrames.output(frame);
+        nextOutgoingFrames.output(context,callback,frame);
+    }
+
+    public <C> void nextOutputNoCallback(WebSocketFrame frame)
+    {
+        nextOutgoingFrames.output(null,new FutureCallback<Void>(),frame);
     }
 
     @Override
-    public void output(WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
     {
         // pass thru, un-modified
-        nextOutgoingFrames.output(frame);
+        nextOutgoingFrames.output(context,callback,frame);
     }
 
     public void setBufferPool(ByteBufferPool bufferPool)

@@ -167,7 +167,7 @@ public class WebSocketEventDriver implements IncomingFrames
                 {
                     WebSocketFrame pong = new WebSocketFrame(OpCode.PONG);
                     pong.setPayload(frame.getPayload());
-                    connection.write(null,new FutureCallback<Void>(),pong);
+                    connection.output(null,new FutureCallback<Void>(),pong);
                     break;
                 }
                 case BINARY:

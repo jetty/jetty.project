@@ -18,14 +18,10 @@ package org.eclipse.jetty.websocket.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.Generator;
-import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.rules.TestName;
 
@@ -59,52 +55,12 @@ public class LocalWebSocketConnection implements RawConnection, WebSocketConnect
     }
 
     @Override
-    public <C> void complete(FrameBytes<C> frameBytes)
-    {
-    }
-
-    @Override
     public void disconnect(boolean onlyOutput)
     {
     }
 
     @Override
-    public void flush()
-    {
-    }
-
-    @Override
-    public ByteBufferPool getBufferPool()
-    {
-        return null;
-    }
-
-    @Override
-    public Executor getExecutor()
-    {
-        return null;
-    }
-
-    @Override
-    public Generator getGenerator()
-    {
-        return null;
-    }
-
-    @Override
-    public Parser getParser()
-    {
-        return null;
-    }
-
-    @Override
     public WebSocketPolicy getPolicy()
-    {
-        return null;
-    }
-
-    @Override
-    public FrameQueue getQueue()
     {
         return null;
     }
@@ -125,6 +81,11 @@ public class LocalWebSocketConnection implements RawConnection, WebSocketConnect
     public boolean isOpen()
     {
         return false;
+    }
+
+    @Override
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    {
     }
 
     @Override
@@ -150,11 +111,6 @@ public class LocalWebSocketConnection implements RawConnection, WebSocketConnect
 
     @Override
     public <C> void write(C context, Callback<C> callback, String message) throws IOException
-    {
-    }
-
-    @Override
-    public <C> void write(C context, Callback<C> callback, WebSocketFrame frame)
     {
     }
 }

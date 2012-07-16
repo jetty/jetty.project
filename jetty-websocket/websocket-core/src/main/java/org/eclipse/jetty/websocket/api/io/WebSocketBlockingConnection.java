@@ -20,7 +20,6 @@ import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.io.DataFrameBytes;
 import org.eclipse.jetty.websocket.io.RawConnection;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
@@ -56,8 +55,7 @@ public class WebSocketBlockingConnection
         try
         {
             FutureCallback<Void> blocking = new FutureCallback<>();
-            DataFrameBytes<Void> bytes = new DataFrameBytes<>(conn,blocking,null,frame);
-            this.conn.getQueue().append(bytes);
+            conn.output(null,blocking,frame);
             blocking.get(); // block till finished
         }
         catch (InterruptedException e)
@@ -81,8 +79,7 @@ public class WebSocketBlockingConnection
         try
         {
             FutureCallback<Void> blocking = new FutureCallback<>();
-            DataFrameBytes<Void> bytes = new DataFrameBytes<>(conn,blocking,null,frame);
-            this.conn.getQueue().append(bytes);
+            conn.output(null,blocking,frame);
             blocking.get(); // block till finished
         }
         catch (InterruptedException e)

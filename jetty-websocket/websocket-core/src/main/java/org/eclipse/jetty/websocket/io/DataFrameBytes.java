@@ -26,7 +26,7 @@ public class DataFrameBytes<C> extends FrameBytes<C>
     private int size;
     private ByteBuffer buffer;
 
-    public DataFrameBytes(RawConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    public DataFrameBytes(WebSocketAsyncConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
     {
         super(connection,callback,context,frame);
     }

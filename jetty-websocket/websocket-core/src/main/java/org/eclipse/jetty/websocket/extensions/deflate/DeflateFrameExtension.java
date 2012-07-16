@@ -21,6 +21,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
@@ -65,8 +66,8 @@ public class DeflateFrameExtension extends Extension
             case PONG:
                 if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
                 {
-                    throw new ProtocolException("Invalid control frame payload length, [" + len + "] cannot exceed ["
-                            + WebSocketFrame.MAX_CONTROL_PAYLOAD + "]");
+                    throw new ProtocolException("Invalid control frame payload length, [" + len + "] cannot exceed [" + WebSocketFrame.MAX_CONTROL_PAYLOAD
+                            + "]");
                 }
                 break;
         }
@@ -122,19 +123,19 @@ public class DeflateFrameExtension extends Extension
     }
 
     @Override
-    public void output(WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
     {
         if (frame.getOpCode().isControlFrame())
         {
             // skip, cannot compress control frames.
-            super.output(frame);
+            nextOutput(context,callback,frame);
             return;
         }
 
         if (frame.getPayloadLength() < minLength)
         {
             // skip, frame too small to care compressing it.
-            super.output(frame);
+            nextOutput(context,callback,frame);
             return;
         }
 
@@ -178,7 +179,7 @@ public class DeflateFrameExtension extends Extension
 
         frame.setPayload(out);
         frame.setRsv1(deflater.finished());
-        nextOutput(frame);
+        nextOutput(context,callback,frame);
 
         // free original data buffer
         getBufferPool().release(data);
