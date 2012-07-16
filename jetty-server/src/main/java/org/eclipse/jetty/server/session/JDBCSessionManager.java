@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -833,10 +834,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                 try
                 {
                     connection = getConnection();
-                    statement = connection.prepareStatement(_jdbcSessionIdMgr._selectSession);
-                    statement.setString(1, id);
-                    statement.setString(2, canonicalContextPath);
-                    statement.setString(3, vhost);
+                    statement = _jdbcSessionIdMgr._dbAdaptor.getLoadStatement(connection, id, canonicalContextPath, vhost);
                     ResultSet result = statement.executeQuery();
                     if (result.next())
                     {
