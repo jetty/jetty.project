@@ -79,6 +79,15 @@ public class IncludableGzipFilter extends GzipFilter
                         {
                             return new GZIPOutputStream(_response.getOutputStream(),_bufferSize);
                         }
+
+                        @Override
+                        protected void setHeader(String name, String value)
+                        {
+                            super.setHeader(name, value);
+                            HttpServletResponse response = (HttpServletResponse)getResponse();
+                            if (!response.containsHeader(name))
+                                response.setHeader("org.eclipse.jetty.server.include." + name, value);
+                        }
                     };
                 }
             };
@@ -97,6 +106,15 @@ public class IncludableGzipFilter extends GzipFilter
                         {
                             return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(_deflateCompressionLevel, _deflateNoWrap));
                         }
+
+                        @Override
+                        protected void setHeader(String name, String value)
+                        {
+                            super.setHeader(name, value);
+                            HttpServletResponse response = (HttpServletResponse)getResponse();
+                            if (!response.containsHeader(name))
+                                response.setHeader("org.eclipse.jetty.server.include." + name, value);
+                        }
                     };
                 }
             };
@@ -108,8 +126,8 @@ public class IncludableGzipFilter extends GzipFilter
         configureWrappedResponse(wrappedResponse);
         return wrappedResponse;
     }
-    
-    
+
+
     // Extend CompressedResponseWrapper to be able to set headers during include and to create unchecked printwriters
     private abstract class IncludableResponseWrapper extends CompressedResponseWrapper
     {
@@ -124,7 +142,7 @@ public class IncludableGzipFilter extends GzipFilter
             super.setHeader(name,value);
             HttpServletResponse response = (HttpServletResponse)getResponse();
             if (!response.containsHeader(name))
-                response.setHeader("org.eclipse.jetty.server.include."+name,value);;    
+                response.setHeader("org.eclipse.jetty.server.include."+name,value);
         }
         @Override
         protected PrintWriter newWriter(OutputStream out, String encoding) throws UnsupportedEncodingException
