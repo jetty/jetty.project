@@ -262,6 +262,9 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     {
         LOG.debug("onOpen()");
         super.onOpen();
+        // TODO: websocket.setConnection(this);
+        // TODO: websocket.onConnect();
+
         fillInterested();
     }
 

@@ -119,7 +119,12 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         WebSocketCreator creator = getCreator();
 
         Object websocketPojo = creator.createWebSocket(sockreq,sockresp);
-        // TODO: Handle forbidden?
+
+        // Handle response forbidden (and similar paths)
+        if (sockresp.isCommitted())
+        {
+            return false;
+        }
 
         if (websocketPojo == null)
         {
@@ -127,8 +132,6 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
             response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             return false;
         }
-
-        // TODO: discover type, create proxy
 
         // Send the upgrade
         WebSocketPolicy objPolicy = this.basePolicy.clonePolicy();
