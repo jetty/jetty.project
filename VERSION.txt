@@ -1,3 +1,5 @@
+jetty-8.1.6-SNAPSHOT
+
 jetty-8.1.5.v20120716 - 16 July 2012
  + 376717 Balancer Servlet with round robin support, contribution, added
    missing license
