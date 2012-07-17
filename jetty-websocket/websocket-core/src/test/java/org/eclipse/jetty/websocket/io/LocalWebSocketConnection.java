@@ -15,17 +15,13 @@
 //========================================================================
 package org.eclipse.jetty.websocket.io;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketConnection implements RawConnection, WebSocketConnection
+public class LocalWebSocketConnection implements RawConnection
 {
     private final String id;
 
@@ -60,19 +56,7 @@ public class LocalWebSocketConnection implements RawConnection, WebSocketConnect
     }
 
     @Override
-    public WebSocketPolicy getPolicy()
-    {
-        return null;
-    }
-
-    @Override
     public InetSocketAddress getRemoteAddress()
-    {
-        return null;
-    }
-
-    @Override
-    public String getSubProtocol()
     {
         return null;
     }
@@ -89,28 +73,8 @@ public class LocalWebSocketConnection implements RawConnection, WebSocketConnect
     }
 
     @Override
-    public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
-    {
-    }
-
-    @Override
     public String toString()
     {
-        return String.format("LocalWebSocketConnection[%s]",id);
-    }
-
-    @Override
-    public <C> void write(C context, Callback<C> callback, byte[] buf, int offset, int len) throws IOException
-    {
-    }
-
-    @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer buffer) throws IOException
-    {
-    }
-
-    @Override
-    public <C> void write(C context, Callback<C> callback, String message) throws IOException
-    {
+        return String.format("%s[%s]",LocalWebSocketConnection.class.getSimpleName(),id);
     }
 }

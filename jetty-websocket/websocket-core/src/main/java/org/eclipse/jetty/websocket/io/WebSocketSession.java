@@ -9,17 +9,29 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
-public class WebSocketSession implements WebSocketConnection
+public class WebSocketSession implements WebSocketConnection, IncomingFrames, OutgoingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
-    private RawConnection connection;
+    private final RawConnection connection;
+    private final WebSocketPolicy policy;
+    private final String subprotocol;
+    private final WebSocketEventDriver websocket;
     private OutgoingFrames outgoing;
-    private String subprotocol;
-    private WebSocketPolicy policy;
+
+    public WebSocketSession(WebSocketEventDriver websocket, RawConnection connection, WebSocketPolicy policy, String subprotocol)
+    {
+        super();
+        this.websocket = websocket;
+        this.connection = connection;
+        this.policy = policy;
+        this.subprotocol = subprotocol;
+    }
 
     @Override
     public void close() throws IOException
@@ -31,6 +43,16 @@ public class WebSocketSession implements WebSocketConnection
     public void close(int statusCode, String reason) throws IOException
     {
         connection.close(statusCode,reason);
+    }
+
+    public IncomingFrames getIncoming()
+    {
+        return websocket;
+    }
+
+    public OutgoingFrames getOutgoing()
+    {
+        return outgoing;
     }
 
     @Override
@@ -52,9 +74,30 @@ public class WebSocketSession implements WebSocketConnection
     }
 
     @Override
+    public void incoming(WebSocketException e)
+    {
+        // pass on incoming to websocket itself
+        websocket.incoming(e);
+    }
+
+    @Override
+    public void incoming(WebSocketFrame frame)
+    {
+        // pass on incoming to websocket itself
+        websocket.incoming(frame);
+    }
+
+    @Override
     public boolean isOpen()
     {
         return connection.isOpen();
+    }
+
+    @Override
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    {
+        // forward on to chain
+        outgoing.output(context,callback,frame);
     }
 
     /**
@@ -66,6 +109,11 @@ public class WebSocketSession implements WebSocketConnection
         WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setPayload(payload);
         frame.setFin(true);
         outgoing.output(context,callback,frame);
+    }
+
+    public void setOutgoing(OutgoingFrames outgoing)
+    {
+        this.outgoing = outgoing;
     }
 
     /**

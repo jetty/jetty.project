@@ -36,8 +36,8 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.io.MessageInputStream;
 import org.eclipse.jetty.websocket.io.MessageReader;
-import org.eclipse.jetty.websocket.io.RawConnection;
 import org.eclipse.jetty.websocket.io.StreamAppender;
+import org.eclipse.jetty.websocket.io.WebSocketSession;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Frame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -58,7 +58,7 @@ public class WebSocketEventDriver implements IncomingFrames
     private final WebSocketPolicy policy;
     private final EventMethods events;
     private final ByteBufferPool bufferPool;
-    private RawConnection connection;
+    private WebSocketSession connection;
     private ByteBuffer activeMessage;
     private StreamAppender activeStream;
 
@@ -347,7 +347,7 @@ public class WebSocketEventDriver implements IncomingFrames
      * @param conn
      *            the connection
      */
-    public void setConnection(RawConnection conn)
+    public void setConnection(WebSocketSession conn)
     {
         this.connection = conn;
     }

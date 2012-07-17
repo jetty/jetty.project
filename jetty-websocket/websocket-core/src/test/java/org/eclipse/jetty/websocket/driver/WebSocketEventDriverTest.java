@@ -24,7 +24,7 @@ import org.eclipse.jetty.websocket.examples.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.examples.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.examples.AnnotatedFramesSocket;
 import org.eclipse.jetty.websocket.examples.ListenerBasicSocket;
-import org.eclipse.jetty.websocket.io.LocalWebSocketConnection;
+import org.eclipse.jetty.websocket.io.LocalWebSocketSession;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
@@ -57,7 +57,7 @@ public class WebSocketEventDriverTest
         AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
         WebSocketEventDriver driver = newDriver(socket);
 
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setConnection(conn);
         driver.onConnect();
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -73,7 +73,7 @@ public class WebSocketEventDriverTest
         AnnotatedBinaryArraySocket socket = new AnnotatedBinaryArraySocket();
         WebSocketEventDriver driver = newDriver(socket);
 
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setConnection(conn);
         driver.onConnect();
         driver.incoming(makeBinaryFrame("Hello World",true));
@@ -91,7 +91,7 @@ public class WebSocketEventDriverTest
         AnnotatedFramesSocket socket = new AnnotatedFramesSocket();
         WebSocketEventDriver driver = newDriver(socket);
 
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setConnection(conn);
         driver.onConnect();
         driver.incoming(new WebSocketFrame(OpCode.PING).setPayload("PING"));
@@ -114,7 +114,7 @@ public class WebSocketEventDriverTest
         AnnotatedBinaryStreamSocket socket = new AnnotatedBinaryStreamSocket();
         WebSocketEventDriver driver = newDriver(socket);
 
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setConnection(conn);
         driver.onConnect();
         driver.incoming(makeBinaryFrame("Hello World",true));
@@ -132,7 +132,7 @@ public class WebSocketEventDriverTest
         ListenerBasicSocket socket = new ListenerBasicSocket();
         WebSocketEventDriver driver = newDriver(socket);
 
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname);
+        LocalWebSocketSession conn = new LocalWebSocketSession(testname);
         driver.setConnection(conn);
         driver.onConnect();
         driver.incoming(WebSocketFrame.text("Hello World"));

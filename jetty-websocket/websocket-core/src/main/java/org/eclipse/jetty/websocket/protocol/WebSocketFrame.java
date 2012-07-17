@@ -397,7 +397,7 @@ public class WebSocketFrame implements Frame
         }
 
         data = ByteBuffer.allocate(len);
-        BufferUtil.clear(data);
+        BufferUtil.clearToFill(data);
         data.put(buf,0,len);
         BufferUtil.flipToFlush(data,0);
         return this;
