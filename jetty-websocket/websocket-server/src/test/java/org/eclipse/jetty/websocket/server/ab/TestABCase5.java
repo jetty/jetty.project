@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -403,10 +404,9 @@ public class TestABCase5
             Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,1);
             WebSocketFrame frame = frames.remove();
 
-            Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PING));
+            Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PONG));
 
-            ByteBuffer payload1 = ByteBuffer.allocate(pingPayload.length());
-            payload1.flip();
+            ByteBuffer payload1 = BufferUtil.toBuffer(pingPayload,StringUtil.__UTF8_CHARSET);
 
             ByteBufferAssert.assertEquals("payloads should be equal",payload1,frame.getPayload());
             frame = frames.remove();
@@ -434,18 +434,21 @@ public class TestABCase5
             String textPayload1 = "fragment1";
             WebSocketFrame frame1 = WebSocketFrame.text().setFin(false).setPayload(textPayload1);
             ByteBuffer buf1 = laxGenerator.generate(frame1);
+            BufferUtil.flipToFlush(buf1,0);
             client.writeRaw(buf1);
 
             // Send a ping with payload
             String pingPayload = "ping payload";
             WebSocketFrame frame2 = WebSocketFrame.ping().setPayload(pingPayload);
             ByteBuffer buf2 = laxGenerator.generate(frame2);
+            BufferUtil.flipToFlush(buf2,0);
             client.writeRaw(buf2);
 
             // Send remaining text as continuation
             String textPayload2 = "fragment2";
             WebSocketFrame frame3 = new WebSocketFrame(OpCode.CONTINUATION).setPayload(textPayload2);
             ByteBuffer buf3 = laxGenerator.generate(frame3);
+            BufferUtil.flipToFlush(buf3,0);
             client.writeRaw(buf3);
 
             // Should be 2 frames, pong frame followed by combined echo'd text frame
@@ -454,9 +457,7 @@ public class TestABCase5
 
             Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PONG));
 
-            ByteBuffer payload1 = ByteBuffer.allocate(pingPayload.length());
-            payload1.flip();
-
+            ByteBuffer payload1 = BufferUtil.toBuffer(pingPayload,StringUtil.__UTF8_CHARSET);
             ByteBufferAssert.assertEquals("Payload",payload1,frame.getPayload());
 
             frame = frames.remove();

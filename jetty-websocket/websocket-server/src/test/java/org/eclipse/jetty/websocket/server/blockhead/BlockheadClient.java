@@ -210,9 +210,10 @@ public class BlockheadClient implements IncomingFrames
     public void incoming(WebSocketFrame frame)
     {
         LOG.debug("incoming({})",frame);
-        if (!incomingFrameQueue.offerLast(frame))
+        WebSocketFrame copy = new WebSocketFrame(frame); // make a copy
+        if (!incomingFrameQueue.offerLast(copy))
         {
-            throw new RuntimeException("Unable to queue incoming frame: " + frame);
+            throw new RuntimeException("Unable to queue incoming frame: " + copy);
         }
     }
 

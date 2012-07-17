@@ -163,11 +163,19 @@ public class WebSocketEventDriver implements IncomingFrames
                     }
                     throw new CloseException(close.getStatusCode(),close.getReason());
                 }
-                case PONG:
+                case PING:
                 {
                     WebSocketFrame pong = new WebSocketFrame(OpCode.PONG);
-                    pong.setPayload(frame.getPayload());
-                    connection.output(null,new FutureCallback<Void>(),pong);
+                    if (frame.getPayloadLength() > 0)
+                    {
+                        // Copy payload
+                        ByteBuffer pongBuf = ByteBuffer.allocate(frame.getPayloadLength());
+                        BufferUtil.clearToFill(pongBuf);
+                        BufferUtil.put(frame.getPayload(),pongBuf);
+                        BufferUtil.flipToFlush(pongBuf,0);
+                        pong.setPayload(pongBuf);
+                    }
+                    connection.output("pong",new FutureCallback<String>(),pong);
                     break;
                 }
                 case BINARY:

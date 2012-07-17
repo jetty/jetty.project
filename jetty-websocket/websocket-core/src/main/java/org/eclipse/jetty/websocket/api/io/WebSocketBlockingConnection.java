@@ -31,17 +31,17 @@ import org.eclipse.jetty.websocket.io.WebSocketSession;
  */
 public class WebSocketBlockingConnection
 {
-    private static class Blocker extends FutureCallback<Void>
+    private static class Blocker extends FutureCallback<String>
     {
         @Override
-        public void completed(Void context)
+        public void completed(String context)
         {
             LOG.debug("completed({})",context);
             super.completed(context);
         }
 
         @Override
-        public void failed(Void context, Throwable cause)
+        public void failed(String context, Throwable cause)
         {
             LOG.debug("failed({},{})",context,cause);
             super.failed(context,cause);
@@ -55,6 +55,8 @@ public class WebSocketBlockingConnection
     }
 
     private static final Logger LOG = Log.getLogger(WebSocketBlockingConnection.class);
+    private static final String CONTEXT_BINARY = "BLOCKING_BINARY";
+    private static final String CONTEXT_TEXT = "BLOCKING_TEXT";
     private final WebSocketSession conn;
 
     public WebSocketBlockingConnection(WebSocketConnection conn)
@@ -79,7 +81,7 @@ public class WebSocketBlockingConnection
         try
         {
             Blocker blocker = new Blocker();
-            conn.write(null,blocker,data,offset,length);
+            conn.write(CONTEXT_BINARY,blocker,data,offset,length);
             blocker.get(); // block till finished
         }
         catch (InterruptedException e)
@@ -102,7 +104,7 @@ public class WebSocketBlockingConnection
         try
         {
             Blocker blocker = new Blocker();
-            conn.write(null,blocker,message);
+            conn.write(CONTEXT_TEXT,blocker,message);
             blocker.get(); // block till finished
         }
         catch (InterruptedException e)
