@@ -17,9 +17,28 @@ package org.eclipse.jetty.websocket.api.io;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.charset.Charset;
+
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.io.WebSocketSession;
 
 public class WebSocketWriter extends Writer
 {
+    private final Charset charset = StringUtil.__UTF8_CHARSET;
+    private final WebSocketSession conn;
+
+    public WebSocketWriter(WebSocketConnection conn)
+    {
+        if (conn instanceof WebSocketSession)
+        {
+            this.conn = (WebSocketSession)conn;
+        }
+        else
+        {
+            throw new IllegalArgumentException("WebSocketConnection must implement internal WebSocketSession interface");
+        }
+    }
 
     @Override
     public void close() throws IOException
@@ -41,5 +60,4 @@ public class WebSocketWriter extends Writer
         // TODO Auto-generated method stub
 
     }
-
 }

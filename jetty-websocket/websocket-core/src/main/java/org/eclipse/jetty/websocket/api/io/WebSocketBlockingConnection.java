@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.io.RawConnection;
+import org.eclipse.jetty.websocket.io.WebSocketSession;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
@@ -30,17 +30,17 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
  */
 public class WebSocketBlockingConnection
 {
-    private final RawConnection conn;
+    private final WebSocketSession conn;
 
     public WebSocketBlockingConnection(WebSocketConnection conn)
     {
-        if (conn instanceof RawConnection)
+        if (conn instanceof WebSocketSession)
         {
-            this.conn = (RawConnection)conn;
+            this.conn = (WebSocketSession)conn;
         }
         else
         {
-            throw new IllegalArgumentException("WebSocketConnection must implement internal RawConnection interface");
+            throw new IllegalArgumentException("WebSocketConnection must implement internal WebSocketSession interface");
         }
     }
 

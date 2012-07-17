@@ -18,8 +18,24 @@ package org.eclipse.jetty.websocket.api.io;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.io.WebSocketSession;
+
 public class WebSocketOutputStream extends OutputStream
 {
+    private final WebSocketSession conn;
+
+    public WebSocketOutputStream(WebSocketConnection conn)
+    {
+        if (conn instanceof WebSocketSession)
+        {
+            this.conn = (WebSocketSession)conn;
+        }
+        else
+        {
+            throw new IllegalArgumentException("WebSocketConnection must implement internal WebSocketSession interface");
+        }
+    }
 
     @Override
     public void write(int b) throws IOException
