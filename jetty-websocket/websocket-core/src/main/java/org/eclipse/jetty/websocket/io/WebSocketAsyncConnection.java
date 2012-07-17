@@ -340,7 +340,19 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
 
     private <C> void write(ByteBuffer buffer, WebSocketAsyncConnection webSocketAsyncConnection, FrameBytes<C> frameBytes)
     {
-        LOG.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
-        getEndPoint().write(frameBytes.context,frameBytes,buffer);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
+            LOG.debug("EndPoint: {}",getEndPoint());
+        }
+        try
+        {
+            getEndPoint().write(frameBytes.context,frameBytes,buffer);
+        }
+        catch (Throwable t)
+        {
+            LOG.debug(t);
+            frameBytes.failed(frameBytes.context,t);
+        }
     }
 }

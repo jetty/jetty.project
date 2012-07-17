@@ -96,6 +96,10 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("output({},{},{})",context,callback,frame);
+        }
         // forward on to chain
         outgoing.output(context,callback,frame);
     }
@@ -108,7 +112,7 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     {
         WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setPayload(payload);
         frame.setFin(true);
-        outgoing.output(context,callback,frame);
+        output(context,callback,frame);
     }
 
     public void setOutgoing(OutgoingFrames outgoing)
@@ -128,7 +132,7 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
         }
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(buf,offset,len);
         frame.setFin(true);
-        outgoing.output(context,callback,frame);
+        output(context,callback,frame);
     }
 
     /**
@@ -143,7 +147,7 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
         }
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(buffer);
         frame.setFin(true);
-        outgoing.output(context,callback,frame);
+        output(context,callback,frame);
     }
 
     /**
@@ -158,6 +162,6 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
         }
         WebSocketFrame frame = WebSocketFrame.text(message);
         frame.setFin(true);
-        outgoing.output(context,callback,frame);
+        output(context,callback,frame);
     }
 }

@@ -19,9 +19,10 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.io.WebSocketSession;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * For working with the {@link WebSocketConnection} in a blocking technique.
@@ -30,6 +31,30 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
  */
 public class WebSocketBlockingConnection
 {
+    private static class Blocker extends FutureCallback<Void>
+    {
+        @Override
+        public void completed(Void context)
+        {
+            LOG.debug("completed({})",context);
+            super.completed(context);
+        }
+
+        @Override
+        public void failed(Void context, Throwable cause)
+        {
+            LOG.debug("failed({},{})",context,cause);
+            super.failed(context,cause);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[%s]",Blocker.class.getSimpleName(),super.toString());
+        }
+    }
+
+    private static final Logger LOG = Log.getLogger(WebSocketBlockingConnection.class);
     private final WebSocketSession conn;
 
     public WebSocketBlockingConnection(WebSocketConnection conn)
@@ -51,12 +76,11 @@ public class WebSocketBlockingConnection
      */
     public void write(byte[] data, int offset, int length) throws IOException
     {
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(data,offset,length);
         try
         {
-            FutureCallback<Void> blocking = new FutureCallback<>();
-            conn.output(null,blocking,frame);
-            blocking.get(); // block till finished
+            Blocker blocker = new Blocker();
+            conn.write(null,blocker,data,offset,length);
+            blocker.get(); // block till finished
         }
         catch (InterruptedException e)
         {
@@ -75,12 +99,11 @@ public class WebSocketBlockingConnection
      */
     public void write(String message) throws IOException
     {
-        WebSocketFrame frame = WebSocketFrame.text(message);
         try
         {
-            FutureCallback<Void> blocking = new FutureCallback<>();
-            conn.output(null,blocking,frame);
-            blocking.get(); // block till finished
+            Blocker blocker = new Blocker();
+            conn.write(null,blocker,message);
+            blocker.get(); // block till finished
         }
         catch (InterruptedException e)
         {

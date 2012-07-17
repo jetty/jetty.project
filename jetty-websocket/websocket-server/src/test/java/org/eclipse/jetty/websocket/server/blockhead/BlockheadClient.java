@@ -121,6 +121,7 @@ public class BlockheadClient implements IncomingFrames
 
     public void close()
     {
+        LOG.debug("close()");
         close(-1,null);
     }
 
@@ -150,7 +151,7 @@ public class BlockheadClient implements IncomingFrames
         in = socket.getInputStream();
     }
 
-    private void disconnect()
+    public void disconnect()
     {
         LOG.debug("disconnect");
         IO.close(in);
@@ -257,6 +258,7 @@ public class BlockheadClient implements IncomingFrames
 
     public Queue<WebSocketFrame> readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
     {
+        LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
         int startCount = incomingFrameQueue.size();
 
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
