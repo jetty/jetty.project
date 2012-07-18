@@ -649,6 +649,43 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(s.getBytes(charset));
     }
+    
+    /**
+     * Create a new ByteBuffer using a copy of the provided byte array.
+     * 
+     * @param array
+     *            the byte array to copy. (not using as-is in underlying implementation)
+     * @return ByteBuffer with provided byte array, in flush mode
+     */
+    public static ByteBuffer toBuffer(byte array[])
+    {
+        int len = array.length;
+        ByteBuffer buf = ByteBuffer.allocate(len);
+        BufferUtil.clearToFill(buf);
+        buf.put(array,0,len);
+        BufferUtil.flipToFlush(buf,0);
+        return buf;
+    }
+    
+    /**
+     * Create a new ByteBuffer using a copy of the provided byte array.
+     * 
+     * @param array
+     *            the byte array to copy. (not using as-is in underlying implementation)
+     * @param offset
+     *            the offset within the byte array to copy from
+     * @param length
+     *            the length in bytes of the array to copy
+     * @return ByteBuffer with provided byte array, in flush mode
+     */
+    public static ByteBuffer toBuffer(byte array[], int offset, int length)
+    {
+        ByteBuffer buf = ByteBuffer.allocate(length);
+        BufferUtil.clearToFill(buf);
+        buf.put(array,offset,length);
+        BufferUtil.flipToFlush(buf,0);
+        return buf;
+    }
 
     public static ByteBuffer toBuffer(File file) throws IOException
     {

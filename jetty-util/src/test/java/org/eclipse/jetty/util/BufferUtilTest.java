@@ -17,7 +17,9 @@ package org.eclipse.jetty.util;
 import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class BufferUtilTest
@@ -155,4 +157,42 @@ public class BufferUtilTest
         assertEquals("1234567890",BufferUtil.toString(to));
     }
    
+    @Test
+    public void testToBuffer_Array()
+    {
+        byte arr[] = new byte[128];
+        Arrays.fill(arr,(byte)0x44);
+        ByteBuffer buf = BufferUtil.toBuffer(arr);
+
+        int count = 0;
+        while (buf.remaining() > 0)
+        {
+            byte b = buf.get();
+            Assert.assertEquals(b,0x44);
+            count++;
+        }
+
+        Assert.assertEquals("Count of bytes",arr.length,count);
+    }
+
+    @Test
+    public void testToBuffer_ArrayOffsetLength()
+    {
+        byte arr[] = new byte[128];
+        Arrays.fill(arr,(byte)0xFF); // fill whole thing with FF
+        int offset = 10;
+        int length = 100;
+        Arrays.fill(arr,offset,offset + length,(byte)0x77); // fill partial with 0x77
+        ByteBuffer buf = BufferUtil.toBuffer(arr,offset,length);
+
+        int count = 0;
+        while (buf.remaining() > 0)
+        {
+            byte b = buf.get();
+            Assert.assertEquals(b,0x77);
+            count++;
+        }
+
+        Assert.assertEquals("Count of bytes",length,count);
+    }
 }
