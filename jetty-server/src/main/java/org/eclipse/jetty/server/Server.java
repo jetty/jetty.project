@@ -4,7 +4,7 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Connector.NetConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
@@ -53,17 +54,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = Log.getLogger(Server.class);
-
-    private static final String __version;
-    static
-    {
-        if (Server.class.getPackage()!=null &&
-            "Eclipse.org - Jetty".equals(Server.class.getPackage().getImplementationVendor()) &&
-             Server.class.getPackage().getImplementationVersion()!=null)
-            __version=Server.class.getPackage().getImplementationVersion();
-        else
-            __version=System.getProperty("jetty.version","9.0.y.z-SNAPSHOT");
-    }
 
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
@@ -117,7 +107,7 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     public static String getVersion()
     {
-        return __version;
+        return Jetty.VERSION;
     }
 
     /* ------------------------------------------------------------ */
@@ -255,8 +245,8 @@ public class Server extends HandlerWrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.register(this);
 
-        LOG.info("jetty-"+__version);
-        HttpGenerator.setServerVersion(__version);
+        LOG.info("jetty-"+getVersion());
+        HttpGenerator.setServerVersion(getVersion());
         MultiException mex=new MultiException();
 
         if (_threadPool==null)

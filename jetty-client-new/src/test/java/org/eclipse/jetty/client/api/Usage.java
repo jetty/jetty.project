@@ -48,7 +48,7 @@ public class Usage
         HTTPClient client = new HTTPClient();
         // Address must be provided, it's the only thing non defaultable
         Request.Builder builder = client.builder("localhost:8080");
-        Future<Response> responseFuture = builder.method("GET").uri("/").header("Origin", "localhost").build().send();
+        Future<Response> responseFuture = builder.method("GET").path("/").header("Origin", "localhost").build().send();
         responseFuture.get();
     }
 
@@ -57,7 +57,7 @@ public class Usage
     public void testSimpleAsyncGET() throws Exception
     {
         HTTPClient client = new HTTPClient();
-        client.builder("localhost:8080").method("GET").uri("/").header("Origin", "localhost").build().send(new Response.Listener.Adapter()
+        client.builder("localhost:8080").method("GET").path("/").header("Origin", "localhost").build().send(new Response.Listener.Adapter()
         {
             @Override
             public void onEnd(Response response)
@@ -72,7 +72,7 @@ public class Usage
         HTTPClient client = new HTTPClient();
         Response response = client.builder("localhost:8080")
                 .method("GET")
-                .uri("/")
+                .path("/")
                 .listener(new Request.Listener.Adapter()
                 {
                     @Override
@@ -94,10 +94,10 @@ public class Usage
     public void testRequestWithExplicitConnectionControl() throws Exception
     {
         HTTPClient client = new HTTPClient();
-        try (HTTPClient.Connection connection = client.getDestination("localhost:8080").newConnection())
+        try (Connection connection = client.getDestination(Address.from("localhost:8080")).connect(5, TimeUnit.SECONDS))
         {
             Request.Builder builder = client.builder("localhost:8080");
-            Request request = builder.method("GET").uri("/").header("Origin", "localhost").build();
+            Request request = builder.method("GET").path("/").header("Origin", "localhost").build();
 
             Future<Response> response = connection.send(request, new Response.Listener.Adapter());
             response.get().getStatus();
@@ -109,7 +109,7 @@ public class Usage
     {
         HTTPClient client = new HTTPClient();
         Response response = client.builder("localhost:8080")
-                .method("GET").uri("/").file(new File("")).build().send().get();
+                .method("GET").path("/").file(new File("")).build().send().get();
         response.getStatus();
     }
 

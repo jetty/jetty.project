@@ -22,16 +22,20 @@ public interface Request
 
     Future<Response> send(Response.Listener listener);
 
+    Address address();
+
+    void abort();
+
     /**
      * <p>A builder for requests</p>.
      */
     public interface Builder
     {
-        Builder scheme(String scheme);
+        Builder secure(boolean secure);
 
         Builder method(String method);
 
-        Builder uri(String uri);
+        Builder path(String path);
 
         Builder header(String name, String value);
 
@@ -48,6 +52,8 @@ public interface Request
         Builder cookie(String key, String value);
 
         Builder authentication(Authentication authentication);
+
+        Builder agent(String userAgent);
 
         Builder followRedirects(boolean follow);
 
