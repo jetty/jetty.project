@@ -139,6 +139,8 @@ public class WebSocketFrame implements Frame
             mask = new byte[copy.mask.length];
             System.arraycopy(copy.mask,0,mask,0,mask.length);
         }
+        payloadLength = copy.payloadLength;
+        payloadStart = copy.payloadStart;
         data = copy.data.slice();
         continuationIndex = copy.continuationIndex;
         continuation = copy.continuation;

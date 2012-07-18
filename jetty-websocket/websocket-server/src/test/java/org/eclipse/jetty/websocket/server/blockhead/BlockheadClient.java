@@ -416,8 +416,7 @@ public class BlockheadClient implements IncomingFrames
         {
             LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
         }
-        byte arr[] = BufferUtil.toArray(buf);
-        out.write(arr,0,arr.length);
+        BufferUtil.writeTo(buf,out);
         out.flush();
 
         if (frame.getOpCode() == OpCode.CLOSE)

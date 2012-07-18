@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -321,7 +320,6 @@ public class WebSocketServletRFCTest
 
             WebSocketFrame bin = WebSocketFrame.binary(buf).setFin(true);
             ByteBuffer bb = generator.generate(bin);
-            BufferUtil.flipToFlush(bb,0);
             try
             {
                 client.writeRaw(bb);
@@ -363,7 +361,6 @@ public class WebSocketServletRFCTest
 
             WebSocketFrame text = WebSocketFrame.text().setPayload(buf).setFin(true);
             ByteBuffer bb = generator.generate(text);
-            BufferUtil.flipToFlush(bb,0);
             try
             {
                 client.writeRaw(bb);
@@ -402,7 +399,6 @@ public class WebSocketServletRFCTest
 
             WebSocketFrame txt = WebSocketFrame.text().setPayload(buf);
             ByteBuffer bb = generator.generate(txt);
-            BufferUtil.flipToFlush(bb,0);
             client.writeRaw(bb);
 
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
