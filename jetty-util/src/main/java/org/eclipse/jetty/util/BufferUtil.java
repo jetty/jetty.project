@@ -651,40 +651,31 @@ public class BufferUtil
     }
     
     /**
-     * Create a new ByteBuffer using a copy of the provided byte array.
+     * Create a new ByteBuffer using provided byte array.
      * 
      * @param array
-     *            the byte array to copy. (not using as-is in underlying implementation)
+     *            the byte array to back buffer with.
      * @return ByteBuffer with provided byte array, in flush mode
      */
     public static ByteBuffer toBuffer(byte array[])
     {
-        int len = array.length;
-        ByteBuffer buf = ByteBuffer.allocate(len);
-        BufferUtil.clearToFill(buf);
-        buf.put(array,0,len);
-        BufferUtil.flipToFlush(buf,0);
-        return buf;
+        return ByteBuffer.wrap(array);
     }
     
     /**
-     * Create a new ByteBuffer using a copy of the provided byte array.
+     * Create a new ByteBuffer using the provided byte array.
      * 
      * @param array
-     *            the byte array to copy. (not using as-is in underlying implementation)
+     *            the byte array to use.
      * @param offset
-     *            the offset within the byte array to copy from
+     *            the offset within the byte array to use from
      * @param length
-     *            the length in bytes of the array to copy
+     *            the length in bytes of the array to use
      * @return ByteBuffer with provided byte array, in flush mode
      */
     public static ByteBuffer toBuffer(byte array[], int offset, int length)
     {
-        ByteBuffer buf = ByteBuffer.allocate(length);
-        BufferUtil.clearToFill(buf);
-        buf.put(array,offset,length);
-        BufferUtil.flipToFlush(buf,0);
-        return buf;
+        return ByteBuffer.wrap(array,offset,length);
     }
 
     public static ByteBuffer toBuffer(File file) throws IOException
