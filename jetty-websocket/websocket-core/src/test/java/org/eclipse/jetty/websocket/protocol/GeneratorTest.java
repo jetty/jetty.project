@@ -21,8 +21,8 @@ public class GeneratorTest
         int totalParts = 0;
         int totalBytes = 0;
         int windowSize = 1024;
-        int expectedHeaderSize = 4; // TODO: correct size
-        int expectedParts = (payload.length + expectedHeaderSize) / windowSize;
+        int expectedHeaderSize = 4;
+        int expectedParts = (int)Math.ceil((double)(payload.length + expectedHeaderSize) / windowSize);
 
         Generator generator = new UnitGenerator();
 
@@ -32,9 +32,12 @@ public class GeneratorTest
             Assert.assertThat("Too many parts",totalParts,lessThan(20));
 
             ByteBuffer buf = generator.generate(windowSize,frame);
+            // System.out.printf("Generated buf.limit() = %,d%n",buf.limit());
 
             totalBytes += buf.remaining();
             totalParts++;
+
+            done = (frame.remaining() <= 0);
         }
 
         Assert.assertThat("Created Parts",totalParts,is(expectedParts));
