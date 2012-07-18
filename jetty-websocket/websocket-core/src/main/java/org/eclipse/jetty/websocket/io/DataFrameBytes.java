@@ -17,7 +17,6 @@ package org.eclipse.jetty.websocket.io;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,9 +45,9 @@ public class DataFrameBytes<C> extends FrameBytes<C>
 
         if (frame.remaining() > 0)
         {
-            // We have written a frame out of this DataInfo, but there is more to write.
+            // We have written a partial frame per windowing size.
             // We need to keep the correct ordering of frames, to avoid that another
-            // DataInfo for the same stream is written before this one is finished.
+            // Data frame for the same stream is written before this one is finished.
             connection.getQueue().prepend(this);
         }
         else
@@ -72,7 +71,6 @@ public class DataFrameBytes<C> extends FrameBytes<C>
             }
 
             buffer = connection.getGenerator().generate(size,frame);
-            BufferUtil.flipToFlush(buffer,0);
             return buffer;
         }
         catch (Throwable x)

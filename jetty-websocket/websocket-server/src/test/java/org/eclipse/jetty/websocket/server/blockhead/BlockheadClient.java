@@ -412,7 +412,6 @@ public class BlockheadClient implements IncomingFrames
         frame.setMask(clientmask);
         // frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
         ByteBuffer buf = generator.generate(frame);
-        BufferUtil.flipToFlush(buf,0);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));

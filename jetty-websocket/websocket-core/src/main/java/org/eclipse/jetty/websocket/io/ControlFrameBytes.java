@@ -17,7 +17,6 @@ package org.eclipse.jetty.websocket.io;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
@@ -50,7 +49,6 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
         if (buffer == null)
         {
             buffer = connection.getGenerator().generate(frame);
-            BufferUtil.flipToFlush(buffer,0);
         }
         return buffer;
     }
