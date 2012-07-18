@@ -21,7 +21,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     private AsyncConnection _connection;
 
     private final TimerTask _checkTimeout=new TimeoutTask(this);
-    
+
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
@@ -30,18 +30,18 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
             if (_closed)
                 throw new ClosedChannelException();
             return _in==null || BufferUtil.hasContent(_in);
-        }       
+        }
     };
-    
+
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
         protected void onIncompleteFlushed()
-        {            
+        {
             // Don't need to do anything here as takeOutput does the signalling.
         }
     };
-    
+
     public AsyncByteArrayEndPoint(Timer timer)
     {
         super();
@@ -85,7 +85,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
         super.setOutput(out);
         _writeFlusher.completeWrite();
     }
-    
+
     @Override
     public void reset()
     {
@@ -117,7 +117,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     {
         _connection=connection;
     }
-    
+
     public void checkReadWriteTimeout(long now)
     {
         synchronized (this)
@@ -136,7 +136,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
                         if (isOutputShutdown())
                             close();
                         notIdle();
-                        
+
                         TimeoutException timeout = new TimeoutException("idle "+idleForMs+"ms");
                         _readInterest.failed(timeout);
                         _writeFlusher.failed(timeout);
@@ -147,21 +147,25 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     }
 
     @Override
+    public void onOpen()
+    {
+    }
+
+    @Override
     public void onClose()
     {
         _checkTimeout.cancel();
-        super.onClose();
     }
 
     private static class TimeoutTask extends TimerTask
     {
         final WeakReference<AsyncByteArrayEndPoint> _endp;
-        
+
         TimeoutTask(AsyncByteArrayEndPoint endp)
         {
             _endp=new WeakReference<AsyncByteArrayEndPoint>(endp);
         }
-        
+
         @Override
         public void run()
         {
@@ -172,5 +176,5 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
                 endp.checkReadWriteTimeout(System.currentTimeMillis());
         }
     };
-    
+
 }

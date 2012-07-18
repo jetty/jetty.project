@@ -60,7 +60,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             return false;
         }
     };
-    
+
     /* ------------------------------------------------------------ */
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
@@ -73,7 +73,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     };
 
     /* ------------------------------------------------------------ */
-    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, int maxIdleTime) throws IOException
+    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, long maxIdleTime) throws IOException
     {
         super(channel);
         _manager = selectSet.getManager();
@@ -97,7 +97,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     {
         _writeFlusher.write(context,callback,buffers);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public AsyncConnection getAsyncConnection()
@@ -171,7 +171,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     public void checkReadWriteTimeout(long now)
     {
         synchronized (this)
-        {            
+        {
             if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
                 long idleTimestamp = getIdleTimestamp();
@@ -196,7 +196,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
     }
 
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void shutdownInput()
@@ -204,7 +204,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         super.shutdownInput();
         updateKey();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Updates selection key. This method schedules a call to doUpdateKey to do the keyChange
@@ -325,6 +325,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     {
         super.close();
         updateKey();
+    }
+
+    @Override
+    public void onOpen()
+    {
     }
 
     /* ------------------------------------------------------------ */
