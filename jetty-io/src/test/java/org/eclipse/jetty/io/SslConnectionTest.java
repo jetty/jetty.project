@@ -7,7 +7,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
@@ -32,36 +31,12 @@ public class SslConnectionTest
     protected volatile AsyncEndPoint _lastEndp;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
-    private int maxIdleTimeout = 600000; // TODO: use smaller value
     protected SelectorManager _manager = new SelectorManager()
     {
-        @Override
-        protected int getMaxIdleTime()
-        {
-            return maxIdleTimeout;
-        }
-        
         @Override
         protected void execute(Runnable task)
         {
             _threadPool.execute(task);
-        }
-
-        @Override
-        protected void endPointClosed(AsyncEndPoint endpoint)
-        {
-        }
-
-        @Override
-        protected void endPointOpened(AsyncEndPoint endpoint)
-        {
-            // System.err.println("endPointOpened");
-            endpoint.getAsyncConnection().onOpen();
-        }
-
-        @Override
-        protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
-        {
         }
 
         @Override
@@ -89,12 +64,15 @@ public class SslConnectionTest
             return endp;
         }
     };
+    {
+        _manager.setMaxIdleTime(600000); // TODO: use smaller value
+    }
 
     // Must be volatile or the test may fail spuriously
     protected volatile int _blockAt=0;
     private volatile int _writeCount=1;
 
-    
+
     @BeforeClass
     public static void initSslEngine() throws Exception
     {
@@ -147,7 +125,7 @@ public class SslConnectionTest
         {
             // System.err.println("onClose");
         }
-        
+
         @Override
         public synchronized void onFillable()
         {
@@ -171,7 +149,7 @@ public class SslConnectionTest
                     }
 
                     // System.err.println(BufferUtil.toDetailString(_in));
-                    
+
                     // Write everything
                     int l=_in.remaining();
                     if (l>0)
@@ -181,7 +159,7 @@ public class SslConnectionTest
                         blockingWrite.get();
                         // System.err.println("wrote "+l);
                     }
-                    
+
                     // are we done?
                     if (endp.isInputShutdown())
                     {
@@ -216,7 +194,7 @@ public class SslConnectionTest
     public void testHelloWorld() throws Exception
     {
         //Log.getRootLogger().setDebugEnabled(true);
-        
+
         // Log.getRootLogger().setDebugEnabled(true);
         Socket client = newClient();
         // System.err.println("client="+client);
@@ -225,24 +203,24 @@ public class SslConnectionTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
         _manager.accept(server);
-        
+
         client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
         // System.err.println("wrote");
         byte[] buffer = new byte[1024];
         int len = client.getInputStream().read(buffer);
         // System.err.println(new String(buffer,0,len,"UTF-8"));
-        
+
         client.close();
-        
+
     }
-    
-    
+
+
     @Test
     @Ignore
     public void testNasty() throws Exception
     {
         //Log.getRootLogger().setDebugEnabled(true);
-        
+
         // Log.getRootLogger().setDebugEnabled(true);
         final Socket client = newClient();
         // System.err.println("client="+client);
@@ -251,7 +229,7 @@ public class SslConnectionTest
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
         _manager.accept(server);
-        
+
         new Thread()
         {
             public void run()
@@ -277,7 +255,7 @@ public class SslConnectionTest
                 }
             }
         }.start();
-        
+
         for (int i=0;i<100000;i++)
         {
             client.getOutputStream().write(("HelloWorld "+i+"\n").getBytes("UTF-8"));
@@ -285,10 +263,10 @@ public class SslConnectionTest
             if (i%1000==0)
                 Thread.sleep(10);
         }
-        
+
         Thread.sleep(20000);
         client.close();
-        
+
     }
 
 

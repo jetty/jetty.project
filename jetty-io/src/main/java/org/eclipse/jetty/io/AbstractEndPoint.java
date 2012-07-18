@@ -7,31 +7,31 @@ public abstract class AbstractEndPoint implements EndPoint
     private final long _created=System.currentTimeMillis();
     private final InetSocketAddress _local;
     private final InetSocketAddress _remote;
-    private volatile int _maxIdleTime;    
+    private volatile long _maxIdleTime;
     private volatile long _idleTimestamp=System.currentTimeMillis();
 
-    
+
     protected AbstractEndPoint(InetSocketAddress local,InetSocketAddress remote)
     {
         _local=local;
         _remote=remote;
     }
-    
+
     @Override
     public long getCreatedTimeStamp()
     {
         return _created;
     }
 
-    
+
     @Override
-    public int getMaxIdleTime()
+    public long getMaxIdleTime()
     {
         return _maxIdleTime;
     }
 
     @Override
-    public void setMaxIdleTime(int timeMs)
+    public void setMaxIdleTime(long timeMs)
     {
         _maxIdleTime=timeMs;
     }
@@ -61,12 +61,7 @@ public abstract class AbstractEndPoint implements EndPoint
     {
         _idleTimestamp=System.currentTimeMillis();
     }
-    
-    /* ------------------------------------------------------------ */
-    public void onClose()
-    {
-    }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -79,5 +74,5 @@ public abstract class AbstractEndPoint implements EndPoint
                 isOpen(),
                 isOutputShutdown());
     }
-    
+
 }

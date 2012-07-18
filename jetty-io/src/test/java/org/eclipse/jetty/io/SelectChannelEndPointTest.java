@@ -1,11 +1,5 @@
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -30,40 +24,23 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class SelectChannelEndPointTest
 {
     protected volatile AsyncEndPoint _lastEndp;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
-    private int maxIdleTimeout = 600000; // TODO: use smaller value
     protected SelectorManager _manager = new SelectorManager()
     {
-        @Override
-        protected int getMaxIdleTime()
-        {
-            return maxIdleTimeout;
-        }
-        
         @Override
         protected void execute(Runnable task)
         {
             _threadPool.execute(task);
-        }
-
-        @Override
-        protected void endPointClosed(AsyncEndPoint endpoint)
-        {
-        }
-
-        @Override
-        protected void endPointOpened(AsyncEndPoint endpoint)
-        {
-            endpoint.getAsyncConnection().onOpen();
-        }
-
-        @Override
-        protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
-        {
         }
 
         @Override
@@ -81,6 +58,9 @@ public class SelectChannelEndPointTest
             return endp;
         }
     };
+    {
+        _manager.setMaxIdleTime(600000); // TODO: use smaller value
+    }
 
     // Must be volatile or the test may fail spuriously
     protected volatile int _blockAt=0;
@@ -350,12 +330,12 @@ public class SelectChannelEndPointTest
         _blockAt=10;
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
-        
+
         while(_lastEndp==null);
 
         _lastEndp.setMaxIdleTime(10*specifiedTimeout);
         Thread.sleep((11*specifiedTimeout)/10);
-        
+
         long start=System.currentTimeMillis();
         try
         {
@@ -367,7 +347,7 @@ public class SelectChannelEndPointTest
             int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
             Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3*specifiedTimeout/4));
         }
-        
+
         // write remaining characters
         clientOutputStream.write("90ABCDEF".getBytes("UTF-8"));
         clientOutputStream.flush();
@@ -538,13 +518,13 @@ public class SelectChannelEndPointTest
 
                         //if (latch.getCount()%1000==0)
                         //    System.out.println(writes-latch.getCount());
-                            
+
                         latch.countDown();
                     }
                 }
                 catch(Throwable e)
                 {
-                    
+
                     long now = System.currentTimeMillis();
                     System.err.println("count="+count);
                     System.err.println("latch="+latch.getCount());
@@ -552,7 +532,7 @@ public class SelectChannelEndPointTest
                     System.err.println("last="+(now-last));
                     System.err.println("endp="+_lastEndp);
                     System.err.println("conn="+_lastEndp.getAsyncConnection());
-                    
+
                     e.printStackTrace();
                 }
             }
@@ -581,7 +561,7 @@ public class SelectChannelEndPointTest
                 Assert.fail();
             last=latch.getCount();
         }
-        
+
         assertEquals(0,latch.getCount());
     }
 

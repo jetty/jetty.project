@@ -17,7 +17,7 @@ import org.eclipse.jetty.util.FutureCallback;
  * some inefficiencies.
  * <p>
  * This class will frequently be used in conjunction with some of the utility
- * implementations of {@link Callback}, such as {@link FutureCallback} and 
+ * implementations of {@link Callback}, such as {@link FutureCallback} and
  * {@link ExecutorCallback}. Examples are:
  * <h3>Blocking Read</h3>
  * A FutureCallback can be used to block until an endpoint is ready to be filled
@@ -40,21 +40,21 @@ import org.eclipse.jetty.util.FutureCallback;
  *   }
  *   public void onFailed(String context,Throwable cause) {...}
  * });</pre></blockquote>
- * The executor callback can also be customized to not dispatch in some circumstances when 
+ * The executor callback can also be customized to not dispatch in some circumstances when
  * it knows it can use the callback thread and does not need to dispatch.
- * 
+ *
  * <h3>Blocking Write</h3>
- * The write contract is that the callback complete is not called until all data has been 
+ * The write contract is that the callback complete is not called until all data has been
  * written or there is a failure.  For blocking this looks like:
- * 
+ *
  * <blockquote><pre>
  * FutureCallback<String> future = new FutureCallback<>();
  * endpoint.write("ContextObj",future,headerBuffer,contentBuffer);
  * String context = future.get(); // This blocks
  * </pre></blockquote>
- * 
+ *
  * <h3>Dispatched Write</h3>
- * Note also that multiple buffers may be passed in write so that gather writes 
+ * Note also that multiple buffers may be passed in write so that gather writes
  * can be done:
  * <blockquote><pre>
  * endpoint.write("ContextObj",new ExecutorCallback<String>(executor)
@@ -66,7 +66,7 @@ import org.eclipse.jetty.util.FutureCallback;
  *   }
  *   public void onFailed(String context,Throwable cause) {...}
  * },headerBuffer,contentBuffer);</pre></blockquote>
- * 
+ *
  */
 public interface AsyncEndPoint extends EndPoint
 {
@@ -83,7 +83,7 @@ public interface AsyncEndPoint extends EndPoint
     /* ------------------------------------------------------------ */
     /** Asynchronous write operation.
      * <p>
-     * This method performs {@link #flush(ByteBuffer...)} operation(s) and do a callback when all the data 
+     * This method performs {@link #flush(ByteBuffer...)} operation(s) and do a callback when all the data
      * has been flushed or an error occurs.
      * @param context Context to return via the callback
      * @param callback The callback to call when an error occurs or we are readable.
@@ -102,7 +102,8 @@ public interface AsyncEndPoint extends EndPoint
     AsyncConnection getAsyncConnection();
 
     void setAsyncConnection(AsyncConnection connection);
-    
+
+    void onOpen();
+
     void onClose();
-    
 }
