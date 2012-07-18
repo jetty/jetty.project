@@ -120,7 +120,7 @@ public class XmlConfiguration
             __parser.redirectEntity("configure_6_0.dtd",config60);
             __parser.redirectEntity("configure_7_6.dtd",config76);
 
-            
+
             __parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config76);
             __parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config76);
             __parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config76);
@@ -303,7 +303,7 @@ public class XmlConfiguration
 
         public void init(URL url, XmlParser.Node config, Map<String, Object> idMap, Map<String, String> properties)
         {
-            _url=url.toString();
+            _url=url==null?null:url.toString();
             _config=config;
             _idMap=idMap;
             _propertyMap=properties;
@@ -927,7 +927,7 @@ public class XmlConfiguration
                 configure(prop,node,0);
             return prop;
         }
-        
+
 
         /* ------------------------------------------------------------ */
         /*
@@ -1097,7 +1097,7 @@ public class XmlConfiguration
                 String defaultValue = node.getAttribute("default");
                 return System.getProperty(name,defaultValue);
             }
-            
+
             if ("Env".equals(tag))
             {
                 String name = node.getAttribute("name");
