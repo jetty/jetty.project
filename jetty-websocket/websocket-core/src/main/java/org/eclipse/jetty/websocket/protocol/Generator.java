@@ -157,6 +157,13 @@ public class Generator
 
     }
 
+    /*
+     * The generate method needs to perform two functions.
+     * 
+     * 1 - on the initial call for a given frame it needs to generate the framing bytecode and as much of the payload as will fit in the given buffer size
+     * 
+     * 2 - on subsequent calls it needs to return as much of the payload as will fit in the given buffer size
+     */
     public ByteBuffer generate(int bufferSize, WebSocketFrame frame)
     {
         LOG.debug(String.format("Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d]",frame.getOpCode().toString(),
