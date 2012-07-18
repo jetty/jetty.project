@@ -73,11 +73,9 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(actual,0);
         BufferUtil.flipToFlush(expected,0);
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -117,11 +115,9 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(actual,0);
         BufferUtil.flipToFlush(expected,0);
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -162,11 +158,9 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(actual,0);
         BufferUtil.flipToFlush(expected,0);
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -206,7 +200,6 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(actual,0);
         BufferUtil.flipToFlush(expected,0);
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -248,11 +241,9 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(actual,0);
         BufferUtil.flipToFlush(expected,0);
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -291,11 +282,9 @@ public class TestABCase1_2
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(actual,0);
         BufferUtil.flipToFlush(expected,0);
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -311,11 +300,9 @@ public class TestABCase1_2
         expected.put(new byte[]
                 { (byte)0x82, (byte)0x00 });
 
-        BufferUtil.flipToFlush(actual,0);
         BufferUtil.flipToFlush(expected,0);
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test

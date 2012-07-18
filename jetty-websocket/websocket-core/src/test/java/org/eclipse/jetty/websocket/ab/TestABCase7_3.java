@@ -53,7 +53,6 @@ public class TestABCase7_3
         expected.put(new byte[]
                 { (byte)0x88, (byte)0x00 });
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -128,7 +127,6 @@ public class TestABCase7_3
         expected.put(new byte[]
                 { (byte)0x88, (byte)0x02, 0x03, (byte)0xe8 });
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -180,7 +178,6 @@ public class TestABCase7_3
         expected.putShort((short)1000);
         expected.put(messageBytes);
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -244,7 +241,6 @@ public class TestABCase7_3
 
         expected.put(messageBytes);
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
