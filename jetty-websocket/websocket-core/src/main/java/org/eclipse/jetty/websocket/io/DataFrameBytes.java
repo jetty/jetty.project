@@ -19,10 +19,13 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 public class DataFrameBytes<C> extends FrameBytes<C>
 {
+    private static final Logger LOG = Log.getLogger(DataFrameBytes.class);
     private int size;
     private ByteBuffer buffer;
 
@@ -34,6 +37,11 @@ public class DataFrameBytes<C> extends FrameBytes<C>
     @Override
     public void completed(C context)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("completed({}) - frame.remaining() = {}",context,frame.remaining());
+        }
+
         connection.getBufferPool().release(buffer);
 
         if (frame.remaining() > 0)

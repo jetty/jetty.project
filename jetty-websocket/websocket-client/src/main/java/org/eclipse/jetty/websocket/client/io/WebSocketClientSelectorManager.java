@@ -21,7 +21,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -52,33 +51,9 @@ public class WebSocketClientSelectorManager extends SelectorManager
     }
 
     @Override
-    protected void endPointClosed(AsyncEndPoint endpoint)
-    {
-        endpoint.getAsyncConnection().onClose();
-    }
-
-    @Override
-    protected void endPointOpened(AsyncEndPoint endpoint)
-    {
-    }
-
-    @Override
-    protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
-    {
-        // TODO Investigate role of this with websocket
-
-    }
-
-    @Override
     protected void execute(Runnable task)
     {
         // TODO Auto-generated method stub
-    }
-
-    @Override
-    protected int getMaxIdleTime()
-    {
-        return 0;
     }
 
     public SslContextFactory getSslContextFactory()

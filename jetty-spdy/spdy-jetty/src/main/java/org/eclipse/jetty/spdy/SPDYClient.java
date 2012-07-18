@@ -288,22 +288,6 @@ public class SPDYClient
             }
 
             @Override
-            protected void endPointOpened(AsyncEndPoint endpoint)
-            {
-            }
-
-            @Override
-            protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
-            {
-            }
-
-            @Override
-            protected void endPointClosed(AsyncEndPoint endpoint)
-            {
-                endpoint.getAsyncConnection().onClose();
-            }
-
-            @Override
             public AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
             {
                 SessionPromise sessionPromise = (SessionPromise)attachment;

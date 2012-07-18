@@ -131,7 +131,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     {
         return _byteBufferPool;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
@@ -174,7 +174,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     public void open() throws IOException
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     public void close() throws IOException
     {
@@ -185,13 +185,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     {
         return -1;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the maxIdleTime.
      */
     @Override
-    public int getMaxIdleTime()
+    public long getMaxIdleTime()
     {
         return _maxIdleTime;
     }
@@ -278,10 +278,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
         if (_name==null)
             _name = (getHost() == null?"0.0.0.0":getHost()) + ":" + getPort();
-        
+
         // open listener port
         open();
-        
+
         _name=_name+"/"+getLocalPort();
 
         super.doStart();
@@ -316,7 +316,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             if (thread != null)
                 thread.interrupt();
         }
-        
+
         int i=_name.lastIndexOf("/");
         if (i>0)
             _name=_name.substring(0,i);
@@ -437,8 +437,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /* ------------------------------------------------------------ */
     protected void connectionOpened(AsyncConnection connection)
     {
-        // TODO: should we dispatch the call to onOpen() to another thread ?
-        connection.onOpen();
         _stats.connectionOpened();
     }
 
@@ -453,9 +451,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /* ------------------------------------------------------------ */
     protected void connectionClosed(AsyncConnection connection)
     {
-        // TODO: should we dispatch the call to onClose() to another thread ?
-        connection.onClose();
-
         long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
         // TODO: remove casts to HttpConnection
         int requests = (connection instanceof HttpConnection)?((HttpConnection)connection).getHttpChannel().getRequests():0;

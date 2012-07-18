@@ -39,7 +39,7 @@ public class LocalHttpConnector extends HttpConnector
     {
         setMaxIdleTime(30000);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public Object getTransport()
@@ -70,7 +70,7 @@ public class LocalHttpConnector extends HttpConnector
     {
         LOG.debug("getResponses");
         Phaser phaser=_executor._phaser;
-        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes 
+        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes
         LocalEndPoint request = new LocalEndPoint();
         request.setInput(requestsBuffer);
         _connects.add(request);
@@ -80,7 +80,7 @@ public class LocalHttpConnector extends HttpConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * Execute a request and return the EndPoint through which 
+     * Execute a request and return the EndPoint through which
      * responses can be received.
      * @param rawRequest
      * @return
@@ -88,7 +88,7 @@ public class LocalHttpConnector extends HttpConnector
     public LocalEndPoint executeRequest(String rawRequest)
     {
         Phaser phaser=_executor._phaser;
-        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes 
+        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
         _connects.add(endp);
@@ -106,7 +106,7 @@ public class LocalHttpConnector extends HttpConnector
         connectionOpened(connection);
         _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
@@ -141,14 +141,14 @@ public class LocalHttpConnector extends HttpConnector
             {
                 return false;
             }
-            
+
         };
         final Executor _executor;
         LocalExecutor(Executor e)
         {
             _executor=e;
         }
-        
+
         @Override
         public void execute(final Runnable task)
         {
@@ -167,7 +167,7 @@ public class LocalHttpConnector extends HttpConnector
                     {
                         _phaser.arriveAndDeregister();
                     }
-                }   
+                }
             });
         }
     }
@@ -176,7 +176,7 @@ public class LocalHttpConnector extends HttpConnector
     public class LocalEndPoint extends AsyncByteArrayEndPoint
     {
         private CountDownLatch _closed = new CountDownLatch(1);
-        
+
         LocalEndPoint()
         {
             super(getTimer());
@@ -204,7 +204,6 @@ public class LocalHttpConnector extends HttpConnector
         public void onClose()
         {
             super.onClose();
-            connectionClosed(getAsyncConnection());
             _closed.countDown();
         }
 
@@ -237,5 +236,5 @@ public class LocalHttpConnector extends HttpConnector
                 }
             }
         }
-    }    
+    }
 }

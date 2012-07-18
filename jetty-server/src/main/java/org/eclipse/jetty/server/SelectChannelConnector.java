@@ -70,7 +70,7 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         this(Math.max(1,(Runtime.getRuntime().availableProcessors())/4),
              Math.max(1,(Runtime.getRuntime().availableProcessors())/4));
     }
-    
+
     /* ------------------------------------------------------------ */
     public SelectChannelConnector(int acceptors, int selectors)
     {
@@ -78,7 +78,7 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         _manager=new ConnectorSelectorManager(selectors);
         addBean(_manager,true);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     @Override
@@ -210,7 +210,6 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
     /* ------------------------------------------------------------------------------- */
     protected void endPointClosed(AsyncEndPoint endpoint)
     {
-        endpoint.onClose();
         connectionClosed(endpoint.getAsyncConnection());
     }
 
@@ -237,15 +236,16 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
             findExecutor().execute(task);
         }
 
-        @Override 
-        protected int getMaxIdleTime()
+        @Override
+        protected long getMaxIdleTime()
         {
             return SelectChannelConnector.this.getMaxIdleTime();
         }
-        
+
         @Override
         protected void endPointClosed(AsyncEndPoint endpoint)
         {
+            super.endPointClosed(endpoint);
             SelectChannelConnector.this.endPointClosed(endpoint);
         }
 
@@ -253,6 +253,7 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         protected void endPointOpened(AsyncEndPoint endpoint)
         {
             // TODO handle max connections and low resources
+            super.endPointOpened(endpoint);
             connectionOpened(endpoint.getAsyncConnection());
         }
 

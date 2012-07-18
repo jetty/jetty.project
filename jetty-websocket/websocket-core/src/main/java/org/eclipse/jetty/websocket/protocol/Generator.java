@@ -166,10 +166,13 @@ public class Generator
      */
     public ByteBuffer generate(int bufferSize, WebSocketFrame frame)
     {
-        LOG.debug(String.format("Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d]",frame.getOpCode().toString(),
-                frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame.getPayloadLength()));
-
-        assertFrameValid(frame);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug(String.format(
+                    "Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d,payloadStart=%s,remaining=%d,position=%s]",frame
+                    .getOpCode().toString(),frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame
+                    .getPayloadLength(),frame.getPayloadStart(),frame.remaining(),frame.position()));
+        }
 
         /*
          * prepare the byte buffer to put frame into
@@ -177,117 +180,138 @@ public class Generator
         ByteBuffer buffer = bufferPool.acquire(bufferSize,true);
         BufferUtil.clearToFill(buffer);
 
-        /*
-         * start the generation process
-         */
-        byte b;
-
-        // Setup fin thru opcode
-        b = 0x00;
-        if (frame.isFin())
+        if (frame.remaining() == frame.getPayloadLength())
         {
-            b |= 0x80; // 1000_0000
-        }
-        if (frame.isRsv1())
-        {
-            b |= 0x40; // 0100_0000
-        }
-        if (frame.isRsv2())
-        {
-            b |= 0x20; // 0010_0000
-        }
-        if (frame.isRsv3())
-        {
-            b |= 0x10;
-        }
+            // we need a framing header
+            assertFrameValid(frame);
 
-        byte opcode = frame.getOpCode().getCode();
+            /*
+             * start the generation process
+             */
+            byte b;
 
-        if (frame.isContinuation())
-        {
-            // Continuations are not the same OPCODE
-            opcode = OpCode.CONTINUATION.getCode();
-        }
+            // Setup fin thru opcode
+            b = 0x00;
+            if (frame.isFin())
+            {
+                b |= 0x80; // 1000_0000
+            }
+            if (frame.isRsv1())
+            {
+                b |= 0x40; // 0100_0000
+            }
+            if (frame.isRsv2())
+            {
+                b |= 0x20; // 0010_0000
+            }
+            if (frame.isRsv3())
+            {
+                b |= 0x10;
+            }
 
-        b |= opcode & 0x0F;
+            byte opcode = frame.getOpCode().getCode();
 
-        buffer.put(b);
+            if (frame.isContinuation())
+            {
+                // Continuations are not the same OPCODE
+                opcode = OpCode.CONTINUATION.getCode();
+            }
 
-        // is masked
-        b = 0x00;
-        b |= (frame.isMasked()?0x80:0x00);
+            b |= opcode & 0x0F;
 
-        // payload lengths
-        int payloadLength = frame.getPayloadLength();
-
-        /*
-         * if length is over 65535 then its a 7 + 64 bit length
-         */
-        if (payloadLength > 0xFF_FF)
-        {
-            // we have a 64 bit length
-            b |= 0x7F;
-            buffer.put(b); // indicate 8 byte length
-            buffer.put((byte)0); //
-            buffer.put((byte)0); // anything over an
-            buffer.put((byte)0); // int is just
-            buffer.put((byte)0); // intsane!
-            buffer.put((byte)((payloadLength >> 24) & 0xFF));
-            buffer.put((byte)((payloadLength >> 16) & 0xFF));
-            buffer.put((byte)((payloadLength >> 8) & 0xFF));
-            buffer.put((byte)(payloadLength & 0xFF));
-        }
-        /*
-         * if payload is ge 126 we have a 7 + 16 bit length
-         */
-        else if (payloadLength >= 0x7E)
-        {
-            b |= 0x7E;
-            buffer.put(b); // indicate 2 byte length
-            buffer.put((byte)(payloadLength >> 8));
-            buffer.put((byte)(payloadLength & 0xFF));
-        }
-        /*
-         * we have a 7 bit length
-         */
-        else
-        {
-            b |= (payloadLength & 0x7F);
             buffer.put(b);
-        }
 
-        // masking key
-        if (frame.isMasked())
-        {
-            buffer.put(frame.getMask());
-        }
+            // is masked
+            b = 0x00;
+            b |= (frame.isMasked()?0x80:0x00);
 
-        // remember the position
-        int positionPrePayload = buffer.position();
+            // payload lengths
+            int payloadLength = frame.getPayloadLength();
+
+            /*
+             * if length is over 65535 then its a 7 + 64 bit length
+             */
+            if (payloadLength > 0xFF_FF)
+            {
+                // we have a 64 bit length
+                b |= 0x7F;
+                buffer.put(b); // indicate 8 byte length
+                buffer.put((byte)0); //
+                buffer.put((byte)0); // anything over an
+                buffer.put((byte)0); // int is just
+                buffer.put((byte)0); // intsane!
+                buffer.put((byte)((payloadLength >> 24) & 0xFF));
+                buffer.put((byte)((payloadLength >> 16) & 0xFF));
+                buffer.put((byte)((payloadLength >> 8) & 0xFF));
+                buffer.put((byte)(payloadLength & 0xFF));
+            }
+            /*
+             * if payload is ge 126 we have a 7 + 16 bit length
+             */
+            else if (payloadLength >= 0x7E)
+            {
+                b |= 0x7E;
+                buffer.put(b); // indicate 2 byte length
+                buffer.put((byte)(payloadLength >> 8));
+                buffer.put((byte)(payloadLength & 0xFF));
+            }
+            /*
+             * we have a 7 bit length
+             */
+            else
+            {
+                b |= (payloadLength & 0x7F);
+                buffer.put(b);
+            }
+
+            // masking key
+            if (frame.isMasked())
+            {
+                buffer.put(frame.getMask());
+            }
+        }
 
         // copy payload
         if (frame.hasPayload())
         {
-            buffer.put(frame.getPayload());
-        }
+            // remember the position
+            int maskingStartPosition = buffer.position();
 
-        int positionPostPayload = buffer.position();
+            // remember the offset within the frame payload (for working with
+            // windowed frames that don't split on 4 byte barriers)
+            int payloadOffset = frame.getPayload().position();
+            int payloadStart = frame.getPayloadStart();
 
-        // mask it if needed
-        if (frame.isMasked())
-        {
-            // move back to remembered position.
-            int size = positionPostPayload - positionPrePayload;
-            byte[] mask = frame.getMask();
-            int pos;
-            for (int i = 0; i < size; i++)
+            // put as much as possible into the buffer
+            BufferUtil.put(frame.getPayload(),buffer);
+
+            // mask it if needed
+            if (frame.isMasked())
             {
-                pos = positionPrePayload + i;
-                // Mask each byte by its absolute position in the bytebuffer
-                buffer.put(pos,(byte)(buffer.get(pos) ^ mask[i % 4]));
+                // move back to remembered position.
+                int size = buffer.position() - maskingStartPosition;
+                byte[] mask = frame.getMask();
+                byte b;
+                int posBuf;
+                int posFrame;
+                for (int i = 0; i < size; i++)
+                {
+                    posBuf = i + maskingStartPosition;
+                    posFrame = i + (payloadOffset - payloadStart);
+
+                    // get raw byte from buffer.
+                    b = buffer.get(posBuf);
+
+                    // mask, using offset information from frame windowing.
+                    b ^= mask[posFrame % 4];
+
+                    // Mask each byte by its absolute position in the bytebuffer
+                    buffer.put(posBuf,b);
+                }
             }
         }
 
+        BufferUtil.flipToFlush(buffer,0);
         return buffer;
     }
 
