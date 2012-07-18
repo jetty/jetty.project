@@ -222,7 +222,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void close()
     {
         _closed=true;
-        onClose();
+        // TODO: for sbordet to fix - onClose();
     }
 
     /* ------------------------------------------------------------ */

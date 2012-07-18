@@ -177,6 +177,18 @@ public class SslConnection extends AbstractAsyncConnection
         private boolean _netWriting;
         private boolean _underflown;
         private boolean _ishut=false;
+        
+        @Override
+        public void onOpen()
+        {
+            // TODO for sbordet to fix
+        }
+        
+        @Override
+        public void onClose()
+        {
+            // TODO for sbordet to fix
+        }
 
         private final Callback<Void> _writeCallback = new Callback<Void>(){
 
