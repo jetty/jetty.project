@@ -67,10 +67,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     @Override
     public void failed(C context, Throwable x)
     {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("failed({},{})",context,x);
-        }
+        LOG.warn("failed(" + context + ")",x);
         cancelTask();
         callback.failed(context,x);
     }

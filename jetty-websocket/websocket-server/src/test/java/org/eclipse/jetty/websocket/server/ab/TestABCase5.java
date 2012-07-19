@@ -17,7 +17,6 @@ package org.eclipse.jetty.websocket.server.ab;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -25,11 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Generator;
@@ -37,8 +32,6 @@ import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
@@ -49,44 +42,6 @@ import org.junit.Test;
 
 public class TestABCase5
 {
-    @SuppressWarnings("serial")
-    public static class RFCServlet extends WebSocketServlet
-    {
-        @Override
-        public void registerWebSockets(WebSocketServerFactory factory)
-        {
-            factory.register(RFCSocket.class);
-        }
-    }
-
-    public static class RFCSocket extends WebSocketAdapter
-    {
-        private static Logger LOG = Log.getLogger(RFCSocket.class);
-
-        @Override
-        public void onWebSocketText(String message)
-        {
-            LOG.debug("onWebSocketText({})",message);
-            // Test the RFC 6455 close code 1011 that should close
-            // trigger a WebSocket server terminated close.
-            if (message.equals("CRASH"))
-            {
-                System.out.printf("Got OnTextMessage");
-                throw new RuntimeException("Something bad happened");
-            }
-
-            // echo the message back.
-            try
-            {
-                getConnection().write("ECHO_FROM_WEBSOCKET",new FutureCallback<String>(),message);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace(System.err);
-            }
-        }
-    }
-
     private static final byte FIN = (byte)0x80;
     private static final byte NOFIN = 0x00;
 

@@ -180,8 +180,6 @@ public class Parser
         }
         try
         {
-            LOG.debug("Parsing {} bytes",buffer.remaining());
-
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {
