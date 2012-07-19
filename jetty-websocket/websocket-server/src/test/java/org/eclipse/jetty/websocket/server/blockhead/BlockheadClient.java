@@ -121,6 +121,7 @@ public class BlockheadClient implements IncomingFrames
 
     public void close()
     {
+        LOG.debug("close()");
         close(-1,null);
     }
 
@@ -150,7 +151,7 @@ public class BlockheadClient implements IncomingFrames
         in = socket.getInputStream();
     }
 
-    private void disconnect()
+    public void disconnect()
     {
         LOG.debug("disconnect");
         IO.close(in);
@@ -209,9 +210,10 @@ public class BlockheadClient implements IncomingFrames
     public void incoming(WebSocketFrame frame)
     {
         LOG.debug("incoming({})",frame);
-        if (!incomingFrameQueue.offerLast(frame))
+        WebSocketFrame copy = new WebSocketFrame(frame); // make a copy
+        if (!incomingFrameQueue.offerLast(copy))
         {
-            throw new RuntimeException("Unable to queue incoming frame: " + frame);
+            throw new RuntimeException("Unable to queue incoming frame: " + copy);
         }
     }
 
@@ -257,6 +259,7 @@ public class BlockheadClient implements IncomingFrames
 
     public Queue<WebSocketFrame> readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
     {
+        LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
         int startCount = incomingFrameQueue.size();
 
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
@@ -409,13 +412,11 @@ public class BlockheadClient implements IncomingFrames
         frame.setMask(clientmask);
         // frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
         ByteBuffer buf = generator.generate(frame);
-        BufferUtil.flipToFlush(buf,0);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
         }
-        byte arr[] = BufferUtil.toArray(buf);
-        out.write(arr,0,arr.length);
+        BufferUtil.writeTo(buf,out);
         out.flush();
 
         if (frame.getOpCode() == OpCode.CLOSE)

@@ -37,7 +37,7 @@ public class CloseInfo
 
     public CloseInfo(ByteBuffer payload, boolean validate)
     {
-        this.statusCode = 0;
+        this.statusCode = -1;
         this.reason = null;
 
         if ((payload == null) || (payload.remaining() == 0))
@@ -54,6 +54,7 @@ public class CloseInfo
         if (data.remaining() >= 2)
         {
             // Status Code
+            statusCode = 0; // start with 0
             statusCode |= (data.get() & 0xFF) << 8;
             statusCode |= (data.get() & 0xFF);
 

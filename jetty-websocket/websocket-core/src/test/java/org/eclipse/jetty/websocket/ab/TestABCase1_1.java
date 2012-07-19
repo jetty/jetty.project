@@ -69,11 +69,9 @@ public class TestABCase1_1
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -111,11 +109,9 @@ public class TestABCase1_1
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -153,11 +149,9 @@ public class TestABCase1_1
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -195,11 +189,9 @@ public class TestABCase1_1
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -236,11 +228,9 @@ public class TestABCase1_1
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -276,11 +266,9 @@ public class TestABCase1_1
             expected.put("*".getBytes());
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test
@@ -296,11 +284,9 @@ public class TestABCase1_1
         expected.put(new byte[]
                 { (byte)0x81, (byte)0x00 });
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
-
     }
 
     @Test

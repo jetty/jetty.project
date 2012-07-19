@@ -74,7 +74,7 @@ public class PutFilterTest
     public void testHandlePut() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
         // test GET
@@ -171,7 +171,7 @@ public class PutFilterTest
     public void testHandleDelete() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
         // test PUT1
@@ -208,7 +208,7 @@ public class PutFilterTest
     public void testHandleMove() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
         // test PUT1
@@ -246,13 +246,13 @@ public class PutFilterTest
     public void testHandleOptions() throws Exception
     {
         // generated and parsed test
-        HttpTester request = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
         // test PUT1
         request.setMethod("OPTIONS");
         request.setVersion("HTTP/1.0");
-        request.setHeader("Host","tester");
+        request.put("Host","tester");
         request.setURI("/context/file.txt");
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());

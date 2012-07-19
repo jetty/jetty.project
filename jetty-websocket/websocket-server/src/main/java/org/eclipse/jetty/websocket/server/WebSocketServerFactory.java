@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -48,7 +49,9 @@ import org.eclipse.jetty.websocket.driver.EventMethodsCache;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
+import org.eclipse.jetty.websocket.io.WebSocketSession;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeHixie76;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
@@ -119,7 +122,12 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         WebSocketCreator creator = getCreator();
 
         Object websocketPojo = creator.createWebSocket(sockreq,sockresp);
-        // TODO: Handle forbidden?
+
+        // Handle response forbidden (and similar paths)
+        if (sockresp.isCommitted())
+        {
+            return false;
+        }
 
         if (websocketPojo == null)
         {
@@ -127,8 +135,6 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
             response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             return false;
         }
-
-        // TODO: discover type, create proxy
 
         // Send the upgrade
         WebSocketPolicy objPolicy = this.basePolicy.clonePolicy();
@@ -282,12 +288,6 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         this.creator = creator;
     }
 
-    private IncomingFrames setupExtensionChain(WebSocketEventDriver websocket, List<Extension> extensions)
-    {
-        // TODO Auto-generated method stub
-        return websocket;
-    }
-
     /**
      * Upgrade the request/response to a WebSocket Connection.
      * <p>
@@ -345,8 +345,40 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         LOG.debug("AsyncWebSocketConnection: {}",connection);
 
         // Initialize / Negotiate Extensions
+        WebSocketSession session = new WebSocketSession(websocket,connection,getPolicy(),response.getAcceptedSubProtocol());
         List<Extension> extensions = initExtensions(request.getExtensions());
-        IncomingFrames incoming = setupExtensionChain(websocket,extensions);
+
+        // Start with default routing.
+        IncomingFrames incoming = session;
+        OutgoingFrames outgoing = connection;
+
+        // Connect extensions
+        if (extensions != null)
+        {
+            Iterator<Extension> extIter;
+            // Connect outgoings
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextOutgoingFrames(outgoing);
+                outgoing = ext;
+            }
+
+            // Connect incomings
+            Collections.reverse(extensions);
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextIncomingFrames(incoming);
+                incoming = ext;
+            }
+        }
+
+        // configure session for outgoing flows
+        session.setOutgoing(outgoing);
+        // configure connection for incoming flows
         connection.getParser().setIncomingFramesHandler(incoming);
 
         // Process (version specific) handshake response
@@ -358,7 +390,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
         // Notify POJO of connection
         // TODO move to WebSocketAsyncConnection.onOpen
-        websocket.setConnection(connection);
+        websocket.setConnection(session);
         websocket.onConnect();
 
         LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),version,response.getAcceptedSubProtocol(),connection);

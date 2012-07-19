@@ -39,14 +39,13 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.protocol.Generator;
-import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io
  */
-public class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, WebSocketConnection, OutgoingFrames
+public class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, OutgoingFrames
 {
     static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
     private static final ThreadLocal<WebSocketAsyncConnection> CURRENT_CONNECTION = new ThreadLocal<WebSocketAsyncConnection>();
@@ -68,7 +67,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     private final WebSocketPolicy policy;
     private final FrameQueue queue;
     private List<ExtensionConfig> extensions;
-    private OutgoingFrames outgoingFramesHandler;
     private boolean flushing;
 
     public WebSocketAsyncConnection(AsyncEndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -95,7 +93,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         terminateConnection(statusCode,reason);
     }
 
-    @Override
     public <C> void complete(FrameBytes<C> frameBytes)
     {
         synchronized (queue)
@@ -134,7 +131,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         }
     }
 
-    @Override
     public void flush()
     {
         FrameBytes<?> frameBytes = null;
@@ -160,13 +156,11 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         write(buffer,this,frameBytes);
     }
 
-    @Override
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
     }
 
-    @Override
     public Executor getExecutor()
     {
         return getExecutor();
@@ -184,25 +178,21 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         return extensions;
     }
 
-    @Override
     public Generator getGenerator()
     {
         return generator;
     }
 
-    @Override
     public Parser getParser()
     {
         return parser;
     }
 
-    @Override
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
     }
 
-    @Override
     public FrameQueue getQueue()
     {
         return queue;
@@ -217,13 +207,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     public ScheduledExecutorService getScheduler()
     {
         return scheduler;
-    }
-
-    @Override
-    public String getSubProtocol()
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 
     @Override
@@ -262,22 +245,31 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     {
         LOG.debug("onOpen()");
         super.onOpen();
+        // TODO: websocket.setConnection(this);
+        // TODO: websocket.onConnect();
+
         fillInterested();
     }
 
+    /**
+     * Enqueue internal frame from {@link OutgoingFrames} stack for eventual write out on the physical connection.
+     */
     @Override
-    public void output(WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
     {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
-    {
-        WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setPayload(payload);
-        ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
-        scheduleTimeout(bytes);
-        queue.prepend(bytes);
+        if (frame.getOpCode().isControlFrame())
+        {
+            ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
+            scheduleTimeout(bytes);
+            queue.prepend(bytes);
+        }
+        else
+        {
+            DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
+            scheduleTimeout(bytes);
+            queue.append(bytes);
+        }
+        flush();
     }
 
     private void read(ByteBuffer buffer)
@@ -348,83 +340,22 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
 
     private <C> void write(ByteBuffer buffer, WebSocketAsyncConnection webSocketAsyncConnection, FrameBytes<C> frameBytes)
     {
-        LOG.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
-        getEndPoint().write(frameBytes.context,frameBytes,buffer);
-    }
+        AsyncEndPoint endpoint = getEndPoint();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <C> void write(C context, Callback<C> callback, byte buf[], int offset, int len) throws IOException
-    {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
+            LOG.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
+            LOG.debug("EndPoint: {}",endpoint);
         }
-        if (len == 0)
+        try
         {
-            // nothing to write
-            return;
+            endpoint.write(frameBytes.context,frameBytes,buffer);
+            // endpoint.flush();
         }
-
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(buf,offset,len);
-        DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
-        scheduleTimeout(bytes);
-        queue.append(bytes);
-        flush();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer buffer) throws IOException
-    {
-        if (LOG.isDebugEnabled())
+        catch (Throwable t)
         {
-            LOG.debug("write(context,{},ByteBuffer->{})",callback,BufferUtil.toDetailString(buffer));
-        }
-
-        WebSocketFrame frame = WebSocketFrame.binary().setPayload(buffer);
-        DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
-        scheduleTimeout(bytes);
-        queue.append(bytes);
-        flush();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <C> void write(C context, Callback<C> callback, String message) throws IOException
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("write(context,{},message.length:{})",callback,message.length());
-        }
-
-        WebSocketFrame frame = WebSocketFrame.text(message);
-        DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
-        scheduleTimeout(bytes);
-        queue.append(bytes);
-        flush();
-    }
-
-    @Override
-    public <C> void write(C context, Callback<C> callback, WebSocketFrame frame)
-    {
-        if (frame.getOpCode().isControlFrame())
-        {
-            ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
-            scheduleTimeout(bytes);
-            queue.prepend(bytes);
-        }
-        else
-        {
-            DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
-            scheduleTimeout(bytes);
-            queue.append(bytes);
+            LOG.debug(t);
+            frameBytes.failed(frameBytes.context,t);
         }
     }
 }

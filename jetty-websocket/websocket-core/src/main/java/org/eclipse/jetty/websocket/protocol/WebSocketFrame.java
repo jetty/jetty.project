@@ -87,10 +87,17 @@ public class WebSocketFrame implements Frame
     private OpCode opcode = null;
     private boolean masked = false;
     private byte mask[];
+    /**
+     * The payload data.
+     * <p>
+     * It is assumed to always be in FLUSH mode (ready to read) in this object.
+     */
     private ByteBuffer data;
+    private int payloadLength = 0;
+    /** position of start of data within a fresh payload */
+    private int payloadStart = -1;
 
     private boolean continuation = false;
-
     private int continuationIndex = 0;
 
     /**
@@ -108,6 +115,35 @@ public class WebSocketFrame implements Frame
     {
         reset();
         this.opcode = opcode;
+    }
+
+    /**
+     * Copy constructor for the websocket frame.
+     * <p>
+     * Note: the underlying payload is merely a {@link ByteBuffer#slice()} of the input frame.
+     * 
+     * @param copy
+     *            the websocket to copy.
+     */
+    public WebSocketFrame(WebSocketFrame copy)
+    {
+        fin = copy.rsv1;
+        rsv1 = copy.rsv2;
+        rsv2 = copy.rsv2;
+        rsv3 = copy.rsv3;
+        opcode = copy.opcode;
+        masked = copy.masked;
+        mask = null;
+        if (copy.mask != null)
+        {
+            mask = new byte[copy.mask.length];
+            System.arraycopy(copy.mask,0,mask,0,mask.length);
+        }
+        payloadLength = copy.payloadLength;
+        payloadStart = copy.payloadStart;
+        data = copy.data.slice();
+        continuationIndex = copy.continuationIndex;
+        continuation = copy.continuation;
     }
 
     public void assertValid()
@@ -177,12 +213,20 @@ public class WebSocketFrame implements Frame
         return opcode;
     }
 
+    /**
+     * Get the payload ByteBuffer. possible null.
+     * <p>
+     * 
+     * @return A {@link ByteBuffer#slice()} of the payload buffer (to prevent modification of the buffer state). Possibly null if no payload present.
+     *         <p>
+     *         Note: this method is exposed via the immutable {@link Frame#getPayload()} method.
+     */
     @Override
     public ByteBuffer getPayload()
     {
         if (data != null)
         {
-            return data.slice();
+            return data;
         }
         else
         {
@@ -206,12 +250,21 @@ public class WebSocketFrame implements Frame
         {
             return 0;
         }
-        return data.remaining();
+        return payloadLength;
+    }
+
+    public int getPayloadStart()
+    {
+        if (data == null)
+        {
+            return -1;
+        }
+        return payloadStart;
     }
 
     public boolean hasPayload()
     {
-        return ((data != null) && (data.remaining() > 0));
+        return ((data != null) && (payloadLength > 0));
     }
 
     public boolean isContinuation()
@@ -254,6 +307,29 @@ public class WebSocketFrame implements Frame
         return rsv3;
     }
 
+    /**
+     * Get the position currently within the payload data.
+     * <p>
+     * Used by flow control, generator and window sizing.
+     * 
+     * @return the number of bytes remaining in the payload data that has not yet been written out to Network ByteBuffers.
+     */
+    public int position()
+    {
+        if (data == null)
+        {
+            return -1;
+        }
+        return data.position();
+    }
+
+    /**
+     * Get the number of bytes remaining to write out to the Network ByteBuffer.
+     * <p>
+     * Used by flow control, generator and window sizing.
+     * 
+     * @return the number of bytes remaining in the payload data that has not yet been written out to Network ByteBuffers.
+     */
     public int remaining()
     {
         if (data == null)
@@ -272,6 +348,7 @@ public class WebSocketFrame implements Frame
         opcode = null;
         masked = false;
         data = null;
+        payloadLength = 0;
         mask = null;
         continuationIndex = 0;
         continuation = false;
@@ -336,12 +413,9 @@ public class WebSocketFrame implements Frame
             }
         }
 
-        int len = buf.length;
-        data = ByteBuffer.allocate(len);
-        BufferUtil.clearToFill(data);
-        data.put(buf,0,len);
-        BufferUtil.flipToFlush(data,0);
-        BufferUtil.flipToFill(data);
+        data = BufferUtil.toBuffer(buf);
+        payloadStart = data.position();
+        payloadLength = data.limit();
         return this;
     }
 
@@ -367,10 +441,9 @@ public class WebSocketFrame implements Frame
             }
         }
 
-        data = ByteBuffer.allocate(len);
-        BufferUtil.clearToFill(data);
-        data.put(buf,0,len);
-        BufferUtil.flipToFill(data);
+        data = BufferUtil.toBuffer(buf,offset,len);
+        payloadStart = data.position();
+        payloadLength = data.limit();
         return this;
     }
 
@@ -401,6 +474,8 @@ public class WebSocketFrame implements Frame
         }
 
         data = buf.slice();
+        payloadStart = data.position();
+        payloadLength = data.limit();
         return this;
     }
 
@@ -441,7 +516,7 @@ public class WebSocketFrame implements Frame
             b.append("NO-OP");
         }
         b.append('[');
-        b.append("len=").append(getPayloadLength());
+        b.append("len=").append(payloadLength);
         b.append(",fin=").append(fin);
         b.append(",masked=").append(masked);
         b.append(",continuation=").append(continuation);

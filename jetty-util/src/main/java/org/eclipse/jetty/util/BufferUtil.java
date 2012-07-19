@@ -649,6 +649,34 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(s.getBytes(charset));
     }
+    
+    /**
+     * Create a new ByteBuffer using provided byte array.
+     * 
+     * @param array
+     *            the byte array to back buffer with.
+     * @return ByteBuffer with provided byte array, in flush mode
+     */
+    public static ByteBuffer toBuffer(byte array[])
+    {
+        return ByteBuffer.wrap(array);
+    }
+    
+    /**
+     * Create a new ByteBuffer using the provided byte array.
+     * 
+     * @param array
+     *            the byte array to use.
+     * @param offset
+     *            the offset within the byte array to use from
+     * @param length
+     *            the length in bytes of the array to use
+     * @return ByteBuffer with provided byte array, in flush mode
+     */
+    public static ByteBuffer toBuffer(byte array[], int offset, int length)
+    {
+        return ByteBuffer.wrap(array,offset,length);
+    }
 
     public static ByteBuffer toBuffer(File file) throws IOException
     {

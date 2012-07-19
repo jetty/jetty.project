@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -77,7 +78,7 @@ public class TestABCase5
             // echo the message back.
             try
             {
-                getConnection().write(null,new FutureCallback<Void>(),message);
+                getConnection().write("ECHO_FROM_WEBSOCKET",new FutureCallback<String>(),message);
             }
             catch (IOException e)
             {
@@ -86,8 +87,10 @@ public class TestABCase5
         }
     }
 
-    private static SimpleServletServer server;
+    private static final byte FIN = (byte)0x80;
+    private static final byte NOFIN = 0x00;
 
+    private static SimpleServletServer server;
     private static Generator laxGenerator;
 
     @BeforeClass
@@ -126,7 +129,7 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
-            buf.put((byte)(0x00 | OpCode.PING.getCode()));
+            buf.put((byte)(NOFIN | OpCode.PING.getCode()));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -141,7 +144,7 @@ public class TestABCase5
 
             String fragment2 = "fragment2";
 
-            buf2.put((byte)(0x80 | OpCode.PING.getCode()));
+            buf2.put((byte)(FIN | OpCode.PING.getCode()));
             b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
@@ -213,7 +216,7 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
-            buf.put((byte)(0x00 | OpCode.PONG.getCode()));
+            buf.put((byte)(NOFIN | OpCode.PONG.getCode()));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -228,7 +231,7 @@ public class TestABCase5
 
             String fragment2 = "fragment2";
 
-            buf2.put((byte)(0x80 | OpCode.CONTINUATION.getCode()));
+            buf2.put((byte)(FIN | OpCode.CONTINUATION.getCode()));
             b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
@@ -280,7 +283,7 @@ public class TestABCase5
         }
         finally
         {
-            client.close();
+            client.disconnect();
         }
     }
 
@@ -299,7 +302,7 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
-            buf.put((byte)(0x00 | OpCode.TEXT.getCode()));
+            buf.put((byte)(NOFIN | OpCode.TEXT.getCode()));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -314,7 +317,7 @@ public class TestABCase5
 
             String fragment2 = "fragment2";
 
-            buf2.put((byte)(0x80 | OpCode.CONTINUATION.getCode()));
+            buf2.put((byte)(FIN | OpCode.CONTINUATION.getCode()));
             b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
@@ -354,7 +357,7 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
-            buf.put((byte)(0x00 | OpCode.TEXT.getCode()));
+            buf.put((byte)(NOFIN | OpCode.TEXT.getCode()));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -371,7 +374,7 @@ public class TestABCase5
 
             String pingPayload = "ping payload";
 
-            pingBuf.put((byte)(0x00 | OpCode.PING.getCode()));
+            pingBuf.put((byte)(FIN | OpCode.PING.getCode()));
 
             b = 0x00; // no masking
             b |= pingPayload.length() & 0x7F;
@@ -379,7 +382,7 @@ public class TestABCase5
             pingBuf.put(pingPayload.getBytes());
             BufferUtil.flipToFlush(pingBuf,0);
 
-            client.writeRaw(buf);
+            client.writeRaw(pingBuf);
 
             // Send remaining text as continuation
 
@@ -388,7 +391,7 @@ public class TestABCase5
 
             String fragment2 = "fragment2";
 
-            buf2.put((byte)(0x80 | OpCode.CONTINUATION.getCode()));
+            buf2.put((byte)(FIN | OpCode.CONTINUATION.getCode()));
             b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
@@ -398,13 +401,12 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Should be 2 frames, pong frame followed by combined echo'd text frame
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,1);
             WebSocketFrame frame = frames.remove();
 
-            Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PING));
+            Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PONG));
 
-            ByteBuffer payload1 = ByteBuffer.allocate(pingPayload.length());
-            payload1.flip();
+            ByteBuffer payload1 = BufferUtil.toBuffer(pingPayload,StringUtil.__UTF8_CHARSET);
 
             ByteBufferAssert.assertEquals("payloads should be equal",payload1,frame.getPayload());
             frame = frames.remove();
@@ -452,9 +454,7 @@ public class TestABCase5
 
             Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PONG));
 
-            ByteBuffer payload1 = ByteBuffer.allocate(pingPayload.length());
-            payload1.flip();
-
+            ByteBuffer payload1 = BufferUtil.toBuffer(pingPayload,StringUtil.__UTF8_CHARSET);
             ByteBufferAssert.assertEquals("Payload",payload1,frame.getPayload());
 
             frame = frames.remove();
@@ -487,9 +487,9 @@ public class TestABCase5
 
             String fragment1 = "fragment";
 
-            // continutation w / FIN
+            // continuation w / FIN
 
-            buf.put((byte)(0x80 | OpCode.CONTINUATION.getCode()));
+            buf.put((byte)(FIN | OpCode.CONTINUATION.getCode()));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -507,10 +507,8 @@ public class TestABCase5
 
             Assert.assertThat("CloseFrame.status code",new CloseInfo(frame).getStatusCode(),is(1002));
 
-            Assert.assertThat("CloseFrame.reason",new CloseInfo(frame).getReason(),is("Bad Continuation")); // TODO put close reasons into public strings in
-                                                                                                            // impl
-                                                                                                            // someplace
-
+            Assert.assertThat("CloseFrame.reason",new CloseInfo(frame).getReason(),is("Bad Continuation"));
+            // TODO put close reasons into public strings in impl someplace?
         }
         finally
         {

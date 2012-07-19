@@ -42,8 +42,6 @@ public class WebSocketFrameTest
 
     private void assertEqual(String message, ByteBuffer expected, ByteBuffer actual)
     {
-
-        BufferUtil.flipToFlush(actual,0);
         BufferUtil.flipToFlush(expected,0);
 
         ByteBufferAssert.assertEquals(message,expected,actual);

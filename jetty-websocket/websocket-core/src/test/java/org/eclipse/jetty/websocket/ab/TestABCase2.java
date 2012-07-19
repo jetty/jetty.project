@@ -63,8 +63,6 @@ public class TestABCase2
         expected.put(b);
         expected.put(bytes);
 
-
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -90,8 +88,6 @@ public class TestABCase2
         expected.put(b);
         expected.put(bytes);
 
-
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -112,7 +108,6 @@ public class TestABCase2
         expected.put(new byte[]
                 { (byte)0x89, (byte)0x00 });
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -139,8 +134,6 @@ public class TestABCase2
         expected.put(b);
         expected.put(messageBytes);
 
-
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
@@ -292,9 +285,7 @@ public class TestABCase2
         WebSocketFrame pActual = capture.getFrames().get(0);
         Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(message.length()));
         Assert.assertEquals("PingFrame.payload",message.length(),pActual.getPayloadLength());
-
     }
-
 
     @Test
     public void testParseOversizedBinaryPingCase2_5()

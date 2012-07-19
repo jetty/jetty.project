@@ -16,42 +16,22 @@
 package org.eclipse.jetty.websocket.io;
 
 import java.io.IOException;
-import java.util.concurrent.Executor;
-
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.Generator;
-import org.eclipse.jetty.websocket.protocol.Parser;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import java.net.InetSocketAddress;
 
 /**
  * Interface for working with connections in a raw way.
  * <p>
  * This is abstracted out to allow for common access to connection internals regardless of physical vs virtual connections.
  */
-public interface RawConnection extends WebSocketConnection
+public interface RawConnection extends OutgoingFrames
 {
     void close() throws IOException;
 
-    <C> void complete(FrameBytes<C> frameBytes);
+    void close(int statusCode, String reason) throws IOException;
 
     void disconnect(boolean onlyOutput);
 
-    void flush();
+    InetSocketAddress getRemoteAddress();
 
-    ByteBufferPool getBufferPool();
-
-    Executor getExecutor();
-
-    Generator getGenerator();
-
-    Parser getParser();
-
-    WebSocketPolicy getPolicy();
-
-    FrameQueue getQueue();
-
-    <C> void write(C context, Callback<C> callback, WebSocketFrame frame);
+    boolean isOpen();
 }

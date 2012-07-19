@@ -19,9 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.websocket.ByteBufferAssert;
-import org.eclipse.jetty.websocket.protocol.Generator;
-import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Test;
 
 public class RFC6455ExamplesGeneratorTest
@@ -50,9 +47,7 @@ public class RFC6455ExamplesGeneratorTest
                 { (byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f });
 
         expected1.flip();
-        actual1.flip();
         expected2.flip();
-        actual2.flip();
 
         ByteBufferAssert.assertEquals("t1 buffers are not equal",expected1,actual1);
         ByteBufferAssert.assertEquals("t2 buffers are not equal",expected2,actual2);
@@ -69,7 +64,6 @@ public class RFC6455ExamplesGeneratorTest
         Generator gen = new UnitGenerator();
 
         ByteBuffer actual = gen.generate(pong);
-        actual.flip(); // make readable
 
         ByteBuffer expected = ByteBuffer.allocate(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -89,10 +83,7 @@ public class RFC6455ExamplesGeneratorTest
                 { 0x37, (byte)0xfa, 0x21, 0x3d });
 
         Generator gen = new UnitGenerator();
-        ;
         ByteBuffer actual = gen.generate(text);
-
-        actual.flip(); // make readable
 
         ByteBuffer expected = ByteBuffer.allocate(11);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -130,7 +121,6 @@ public class RFC6455ExamplesGeneratorTest
             expected.put((byte)0x44);
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("binary buffers are not equal",expected,actual);
@@ -163,7 +153,6 @@ public class RFC6455ExamplesGeneratorTest
             expected.put((byte)0x44);
         }
 
-        actual.flip();
         expected.flip();
 
         ByteBufferAssert.assertEquals("binary buffers are not equal",expected,actual);
@@ -176,7 +165,6 @@ public class RFC6455ExamplesGeneratorTest
 
         Generator gen = new UnitGenerator();
         ByteBuffer actual = gen.generate(ping);
-        actual.flip(); // make readable
 
         ByteBuffer expected = ByteBuffer.allocate(10);
         expected.put(new byte[]
@@ -201,7 +189,6 @@ public class RFC6455ExamplesGeneratorTest
                 { (byte)0x81, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f });
 
         expected.flip();
-        actual.flip();
 
         ByteBufferAssert.assertEquals("t1 buffers are not equal",expected,actual);
     }

@@ -14,15 +14,14 @@
 package org.eclipse.jetty.util;
 
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
+import org.junit.Assert;
 import org.junit.Test;
 
-/**
- *
- */
 public class BufferUtilTest
 {
     @Test
@@ -118,5 +117,82 @@ public class BufferUtilTest
             buffer.flip();
             assertEquals("t"+i,str[i],BufferUtil.toString(buffer));
         }
+    }
+    
+    @Test
+    public void testPut() throws Exception
+    {
+        ByteBuffer to = BufferUtil.allocate(10);
+        ByteBuffer from=BufferUtil.toBuffer("12345");
+        
+        BufferUtil.clear(to);
+        assertEquals(5,BufferUtil.append(from,to));
+        assertTrue(BufferUtil.isEmpty(from));
+        assertEquals("12345",BufferUtil.toString(to));
+        
+        from=BufferUtil.toBuffer("XX67890ZZ");
+        from.position(2);
+
+        assertEquals(5,BufferUtil.append(from,to));
+        assertEquals(2,from.remaining());
+        assertEquals("1234567890",BufferUtil.toString(to));
+    }   
+
+    @Test
+    public void testPutDirect() throws Exception
+    {
+        ByteBuffer to = BufferUtil.allocateDirect(10);
+        ByteBuffer from=BufferUtil.toBuffer("12345");
+        
+        BufferUtil.clear(to);
+        assertEquals(5,BufferUtil.append(from,to));
+        assertTrue(BufferUtil.isEmpty(from));
+        assertEquals("12345",BufferUtil.toString(to));
+        
+        from=BufferUtil.toBuffer("XX67890ZZ");
+        from.position(2);
+
+        assertEquals(5,BufferUtil.append(from,to));
+        assertEquals(2,from.remaining());
+        assertEquals("1234567890",BufferUtil.toString(to));
+    }
+   
+    @Test
+    public void testToBuffer_Array()
+    {
+        byte arr[] = new byte[128];
+        Arrays.fill(arr,(byte)0x44);
+        ByteBuffer buf = BufferUtil.toBuffer(arr);
+
+        int count = 0;
+        while (buf.remaining() > 0)
+        {
+            byte b = buf.get();
+            Assert.assertEquals(b,0x44);
+            count++;
+        }
+
+        Assert.assertEquals("Count of bytes",arr.length,count);
+    }
+
+    @Test
+    public void testToBuffer_ArrayOffsetLength()
+    {
+        byte arr[] = new byte[128];
+        Arrays.fill(arr,(byte)0xFF); // fill whole thing with FF
+        int offset = 10;
+        int length = 100;
+        Arrays.fill(arr,offset,offset + length,(byte)0x77); // fill partial with 0x77
+        ByteBuffer buf = BufferUtil.toBuffer(arr,offset,length);
+
+        int count = 0;
+        while (buf.remaining() > 0)
+        {
+            byte b = buf.get();
+            Assert.assertEquals(b,0x77);
+            count++;
+        }
+
+        Assert.assertEquals("Count of bytes",length,count);
     }
 }

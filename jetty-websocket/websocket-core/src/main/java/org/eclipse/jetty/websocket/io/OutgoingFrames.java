@@ -1,5 +1,6 @@
 package org.eclipse.jetty.websocket.io;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
@@ -7,5 +8,5 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
  */
 public interface OutgoingFrames
 {
-    void output(WebSocketFrame frame);
+    <C> void output(C context, Callback<C> callback, WebSocketFrame frame);
 }

@@ -55,7 +55,6 @@ public class GeneratorParserRoundtripTest
             out = gen.generate(frame);
 
             // Parse Buffer
-            BufferUtil.flipToFlush(out,0);
             parser.parse(out);
         }
         finally
@@ -100,7 +99,6 @@ public class GeneratorParserRoundtripTest
             out = gen.generate(policy.getBufferSize(),frame);
 
             // Parse Buffer
-            BufferUtil.flipToFlush(out,0);
             parser.parse(out);
         }
         finally

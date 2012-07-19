@@ -47,6 +47,7 @@ public class Parser
     private int cursor = 0;
     // Frame
     private WebSocketFrame frame;
+    private OpCode lastDataOpcode;
     // payload specific
     private ByteBuffer payload;
     private int payloadLength;
@@ -267,7 +268,7 @@ public class Parser
                             throw new ProtocolException("Fragment continuation frame without prior !FIN");
                         }
                         // Be careful to use the original opcode
-                        opcode = frame.getOpCode();
+                        opcode = lastDataOpcode;
                     }
 
                     // base framing flags
@@ -277,6 +278,11 @@ public class Parser
                     frame.setRsv2(rsv2);
                     frame.setRsv3(rsv3);
                     frame.setOpCode(opcode);
+
+                    if (opcode.isDataFrame())
+                    {
+                        lastDataOpcode = opcode;
+                    }
 
                     state = State.PAYLOAD_LEN;
                     break;

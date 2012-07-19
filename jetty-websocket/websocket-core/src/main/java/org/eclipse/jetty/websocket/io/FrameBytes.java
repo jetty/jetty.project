@@ -21,18 +21,21 @@ import java.nio.channels.InterruptedByTimeoutException;
 import java.util.concurrent.ScheduledFuture;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 public abstract class FrameBytes<C> implements Callback<C>, Runnable
 {
-    protected final RawConnection connection;
+    private final static Logger LOG = Log.getLogger(FrameBytes.class);
+    protected final WebSocketAsyncConnection connection;
     protected final Callback<C> callback;
     protected final C context;
     protected final WebSocketFrame frame;
     // Task used to timeout the bytes
     protected volatile ScheduledFuture<?> task;
 
-    protected FrameBytes(RawConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    protected FrameBytes(WebSocketAsyncConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
     {
         this.connection = connection;
         this.callback = callback;
@@ -52,6 +55,10 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     @Override
     public void completed(C context)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("completed({})",context);
+        }
         cancelTask();
         connection.complete(this);
         callback.completed(context);
@@ -60,6 +67,10 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     @Override
     public void failed(C context, Throwable x)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("failed({},{})",context,x);
+        }
         cancelTask();
         callback.failed(context,x);
     }

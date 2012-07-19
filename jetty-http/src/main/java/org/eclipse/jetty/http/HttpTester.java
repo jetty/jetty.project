@@ -11,151 +11,14 @@ import org.eclipse.jetty.util.StringUtil;
 
 public class HttpTester
 {
-    private Message _message;
-    private Request _request;
-    private Response _response;
+    private HttpTester(){};
     
-    public void setMethod(String method)
+    public static Request newRequest()
     {
-        if (_request==null)
-            _request=new Request();
-        _message=_request;
-        _request._method=method;
-    }
-
-    public void setVersion(HttpVersion version)
-    {
-        if (_message==null)
-            _message=_response=new Response();
-        _message._version=version;
+        return new Request();
     }
     
-    public void setVersion(String version)
-    {
-        setVersion(HttpVersion.CACHE.get(version));
-    }
 
-    public void setHeader(String name, String value)
-    {
-        _message.put(name,value);
-        
-    }
-
-    public void setURI(String uri)
-    {
-        if (_request==null)
-            _request=new Request();
-        _message=_request;
-        _request._uri=uri;
-    }
-
-    public void setContent(String content) 
-    {
-        try
-        {
-            _message._content=new ByteArrayOutputStream();
-            _message._content.write(StringUtil.getBytes(content));
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
-    }
-    
-    public void setContent(ByteBuffer content) 
-    {
-        try
-        {
-            _message._content=new ByteArrayOutputStream();
-            _message._content.write(BufferUtil.toArray(content));
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
-    }
-
-    public ByteBuffer generate() 
-    {
-        try
-        {
-            HttpGenerator generator = new HttpGenerator();
-            HttpGenerator.Info info = _message.getInfo();
-            System.err.println(info.getClass());
-            System.err.println(info);
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ByteBuffer header=BufferUtil.allocate(8192);
-            ByteBuffer buffer=BufferUtil.allocate(8192);
-            ByteBuffer chunk=BufferUtil.allocate(16);
-            ByteBuffer content=_message._content==null?null:ByteBuffer.wrap(_message._content.toByteArray());
-
-
-            loop: while(true)
-            {
-                HttpGenerator.Result result = generator.generate(info,header,chunk,buffer,content,HttpGenerator.Action.COMPLETE);
-                switch(result)
-                {
-                    case NEED_BUFFER:
-                    case NEED_HEADER:
-                    case NEED_CHUNK:
-                    case NEED_INFO:
-                        throw new IllegalStateException();
-
-                    case FLUSH:
-                        if (BufferUtil.hasContent(header))
-                        {
-                            out.write(BufferUtil.toArray(header));
-                            BufferUtil.clear(header);
-                        }
-                        if (BufferUtil.hasContent(chunk))
-                        {
-                            out.write(BufferUtil.toArray(chunk));
-                            BufferUtil.clear(chunk);
-                        }
-                        if (BufferUtil.hasContent(buffer))
-                        {
-                            out.write(BufferUtil.toArray(buffer));
-                            BufferUtil.clear(buffer);
-                        }
-                        break;
-
-                    case FLUSH_CONTENT:
-                        if (BufferUtil.hasContent(header))
-                        {
-                            out.write(BufferUtil.toArray(header));
-                            BufferUtil.clear(header);
-                        }
-                        if (BufferUtil.hasContent(chunk))
-                        {
-                            out.write(BufferUtil.toArray(chunk));
-                            BufferUtil.clear(chunk);
-                        }
-                        if (BufferUtil.hasContent(content))
-                        {
-                            out.write(BufferUtil.toArray(content));
-                            BufferUtil.clear(content);
-                        }
-                        break;
-                    case OK:
-                    case SHUTDOWN_OUT:
-                        break loop;
-                }
-            }
-            
-            return ByteBuffer.wrap(out.toByteArray());
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
-
-    }
-    
-    public String toString()
-    {
-        return String.format("%s %s",_request,_response);
-    }
     
     public static Request parseRequest(String request)
     {
@@ -199,7 +62,42 @@ public class HttpTester
         {
             return _version;
         }
+
+        public void setVersion(String version)
+        {
+            setVersion(HttpVersion.CACHE.get(version));
+        }
         
+        public void setVersion(HttpVersion version)
+        {
+            _version=version;
+        }
+
+        public void setContent(String content) 
+        {
+            try
+            {
+                _content=new ByteArrayOutputStream();
+                _content.write(StringUtil.getBytes(content));
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
+        
+        public void setContent(ByteBuffer content) 
+        {
+            try
+            {
+                _content=new ByteArrayOutputStream();
+                _content.write(BufferUtil.toArray(content));
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
         @Override
         public boolean parsedHeader(HttpHeader header, String name, String value)
         {
@@ -246,7 +144,83 @@ public class HttpTester
         {
             throw new RuntimeIOException(reason);
         }
-        
+
+        public ByteBuffer generate() 
+        {
+            try
+            {
+                HttpGenerator generator = new HttpGenerator();
+                HttpGenerator.Info info = getInfo();
+                System.err.println(info.getClass());
+                System.err.println(info);
+
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteBuffer header=BufferUtil.allocate(8192);
+                ByteBuffer buffer=BufferUtil.allocate(8192);
+                ByteBuffer chunk=BufferUtil.allocate(16);
+                ByteBuffer content=_content==null?null:ByteBuffer.wrap(_content.toByteArray());
+
+
+                loop: while(true)
+                {
+                    HttpGenerator.Result result = generator.generate(info,header,chunk,buffer,content,HttpGenerator.Action.COMPLETE);
+                    switch(result)
+                    {
+                        case NEED_BUFFER:
+                        case NEED_HEADER:
+                        case NEED_CHUNK:
+                        case NEED_INFO:
+                            throw new IllegalStateException();
+
+                        case FLUSH:
+                            if (BufferUtil.hasContent(header))
+                            {
+                                out.write(BufferUtil.toArray(header));
+                                BufferUtil.clear(header);
+                            }
+                            if (BufferUtil.hasContent(chunk))
+                            {
+                                out.write(BufferUtil.toArray(chunk));
+                                BufferUtil.clear(chunk);
+                            }
+                            if (BufferUtil.hasContent(buffer))
+                            {
+                                out.write(BufferUtil.toArray(buffer));
+                                BufferUtil.clear(buffer);
+                            }
+                            break;
+
+                        case FLUSH_CONTENT:
+                            if (BufferUtil.hasContent(header))
+                            {
+                                out.write(BufferUtil.toArray(header));
+                                BufferUtil.clear(header);
+                            }
+                            if (BufferUtil.hasContent(chunk))
+                            {
+                                out.write(BufferUtil.toArray(chunk));
+                                BufferUtil.clear(chunk);
+                            }
+                            if (BufferUtil.hasContent(content))
+                            {
+                                out.write(BufferUtil.toArray(content));
+                                BufferUtil.clear(content);
+                            }
+                            break;
+                        case OK:
+                        case SHUTDOWN_OUT:
+                            break loop;
+                    }
+                }
+                
+                return ByteBuffer.wrap(out.toByteArray());
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+
+        }
         abstract public HttpGenerator.Info getInfo();
        
     }
@@ -275,6 +249,16 @@ public class HttpTester
             return _uri;
         }
 
+        public void setMethod(String method)
+        {
+            _method=method;
+        }
+
+        public void setURI(String uri)
+        {
+            _uri=uri;
+        }
+        
         @Override
         public HttpGenerator.RequestInfo getInfo()
         {
@@ -284,6 +268,11 @@ public class HttpTester
         public String toString()
         {
             return String.format("%s %s %s\n%s\n",_method,_uri,_version,super.toString());
+        }
+
+        public void setHeader(String name, String value)
+        {
+            put(name,value);
         }
     }
     

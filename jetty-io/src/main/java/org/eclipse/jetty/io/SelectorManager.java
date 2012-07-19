@@ -51,6 +51,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     private final ManagedSelector[] _selectSets;
     private long _selectSetIndex;
+    private volatile long _maxIdleTime;
 
     protected SelectorManager()
     {
@@ -62,12 +63,19 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         this._selectSets = new ManagedSelector[selectors];
     }
 
-
     /**
      * @return the max idle time
      */
-    protected abstract int getMaxIdleTime();
-    
+    protected long getMaxIdleTime()
+    {
+        return _maxIdleTime;
+    }
+
+    public void setMaxIdleTime(long maxIdleTime)
+    {
+        _maxIdleTime = maxIdleTime;
+    }
+
     protected abstract void execute(Runnable task);
 
     /**
@@ -139,18 +147,27 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     /**
      * @param endpoint the endPoint being opened
      */
-    protected abstract void endPointOpened(AsyncEndPoint endpoint);
+    protected void endPointOpened(AsyncEndPoint endpoint)
+    {
+        endpoint.getAsyncConnection().onOpen();
+    }
 
     /**
      * @param endpoint the endPoint being closed
      */
-    protected abstract void endPointClosed(AsyncEndPoint endpoint);
+    protected void endPointClosed(AsyncEndPoint endpoint)
+    {
+        endpoint.getAsyncConnection().onClose();
+        endpoint.onClose();
+    }
 
     /**
      * @param endpoint the endPoint being upgraded
      * @param oldConnection the previous connection
      */
-    protected abstract void endPointUpgraded(AsyncEndPoint endpoint,AsyncConnection oldConnection);
+    protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+    {
+    }
 
     /**
      * @param channel the socket channel
