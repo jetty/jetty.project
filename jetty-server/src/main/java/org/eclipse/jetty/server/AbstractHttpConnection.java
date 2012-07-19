@@ -362,7 +362,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             if (_server.isUncheckedPrintWriter())
                 _printWriter=new UncheckedPrintWriter(_writer);
             else
-                _printWriter = new ClearablePrintWriter(_writer)
+                _printWriter = new PrintWriter(_writer)
                 {
                     public void close()
                     {
@@ -402,8 +402,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _responseFields.clear();
         _response.recycle();
         _uri.clear();
-        if (_printWriter != null && (_printWriter instanceof ClearablePrintWriter))
-            ((ClearablePrintWriter)_printWriter).clearError();
+        _writer=null;
     }
 
     /* ------------------------------------------------------------ */
