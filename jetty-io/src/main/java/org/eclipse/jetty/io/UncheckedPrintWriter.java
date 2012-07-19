@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link java.io.IOException} thrown by the underlying implementation of
  * {@link java.io.Writer} as {@link RuntimeIOException} instances.
  */
-public class UncheckedPrintWriter extends PrintWriter
+public class UncheckedPrintWriter extends ClearablePrintWriter
 {
     private static final Logger LOG = Log.getLogger(UncheckedPrintWriter.class);
 

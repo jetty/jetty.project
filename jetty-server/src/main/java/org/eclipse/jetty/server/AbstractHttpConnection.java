@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.ClearablePrintWriter;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -361,7 +362,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             if (_server.isUncheckedPrintWriter())
                 _printWriter=new UncheckedPrintWriter(_writer);
             else
-                _printWriter = new PrintWriter(_writer)
+                _printWriter = new ClearablePrintWriter(_writer)
                 {
                     public void close()
                     {
@@ -378,7 +379,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                         }
                     }
                 };
-
         }
         _writer.setCharacterEncoding(encoding);
         return _printWriter;
@@ -402,6 +402,8 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _responseFields.clear();
         _response.recycle();
         _uri.clear();
+        if (_printWriter != null && (_printWriter instanceof ClearablePrintWriter))
+            ((ClearablePrintWriter)_printWriter).clearError();
     }
 
     /* ------------------------------------------------------------ */
