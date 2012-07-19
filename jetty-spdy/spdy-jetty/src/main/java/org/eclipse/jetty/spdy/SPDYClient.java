@@ -279,12 +279,8 @@ public class SPDYClient
                 long maxIdleTime = attachment.client.getMaxIdleTime();
                 if (maxIdleTime < 0)
                     maxIdleTime = getMaxIdleTime();
-                SelectChannelEndPoint result = new SelectChannelEndPoint(channel, selectSet, key, (int)maxIdleTime);
 
-                AsyncConnection connection = newConnection(channel, result, attachment);
-                result.setAsyncConnection(connection);
-
-                return result;
+                return new SelectChannelEndPoint(channel, selectSet, key, maxIdleTime);
             }
 
             @Override
