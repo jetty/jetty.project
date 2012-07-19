@@ -41,7 +41,6 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.ClearablePrintWriter;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
