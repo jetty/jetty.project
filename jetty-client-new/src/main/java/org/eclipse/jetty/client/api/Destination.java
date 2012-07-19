@@ -21,4 +21,6 @@ public interface Destination
     Connection connect(long timeout, TimeUnit unit);
 
     Future<Response> send(Request request, Response.Listener listener);
+
+    Address address();
 }

@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -22,12 +26,16 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Address;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Jetty;
-import org.eclipse.jetty.util.Name;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 
 /**
@@ -68,17 +76,47 @@ public class HTTPClient extends AggregateLifeCycle
     private volatile boolean followRedirects;
     private Executor executor;
     private int maxConnectionsPerAddress = Integer.MAX_VALUE;
+    private int maxQueueSizePerAddress = Integer.MAX_VALUE;
+    private SelectorManager selectorManager;
+    private SocketAddress bindAddress;
 
     @Override
     protected void doStart() throws Exception
     {
+        selectorManager = newSelectorManager();
+        addBean(selectorManager);
         super.doStart();
+    }
+
+    protected SelectorManager newSelectorManager()
+    {
+        ClientSelectorManager result = new ClientSelectorManager();
+        result.setMaxIdleTime(getIdleTimeout());
+        return result;
     }
 
     @Override
     protected void doStop() throws Exception
     {
         super.doStop();
+    }
+
+    /**
+     * @return the address to bind socket channels to
+     * @see #setBindAddress(SocketAddress)
+     */
+    public SocketAddress getBindAddress()
+    {
+        return bindAddress;
+    }
+
+    /**
+     * @param bindAddress the address to bind socket channels to
+     * @see #getBindAddress()
+     */
+    public void setBindAddress(SocketAddress bindAddress)
+    {
+        this.bindAddress = bindAddress;
     }
 
     public Future<Response> GET(String absoluteURL)
@@ -190,6 +228,30 @@ public class HTTPClient extends AggregateLifeCycle
         this.maxConnectionsPerAddress = maxConnectionsPerAddress;
     }
 
+    public int getMaxQueueSizePerAddress()
+    {
+        return maxQueueSizePerAddress;
+    }
+
+    public void setMaxQueueSizePerAddress(int maxQueueSizePerAddress)
+    {
+        this.maxQueueSizePerAddress = maxQueueSizePerAddress;
+    }
+
+    protected Future<Connection> newConnection(Destination destination) throws IOException
+    {
+        SocketChannel channel = SocketChannel.open();
+        SocketAddress bindAddress = getBindAddress();
+        if (bindAddress != null)
+            channel.bind(bindAddress);
+        channel.socket().setTcpNoDelay(true);
+        channel.connect(destination.address().toSocketAddress());
+
+        FutureCallback<Connection> result = new FutureCallback<>();
+        selectorManager.connect(channel, result);
+        return result;
+    }
+
     protected class ClientSelectorManager extends SelectorManager
     {
         public ClientSelectorManager()
@@ -202,6 +264,22 @@ public class HTTPClient extends AggregateLifeCycle
             super(selectors);
         }
 
+        @Override
+        protected Selectable newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey sKey) throws IOException
+        {
+            return new SelectChannelEndPoint(channel, selectSet, sKey, getMaxIdleTime());
+        }
 
+        @Override
+        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        {
+            return null;
+        }
+
+        @Override
+        protected void execute(Runnable task)
+        {
+            getExecutor().execute(task);
+        }
     }
 }
