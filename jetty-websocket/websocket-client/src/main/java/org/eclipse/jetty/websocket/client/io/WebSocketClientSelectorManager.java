@@ -133,9 +133,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
     {
-        SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,getMaxIdleTime());
-        endp.setAsyncConnection(selectSet.getManager().newConnection(channel,endp,key.attachment()));
-        return endp;
+        return new SelectChannelEndPoint(channel,selectSet,key,getMaxIdleTime());
     }
 
     public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
