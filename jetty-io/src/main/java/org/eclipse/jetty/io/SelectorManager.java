@@ -25,8 +25,11 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -303,7 +306,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
-        private final ConcurrentLinkedQueue<Runnable> _changes = new ConcurrentLinkedQueue<>();
+        private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
+        private final Set<AsyncEndPoint> _endPoints = Collections.newSetFromMap(new ConcurrentHashMap<AsyncEndPoint, Boolean>());
         private final int _id;
         private Selector _selector;
         private Thread _thread;
@@ -342,7 +346,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             if (Thread.currentThread() != _thread)
             {
-                _changes.add(change);
+                _changes.offer(change);
                 LOG.debug("Queued change {}", change);
                 boolean wakeup = _needsWakeup;
                 if (wakeup)
@@ -362,9 +366,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             Runnable change;
             while ((change = _changes.poll()) != null)
-            {
                 runChange(change);
-            }
         }
 
         protected void runChange(Runnable change)
@@ -531,9 +533,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
         {
             AsyncEndPoint endPoint = newEndPoint(channel, this, selectionKey);
+            _endPoints.add(endPoint);
             endPointOpened(endPoint);
-            endPoint.setAsyncConnection(newConnection(channel, endPoint, selectionKey.attachment()));
-            endPoint.getAsyncConnection().onOpen();
+            AsyncConnection asyncConnection = newConnection(channel, endPoint, selectionKey.attachment());
+            endPoint.setAsyncConnection(asyncConnection);
+            asyncConnection.onOpen();
             LOG.debug("Created {}", endPoint);
             return endPoint;
         }
@@ -541,6 +545,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void destroyEndPoint(AsyncEndPoint endPoint)
         {
             LOG.debug("Destroyed {}", endPoint);
+            _endPoints.remove(endPoint);
             endPoint.getAsyncConnection().onClose();
             endPointClosed(endPoint);
         }
@@ -607,13 +612,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         private void timeoutCheck()
         {
+            // We cannot use the _selector.keys() because the returned Set is not thread
+            // safe so it may be modified by the selector thread while we iterate here.
             long now = System.currentTimeMillis();
-            for (SelectionKey key : _selector.keys())
-            {
-                Object attachment = key.attachment();
-                if (attachment instanceof AsyncEndPoint)
-                    ((AsyncEndPoint)attachment).checkTimeout(now);
-            }
+            for (AsyncEndPoint endPoint : _endPoints)
+                endPoint.checkTimeout(now);
         }
 
         private class DumpKeys implements Runnable

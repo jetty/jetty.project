@@ -34,20 +34,17 @@ public class LocalHttpConnector extends HttpConnector
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<LocalEndPoint>();
     private LocalExecutor _executor;
 
-    /* ------------------------------------------------------------ */
     public LocalHttpConnector()
     {
         setIdleTimeout(30000);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Object getTransport()
     {
         return this;
     }
 
-    /* ------------------------------------------------------------ */
     /** Sends requests and get's responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
@@ -61,7 +58,6 @@ public class LocalHttpConnector extends HttpConnector
         return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
     }
 
-    /* ------------------------------------------------------------ */
     /** Sends requests and get's responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
@@ -78,7 +74,6 @@ public class LocalHttpConnector extends HttpConnector
         return request.takeOutput();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Execute a request and return the EndPoint through which
      * responses can be received.
@@ -88,14 +83,13 @@ public class LocalHttpConnector extends HttpConnector
     public LocalEndPoint executeRequest(String rawRequest)
     {
         Phaser phaser=_executor._phaser;
-        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes
+        phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
         _connects.add(endp);
         return endp;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
@@ -104,11 +98,11 @@ public class LocalHttpConnector extends HttpConnector
         HttpConnection connection=new HttpConnection(this,endp,getServer());
         endp.setAsyncConnection(connection);
         endp.onOpen();
+        connection.onOpen();
         connectionOpened(connection);
         _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
@@ -116,7 +110,6 @@ public class LocalHttpConnector extends HttpConnector
         _executor=new LocalExecutor(findExecutor());
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
@@ -124,28 +117,25 @@ public class LocalHttpConnector extends HttpConnector
         _executor=null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Executor findExecutor()
     {
         return _executor==null?super.findExecutor():_executor;
     }
 
-    /* ------------------------------------------------------------ */
-    class LocalExecutor implements Executor
+    private class LocalExecutor implements Executor
     {
-        Phaser _phaser=new Phaser()
+        private final Phaser _phaser=new Phaser()
         {
-
             @Override
             protected boolean onAdvance(int phase, int registeredParties)
             {
                 return false;
             }
-
         };
-        final Executor _executor;
-        LocalExecutor(Executor e)
+        private final Executor _executor;
+
+        private LocalExecutor(Executor e)
         {
             _executor=e;
         }
@@ -173,7 +163,6 @@ public class LocalHttpConnector extends HttpConnector
         }
     }
 
-    /* ------------------------------------------------------------ */
     public class LocalEndPoint extends AsyncByteArrayEndPoint
     {
         private CountDownLatch _closed = new CountDownLatch(1);
@@ -184,7 +173,6 @@ public class LocalHttpConnector extends HttpConnector
             setIdleTimeout(LocalHttpConnector.this.getIdleTimeout());
         }
 
-        /* ------------------------------------------------------------ */
         public void addInput(String s)
         {
             // TODO this is a busy wait
@@ -193,7 +181,6 @@ public class LocalHttpConnector extends HttpConnector
             setInput(BufferUtil.toBuffer(s, StringUtil.__UTF8_CHARSET));
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void close()
         {
@@ -206,7 +193,6 @@ public class LocalHttpConnector extends HttpConnector
             }
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void onClose()
         {
@@ -214,7 +200,6 @@ public class LocalHttpConnector extends HttpConnector
             _closed.countDown();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void shutdownOutput()
         {
@@ -222,7 +207,6 @@ public class LocalHttpConnector extends HttpConnector
             close();
         }
 
-        /* ------------------------------------------------------------ */
         public void waitUntilClosed()
         {
             while (isOpen())
