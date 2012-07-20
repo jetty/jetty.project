@@ -1,4 +1,3 @@
-package org.eclipse.jetty.util;
 //========================================================================
 //Copyright (c) 2006-2012 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
@@ -11,6 +10,7 @@ package org.eclipse.jetty.util;
 //http://www.opensource.org/licenses/apache2.0.php
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
+package org.eclipse.jetty.util;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,16 +19,20 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Scanner.Notification;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class ScannerTest
 {
     static File _directory;
@@ -97,6 +101,7 @@ public class ScannerTest
     }
 
     @Test
+    @Slow
     public void testAddedChangeRemove() throws Exception
     {
         // TODO needs to be further investigated
