@@ -1,27 +1,27 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 package org.eclipse.jetty.spdy;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -64,10 +64,13 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.Atomics;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class StandardSession implements ISession, Parser.Listener, Handler<StandardSession.FrameBytes>
+public class StandardSession implements ISession, Parser.Listener, Handler<StandardSession.FrameBytes>, Dumpable
 {
     private static final Logger logger = Log.getLogger(Session.class);
     private static final ThreadLocal<Integer> handlerInvocations = new ThreadLocal<Integer>()
@@ -79,6 +82,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     };
 
+    private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final LinkedList<FrameBytes> queue = new LinkedList<>();
@@ -208,7 +212,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         SettingsFrame frame = new SettingsFrame(version,settingsInfo.getFlags(),settingsInfo.getSettings());
-        control(null,frame,timeout,unit,handler,null);
+        control(null, frame, timeout, unit, handler, null);
     }
 
     @Override
@@ -244,7 +248,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void goAway(long timeout, TimeUnit unit, Handler<Void> handler)
     {
-        goAway(SessionStatus.OK,timeout,unit,handler);
+        goAway(SessionStatus.OK, timeout, unit, handler);
     }
 
     private void goAway(SessionStatus sessionStatus, long timeout, TimeUnit unit, Handler<Void> handler)
@@ -267,6 +271,30 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         Set<Stream> result = new HashSet<>();
         result.addAll(streams.values());
         return result;
+    }
+
+    @Override
+    public IStream getStream(int streamId)
+    {
+        return streams.get(streamId);
+    }
+
+    @Override
+    public Object getAttribute(String key)
+    {
+        return attributes.get(key);
+    }
+
+    @Override
+    public void setAttribute(String key, Object value)
+    {
+        attributes.put(key, value);
+    }
+
+    @Override
+    public Object removeAttribute(String key)
+    {
+        return attributes.remove(key);
     }
 
     @Override
@@ -399,7 +427,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         };
         flowControlStrategy.onDataReceived(this, stream, dataInfo);
         stream.process(dataInfo);
-        updateLastStreamId(stream);
         if (stream.isClosed())
             removeStream(stream);
     }
@@ -429,6 +456,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void processSyn(SessionFrameListener listener, IStream stream, SynStreamFrame frame)
     {
         stream.process(frame);
+        // Update the last stream id before calling the application (which may send a GO_AWAY)
+        updateLastStreamId(stream);
         SynInfo synInfo = new SynInfo(frame.getHeaders(),frame.isClose(),frame.getPriority());
         StreamFrameListener streamListener = notifyOnSyn(listener,stream,synInfo);
         stream.setStreamFrameListener(streamListener);
@@ -474,7 +503,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private IStream newStream(SynStreamFrame frame)
     {
         IStream associatedStream = streams.get(frame.getAssociatedStreamId());
-        IStream stream = new StandardStream(frame, this, associatedStream);
+        IStream stream = new StandardStream(frame.getStreamId(), frame.getPriority(), this, associatedStream);
         flowControlStrategy.onNewStream(this, stream);
         return stream;
     }
@@ -800,9 +829,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         try
         {
-            if (stream != null)
-                updateLastStreamId(stream);
-
             // Synchronization is necessary, since we may have concurrent replies
             // and those needs to be generated and enqueued atomically in order
             // to maintain a correct compression context
@@ -830,17 +856,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void updateLastStreamId(IStream stream)
     {
         int streamId = stream.getId();
-        if (stream.isClosed() && streamId % 2 != streamIds.get() % 2)
-        {
-            // Non-blocking atomic update
-            int oldValue = lastStreamId.get();
-            while (streamId > oldValue)
-            {
-                if (lastStreamId.compareAndSet(oldValue,streamId))
-                    break;
-                oldValue = lastStreamId.get();
-            }
-        }
+        if (streamId % 2 != streamIds.get() % 2)
+            Atomics.updateMax(lastStreamId, streamId);
     }
 
     @Override
@@ -1075,6 +1092,27 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         flowControlStrategy.setWindowSize(this, initialWindowSize);
     }
+
+    public String toString()
+    {
+        return String.format("%s@%x{v%d,queuSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(), hashCode(), version, queue.size(), getWindowSize(), streams.size());
+    }
+    
+    
+    @Override
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        AggregateLifeCycle.dumpObject(out,this);
+        AggregateLifeCycle.dump(out,indent,Collections.singletonList(controller),streams.values());
+    }
+
+
 
     public interface FrameBytes extends Comparable<FrameBytes>
     {

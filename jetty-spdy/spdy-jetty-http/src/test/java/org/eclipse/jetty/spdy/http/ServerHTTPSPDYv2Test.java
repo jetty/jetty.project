@@ -1,18 +1,16 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 
 package org.eclipse.jetty.spdy.http;
 
@@ -1009,6 +1007,61 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithMultipleMediumContentByPassed() throws Exception
+    {
+        final byte[] data = new byte[2048];
+        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                // The sequence of write/flush/write/write below triggers a condition where
+                // HttpGenerator._bypass is set to true on the second write(), and the
+                // third write causes an infinite spin loop on the third write().
+                request.setHandled(true);
+                OutputStream output = httpResponse.getOutputStream();
+                output.write(data);
+                output.flush();
+                output.write(data);
+                output.write(data);
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        final AtomicInteger contentLength = new AtomicInteger();
+        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertFalse(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataInfo.consume(dataInfo.available());
+                contentLength.addAndGet(dataInfo.length());
+                if (dataInfo.isClose())
+                    dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(3 * data.length, contentLength.get());
     }
 
     @Test

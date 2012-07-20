@@ -85,7 +85,6 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         {
             // sanity check:
             Class cl = getClass().getClassLoader().loadClass("org.apache.jasper.servlet.JspServlet");
-            // System.err.println("found the jsp servlet: " + cl.getName());
         }
         catch (Exception e)
         {

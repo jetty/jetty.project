@@ -1,7 +1,21 @@
 package org.eclipse.jetty.server.handler;
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -223,7 +237,33 @@ public class ConnectHandler extends HandlerWrapper
             return;
         }
 
-        SocketChannel channel = connectToServer(request, host, port);
+        SocketChannel channel;
+
+        try
+        {
+            channel = connectToServer(request,host,port);
+        }
+        catch (SocketException se)
+        {
+            LOG.info("ConnectHandler: SocketException " + se.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            baseRequest.setHandled(true);
+            return;
+        }
+        catch (SocketTimeoutException ste)
+        {
+            LOG.info("ConnectHandler: SocketTimeoutException" + ste.getMessage());
+            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
+            baseRequest.setHandled(true);
+            return;
+        }
+        catch (IOException ioe)
+        {
+            LOG.info("ConnectHandler: IOException" + ioe.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            baseRequest.setHandled(true);
+            return;
+        }
 
         // Transfer unread data from old connection to new connection
         // We need to copy the data to avoid races:
@@ -304,9 +344,10 @@ public class ConnectHandler extends HandlerWrapper
         return new ProxyToServerConnection(context, buffer);
     }
 
+    // may return null
     private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
     {
-        SocketChannel channel = connect(request, host, port);
+        SocketChannel channel = connect(request, host, port);      
         channel.configureBlocking(false);
         return channel;
     }
@@ -323,6 +364,12 @@ public class ConnectHandler extends HandlerWrapper
     protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
     {
         SocketChannel channel = SocketChannel.open();
+
+        if (channel == null)
+        {
+            throw new IOException("unable to connect to " + host + ":" + port);
+        }
+
         try
         {
             // Connect to remote server

@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>7.6.5-SNAPSHOT</version>
+        <version>7.6.6-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spdy-jetty-http-webapp</artifactId>
@@ -60,4 +60,45 @@
 -->
         </plugins>
     </build>
+
+<!--
+    <profiles>
+        <profile>
+            <id>proxy</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>jetty-maven-plugin</artifactId>
+                        <version>${project.version}</version>
+                        <configuration>
+                            <stopPort>8888</stopPort>
+                            <stopKey>quit</stopKey>
+                            <jvmArgs>
+                                -Dlog4j.configuration=file://${basedir}/src/main/resources/log4j.properties
+                                -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${npn.version}/npn-boot-${npn.version}.jar
+                                -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005
+                            </jvmArgs>
+                            <jettyXml>${basedir}/src/main/config/etc/jetty-spdy-proxy.xml</jettyXml>
+                            <contextPath>/</contextPath>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.eclipse.jetty.spdy</groupId>
+                                <artifactId>spdy-jetty-http</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.slf4j</groupId>
+                                <artifactId>slf4j-log4j12</artifactId>
+                                <version>${slf4j-version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+-->
+
 </project>

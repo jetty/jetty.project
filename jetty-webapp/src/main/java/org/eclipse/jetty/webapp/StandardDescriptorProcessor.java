@@ -248,6 +248,15 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             try
             {
                 Loader.loadClass(this.getClass(), servlet_class);
+                
+                //Ensure there is a scratch dir
+                if (holder.getInitParameter("scratchdir") == null)
+                {
+                    File tmp = context.getTempDirectory();
+                    File scratch = new File(tmp, "jsp");
+                    if (!scratch.exists()) scratch.mkdir();
+                    holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
+                }
             }
             catch (ClassNotFoundException e)
             {
@@ -256,32 +265,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
         }
         
-        //could be more than 1 declaration of the jsp servlet, so configure them all
-        if (servlet_class != null && "org.apache.jasper.servlet.JspServlet".equals(servlet_class))
-        {
-            if (holder.getInitParameter("scratchdir") == null)
-            {
-                File tmp = context.getTempDirectory();
-                File scratch = new File(tmp, "jsp");
-                if (!scratch.exists()) scratch.mkdir();
-                holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
-
-                if ("?".equals(holder.getInitParameter("classpath")))
-                {
-                    String classpath = context.getClassPath();
-                    LOG.debug("classpath=" + classpath);
-                    if (classpath != null) 
-                        holder.setInitParameter("classpath", classpath);
-                }
-            }
-
-            /* Set the webapp's classpath for Jasper */
-            context.setAttribute("org.apache.catalina.jsp_classpath", context.getClassPath());
-
-            /* Set the system classpath for Jasper */
-            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
-        }
-        
+       
         //Set the servlet-class
         if (servlet_class != null) 
         {
@@ -325,8 +309,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             holder.setForcedPath(jsp_file);
             holder.setClassName(jspServletClass); //only use our default instance
-            //set the system classpath explicitly for the holder that will represent the JspServlet instance
-            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
         }
 
         // handle load-on-startup 
@@ -1434,46 +1416,5 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         return p;
     }
 
-    /**
-     * Generate the classpath (as a string) of all classloaders
-     * above the webapp's classloader.
-     * 
-     * This is primarily used for jasper.
-     * @return the system class path
-     */
-    protected String getSystemClassPath(WebAppContext context)
-    {
-        ClassLoader loader = context.getClassLoader();
-        if (loader.getParent() != null)
-            loader = loader.getParent();
-
-        StringBuilder classpath=new StringBuilder();
-        while (loader != null && (loader instanceof URLClassLoader))
-        {
-            URL[] urls = ((URLClassLoader)loader).getURLs();
-            if (urls != null)
-            {     
-                for (int i=0;i<urls.length;i++)
-                {
-                    try
-                    {
-                        Resource resource = context.newResource(urls[i]);
-                        File file=resource.getFile();
-                        if (file!=null && file.exists())
-                        {
-                            if (classpath.length()>0)
-                                classpath.append(File.pathSeparatorChar);
-                            classpath.append(file.getAbsolutePath());
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.debug(e);
-                    }
-                }
-            }
-            loader = loader.getParent();
-        }
-        return classpath.toString();
-    }
+  
 }

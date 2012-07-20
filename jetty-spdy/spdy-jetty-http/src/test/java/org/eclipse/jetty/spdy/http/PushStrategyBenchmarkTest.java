@@ -1,18 +1,16 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 
 package org.eclipse.jetty.spdy.http;
 
@@ -24,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -137,39 +138,21 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
             for (int i = 0; i < cssResources.length; ++i)
             {
                 String path = "/" + i + ".css";
-                exchange = new TestExchange();
-                exchange.setMethod("GET");
-                exchange.setRequestURI(path);
-                exchange.setVersion("HTTP/1.1");
-                exchange.setAddress(new Address("localhost", connector.getLocalPort()));
-                exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
-                exchange.setRequestHeader("referer", referrer);
+                exchange = createExchangeWithReferrer(referrer, path);
                 ++result;
                 httpClient.send(exchange);
             }
             for (int i = 0; i < jsResources.length; ++i)
             {
                 String path = "/" + i + ".js";
-                exchange = new TestExchange();
-                exchange.setMethod("GET");
-                exchange.setRequestURI(path);
-                exchange.setVersion("HTTP/1.1");
-                exchange.setAddress(new Address("localhost", connector.getLocalPort()));
-                exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
-                exchange.setRequestHeader("referer", referrer);
+                exchange = createExchangeWithReferrer(referrer, path);
                 ++result;
                 httpClient.send(exchange);
             }
             for (int i = 0; i < pngResources.length; ++i)
             {
                 String path = "/" + i + ".png";
-                exchange = new TestExchange();
-                exchange.setMethod("GET");
-                exchange.setRequestURI(path);
-                exchange.setVersion("HTTP/1.1");
-                exchange.setAddress(new Address("localhost", connector.getLocalPort()));
-                exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
-                exchange.setRequestHeader("referer", referrer);
+                exchange = createExchangeWithReferrer(referrer, path);
                 ++result;
                 httpClient.send(exchange);
             }
@@ -178,6 +161,19 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
 
         return result;
+    }
+
+    private ContentExchange createExchangeWithReferrer(String referrer, String path)
+    {
+        ContentExchange exchange;
+        exchange = new TestExchange();
+        exchange.setMethod("GET");
+        exchange.setRequestURI(path);
+        exchange.setVersion("HTTP/1.1");
+        exchange.setAddress(new Address("localhost", connector.getLocalPort()));
+        exchange.setRequestHeader("Host", "localhost:" + connector.getLocalPort());
+        exchange.setRequestHeader("referer", referrer);
+        return exchange;
     }
 
 
@@ -238,13 +234,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 String path = "/" + i + ".css";
                 if (pushedResources.contains(path))
                     continue;
-                headers = new Headers();
-                headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-                headers.put(HTTPSPDYHeader.URI.name(version()), path);
-                headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-                headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-                headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
-                headers.put("referer", referrer);
+                headers = createRequestHeaders(referrer, path);
                 ++result;
                 session.syn(new SynInfo(headers, true), new DataListener());
             }
@@ -253,13 +243,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 String path = "/" + i + ".js";
                 if (pushedResources.contains(path))
                     continue;
-                headers = new Headers();
-                headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-                headers.put(HTTPSPDYHeader.URI.name(version()), path);
-                headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-                headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-                headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
-                headers.put("referer", referrer);
+                headers = createRequestHeaders(referrer, path);
                 ++result;
                 session.syn(new SynInfo(headers, true), new DataListener());
             }
@@ -268,13 +252,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
                 String path = "/" + i + ".png";
                 if (pushedResources.contains(path))
                     continue;
-                headers = new Headers();
-                headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-                headers.put(HTTPSPDYHeader.URI.name(version()), path);
-                headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-                headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-                headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
-                headers.put("referer", referrer);
+                headers = createRequestHeaders(referrer, path);
                 ++result;
                 session.syn(new SynInfo(headers, true), new DataListener());
             }
@@ -283,6 +261,19 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
 
         return result;
+    }
+
+    private Headers createRequestHeaders(String referrer, String path)
+    {
+        Headers headers;
+        headers = new Headers();
+        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version()), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put("referer", referrer);
+        return headers;
     }
 
     private void sleep(long delay) throws ServletException
@@ -343,13 +334,36 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         }
     }
 
+    private void addPushedResource(String pushedURI)
+    {
+        switch (version())
+        {
+            case SPDY.V2:
+            {
+                Matcher matcher = Pattern.compile("https?://[^:]+:\\d+(/.*)").matcher(pushedURI);
+                Assert.assertTrue(matcher.matches());
+                pushedResources.add(matcher.group(1));
+                break;
+            }
+            case SPDY.V3:
+            {
+                pushedResources.add(pushedURI);
+                break;
+            }
+            default:
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
     private class ClientSessionFrameListener extends SessionFrameListener.Adapter
     {
         @Override
         public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
         {
             String path = synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version())).value();
-            pushedResources.add(path);
+            addPushedResource(path);
             return new DataListener();
         }
     }

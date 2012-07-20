@@ -535,7 +535,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
         //Create a WebAppContext suitable to deploy in OSGi
         ContextHandler ch = ((OSGiApp)app).createContextHandler();
-        System.err.println("Created contexthandler "+ch);
         return ch;
     }
 

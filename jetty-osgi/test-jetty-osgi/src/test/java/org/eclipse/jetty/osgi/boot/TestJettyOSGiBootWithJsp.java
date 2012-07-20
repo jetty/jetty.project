@@ -171,7 +171,7 @@ public class TestJettyOSGiBootWithJsp
             if (responseStatus == HttpStatus.OK_200) {
                 content = getExchange.getResponseContent();
             }
-            //System.err.println("content: " + content);
+
             Assert.assertTrue(content.indexOf("<tr><th>ServletPath:</th><td>/jsp/dump.jsp</td></tr>") != -1);
         }
         finally
