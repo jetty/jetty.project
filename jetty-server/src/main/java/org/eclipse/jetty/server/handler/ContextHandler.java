@@ -73,6 +73,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.annotation.Managed;
 
 /* ------------------------------------------------------------ */
 /**
@@ -89,8 +90,10 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
+@Managed("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
 {
+    
     private static final Logger LOG = Log.getLogger(ContextHandler.class);
 
     private static final ThreadLocal<Context> __context = new ThreadLocal<Context>();
@@ -117,23 +120,44 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     private final AttributesMap _attributes;
     private final AttributesMap _contextAttributes;
+    
+    @Managed("Initial Parameter map for the context")
     private final Map<String, String> _initParams;
+    
     private ClassLoader _classLoader;
     private String _contextPath = "/";
+    
+    @Managed(value="Display name of the Context", readonly=true)
     private String _displayName;
+    
     private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
+    
+    @Managed("Partial URIs of directory welcome files")
     private String[] _welcomeFiles;
+    
+    @Managed(value="The error handler to use for the context", managed=true)
     private ErrorHandler _errorHandler;
+    
+    @Managed("Virtual hosts accepted by the context")
     private String[] _vhosts;
+    
     private Set<String> _connectors;
     private EventListener[] _eventListeners;
     private Logger _logger;
+    
+    @Managed("Checks if the /context is not redirected to /context/")
     private boolean _allowNullPathInfo;
+    
     private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",1000).intValue();
+    
+    @Managed("The maximum content size")
     private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",200000).intValue();
+    
+    @Managed("True if URLs are compacted to replace the multiple '/'s with a single '/'")
     private boolean _compactPath = false;
+    
     private boolean _aliases = false;
 
     private Object _contextListeners;
@@ -143,7 +167,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
 
+    @Managed("False if this context is accepting new requests. True for graceful shutdown, which allows existing requests to complete")
     private boolean _shutdown = false;
+    
     private boolean _available = true;
     private volatile int _availability; // 0=STOPPED, 1=AVAILABLE, 2=SHUTDOWN, 3=UNAVAILABLE
 
@@ -1177,7 +1203,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /*
      * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
      */
-    public void removeAttribute(String name)
+    @Managed("Remove context attribute")
+    public void removeAttribute( @Managed("attribute name") String name)
     {
         checkManagedAttribute(name,null);
         _attributes.removeAttribute(name);
@@ -1190,7 +1217,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      *
      * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
      */
-    public void setAttribute(String name, Object value)
+    @Managed("Set context attribute")
+    public void setAttribute(@Managed("attribute name") String name, @Managed("attribute value") Object value)
     {
         checkManagedAttribute(name,value);
         _attributes.setAttribute(name,value);
