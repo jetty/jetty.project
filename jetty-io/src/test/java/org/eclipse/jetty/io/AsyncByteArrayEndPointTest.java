@@ -7,6 +7,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.hamcrest.Matchers;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
@@ -105,11 +106,13 @@ public class AsyncByteArrayEndPointTest
         assertEquals(" more.",endp.getOutputString());
     }
 
+    // TODO: idle timeout testing should be done with a SelectorManager
+    @Ignore
     @Test
     public void testIdle() throws Exception
     {
         AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
-        endp.setMaxIdleTime(500);
+        endp.setIdleTimeout(500);
         endp.setInput("test");
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(5));

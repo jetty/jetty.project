@@ -192,9 +192,7 @@ public class SelectChannelEndPointTest
                     fillInterested();
             }
         }
-
     }
-
 
     @Test
     public void testEcho() throws Exception
@@ -332,7 +330,7 @@ public class SelectChannelEndPointTest
 
         while(_lastEndp==null);
 
-        _lastEndp.setMaxIdleTime(10*specifiedTimeout);
+        _lastEndp.setIdleTimeout(10 * specifiedTimeout);
         Thread.sleep((11*specifiedTimeout)/10);
 
         long start=System.currentTimeMillis();
@@ -384,7 +382,7 @@ public class SelectChannelEndPointTest
         }
 
         // Set Max idle
-        _lastEndp.setMaxIdleTime(500);
+        _lastEndp.setIdleTimeout(500);
 
         // read until idle shutdown received
         long start=System.currentTimeMillis();
@@ -428,7 +426,7 @@ public class SelectChannelEndPointTest
         }
 
         // Set Max idle
-        _lastEndp.setMaxIdleTime(500);
+        _lastEndp.setIdleTimeout(500);
 
         // Write 8 and cause block waiting for 10
         _blockAt=10;
@@ -485,7 +483,7 @@ public class SelectChannelEndPointTest
 
         while (_lastEndp==null)
             Thread.sleep(10);
-        _lastEndp.setMaxIdleTime(5000);
+        _lastEndp.setIdleTimeout(5000);
 
         new Thread()
         {
@@ -599,7 +597,7 @@ public class SelectChannelEndPointTest
                 assertEquals("test-"+i+"/"+j,c,(char)b);
             }
             if (i==0)
-                _lastEndp.setMaxIdleTime(60000);
+                _lastEndp.setIdleTimeout(60000);
         }
 
 

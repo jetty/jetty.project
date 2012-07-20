@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.embedded;
@@ -23,13 +23,13 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -45,14 +45,14 @@ public class LikeJettyXml
         Server server = new Server();
         server.setDumpAfterStart(true);
         server.setDumpBeforeStop(true);
-        
+
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         mbContainer.start();
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer,true);
         mbContainer.addBean(new Log());
-        
+
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setMaxThreads(500);
@@ -61,10 +61,10 @@ public class LikeJettyXml
         // Setup Connectors
         SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(8080);
-        connector.setMaxIdleTime(30000);
+        connector.setIdleTimeout(30000);
         connector.setConfidentialPort(8443);
         // TODO connector.setStatsOn(false);
-        
+
         server.setConnectors(new Connector[]
         { connector });
 
@@ -89,23 +89,23 @@ public class LikeJettyXml
         // TODO ssl_connector.setStatsOn(false);
         server.addConnector(ssl_connector);
         ssl_connector.open();
-        
+
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         RequestLogHandler requestLogHandler = new RequestLogHandler();
-        
+
         handlers.setHandlers(new Handler[] { contexts, new DefaultHandler(), requestLogHandler });
-        
+
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(handlers);
-        
+
         server.setHandler(stats);
 
         // Setup deployers
         DeploymentManager deployer = new DeploymentManager();
         deployer.setContexts(contexts);
-        server.addBean(deployer);   
-        
+        server.addBean(deployer);
+
         ContextProvider context_provider = new ContextProvider();
         context_provider.setMonitoredDirName(jetty_home + "/contexts");
         context_provider.setScanInterval(2);
@@ -131,7 +131,7 @@ public class LikeJettyXml
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
-       
+
         server.start();
         server.join();
     }

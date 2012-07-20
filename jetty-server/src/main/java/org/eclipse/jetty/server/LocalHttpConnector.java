@@ -37,7 +37,7 @@ public class LocalHttpConnector extends HttpConnector
     /* ------------------------------------------------------------ */
     public LocalHttpConnector()
     {
-        setMaxIdleTime(30000);
+        setIdleTimeout(30000);
     }
 
     /* ------------------------------------------------------------ */
@@ -181,7 +181,7 @@ public class LocalHttpConnector extends HttpConnector
         public LocalEndPoint()
         {
             setGrowOutput(true);
-            setMaxIdleTime(LocalHttpConnector.this.getMaxIdleTime());
+            setIdleTimeout(LocalHttpConnector.this.getIdleTimeout());
         }
 
         /* ------------------------------------------------------------ */
@@ -190,7 +190,7 @@ public class LocalHttpConnector extends HttpConnector
             // TODO this is a busy wait
             while(getIn()==null || BufferUtil.hasContent(getIn()))
                 Thread.yield();
-            setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
+            setInput(BufferUtil.toBuffer(s, StringUtil.__UTF8_CHARSET));
         }
 
         /* ------------------------------------------------------------ */

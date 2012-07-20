@@ -25,13 +25,13 @@ public abstract class AbstractEndPoint implements EndPoint
 
 
     @Override
-    public long getMaxIdleTime()
+    public long getIdleTimeout()
     {
         return _maxIdleTime;
     }
 
     @Override
-    public void setMaxIdleTime(long timeMs)
+    public void setIdleTimeout(long timeMs)
     {
         _maxIdleTime=timeMs;
     }

@@ -12,15 +12,9 @@ package org.eclipse.jetty.servlet;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -30,7 +24,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalHttpConnector;
@@ -42,9 +35,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 /**
  * This tests the correct functioning of the AsyncContext
- * 
+ *
  * tests for #371649 and #371635
  */
 public class AsyncContextTest
@@ -56,11 +54,11 @@ public class AsyncContextTest
 
     @Before
     public void setUp() throws Exception
-    {   
+    {
         _server = new Server();
         _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         _connector = new LocalHttpConnector();
-        _connector.setMaxIdleTime(30000);
+        _connector.setIdleTimeout(30000);
         _server.setConnectors(new Connector[]
         { _connector });
 
@@ -84,7 +82,7 @@ public class AsyncContextTest
     {
         _server.stop();
     }
-    
+
     @Test
     public void testSimpleAsyncContext() throws Exception
     {
@@ -117,16 +115,16 @@ public class AsyncContextTest
         Assert.assertEquals("context path attr is correct","async:run:attr:contextPath:",br.readLine());
         Assert.assertEquals("request uri attr is correct","async:run:attr:requestURI:/servletPath",br.readLine());
     }
-    
+
     @Test
     public void testDispatchAsyncContextEncodedPathAndQueryString() throws Exception
     {
         String request = "GET /path%20with%20spaces/servletPath?dispatch=true&queryStringWithEncoding=space%20space HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
         String responseString = _connector.getResponses(request);
-        
+
         BufferedReader br = parseHeader(responseString);
-        
+
         assertThat("servlet gets right path",br.readLine(),equalTo("doGet:getServletPath:/servletPath2"));
         assertThat("async context gets right path in get",br.readLine(), equalTo("doGet:async:getServletPath:/servletPath2"));
         assertThat("servlet path attr is original",br.readLine(),equalTo("async:run:attr:servletPath:/path with spaces/servletPath"));
@@ -294,7 +292,7 @@ public class AsyncContextTest
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             if (request.getParameter("dispatch") != null)
-            {                
+            {
                 AsyncContext asyncContext = request.startAsync(request,response);
                 asyncContext.dispatch("/servletPath2");
             }
@@ -320,7 +318,7 @@ public class AsyncContextTest
         {
             response.getOutputStream().print("doGet:getServletPath:" + request.getServletPath() + "\n");
             AsyncContext asyncContext = request.startAsync(request, response);
-            response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");         
+            response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
             asyncContext.start(new AsyncRunnable(asyncContext));
             return;
         }
@@ -338,21 +336,21 @@ public class AsyncContextTest
         @Override
         public void run()
         {
-            HttpServletRequest req = (HttpServletRequest)_context.getRequest();         
-                        
+            HttpServletRequest req = (HttpServletRequest)_context.getRequest();
+
             try
             {
                 _context.getResponse().getOutputStream().print("async:run:attr:servletPath:" + req.getAttribute(AsyncContext.ASYNC_SERVLET_PATH) + "\n");
-                _context.getResponse().getOutputStream().print("async:run:attr:pathInfo:" + req.getAttribute(AsyncContext.ASYNC_PATH_INFO) + "\n");              
-                _context.getResponse().getOutputStream().print("async:run:attr:queryString:" + req.getAttribute(AsyncContext.ASYNC_QUERY_STRING) + "\n");              
-                _context.getResponse().getOutputStream().print("async:run:attr:contextPath:" + req.getAttribute(AsyncContext.ASYNC_CONTEXT_PATH) + "\n");              
-                _context.getResponse().getOutputStream().print("async:run:attr:requestURI:" + req.getAttribute(AsyncContext.ASYNC_REQUEST_URI) + "\n");              
+                _context.getResponse().getOutputStream().print("async:run:attr:pathInfo:" + req.getAttribute(AsyncContext.ASYNC_PATH_INFO) + "\n");
+                _context.getResponse().getOutputStream().print("async:run:attr:queryString:" + req.getAttribute(AsyncContext.ASYNC_QUERY_STRING) + "\n");
+                _context.getResponse().getOutputStream().print("async:run:attr:contextPath:" + req.getAttribute(AsyncContext.ASYNC_CONTEXT_PATH) + "\n");
+                _context.getResponse().getOutputStream().print("async:run:attr:requestURI:" + req.getAttribute(AsyncContext.ASYNC_REQUEST_URI) + "\n");
             }
             catch (IOException e)
             {
                 e.printStackTrace();
             }
-            _context.complete();         
+            _context.complete();
         }
     }
 
@@ -363,6 +361,6 @@ public class AsyncContextTest
             super(response);
         }
     }
-    
-    
+
+
 }

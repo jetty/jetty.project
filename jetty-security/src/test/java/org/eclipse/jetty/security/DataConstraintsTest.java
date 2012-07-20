@@ -13,12 +13,8 @@
 
 package org.eclipse.jetty.security;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -39,6 +35,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
  */
@@ -55,14 +54,14 @@ public class DataConstraintsTest
     {
         _server = new Server();
         _connector = new LocalHttpConnector();
-        _connector.setMaxIdleTime(300000);
+        _connector.setIdleTimeout(300000);
         _connector.setIntegralPort(9998);
         _connector.setIntegralScheme("FTP");
         _connector.setConfidentialPort(9999);
         _connector.setConfidentialScheme("SPDY");
         _connectorS = new LocalHttpConnector()
         {
-            
+
             @Override
             public void customize(Request request) throws IOException
             {

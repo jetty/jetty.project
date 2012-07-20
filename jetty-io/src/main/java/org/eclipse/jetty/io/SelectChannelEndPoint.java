@@ -66,12 +66,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
     };
 
-    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, long maxIdleTime) throws IOException
+    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, long idleTimeout) throws IOException
     {
         super(channel);
         _selector = selectSet;
         _key = key;
-        setMaxIdleTime(maxIdleTime);
+        setIdleTimeout(idleTimeout);
     }
 
     @Override
@@ -104,6 +104,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     @Override
     public void onSelected()
     {
+        _interestOps = 0;
         if (_key.isReadable())
             _readInterest.readable();
         if (_key.isWritable())
@@ -118,13 +119,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
                 long idleTimestamp = getIdleTimestamp();
-                long max_idle_time = getMaxIdleTime();
+                long idleTimeout = getIdleTimeout();
 
-                if (idleTimestamp != 0 && max_idle_time > 0)
+                if (idleTimestamp != 0 && idleTimeout > 0)
                 {
                     long idleForMs = now - idleTimestamp;
 
-                    if (idleForMs > max_idle_time)
+                    if (idleForMs > idleTimeout)
                     {
                         if (isOutputShutdown())
                             close();
@@ -156,7 +157,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         if (newInterestOps != oldInterestOps)
         {
             _interestOps = newInterestOps;
+            LOG.debug("Key update {} -> {} for {}", oldInterestOps, newInterestOps, this);
             _selector.submit(this);
+        }
+        else
+        {
+            LOG.debug("Ignoring key update {} -> {} for {}", oldInterestOps, newInterestOps, this);
         }
     }
 

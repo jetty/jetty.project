@@ -44,7 +44,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
 
     public AsyncByteArrayEndPoint(String input, int outputSize)
     {
-        super(input,outputSize);
+        super(input, outputSize);
     }
 
     @Override
@@ -81,13 +81,13 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     @Override
     public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
     {
-        _readInterest.register(context,callback);
+        _readInterest.register(context, callback);
     }
 
     @Override
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
     {
-        _writeFlusher.write(context,callback,buffers);
+        _writeFlusher.write(context, callback, buffers);
     }
 
     @Override
@@ -110,13 +110,13 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
             if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
                 long idleTimestamp = getIdleTimestamp();
-                long max_idle_time = getMaxIdleTime();
+                long idleTimeout = getIdleTimeout();
 
-                if (idleTimestamp != 0 && max_idle_time > 0)
+                if (idleTimestamp != 0 && idleTimeout > 0)
                 {
                     long idleForMs = now - idleTimestamp;
 
-                    if (idleForMs > max_idle_time)
+                    if (idleForMs > idleTimeout)
                     {
                         if (isOutputShutdown())
                             close();
