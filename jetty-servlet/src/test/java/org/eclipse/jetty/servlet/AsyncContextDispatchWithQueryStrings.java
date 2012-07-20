@@ -1,10 +1,18 @@
 package org.eclipse.jetty.servlet;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -23,12 +31,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 /**
  * This tests verifies that merging of queryStrings works when dispatching
  * Requests via {@link Continuation} multiple times.
- * 
+ *
  * @author tbecker
- * 
+ *
  */
 public class AsyncContextDispatchWithQueryStrings {
 
@@ -38,7 +49,7 @@ public class AsyncContextDispatchWithQueryStrings {
 
 	@Before
 	public void setUp() throws Exception {
-		_connector.setMaxIdleTime(30000);
+		_connector.setIdleTimeout(30000);
 		_server.setConnectors(new Connector[] { _connector });
 
 		_contextHandler.setContextPath("/");

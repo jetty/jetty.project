@@ -121,8 +121,11 @@ public class ShutdownThread extends Thread
         {
             try
             {
-                lifeCycle.stop();
-                LOG.debug("Stopped {}",lifeCycle);
+                if (lifeCycle.isStarted())
+                {
+                    lifeCycle.stop();
+                    LOG.debug("Stopped {}",lifeCycle);
+                }
             }
             catch (Exception ex)
             {

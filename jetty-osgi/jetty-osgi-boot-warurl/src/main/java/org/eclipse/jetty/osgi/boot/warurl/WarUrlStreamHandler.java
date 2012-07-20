@@ -24,12 +24,13 @@ import java.util.jar.Manifest;
 import org.eclipse.jetty.osgi.boot.warurl.internal.WarBundleManifestGenerator;
 import org.eclipse.jetty.osgi.boot.warurl.internal.WarURLConnection;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.service.url.AbstractURLStreamHandlerService;
 
 /**
- * RFC-66: support for the "war" protocol
- * We are reusing the parsing of the query string from jetty.
- * If we wanted to not depend on jetty at all we could duplicate that method here
+ * RFC-66: support for the "war" protocol We are reusing the parsing of the
+ * query string from jetty. If we wanted to not depend on jetty at all we could
+ * duplicate that method here
  */
 public class WarUrlStreamHandler extends AbstractURLStreamHandlerService
 {
@@ -40,11 +41,11 @@ public class WarUrlStreamHandler extends AbstractURLStreamHandlerService
     @Override
     public URLConnection openConnection(URL url) throws IOException
     {
-        //remove the war scheme.
+        // remove the war scheme.
         URL actual = new URL(url.toString().substring("war:".length()));
-        
-        //let's do some basic tests: see if this is a folder or not.
-        //if it is a folder. we will try to support it.
+
+        // let's do some basic tests: see if this is a folder or not.
+        // if it is a folder. we will try to support it.
         if (actual.getProtocol().equals("file"))
         {
             File file = new File(URIUtil.encodePath(actual.getPath()));
@@ -52,34 +53,48 @@ public class WarUrlStreamHandler extends AbstractURLStreamHandlerService
             {
                 if (file.isDirectory())
                 {
-                    //TODO (not mandatory for rfc66 though)
+                    // TODO (not mandatory for rfc66 though)
                 }
             }
         }
-        
-      //  if (actual.toString().startsWith("file:/") && ! actual.to)
+
+        // if (actual.toString().startsWith("file:/") && ! actual.to)
         URLConnection ori = (URLConnection) actual.openConnection();
+        ori.setDefaultUseCaches(Resource.getDefaultUseCaches());
         JarURLConnection jarOri = null;
-        try {
+        try
+        {
             if (ori instanceof JarURLConnection)
             {
-                jarOri = (JarURLConnection)ori;
+                jarOri = (JarURLConnection) ori;
             }
             else
             {
-                jarOri = (JarURLConnection) new URL("jar:"+actual.toString() + "!/").openConnection();
+                jarOri = (JarURLConnection) new URL("jar:" + actual.toString() + "!/").openConnection();
+                jarOri.setDefaultUseCaches(Resource.getDefaultUseCaches());
             }
-            Manifest mf = WarBundleManifestGenerator.createBundleManifest(
-                    jarOri.getManifest(), url, jarOri.getJarFile());
-            try { jarOri.getJarFile().close(); jarOri = null; } catch (Throwable t) {}
-            return new WarURLConnection(actual,mf);
+            Manifest mf = WarBundleManifestGenerator.createBundleManifest(jarOri.getManifest(), url, jarOri.getJarFile());
+            try
+            {
+                jarOri.getJarFile().close();
+                jarOri = null;
+            }
+            catch (Throwable t)
+            {
+            }
+            return new WarURLConnection(actual, mf);
         }
         finally
         {
-            if (jarOri != null) try { jarOri.getJarFile().close(); } catch (Throwable t) {}
+            if (jarOri != null) try
+            {
+                jarOri.getJarFile().close();
+            }
+            catch (Throwable t)
+            {
+            }
         }
-        
+
     }
-    
 
 }

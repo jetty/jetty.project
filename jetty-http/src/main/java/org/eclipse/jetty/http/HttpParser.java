@@ -898,13 +898,11 @@ public class HttpParser
                             buffer.position(buffer.position()-1);
                             String chars = BufferUtil.toDetailString(buffer);
                             BufferUtil.clear(buffer);
-                            throw new IOException(this+" Illegal characters: "+chars);
+                            throw new IOException(this+" Extra data after oshut: "+chars);
                         }
                     }
                     return false;
             }
-            
-
             
             // Request/response line
             if (_state.ordinal()<State.HEADER.ordinal())

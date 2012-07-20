@@ -55,25 +55,24 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *
  * Here is a typical jetty.xml configuration would be: <pre>
  *
- *   &lt;Set name="handler"&gt;
- *     &lt;New id="Handlers" class="org.eclipse.jetty.rewrite.handler.RewriteHandler"&gt;
+ *     &lt;New id="RewriteHandler" class="org.eclipse.jetty.rewrite.handler.RewriteHandler"&gt;
  *       &lt;Set name="rules"&gt;
  *         &lt;Array type="org.eclipse.jetty.rewrite.handler.Rule"&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="rewrite" class="org.eclipse.jetty.rewrite.handler.RewritePatternRule"&gt;
  *               &lt;Set name="pattern"&gt;/*&lt;/Set&gt;
  *               &lt;Set name="replacement"&gt;/test&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="rewrite" class="org.eclipse.jetty.rewrite.handler.ProxyRule"&gt;
  *               &lt;Set name="pattern"&gt;/*&lt;/Set&gt;
  *               &lt;Set name="proxyTo"&gt;http://webtide.com:8080&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="response" class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule"&gt;
  *               &lt;Set name="pattern"&gt;/session/&lt;/Set&gt;
@@ -81,7 +80,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *               &lt;Set name="reason"&gt;Setting error code 400&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="header" class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule"&gt;
  *               &lt;Set name="pattern"&gt;*.jsp&lt;/Set&gt;
@@ -89,7 +88,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *               &lt;Set name="value"&gt;dexter webserver&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="header" class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule"&gt;
  *               &lt;Set name="pattern"&gt;*.jsp&lt;/Set&gt;
@@ -97,21 +96,21 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *               &lt;Set name="value"&gt;driven header purpose&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="redirect" class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule"&gt;
  *               &lt;Set name="pattern"&gt;/test/dispatch&lt;/Set&gt;
  *               &lt;Set name="location"&gt;http://jetty.eclipse.org&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="regexRewrite" class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule"&gt;
  *               &lt;Set name="regex"&gt;/test-jaas/$&lt;/Set&gt;
  *               &lt;Set name="replacement"&gt;/demo&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="forwardedHttps" class="org.eclipse.jetty.rewrite.handler.ForwardedSchemeHeaderRule"&gt;
  *               &lt;Set name="header"&gt;X-Forwarded-Scheme&lt;/Set&gt;
@@ -119,10 +118,10 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *               &lt;Set name="scheme"&gt;https&lt;/Set&gt;
  *             &lt;/New&gt;
  *           &lt;/Item&gt;
- *
+ * 
  *           &lt;Item&gt;
  *             &lt;New id="virtualHost" class="org.eclipse.jetty.rewrite.handler.VirtualHostRuleContainer"&gt;
- *
+ * 
  *               &lt;Set name="virtualHosts"&gt;
  *                 &lt;Array type="java.lang.String"&gt;
  *                   &lt;Item&gt;eclipse.com&lt;/Item&gt;
@@ -131,7 +130,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *                   &lt;Item&gt;www.eclipse.org&lt;/Item&gt;
  *                 &lt;/Array&gt;
  *               &lt;/Set&gt;
- *
+ * 
  *               &lt;Call name="addRule"&gt;
  *                 &lt;Arg&gt;
  *                   &lt;New class="org.eclipse.jetty.rewrite.handler.CookiePatternRule"&gt;
@@ -141,33 +140,34 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  *                   &lt;/New&gt;
  *                 &lt;/Arg&gt;
  *               &lt;/Call&gt;
- *
+ *               
  *             &lt;/New&gt;
- *           &lt;/      Item&gt;
- *
+ *           &lt;/Item&gt;
+ * 
  *         &lt;/Array&gt;
  *       &lt;/Set&gt;
- *
- *       &lt;Set name="handler"&gt;
- *         &lt;New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection"&gt;
- *           &lt;Set name="handlers"&gt;
- *            &lt;Array type="org.eclipse.jetty.server.Handler"&gt;
- *              &lt;Item&gt;
- *                &lt;New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/&gt;
- *              &lt;/Item&gt;
- *              &lt;Item&gt;
- *                &lt;New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/&gt;
- *              &lt;/Item&gt;
- *              &lt;Item&gt;
- *                &lt;New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler"/&gt;
- *              &lt;/Item&gt;
- *            &lt;/Array&gt;
- *           &lt;/Set&gt;
- *         &lt;/New&gt;
- *       &lt;/Set&gt;
- *
  *     &lt;/New&gt;
- *   &lt;/Set&gt;
+ * 
+ *     &lt;Set name="handler"&gt;
+ *       &lt;New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection"&gt;
+ *         &lt;Set name="handlers"&gt;
+ *           &lt;Array type="org.eclipse.jetty.server.Handler"&gt;
+ *             &lt;Item&gt;
+ *               &lt;Ref id="RewriteHandler"/&gt;
+ *             &lt;/Item&gt;
+ *             &lt;Item&gt;
+ *               &lt;New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/&gt;
+ *             &lt;/Item&gt;
+ *             &lt;Item&gt;
+ *               &lt;New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/&gt;
+ *             &lt;/Item&gt;
+ *             &lt;Item&gt;
+ *               &lt;New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler"/&gt;
+ *             &lt;/Item&gt;
+ *           &lt;/Array&gt;
+ *         &lt;/Set&gt;
+ *       &lt;/New&gt;
+ *     &lt;/Set&gt;
  * </pre>
  *
  */

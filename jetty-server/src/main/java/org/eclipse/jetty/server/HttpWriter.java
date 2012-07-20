@@ -109,6 +109,8 @@ public class HttpWriter extends Writer
     public void write (char[] s,int offset, int length) throws IOException
     {              
         HttpOutput out = _out; 
+        if (length==0)
+            out.checkAllWritten();
         
         while (length > 0)
         {  

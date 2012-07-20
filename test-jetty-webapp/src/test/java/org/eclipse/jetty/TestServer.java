@@ -28,7 +28,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -36,8 +35,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.nio.BlockingChannelConnector;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
@@ -77,7 +75,6 @@ public class TestServer
         connector0.setPort(8080);
         connector0.setMaxIdleTime(30000);
         connector0.setConfidentialPort(8443);
-        connector0.setUseDirectBuffers(true);
         server.addConnector(connector0);
         
         // Setup Connectors
@@ -85,27 +82,14 @@ public class TestServer
         connector1.setPort(8081);
         connector1.setMaxIdleTime(30000);
         connector1.setConfidentialPort(8443);
-        connector1.setUseDirectBuffers(false);
         server.addConnector(connector1);
         
-        // Setup Connectors
-        SocketConnector connector2 = new SocketConnector();
-        connector2.setPort(8082);
-        connector2.setMaxIdleTime(30000);
-        connector2.setConfidentialPort(8443);
-        server.addConnector(connector2);
         
-        // Setup Connectors
-        BlockingChannelConnector connector3 = new BlockingChannelConnector();
-        connector3.setPort(8083);
-        connector3.setMaxIdleTime(30000);
-        connector3.setConfidentialPort(8443);
-        server.addConnector(connector3);
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
         SslContextFactory cf = ssl_connector.getSslContextFactory();
-        cf.setKeyStore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
+        cf.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         cf.setTrustStore(jetty_root + "/jetty-server/src/main/config/etc/keystore");

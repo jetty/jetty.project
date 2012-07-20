@@ -156,7 +156,8 @@ public class URLEncodedTest
         url_encoded.decode("Name15=xx%zz", "UTF-8");
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded get", "xx%zz", url_encoded.getString("Name15"));
-
+        
+        assertEquals("%u123",UrlEncoded.decodeString("%u123",0,5,"UTF-8"));
     }
     
     
@@ -179,7 +180,6 @@ public class URLEncodedTest
             ByteArrayInputStream in = new ByteArrayInputStream("name\n=value+%30&name1=&name2&n\u00e3me3=value+3".getBytes(charsets[i][0]));
             MultiMap m = new MultiMap();
             UrlEncoded.decodeTo(in, m, charsets[i][1], -1,-1);
-            System.err.println(m);
             assertEquals(i+" stream length",4,m.size());
             assertEquals(i+" stream name\\n","value 0",m.getString("name\n"));
             assertEquals(i+" stream name1","",m.getString("name1"));
@@ -243,7 +243,7 @@ public class URLEncodedTest
         String query="name=X%c0%afZ";
         
         MultiMap<String> map = new MultiMap<String>();
-        
+        UrlEncoded.LOG.info("EXPECT 4 Not Valid UTF8 warnings...");
         UrlEncoded.decodeUtf8To(query.getBytes(StringUtil.__ISO_8859_1),0,query.length(),map);
         assertEquals("X"+Utf8Appendable.REPLACEMENT+Utf8Appendable.REPLACEMENT+"Z",map.getValue("name",0));
 

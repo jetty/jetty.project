@@ -84,19 +84,7 @@ public abstract class AbstractOrphanedSessionTest
                     // must be removed by scavenging done in the other node.
                     Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + 2L * scavengePeriod));
 
-                    System.err.println("FINISHED waiting for session to expire");
                     // Perform one request to server2 to be sure that the session has been expired
-//                    
-
-                    // force invalidate to test
-//                    ContentExchange exchange3 = new ContentExchange(true);
-//                    exchange3.setMethod(HttpMethods.GET);
-//                    exchange3.setURL("http://localhost:" + port2 + contextPath + servletMapping + "?action=remove");
-//                    exchange3.getRequestFields().add("Cookie", sessionCookie);
-//                    client.send(exchange3);
-//                    exchange3.waitForDone();
-                    
-                    System.err.println("CHECKING NODE2");
                     ContentExchange exchange2 = new ContentExchange(true);
                     exchange2.setMethod(HttpMethods.GET);
                     exchange2.setURL("http://localhost:" + port2 + contextPath + servletMapping + "?action=check");

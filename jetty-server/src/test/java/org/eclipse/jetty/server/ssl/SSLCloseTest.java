@@ -1,15 +1,14 @@
 //========================================================================
-//Copyright 2004-2008 Mort Bay Consulting Pty. Ltd.
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
-//Licensed under the Apache License, Version 2.0 (the "License");
-//you may not use this file except in compliance with the License.
-//You may obtain a copy of the License at 
-//http://www.apache.org/licenses/LICENSE-2.0
-//Unless required by applicable law or agreed to in writing, software
-//distributed under the License is distributed on an "AS IS" BASIS,
-//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//See the License for the specific language governing permissions and
-//limitations under the License.
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
 // JettyTest.java --
@@ -27,7 +26,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -36,7 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -53,20 +50,18 @@ public class SSLCloseTest extends TestCase
     {
         public X509Certificate[] getAcceptedIssuers()
         {
-            return null;
+            return new X509Certificate[]{};
         }
 
         public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
         {
-            return;
         }
 
         public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
         {
-            return;
         }
     }
-    
+
     private static final TrustManager[] s_dummyTrustManagers=new TrustManager[]  { new CredulousTM() };
 
     // ~ Methods
@@ -74,7 +69,7 @@ public class SSLCloseTest extends TestCase
 
     /**
      * Feed the server the entire request at once.
-     * 
+     *
      * @throws Exception
      */
     public void testClose() throws Exception
@@ -83,7 +78,7 @@ public class SSLCloseTest extends TestCase
         SslSelectChannelConnector connector=new SslSelectChannelConnector();
 
         String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
-        
+
         connector.setPort(0);
         connector.getSslContextFactory().setKeyStorePath(keystore);
         connector.getSslContextFactory().setKeyStorePassword("storepwd");
@@ -92,7 +87,7 @@ public class SSLCloseTest extends TestCase
         server.setConnectors(new Connector[]
         { connector });
         server.setHandler(new WriteHandler());
-        
+
         server.start();
 
 
@@ -107,7 +102,7 @@ public class SSLCloseTest extends TestCase
 
         os.write("GET /test HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n".getBytes());
         os.flush();
-        
+
         BufferedReader in =new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         String line;
@@ -123,7 +118,7 @@ public class SSLCloseTest extends TestCase
 
         while ((line=in.readLine())!=null)
             System.err.println(line);
-        
+
     }
 
 
@@ -137,7 +132,7 @@ public class SSLCloseTest extends TestCase
                 response.setStatus(200);
                 response.setHeader("test","value");
                 __endp=baseRequest.getHttpChannel().getEndPoint();
-                
+
                 OutputStream out=response.getOutputStream();
 
                 String data = "Now is the time for all good men to come to the aid of the party.\n";

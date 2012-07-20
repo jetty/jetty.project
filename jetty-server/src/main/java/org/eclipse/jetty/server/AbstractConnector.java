@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2004-2012 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -57,7 +57,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
     private final Statistics _stats = new ConnectionStatistics();
 
-    protected int _maxIdleTime = 200000;
+    protected int _idleTimeout = 200000;
     protected int _soLingerTime = -1;
 
 
@@ -191,9 +191,9 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
      * @return Returns the maxIdleTime.
      */
     @Override
-    public long getMaxIdleTime()
+    public long getIdleTimeout()
     {
-        return _maxIdleTime;
+        return _idleTimeout;
     }
 
     /* ------------------------------------------------------------ */
@@ -213,12 +213,12 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
      * Previously, Jetty supported separate idle timeouts and IO operation timeouts, however the expense of changing the value of soTimeout was significant, so
      * these timeouts were merged. With the advent of NIO, it may be possible to again differentiate these values (if there is demand).
      *
-     * @param maxIdleTime
-     *            The maxIdleTime to set.
+     * @param idleTimeout
+     *            The idleTimeout to set.
      */
-    public void setMaxIdleTime(int maxIdleTime)
+    public void setIdleTimeout(int idleTimeout)
     {
-        _maxIdleTime = maxIdleTime;
+        _idleTimeout = idleTimeout;
     }
 
     /* ------------------------------------------------------------ */

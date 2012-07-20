@@ -1,3 +1,16 @@
+// ========================================================================
+// Copyright (c) 2004-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
+
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
@@ -70,7 +83,6 @@ import org.eclipse.jetty.util.FutureCallback;
  */
 public interface AsyncEndPoint extends EndPoint
 {
-    /* ------------------------------------------------------------ */
     /** Asynchronous a fillable notification.
      * <p>
      * This method schedules a callback operations when a call to {@link #fill(ByteBuffer)} will return data or EOF.
@@ -80,7 +92,6 @@ public interface AsyncEndPoint extends EndPoint
      */
     <C> void fillInterested(C context, Callback<C> callback) throws ReadPendingException;
 
-    /* ------------------------------------------------------------ */
     /** Asynchronous write operation.
      * <p>
      * This method performs {@link #flush(ByteBuffer...)} operation(s) and do a callback when all the data
@@ -92,7 +103,6 @@ public interface AsyncEndPoint extends EndPoint
      */
     <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException;
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Timestamp in ms since epoch of when the last data was
      * filled or flushed from this endpoint.
@@ -106,4 +116,6 @@ public interface AsyncEndPoint extends EndPoint
     void onOpen();
 
     void onClose();
+
+    void checkTimeout(long now);
 }

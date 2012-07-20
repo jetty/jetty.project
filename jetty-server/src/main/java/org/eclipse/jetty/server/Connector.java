@@ -54,7 +54,7 @@ public interface Connector extends LifeCycle
     /**
      * @return Max Idle time for connections in milliseconds
      */
-    long getMaxIdleTime();
+    long getIdleTimeout();
 
     /* ------------------------------------------------------------ */
     /**

@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.plus.jndi;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+
+import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
@@ -25,6 +29,7 @@ import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -125,6 +130,35 @@ public class TestNamingEntries
     public void init()
     {
         this.someObject = new SomeObject(4);
+        
+        
+
+        
+    }
+    
+    /** 
+     * after each test we should scrape out any lingering bindings to prevent cross test pollution
+     * as observed when running java 7
+     * 
+     * @throws Exception
+     */
+    @After
+    public void after() throws Exception
+    {
+        InitialContext icontext = new InitialContext();
+
+        NamingEnumeration<Binding> bindings = icontext.listBindings("");
+        List<String> names = new ArrayList<String>();
+        while (bindings.hasMore())
+        {
+            Binding bd = (Binding)bindings.next();
+            names.add(bd.getName());
+        }
+
+        for (String name : names)
+        {
+            icontext.unbind(name);
+        }
     }
 
     @Test
@@ -199,6 +233,7 @@ public class TestNamingEntries
 
         ne = NamingEntryUtil.lookupNamingEntry(new ScopeB(), "resourceB");
         assertNull(ne);
+        testLink();
     }
 
     @Test

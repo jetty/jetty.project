@@ -86,7 +86,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JSON
 {
-    private static final Logger LOG = Log.getLogger(JSON.class);
+    static final Logger LOG = Log.getLogger(JSON.class);
     public final static JSON DEFAULT = new JSON();
 
     private Map<String, Convertor> _convertors = new ConcurrentHashMap<String, Convertor>();
@@ -950,7 +950,7 @@ public class JSON
             }
             catch (ClassNotFoundException e)
             {
-                e.printStackTrace();
+                LOG.warn(e);
             }
         }
         return map;

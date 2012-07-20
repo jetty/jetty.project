@@ -354,6 +354,7 @@ public class DataSourceLoginService extends MappedLoginService
         
         @SuppressWarnings("unused")
         InitialContext ic = new InitialContext();
+        assert ic!=null;
         
         //TODO webapp scope?
         

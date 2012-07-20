@@ -475,10 +475,12 @@ public class HttpDestination implements Dumpable
                     HttpEventListener elistener = (HttpEventListener)constructor.newInstance(this, ex);
                     ex.setEventListener(elistener);
                 }
-                catch (Exception e)
+                catch (final Exception e)
                 {
-                    e.printStackTrace();
-                    throw new IOException("Unable to instantiate registered listener for destination: " + listenerClass);
+                    throw new IOException("Unable to instantiate registered listener for destination: " + listenerClass)
+                    {
+                        {initCause(e);}
+                    };
                 }
             }
         }

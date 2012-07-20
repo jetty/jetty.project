@@ -815,11 +815,24 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder(Holder.Source.JAVAX_API);
-            holder.setName(filterName);
-            holder.setHeldClass(filterClass);
-            handler.addFilter(holder);
-            return holder.getRegistration();
+            FilterHolder holder = handler.getFilter(filterName);
+            if (holder == null)
+            {
+                //new filter
+                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder.setName(filterName);
+                holder.setHeldClass(filterClass);
+                handler.addFilter(holder);
+                return holder.getRegistration();
+            }
+            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            {
+                //preliminary filter registration completion
+                holder.setHeldClass(filterClass);
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing filter
         }
 
         /* ------------------------------------------------------------ */
@@ -836,11 +849,24 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder(Holder.Source.JAVAX_API);
-            holder.setName(filterName);
-            holder.setClassName(className);
-            handler.addFilter(holder);
-            return holder.getRegistration();
+            FilterHolder holder = handler.getFilter(filterName);
+            if (holder == null)
+            {
+                //new filter
+                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder.setName(filterName);
+                holder.setClassName(className);
+                handler.addFilter(holder);
+                return holder.getRegistration();
+            }
+            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            {
+                //preliminary filter registration completion
+                holder.setClassName(className);
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing filter
         }
 
 
@@ -858,11 +884,25 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
             
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder(Holder.Source.JAVAX_API);
-            holder.setName(filterName);
-            holder.setFilter(filter);
-            handler.addFilter(holder);
-            return holder.getRegistration();
+            FilterHolder holder = handler.getFilter(filterName);
+            if (holder == null)
+            {
+                //new filter
+                holder = handler.newFilterHolder(Holder.Source.JAVAX_API);
+                holder.setName(filterName);
+                holder.setFilter(filter);
+                handler.addFilter(holder);
+                return holder.getRegistration();
+            }
+            
+            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            {
+                //preliminary filter registration completion
+                holder.setFilter(filter);
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing filter
         }
         
         /* ------------------------------------------------------------ */
@@ -877,13 +917,27 @@ public class ServletContextHandler extends ContextHandler
             
             if (!_enabled)
                 throw new UnsupportedOperationException();
-
+            
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder(Holder.Source.JAVAX_API);
-            holder.setName(servletName);
-            holder.setHeldClass(servletClass);
-            handler.addServlet(holder);
-            return dynamicHolderAdded(holder);
+            ServletHolder holder = handler.getServlet(servletName);
+            if (holder == null)
+            {
+                //new servlet
+                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder.setName(servletName);
+                holder.setHeldClass(servletClass);
+                handler.addServlet(holder);
+                return dynamicHolderAdded(holder);
+            }
+
+            //complete a partial registration
+            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            {
+                holder.setHeldClass(servletClass);
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing completed registration for servlet name      
         }
 
         /* ------------------------------------------------------------ */
@@ -899,12 +953,27 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder(Holder.Source.JAVAX_API);
-            holder.setName(servletName);
-            holder.setClassName(className);
-            handler.addServlet(holder);
-            return dynamicHolderAdded(holder);
+
+            final ServletHandler handler = ServletContextHandler.this.getServletHandler();            
+            ServletHolder holder = handler.getServlet(servletName);
+            if (holder == null)
+            {
+                //new servlet
+                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder.setName(servletName);
+                holder.setClassName(className);
+                handler.addServlet(holder);
+                return dynamicHolderAdded(holder);
+            }
+
+            //complete a partial registration
+            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            {
+                holder.setClassName(className); 
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing completed registration for servlet name
         }
 
         /* ------------------------------------------------------------ */
@@ -919,13 +988,28 @@ public class ServletContextHandler extends ContextHandler
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
+
+            //TODO handle partial registrations
             
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder(Holder.Source.JAVAX_API);
-            holder.setName(servletName);
-            holder.setServlet(servlet);
-            handler.addServlet(holder);
-            return dynamicHolderAdded(holder);
+            ServletHolder holder = handler.getServlet(servletName);
+            if (holder == null)
+            {
+                holder = handler.newServletHolder(Holder.Source.JAVAX_API);
+                holder.setName(servletName);
+                holder.setServlet(servlet);
+                handler.addServlet(holder);
+                return dynamicHolderAdded(holder);
+            }
+            
+            //complete a partial registration
+            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            {
+                holder.setServlet(servlet);
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing completed registration for servlet name
         }
 
         /* ------------------------------------------------------------ */

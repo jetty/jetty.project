@@ -101,6 +101,12 @@ public class HttpOutput extends ServletOutputStream
     }
 
     /* ------------------------------------------------------------ */
+    public void checkAllWritten()
+    {
+        _channel.getResponse().checkAllContentWritten(_written);
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
@@ -108,7 +114,7 @@ public class HttpOutput extends ServletOutputStream
             throw new EofException();
 
         _written+=_channel.write(ByteBuffer.wrap(b,off,len));
-        _channel.getResponse().checkAllContentWritten(_written);
+        checkAllWritten();
     }
 
     /* ------------------------------------------------------------ */
@@ -122,7 +128,7 @@ public class HttpOutput extends ServletOutputStream
             throw new IOException("Closed");
 
         _written+=_channel.write(ByteBuffer.wrap(b));
-        _channel.getResponse().checkAllContentWritten(_written);
+        checkAllWritten();
     }
 
     /* ------------------------------------------------------------ */
@@ -136,7 +142,7 @@ public class HttpOutput extends ServletOutputStream
             throw new IOException("Closed");
 
         _written+=_channel.write(ByteBuffer.wrap(new byte[]{(byte)b}));
-        _channel.getResponse().checkAllContentWritten(_written);
+        checkAllWritten();
     }
 
     /* ------------------------------------------------------------ */

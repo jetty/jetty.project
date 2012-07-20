@@ -24,10 +24,15 @@ import java.io.FilenameFilter;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.sql.Time;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TimeZone;
+import java.util.zip.ZipFile;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;
@@ -115,14 +120,10 @@ public class ResourceTest
         URI uri = file.toURI();
         __userURL=uri.toURL();
 
-        __userURL = new URL(__userURL.toString() + "src/test/java/org/eclipse/jetty/util/resource/");
+        __userURL = new URL(__userURL.toString() + "src/test/resources/org/eclipse/jetty/util/resource/");
         FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
         __userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
-        __relDir = "src/test/java/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);  
-
-        System.err.println("User Dir="+__userDir);
-        System.err.println("Rel  Dir="+__relDir);
-        System.err.println("User URL="+__userURL);
+        __relDir = "src/test/resources/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);  
 
         tmpFile=File.createTempFile("test",null).getCanonicalFile();
         tmpFile.deleteOnExit();
@@ -136,15 +137,15 @@ public class ResourceTest
         data[i++]=new Data(__userURL,EXISTS,DIR);
         data[i++]=new Data(__userDir,EXISTS,DIR);
         data[i++]=new Data(__relDir,EXISTS,DIR);
-        data[i++]=new Data(__userURL+"ResourceTest.java",EXISTS,!DIR);
-        data[i++]=new Data(__userDir+"ResourceTest.java",EXISTS,!DIR);
-        data[i++]=new Data(__relDir+"ResourceTest.java",EXISTS,!DIR);
+        data[i++]=new Data(__userURL+"resource.txt",EXISTS,!DIR);
+        data[i++]=new Data(__userDir+"resource.txt",EXISTS,!DIR);
+        data[i++]=new Data(__relDir+"resource.txt",EXISTS,!DIR);
         data[i++]=new Data(__userURL+"NoName.txt",!EXISTS,!DIR);
         data[i++]=new Data(__userDir+"NoName.txt",!EXISTS,!DIR);
         data[i++]=new Data(__relDir+"NoName.txt",!EXISTS,!DIR);
 
-        data[i++]=new Data(data[rt],"ResourceTest.java",EXISTS,!DIR);
-        data[i++]=new Data(data[rt],"/ResourceTest.java",EXISTS,!DIR);
+        data[i++]=new Data(data[rt],"resource.txt",EXISTS,!DIR);
+        data[i++]=new Data(data[rt],"/resource.txt",EXISTS,!DIR);
         data[i++]=new Data(data[rt],"NoName.txt",!EXISTS,!DIR);
         data[i++]=new Data(data[rt],"/NoName.txt",!EXISTS,!DIR);
         
@@ -308,6 +309,22 @@ public class ResourceTest
         
         container = Resource.newResource(__userURL+"TestData");
         assertFalse(jarFileResource.isContainedIn(container));
+    }
+
+    /* ------------------------------------------------------------ */
+    @Test
+    public void testJarFileLastModified ()
+    throws Exception
+    {
+        String s = "jar:"+__userURL+"TestData/test.zip!/subdir/numbers";
+        
+        // TODO move this into src/test/resources!!!
+        ZipFile zf = new ZipFile(MavenTestingUtils.getProjectFile("src/test/resources/org/eclipse/jetty/util/resource/TestData/test.zip"));
+        
+        long last = zf.getEntry("subdir/numbers").getTime();
+        
+        Resource r = Resource.newResource(s);
+        assertEquals(last,r.lastModified()); // Known date value inside zip
     }
 
     /* ------------------------------------------------------------ */

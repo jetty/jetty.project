@@ -232,10 +232,15 @@ public class CertificateValidator
             }
     
             // Enable On-Line Certificate Status Protocol (OCSP) support
-            Security.setProperty("ocsp.enable","true");
-    
+            if (_enableOCSP)
+            {
+                Security.setProperty("ocsp.enable","true");
+            }
             // Enable Certificate Revocation List Distribution Points (CRLDP) support
-            System.setProperty("com.sun.security.enableCRLDP","true");
+            if (_enableCRLDP)
+            {
+                System.setProperty("com.sun.security.enableCRLDP","true");
+            }
     
             // Build certification path
             CertPathBuilderResult buildResult = CertPathBuilder.getInstance("PKIX").build(pbParams);               

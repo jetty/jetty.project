@@ -102,7 +102,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         {
             for (ServletHolder h : holders)
             {
-                if (h.getClassName().equals(clazz.getName()))
+                if (h.getClassName() != null && h.getClassName().equals(clazz.getName()))
                 {
                     holder = h;
                 }

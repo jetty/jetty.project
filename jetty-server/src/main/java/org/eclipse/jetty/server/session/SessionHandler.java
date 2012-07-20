@@ -201,12 +201,10 @@ public class SessionHandler extends ScopedHandler
         {
             if (access!=null)
                 _sessionManager.complete(access);
-            else 
-            {
-                HttpSession session = baseRequest.getSession(false);
-                if (session!=null && old_session==null)
-                    _sessionManager.complete(session);
-            }
+
+            HttpSession session = baseRequest.getSession(false);
+            if (session!=null && old_session==null && session!=access)
+                _sessionManager.complete(session);
 
             if (old_session_manager!=null && old_session_manager != _sessionManager)
             {

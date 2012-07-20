@@ -19,11 +19,6 @@
  */
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
@@ -35,6 +30,11 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -49,7 +49,7 @@ public class RFC2616Test
     {
         server = new Server();
         connector = new LocalHttpConnector();
-        connector.setMaxIdleTime(10000);
+        connector.setIdleTimeout(10000);
         server.addConnector(connector);
 
         ContextHandler vcontext=new ContextHandler();
@@ -123,7 +123,7 @@ public class RFC2616Test
             "0;\015\012\015\012");
         checkContains(response,offset,"HTTP/1.1 400 Bad","Chunked last");
     }
-    
+
     @Test
     public void test3_6_b() throws Exception
     {
@@ -165,7 +165,7 @@ public class RFC2616Test
         offset=checkContains(response,offset,"/R3","3.6.1 Chunking");
 
     }
-    
+
     @Test
     public void test3_6_c() throws Exception
     {
@@ -207,7 +207,7 @@ public class RFC2616Test
         offset=checkContains(response,offset,"/R3","3.6.1 Chunking");
 
     }
-    
+
     @Test
     public void test3_6_d() throws Exception
     {
@@ -365,7 +365,7 @@ public class RFC2616Test
         offset=checkContains(response,offset,"Virtual Dump","virtual host")+1;
         offset=checkContains(response,offset,"pathInfo=/path/R1","Default host")+1;
     }
-    
+
     @Test
     public void test5_2_2() throws Exception
     {
@@ -378,7 +378,7 @@ public class RFC2616Test
         offset=checkContains(response,offset,"HTTP/1.1 200","Default host")+1;
         offset=checkContains(response,offset,"Dump HttpHandler","Default host")+1;
         offset=checkContains(response,offset,"pathInfo=/path/R1","Default host")+1;
-        
+
         // Virtual Host
         offset=0;
         response=connector.getResponses("GET /path/R2 HTTP/1.1\n"+"Host: VirtualHost\n"+"\n");
@@ -430,7 +430,7 @@ public class RFC2616Test
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n"+
             "GET /R2 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n"+
             "GET /R3 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-            
+
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2 default")+1;
             offset=checkContains(response,offset,"/R1","8.1.2 default")+1;
 
@@ -452,7 +452,7 @@ public class RFC2616Test
     {
         String response;
         int offset=0;
-        
+
         // Expect Failure
         offset=0;
         response=connector.getResponses(
@@ -480,7 +480,7 @@ public class RFC2616Test
             "Content-Length: 8\n"+
             "Connection: close\n"+
             "\n"+
-            "123456\015\012");     
+            "123456\015\012");
         checkNotContained(response,offset,"HTTP/1.1 100 ","8.2.3 expect 100");
         offset=checkContains(response,offset,"HTTP/1.1 200 OK","8.2.3 expect with body")+1;
     }
@@ -501,16 +501,16 @@ public class RFC2616Test
         String infomational= endp.takeOutputString();
         offset=checkContains(infomational,offset,"HTTP/1.1 100 ","8.2.3 expect 100")+1;
         checkNotContained(infomational,offset,"HTTP/1.1 200","8.2.3 expect 100");
-        
+
         endp.addInput("654321\015\012");
 
         Thread.sleep(200);
         String response= endp.takeOutputString();
         offset=0;
         offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 expect 100")+1;
-        offset=checkContains(response,offset,"654321","8.2.3 expect 100")+1;        
+        offset=checkContains(response,offset,"654321","8.2.3 expect 100")+1;
     }
-    
+
     @Test
     public void test8_2_4() throws Exception
     {
@@ -855,7 +855,7 @@ public class RFC2616Test
             "GET /R2 HTTP/1.0\n"+"Host: localhost\n"+"Connection: close\n"+"\n"+
 
             "GET /R3 HTTP/1.0\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-            
+
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","19.6.2 Keep-alive 1")+1;
             offset=checkContains(response,offset,"Connection: keep-alive","19.6.2 Keep-alive 1")+1;
 

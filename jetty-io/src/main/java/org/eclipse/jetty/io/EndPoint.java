@@ -116,13 +116,13 @@ public interface EndPoint
      * extraordinary handling takes place.
      * @return the max idle time in ms or if ms <= 0 implies an infinite timeout
      */
-    long getMaxIdleTime();
+    long getIdleTimeout();
 
     /* ------------------------------------------------------------ */
     /** Set the max idle time.
      * @param timeMs the max idle time in MS. Timeout <= 0 implies an infinite timeout
      */
-    void setMaxIdleTime(long timeMs);
+    void setIdleTimeout(long timeMs);
 
 
 

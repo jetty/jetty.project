@@ -18,7 +18,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 
 /* ------------------------------------------------------------ */
 /**
@@ -37,7 +37,7 @@ public class ManyContexts
     public static void main(String[] args) throws Exception
     {
         Server server = new Server();
-        Connector connector = new SelectChannelConnector();
+        SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(8080);
         server.setConnectors(new Connector[]
         { connector });

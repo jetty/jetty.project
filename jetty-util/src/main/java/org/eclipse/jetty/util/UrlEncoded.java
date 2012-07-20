@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class UrlEncoded extends MultiMap implements Cloneable
 {
-    private static final Logger LOG = Log.getLogger(UrlEncoded.class);
+    static final Logger LOG = Log.getLogger(UrlEncoded.class);
 
     public static final String ENCODING = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset",StringUtil.__UTF8);
 
@@ -347,7 +347,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of content to read or -1 for no limit
      * @param maxLength maximum number of keys to read or -1 for no limit
      */
     public static void decode88591To(InputStream in, MultiMap map, int maxLength, int maxKeys)
@@ -433,7 +432,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of content to read or -1 for no limit
      * @param maxLength maximum number of keys to read or -1 for no limit
      */
     public static void decodeUtf8To(InputStream in, MultiMap map, int maxLength, int maxKeys)
@@ -760,14 +758,15 @@ public class UrlEncoded extends MultiMap implements Cloneable
                                 {
                                     try
                                     {
-                                        ba[n++]=(byte)TypeUtil.parseInt(encoded,offset+i+1,2,16);
+                                        ba[n]=(byte)TypeUtil.parseInt(encoded,offset+i+1,2,16);
+                                        n++;
                                         i+=3;
                                     }
                                     catch(NumberFormatException nfe)
-                                    {                                        
-                                        ba[n-1] = (byte)'%';                                    
-                                        for(char next; ((next=encoded.charAt(++i+offset))!='%');)
-                                            ba[n++] = (byte)(next=='+' ? ' ' : next);
+                                    {   
+                                        LOG.ignore(nfe);
+                                        ba[n++] = (byte)'%';
+                                        i++;         
                                     }
                                 }
                                 else

@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -172,7 +171,7 @@ public class Request implements HttpServletRequest
         _state=channel.getState();
         _fields=_channel.getRequestFields();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void addEventListener(final EventListener listener)
     {
@@ -854,7 +853,7 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote=_remote;
         if (remote==null)
             remote=_channel.getRemoteAddress();
-        
+
         return remote==null?"":remote.getHostString();
     }
 
@@ -1411,6 +1410,7 @@ public class Request implements HttpServletRequest
         if (_attributes != null)
             _attributes.clearAttributes();
         _characterEncoding = null;
+        _contextPath = null;
         if (_cookies != null)
             _cookies.reset();
         _cookiesExtracted = false;
@@ -1501,7 +1501,7 @@ public class Request implements HttpServletRequest
      * Set a request attribute. if the attribute name is "org.eclipse.jetty.server.server.Request.queryEncoding" then the value is also passed in a call to
      * {@link #setQueryEncoding}. <p> if the attribute name is "org.eclipse.jetty.server.server.ResponseBuffer", then the response buffer is flushed with @{link
      * #flushResponseBuffer} <p> if the attribute name is "org.eclipse.jetty.io.EndPoint.maxIdleTime", then the value is passed to the associated {@link
-     * EndPoint#setMaxIdleTime}.
+     * EndPoint#setIdleTimeout}.
      *
      * @see javax.servlet.ServletRequest#setAttribute(java.lang.String, java.lang.Object)
      */
@@ -1899,7 +1899,7 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _state.suspend(_context,this,_channel.getResponse());
+        _state.suspend();
         return _state;
     }
 
@@ -1938,13 +1938,29 @@ public class Request implements HttpServletRequest
     public Part getPart(String name) throws IOException, ServletException
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            return null;
+            throw new ServletException("Content-Type != multipart/form-data");
 
         if (_multiPartInputStream == null)
         {
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
+            for (Part p:parts)
+            {
+                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                {
+                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    String charset = null;
+                    if (mp.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
+
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
+                    getParameter(""); //cause params to be evaluated
+                    getParameters().add(mp.getName(), content);
+                }
+            }
         }
         return _multiPartInputStream.getPart(name);
     }
@@ -1954,13 +1970,29 @@ public class Request implements HttpServletRequest
     public Collection<Part> getParts() throws IOException, ServletException
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            return Collections.emptyList();
+            throw new ServletException("Content-Type != multipart/form-data");
 
         if (_multiPartInputStream == null)
         {
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
+            for (Part p:parts)
+            {
+                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                {
+                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    String charset = null;
+                    if (mp.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
+
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
+                    getParameter(""); //cause params to be evaluated
+                    getParameters().add(mp.getName(), content);
+                }
+            }
         }
         return _multiPartInputStream.getParts();
     }

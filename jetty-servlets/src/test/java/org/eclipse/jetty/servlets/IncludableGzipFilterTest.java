@@ -23,7 +23,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -37,9 +41,28 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class IncludableGzipFilterTest
 {
+    @Parameters
+    public static Collection<String[]> data()
+    {
+        String[][] data = new String[][]
+                {
+                { GzipFilter.GZIP },
+                { GzipFilter.DEFLATE } 
+                };
+        
+        return Arrays.asList(data);
+    }
+    
+    @Rule
+    public TestingDir testdir = new TestingDir();
+    
     private static String __content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
         "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
@@ -54,11 +77,14 @@ public class IncludableGzipFilterTest
         "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
-    @Rule
-    public TestingDir testdir = new TestingDir();
-
     private ServletTester tester;
-
+    private String compressionType;
+    
+    public IncludableGzipFilterTest(String compressionType)
+    {
+        this.compressionType = compressionType;
+    }
+    
     @Before
     public void setUp() throws Exception
     {
@@ -93,16 +119,25 @@ public class IncludableGzipFilterTest
         ByteBuffer request=BufferUtil.toBuffer(
             "GET /context/file.txt HTTP/1.0\r\n"+
             "Host: tester\r\n"+
-            "Accept-Encoding: gzip\r\n"+
+            "Accept-Encoding: "+compressionType+"\r\n"+
             "\r\n");
 
         
         HttpTester.Response response=HttpTester.parseResponse(tester.getResponses(request));
         
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        assertEquals("gzip",response.get("Content-Encoding"));
+        assertEquals(compressionType,response.get("Content-Encoding"));
         
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        InputStream testIn = null;
+        ByteArrayInputStream compressedResponseStream = new ByteArrayInputStream(response.getContentBytes());
+        if (compressionType.equals(GzipFilter.GZIP))
+        {
+            testIn = new GZIPInputStream(compressedResponseStream);
+        }
+        else if (compressionType.equals(GzipFilter.DEFLATE))
+        {
+            testIn = new InflaterInputStream(compressedResponseStream, new Inflater(true));
+        }
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
         

@@ -1,9 +1,22 @@
 package org.eclipse.jetty.proxy;
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -12,7 +25,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import junit.framework.Assert;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
@@ -31,21 +43,24 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.After;
 import org.junit.Test;
 
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
+
 public class ProxyServletTest
 {
-    private Server server;
-    private Connector connector;
-    private HttpClient client;
+    private Server _server;
+    private Connector _connector;
+    private HttpClient _client;
 
     public void init(HttpServlet servlet) throws Exception
     {
-        server = new Server();
+        _server = new Server();
 
-        connector = new SelectChannelConnector();
-        server.addConnector(connector);
+        _connector = new SelectChannelConnector();
+        _server.addConnector(_connector);
 
         HandlerCollection handlers = new HandlerCollection();
-        server.setHandler(handlers);
+        _server.setHandler(handlers);
 
         ServletContextHandler proxyCtx = new ServletContextHandler(handlers, "/proxy", ServletContextHandler.NO_SESSIONS);
         ServletHolder proxyServletHolder = new ServletHolder(new ProxyServlet()
@@ -67,25 +82,49 @@ public class ProxyServletTest
         handlers.addHandler(proxyCtx);
         handlers.addHandler(appCtx);
 
-        server.start();
+        _server.start();
 
-        client = new HttpClient();
-        client.start();
+        _client = new HttpClient();
+        _client.start();
     }
 
     @After
     public void destroy() throws Exception
     {
-        if (client != null)
-            client.stop();
+        if (_client != null)
+            _client.stop();
 
-        if (server != null)
+        if (_server != null)
         {
-            server.stop();
-            server.join();
+            _server.stop();
+            _server.join();
         }
     }
 
+    @Test
+    public void testXForwardedHostHeader() throws Exception
+    {
+        init(new HttpServlet()
+        {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                PrintWriter writer = resp.getWriter();
+                writer.write(req.getHeader("X-Forwarded-Host"));
+                writer.flush();
+            }
+        });
+
+        String url = "http://localhost:" + _connector.getLocalPort() + "/proxy/test";
+        ContentExchange exchange = new ContentExchange();
+        exchange.setURL(url);
+        _client.send(exchange);
+        exchange.waitForDone();
+        assertThat("Response expected to contain content of X-Forwarded-Host Header from the request",exchange.getResponseContent(),equalTo("localhost:"
+                + _connector.getLocalPort()));
+    }
 
     @Test
     public void testBigDownloadWithSlowReader() throws Exception
@@ -102,6 +141,8 @@ public class ProxyServletTest
 
         init(new HttpServlet()
         {
+            private static final long serialVersionUID = 1L;
+
             @Override
             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
@@ -115,7 +156,7 @@ public class ProxyServletTest
             }
         });
 
-        String url = "http://localhost:" + connector.getLocalPort() + "/proxy" + "/test";
+        String url = "http://localhost:" + _connector.getLocalPort() + "/proxy/test";
         ContentExchange exchange = new ContentExchange(true)
         {
             @Override
@@ -135,7 +176,7 @@ public class ProxyServletTest
         };
         exchange.setURL(url);
         long start = System.nanoTime();
-        client.send(exchange);
+        _client.send(exchange);
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
         long elapsed = System.nanoTime() - start;
         Assert.assertEquals(HttpStatus.OK_200, exchange.getResponseStatus());

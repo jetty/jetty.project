@@ -44,7 +44,6 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 8.0.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
                 <copy todir="target/classes/contexts">
                     <fileset dir="contexts" />
                 </copy>
@@ -80,6 +79,33 @@
         </configuration>
       </plugin>
       <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <executions>
+              <execution>
+                  <id>bundle-manifest</id>
+                  <phase>process-classes</phase>
+                  <goals>
+                      <goal>manifest</goal> 
+                  </goals>
+              </execution>
+          </executions>
+          <configuration>
+              <instructions>
+                <Bundle-SymbolicName>org.eclipse.jetty.osgi.httpservice</Bundle-SymbolicName>
+                <Bundle-Name>OSGi HttpService</Bundle-Name>
+                <Jetty-ContextFilePath>contexts/httpservice.xml</Jetty-ContextFilePath>
+                <Import-Package>org.eclipse.jetty.server.handler;version="[8.1,9)",
+org.eclipse.jetty.util.component;version="[8.1,9)",
+org.eclipse.equinox.http.servlet,
+*
+                 </Import-Package>
+                <_nouses>true</_nouses>
+              </instructions>
+          </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
         <configuration>
@@ -88,6 +114,4 @@
       </plugin>
     </plugins>
   </build>
-
-
 </project>

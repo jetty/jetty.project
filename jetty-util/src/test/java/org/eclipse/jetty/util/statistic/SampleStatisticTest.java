@@ -1,8 +1,22 @@
 package org.eclipse.jetty.util.statistic;
+//========================================================================
+//Copyright (c) 2006-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at 
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses. 
+//========================================================================
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -46,15 +60,8 @@ public class SampleStatisticTest
 
     private void assertNearEnough(String test,double expected, double actual)
     {
-        double diff = Math.abs(expected-actual);
-        if (diff<0.1)
-        {
-            System.out.println("Near enough "+test+" diff="+diff);
-            return;
-        }
-        String failed = "Not near enough "+test+" expected="+expected+" actual="+actual+" diff="+diff;
-        System.err.println(failed);
-        assertTrue(failed,false);
+        Assert.assertThat(actual,Matchers.greaterThan(expected-0.1D));
+        Assert.assertThat(actual,Matchers.lessThan(expected+0.1D));
     }
     
 }

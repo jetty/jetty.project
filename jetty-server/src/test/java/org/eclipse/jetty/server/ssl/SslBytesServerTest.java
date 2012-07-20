@@ -143,7 +143,7 @@ public class SslBytesServerTest extends SslBytesTest
                 //                };
             }
         };
-        connector.setMaxIdleTime(idleTimeout);
+        connector.setIdleTimeout(idleTimeout);
 
         //        connector.setPort(5870);
         connector.setPort(0);

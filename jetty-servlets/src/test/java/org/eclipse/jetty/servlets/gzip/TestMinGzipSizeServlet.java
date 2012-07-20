@@ -1,4 +1,16 @@
 package org.eclipse.jetty.servlets.gzip;
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 import java.io.IOException;
 
@@ -9,7 +21,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Buffer;
 
 /**
  * Test servlet for testing against unusual minGzip configurable.
@@ -40,11 +51,9 @@ public class TestMinGzipSizeServlet extends TestDirContentServlet
         }
         else
         {
-            Buffer buf = mimeTypes.getMimeByExtension(fileName);
-            if (buf != null)
-            {
-                response.setContentType(buf.toString());
-            }
+            String mime = mimeTypes.getMimeByExtension(fileName);
+            if (mime != null)
+                response.setContentType(mime);
         }
         ServletOutputStream out = response.getOutputStream();
         out.write(dataBytes);

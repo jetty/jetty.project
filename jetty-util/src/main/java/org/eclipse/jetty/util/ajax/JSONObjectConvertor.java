@@ -97,7 +97,6 @@ public class JSONObjectConvertor implements JSON.Convertor
         } 
         catch (Throwable e)
         {
-            // e.printStackTrace();
             throw new IllegalArgumentException(e);
         }
     }

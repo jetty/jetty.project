@@ -1,4 +1,16 @@
 package org.eclipse.jetty.webapp;
+//========================================================================
+//Copyright (c) 2006-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at 
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses. 
+//========================================================================
 
 import java.io.File;
 import java.io.IOException;
@@ -305,7 +317,8 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
             catch(IOException e)
             {
-                LOG.warn("tmpdir",e); System.exit(1);
+                tmpDir = null;
+                throw new IllegalStateException("Cannot create tmp dir in "+System.getProperty("java.io.tmpdir")+ " for context "+context,e);
             }
         }
     }
@@ -368,10 +381,6 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (!isTempWorkDirectory(tmpDir))
             {
                 tmpDir.deleteOnExit();
-                //TODO why is this here?
-                File sentinel = new File(tmpDir, ".active");
-                if(!sentinel.exists())
-                    sentinel.mkdir();
             }
 
             if(LOG.isDebugEnabled())
@@ -402,8 +411,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Try webapp=" + web_app + ", exists=" + web_app.exists() + ", directory=" + web_app.isDirectory());
-
+                LOG.debug("Try webapp=" + web_app + ", exists=" + web_app.exists() + ", directory=" + web_app.isDirectory()+" file="+(web_app.getFile()));
             // Is the WAR usable directly?
             if (web_app.exists() && !web_app.isDirectory() && !web_app.toString().startsWith("jar:"))
             {
@@ -448,24 +456,32 @@ public class WebInfConfiguration extends AbstractConfiguration
                 }
                 else
                 {
+                    //Use a sentinel file that will exist only whilst the extraction is taking place.
+                    //This will help us detect interrupted extractions.
+                    File extractionLock = new File (context.getTempDirectory(), ".extract_lock");
+                   
                     if (!extractedWebAppDir.exists())
                     {
                         //it hasn't been extracted before so extract it
+                        extractionLock.createNewFile();  
                         extractedWebAppDir.mkdir();
-                        LOG.info("Extract " + web_app + " to " + extractedWebAppDir);
+                        LOG.info("Extract " + web_app + " to " + extractedWebAppDir);                                     
                         Resource jar_web_app = JarResource.newJarResource(web_app);
                         jar_web_app.copyTo(extractedWebAppDir);
+                        extractionLock.delete();
                     }
                     else
                     {
-                        //only extract if the war file is newer
-                        if (web_app.lastModified() > extractedWebAppDir.lastModified())
+                        //only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
+                        if (web_app.lastModified() > extractedWebAppDir.lastModified() || extractionLock.exists())
                         {
+                            extractionLock.createNewFile();
                             IO.delete(extractedWebAppDir);
                             extractedWebAppDir.mkdir();
                             LOG.info("Extract " + web_app + " to " + extractedWebAppDir);
                             Resource jar_web_app = JarResource.newJarResource(web_app);
                             jar_web_app.copyTo(extractedWebAppDir);
+                            extractionLock.delete();
                         }
                     }
                 } 
@@ -485,57 +501,50 @@ public class WebInfConfiguration extends AbstractConfiguration
                 LOG.debug("webapp=" + web_app);
         }
         
-        
 
         // Do we need to extract WEB-INF/lib?
-        if (context.isCopyWebInf())
+        if (context.isCopyWebInf() && !context.isCopyWebDir())
         {
             Resource web_inf= web_app.addPath("WEB-INF/");
 
-            if (web_inf instanceof ResourceCollection ||
-                    web_inf.exists() && 
-                    web_inf.isDirectory() && 
-                    (web_inf.getFile()==null || !web_inf.getFile().isDirectory()))
-            {       
-                File extractedWebInfDir= new File(context.getTempDirectory(), "webinf");
-                if (extractedWebInfDir.exists())
-                    IO.delete(extractedWebInfDir);
-                extractedWebInfDir.mkdir();
-                Resource web_inf_lib = web_inf.addPath("lib/");
-                File webInfDir=new File(extractedWebInfDir,"WEB-INF");
-                webInfDir.mkdir();
+            File extractedWebInfDir= new File(context.getTempDirectory(), "webinf");
+            if (extractedWebInfDir.exists())
+                IO.delete(extractedWebInfDir);
+            extractedWebInfDir.mkdir();
+            Resource web_inf_lib = web_inf.addPath("lib/");
+            File webInfDir=new File(extractedWebInfDir,"WEB-INF");
+            webInfDir.mkdir();
 
-                if (web_inf_lib.exists())
-                {
-                    File webInfLibDir = new File(webInfDir, "lib");
-                    if (webInfLibDir.exists())
-                        IO.delete(webInfLibDir);
-                    webInfLibDir.mkdir();
+            if (web_inf_lib.exists())
+            {
+                File webInfLibDir = new File(webInfDir, "lib");
+                if (webInfLibDir.exists())
+                    IO.delete(webInfLibDir);
+                webInfLibDir.mkdir();
 
-                    LOG.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
-                    web_inf_lib.copyTo(webInfLibDir);
-                }
+                LOG.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
+                web_inf_lib.copyTo(webInfLibDir);
+            }
 
-                Resource web_inf_classes = web_inf.addPath("classes/");
-                if (web_inf_classes.exists())
-                {
-                    File webInfClassesDir = new File(webInfDir, "classes");
-                    if (webInfClassesDir.exists())
-                        IO.delete(webInfClassesDir);
-                    webInfClassesDir.mkdir();
-                    LOG.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
-                    web_inf_classes.copyTo(webInfClassesDir);
-                }
+            Resource web_inf_classes = web_inf.addPath("classes/");
+            if (web_inf_classes.exists())
+            {
+                File webInfClassesDir = new File(webInfDir, "classes");
+                if (webInfClassesDir.exists())
+                    IO.delete(webInfClassesDir);
+                webInfClassesDir.mkdir();
+                LOG.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
+                web_inf_classes.copyTo(webInfClassesDir);
+            }
 
-                web_inf=Resource.newResource(extractedWebInfDir.getCanonicalPath());
+            web_inf=Resource.newResource(extractedWebInfDir.getCanonicalPath());
 
-                ResourceCollection rc = new ResourceCollection(web_inf,web_app);
+            ResourceCollection rc = new ResourceCollection(web_inf,web_app);
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("context.resourcebase = "+rc);
+            if (LOG.isDebugEnabled())
+                LOG.debug("context.resourcebase = "+rc);
 
-                context.setBaseResource(rc);
-            }   
+            context.setBaseResource(rc);   
         }
     }
     

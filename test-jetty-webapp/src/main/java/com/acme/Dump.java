@@ -49,7 +49,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -161,7 +161,7 @@ public class Dump extends HttpServlet
             try
             {
                 long s = Long.parseLong(request.getParameter("sleep"));
-                if (request.getHeader(HttpHeaders.EXPECT)!=null &&request.getHeader(HttpHeaders.EXPECT).indexOf("102")>=0)
+                if (request.getHeader(HttpHeader.EXPECT.asString())!=null && request.getHeader(HttpHeader.EXPECT.asString()).indexOf("102")>=0)
                 {
                     Thread.sleep(s/2);
                     response.sendError(102);

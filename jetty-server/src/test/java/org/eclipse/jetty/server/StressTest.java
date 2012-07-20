@@ -13,17 +13,12 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,7 +26,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.Stress;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -40,6 +34,10 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 public class StressTest
 {
@@ -91,7 +89,7 @@ public class StressTest
 
         _connector = new SelectChannelConnector(1,1);
         _connector.setAcceptQueueSize(5000);
-        _connector.setMaxIdleTime(30000);
+        _connector.setIdleTimeout(30000);
         _server.addConnector(_connector);
 
         TestHandler _handler = new TestHandler();
@@ -120,7 +118,7 @@ public class StressTest
     {
         // TODO needs to be further investigated
         assumeTrue(!OS.IS_OSX || Stress.isEnabled());
-    	
+
         doThreads(10,10,false);
         Thread.sleep(1000);
         doThreads(100,20,false);
@@ -138,7 +136,7 @@ public class StressTest
     {
         // TODO needs to be further investigated
         assumeTrue(!OS.IS_OSX || Stress.isEnabled());
-    	
+
         doThreads(20,10,true);
         Thread.sleep(1000);
         doThreads(100,50,true);

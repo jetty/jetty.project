@@ -1,6 +1,5 @@
 // ========================================================================
 // Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
@@ -15,179 +14,124 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
  * An ChannelEndpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, SelectorManager.Selectable
+public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, SelectorManager.SelectableAsyncEndPoint
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
     private final SelectorManager.ManagedSelector _selector;
-    private final SelectorManager _manager;
+    private final SelectionKey _key;
 
-    private SelectionKey _key;
+    /**
+     * The desired value for {@link SelectionKey#interestOps()}
+     */
+    private volatile int _interestOps;
 
-    private boolean _selected;
-    private boolean _changing;
-
-    /** The desired value for {@link SelectionKey#interestOps()} */
-    private int _interestOps;
-
-    /** true if {@link ManagedSelector#destroyEndPoint(SelectorManager.Selectable)} has not been called */
-    private boolean _open;
+    /**
+     * true if {@link ManagedSelector#destroyEndPoint(AsyncEndPoint)} has not been called
+     */
+    private final AtomicBoolean _open = new AtomicBoolean();
 
     private volatile AsyncConnection _connection;
 
-    /* ------------------------------------------------------------ */
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
         protected boolean needsFill()
         {
-            _interestOps=_interestOps | SelectionKey.OP_READ;
-            updateKey();
+            updateKey(SelectionKey.OP_READ, true);
             return false;
         }
     };
 
-    /* ------------------------------------------------------------ */
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
         protected void onIncompleteFlushed()
         {
-            _interestOps = _interestOps | SelectionKey.OP_WRITE;
-            updateKey();
+            updateKey(SelectionKey.OP_WRITE, true);
         }
     };
 
-    /* ------------------------------------------------------------ */
-    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, long maxIdleTime) throws IOException
+    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, long idleTimeout) throws IOException
     {
         super(channel);
-        _manager = selectSet.getManager();
         _selector = selectSet;
-        _open = true;
         _key = key;
-
-        setMaxIdleTime(maxIdleTime);
+        setIdleTimeout(idleTimeout);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
     {
-        _readInterest.register(context,callback);
+        _readInterest.register(context, callback);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
     {
-        _writeFlusher.write(context,callback,buffers);
+        _writeFlusher.write(context, callback, buffers);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public AsyncConnection getAsyncConnection()
     {
         return _connection;
     }
 
-    /* ------------------------------------------------------------ */
-    public SelectionKey getSelectionKey()
-    {
-        synchronized (this)
-        {
-            return _key;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public SelectorManager getSelectorManager()
-    {
-        return _manager;
-    }
-
-    /* ------------------------------------------------------------ */
     @Override
     public void setAsyncConnection(AsyncConnection connection)
     {
         AsyncConnection old = getAsyncConnection();
         _connection = connection;
         if (old != null && old != connection)
-            _manager.endPointUpgraded(this,old);
+            _selector.getSelectorManager().connectionUpgraded(this, old);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Called by selectSet to schedule handling
-     *
-     */
     @Override
     public void onSelected()
     {
-        boolean can_read;
-        boolean can_write;
-
-        synchronized (this)
-        {
-            _selected = true;
-            try
-            {
-                // If there is no key, then do nothing
-                if (_key == null || !_key.isValid())
-                    return;
-
-                can_read = (_key.isReadable() && (_key.interestOps() & SelectionKey.OP_READ) == SelectionKey.OP_READ);
-                can_write = (_key.isWritable() && (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE);
-                _interestOps = 0;
-            }
-            finally
-            {
-                _selector.submit(this);
-                _selected = false;
-            }
-        }
-        if (can_read)
+        _interestOps = 0;
+        if (_key.isReadable())
             _readInterest.readable();
-        if (can_write)
+        if (_key.isWritable())
             _writeFlusher.completeWrite();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
-    public void checkReadWriteTimeout(long now)
+    public void checkTimeout(long now)
     {
         synchronized (this)
         {
             if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
                 long idleTimestamp = getIdleTimestamp();
-                long max_idle_time = getMaxIdleTime();
+                long idleTimeout = getIdleTimeout();
 
-                if (idleTimestamp != 0 && max_idle_time > 0)
+                if (idleTimestamp != 0 && idleTimeout > 0)
                 {
                     long idleForMs = now - idleTimestamp;
 
-                    if (idleForMs > max_idle_time)
+                    if (idleForMs > idleTimeout)
                     {
                         if (isOutputShutdown())
                             close();
                         notIdle();
 
-                        TimeoutException timeout = new TimeoutException("idle "+idleForMs+"ms");
+                        TimeoutException timeout = new TimeoutException("idle " + idleForMs + "ms");
                         _readInterest.failed(timeout);
                         _writeFlusher.failed(timeout);
                     }
@@ -196,143 +140,65 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
     }
 
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void shutdownInput()
+    private void updateKey(int operation, boolean add)
     {
-        super.shutdownInput();
-        updateKey();
-    }
+        int oldInterestOps = _interestOps;
+        int newInterestOps;
+        if (add)
+            newInterestOps = oldInterestOps | operation;
+        else
+            newInterestOps = oldInterestOps & ~operation;
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Updates selection key. This method schedules a call to doUpdateKey to do the keyChange
-     */
-    private void updateKey()
-    {
-        synchronized (this)
+        if (isInputShutdown())
+            newInterestOps &= ~SelectionKey.OP_READ;
+        if (isOutputShutdown())
+            newInterestOps &= ~SelectionKey.OP_WRITE;
+
+        if (newInterestOps != oldInterestOps)
         {
-            if (!_selected)
-            {
-                int current_ops = -1;
-                if (getChannel().isOpen())
-                {
-                    try
-                    {
-                        current_ops = ((_key != null && _key.isValid())?_key.interestOps():-1);
-                    }
-                    catch (Exception e)
-                    {
-                        _key = null;
-                        LOG.ignore(e);
-                    }
-                }
-                if (_interestOps != current_ops && !_changing)
-                {
-                    _changing = true;
-                    _selector.submit(this);
-                }
-            }
+            _interestOps = newInterestOps;
+            LOG.debug("Key update {} -> {} for {}", oldInterestOps, newInterestOps, this);
+            _selector.submit(this);
+        }
+        else
+        {
+            LOG.debug("Ignoring key update {} -> {} for {}", oldInterestOps, newInterestOps, this);
         }
     }
 
     @Override
     public void run()
     {
-        doUpdateKey();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Synchronize the interestOps with the actual key. Call is scheduled by a call to updateKey
-     */
-    @Override
-    public void doUpdateKey()
-    {
-        synchronized (this)
+        try
         {
-            _changing = false;
             if (getChannel().isOpen())
             {
-                if (_interestOps > 0)
-                {
-                    if (_key == null || !_key.isValid())
-                    {
-                        SelectableChannel sc = (SelectableChannel)getChannel();
-                        if (sc.isRegistered())
-                        {
-                            updateKey();
-                        }
-                        else
-                        {
-                            try
-                            {
-                                _key = ((SelectableChannel)getChannel()).register(_selector.getSelector(),_interestOps,this);
-                            }
-                            catch (Exception e)
-                            {
-                                LOG.ignore(e);
-                                if (_key != null && _key.isValid())
-                                {
-                                    _key.cancel();
-                                }
-
-                                if (_open)
-                                {
-                                    _selector.destroyEndPoint(this);
-                                }
-                                _open = false;
-                                _key = null;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        _key.interestOps(_interestOps);
-                    }
-                }
-                else
-                {
-                    if (_key != null && _key.isValid())
-                        _key.interestOps(0);
-                    else
-                        _key = null;
-                }
+                int oldInterestOps = _key.interestOps();
+                int newInterestOps = _interestOps;
+                if (newInterestOps != oldInterestOps)
+                    _key.interestOps(newInterestOps);
             }
-            else
-            {
-                if (_key != null && _key.isValid())
-                    _key.cancel();
-
-                if (_open)
-                {
-                    _open = false;
-                    _selector.destroyEndPoint(this);
-                }
-                _key = null;
-            }
-
+        }
+        catch (CancelledKeyException x)
+        {
+            LOG.debug("Ignoring key update for concurrently closed channel {}", this);
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.nio.ChannelEndPoint#close()
-     */
     @Override
     public void close()
     {
         super.close();
-        updateKey();
+        if (_open.compareAndSet(true, false))
+            _selector.destroyEndPoint(this);
     }
 
     @Override
     public void onOpen()
     {
+        _open.compareAndSet(false, true);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void onClose()
     {
@@ -340,42 +206,26 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         _readInterest.close();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         // Do NOT use synchronized (this)
         // because it's very easy to deadlock when debugging is enabled.
         // We do a best effort to print the right toString() and that's it.
-        SelectionKey key = _key;
         String keyString = "";
-        if (key != null)
+        if (_key.isValid())
         {
-            if (key.isValid())
-            {
-                if (key.isReadable())
-                    keyString += "r";
-                if (key.isWritable())
-                    keyString += "w";
-            }
-            else
-            {
-                keyString += "!";
-            }
+            if (_key.isReadable())
+                keyString += "r";
+            if (_key.isWritable())
+                keyString += "w";
         }
         else
         {
-            keyString += "-";
+            keyString += "!";
         }
-
-        return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",hashCode(),getRemoteAddress(),getLocalAddress(),isOpen(),
-                isInputShutdown(),isOutputShutdown(),_interestOps,keyString,_readInterest,_writeFlusher,getAsyncConnection());
+        return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",
+                hashCode(), getRemoteAddress(), getLocalAddress(), isOpen(), isInputShutdown(),
+                isOutputShutdown(), _interestOps, keyString, _readInterest, _writeFlusher, getAsyncConnection());
     }
-
-    /* ------------------------------------------------------------ */
-    public ManagedSelector getSelectSet()
-    {
-        return _selector;
-    }
-
 }

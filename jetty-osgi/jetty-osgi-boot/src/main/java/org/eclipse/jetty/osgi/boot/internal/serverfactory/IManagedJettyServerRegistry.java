@@ -17,12 +17,14 @@ package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 /**
  * Keeps track of the running jetty servers. They are named.
  */
-public interface IManagedJettyServerRegistry {
+public interface IManagedJettyServerRegistry
+{
 
     /**
      * @param managedServerName The server name
-     * @return the corresponding jetty server wrapped with its deployment properties.
+     * @return the corresponding jetty server wrapped with its deployment
+     *         properties.
      */
-	public ServerInstanceWrapper getServerInstanceWrapper(String managedServerName);
-	
+    public ServerInstanceWrapper getServerInstanceWrapper(String managedServerName);
+
 }

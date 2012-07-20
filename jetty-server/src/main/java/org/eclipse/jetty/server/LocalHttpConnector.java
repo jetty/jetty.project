@@ -37,7 +37,7 @@ public class LocalHttpConnector extends HttpConnector
     /* ------------------------------------------------------------ */
     public LocalHttpConnector()
     {
-        setMaxIdleTime(30000);
+        setIdleTimeout(30000);
     }
 
     /* ------------------------------------------------------------ */
@@ -103,6 +103,7 @@ public class LocalHttpConnector extends HttpConnector
         LocalEndPoint endp = _connects.take();
         HttpConnection connection=new HttpConnection(this,endp,getServer());
         endp.setAsyncConnection(connection);
+        endp.onOpen();
         connectionOpened(connection);
         _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
@@ -177,17 +178,10 @@ public class LocalHttpConnector extends HttpConnector
     {
         private CountDownLatch _closed = new CountDownLatch(1);
 
-        LocalEndPoint()
+        public LocalEndPoint()
         {
-            super(getTimer());
             setGrowOutput(true);
-            setMaxIdleTime(LocalHttpConnector.this.getMaxIdleTime());
-        }
-
-        /* ------------------------------------------------------------ */
-        LocalEndPoint(CountDownLatch onCloseLatch)
-        {
-            this();
+            setIdleTimeout(LocalHttpConnector.this.getIdleTimeout());
         }
 
         /* ------------------------------------------------------------ */
@@ -196,7 +190,20 @@ public class LocalHttpConnector extends HttpConnector
             // TODO this is a busy wait
             while(getIn()==null || BufferUtil.hasContent(getIn()))
                 Thread.yield();
-            setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
+            setInput(BufferUtil.toBuffer(s, StringUtil.__UTF8_CHARSET));
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public void close()
+        {
+            boolean was_open=isOpen();
+            super.close();
+            if (was_open)
+            {
+                connectionClosed(getAsyncConnection());
+                onClose();
+            }
         }
 
         /* ------------------------------------------------------------ */

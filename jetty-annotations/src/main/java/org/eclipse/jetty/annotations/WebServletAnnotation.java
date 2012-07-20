@@ -92,7 +92,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         
         MetaData metaData = _context.getMetaData();
 
-        //Find out if a <servlet>  of this type already exists with this name
+        //Find out if a <servlet> already exists with this name
         ServletHolder[] holders = _context.getServletHandler().getServlets();
         boolean isNew = true;
         ServletHolder holder = null;
@@ -100,7 +100,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         {
             for (ServletHolder h : holders)
             {
-                if (h.getClassName().equals(clazz.getName()) && h.getName().equals(servletName))
+                if (h.getName() != null && servletName.equals(h.getName()))
                 {
                     holder = h;
                     isNew = false;
@@ -142,11 +142,19 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         }
         else
         {
+            //set the class according to the servlet that is annotated, if it wasn't already
+            //NOTE: this may be considered as "completing" an incomplete servlet registration, and it is
+            //not clear from servlet 3.0 spec whether this is intended, or if only a ServletContext.addServlet() call
+            //can complete it, see http://java.net/jira/browse/SERVLET_SPEC-42
+            if (holder.getClassName() == null) 
+                holder.setClassName(clazz.getName());
+            if (holder.getHeldClass() == null)
+                holder.setHeldClass(clazz);
+            
             //check if the existing servlet has each init-param from the annotation
             //if not, add it
             for (WebInitParam ip:annotation.initParams())
             {
-              //if (holder.getInitParameter(ip.name()) == null)
                 if (metaData.getOrigin(servletName+".servlet.init-param"+ip.name())==Origin.NotSet)
                 {
                     holder.setInitParameter(ip.name(), ip.value());
@@ -154,17 +162,53 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 }  
             }
             
-            //check the url-patterns, if there annotation has a new one, add it
-            ServletMapping[] mappings = _context.getServletHandler().getServletMappings();
-
+            //check the url-patterns   
             //ServletSpec 3.0 p81 If a servlet already has url mappings from a 
-            //descriptor the annotation is ignored
-            if (mappings == null && metaData.getOriginDescriptor(servletName+".servlet.mappings") != null)
+            //webxml or fragment descriptor the annotation is ignored. However, we want to be able to
+            //replace mappings that were given in webdefault.xml     
+            boolean mappingsExist = false;
+            boolean anyNonDefaults = false;
+            ServletMapping[] allMappings = _context.getServletHandler().getServletMappings();
+            if (allMappings != null)
             {
-                ServletMapping mapping = new ServletMapping();
-                mapping.setServletName(servletName);
-                mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
-                _context.getServletHandler().addServletMapping(mapping); 
+                for (ServletMapping m:allMappings)
+                {
+                    if (m.getServletName() != null && servletName.equals(m.getServletName()))
+                    {    
+                        mappingsExist = true;
+                        if (!m.isDefault())
+                        {
+                            anyNonDefaults = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (anyNonDefaults)
+                return;  //if any mappings already set by a descriptor that is not webdefault.xml, we're done
+       
+            boolean clash = false;
+            if (mappingsExist)
+            {
+                for (String p:urlPatternList)
+                {
+                    ServletMapping m = _context.getServletHandler().getServletMapping(p);
+                    if (m != null && !m.isDefault())
+                    {
+                        //trying to override a servlet-mapping that was added not by webdefault.xml
+                        clash = true;
+                        break;
+                    }
+                }
+            }
+       
+            if (!mappingsExist || !clash)
+            {
+                ServletMapping m = new ServletMapping();
+                m.setServletName(servletName);
+                m.setPathSpecs(LazyList.toStringArray(urlPatternList));
+                _context.getServletHandler().addServletMapping(m); 
             }
         }
     }   

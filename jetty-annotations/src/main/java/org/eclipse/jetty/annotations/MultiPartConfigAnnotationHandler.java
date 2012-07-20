@@ -79,7 +79,7 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
         {
             for (ServletHolder h : holders)
             {
-                if (h.getClassName().equals(clazz.getName()))
+                if (h.getClassName() != null && h.getClassName().equals(clazz.getName()))
                 {
                     holder = h;
                 }
