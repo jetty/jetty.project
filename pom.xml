@@ -517,7 +517,6 @@
   <!--
     Usage:
     configure settings.xml for jetty.eclipse.website server entry
-    > mvn -Paggregate-site javadoc:aggregate jxr:jxr
     > mvn -N site:deploy
     or
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
@@ -557,29 +556,9 @@
         </executions>
       </plugin>
     </plugins>
-  </build>
-    </profile>
-    <profile>
-      <!--
-        Moves the jetty-aggregate build tree to a profile called 'aggregates'.
-        It is active by default, but being in a profile allows it to be
-        disabled via the "-P-aggregates" command line on maven.
-        (Useful for running site plugin with deep reporting and avoiding
-         duplicate hits on aggregated classes) -->
-      <id>aggregates</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-	<!--
-        <file>
-          <exists>${basedir}/pom.xml</exists>
-        </file>
-	-->
-      </activation>
-      <modules>
-        <module>jetty-aggregate</module>
-      </modules>
-    </profile>
-    <profile>
+   </build>
+  </profile>
+  <profile>
       <!--
         Moves the jetty-osgi build tree to a profile called 'osgi'.
         It is active by default, but being in a profile allows it to be

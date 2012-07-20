@@ -291,10 +291,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     
                     // return if the connection has been changed
                     if (getEndPoint().getAsyncConnection()!=this)
-                    {
-                        getEndPoint().getAsyncConnection().onOpen();
                         return;
-                    }
                 } 
                 else if (_headerBytes>= _connector.getRequestHeaderSize())
                 {

@@ -103,6 +103,7 @@ public class LocalHttpConnector extends HttpConnector
         LocalEndPoint endp = _connects.take();
         HttpConnection connection=new HttpConnection(this,endp,getServer());
         endp.setAsyncConnection(connection);
+        endp.onOpen();
         connectionOpened(connection);
         _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
@@ -197,6 +198,19 @@ public class LocalHttpConnector extends HttpConnector
             while(getIn()==null || BufferUtil.hasContent(getIn()))
                 Thread.yield();
             setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override 
+        public void close()
+        {
+            boolean was_open=isOpen();
+            super.close();
+            if (was_open)
+            {
+                connectionClosed(getAsyncConnection());
+                onClose();
+            }
         }
 
         /* ------------------------------------------------------------ */

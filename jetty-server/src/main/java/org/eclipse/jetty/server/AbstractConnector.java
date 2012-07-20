@@ -437,7 +437,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /* ------------------------------------------------------------ */
     protected void connectionOpened(AsyncConnection connection)
     {
-        connection.onOpen();
         _stats.connectionOpened();
     }
 

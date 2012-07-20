@@ -17,7 +17,7 @@ import junit.framework.TestCase;
 
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.testing.ServletTester;
+import org.eclipse.jetty.servlet.ServletTester;
 
 import com.acme.DispatchServlet;
 

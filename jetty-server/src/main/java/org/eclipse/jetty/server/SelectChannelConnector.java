@@ -242,8 +242,8 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         @Override
         protected void endPointClosed(AsyncEndPoint endpoint)
         {
+            connectionClosed(endpoint.getAsyncConnection());
             super.endPointClosed(endpoint);
-            SelectChannelConnector.this.endPointClosed(endpoint);
         }
 
         @Override
