@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client.api;
 
 import java.io.File;
+import java.net.URI;
 import java.util.concurrent.Future;
 
 public interface Request
@@ -22,7 +23,7 @@ public interface Request
 
     Future<Response> send(Response.Listener listener);
 
-    Address address();
+    URI uri();
 
     void abort();
 
@@ -31,11 +32,7 @@ public interface Request
      */
     public interface Builder
     {
-        Builder secure(boolean secure);
-
         Builder method(String method);
-
-        Builder path(String path);
 
         Builder header(String name, String value);
 

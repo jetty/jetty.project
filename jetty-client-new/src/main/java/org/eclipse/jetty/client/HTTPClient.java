@@ -19,12 +19,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.jndi.toolkit.url.Uri;
 import org.eclipse.jetty.client.api.Address;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
@@ -54,12 +56,12 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
  *
  * // Using the builder with a timeout
  * HTTPClient client = new HTTPClient();
- * Response response = client.builder("localhost:8080").path("/").build().send().get(5, TimeUnit.SECONDS);
+ * Response response = client.builder("http://localhost:8080/").build().send().get(5, TimeUnit.SECONDS);
  * int status = response.getStatus();
  *
  * // Asynchronously
  * HTTPClient client = new HTTPClient();
- * client.builder("localhost:8080").path("/").build().send(new Response.Listener.Adapter()
+ * client.builder("http://localhost:8080/").build().send(new Response.Listener.Adapter()
  * {
  *     &#64;Override
  *     public void onComplete(Response response)
@@ -71,14 +73,15 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
  */
 public class HTTPClient extends AggregateLifeCycle
 {
-    private final ConcurrentMap<Address, Destination> destinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Destination> destinations = new ConcurrentHashMap<>();
     private volatile String agent = "Jetty/" + Jetty.VERSION;
-    private volatile boolean followRedirects;
-    private Executor executor;
-    private int maxConnectionsPerAddress = Integer.MAX_VALUE;
-    private int maxQueueSizePerAddress = Integer.MAX_VALUE;
-    private SelectorManager selectorManager;
-    private SocketAddress bindAddress;
+    private volatile boolean followRedirects = true;
+    private volatile Executor executor;
+    private volatile int maxConnectionsPerAddress = Integer.MAX_VALUE;
+    private volatile int maxQueueSizePerAddress = Integer.MAX_VALUE;
+    private volatile SocketAddress bindAddress;
+    private volatile SelectorManager selectorManager;
+    private volatile long idleTimeout;
 
     @Override
     protected void doStart() throws Exception
@@ -101,6 +104,16 @@ public class HTTPClient extends AggregateLifeCycle
         super.doStop();
     }
 
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+    }
+
     /**
      * @return the address to bind socket channels to
      * @see #setBindAddress(SocketAddress)
@@ -119,31 +132,15 @@ public class HTTPClient extends AggregateLifeCycle
         this.bindAddress = bindAddress;
     }
 
-    public Future<Response> GET(String absoluteURL)
+    public Future<Response> GET(String uri)
     {
-        try
-        {
-            return GET(new URI(absoluteURL));
-        }
-        catch (URISyntaxException x)
-        {
-            throw new IllegalArgumentException(x);
-        }
+        return GET(URI.create(uri));
     }
 
     public Future<Response> GET(URI uri)
     {
-        boolean secure = false;
-        String scheme = uri.getScheme();
-        if ("https".equals(scheme))
-            secure = true;
-        else if (!"http".equals(scheme))
-            throw new IllegalArgumentException("Invalid scheme " + scheme);
-
-        return builder(uri.getHost() + ":" + uri.getPort())
+        return builder(uri)
                 .method("GET")
-                .secure(secure)
-                .path(uri.getPath())
                 // Add decoder, cookies, agent, default headers, etc.
                 .agent(getUserAgent())
                 .followRedirects(isFollowRedirects())
@@ -151,14 +148,14 @@ public class HTTPClient extends AggregateLifeCycle
                 .send();
     }
 
-    public Request.Builder builder(String hostAndPort)
+    public Request.Builder builder(String uri)
     {
-        return builder(Address.from(hostAndPort));
+        return builder(URI.create(uri));
     }
 
-    private Request.Builder builder(Address address)
+    public Request.Builder builder(URI uri)
     {
-        return new StandardRequest(this, address);
+        return new StandardRequest(this, uri);
     }
 
     public Request.Builder builder(Request prototype)
@@ -166,7 +163,7 @@ public class HTTPClient extends AggregateLifeCycle
         return null;
     }
 
-    public Destination getDestination(Address address)
+    public Destination getDestination(String address)
     {
         Destination destination = destinations.get(address);
         if (destination == null)
@@ -210,7 +207,17 @@ public class HTTPClient extends AggregateLifeCycle
 
     public Future<Response> send(Request request, Response.Listener listener)
     {
-        return getDestination(request.address()).send(request, listener);
+        URI uri = request.uri();
+        String scheme = uri.getScheme();
+        if (!Arrays.asList("http", "https").contains(scheme.toLowerCase()))
+            throw new IllegalArgumentException("Invalid protocol " + scheme);
+
+        String key = scheme.toLowerCase() + "://" + uri.getHost().toLowerCase();
+        int port = uri.getPort();
+        if (port < 0)
+            key += "https".equalsIgnoreCase(scheme) ? ":443" : ":80";
+
+        return getDestination(key).send(request, listener);
     }
 
     public Executor getExecutor()
@@ -273,7 +280,9 @@ public class HTTPClient extends AggregateLifeCycle
         @Override
         public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
-            return null;
+            // TODO: SSL
+
+            return new StandardConnection(channel, endpoint, )
         }
 
         @Override

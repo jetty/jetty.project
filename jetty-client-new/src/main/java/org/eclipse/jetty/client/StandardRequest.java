@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.File;
+import java.net.URI;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.client.api.Address;
@@ -22,42 +23,25 @@ import org.eclipse.jetty.client.api.ContentDecoder;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.util.FutureCallback;
 
 public class StandardRequest implements Request, Request.Builder
 {
     private final HTTPClient client;
-    private final Address address;
-    private boolean secure;
+    private final URI uri;
     private String method;
-    private String path;
     private String agent;
     private Response response;
 
-    public StandardRequest(HTTPClient client, Address address)
+    public StandardRequest(HTTPClient client, URI uri)
     {
         this.client = client;
-        this.address = address;
-    }
-
-    @Override
-    public Request.Builder secure(boolean secure)
-    {
-        this.secure = secure;
-        return this;
+        this.uri = uri;
     }
 
     @Override
     public Request.Builder method(String method)
     {
         this.method = method;
-        return this;
-    }
-
-    @Override
-    public Request.Builder path(String path)
-    {
-        this.path = path;
         return this;
     }
 
