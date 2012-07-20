@@ -15,7 +15,7 @@ package org.eclipse.jetty.embedded;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -39,7 +39,7 @@ public class ManyConnectors
         SelectChannelConnector connector1 = new SelectChannelConnector();
         connector1.setHost("127.0.0.1");
         connector1.setPort(8888);
-        connector1.setThreadPool(new QueuedThreadPool(20));
+        connector1.setExecutor(new QueuedThreadPool(20));
         connector1.setName("admin");
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();

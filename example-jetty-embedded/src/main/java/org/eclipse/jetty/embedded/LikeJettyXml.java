@@ -29,10 +29,8 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.server.nio.BlockingChannelConnector;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -65,17 +63,10 @@ public class LikeJettyXml
         connector.setPort(8080);
         connector.setMaxIdleTime(30000);
         connector.setConfidentialPort(8443);
-        connector.setStatsOn(false);
+        // TODO connector.setStatsOn(false);
         
         server.setConnectors(new Connector[]
         { connector });
-        
-        BlockingChannelConnector bConnector = new BlockingChannelConnector();
-        bConnector.setPort(8888);
-        bConnector.setMaxIdleTime(30000);
-        bConnector.setConfidentialPort(8443);
-        bConnector.setAcceptors(1);
-        server.addConnector(bConnector);
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
@@ -95,24 +86,9 @@ public class LikeJettyXml
                     "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
-        ssl_connector.setStatsOn(false);
+        // TODO ssl_connector.setStatsOn(false);
         server.addConnector(ssl_connector);
         ssl_connector.open();
-        
-        SslSocketConnector ssl2_connector = new SslSocketConnector(cf);
-        ssl2_connector.setPort(8444);
-        ssl2_connector.setStatsOn(false);
-        server.addConnector(ssl2_connector);
-        ssl2_connector.open();
-
-       
-        /*
-        
-        Ajp13SocketConnector ajp = new Ajp13SocketConnector();
-        ajp.setPort(8009);
-        server.addConnector(ajp);
-        
-        */
         
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -155,10 +131,8 @@ public class LikeJettyXml
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
-        
-  
+       
         server.start();
-        
         server.join();
     }
 }

@@ -257,6 +257,7 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         @Override
         protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
         {
+            super.endPointUpgraded(endpoint,oldConnection);
             connectionUpgraded(oldConnection,endpoint.getAsyncConnection());
         }
 

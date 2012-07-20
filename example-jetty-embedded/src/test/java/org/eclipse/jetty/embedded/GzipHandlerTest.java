@@ -27,14 +27,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.LocalHttpConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.GzipHandler;
-import org.eclipse.jetty.testing.HttpTester;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
@@ -57,14 +56,14 @@ public class GzipHandlerTest
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
     private Server _server;
-    private LocalConnector _connector;
+    private LocalHttpConnector _connector;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
 
-        _connector = new LocalConnector();
+        _connector = new LocalHttpConnector();
         _server.addConnector(_connector);
 
         Handler testHandler = new AbstractHandler()
@@ -97,10 +96,9 @@ public class GzipHandlerTest
     @Test
     public void testGzipHandler() throws Exception
     {
-
         // generated and parsed test
-        HttpTester request = new HttpTester();
-        HttpTester response = new HttpTester();
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
 
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
@@ -108,12 +106,9 @@ public class GzipHandlerTest
         request.setHeader("accept-encoding","gzip");
         request.setURI("/");
         
-        ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
-        ByteArrayBuffer respBuff = _connector.getResponses(reqsBuff, false);
-        response.parse(respBuff.asArray());
+        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
                 
-        assertTrue(response.getMethod()==null);
-        assertTrue(response.getHeader("Content-Encoding").equalsIgnoreCase("gzip"));
+        assertTrue(response.get("Content-Encoding").equalsIgnoreCase("gzip"));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));

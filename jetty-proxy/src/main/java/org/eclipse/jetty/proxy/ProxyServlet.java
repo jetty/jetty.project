@@ -42,12 +42,12 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.HostMap;
 import org.eclipse.jetty.util.IO;
@@ -485,7 +485,7 @@ public class ProxyServlet implements Servlet
                     {
                         String nameString = name.toString();
                         String s = nameString.toLowerCase();
-                        if (!_DontProxyHeaders.contains(s) || (HttpHeaders.CONNECTION_BUFFER.equals(name) && HttpHeaderValues.CLOSE_BUFFER.equals(value)))
+                        if (!_DontProxyHeaders.contains(s) || (HttpHeader.CONNECTION.is(name) && HttpHeaderValue.CLOSE.is(value)))
                         {
                             if (debug != 0)
                                 _log.debug(debug + " " + name + ": " + value);
@@ -542,10 +542,10 @@ public class ProxyServlet implements Servlet
 
                 };
 
-                exchange.setScheme(HttpSchemes.HTTPS.equals(request.getScheme())?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER);
+                exchange.setScheme((HttpScheme.HTTPS.is(request.getScheme())?HttpScheme.HTTPS:HttpScheme.HTTP).asString());
                 exchange.setMethod(request.getMethod());
                 exchange.setURL(url.toString());
-                exchange.setVersion(request.getProtocol());
+                exchange.setVersion(HttpVersion.CACHE.get(request.getProtocol()));
 
 
                 if (debug != 0)
@@ -587,7 +587,7 @@ public class ProxyServlet implements Servlet
                     else if ("content-length".equals(lhdr))
                     {
                         contentLength = request.getContentLength();
-                        exchange.setRequestHeader(HttpHeaders.CONTENT_LENGTH,Long.toString(contentLength));
+                        exchange.setRequestHeader(HttpHeader.CONTENT_LENGTH.asString(),Long.toString(contentLength));
                         if (contentLength > 0)
                             hasContent = true;
                     }
