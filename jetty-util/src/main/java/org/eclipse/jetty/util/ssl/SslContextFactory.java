@@ -88,7 +88,7 @@ public class SslContextFactory extends AbstractLifeCycle
         }
     }};
 
-    private static final Logger LOG = Log.getLogger(SslContextFactory.class);
+    static final Logger LOG = Log.getLogger(SslContextFactory.class);
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?

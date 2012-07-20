@@ -15,6 +15,8 @@ package org.eclipse.jetty.util.statistic;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -58,15 +60,8 @@ public class SampleStatisticTest
 
     private void assertNearEnough(String test,double expected, double actual)
     {
-        double diff = Math.abs(expected-actual);
-        if (diff<0.1)
-        {
-            System.out.println("Near enough "+test+" diff="+diff);
-            return;
-        }
-        String failed = "Not near enough "+test+" expected="+expected+" actual="+actual+" diff="+diff;
-        System.err.println(failed);
-        assertTrue(failed,false);
+        Assert.assertThat(actual,Matchers.greaterThan(expected-0.1D));
+        Assert.assertThat(actual,Matchers.lessThan(expected+0.1D));
     }
     
 }

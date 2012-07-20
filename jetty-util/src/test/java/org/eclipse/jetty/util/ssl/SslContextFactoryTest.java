@@ -127,6 +127,7 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsResourceKsWrongPW() throws Exception
     {
+        SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,null): java.security.UnrecoverableKeyException: Cannot recover key...");
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
 
@@ -151,6 +152,7 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
+        SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,null): java.io.IOException: Keystore was tampered with ...");
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
 
@@ -178,6 +180,7 @@ public class SslContextFactoryTest
         SslContextFactory cf = new SslContextFactory();
         try
         {
+            SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,/foo): java.lang.IllegalStateException: SSL doesn't have a valid keystore...");
             ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.setTrustStore("/foo");
             cf.start();

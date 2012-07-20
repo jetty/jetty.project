@@ -411,7 +411,7 @@ public class StdErrLog extends AbstractLogger
         format(buffer,level,msg);
         if (isHideStacks())
         {
-            format(buffer,String.valueOf(thrown));
+            format(buffer,": "+String.valueOf(thrown));
         }
         else
         {

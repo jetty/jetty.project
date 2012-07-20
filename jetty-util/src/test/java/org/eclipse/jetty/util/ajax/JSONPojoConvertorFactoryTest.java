@@ -100,7 +100,6 @@ public class JSONPojoConvertorFactoryTest
         bar.setColor(Color.Green);
         
         String s = jsonOut.toJSON(bar);
-        System.err.println(s);
         
         assertTrue(s.indexOf("class")<0);
         

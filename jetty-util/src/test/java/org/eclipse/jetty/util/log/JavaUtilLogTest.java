@@ -190,7 +190,7 @@ public class JavaUtilLogTest
         log.info(null,"Testing","info(null,arg0,arg1)");
         log.info(null,null,null);
         
-        jul.dump();
+        //jul.dump();
         
         jul.assertContainsLine("INFO|test.nu.ll|Testing info(msg,null,null) - null/null");
         jul.assertContainsLine("INFO|test.nu.ll|Testing info(msg,null,null) > null null");

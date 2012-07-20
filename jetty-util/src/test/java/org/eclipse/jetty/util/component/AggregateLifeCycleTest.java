@@ -12,7 +12,10 @@ package org.eclipse.jetty.util.component;
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
@@ -224,33 +227,45 @@ public class AggregateLifeCycleTest
     }
     
     @Test
-    public void testDumpable()
+    public void testDumpable() throws Exception
     {
         AggregateLifeCycle a0 = new AggregateLifeCycle();
-        a0.dumpStdErr();
+        String dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
         
-        System.err.println("--");
         AggregateLifeCycle aa0 = new AggregateLifeCycle();
         a0.addBean(aa0);
-        a0.dumpStdErr();
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
         
-        System.err.println("--");
         AggregateLifeCycle aa1 = new AggregateLifeCycle();
         a0.addBean(aa1);
-        a0.dumpStdErr();
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"");
         
-        System.err.println("--");
         AggregateLifeCycle aaa0 = new AggregateLifeCycle();
         aa0.addBean(aaa0);
-        a0.dumpStdErr();   
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"");
         
-        System.err.println("--");
         AggregateLifeCycle aa10 = new AggregateLifeCycle();
         aa1.addBean(aa10);
-        a0.dumpStdErr();   
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"");
         
-
-        System.err.println("--");
         final AggregateLifeCycle a1 = new AggregateLifeCycle();
         final AggregateLifeCycle a2 = new AggregateLifeCycle();
         final AggregateLifeCycle a3 = new AggregateLifeCycle();
@@ -267,16 +282,95 @@ public class AggregateLifeCycleTest
             }
         };
         a0.addBean(aa);
-        a0.dumpStdErr();   
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     |");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"");
 
-        System.err.println("--");
         a2.addBean(aa0);
-        a0.dumpStdErr(); 
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     |   +- org.eclipse.jetty.util.component.Aggre");
+        dump=check(dump,"     |       +- org.eclipse.jetty.util.component.A");
+        dump=check(dump,"     |");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"");
 
-        System.err.println("--");
-        a0.unmanage(aa);
         a2.unmanage(aa0);
-        a0.dumpStdErr(); 
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     |   +~ org.eclipse.jetty.util.component.Aggre");
+        dump=check(dump,"     |");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"     +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump,"");
+        
+        a0.unmanage(aa);
+        dump=trim(a0.dump());
+        dump=check(dump,"org.eclipse.jetty.util.component.AggregateLifeCycl");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +- org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump," |   +- org.eclipse.jetty.util.component.Aggregate");
+        dump=check(dump," +~ org.eclipse.jetty.util.component.AggregateLife");
+        dump=check(dump,"");
         
     }
+    
+    String trim(String s) throws IOException
+    {
+        StringBuilder b=new StringBuilder();
+        BufferedReader reader=new BufferedReader(new StringReader(s));
+        
+        for (String line=reader.readLine();line!=null;line=reader.readLine())
+        {
+            if (line.length()>50)
+                line=line.substring(0,50);
+            b.append(line).append('\n');
+        }
+        
+        return b.toString();
+    }
+    
+    String check(String s,String x)
+    {
+        String r=s;
+        int nl = s.indexOf('\n');
+        if (nl>0)
+        {
+            r=s.substring(nl+1);
+            s=s.substring(0,nl);
+        }
+        
+        Assert.assertEquals(x,s);
+        
+        return r;
+    }
+    
+    
+    
 }

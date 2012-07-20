@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class UrlEncoded extends MultiMap implements Cloneable
 {
-    private static final Logger LOG = Log.getLogger(UrlEncoded.class);
+    static final Logger LOG = Log.getLogger(UrlEncoded.class);
 
     public static final String ENCODING = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset",StringUtil.__UTF8);
 
