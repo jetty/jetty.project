@@ -78,8 +78,7 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         _manager=new ConnectorSelectorManager(selectors);
         addBean(_manager,true);
     }
-
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public void accept(int acceptorID) throws IOException

@@ -36,9 +36,25 @@ public class SpnegoAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(SpnegoAuthenticator.class);
     
+    private String _authMethod = Constraint.__SPNEGO_AUTH;
+    
+    public SpnegoAuthenticator()
+    {
+    	
+    }
+    
+    /**
+     * Allow for a custom authMethod value to be set for instances where SPENGO may not be appropriate
+     * @param authMethod
+     */
+    public SpnegoAuthenticator( String authMethod )
+    {
+    	_authMethod = authMethod;
+    }
+    
     public String getAuthMethod()
     {
-        return Constraint.__SPNEGO_AUTH;
+        return _authMethod;
     }
 
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException

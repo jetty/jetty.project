@@ -420,6 +420,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         boolean gzip=false;
         if (!included.booleanValue() && _gzip && reqRanges==null && !endsWithSlash )
         {
+            // Tell caches that response may vary by accept-encoding
+            response.setHeader(HttpHeader.VARY.asString(),HttpHeader.ACCEPT_ENCODING.asString());
+
             String accept=request.getHeader(HttpHeader.ACCEPT_ENCODING.asString());
             if (accept!=null && accept.indexOf("gzip")>=0)
                 gzip=true;
@@ -733,9 +736,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         byte[] data=null;
         String base = URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH);
 
-        // handle ResourceCollection
-        if (_resourceBase instanceof ResourceCollection)
-            resource=_resourceBase.addPath(pathInContext);
+        //If the DefaultServlet has a resource base set, use it
+        if (_resourceBase != null)
+        {
+            // handle ResourceCollection
+            if (_resourceBase instanceof ResourceCollection)
+                resource=_resourceBase.addPath(pathInContext);
+        }
+        //Otherwise, try using the resource base of its enclosing context handler
         else if (_contextHandler.getBaseResource() instanceof ResourceCollection)
             resource=_contextHandler.getBaseResource().addPath(pathInContext);
 

@@ -24,10 +24,15 @@ import java.io.FilenameFilter;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.sql.Time;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TimeZone;
+import java.util.zip.ZipFile;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;
@@ -308,6 +313,22 @@ public class ResourceTest
         
         container = Resource.newResource(__userURL+"TestData");
         assertFalse(jarFileResource.isContainedIn(container));
+    }
+
+    /* ------------------------------------------------------------ */
+    @Test
+    public void testJarFileLastModified ()
+    throws Exception
+    {
+        String s = "jar:"+__userURL+"TestData/test.zip!/subdir/numbers";
+        
+        // TODO move this into src/test/resources!!!
+        ZipFile zf = new ZipFile(MavenTestingUtils.getProjectFile("src/test/java/org/eclipse/jetty/util/resource/TestData/test.zip"));
+        
+        long last = zf.getEntry("subdir/numbers").getTime();
+        
+        Resource r = Resource.newResource(s);
+        assertEquals(last,r.lastModified()); // Known date value inside zip
     }
 
     /* ------------------------------------------------------------ */

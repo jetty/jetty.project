@@ -14,6 +14,10 @@
 package org.eclipse.jetty.util;
 
 import java.nio.charset.Charset;
+import java.net.URI;
+import java.net.URLEncoder;
+
+import org.eclipse.jetty.util.log.Log;
 
 
 
@@ -67,6 +71,7 @@ public class URIUtil
      */
     public static StringBuilder encodePath(StringBuilder buf, String path)
     {
+        byte[] bytes=null;
         if (buf==null)
         {
         loop:
@@ -84,8 +89,16 @@ public class URIUtil
                     case '<':
                     case '>':
                     case ' ':
-                        buf=new StringBuilder(path.length()<<1);
+                        buf=new StringBuilder(path.length()*2);
                         break loop;
+                    default:
+                        if (c>127)
+                        {
+                            bytes=path.getBytes(URIUtil.__CHARSET);
+                            buf=new StringBuilder(path.length()*2);
+                            break loop;
+                        }
+                       
                 }
             }
             if (buf==null)
@@ -94,41 +107,91 @@ public class URIUtil
         
         synchronized(buf)
         {
-            for (int i=0;i<path.length();i++)
+            if (bytes!=null)
             {
-                char c=path.charAt(i);       
-                switch(c)
+                for (int i=0;i<bytes.length;i++)
                 {
-                  case '%':
-                      buf.append("%25");
-                      continue;
-                  case '?':
-                      buf.append("%3F");
-                      continue;
-                  case ';':
-                      buf.append("%3B");
-                      continue;
-                  case '#':
-                      buf.append("%23");
-                      continue;
-                  case '"':
-                      buf.append("%22");
-                      continue;
-                  case '\'':
-                      buf.append("%27");
-                      continue;
-                  case '<':
-                      buf.append("%3C");
-                      continue;
-                  case '>':
-                      buf.append("%3E");
-                      continue;
-                  case ' ':
-                      buf.append("%20");
-                      continue;
-                  default:
-                      buf.append(c);
-                      continue;
+                    byte c=bytes[i];       
+                    switch(c)
+                    {
+                      case '%':
+                          buf.append("%25");
+                          continue;
+                      case '?':
+                          buf.append("%3F");
+                          continue;
+                      case ';':
+                          buf.append("%3B");
+                          continue;
+                      case '#':
+                          buf.append("%23");
+                          continue;
+                      case '"':
+                          buf.append("%22");
+                          continue;
+                      case '\'':
+                          buf.append("%27");
+                          continue;
+                      case '<':
+                          buf.append("%3C");
+                          continue;
+                      case '>':
+                          buf.append("%3E");
+                          continue;
+                      case ' ':
+                          buf.append("%20");
+                          continue;
+                      default:
+                          if (c<0)
+                          {
+                              buf.append('%');
+                              TypeUtil.toHex(c,buf);
+                          }
+                          else
+                              buf.append((char)c);
+                          continue;
+                    }
+                }
+                
+            }
+            else
+            {
+                for (int i=0;i<path.length();i++)
+                {
+                    char c=path.charAt(i);       
+                    switch(c)
+                    {
+                        case '%':
+                            buf.append("%25");
+                            continue;
+                        case '?':
+                            buf.append("%3F");
+                            continue;
+                        case ';':
+                            buf.append("%3B");
+                            continue;
+                        case '#':
+                            buf.append("%23");
+                            continue;
+                        case '"':
+                            buf.append("%22");
+                            continue;
+                        case '\'':
+                            buf.append("%27");
+                            continue;
+                        case '<':
+                            buf.append("%3C");
+                            continue;
+                        case '>':
+                            buf.append("%3E");
+                            continue;
+                        case ' ':
+                            buf.append("%20");
+                            continue;
+                        default:
+                            buf.append(c);
+                            continue;
+                    }
                 }
             }
         }
@@ -182,7 +245,7 @@ public class URIUtil
     }
     
     /* ------------------------------------------------------------ */
-    /* Decode a URI path.
+    /* Decode a URI path and strip parameters
      * @param path The path the encode
      * @param buf StringBuilder to encode path into
      */
@@ -190,8 +253,10 @@ public class URIUtil
     {
         if (path==null)
             return null;
+        // Array to hold all converted characters
         char[] chars=null;
         int n=0;
+        // Array to hold a sequence of %encodings
         byte[] bytes=null;
         int b=0;
         
@@ -213,12 +278,23 @@ public class URIUtil
                 i+=2;
                 continue;
             }
+            else if (c==';')
+            {
+                if (chars==null)
+                {
+                    chars=new char[len];
+                    path.getChars(0,i,chars,0);
+                    n=i;
+                }
+                break;
+            }
             else if (bytes==null)
             {
                 n++;
                 continue;
             }
             
+            // Do we have some bytes to convert?
             if (b>0)
             {
                 String s=new String(bytes,0,b,__CHARSET);
@@ -233,6 +309,7 @@ public class URIUtil
         if (chars==null)
             return path;
 
+        // if we have a remaining sequence of bytes
         if (b>0)
         {
             String s=new String(bytes,0,b,__CHARSET);
@@ -244,7 +321,7 @@ public class URIUtil
     }
     
     /* ------------------------------------------------------------ */
-    /* Decode a URI path.
+    /* Decode a URI path and strip parameters.
      * @param path The path the encode
      * @param buf StringBuilder to encode path into
      */
@@ -261,6 +338,11 @@ public class URIUtil
             {
                 b=(byte)(0xff&TypeUtil.parseInt(buf,i+offset+1,2,16));
                 i+=2;
+            }
+            else if (b==';')
+            {
+                length=i;
+                break;
             }
             else if (bytes==null)
             {
@@ -350,20 +432,6 @@ public class URIUtil
         if (slash>=0)
             return p.substring(0,slash+1);
         return null;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Strip parameters from a path.
-     * Return path upto any semicolon parameters.
-     */
-    public static String stripPath(String path)
-    {
-        if (path==null)
-            return null;
-        int semi=path.indexOf(';');
-        if (semi<0)
-            return path;
-        return path.substring(0,semi);
     }
     
     /* ------------------------------------------------------------ */

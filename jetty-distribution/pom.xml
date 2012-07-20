@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.0-SNAPSHOT</version>
+    <version>8.1.6-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
@@ -124,7 +124,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy</excludeGroupIds>
               <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor,jetty-jsp</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
@@ -202,20 +202,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-monitor-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <includeArtifactIds>jetty-monitor</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <excludeTransitive>true</excludeTransitive>
-              <outputDirectory>${assembly-directory}/lib/monitor</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>unpack-config-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -227,6 +213,20 @@
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-monitor-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeArtifactIds>jetty-monitor</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <excludeTransitive>true</excludeTransitive>
+              <outputDirectory>${assembly-directory}/lib/monitor</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -406,4 +406,92 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <!-- Modules that are only for JDK7+ builds -->
+      <id>JDK7-plus-modules</id>
+      <activation>
+        <jdk>[1.7,)</jdk>
+      </activation>
+      <build>
+      <plugins>
+       <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+         <execution>
+            <id>copy-lib-spdy-deps</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-spdy</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.spdy</groupId>
+                  <artifactId>spdy-jetty-http-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
+                  <destFileName>spdy.war</destFileName>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-spdy</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+              <classifier>config</classifier>
+              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <excludes>META-INF/**</excludes>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+       </plugin>
+      </plugins>
+      </build>
+      <dependencies>
+          <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-jetty</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-jetty-http</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-jetty-http-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

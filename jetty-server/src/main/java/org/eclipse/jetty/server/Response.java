@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.omg.CORBA._PolicyStub;
 
 /** Response.
  * <p>
@@ -777,6 +778,7 @@ public class Response implements HttpServletResponse
     }
 
 
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#setContentLength(int)
@@ -799,22 +801,23 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     public void checkAllContentWritten(long written)
     {
-        if (_contentLength>0 && written>=_contentLength)
+        if (_contentLength>=0 && written>=_contentLength)
         {
-            switch(_outputState)
+            try
             {
-                case WRITER:
-                    _writer.close();
-                    break;
-                case STREAM:
-                    try
-                    {
+                switch(_outputState)
+                {
+                    case WRITER:
+                        _writer.close();
+                        break;
+                    case STREAM:
                         getOutputStream().close();
-                    }
-                    catch(IOException e)
-                    {
-                        throw new RuntimeException(e);
-                    }
+
+                } 
+            }
+            catch(IOException e)
+            {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -876,7 +879,20 @@ public class Response implements HttpServletResponse
                 }
             }
         }
-    }
+        
+        
+        /* TODO merged code not used???
+                    else if (_mimeType!=null)
+                        _contentType=_mimeType;
+
+
+
+                    if (_contentType==null)
+                        _connection.getResponseFields().remove(HttpHeaders.CONTENT_TYPE_BUFFER);
+                    else
+                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+*/
+        }
 
     /* ------------------------------------------------------------ */
     /*

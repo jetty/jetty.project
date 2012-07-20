@@ -108,6 +108,27 @@ public class DispatcherTest
 
         assertEquals(expected, responses);
     }
+    
+    @Test
+    public void testForwardWithParam() throws Exception
+    {
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(EchoURIServlet.class, "/EchoURI/*");
+
+        String expected=
+            "HTTP/1.1 200 OK\r\n"+
+            "Content-Type: text/plain\r\n"+
+            "Content-Length: 54\r\n"+
+            "\r\n"+
+            "/context\r\n"+
+            "/EchoURI\r\n"+
+            "/x x\r\n"+
+            "/context/EchoURI/x%20x;a=1\r\n";
+
+        String responses = _connector.getResponses("GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.1\n" + "Host: localhost\n\n");
+
+        assertEquals(expected, responses);
+    }
 
     @Test
     public void testInclude() throws Exception
@@ -280,6 +301,10 @@ public class DispatcherTest
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeForwardServlet/assertpath?do=end");
             else if(request.getParameter("do").equals("assertforward"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardServlet?do=end&do=the");
+            else if(request.getParameter("do").equals("ctx.echo"))
+                dispatcher = getServletContext().getRequestDispatcher(request.getParameter("uri"));
+            else if(request.getParameter("do").equals("req.echo"))
+                dispatcher = request.getRequestDispatcher(request.getParameter("uri"));
             dispatcher.forward(request, response);
         }
     }
@@ -460,6 +485,19 @@ public class DispatcherTest
                     throw new ServletException("type of forward or include is required");
                 }
             }
+        }
+    }
+    
+    public static class EchoURIServlet extends HttpServlet implements Servlet
+    {
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/plain");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().println(request.getContextPath());
+            response.getOutputStream().println(request.getServletPath());
+            response.getOutputStream().println(request.getPathInfo());
+            response.getOutputStream().println(request.getRequestURI());
         }
     }
     

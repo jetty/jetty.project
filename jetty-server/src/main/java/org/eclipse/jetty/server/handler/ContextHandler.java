@@ -65,6 +65,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -140,6 +141,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private Object _requestListeners;
     private Object _requestAttributeListeners;
     private Map<String, Object> _managedAttributes;
+    private String[] _protectedTargets;
 
     private boolean _shutdown = false;
     private boolean _available = true;
@@ -1037,6 +1039,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 // Handle the REALLY SILLY request events!
                 if (_requestAttributeListeners != null)
                 {
+                    // TODO COW lists ???
                     final int s = LazyList.size(_requestAttributeListeners);
                     for (int i = 0; i < s; i++)
                         baseRequest.addEventListener(((EventListener)LazyList.get(_requestAttributeListeners,i)));
@@ -1126,13 +1129,49 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Check the target. Called by {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)} when a target within a context is determined. If
-     * the target is protected, 404 is returned. The default implementation always returns false.
+     * the target is protected, 404 is returned. 
      */
     /* ------------------------------------------------------------ */
-    protected boolean isProtectedTarget(String target)
+    public boolean isProtectedTarget(String target)
     {
-        return false;
+        if (target == null || _protectedTargets == null)
+            return false;
+        
+        while (target.startsWith("//"))
+            target=URIUtil.compactPath(target);
+        
+        boolean isProtected = false;
+        int i=0;
+        while (!isProtected && i<_protectedTargets.length)
+        {
+            isProtected = StringUtil.startsWithIgnoreCase(target, _protectedTargets[i++]);
+        }
+        return isProtected;
     }
+    
+    
+    public void setProtectedTargets (String[] targets)
+    {
+        if (targets == null)
+        {
+            _protectedTargets = null;
+            return;
+        }
+        
+        _protectedTargets = new String[targets.length];
+        System.arraycopy(targets, 0, _protectedTargets, 0, targets.length);
+    }
+    
+    public String[] getProtectedTargets ()
+    {
+        if (_protectedTargets == null)
+            return null;
+        
+        String[] tmp = new String[_protectedTargets.length];
+        System.arraycopy(_protectedTargets, 0, tmp, 0, _protectedTargets.length);
+        return tmp;
+    }
+    
 
     /* ------------------------------------------------------------ */
     /*
@@ -1785,8 +1824,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     query = uriInContext.substring(q + 1);
                     uriInContext = uriInContext.substring(0,q);
                 }
-                if ((q = uriInContext.indexOf(';')) > 0)
-                    uriInContext = uriInContext.substring(0,q);
+                // if ((q = uriInContext.indexOf(';')) > 0)
+                //     uriInContext = uriInContext.substring(0,q);
 
                 String pathInContext = URIUtil.canonicalPath(URIUtil.decodePath(uriInContext));
                 String uri = URIUtil.addPaths(getContextPath(),uriInContext);

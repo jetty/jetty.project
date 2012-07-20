@@ -16,6 +16,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -33,9 +35,9 @@ public class NoSqlSession extends AbstractSession
     private long _lastSync;
 
     /* ------------------------------------------------------------ */
-    public NoSqlSession(NoSqlSessionManager manager, long created, long accessed, String clusterId)
+    public NoSqlSession(NoSqlSessionManager manager, HttpServletRequest request)
     {
-        super(manager, created,accessed,clusterId);
+        super(manager, request);
         _manager=manager;
         save(true);
         _active.incrementAndGet();

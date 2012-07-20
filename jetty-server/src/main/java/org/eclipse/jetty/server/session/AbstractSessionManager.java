@@ -135,6 +135,16 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         return _context.getContextHandler();
     }
     
+    public String getSessionPath()
+    {
+        return _sessionPath;
+    }
+
+    public int getMaxCookieAge()
+    {
+        return _maxCookieAge;
+    }
+
     /* ------------------------------------------------------------ */
     public HttpCookie access(HttpSession session,boolean secure)
     {

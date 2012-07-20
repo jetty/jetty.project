@@ -1411,6 +1411,7 @@ public class Request implements HttpServletRequest
         if (_attributes != null)
             _attributes.clearAttributes();
         _characterEncoding = null;
+        _contextPath = null;
         if (_cookies != null)
             _cookies.reset();
         _cookiesExtracted = false;
@@ -1899,7 +1900,7 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _state.suspend(_context,this,_channel.getResponse());
+        _state.suspend();
         return _state;
     }
 
@@ -1938,13 +1939,29 @@ public class Request implements HttpServletRequest
     public Part getPart(String name) throws IOException, ServletException
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            return null;
+            throw new ServletException("Content-Type != multipart/form-data");
 
         if (_multiPartInputStream == null)
         {
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
+            for (Part p:parts)
+            {
+                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                {
+                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    String charset = null;
+                    if (mp.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
+                    
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
+                    getParameter(""); //cause params to be evaluated
+                    getParameters().add(mp.getName(), content);
+                }
+            }
         }
         return _multiPartInputStream.getPart(name);
     }
@@ -1954,13 +1971,29 @@ public class Request implements HttpServletRequest
     public Collection<Part> getParts() throws IOException, ServletException
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            return Collections.emptyList();
+            throw new ServletException("Content-Type != multipart/form-data");
 
         if (_multiPartInputStream == null)
         {
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
+            for (Part p:parts)
+            {
+                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                {
+                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    String charset = null;
+                    if (mp.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
+
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);                   
+                    getParameter(""); //cause params to be evaluated
+                    getParameters().add(mp.getName(), content);
+                }
+            }
         }
         return _multiPartInputStream.getParts();
     }

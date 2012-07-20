@@ -4,23 +4,25 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.util.statistic;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.util.Atomics;
+
 
 /* ------------------------------------------------------------ */
 /**
  * SampledStatistics
  * <p>
- * Provides max, total, mean, count, variance, and standard 
+ * Provides max, total, mean, count, variance, and standard
  * deviation of continuous sequence of samples.
  * <p>
  * Calculates estimates of mean, variance, and standard deviation
@@ -53,25 +55,17 @@ public class SampleStatistic
     {
         long total = _total.addAndGet(sample);
         long count = _count.incrementAndGet();
-        
+
         if (count>1)
         {
             long mean10 = total*10/count;
             long delta10 = sample*10 - mean10;
             _totalVariance100.addAndGet(delta10*delta10);
-        }        
-        
-        long oldMax = _max.get();
-        while (sample > oldMax)
-        {
-            if (_max.compareAndSet(oldMax, sample))
-                break;
-            oldMax = _max.get();
         }
-        
+
+        Atomics.updateMax(_max, sample);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the max value
      */
@@ -80,37 +74,31 @@ public class SampleStatistic
         return _max.get();
     }
 
-    /* ------------------------------------------------------------ */
     public long getTotal()
     {
         return _total.get();
     }
 
-    /* ------------------------------------------------------------ */
     public long getCount()
     {
         return _count.get();
     }
 
-    /* ------------------------------------------------------------ */
     public double getMean()
     {
         return (double)_total.get()/_count.get();
     }
 
-    /* ------------------------------------------------------------ */
     public double getVariance()
     {
         final long variance100 = _totalVariance100.get();
         final long count = _count.get();
-        
+
         return count>1?((double)variance100)/100.0/(count-1):0.0;
     }
 
-    /* ------------------------------------------------------------ */
     public double getStdDev()
     {
         return Math.sqrt(getVariance());
     }
-
 }

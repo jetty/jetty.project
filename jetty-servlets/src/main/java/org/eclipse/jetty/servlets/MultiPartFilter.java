@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +159,11 @@ public class MultiPartFilter implements Filter
                     {
                         request.setAttribute(mp.getName(),mp.getFile());
                         if (mp.getContentDispositionFilename() != null)
+                        {
                             params.add(mp.getName(), mp.getContentDispositionFilename());
+                            if (mp.getContentType() != null)
+                                params.add(mp.getName()+CONTENT_TYPE_SUFFIX, mp.getContentType());
+                        }
                         if (_deleteFiles)
                         {
                             mp.getFile().deleteOnExit();
@@ -177,6 +182,8 @@ public class MultiPartFilter implements Filter
                         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                         IO.copy(p.getInputStream(), bytes);
                         params.add(p.getName(), bytes.toByteArray());
+                        if (p.getContentType() != null)
+                            params.add(p.getName()+CONTENT_TYPE_SUFFIX, p.getContentType());
                     }
                 }
             }
@@ -287,7 +294,14 @@ public class MultiPartFilter implements Filter
         @Override
         public Map getParameterMap()
         {
-            return Collections.unmodifiableMap(_params.toStringArrayMap());
+            Map<String, String> cmap = new HashMap<String,String>();
+            
+            for ( Object key : _params.keySet() )
+            {
+                cmap.put((String)key,getParameter((String)key));
+            }
+            
+            return Collections.unmodifiableMap(cmap);
         }
         
         /* ------------------------------------------------------------------------------- */
@@ -322,7 +336,7 @@ public class MultiPartFilter implements Filter
                     }
                     catch(Exception e)
                     {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
                 }
                 else if (o instanceof String)

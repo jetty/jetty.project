@@ -105,9 +105,9 @@ public class ServletContainerInitializerListener implements ServletContextListen
                 }
             }
 
-            //TODO Email from Jan Luehe 18 August: after all ServletContainerInitializers have been
+            //Email from Jan Luehe 18 August: after all ServletContainerInitializers have been
             //called, need to check to see if there are any ServletRegistrations remaining
-            //that are "preliminary" and fail the deployment if so.
+            //that are "preliminary" and fail the deployment if so. Implemented in ServletHolder.doStart().
         } 
         
     }

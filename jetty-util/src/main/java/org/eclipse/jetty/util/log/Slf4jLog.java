@@ -29,17 +29,7 @@ public class Slf4jLog extends AbstractLogger
 
     public Slf4jLog(String name)
     {
-        // This checks to make sure that an slf4j implementation is present.
-        // It is needed because slf4j-api 1.6.x defaults to using NOPLogger.
-        try
-        {
-            Class.forName("org.slf4j.impl.StaticLoggerBinder");
-        }
-        catch (ClassNotFoundException ex)
-        {
-            throw new NoClassDefFoundError("org.slf4j.impl.StaticLoggerBinder");
-        }
-
+        //NOTE: if only an slf4j-api jar is on the classpath, slf4j will use a NOPLogger
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger( name );
         
         // Fix LocationAwareLogger use to indicate FQCN of this class - 

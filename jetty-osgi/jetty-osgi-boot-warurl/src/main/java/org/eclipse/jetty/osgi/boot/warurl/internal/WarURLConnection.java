@@ -31,6 +31,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Facade for a URLConnection that will read a jar and substitute its
@@ -106,6 +107,7 @@ public class WarURLConnection extends URLConnection
     {
         super(url);
         _conn = url.openConnection();
+        _conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
         _mf = mf;
     }
     @Override

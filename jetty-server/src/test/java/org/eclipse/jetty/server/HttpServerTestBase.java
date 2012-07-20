@@ -27,9 +27,11 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Exchanger;
 
 import javax.servlet.ServletException;
@@ -37,14 +39,16 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
+import org.junit.matchers.JUnitMatchers;
 
 /**
  *
@@ -105,6 +109,41 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
 
 
+    /*
+     * Feed a full header method
+     */
+    @Test
+    public void testFull() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+
+            byte[] buffer = new byte[64*1024];
+            Arrays.fill(buffer,(byte)'A');
+            
+            os.write(buffer);
+            os.flush();
+
+            // Read the response.
+            String response=readResponse(client);
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
+        }
+        catch(SocketException e)
+        {
+            // TODO looks like a close is overtaking the 413 in SSL
+            System.err.println("Investigate this "+e);
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
 
 
     /*
@@ -1083,10 +1122,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             else
                 out.println(avail);
 
-            for (int i=0;i<avail;i++)
+            while (avail>0)
+            {
                 buf+=(char)in.read();
-
-            avail=in.available();
+                avail=in.available();
+            }
+            
+            
             out.println(avail);
             
             // read remaining no matter what
@@ -1318,6 +1360,54 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
            //don't read the input, just send something back
             ((Request)request).setHandled(true);
             response.setStatus(200);
+        }
+    }
+    
+
+    @Test
+    public void testSuspendedPipeline() throws Exception
+    {
+        SuspendHandler suspend = new SuspendHandler();
+        suspend.setSuspendFor(30000);
+        suspend.setResumeAfter(1000);
+        configureServer(suspend);
+
+        long start=System.currentTimeMillis();
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        client.setSoTimeout(5000);
+        try
+        {
+            OutputStream os=client.getOutputStream();
+            InputStream is=client.getInputStream();
+
+            // write an initial request
+            os.write((
+                    "GET / HTTP/1.1\r\n"+
+                    "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+            
+            Thread.sleep(200);
+            
+            // write an pipelined request
+            os.write((
+                    "GET / HTTP/1.1\r\n"+
+                    "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                    "connection: close\r\n"+
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+            
+            String response=readResponse(client);
+            assertThat(response,JUnitMatchers.containsString("RESUMEDHTTP/1.1 200 OK"));
+            assertThat((System.currentTimeMillis()-start),greaterThanOrEqualTo(1999L));
+            
+            // TODO This test should also check that that the CPU did not spin during the suspend.
+        }
+        finally
+        {
+            client.close();
         }
     }
 }

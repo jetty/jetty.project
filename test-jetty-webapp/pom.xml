@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.0.0-SNAPSHOT</version>
+    <version>8.1.6-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-webapp</artifactId>
@@ -76,7 +76,7 @@
             </goals>
             <configuration>
               <instructions>
-		<Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
+                <Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
                 <Import-Package>javax.servlet,org.eclipse.jetty.servlets,*</Import-Package>
                 <Export-Package>!com.acme*</Export-Package>
                 <!-- the test webapp is configured via a jetty xml file
@@ -94,11 +94,11 @@
            </execution>
         </executions>
       </plugin>
-<!--      
+<!--
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
-        <version>7.5.2-SNAPSHOT</version>
+        <version>${project.version}</version>
         <configuration>
           <stopPort>8087</stopPort>
           <stopKey>foo</stopKey>
@@ -109,6 +109,7 @@
               <value>222</value>
             </systemProperty>
           </systemProperties>
+          <useTestScope>true</useTestScope>
           <webAppConfig>
             <contextPath>/test</contextPath>
             <tempDirectory>${project.build.directory}/work</tempDirectory>

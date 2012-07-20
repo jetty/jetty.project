@@ -49,7 +49,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      *  environment that will be looked up at runtime. They do
      *  not specify an injection.
      */
-    public void doHandle(Class clazz)
+    public void doHandle(Class<?> clazz)
     {
         if (Util.isServletType(clazz))
         {
@@ -65,16 +65,13 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
         }
     }
         
-     public void handleClass (Class clazz)
+     public void handleClass (Class<?> clazz)
      {
          Resource resource = (Resource)clazz.getAnnotation(Resource.class);
          if (resource != null)
          {
              String name = resource.name();
              String mappedName = resource.mappedName();
-             Resource.AuthenticationType auth = resource.authenticationType();
-             Class type = resource.type();
-             boolean shareable = resource.shareable();
              
              if (name==null || name.trim().equals(""))
                  throw new IllegalStateException ("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
@@ -92,7 +89,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
          }
     }
 
-    public void handleField(Class clazz, Field field)
+    public void handleField(Class<?> clazz, Field field)
     {
         Resource resource = (Resource)field.getAnnotation(Resource.class);
         if (resource != null)
@@ -118,7 +115,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);
             String mappedName = (resource.mappedName()!=null && !resource.mappedName().trim().equals("")?resource.mappedName():null);
             //get the type of the Field
-            Class type = field.getType();
+            Class<?> type = field.getType();
             
             //Servlet Spec 3.0 p. 76
             //If a descriptor has specified at least 1 injection target for this
@@ -207,7 +204,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      * This will generate a JNDI entry, and an Injection to be
      * processed when an instance of the class is created.
      */
-    public void handleMethod(Class clazz, Method method)
+    public void handleMethod(Class<?> clazz, Method method)
     {
 
         Resource resource = (Resource)method.getAnnotation(Resource.class);
@@ -265,9 +262,9 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
             name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);
             String mappedName = (resource.mappedName()!=null && !resource.mappedName().trim().equals("")?resource.mappedName():null);
-            Class paramType = method.getParameterTypes()[0];
+            Class<?> paramType = method.getParameterTypes()[0];
 
-            Class resourceType = resource.type();
+            Class<?> resourceType = resource.type();
             
             //Servlet Spec 3.0 p. 76
             //If a descriptor has specified at least 1 injection target for this

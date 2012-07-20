@@ -503,15 +503,18 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                         previousIdentity = deferred.getPreviousAssociation();
                         deferred.setIdentityService(null);
                     }
-                   
-                    Authentication auth=baseRequest.getAuthentication();
-                    if (auth instanceof Authentication.User)
+
+                    if (authenticator!=null)
                     {
-                        Authentication.User userAuth = (Authentication.User)auth;
-                        authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
+                        Authentication auth=baseRequest.getAuthentication();
+                        if (auth instanceof Authentication.User)
+                        {
+                            Authentication.User userAuth = (Authentication.User)auth;
+                            authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
+                        }
+                        else
+                            authenticator.secureResponse(request, response, isAuthMandatory, null);
                     }
-                    else
-                        authenticator.secureResponse(request, response, isAuthMandatory, null);
                 }
                 else
                 {

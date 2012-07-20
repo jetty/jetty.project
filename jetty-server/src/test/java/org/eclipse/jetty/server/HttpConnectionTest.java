@@ -282,7 +282,6 @@ public class HttpConnectionTest
     @Test
     public void testUnconsumedError() throws Exception
     {
-
         String response=null;
         String requests=null;
         int offset=0;

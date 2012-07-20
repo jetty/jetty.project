@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -75,7 +76,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public final static String SERVER_CONFIG = "org.eclipse.jetty.webapp.configuration";
     public final static String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public final static String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
-
+    
+    private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
+    
     private static String[] __dftConfigurationClasses =
     {
         "org.eclipse.jetty.webapp.WebInfConfiguration",
@@ -131,7 +134,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _distributable=false;
     private boolean _extractWAR=true;
     private boolean _copyDir=false;
-    private boolean _copyWebInf=true; // TODO change to false?
+    private boolean _copyWebInf=false; // TODO change to true?
     private boolean _logUrlOnStart =false;
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
@@ -150,6 +153,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationsSet=false;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
+    
+    
 
     private MetaData _metadata=new MetaData();
 
@@ -171,6 +176,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(SESSIONS|SECURITY);
         _scontext=new Context();
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -185,6 +191,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setContextPath(contextPath);
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -199,6 +206,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _scontext=new Context();
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -215,6 +223,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(null, sessionHandler, securityHandler, servletHandler, errorHandler);
         _scontext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -270,11 +279,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    public String getResourceAlias(String alias)
+    public String getResourceAlias(String path)
     {
         if (_resourceAliases == null)
             return null;
-        return _resourceAliases.get(alias);
+        String alias = _resourceAliases.get(path);
+        
+        int slash=path.length();
+        while (alias==null)
+        {
+            slash=path.lastIndexOf("/",slash-1);
+            if (slash<0)
+                break;
+            String match=_resourceAliases.get(path.substring(0,slash+1));
+            if (match!=null)
+                alias=match+path.substring(slash+1);            
+        }
+        return alias;
     }
 
     /* ------------------------------------------------------------ */
@@ -575,6 +596,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @return Returns the Override Descriptor.
      * @deprecated use {@link #getOverrideDescriptors()}
      */
+    @Deprecated
     public String getOverrideDescriptor()
     {
         if (_overrideDescriptors.size()!=1)
@@ -686,20 +708,26 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private void loadServerClasses()
     {
         if (_serverClasses != null)
+        {
             return;
+        }
 
-        //look for a Server attribute with the list of Server classes
-        //to apply to every web application. If not present, use our defaults.
+        // look for a Server attribute with the list of Server classes
+        // to apply to every web application. If not present, use our defaults.
         Server server = getServer();
         if (server != null)
         {
             Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
-            if (serverClasses != null || serverClasses instanceof String[])
+            if (serverClasses != null && serverClasses instanceof String[])
+            {
                 _serverClasses = new ClasspathPattern((String[])serverClasses);
+            }
         }
 
         if (_serverClasses == null)
+        {
             _serverClasses = new ClasspathPattern(__dftServerClasses);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -813,16 +841,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    protected boolean isProtectedTarget(String target)
-    {
-        while (target.startsWith("//"))
-            target=URIUtil.compactPath(target);
-
-        return StringUtil.startsWithIgnoreCase(target, "/web-inf") || StringUtil.startsWithIgnoreCase(target, "/meta-inf");
-    }
-
+  
 
     /* ------------------------------------------------------------ */
     @Override
@@ -873,6 +892,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param overrideDescriptor The overrideDescritpor to set.
      * @deprecated use {@link #setOverrideDescriptors(List)}
      */
+    @Deprecated
     public void setOverrideDescriptor(String overrideDescriptor)
     {
         _overrideDescriptors.clear();
@@ -960,7 +980,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public void addEventListener(EventListener listener)
     {
-        setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(), listener, EventListener.class));
+        setEventListeners(LazyList.addToArray(getEventListeners(), listener, EventListener.class));
     }
 
 
@@ -1217,6 +1237,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public class Context extends ServletContextHandler.Context
     {
         /* ------------------------------------------------------------ */
+        @Override
         public URL getResource(String path) throws MalformedURLException
         {
             Resource resource=WebAppContext.this.getResource(path);

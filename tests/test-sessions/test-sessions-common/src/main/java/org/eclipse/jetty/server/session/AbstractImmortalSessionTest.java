@@ -44,6 +44,7 @@ public abstract class AbstractImmortalSessionTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 2;
+        //turn off session expiry by setting maxInactiveInterval to -1
         AbstractTestServer server = createServer(0, -1, scavengePeriod);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server.start();

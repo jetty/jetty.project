@@ -35,7 +35,7 @@ import java.security.cert.X509CertSelector;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -87,7 +87,7 @@ public class SslContextFactory extends AbstractLifeCycle
         {
         }
     }};
-    
+
     private static final Logger LOG = Log.getLogger(SslContextFactory.class);
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
@@ -108,13 +108,12 @@ public class SslContextFactory extends AbstractLifeCycle
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
     /** Excluded protocols. */
-    private final Set<String> _excludeProtocols = new HashSet<String>();
-    // private final Set<String> _excludeProtocols = new HashSet<String>(Collections.singleton("SSLv2Hello"));
+    private final Set<String> _excludeProtocols = new LinkedHashSet<String>();
     /** Included protocols. */
     private Set<String> _includeProtocols = null;
 
     /** Excluded cipher suites. */
-    private final Set<String> _excludeCipherSuites = new HashSet<String>();
+    private final Set<String> _excludeCipherSuites = new LinkedHashSet<String>();
     /** Included cipher suites. */
     private Set<String> _includeCipherSuites = null;
 
@@ -211,6 +210,8 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * Construct an instance of SslContextFactory
      * Default constructor for use in XmlConfiguration files
+     * @param trustAll whether to blindly trust all certificates
+     * @see #setTrustAll(boolean)
      */
     public SslContextFactory(boolean trustAll)
     {
@@ -314,7 +315,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param Protocols
+     * @param protocols
      *            The array of protocol names to exclude from
      *            {@link SSLEngine#setEnabledProtocols(String[])}
      */
@@ -348,7 +349,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param Protocols
+     * @param protocols
      *            The array of protocol names to include in
      *            {@link SSLEngine#setEnabledProtocols(String[])}
      */
@@ -356,7 +357,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         checkNotStarted();
 
-        _includeProtocols = new HashSet<String>(Arrays.asList(protocols));
+        _includeProtocols = new LinkedHashSet<String>(Arrays.asList(protocols));
     }
 
     /* ------------------------------------------------------------ */
@@ -412,7 +413,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         checkNotStarted();
 
-        _includeCipherSuites = new HashSet<String>(Arrays.asList(cipherSuites));
+        _includeCipherSuites = new LinkedHashSet<String>(Arrays.asList(cipherSuites));
     }
 
     /* ------------------------------------------------------------ */
@@ -445,7 +446,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param keyStorePath
+     * @param keyStorePath the file system path or URL of the keystore
      * @deprecated Use {@link #setKeyStorePath(String)}
      */
     @Deprecated
@@ -1004,7 +1005,7 @@ public class SslContextFactory extends AbstractLifeCycle
      * Override this method to provide alternate way to load a keystore.
      *
      * @return the key store instance
-     * @throws Exception
+     * @throws Exception if the keystore cannot be loaded
      */
     protected KeyStore loadKeyStore() throws Exception
     {
@@ -1018,7 +1019,7 @@ public class SslContextFactory extends AbstractLifeCycle
      * Override this method to provide alternate way to load a truststore.
      *
      * @return the key store instance
-     * @throws Exception
+     * @throws Exception if the truststore cannot be loaded
      */
     protected KeyStore loadTrustStore() throws Exception
     {
@@ -1041,7 +1042,7 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param storeProvider keystore provider
      * @param storePassword keystore password
      * @return created keystore
-     * @throws Exception
+     * @throws Exception if the keystore cannot be obtained
      *
      * @deprecated
      */
@@ -1060,7 +1061,7 @@ public class SslContextFactory extends AbstractLifeCycle
      *
      * @param crlPath path of certificate revocation list file
      * @return Collection of CRL's
-     * @throws Exception
+     * @throws Exception if the certificate revocation list cannot be loaded
      */
     protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
     {
@@ -1200,16 +1201,16 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * Select cipher suites to be used by the connector
+     * Select protocols to be used by the connector
      * based on configured inclusion and exclusion lists
-     * as well as enabled and supported cipher suite lists.
-     * @param enabledCipherSuites Array of enabled cipher suites
-     * @param supportedCipherSuites Array of supported cipher suites
-     * @return Array of cipher suites to enable
+     * as well as enabled and supported protocols.
+     * @param enabledProtocols Array of enabled protocols
+     * @param supportedProtocols Array of supported protocols
+     * @return Array of protocols to enable
      */
     public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
     {
-        Set<String> selected_protocols = new HashSet<String>();
+        Set<String> selected_protocols = new LinkedHashSet<String>();
 
         // Set the starting protocols - either from the included or enabled list
         if (_includeProtocols!=null)
@@ -1241,7 +1242,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
     {
-        Set<String> selected_ciphers = new HashSet<String>();
+        Set<String> selected_ciphers = new LinkedHashSet<String>();
 
         // Set the starting ciphers - either from the included or enabled list
         if (_includeCipherSuites!=null)

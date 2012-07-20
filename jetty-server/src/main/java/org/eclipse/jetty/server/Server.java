@@ -62,7 +62,7 @@ public class Server extends HandlerWrapper implements Attributes
              Server.class.getPackage().getImplementationVersion()!=null)
             __version=Server.class.getPackage().getImplementationVersion();
         else
-            __version=System.getProperty("jetty.version","9.0.y.z-SNAPSHOT");
+            __version=System.getProperty("jetty.version","9.x.y.z-SNAPSHOT");
     }
 
     private final Container _container=new Container();
@@ -74,7 +74,6 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _sendDateHeader = false; //send Date: header
     private int _graceful=0;
     private boolean _stopAtShutdown;
-    private int _maxCookieVersion=1;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
     private boolean _uncheckedPrintWriter=false;
@@ -138,11 +137,21 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     public void setStopAtShutdown(boolean stop)
     {
-        _stopAtShutdown=stop;
+        //if we now want to stop
         if (stop)
-            ShutdownThread.register(this);
+        {
+            //and we weren't stopping before
+            if (!_stopAtShutdown)
+            {  
+                //only register to stop if we're already started (otherwise we'll do it in doStart())
+                if (isStarted()) 
+                    ShutdownThread.register(this);
+            }
+        }
         else
             ShutdownThread.deregister(this);
+        
+        _stopAtShutdown=stop;
     }
 
     /* ------------------------------------------------------------ */
@@ -271,7 +280,7 @@ public class Server extends HandlerWrapper implements Attributes
             mex.add(e);
         }
 
-        if (_connectors!=null)
+        if (_connectors!=null && mex.size()==0)
         {
             for (int i=0;i<_connectors.length;i++)
             {
@@ -306,7 +315,7 @@ public class Server extends HandlerWrapper implements Attributes
                 {
                     LOG.info("Graceful shutdown {}",_connectors[i]);
                     if (_connectors[i] instanceof NetConnector)
-                    ((NetConnector)_connectors[i]).close();
+                        ((NetConnector)_connectors[i]).close();
                 }
             }
 
@@ -353,7 +362,7 @@ public class Server extends HandlerWrapper implements Attributes
         {
             LOG.debug("REQUEST "+target+" on "+connection);
             handle(target, request, request, response);
-            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
+            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
         }
         else
             handle(target, request, request, response);
@@ -376,11 +385,6 @@ public class Server extends HandlerWrapper implements Attributes
         if (path!=null)
         {
             // this is a dispatch with a path
-            baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI,baseRequest.getRequestURI());
-            baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING,baseRequest.getQueryString());
-
-            baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,state.getSuspendedContext().getContextPath());
-
             final String contextPath=state.getServletContext().getContextPath();
             HttpURI uri = new HttpURI(URIUtil.addPaths(contextPath,path));
             baseRequest.setUri(uri);
@@ -465,21 +469,20 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the maximum cookie version.
-     * @return the maximum set-cookie version sent by this server
+    /** 
      */
+    @Deprecated
     public int getMaxCookieVersion()
     {
-        return _maxCookieVersion;
+        return 1;
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the maximum cookie version.
-     * @param maxCookieVersion the maximum set-cookie version sent by this server
+    /** 
      */
+    @Deprecated
     public void setMaxCookieVersion(int maxCookieVersion)
     {
-        _maxCookieVersion = maxCookieVersion;
     }
 
 

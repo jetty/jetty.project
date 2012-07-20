@@ -26,13 +26,14 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
+import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -102,8 +103,11 @@ public class HttpChannelState implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     public State getState()
-    {
-        return _state;
+    {        
+        synchronized(this)
+        {
+            return _state;
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -334,7 +338,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#suspend(long)
      */
-    protected void suspend(final ServletContext context,
+    private void doSuspend(final ServletContext context,
             final ServletRequest request,
             final ServletResponse response)
     {
@@ -352,9 +356,8 @@ public class HttpChannelState implements AsyncContext, Continuation
                     else
                     {
                         _event._dispatchContext=null;
-                        _event._path=null;
+                        _event._pathInContext=null;
                     }
-
                     _state=State.ASYNCSTARTED;
                     List<AsyncListener> listeners=_lastAsyncListeners;
                     _lastAsyncListeners=_asyncListeners;
@@ -390,7 +393,6 @@ public class HttpChannelState implements AsyncContext, Continuation
         synchronized (this)
         {
             // TODO should we change state here?
-            
             if (_event!=null)
                 _event._cause=th;
         }
@@ -717,7 +719,10 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         Timer timer = _channel.getTimer();
         if (timer!=null)
+        {
+            _event._timeout= new AsyncTimeout();
             timer.schedule(_event._timeout,_timeoutMs);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -725,7 +730,11 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         AsyncEventState event=_event;
         if (event!=null)
-            event._timeout.cancel();
+        {
+            TimerTask task=event._timeout;
+            if (task!=null)
+                task.cancel();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -800,7 +809,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     public void dispatch(ServletContext context, String path)
     {
         _event._dispatchContext=context;
-        _event._path=path;
+        _event._pathInContext=path;
         dispatch();
     }
 
@@ -808,7 +817,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     @Override
     public void dispatch(String path)
     {
-        _event._path=path;
+        _event._pathInContext=path;
         dispatch();
     }
 
@@ -909,6 +918,25 @@ public class HttpChannelState implements AsyncContext, Continuation
         dispatch();
     }
     
+
+
+    /* ------------------------------------------------------------ */
+    protected void suspend(final ServletContext context,
+            final ServletRequest request,
+            final ServletResponse response)
+    {
+        synchronized (this)
+        {
+            _responseWrapped=!(response instanceof Response);
+            doSuspend(context,request,response);
+            if (request instanceof HttpServletRequest)
+            {
+                _event._pathInContext = URIUtil.addPaths(((HttpServletRequest)request).getServletPath(),((HttpServletRequest)request).getPathInfo());
+            }
+        }
+    }
+
+    
     /* ------------------------------------------------------------ */
     /**
      * @see Continuation#suspend()
@@ -917,16 +945,8 @@ public class HttpChannelState implements AsyncContext, Continuation
     public void suspend(ServletResponse response)
     {
         _continuation=true;
-        if (response instanceof ServletResponseWrapper)
-        {
-            _responseWrapped=true;
-            HttpChannelState.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),response);       
-        }
-        else
-        {
-            _responseWrapped=false;
-            HttpChannelState.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
-        }
+        _responseWrapped=!(response instanceof Response);
+        doSuspend(_channel.getRequest().getServletContext(),_channel.getRequest(),response); 
     }
 
     /* ------------------------------------------------------------ */
@@ -938,7 +958,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         _responseWrapped=false;
         _continuation=true;
-        HttpChannelState.this.suspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
+        doSuspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
     }
 
     /* ------------------------------------------------------------ */
@@ -1015,16 +1035,44 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     public class AsyncEventState extends AsyncEvent
     {
-        private final TimerTask _timeout=  new AsyncTimeout();
+        private TimerTask _timeout;  
         private final ServletContext _suspendedContext;
         private ServletContext _dispatchContext;
-        private String _path;
+        private String _pathInContext;
         private Throwable _cause;
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
             super(HttpChannelState.this, request,response);
             _suspendedContext=context;
+            // Get the base request So we can remember the initial paths
+            Request r=_channel.getRequest();
+ 
+            // If we haven't been async dispatched before
+            if (r.getAttribute(AsyncContext.ASYNC_REQUEST_URI)==null)
+            {
+                // We are setting these attributes during startAsync, when the spec implies that 
+                // they are only available after a call to AsyncContext.dispatch(...);
+                
+                // have we been forwarded before?
+                String uri=(String)r.getAttribute(Dispatcher.FORWARD_REQUEST_URI);
+                if (uri!=null)
+                {
+                    r.setAttribute(AsyncContext.ASYNC_REQUEST_URI,uri);
+                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,r.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
+                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,r.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
+                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,r.getAttribute(Dispatcher.FORWARD_PATH_INFO));
+                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,r.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+                }
+                else
+                {
+                    r.setAttribute(AsyncContext.ASYNC_REQUEST_URI,r.getRequestURI());
+                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,r.getContextPath());
+                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,r.getServletPath());
+                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,r.getPathInfo());
+                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,r.getQueryString());
+                }
+            }
         }
         
         public ServletContext getSuspendedContext()
@@ -1042,9 +1090,13 @@ public class HttpChannelState implements AsyncContext, Continuation
             return _dispatchContext==null?_suspendedContext:_dispatchContext;
         }
         
+        /* ------------------------------------------------------------ */
+        /**
+         * @return The path in the context
+         */
         public String getPath()
         {
-            return _path;
+            return _pathInContext;
         }
     }
     

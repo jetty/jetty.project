@@ -150,6 +150,15 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     public void onOpen()
     {
     }
+    
+    @Override 
+    public void close()
+    {
+        boolean was_open=isOpen();
+        super.close();
+        if (was_open)
+            onClose();
+    }
 
     @Override
     public void onClose()

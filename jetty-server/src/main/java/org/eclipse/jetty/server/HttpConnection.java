@@ -304,12 +304,17 @@ public class HttpConnection extends AbstractAsyncConnection
                 }
             }
         }
-        catch(Exception e)
+        catch(IOException e)
         {
             if (_parser.isIdle())
                 LOG.debug(e);
             else
                 LOG.warn(this.toString(),e);
+            getEndPoint().close();
+        }
+        catch(Exception e)
+        {
+            LOG.warn(this.toString(),e);
             getEndPoint().close();
         }
         finally

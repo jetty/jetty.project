@@ -118,7 +118,6 @@ public class MongoSessionManager extends NoSqlSessionManager
 
             // Form query for upsert
             BasicDBObject key = new BasicDBObject(__ID,session.getClusterId());
-            key.put(__VALID,true);
 
             // Form updates
             BasicDBObject update = new BasicDBObject();
@@ -133,6 +132,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                 upsert = true;
                 version = new Long(1);
                 sets.put(__CREATED,session.getCreationTime());
+                sets.put(__VALID,true);
                 sets.put(getContextKey(__VERSION),version);
             }
             else
@@ -245,21 +245,37 @@ public class MongoSessionManager extends NoSqlSessionManager
             {
                 for (String name : attrs.keySet())
                 {
-                    if ( __METADATA.equals(name) )
+                    if (__METADATA.equals(name))
                     {
                         continue;
                     }
-                    
+
                     String attr = decodeName(name);
                     Object value = decodeValue(attrs.get(name));
-                    session.doPutOrRemove(attr,value);
-                    session.bindValue(attr,value);
+
+                    if (attrs.keySet().contains(name))
+                    {
+                        session.doPutOrRemove(attr,value);
+                        session.bindValue(attr,value);
+                    }
+                    else
+                    {
+                        session.doPutOrRemove(attr,value);
+                    }
+                }
+                // cleanup, remove values from session, that don't exist in data anymore:
+                for (String name : session.getNames())
+                {
+                    if (!attrs.keySet().contains(name))
+                    {
+                        session.doPutOrRemove(name,null);
+                        session.unbindValue(name,session.getAttribute(name));
+                    }
                 }
             }
 
             session.didActivate();
-            
-            
+
             return version;
         }
         catch (Exception e)
@@ -348,7 +364,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             BasicDBObject remove = new BasicDBObject();
             BasicDBObject unsets = new BasicDBObject();
             unsets.put(getContextKey(),1);
-            remove.put("$unsets",unsets);
+            remove.put("$unset",unsets);
             _sessions.update(key,remove);
 
             return true;

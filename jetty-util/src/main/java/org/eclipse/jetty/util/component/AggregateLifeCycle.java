@@ -1,4 +1,16 @@
 package org.eclipse.jetty.util.component;
+//========================================================================
+//Copyright (c) 2006-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at 
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses. 
+//========================================================================
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,13 +27,13 @@ import org.eclipse.jetty.util.log.Logger;
  * An AggregateLifeCycle is an {@link LifeCycle} implementation for a collection of contained beans.
  * <p>
  * Beans can be added the AggregateLifeCycle either as managed beans or as unmanaged beans.  A managed bean is started, stopped and destroyed with the aggregate.  
- * An umanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
+ * An unmanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
  * <p>
  * When a bean is added, if it is a {@link LifeCycle} and it is already started, then it is assumed to be an unmanaged bean.  
- * Otherwise the methods {@link #addBean(LifeCycle, boolean)}, {@link #manage(LifeCycle)} and {@link #unmanage(LifeCycle)} can be used to 
+ * Otherwise the methods {@link #addBean(Object, boolean)}, {@link #manage(Object)} and {@link #unmanage(Object)} can be used to 
  * explicitly control the life cycle relationship.
  * <p>
- * If adding a bean that is shared between multiple {@link AggregateLifeCycle} instances, then it should be started before being added, so it is unmanged, or 
+ * If adding a bean that is shared between multiple {@link AggregateLifeCycle} instances, then it should be started before being added, so it is unmanaged, or 
  * the API must be used to explicitly set it as unmanaged.
  * <p>
  */
@@ -39,6 +51,11 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         }
         final Object _bean;
         volatile boolean _managed=true;
+        
+        public String toString()
+        {
+            return "{"+_bean+","+_managed+"}";
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -154,7 +171,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     /** Add an associated lifecycle.
      * @param o The lifecycle to add
      * @param managed True if the LifeCycle is to be joined, otherwise it will be disjoint.
-     * @return
+     * @return true if bean was added, false if already present.
      */
     public boolean addBean(Object o, boolean managed)
     {
@@ -345,10 +362,17 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     /* ------------------------------------------------------------ */
     public static void dumpObject(Appendable out,Object o) throws IOException
     {
-        if (o instanceof LifeCycle)
-            out.append(String.valueOf(o)).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
-        else
-            out.append(String.valueOf(o)).append("\n"); 
+        try
+        {
+            if (o instanceof LifeCycle)
+                out.append(String.valueOf(o)).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
+            else
+                out.append(String.valueOf(o)).append("\n");
+        }
+        catch(Throwable th)
+        {
+            out.append(" => ").append(th.toString()).append('\n');
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -362,10 +386,10 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         for (Bean b : _beans)
         {
             i++;
-            
+
+            out.append(indent).append(" +- ");
             if (b._managed)
             {
-                out.append(indent).append(" +- ");
                 if (b._bean instanceof Dumpable)
                     ((Dumpable)b._bean).dump(out,indent+(i==size?"    ":" |  "));
                 else 

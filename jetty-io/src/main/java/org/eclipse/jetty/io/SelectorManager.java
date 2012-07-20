@@ -149,7 +149,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected void endPointOpened(AsyncEndPoint endpoint)
     {
-        endpoint.getAsyncConnection().onOpen();
     }
 
     /**

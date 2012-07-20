@@ -47,6 +47,22 @@ public class MultipartFilterTest
     private ServletTester tester;
 
   
+    public static class TestServlet extends DumpServlet
+    {
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            assertNotNull(req.getParameter("fileup"));
+            assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
+            assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
+            super.doPost(req, resp);
+        }
+        
+    }
+    
+
+    
     @Before
     public void setUp() throws Exception
     {
@@ -58,7 +74,7 @@ public class MultipartFilterTest
 
         tester=new ServletTester("/context");
         tester.getContext().setResourceBase(_dir.getCanonicalPath());
-        tester.getContext().addServlet(DumpServlet.class, "/");
+        tester.getContext().addServlet(TestServlet.class, "/");
         tester.getContext().setAttribute("javax.servlet.context.tempdir", _dir);
         FilterHolder multipartFilter = tester.getContext().addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
@@ -200,7 +216,8 @@ public class MultipartFilterTest
      * Test multipart with parts encoded in quoted-printable (RFC1521 section 5)
      */
     @Test
-    public void testPostWithContentTransferEncodingQuotedPrintable() throws Exception {
+    public void testPostWithContentTransferEncodingQuotedPrintable() throws Exception 
+    {
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -232,6 +249,63 @@ public class MultipartFilterTest
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
 
+    /*
+     * see the testParameterMap test
+     *
+     */
+    public static class TestServletParameterMap extends DumpServlet
+    {
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            assertEquals("How now brown cow.", req.getParameterMap().get("strupContent-Type:"));
+            super.doPost(req, resp);
+        }
+        
+    }
+    
+    /** 
+     * Validate that the getParameterMap() call is correctly unencoding the parameters in the 
+     * map that it returns.
+     * @throws Exception
+     */
+    @Test
+    public void testParameterMap() throws Exception
+    {
+        tester.addServlet(TestServletParameterMap.class,"/test2");
+        
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+        
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"Diplomsko Delo Lektorirano KON&#268;NA.doc\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"strup\""+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+
+        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+    
     public static class DumpServlet extends HttpServlet
     {
         private static final long serialVersionUID = 201012011130L;

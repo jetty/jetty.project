@@ -14,16 +14,17 @@
 package org.eclipse.jetty.http;
 
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
-
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class HttpGeneratorClientTest
 {
@@ -242,7 +243,7 @@ public class HttpGeneratorClientTest
         assertTrue(head.endsWith("\r\n\r\n10\r\n"));
         assertThat(body,containsString("dog"));
     }
-
+    
     @Test
     public void testRequestWithLargeChunkedContent() throws Exception
     {        
@@ -252,7 +253,6 @@ public class HttpGeneratorClientTest
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
         HttpGenerator gen = new HttpGenerator();
         gen.setLargeContent(8);
-
 
         HttpGenerator.Result
 

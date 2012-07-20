@@ -92,7 +92,7 @@ public abstract class AbstractReentrantRequestSessionTest
                 int port = Integer.parseInt(request.getParameter("port"));
                 String path = request.getParameter("path");
 
-                // We want to make another request with a different session
+                // We want to make another request 
                 // while this request is still pending, to see if the locking is
                 // fine grained (per session at least).
                 try

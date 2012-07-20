@@ -66,7 +66,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
              }
             catch (ClassNotFoundException e)
             {
-                e.printStackTrace();
+                JSON.LOG.warn(e);
             }
         }
         if (convertor!=null)
@@ -92,7 +92,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    e.printStackTrace();
+                    JSON.LOG.warn(e);
                 }
             }
             if (convertor!=null)
