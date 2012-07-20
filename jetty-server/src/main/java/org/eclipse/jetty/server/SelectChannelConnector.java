@@ -78,7 +78,7 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         _manager=new ConnectorSelectorManager(selectors);
         addBean(_manager,true);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void accept(int acceptorID) throws IOException
@@ -234,15 +234,16 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         }
 
         @Override
-        protected long getMaxIdleTime()
+        protected long getIdleTimeout()
         {
+            // TODO: avoid override this method
             return SelectChannelConnector.this.getMaxIdleTime();
         }
 
         @Override
         protected void endPointClosed(AsyncEndPoint endpoint)
         {
-            connectionClosed(endpoint.getAsyncConnection());
+            SelectChannelConnector.this.connectionClosed(endpoint.getAsyncConnection());
             super.endPointClosed(endpoint);
         }
 
@@ -251,26 +252,26 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         {
             // TODO handle max connections and low resources
             super.endPointOpened(endpoint);
-            connectionOpened(endpoint.getAsyncConnection());
+            SelectChannelConnector.this.connectionOpened(endpoint.getAsyncConnection());
         }
 
         @Override
-        protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+        protected void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
         {
-            super.endPointUpgraded(endpoint,oldConnection);
-            connectionUpgraded(oldConnection,endpoint.getAsyncConnection());
+            super.connectionUpgraded(endpoint, oldConnection);
+            SelectChannelConnector.this.connectionUpgraded(oldConnection,endpoint.getAsyncConnection());
+        }
+
+        @Override
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        {
+            return SelectChannelConnector.this.newEndPoint(channel,selectSet, selectionKey);
         }
 
         @Override
         public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
             return SelectChannelConnector.this.newConnection(channel,endpoint);
-        }
-
-        @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey sKey) throws IOException
-        {
-            return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
         }
     }
 }

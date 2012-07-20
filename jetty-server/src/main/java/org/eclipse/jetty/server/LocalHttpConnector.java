@@ -178,17 +178,10 @@ public class LocalHttpConnector extends HttpConnector
     {
         private CountDownLatch _closed = new CountDownLatch(1);
 
-        LocalEndPoint()
+        public LocalEndPoint()
         {
-            super(getTimer());
             setGrowOutput(true);
             setMaxIdleTime(LocalHttpConnector.this.getMaxIdleTime());
-        }
-
-        /* ------------------------------------------------------------ */
-        LocalEndPoint(CountDownLatch onCloseLatch)
-        {
-            this();
         }
 
         /* ------------------------------------------------------------ */
@@ -201,7 +194,7 @@ public class LocalHttpConnector extends HttpConnector
         }
 
         /* ------------------------------------------------------------ */
-        @Override 
+        @Override
         public void close()
         {
             boolean was_open=isOpen();

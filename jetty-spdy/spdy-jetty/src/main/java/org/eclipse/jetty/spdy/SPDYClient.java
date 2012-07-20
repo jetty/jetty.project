@@ -272,15 +272,15 @@ public class SPDYClient
             }
 
             @Override
-            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
             {
-                SessionPromise attachment = (SessionPromise)key.attachment();
+                SessionPromise attachment = (SessionPromise)selectionKey.attachment();
 
                 long maxIdleTime = attachment.client.getMaxIdleTime();
                 if (maxIdleTime < 0)
-                    maxIdleTime = getMaxIdleTime();
+                    maxIdleTime = getIdleTimeout();
 
-                return new SelectChannelEndPoint(channel, selectSet, key, maxIdleTime);
+                return new SelectChannelEndPoint(channel, selectSet, selectionKey, maxIdleTime);
             }
 
             @Override

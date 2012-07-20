@@ -364,17 +364,18 @@
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-deploy</module>
-    
+
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
 
-    <module>test-continuation</module>
-    <module>test-jetty-webapp</module>
+    <!--<module>test-continuation</module>-->
+    <!--<module>test-jetty-webapp</module>-->
     <module>example-jetty-embedded</module>
 
-    <module>jetty-client</module>
-    <module>jetty-proxy</module>
+    <!--<module>jetty-client</module>-->
+    <!--<module>jetty-proxy</module>-->
     <!--
+    <module>jetty-spdy</module>
     <module>jetty-jaspi</module>
     <module>jetty-ajp</module>
     <module>jetty-jndi</module>
@@ -525,42 +526,6 @@
    -->
   <profiles>
     <profile>
-      <!-- Modules that are only for JDK7+ builds -->
-      <id>JDK7-plus-modules</id>
-      <activation>
-        <jdk>[1.7,)</jdk>
-      </activation>
-      <modules>
-        <module>jetty-spdy</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>eclipse-release</id>
-   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>enforce-java</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireJavaVersion>
-                  <version>[1.7,)</version>
-                </requireJavaVersion>
-              </rules>    
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-   </build>
-  </profile>
-  <profile>
       <!--
         Moves the jetty-osgi build tree to a profile called 'osgi'.
         It is active by default, but being in a profile allows it to be

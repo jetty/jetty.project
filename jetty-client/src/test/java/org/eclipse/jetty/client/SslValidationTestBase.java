@@ -12,22 +12,9 @@ package org.eclipse.jetty.client;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-import java.io.InputStream;
-import java.lang.reflect.Constructor;
-import java.security.KeyStore;
-import java.security.cert.CRL;
-import java.util.Collection;
-
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.ssl.SslConnector;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.security.CertificateUtils;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public abstract class SslValidationTestBase //extends ContentExchangeTest
 {
@@ -40,8 +27,8 @@ public abstract class SslValidationTestBase //extends ContentExchangeTest
     private String _clientpath = MavenTestingUtils.getTargetFile("test-policy/validation/jetty-client.keystore").getAbsolutePath();
     private String _crlpath = MavenTestingUtils.getTargetFile("test-policy/validation/crlfile.pem").getAbsolutePath();
     private String _password = "OBF:1wnl1sw01ta01z0f1tae1svy1wml";
-    
-    
+
+
     protected void configureServer(Server server)
         throws Exception
     {
@@ -67,13 +54,13 @@ public abstract class SslValidationTestBase //extends ContentExchangeTest
 //        srvFactory.setKeyStorePath(_keypath);
 //        srvFactory.setKeyStorePassword(_password);
 //        srvFactory.setKeyManagerPassword(_password);
-//        
+//
 //        srvFactory.setTrustStore(_trustpath);
 //        srvFactory.setTrustStorePassword(_password);
 //
 //        Constructor<? extends SslConnector> constructor = __klass.getConstructor(SslContextFactory.class);
 //        SslConnector connector = constructor.newInstance(srvFactory);
-//        connector.setMaxIdleTime(5000);
+//        connector.setIdleTimeout(5000);
 //        server.addConnector(connector);
 //
 //        Handler handler = new TestHandler(getBasePath());
@@ -99,11 +86,11 @@ public abstract class SslValidationTestBase //extends ContentExchangeTest
 //        SslContextFactory cf = client.getSslContextFactory();
 //        cf.setValidateCerts(true);
 //        cf.setCrlPath(_crlpath);
-//        
+//
 //        cf.setKeyStorePath(_clientpath);
 //        cf.setKeyStorePassword(_password);
 //        cf.setKeyManagerPassword(_password);
-//        
+//
 //        cf.setTrustStore(_trustpath);
 //        cf.setTrustStorePassword(_password);
     }

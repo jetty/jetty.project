@@ -131,9 +131,9 @@ public class WebSocketClientSelectorManager extends SelectorManager
     }
 
     @Override
-    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
     {
-        return new SelectChannelEndPoint(channel,selectSet,key,getMaxIdleTime());
+        return new SelectChannelEndPoint(channel,selectSet, selectionKey, getIdleTimeout());
     }
 
     public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)

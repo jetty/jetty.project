@@ -55,16 +55,16 @@ public class SslConnectionTest
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,getMaxIdleTime());
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, getIdleTimeout());
             _lastEndp=endp;
             // System.err.println("newEndPoint "+endp);
             return endp;
         }
     };
     {
-        _manager.setMaxIdleTime(600000); // TODO: use smaller value
+        _manager.setIdleTimeout(600000); // TODO: use smaller value
     }
 
     // Must be volatile or the test may fail spuriously

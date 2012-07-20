@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -172,7 +171,7 @@ public class Request implements HttpServletRequest
         _state=channel.getState();
         _fields=_channel.getRequestFields();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void addEventListener(final EventListener listener)
     {
@@ -854,7 +853,7 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote=_remote;
         if (remote==null)
             remote=_channel.getRemoteAddress();
-        
+
         return remote==null?"":remote.getHostString();
     }
 
@@ -1502,7 +1501,7 @@ public class Request implements HttpServletRequest
      * Set a request attribute. if the attribute name is "org.eclipse.jetty.server.server.Request.queryEncoding" then the value is also passed in a call to
      * {@link #setQueryEncoding}. <p> if the attribute name is "org.eclipse.jetty.server.server.ResponseBuffer", then the response buffer is flushed with @{link
      * #flushResponseBuffer} <p> if the attribute name is "org.eclipse.jetty.io.EndPoint.maxIdleTime", then the value is passed to the associated {@link
-     * EndPoint#setMaxIdleTime}.
+     * EndPoint#setIdleTimeout}.
      *
      * @see javax.servlet.ServletRequest#setAttribute(java.lang.String, java.lang.Object)
      */
@@ -1946,7 +1945,7 @@ public class Request implements HttpServletRequest
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
-            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
             for (Part p:parts)
             {
                 MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
@@ -1956,7 +1955,7 @@ public class Request implements HttpServletRequest
                     String charset = null;
                     if (mp.getContentType() != null)
                         charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
-                    
+
                     String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
                     getParameter(""); //cause params to be evaluated
                     getParameters().add(mp.getName(), content);
@@ -1978,7 +1977,7 @@ public class Request implements HttpServletRequest
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
-            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
             for (Part p:parts)
             {
                 MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
@@ -1989,7 +1988,7 @@ public class Request implements HttpServletRequest
                     if (mp.getContentType() != null)
                         charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
 
-                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);                   
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
                     getParameter(""); //cause params to be evaluated
                     getParameters().add(mp.getName(), content);
                 }

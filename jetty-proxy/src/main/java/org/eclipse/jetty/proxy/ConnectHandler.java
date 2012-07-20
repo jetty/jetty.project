@@ -14,9 +14,9 @@ package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentMap;
 import javax.servlet.ServletException;
@@ -256,7 +256,7 @@ public class ConnectHandler extends HandlerWrapper
         // 1. when this unread data is written and the server replies before the clientToProxy
         // connection is installed (it is only installed after returning from this method)
         // 2. when the client sends data before this unread data has been written.
-        
+
         /* TODO
         AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentHttpChannel();
         ByteBuffer headerBuffer = ((HttpParser)httpConnection.getParser()).getHeaderBuffer();
@@ -308,7 +308,7 @@ public class ConnectHandler extends HandlerWrapper
         return clientToProxy;
         return null;
     }
-        */ 
+        */
 
     /**
      * <p>Handles the authentication before setting up the tunnel to the remote server.</p>
@@ -341,7 +341,7 @@ public class ConnectHandler extends HandlerWrapper
     // may return null
     private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
     {
-        SocketChannel channel = connect(request, host, port);      
+        SocketChannel channel = connect(request, host, port);
         channel.configureBlocking(false);
         return channel;
     }
@@ -444,7 +444,7 @@ public class ConnectHandler extends HandlerWrapper
         int flushed = endPoint.flush(buffer);
         if (debug!=null)
             debug.append(flushed);
-        
+
         // Loop until all written
         while (buffer.length()>0 && !endPoint.isOutputShutdown())
         {
@@ -458,7 +458,7 @@ public class ConnectHandler extends HandlerWrapper
             if (debug!=null)
                 debug.append("+").append(flushed);
         }
-       
+
         LOG.debug("Written {}/{} bytes {}", debug, length, endPoint);
         buffer.compact();
         return length;
@@ -473,8 +473,8 @@ public class ConnectHandler extends HandlerWrapper
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
             SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, key, channel.socket().getSoTimeout());
-            endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
-            endp.setMaxIdleTime(_writeTimeout);
+            endp.setConnection(selectSet.getSelectorManager().newConnection(channel,endp, key.attachment()));
+            endp.setIdleTimeout(_writeTimeout);
             return endp;
         }
 
@@ -506,7 +506,7 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected void endPointUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
+        protected void connectionUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
         {
         }
     }
