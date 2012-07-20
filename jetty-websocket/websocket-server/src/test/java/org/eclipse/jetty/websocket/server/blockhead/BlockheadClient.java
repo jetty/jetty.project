@@ -36,6 +36,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -65,6 +66,10 @@ import org.junit.Assert;
  * <p>
  * This client is <u>NOT</u> intended to be performant or follow the websocket spec religiously. In fact, being able to deviate from the websocket spec at will
  * is desired for this client to operate properly for the unit testing within this module.
+ * <p>
+ * The BlockheadClient should never validate frames or bytes being sent for validity, against any sort of spec, or even sanity. It should, however be honest
+ * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
+ * scope.
  */
 public class BlockheadClient implements IncomingFrames
 {
@@ -88,6 +93,7 @@ public class BlockheadClient implements IncomingFrames
     private byte[] clientmask = new byte[]
     { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
     private int timeout = 1000;
+    private AtomicInteger parseCount;
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
@@ -105,6 +111,7 @@ public class BlockheadClient implements IncomingFrames
         generator = new UnitGenerator();
         parser = new Parser(policy);
         parser.setIncomingFramesHandler(this);
+        parseCount = new AtomicInteger(0);
 
         incomingFrameQueue = new LinkedBlockingDeque<>();
     }
@@ -210,6 +217,11 @@ public class BlockheadClient implements IncomingFrames
     public void incoming(WebSocketFrame frame)
     {
         LOG.debug("incoming({})",frame);
+        int count = parseCount.incrementAndGet();
+        if ((count % 10) == 0)
+        {
+            LOG.info("Client parsed {} frames",count);
+        }
         WebSocketFrame copy = new WebSocketFrame(frame); // make a copy
         if (!incomingFrameQueue.offerLast(copy))
         {
@@ -274,6 +286,7 @@ public class BlockheadClient implements IncomingFrames
             int len = 0;
             while (incomingFrameQueue.size() < (startCount + expectedCount))
             {
+                BufferUtil.clearToFill(buf);
                 len = read(buf);
                 if (len > 0)
                 {
@@ -291,7 +304,8 @@ public class BlockheadClient implements IncomingFrames
                 }
                 if (!debug && (System.currentTimeMillis() > expireOn))
                 {
-                    throw new TimeoutException("Timeout reading all of the desired frames");
+                    throw new TimeoutException(String.format("Timeout reading all [%d] expected frames. (managed to read [%d] frames)",expectedCount,
+                            incomingFrameQueue.size()));
                 }
             }
         }

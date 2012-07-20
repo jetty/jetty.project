@@ -22,9 +22,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-
+@RunWith(AdvancedRunner.class)
 public class BlockingArrayQueueTest
 {
     
@@ -138,6 +141,7 @@ public class BlockingArrayQueueTest
     }
     
     @Test
+    @Slow
     public void testTake() throws Exception
     {
         final String[] data=new String[4];
@@ -184,6 +188,7 @@ public class BlockingArrayQueueTest
     volatile boolean _running;
     
     @Test
+    @Slow
     public void testConcurrentAccess() throws Exception
     {
         final int THREADS=50;

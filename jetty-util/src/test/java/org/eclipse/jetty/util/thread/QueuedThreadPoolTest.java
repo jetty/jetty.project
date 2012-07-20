@@ -21,9 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-
+@RunWith(AdvancedRunner.class)
 public class QueuedThreadPoolTest
 {
     final AtomicInteger _jobs=new AtomicInteger();
@@ -62,6 +65,7 @@ public class QueuedThreadPoolTest
     
     
     @Test
+    @Slow
     public void testThreadPool() throws Exception
     {        
         QueuedThreadPool tp= new QueuedThreadPool();
@@ -137,6 +141,7 @@ public class QueuedThreadPoolTest
     }
 
     @Test
+    @Slow
     public void testShrink() throws Exception
     {
         final AtomicInteger sleep = new AtomicInteger(100);

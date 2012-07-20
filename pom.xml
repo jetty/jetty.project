@@ -340,7 +340,6 @@
       </plugin>
     </plugins>
   </reporting>
-<!--
   <repositories>
     <repository>
       <snapshots>
@@ -351,7 +350,6 @@
       <url>http://oss.sonatype.org/content/groups/jetty</url>
     </repository>
   </repositories>
--->
   <modules>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
@@ -483,7 +481,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>1.6.1</version>
+        <version>1.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>

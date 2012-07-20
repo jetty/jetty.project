@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncConnection;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -68,6 +70,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     private final FrameQueue queue;
     private List<ExtensionConfig> extensions;
     private boolean flushing;
+    private AtomicLong writes;
 
     public WebSocketAsyncConnection(AsyncEndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -79,6 +82,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
         this.queue = new FrameQueue();
+        this.writes = new AtomicLong(0);
     }
 
     @Override
@@ -97,7 +101,10 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     {
         synchronized (queue)
         {
-            LOG.debug("Completed Write of {} ({} frame(s) in queue)",frameBytes,queue.size());
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Completed Write of {} ({} frame(s) in queue)",frameBytes,queue.size());
+            }
             flushing = false;
         }
     }
@@ -114,20 +121,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         {
             LOG.debug("Closing {}",endPoint);
             endPoint.close();
-        }
-    }
-
-    private int fill(AsyncEndPoint endPoint, ByteBuffer buffer)
-    {
-        try
-        {
-            return endPoint.fill(buffer);
-        }
-        catch (IOException e)
-        {
-            LOG.warn(e);
-            terminateConnection(StatusCode.PROTOCOL,e.getMessage());
-            return -1;
         }
     }
 
@@ -257,39 +250,52 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
     {
-        if (frame.getOpCode().isControlFrame())
+        synchronized (queue)
         {
-            ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
-            scheduleTimeout(bytes);
-            queue.prepend(bytes);
-        }
-        else
-        {
-            DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
-            scheduleTimeout(bytes);
-            queue.append(bytes);
+            if (frame.getOpCode().isControlFrame())
+            {
+                ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
+                scheduleTimeout(bytes);
+                queue.prepend(bytes);
+            }
+            else
+            {
+                DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
+                scheduleTimeout(bytes);
+                queue.append(bytes);
+            }
         }
         flush();
     }
 
     private void read(ByteBuffer buffer)
     {
-        while (true)
+        try
         {
-            int filled = fill(getEndPoint(),buffer);
-            if (filled == 0)
+            while (true)
             {
-                break;
-            }
-            if (filled < 0)
-            {
-                // IO error
-                terminateConnection(StatusCode.PROTOCOL,null);
-                break;
-            }
+                int filled = getEndPoint().fill(buffer);
+                if (filled == 0)
+                {
+                    break;
+                }
 
-            LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
-            parser.parse(buffer);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
+                }
+                parser.parse(buffer);
+            }
+        }
+        catch (IOException e)
+        {
+            LOG.warn(e);
+            terminateConnection(StatusCode.PROTOCOL,e.getMessage());
+        }
+        catch (CloseException e)
+        {
+            LOG.warn(e);
+            terminateConnection(e.getStatusCode(),e.getMessage());
         }
     }
 
@@ -350,7 +356,11 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         try
         {
             endpoint.write(frameBytes.context,frameBytes,buffer);
-            // endpoint.flush();
+            long count = writes.incrementAndGet();
+            if ((count % 10) == 0)
+            {
+                LOG.info("Server wrote {} ByteBuffers",count);
+            }
         }
         catch (Throwable t)
         {

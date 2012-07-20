@@ -20,17 +20,21 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 
-/* ------------------------------------------------------------ */
-/** Util meta Tests.
- * 
+/** 
+ * Util meta Tests.
  */
+@RunWith(AdvancedRunner.class)
 public class DateCacheTest
 {
     /* ------------------------------------------------------------ */
     @Test
+    @Slow
     public void testDateCache() throws Exception
     {
         //@WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");
