@@ -58,7 +58,6 @@ public class SslConnectionTest
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
         {
             SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,getMaxIdleTime());
-            endp.setAsyncConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
             _lastEndp=endp;
             // System.err.println("newEndPoint "+endp);
             return endp;

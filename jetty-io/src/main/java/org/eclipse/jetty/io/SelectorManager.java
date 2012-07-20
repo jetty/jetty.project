@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * The Selector Manager manages and number of SelectSets to allow
  * NIO scheduling to scale to large numbers of connections.
@@ -49,8 +48,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 {
     public static final Logger LOG = Log.getLogger(SelectorManager.class);
 
-    private final ManagedSelector[] _selectSets;
-    private long _selectSetIndex;
+    private final ManagedSelector[] _selectors;
+    private long _selectorIndex;
     private volatile long _maxIdleTime;
 
     protected SelectorManager()
@@ -60,7 +59,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     protected SelectorManager(@Name("selectors") int selectors)
     {
-        this._selectSets = new ManagedSelector[selectors];
+        this._selectors = new ManagedSelector[selectors];
     }
 
     /**
@@ -81,19 +80,19 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     /**
      * @return the number of select sets in use
      */
-    public int getSelectSets()
+    public int getSelectorCount()
     {
-        return _selectSets.length;
+        return _selectors.length;
     }
 
-    private ManagedSelector chooseSelectSet()
+    private ManagedSelector chooseSelector()
     {
         // The ++ increment here is not atomic, but it does not matter.
         // so long as the value changes sometimes, then connections will
         // be distributed over the available sets.
-        long s = _selectSetIndex++;
-        int index = (int)(s % getSelectSets());
-        return _selectSets[index];
+        long s = _selectorIndex++;
+        int index = (int)(s % getSelectorCount());
+        return _selectors[index];
     }
 
     /**
@@ -103,7 +102,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void connect(SocketChannel channel, Object attachment)
     {
-        ManagedSelector set = chooseSelectSet();
+        ManagedSelector set = chooseSelector();
         set.submit(set.new Connect(channel, attachment));
     }
 
@@ -113,7 +112,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void accept(final SocketChannel channel)
     {
-        final ManagedSelector set = chooseSelectSet();
+        final ManagedSelector set = chooseSelector();
         set.submit(set.new Accept(channel));
     }
 
@@ -121,17 +120,17 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected void doStart() throws Exception
     {
         super.doStart();
-        for (int i=0;i< _selectSets.length;i++)
+        for (int i=0;i< _selectors.length;i++)
         {
-            ManagedSelector selectSet = newSelectSet(i);
-            _selectSets[i] = selectSet;
+            ManagedSelector selectSet = newSelector(i);
+            _selectors[i] = selectSet;
             selectSet.start();
             execute(selectSet);
             execute(new Expirer());
         }
     }
 
-    protected ManagedSelector newSelectSet(int id)
+    protected ManagedSelector newSelector(int id)
     {
         return new ManagedSelector(id);
     }
@@ -139,7 +138,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     @Override
     protected void doStop() throws Exception
     {
-        for (ManagedSelector set : _selectSets)
+        for (ManagedSelector set : _selectors)
             set.stop();
         super.doStop();
     }
@@ -149,6 +148,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected void endPointOpened(AsyncEndPoint endpoint)
     {
+        endpoint.onOpen();
     }
 
     /**
@@ -199,7 +199,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public void dump(Appendable out, String indent) throws IOException
     {
         AggregateLifeCycle.dumpObject(out,this);
-        AggregateLifeCycle.dump(out, indent, TypeUtil.asList(_selectSets));
+        AggregateLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
 
     private class Expirer implements Runnable
@@ -209,7 +209,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             while (isRunning())
             {
-                for (ManagedSelector selector : _selectSets)
+                for (ManagedSelector selector : _selectors)
                     if (selector!=null)
                         selector.timeoutCheck();
                 sleep(1000);
@@ -451,13 +451,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
         {
-            Selectable endp = newEndPoint(channel, this, sKey);
-            _endPoints.put(endp, this);
-            LOG.debug("Created {}", endp);
-            endPointOpened(endp);
-            return endp;
+            Selectable asyncEndPoint = newEndPoint(channel, this, sKey);
+            asyncEndPoint.setAsyncConnection(newConnection(channel, asyncEndPoint, sKey.attachment()));
+            _endPoints.put(asyncEndPoint, this);
+            LOG.debug("Created {}", asyncEndPoint);
+            endPointOpened(asyncEndPoint);
+            return asyncEndPoint;
         }
-
 
         public void destroyEndPoint(Selectable endp)
         {

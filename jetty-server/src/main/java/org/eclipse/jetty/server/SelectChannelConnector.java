@@ -201,9 +201,7 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
     /* ------------------------------------------------------------ */
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
     {
-        SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
-        endp.setAsyncConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
-        return endp;
+        return new SelectChannelEndPoint(channel,selectSet,key, this._maxIdleTime);
     }
 
     /* ------------------------------------------------------------------------------- */
