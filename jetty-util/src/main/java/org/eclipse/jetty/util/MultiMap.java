@@ -13,67 +13,36 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /* ------------------------------------------------------------ */
 /** A multi valued Map.
- * This Map specializes HashMap and provides methods
- * that operate on multi valued items. 
- * <P>
- * Implemented as a map of LazyList values
- * @param <K> The key type of the map.
- *
- * @see LazyList
  * 
  */
-public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
+public class MultiMap implements Map<String,Object>
 {
-    private static final long serialVersionUID = -6878723138353851005L;
-    Map<K,Object> _map;
-    ConcurrentMap<K, Object> _cmap;
+    Map<String,Object> _map;
 
     public MultiMap()
     {
-        _map=new HashMap<K, Object>();
+        _map=new HashMap<String, Object>();
     }
-    
-    public MultiMap(Map<K,Object> map)
+
+    public MultiMap(Map<String,Object> map)
     {
-        if (map instanceof ConcurrentMap)
-            _map=_cmap=new ConcurrentHashMap<K, Object>(map);
-        else
-            _map=new HashMap<K, Object>(map);
+        _map=new HashMap<String, Object>(map);
     }
-    
-    public MultiMap(MultiMap<K> map)
+
+    public MultiMap(MultiMap map)
     {
-        if (map._cmap!=null)
-            _map=_cmap=new ConcurrentHashMap<K, Object>(map._cmap);
-        else
-            _map=new HashMap<K,Object>(map._map);
+        _map=new HashMap<String,Object>(map._map);
     }
-    
-    public MultiMap(int capacity)
-    {
-        _map=new HashMap<K, Object>(capacity);
-    }
-    
-    public MultiMap(boolean concurrent)
-    {
-        if (concurrent)
-            _map=_cmap=new ConcurrentHashMap<K, Object>();
-        else
-            _map=new HashMap<K, Object>();
-    }
-    
+
 
     /* ------------------------------------------------------------ */
     /** Get multiple values.
@@ -140,6 +109,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public Object get(Object name) 
     {
         Object l=_map.get(name);
@@ -161,7 +131,8 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param value The entry value.
      * @return The previous value or null.
      */
-    public Object put(K name, Object value) 
+    @Override
+    public Object put(String name, Object value) 
     {
         return _map.put(name,LazyList.add(null,value));
     }
@@ -172,7 +143,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param values The List of multiple values.
      * @return The previous value or null.
      */
-    public Object putValues(K name, List<? extends Object> values) 
+    public Object putValues(String name, List<? extends Object> values) 
     {
         return _map.put(name,values);
     }
@@ -183,7 +154,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param values The String array of multiple values.
      * @return The previous value or null.
      */
-    public Object putValues(K name, String... values) 
+    public Object putValues(String name, String... values) 
     {
         Object list=null;
         for (int i=0;i<values.length;i++)
@@ -199,7 +170,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param name The entry key. 
      * @param value The entry value.
      */
-    public void add(K name, Object value) 
+    public void add(String name, Object value) 
     {
         Object lo = _map.get(name);
         Object ln = LazyList.add(lo,value);
@@ -214,7 +185,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param name The entry key. 
      * @param values The List of multiple values.
      */
-    public void addValues(K name, List<? extends Object> values) 
+    public void addValues(String name, List<? extends Object> values) 
     {
         Object lo = _map.get(name);
         Object ln = LazyList.addCollection(lo,values);
@@ -229,7 +200,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param name The entry key. 
      * @param values The String array of multiple values.
      */
-    public void addValues(K name, String[] values) 
+    public void addValues(String name, String[] values) 
     {
         Object lo = _map.get(name);
         Object ln = LazyList.addCollection(lo,Arrays.asList(values));
@@ -243,7 +214,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param value The entry value. 
      * @return true if it was removed.
      */
-    public boolean removeValue(K name,Object value)
+    public boolean removeValue(String name,Object value)
     {
         Object lo = _map.get(name);
         Object ln=lo;
@@ -264,13 +235,14 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
     /** Put all contents of map.
      * @param m Map
      */
-    public void putAll(Map<? extends K, ? extends Object> m)
+    @Override
+    public void putAll(Map<? extends String, ? extends Object> m)
     {
         boolean multi = (m instanceof MultiMap);
 
         if (multi)
         {
-            for (Map.Entry<? extends K, ? extends Object> entry : m.entrySet())
+            for (Map.Entry<? extends String, ? extends Object> entry : m.entrySet())
             {
                 _map.put(entry.getKey(),LazyList.clone(entry.getValue()));
             }
@@ -285,21 +257,22 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
     /** 
      * @return Map of String arrays
      */
-    public Map<K,String[]> toStringArrayMap()
+    public Map<String,String[]> toStringArrayMap()
     {
-        HashMap<K,String[]> map = new HashMap<K,String[]>(_map.size()*3/2)
+        HashMap<String,String[]> map = new HashMap<String,String[]>(_map.size()*3/2)
         {
+            @Override
             public String toString()
             {
                 StringBuilder b=new StringBuilder();
                 b.append('{');
-                for (K k:keySet())
+                for (String k:super.keySet())
                 {
                     if(b.length()>1)
                         b.append(',');
                     b.append(k);
                     b.append('=');
-                    b.append(Arrays.asList(get(k)));
+                    b.append(Arrays.asList(super.get(k)));
                 }
 
                 b.append('}');
@@ -307,7 +280,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
             }
         };
         
-        for(Map.Entry<K,Object> entry: _map.entrySet())
+        for(Map.Entry<String,Object> entry: _map.entrySet())
         {
             String[] a = LazyList.toStringArray(entry.getValue());
             map.put(entry.getKey(),a);
@@ -318,25 +291,29 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
     @Override
     public String toString()
     {
-        return _cmap==null?_map.toString():_cmap.toString();
+        return _map.toString();
     }
     
+    @Override
     public void clear()
     {
         _map.clear();
     }
 
+    @Override
     public boolean containsKey(Object key)
     {
         return _map.containsKey(key);
     }
 
+    @Override
     public boolean containsValue(Object value)
     {
         return _map.containsValue(value);
     }
 
-    public Set<Entry<K, Object>> entrySet()
+    @Override
+    public Set<Entry<String, Object>> entrySet()
     {
         return _map.entrySet();
     }
@@ -353,58 +330,33 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
         return _map.hashCode();
     }
 
+    @Override
     public boolean isEmpty()
     {
         return _map.isEmpty();
     }
 
-    public Set<K> keySet()
+    @Override
+    public Set<String> keySet()
     {
         return _map.keySet();
     }
 
+    @Override
     public Object remove(Object key)
     {
         return _map.remove(key);
     }
 
+    @Override
     public int size()
     {
         return _map.size();
     }
 
+    @Override
     public Collection<Object> values()
     {
         return _map.values();
-    }
-
-    
-    
-    public Object putIfAbsent(K key, Object value)
-    {
-        if (_cmap==null)
-            throw new UnsupportedOperationException();
-        return _cmap.putIfAbsent(key,value);
-    }
-
-    public boolean remove(Object key, Object value)
-    {
-        if (_cmap==null)
-            throw new UnsupportedOperationException();
-        return _cmap.remove(key,value);
-    }
-
-    public boolean replace(K key, Object oldValue, Object newValue)
-    {
-        if (_cmap==null)
-            throw new UnsupportedOperationException();
-        return _cmap.replace(key,oldValue,newValue);
-    }
-
-    public Object replace(K key, Object value)
-    {
-        if (_cmap==null)
-            throw new UnsupportedOperationException();
-        return _cmap.replace(key,value);
     }
 }

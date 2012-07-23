@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -123,7 +124,7 @@ public class Request implements HttpServletRequest
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
     private Authentication _authentication;
-    private MultiMap<String> _baseParameters;
+    private MultiMap _baseParameters;
     private String _characterEncoding;
     private ContextHandler.Context _context;
     private boolean _newContext;
@@ -135,7 +136,7 @@ public class Request implements HttpServletRequest
     private int _inputState = __NONE;
     private HttpMethod _httpMethod;
     private String _method;
-    private MultiMap<String> _parameters;
+    private MultiMap _parameters;
     private boolean _paramsExtracted;
     private String _pathInfo;
     private int _port;
@@ -190,7 +191,7 @@ public class Request implements HttpServletRequest
     public void extractParameters()
     {
         if (_baseParameters == null)
-            _baseParameters = new MultiMap<String>(16);
+            _baseParameters = new MultiMap();
 
         if (_paramsExtracted)
         {
@@ -713,7 +714,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the parameters.
      */
-    public MultiMap<String> getParameters()
+    public MultiMap getParameters()
     {
         return _parameters;
     }
@@ -1707,7 +1708,7 @@ public class Request implements HttpServletRequest
      * @param parameters
      *            The parameters to set.
      */
-    public void setParameters(MultiMap<String> parameters)
+    public void setParameters(MultiMap parameters)
     {
         _parameters = (parameters == null)?_baseParameters:parameters;
         if (_paramsExtracted && _parameters == null)
@@ -2033,7 +2034,7 @@ public class Request implements HttpServletRequest
     public void mergeQueryString(String query)
     {
         // extract parameters from dispatch query
-        MultiMap<String> parameters = new MultiMap<String>();
+        MultiMap parameters = new MultiMap();
         UrlEncoded.decodeTo(query,parameters,getCharacterEncoding());
 
         boolean merge_old_query = false;
@@ -2068,10 +2069,10 @@ public class Request implements HttpServletRequest
             if (merge_old_query)
             {
                 StringBuilder overridden_query_string = new StringBuilder();
-                MultiMap<String> overridden_old_query = new MultiMap<String>();
+                MultiMap overridden_old_query = new MultiMap();
                 UrlEncoded.decodeTo(_queryString,overridden_old_query,getCharacterEncoding());
 
-                MultiMap<String> overridden_new_query = new MultiMap<String>();
+                MultiMap overridden_new_query = new MultiMap();
                 UrlEncoded.decodeTo(query,overridden_new_query,getCharacterEncoding());
 
                 Iterator<Entry<String, Object>> iter = overridden_old_query.entrySet().iterator();

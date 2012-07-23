@@ -17,10 +17,8 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -48,7 +46,7 @@ public class MultiPartInputStream
     protected InputStream _in;
     protected MultipartConfigElement _config;
     protected String _contentType;
-    protected MultiMap<String> _parts;
+    protected MultiMap _parts;
     protected File _tmpDir;
     protected File _contextTmpDir;
  
@@ -63,7 +61,7 @@ public class MultiPartInputStream
         protected OutputStream _out;
         protected ByteArrayOutputStream2 _bout;
         protected String _contentType;
-        protected MultiMap<String> _headers;
+        protected MultiMap _headers;
         protected long _size = 0;
 
         public MultiPart (String name, String filename) 
@@ -149,7 +147,7 @@ public class MultiPartInputStream
         
 
         
-        protected void setHeaders(MultiMap<String> headers)
+        protected void setHeaders(MultiMap headers)
         {
             _headers = headers;
         }
@@ -344,7 +342,7 @@ public class MultiPartInputStream
         
         //initialize
         long total = 0; //keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize              
-        _parts = new MultiMap<String>();
+        _parts = new MultiMap();
 
         //if its not a multipart request, don't parse it
         if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
@@ -386,7 +384,7 @@ public class MultiPartInputStream
         String contentTransferEncoding=null;
         outer:while(!lastPart)
         {
-            MultiMap<String> headers = new MultiMap<String>();
+            MultiMap headers = new MultiMap();
             while(true)
             {
                 bytes=TypeUtil.readLine(_in);

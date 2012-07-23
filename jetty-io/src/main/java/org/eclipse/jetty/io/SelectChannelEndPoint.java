@@ -66,10 +66,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
     };
 
-    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, long idleTimeout) throws IOException
+    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, long idleTimeout) throws IOException
     {
         super(channel);
-        _selector = selectSet;
+        _selector = selector;
         _key = key;
         setIdleTimeout(idleTimeout);
     }

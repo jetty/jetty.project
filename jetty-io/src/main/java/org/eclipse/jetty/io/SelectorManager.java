@@ -54,7 +54,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     private final ManagedSelector[] _selectors;
     private volatile long _selectorIndex;
-    private volatile long _idleTimeout;
     private volatile long _idleCheckPeriod;
 
     protected SelectorManager()
@@ -65,24 +64,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected SelectorManager(@Name("selectors") int selectors)
     {
         _selectors = new ManagedSelector[selectors];
-        setIdleTimeout(60000);
         setIdleCheckPeriod(1000);
-    }
-
-    /**
-     * @return the idle timeout, in milliseconds, after which a connection is closed
-     */
-    protected long getIdleTimeout()
-    {
-        return _idleTimeout;
-    }
-
-    /**
-     * @param idleTimeout the idle timeout, in milliseconds, after which a connection is closed
-     */
-    public void setIdleTimeout(long idleTimeout)
-    {
-        _idleTimeout = idleTimeout;
     }
 
     /**
@@ -256,11 +238,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         LOG.warn(String.format("%s - %s", channel, attachment), ex);
     }
 
+    @Override
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
     }
 
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         AggregateLifeCycle.dumpObject(out, this);
@@ -476,7 +460,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             runChanges();
         }
 
-        private void processKey(SelectionKey key) throws IOException
+        private void processKey(SelectionKey key)
         {
             try
             {
@@ -549,12 +533,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             endPoint.getAsyncConnection().onClose();
             endPointClosed(endPoint);
         }
-
+        
+        @Override
         public String dump()
         {
             return AggregateLifeCycle.dump(this);
         }
 
+        @Override
         public void dump(Appendable out, String indent) throws IOException
         {
             out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_id)).append("\n");
@@ -601,6 +587,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
 
+        @Override
         public String toString()
         {
             Selector selector = _selector;

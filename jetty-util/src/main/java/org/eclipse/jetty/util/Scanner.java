@@ -144,7 +144,7 @@ public class Scanner extends AbstractLifeCycle
      * Get the scan interval
      * @return interval between scans in seconds
      */
-    public int getScanInterval()
+    public synchronized int getScanInterval()
     {
         return _scanInterval;
     }

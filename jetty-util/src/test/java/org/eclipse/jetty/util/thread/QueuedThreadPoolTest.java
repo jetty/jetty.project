@@ -56,8 +56,8 @@ public class QueuedThreadPoolTest
         
         public void stop() throws InterruptedException
         {
-            _run.await(10,TimeUnit.SECONDS);
-            _stopping.countDown();
+            if (_run.await(10,TimeUnit.SECONDS))
+                _stopping.countDown();
             if (!_stopped.await(10,TimeUnit.SECONDS))
                 throw new IllegalStateException(); 
         }
@@ -226,6 +226,7 @@ public class QueuedThreadPoolTest
             }
             catch(InterruptedException e)
             {}
+            now=System.currentTimeMillis();
         }
         Assert.assertEquals(idle,tp.getIdleThreads());
     }

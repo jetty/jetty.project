@@ -366,6 +366,8 @@
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
 
+    <module>jetty-util-ajax</module>
+
     <!--<module>test-continuation</module>-->
     <!--<module>test-jetty-webapp</module>-->
     <module>example-jetty-embedded</module>

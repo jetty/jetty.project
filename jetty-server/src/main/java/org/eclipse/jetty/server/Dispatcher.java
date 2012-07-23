@@ -215,7 +215,7 @@ public class Dispatcher implements RequestDispatcher
         final String old_query=baseRequest.getQueryString();
         final Attributes old_attr=baseRequest.getAttributes();
         final DispatcherType old_type=baseRequest.getDispatcherType();
-        MultiMap<String> old_params=baseRequest.getParameters();
+        MultiMap old_params=baseRequest.getParameters();
         
         try
         {

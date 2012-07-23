@@ -30,7 +30,7 @@ import org.junit.Test;
  */
 public class TestIntrospectionUtil
 {
-    public final static Class[] __INTEGER_ARG = new Class[] {Integer.class};
+    public final static Class<?>[] __INTEGER_ARG = new Class[] {Integer.class};
     static Field privateAField;
     static Field protectedAField;
     static Field publicAField;

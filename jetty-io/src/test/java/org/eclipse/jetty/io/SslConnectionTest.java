@@ -1,25 +1,32 @@
 package org.eclipse.jetty.io;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
+
+import junit.framework.Assert;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -49,7 +56,6 @@ public class SslConnectionTest
             AsyncConnection appConnection = new TestConnection(sslConnection.getSslEndPoint());
             sslConnection.getSslEndPoint().setAsyncConnection(appConnection);
 
-            // System.err.println("New Connection "+sslConnection);
             return sslConnection;
 
         }
@@ -57,20 +63,14 @@ public class SslConnectionTest
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, getIdleTimeout());
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, 60000);
             _lastEndp=endp;
-            // System.err.println("newEndPoint "+endp);
             return endp;
         }
     };
-    {
-        _manager.setIdleTimeout(600000); // TODO: use smaller value
-    }
 
     // Must be volatile or the test may fail spuriously
     protected volatile int _blockAt=0;
-    private volatile int _writeCount=1;
-
 
     @BeforeClass
     public static void initSslEngine() throws Exception
@@ -85,7 +85,6 @@ public class SslConnectionTest
     @Before
     public void startManager() throws Exception
     {
-        _writeCount=1;
         _lastEndp=null;
         _connector = ServerSocketChannel.open();
         _connector.socket().bind(null);
@@ -115,21 +114,18 @@ public class SslConnectionTest
         @Override
         public void onOpen()
         {
-            // System.err.println("onOpen");
             fillInterested();
         }
 
         @Override
         public void onClose()
         {
-            // System.err.println("onClose");
         }
 
         @Override
         public synchronized void onFillable()
         {
             AsyncEndPoint endp = getEndPoint();
-            // System.err.println("onReadable "+endp);
             try
             {
                 boolean progress=true;
@@ -139,15 +135,11 @@ public class SslConnectionTest
 
                     // Fill the input buffer with everything available
                     int filled=endp.fill(_in);
-                    // System.err.println("filled="+filled);
                     while (filled>0)
                     {
                         progress=true;
                         filled=endp.fill(_in);
-                        // System.err.println("filled="+filled);
                     }
-
-                    // System.err.println(BufferUtil.toDetailString(_in));
 
                     // Write everything
                     int l=_in.remaining();
@@ -156,13 +148,11 @@ public class SslConnectionTest
                         FutureCallback<Void> blockingWrite= new FutureCallback<>();
                         endp.write(null,blockingWrite,_in);
                         blockingWrite.get();
-                        // System.err.println("wrote "+l);
                     }
 
                     // are we done?
                     if (endp.isInputShutdown())
                     {
-                        // System.err.println("shutdown");
                         endp.shutdownOutput();
                     }
                 }
@@ -192,60 +182,52 @@ public class SslConnectionTest
     @Test
     public void testHelloWorld() throws Exception
     {
-        //Log.getRootLogger().setDebugEnabled(true);
-
-        // Log.getRootLogger().setDebugEnabled(true);
         Socket client = newClient();
-        // System.err.println("client="+client);
-        client.setSoTimeout(600000); // TODO: restore to smaller value
+        client.setSoTimeout(60000); 
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
         _manager.accept(server);
 
         client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
-        // System.err.println("wrote");
         byte[] buffer = new byte[1024];
-        int len = client.getInputStream().read(buffer);
-        // System.err.println(new String(buffer,0,len,"UTF-8"));
-
+        int len=client.getInputStream().read(buffer);
+        Assert.assertEquals(10,len);
+        Assert.assertEquals("HelloWorld",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
+        
         client.close();
-
     }
 
 
     @Test
-    @Ignore
-    public void testNasty() throws Exception
+    public void testManyLines() throws Exception
     {
-        //Log.getRootLogger().setDebugEnabled(true);
-
-        // Log.getRootLogger().setDebugEnabled(true);
         final Socket client = newClient();
-        // System.err.println("client="+client);
-        client.setSoTimeout(600000); // TODO: restore to smaller value
+        client.setSoTimeout(60000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
         _manager.accept(server);
 
+        final int LINES=20;
+        final CountDownLatch count=new CountDownLatch(LINES);
+        
+        
         new Thread()
         {
+            @Override
             public void run()
             {
                 try
                 {
-                    while(true)
+                    BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream(),StringUtil.__UTF8_CHARSET));
+                    while(count.getCount()>0)
                     {
-                        byte[] buffer = new byte[1024];
-                        int len = client.getInputStream().read(buffer);
-                        if (len<0)
-                        {
-                            System.err.println("===");
-                            return;
-                        }
-                        // System.err.println(new String(buffer,0,len,"UTF-8"));
-
+                        String line=in.readLine();
+                        if (line==null)
+                            break;
+                        // System.err.println(line);
+                        count.countDown();
                     }
                 }
                 catch(IOException e)
@@ -255,15 +237,18 @@ public class SslConnectionTest
             }
         }.start();
 
-        for (int i=0;i<100000;i++)
+        for (int i=0;i<LINES;i++)
         {
             client.getOutputStream().write(("HelloWorld "+i+"\n").getBytes("UTF-8"));
             // System.err.println("wrote");
             if (i%1000==0)
+            {
+                client.getOutputStream().flush();
                 Thread.sleep(10);
+            }
         }
 
-        Thread.sleep(20000);
+        Assert.assertTrue(count.await(20,TimeUnit.SECONDS));
         client.close();
 
     }

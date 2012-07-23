@@ -35,6 +35,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public Handler[] getChildHandlers()
     {
         Object list = expandChildren(null,null);
@@ -42,6 +43,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     }
         
     /* ------------------------------------------------------------ */
+    @Override
     public Handler[] getChildHandlersByClass(Class<?> byclass)
     {
         Object list = expandChildren(null,byclass);
@@ -49,6 +51,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public <T extends Handler> T getChildHandlerByClass(Class<T> byclass)
     {
         // TODO this can be more efficient?
@@ -65,7 +68,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     }
 
     /* ------------------------------------------------------------ */
-    protected Object expandHandler(Handler handler, Object list, Class<Handler> byClass)
+    protected Object expandHandler(Handler handler, Object list, Class<?> byClass)
     {
         if (handler==null)
             return list;
@@ -91,7 +94,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         if (root==null || handler==null)
             return null;
         
-        Handler[] branches=root.getChildHandlersByClass(type);
+        Handler[] branches=root.getChildHandlersByClass((Class<Handler>)type);
         if (branches!=null)
         {
             for (Handler h:branches)
@@ -110,6 +113,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpThis(out);

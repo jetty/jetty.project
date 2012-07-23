@@ -14,10 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.nio.charset.Charset;
-import java.net.URI;
-import java.net.URLEncoder;
-
-import org.eclipse.jetty.util.log.Log;
 
 
 

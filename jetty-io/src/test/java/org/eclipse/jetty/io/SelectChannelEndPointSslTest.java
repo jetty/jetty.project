@@ -1,11 +1,18 @@
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -19,12 +26,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
@@ -70,11 +71,10 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     }
 
 
-    @Ignore
+    @Ignore // SSL does not do half closes
     @Override
     public void testShutdown() throws Exception
     {
-        // SSL does not do half closes
     }
 
 
@@ -268,7 +268,6 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         ByteBuffer serverIn = ByteBuffer.allocate(server.getSession().getApplicationBufferSize());
         ByteBuffer serverOut = ByteBuffer.allocate(server.getSession().getApplicationBufferSize());
         ByteBuffer clientIn = ByteBuffer.allocate(client.getSession().getApplicationBufferSize());
-        ByteBuffer clientOut = ByteBuffer.allocate(client.getSession().getApplicationBufferSize());
 
         SSLEngineResult result;
 

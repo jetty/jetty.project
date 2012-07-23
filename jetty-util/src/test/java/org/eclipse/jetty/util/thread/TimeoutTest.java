@@ -71,7 +71,7 @@ public class TimeoutTest
         timeout.setNow(1700);
 
         for (int i=0;i<tasks.length;i++)
-            if (i%2==1)
+            if ((i+1)%2==0)
                 tasks[i].cancel();
 
         timeout.tick();

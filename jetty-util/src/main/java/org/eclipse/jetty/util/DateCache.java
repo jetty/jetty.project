@@ -289,7 +289,7 @@ public class DateCache
 
     /* ------------------------------------------------------------ */
     private volatile ByteBuffer _buffer;
-    private volatile String _last;
+    private volatile Object _last;
     public synchronized ByteBuffer formatBuffer(long date)
     {
         String d = format(date);

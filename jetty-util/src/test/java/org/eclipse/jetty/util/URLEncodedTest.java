@@ -17,7 +17,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
 
 import org.junit.Test;
 
@@ -43,7 +42,7 @@ public class URLEncodedTest
     
     /* -------------------------------------------------------------- */
     @Test
-    public void testUrlEncoded() throws UnsupportedEncodingException
+    public void testUrlEncoded()
     {
           
         UrlEncoded url_encoded = new UrlEncoded();
@@ -150,7 +149,7 @@ public class URLEncodedTest
 
     /* -------------------------------------------------------------- */
     @Test
-    public void testBadEncoding() throws UnsupportedEncodingException
+    public void testBadEncoding()
     {
         UrlEncoded url_encoded = new UrlEncoded();
         url_encoded.decode("Name15=xx%zz", "UTF-8");
@@ -242,7 +241,7 @@ public class URLEncodedTest
     {   
         String query="name=X%c0%afZ";
         
-        MultiMap<String> map = new MultiMap<String>();
+        MultiMap map = new MultiMap();
         UrlEncoded.LOG.info("EXPECT 4 Not Valid UTF8 warnings...");
         UrlEncoded.decodeUtf8To(query.getBytes(StringUtil.__ISO_8859_1),0,query.length(),map);
         assertEquals("X"+Utf8Appendable.REPLACEMENT+Utf8Appendable.REPLACEMENT+"Z",map.getValue("name",0));

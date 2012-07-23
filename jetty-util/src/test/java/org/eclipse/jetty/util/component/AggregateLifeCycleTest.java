@@ -12,7 +12,6 @@ package org.eclipse.jetty.util.component;
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;

@@ -711,7 +711,7 @@ public class BufferUtil
         buf.append(buffer.getClass().getSimpleName());
         buf.append("@");
         if (buffer.hasArray())
-            buf.append(Integer.toHexString(buffer.array().hashCode()));
+            buf.append(Integer.toHexString(((Object)buffer.array()).hashCode()));
         else
             buf.append("?");        
         buf.append("[p=");

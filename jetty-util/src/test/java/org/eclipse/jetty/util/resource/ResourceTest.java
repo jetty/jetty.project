@@ -24,12 +24,9 @@ import java.io.FilenameFilter;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.sql.Time;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -243,7 +240,7 @@ public class ResourceTest
         String s = "jar:"+__userURL+"TestData/test.zip!/subdir/";
         Resource r = Resource.newResource(s);
         
-        Set entries = new HashSet(Arrays.asList(r.list()));
+        Set<String> entries = new HashSet<>(Arrays.asList(r.list()));
         assertEquals(3,entries.size());
         assertTrue(entries.contains("alphabet"));
         assertTrue(entries.contains("numbers"));
@@ -259,7 +256,7 @@ public class ResourceTest
         
         Resource e = Resource.newResource(extract.getAbsolutePath());
         
-        entries = new HashSet(Arrays.asList(e.list()));
+        entries = new HashSet<>(Arrays.asList(e.list()));
         assertEquals(3,entries.size());
         assertTrue(entries.contains("alphabet"));
         assertTrue(entries.contains("numbers"));
@@ -269,7 +266,7 @@ public class ResourceTest
         s = "jar:"+__userURL+"TestData/test.zip!/subdir/subsubdir/";
         r = Resource.newResource(s);
         
-        entries = new HashSet(Arrays.asList(r.list()));
+        entries = new HashSet<>(Arrays.asList(r.list()));
         assertEquals(2,entries.size());
         assertTrue(entries.contains("alphabet"));
         assertTrue(entries.contains("numbers"));
@@ -284,7 +281,7 @@ public class ResourceTest
         
         e = Resource.newResource(extract.getAbsolutePath());
         
-        entries = new HashSet(Arrays.asList(e.list()));
+        entries = new HashSet<>(Arrays.asList(e.list()));
         assertEquals(2,entries.size());
         assertTrue(entries.contains("alphabet"));
         assertTrue(entries.contains("numbers"));
@@ -317,14 +314,12 @@ public class ResourceTest
     throws Exception
     {
         String s = "jar:"+__userURL+"TestData/test.zip!/subdir/numbers";
-        
-        // TODO move this into src/test/resources!!!
         ZipFile zf = new ZipFile(MavenTestingUtils.getProjectFile("src/test/resources/org/eclipse/jetty/util/resource/TestData/test.zip"));
         
         long last = zf.getEntry("subdir/numbers").getTime();
         
         Resource r = Resource.newResource(s);
-        assertEquals(last,r.lastModified()); // Known date value inside zip
+        assertEquals(last,r.lastModified());
     }
 
     /* ------------------------------------------------------------ */

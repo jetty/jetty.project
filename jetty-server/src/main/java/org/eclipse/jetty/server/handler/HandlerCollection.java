@@ -288,7 +288,7 @@ public class HandlerCollection extends AbstractHandlerContainer
 
     /* ------------------------------------------------------------ */
     @Override
-    protected Object expandChildren(Object list, Class byClass)
+    protected Object expandChildren(Object list, Class<?> byClass)
     {
         Handler[] handlers = getHandlers();
         for (int i=0;handlers!=null && i<handlers.length;i++)

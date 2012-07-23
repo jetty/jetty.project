@@ -211,13 +211,6 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         }
 
         @Override
-        protected long getIdleTimeout()
-        {
-            // TODO: avoid override this method
-            return SelectChannelConnector.this.getIdleTimeout();
-        }
-
-        @Override
         protected void endPointClosed(AsyncEndPoint endpoint)
         {
             SelectChannelConnector.this.connectionClosed(endpoint.getAsyncConnection());

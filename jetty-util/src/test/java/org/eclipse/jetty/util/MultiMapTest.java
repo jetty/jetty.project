@@ -28,7 +28,7 @@ public class MultiMapTest
     @Test
     public void testPut()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -43,7 +43,7 @@ public class MultiMapTest
     @Test
     public void testPut_Null()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -59,7 +59,7 @@ public class MultiMapTest
     @Test
     public void testPut_Replace()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
         Object ret;
@@ -83,7 +83,7 @@ public class MultiMapTest
     @Test
     public void testPutValues_List()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -103,7 +103,7 @@ public class MultiMapTest
     @Test
     public void testPutValues_StringArray()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -119,7 +119,7 @@ public class MultiMapTest
     @Test
     public void testPutValues_VarArgs()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -134,7 +134,7 @@ public class MultiMapTest
     @Test
     public void testAdd()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -157,7 +157,7 @@ public class MultiMapTest
     @Test
     public void testAddValues_List()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -183,7 +183,7 @@ public class MultiMapTest
     @Test
     public void testAddValues_List_Empty()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -206,7 +206,7 @@ public class MultiMapTest
     @Test
     public void testAddValues_StringArray()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -229,7 +229,7 @@ public class MultiMapTest
     @Test
     public void testAddValues_StringArray_Empty()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -252,7 +252,7 @@ public class MultiMapTest
     @Test
     public void testRemoveValue()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -274,7 +274,7 @@ public class MultiMapTest
     @Test
     public void testRemoveValue_InvalidItem()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -295,7 +295,7 @@ public class MultiMapTest
     @Test
     public void testRemoveValue_AllItems()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -325,7 +325,7 @@ public class MultiMapTest
     @Test
     public void testRemoveValue_FromEmpty()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
 
         String key = "formats";
 
@@ -346,7 +346,7 @@ public class MultiMapTest
     @Test
     public void testPutAll_Map()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         
         assertMapSize(mm,0); // Shouldn't have anything yet.
         
@@ -369,11 +369,11 @@ public class MultiMapTest
     @Test
     public void testPutAll_MultiMap_Simple()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         
         assertMapSize(mm,0); // Shouldn't have anything yet.
         
-        MultiMap<String> input = new MultiMap<String>();
+        MultiMap input = new MultiMap();
         input.put("food","apple");
         input.put("color","red");
         input.put("amount","bushel");
@@ -392,11 +392,11 @@ public class MultiMapTest
     @Test
     public void testPutAll_MultiMapComplex()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         
         assertMapSize(mm,0); // Shouldn't have anything yet.
         
-        MultiMap<String> input = new MultiMap<String>();
+        MultiMap input = new MultiMap();
         input.putValues("food","apple","cherry","raspberry");
         input.put("color","red");
         input.putValues("amount","bushel","pint");
@@ -415,7 +415,7 @@ public class MultiMapTest
     @Test
     public void testToStringArrayMap()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         mm.putValues("food","apple","cherry","raspberry");
         mm.put("color","red");
         mm.putValues("amount","bushel","pint");
@@ -436,7 +436,7 @@ public class MultiMapTest
     @Test
     public void testToString()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         mm.put("color","red");
 
         Assert.assertEquals("{color=red}", mm.toString());
@@ -452,7 +452,7 @@ public class MultiMapTest
     @Test
     public void testClear()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         mm.putValues("food","apple","cherry","raspberry");
         mm.put("color","red");
         mm.putValues("amount","bushel","pint");
@@ -470,7 +470,7 @@ public class MultiMapTest
     @Test
     public void testContainsKey()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         mm.putValues("food","apple","cherry","raspberry");
         mm.put("color","red");
         mm.putValues("amount","bushel","pint");
@@ -485,7 +485,7 @@ public class MultiMapTest
     @Test
     public void testContainsValue()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         mm.putValues("food","apple","cherry","raspberry");
         mm.put("color","red");
         mm.putValues("amount","bushel","pint");
@@ -500,7 +500,7 @@ public class MultiMapTest
     @Test
     public void testContainsValue_LazyList()
     {
-        MultiMap<String> mm = new MultiMap<String>();
+        MultiMap mm = new MultiMap();
         mm.putValues("food","apple","cherry","raspberry");
         mm.put("color","red");
         mm.putValues("amount","bushel","pint");
@@ -521,9 +521,9 @@ public class MultiMapTest
         }
     }
 
-    private void assertValues(MultiMap<String> mm, String key, Object... expectedValues)
+    private void assertValues(MultiMap mm, String key, Object... expectedValues)
     {
-        List<Object> values = mm.getValues(key);
+        List<String> values = mm.getValues(key);
 
         String prefix = "MultiMap.getValues(" + key + ")";
 
@@ -536,16 +536,16 @@ public class MultiMapTest
         }
     }
 
-    private void assertEmptyValues(MultiMap<String> mm, String key)
+    private void assertEmptyValues(MultiMap mm, String key)
     {
-        List<Object> values = mm.getValues(key);
+        List<String> values = mm.getValues(key);
 
         String prefix = "MultiMap.getValues(" + key + ")";
 
         Assert.assertEquals(prefix + ".size",0,LazyList.size(values));
     }
 
-    private void assertMapSize(MultiMap<String> mm, int expectedSize)
+    private void assertMapSize(MultiMap mm, int expectedSize)
     {
         Assert.assertEquals("MultiMap.size",expectedSize,mm.size());
     }

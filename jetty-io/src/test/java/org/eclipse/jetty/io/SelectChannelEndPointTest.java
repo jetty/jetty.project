@@ -1,5 +1,11 @@
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -24,12 +30,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class SelectChannelEndPointTest
 {
     protected volatile AsyncEndPoint _lastEndp;
@@ -52,14 +52,11 @@ public class SelectChannelEndPointTest
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, getIdleTimeout());
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, 60000);
             _lastEndp=endp;
             return endp;
         }
     };
-    {
-        _manager.setIdleTimeout(600000); // TODO: use smaller value
-    }
 
     // Must be volatile or the test may fail spuriously
     protected volatile int _blockAt=0;
@@ -328,7 +325,9 @@ public class SelectChannelEndPointTest
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
 
-        while(_lastEndp==null);
+        long wait=System.currentTimeMillis()+1000;
+        while(_lastEndp==null && System.currentTimeMillis()<wait)
+            Thread.yield();
 
         _lastEndp.setIdleTimeout(10 * specifiedTimeout);
         Thread.sleep((11*specifiedTimeout)/10);
@@ -393,7 +392,7 @@ public class SelectChannelEndPointTest
         assertTrue(idle<2000);
 
         // But endpoint may still be open for a little bit.
-        if (_lastEndp.isOpen());
+        if (_lastEndp.isOpen())
             Thread.sleep(2000);
 
         // endpoint is closed.
@@ -487,6 +486,7 @@ public class SelectChannelEndPointTest
 
         new Thread()
         {
+            @Override
             public void run()
             {
                 Thread.currentThread().setPriority(MAX_PRIORITY);

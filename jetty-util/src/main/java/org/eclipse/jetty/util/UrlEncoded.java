@@ -19,7 +19,6 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
-import java.util.Map;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
@@ -59,20 +58,19 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /* ----------------------------------------------------------------- */
     public UrlEncoded()
     {
-        super(6);
     }
     
     /* ----------------------------------------------------------------- */
     public UrlEncoded(String s)
     {
-        super(6);
+        this();
         decode(s,ENCODING);
     }
     
     /* ----------------------------------------------------------------- */
     public UrlEncoded(String s, String charset)
     {
-        super(6);
+        this();
         decode(s,charset);
     }
     
@@ -126,10 +124,10 @@ public class UrlEncoded extends MultiMap implements Cloneable
 
         StringBuilder result = new StringBuilder(128);
 
-        Iterator iter = map.entrySet().iterator();
+        Iterator<Entry<String, Object>> iter = map.entrySet().iterator();
         while(iter.hasNext())
         {
-            Map.Entry entry = (Map.Entry)iter.next();
+            Entry<String, Object> entry = iter.next();
 
             String key = entry.getKey().toString();
             Object list = entry.getValue();
@@ -275,7 +273,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
             String key = null;
             String value = null;
 
-            // TODO cache of parameter names ???
             int end=offset+length;
             for (int i=offset;i<end;i++)
             {
@@ -360,7 +357,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
             
             int b;
 
-            // TODO cache of parameter names ???
             int totalLength=0;
             while ((b=in.read())>=0)
             {
@@ -445,7 +441,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
             
             int b;
             
-            // TODO cache of parameter names ???
             int totalLength=0;
             while ((b=in.read())>=0)
             {

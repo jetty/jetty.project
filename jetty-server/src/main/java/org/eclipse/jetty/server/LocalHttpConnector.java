@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -32,6 +33,7 @@ public class LocalHttpConnector extends HttpConnector
 {
     private static final Logger LOG = Log.getLogger(LocalHttpConnector.class);
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<LocalEndPoint>();
+    private Timer _timer;
     private LocalExecutor _executor;
 
     public LocalHttpConnector()
@@ -107,6 +109,7 @@ public class LocalHttpConnector extends HttpConnector
     protected void doStart() throws Exception
     {
         super.doStart();
+        _timer=new Timer(String.format("LocalHttpConnector@%x:Timer",hashCode()),true);
         _executor=new LocalExecutor(findExecutor());
     }
 
@@ -114,6 +117,7 @@ public class LocalHttpConnector extends HttpConnector
     protected void doStop() throws Exception
     {
         super.doStop();
+        _timer.cancel();
         _executor=null;
     }
 
@@ -169,6 +173,7 @@ public class LocalHttpConnector extends HttpConnector
 
         public LocalEndPoint()
         {
+            super(_timer);
             setGrowOutput(true);
             setIdleTimeout(LocalHttpConnector.this.getIdleTimeout());
         }

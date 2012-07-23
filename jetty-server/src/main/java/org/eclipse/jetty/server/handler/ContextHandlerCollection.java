@@ -46,7 +46,7 @@ public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
  
-    private volatile PathMap _contextMap;
+    private volatile PathMap<Object> _contextMap;
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
     
     /* ------------------------------------------------------------ */
@@ -62,7 +62,7 @@ public class ContextHandlerCollection extends HandlerCollection
      */
     public void mapContexts()
     {
-        PathMap contextMap = new PathMap();
+        PathMap<Object> contextMap = new PathMap<Object>();
         Handler[] branches = getHandlers();
         
         
@@ -107,13 +107,13 @@ public class ContextHandlerCollection extends HandlerCollection
                 
                 if (vhosts!=null && vhosts.length>0)
                 {
-                    Map hosts;
+                    Map<String, Object> hosts;
 
                     if (contexts instanceof Map)
-                        hosts=(Map)contexts;
+                        hosts=(Map<String, Object>)contexts;
                     else
                     {
-                        hosts=new HashMap(); 
+                        hosts=new HashMap<String, Object>(); 
                         hosts.put("*",contexts);
                         contextMap.put(contextPath, hosts);
                     }
@@ -128,7 +128,7 @@ public class ContextHandlerCollection extends HandlerCollection
                 }
                 else if (contexts instanceof Map)
                 {
-                    Map hosts=(Map)contexts;
+                    Map<String, Object> hosts=(Map<String, Object>)contexts;
                     contexts=hosts.get("*");
                     contexts= LazyList.add(contexts, branches[b]);
                     hosts.put("*",contexts);
@@ -194,7 +194,7 @@ public class ContextHandlerCollection extends HandlerCollection
 	// { context path => 
 	//     { virtual host => context } 
 	// }
-	PathMap map = _contextMap;
+	PathMap<Object> map = _contextMap;
 	if (map!=null && target!=null && target.startsWith("/"))
 	{
 	    // first, get all contexts matched by context path
@@ -295,7 +295,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /**
      * @return The class to use to add new Contexts
      */
-    public Class getContextClass()
+    public Class<?> getContextClass()
     {
         return _contextClass;
     }
@@ -305,7 +305,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /**
      * @param contextClass The class to use to add new Contexts
      */
-    public void setContextClass(Class contextClass)
+    public void setContextClass(Class<? extends ContextHandler> contextClass)
     {
         if (contextClass ==null || !(ContextHandler.class.isAssignableFrom(contextClass)))
             throw new IllegalArgumentException();

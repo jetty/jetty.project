@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.omg.CORBA._PolicyStub;
 
 /** Response.
  * <p>

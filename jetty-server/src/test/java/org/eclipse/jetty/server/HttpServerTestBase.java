@@ -31,7 +31,6 @@ import java.net.SocketException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Exchanger;
 
 import javax.servlet.ServletException;
@@ -39,12 +38,10 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.hamcrest.Matchers;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;

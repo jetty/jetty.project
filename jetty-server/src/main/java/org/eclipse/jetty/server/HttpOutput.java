@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 
 import javax.servlet.ServletOutputStream;
 
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 

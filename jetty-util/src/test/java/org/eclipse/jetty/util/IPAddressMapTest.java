@@ -25,7 +25,7 @@ public class IPAddressMapTest
     @Test
     public void testOneAddress()
     {
-        IPAddressMap<String> map = new IPAddressMap();
+        IPAddressMap<String> map = new IPAddressMap<>();
      
         map.put("10.5.2.1","1");
         
@@ -41,7 +41,7 @@ public class IPAddressMapTest
     @Test
     public void testOneRange()
     {
-        IPAddressMap<String> map = new IPAddressMap();
+        IPAddressMap<String> map = new IPAddressMap<>();
         
         map.put("1-15.16-31.32-63.64-127","1");
         
@@ -60,7 +60,7 @@ public class IPAddressMapTest
     @Test
     public void testOneMissing()
     {
-        IPAddressMap<String> map = new IPAddressMap();
+        IPAddressMap<String> map = new IPAddressMap<>();
         
         map.put("10.5.2.","1");
 
@@ -73,7 +73,7 @@ public class IPAddressMapTest
     @Test
     public void testTwoMissing()
     {
-        IPAddressMap<String> map = new IPAddressMap();
+        IPAddressMap<String> map = new IPAddressMap<>();
         
         map.put("10.5.","1");
 
@@ -89,7 +89,7 @@ public class IPAddressMapTest
     @Test
     public void testThreeMissing()
     {
-        IPAddressMap<String> map = new IPAddressMap();
+        IPAddressMap<String> map = new IPAddressMap<>();
         
         map.put("10.","1");
 
@@ -108,7 +108,7 @@ public class IPAddressMapTest
     @Test
     public void testOneMixed()
     {
-        IPAddressMap<String> map = new IPAddressMap();
+        IPAddressMap<String> map = new IPAddressMap<>();
         
         map.put("0-15,21.10,16-31.0-15,32-63.-95,128-","1");
         
@@ -128,7 +128,7 @@ public class IPAddressMapTest
     @Test
     public void testManyMixed()
     {
-        IPAddressMap<String> map = new IPAddressMap();
+        IPAddressMap<String> map = new IPAddressMap<>();
         
         map.put("10.5.2.1","1");
         map.put("1-15.16-31.32-63.64-127","2");

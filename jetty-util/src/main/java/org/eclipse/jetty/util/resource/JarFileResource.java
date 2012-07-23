@@ -64,7 +64,7 @@ class JarFileResource extends JarResource
     
     /* ------------------------------------------------------------ */
     @Override
-    protected boolean checkConnection()
+    protected synchronized boolean checkConnection()
     {
         try
         {
@@ -159,10 +159,10 @@ class JarFileResource extends JarResource
             if (jarFile!=null && _entry==null && !_directory)
             {
                 // OK - we have a JarFile, lets look at the entries for our path
-                Enumeration e=jarFile.entries();
+                Enumeration<JarEntry> e=jarFile.entries();
                 while(e.hasMoreElements())
                 {
-                    JarEntry entry = (JarEntry) e.nextElement();
+                    JarEntry entry = e.nextElement();
                     String name=entry.getName().replace('\\','/');
                     
                     // Do we have a match
@@ -243,7 +243,7 @@ class JarFileResource extends JarResource
         
         if(isDirectory() && _list==null)
         {
-            ArrayList list = new ArrayList(32);
+            ArrayList<String> list = new ArrayList<>(32);
 
             checkConnection();
             
@@ -260,14 +260,15 @@ class JarFileResource extends JarResource
                 {
                      LOG.ignore(e);
                 }
+                if(jarFile==null)
+                    throw new IllegalStateException();
             }
             
-            Enumeration e=jarFile.entries();
+            Enumeration<JarEntry> e=jarFile.entries();
             String dir=_urlString.substring(_urlString.indexOf("!/")+2);
             while(e.hasMoreElements())
             {
-                
-                JarEntry entry = (JarEntry) e.nextElement();               
+                JarEntry entry = e.nextElement();               
                 String name=entry.getName().replace('\\','/');               
                 if(!name.startsWith(dir) || name.length()==dir.length())
                 {

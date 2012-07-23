@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -23,6 +28,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.concurrent.Executor;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -44,11 +50,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 /**
  *
  */
@@ -67,7 +68,7 @@ public class ResponseTest
         _server.setHandler(new DumpHandler());
         _server.start();
 
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(new Timer(true));
         HttpInput input = new HttpInput();
         AsyncConnection connection = new AbstractAsyncConnection(endp,new Executor()
         {

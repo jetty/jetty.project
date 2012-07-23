@@ -1,15 +1,5 @@
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.FutureCallback;
-import org.hamcrest.Matchers;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
@@ -17,12 +7,22 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.nio.ByteBuffer;
+import java.util.Timer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
+import org.hamcrest.Matchers;
+import org.junit.Test;
+
 public class AsyncByteArrayEndPointTest
 {
     @Test
     public void testReadable() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(new Timer());
         endp.setInput("test input");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
@@ -81,7 +81,7 @@ public class AsyncByteArrayEndPointTest
     @Test
     public void testWrite() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint((byte[])null,15);
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(new Timer(),(byte[])null,15);
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(10));
 
@@ -106,12 +106,10 @@ public class AsyncByteArrayEndPointTest
         assertEquals(" more.",endp.getOutputString());
     }
 
-    // TODO: idle timeout testing should be done with a SelectorManager
-    @Ignore
     @Test
     public void testIdle() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint();
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(new Timer());
         endp.setIdleTimeout(500);
         endp.setInput("test");
         endp.setGrowOutput(false);

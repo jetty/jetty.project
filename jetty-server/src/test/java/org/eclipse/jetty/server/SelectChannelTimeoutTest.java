@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -22,8 +24,6 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 {

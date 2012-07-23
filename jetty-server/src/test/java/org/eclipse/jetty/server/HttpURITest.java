@@ -217,7 +217,7 @@ public class HttpURITest
         try
         {
             HttpURI huri=new HttpURI(uri);
-            MultiMap<String> params = new MultiMap<String>();
+            MultiMap params = new MultiMap();
             huri.decodeQueryTo(params);
             System.err.println(params);
             Assert.assertTrue(false);
@@ -229,7 +229,7 @@ public class HttpURITest
         try
         {
             HttpURI huri=new HttpURI(uri);
-            MultiMap<String> params = new MultiMap<String>();
+            MultiMap params = new MultiMap();
             huri.decodeQueryTo(params,"UTF-8");
             System.err.println(params);
             Assert.assertTrue(false);
@@ -247,7 +247,7 @@ public class HttpURITest
         {
             HttpURI uri = new HttpURI("/path?value="+URLEncoder.encode(value,"UTF-8"));
             
-            MultiMap<String> parameters = new MultiMap<String>();
+            MultiMap parameters = new MultiMap();
             uri.decodeQueryTo(parameters,"UTF-8");
             assertEquals(value,parameters.get("value"));
         }

@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.ssl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -393,7 +394,14 @@ public class SslConnection extends AbstractAsyncConnection
                                     if (!_flushUnwrap)
                                     {
                                         _fillWrap = true;
-                                        flush(BufferUtil.EMPTY_BUFFER);
+                                        try
+                                        {
+                                            flush(BufferUtil.EMPTY_BUFFER);
+                                        }
+                                        catch(IOException e)
+                                        {
+                                            return -1;
+                                        }
                                         if (BufferUtil.hasContent(_netOut))
                                             return 0;
                                         _fillWrap = false;

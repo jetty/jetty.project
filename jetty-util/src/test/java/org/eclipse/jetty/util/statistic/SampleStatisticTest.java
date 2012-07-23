@@ -13,7 +13,6 @@ package org.eclipse.jetty.util.statistic;
 //========================================================================
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.hamcrest.Matchers;
 import org.junit.Assert;
