@@ -413,7 +413,6 @@ public class HttpGeneratorServerTest
         result=gen.generate(info,header,null,null,null,null);
         assertEquals(HttpGenerator.Result.FLUSH,result);
         String head = BufferUtil.toString(header);
-        System.out.println(head);
         BufferUtil.clear(header);
 
         result=gen.generate(info,null,null,null,null,null);

@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.BrokenBarrierException;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -146,23 +150,30 @@ public class ChannelEndPoint extends AbstractEndPoint
     public int flush(ByteBuffer... buffers) throws IOException
     {
         int flushed=0;
-        if (buffers.length==1)
-            flushed=_channel.write(buffers[0]);
-        else if (buffers.length>1 && _channel instanceof GatheringByteChannel)
-            flushed= (int)((GatheringByteChannel)_channel).write(buffers,0,buffers.length);
-        else
+        try
         {
-            for (ByteBuffer b : buffers)
+            if (buffers.length==1)
+                flushed=_channel.write(buffers[0]);
+            else if (buffers.length>1 && _channel instanceof GatheringByteChannel)
+                flushed= (int)((GatheringByteChannel)_channel).write(buffers,0,buffers.length);
+            else
             {
-                if (b.hasRemaining())
+                for (ByteBuffer b : buffers)
                 {
-                    int l=_channel.write(b);
-                    if (l>0)
-                        flushed+=l;
-                    else
-                        break;
+                    if (b.hasRemaining())
+                    {
+                        int l=_channel.write(b);
+                        if (l>0)
+                            flushed+=l;
+                        else
+                            break;
+                    }
                 }
             }
+        }
+        catch (ClosedChannelException | EOFException | SocketException e)
+        {
+            throw new EofException(e);
         }
         if (flushed>0)
             notIdle();

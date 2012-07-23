@@ -53,8 +53,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public abstract class HttpChannel
 {
-    private static final Logger LOG = Log.getLogger(HttpChannel.class);
-    
+    static final Logger LOG = Log.getLogger(HttpChannel.class);
 
     private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<HttpChannel>();
 
@@ -355,8 +354,7 @@ public abstract class HttpChannel
                 }
                 catch (ServletException e)
                 {
-                    LOG.warn(String.valueOf(_uri),e.toString());
-                    LOG.debug(String.valueOf(_uri),e);
+                    LOG.warn(String.valueOf(_uri),e);
                     _state.error(e);
                     _request.setHandled(true);
                     commitError(500, null, e.toString());
@@ -406,7 +404,10 @@ public abstract class HttpChannel
                     
                     // Complete reading the request
                     _in.consumeAll();
-                    
+                }
+                catch(EofException e)
+                {
+                    LOG.debug(e);
                 }
                 catch(Exception e)
                 {
@@ -702,6 +703,12 @@ public abstract class HttpChannel
                 getResponseFields().put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
             }
             return _response.commit();
+        }
+        
+        @Override
+        public String toString()
+        {
+            return "CEH:"+HttpChannel.this.getConnection().toString();
         }
     }
 

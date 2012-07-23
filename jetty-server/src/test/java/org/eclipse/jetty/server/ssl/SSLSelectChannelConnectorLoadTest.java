@@ -84,7 +84,6 @@ public class SSLSelectChannelConnectorLoadTest
     }
 
     @Test
-    @Ignore
     public void testLongLivedConnections() throws Exception
     {
         Worker.totalIterations.set(0);
@@ -110,13 +109,13 @@ public class SSLSelectChannelConnectorLoadTest
             boolean done = true;
             for (Future task : tasks)
                 done &= task.isDone();
-            System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
+            //System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
         }
         long end = System.currentTimeMillis();
-        System.err.println();
-        System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
+        //System.err.println();
+        //System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         for (Worker worker : workers)
             worker.close();
@@ -132,7 +131,6 @@ public class SSLSelectChannelConnectorLoadTest
     }
 
     @Test
-    @Ignore
     public void testShortLivedConnections() throws Exception
     {
         Worker.totalIterations.set(0);
@@ -157,13 +155,13 @@ public class SSLSelectChannelConnectorLoadTest
             boolean done = true;
             for (Future task : tasks)
                 done &= task.isDone();
-            System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
+            // System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
         }
         long end = System.currentTimeMillis();
-        System.err.println();
-        System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
+        // System.err.println();
+        // System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         threadPool.shutdown();
 

@@ -157,43 +157,23 @@ public class HttpConnectionTest
     @Test
     public void testBad() throws Exception
     {
-        try
-        {
-            ((StdErrLog)Log.getLogger(HttpParser.class)).setHideStacks(true);
+        HttpParser.LOG.info("badMessage: 3 bad messages expected ...");
+        String response;
 
-            String response;
-
-            response=connector.getResponses("GET http://localhost:WRONG/ HTTP/1.1\n"+
-                    "Host: localhost\n"+
+        response=connector.getResponses("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\n"+
+            "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
+        checkContains(response,0,"HTTP/1.1 400");
 
-            response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\n"+
-                    "Host: localhost\n"+
+        response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\n"+
+            "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
+        checkContains(response,0,"HTTP/1.1 400");
 
-            /*
-            response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
-                    "Host: localhost\n"+
+        response=connector.getResponses("GET % HTTP/1.1\n"+
+            "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
-
-            response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
-                    "Host: localhost\n"+
-            "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
-             */
-
-            response=connector.getResponses("GET % HTTP/1.1\n"+
-                    "Host: localhost\n"+
-            "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpParser.class)).setHideStacks(false);
-        }
+        checkContains(response,0,"HTTP/1.1 400");
     }
 
     @Test
@@ -340,6 +320,7 @@ public class HttpConnectionTest
 
         try
         {
+            HttpChannel.LOG.info("EXPECTING:           java.lang.IllegalStateException...");
             ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");

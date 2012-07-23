@@ -110,16 +110,17 @@ public class SSLCloseTest extends TestCase
         String line;
         while ((line=in.readLine())!=null)
         {
-            System.err.println(line);
+            // System.err.println(line);
             if (line.trim().length()==0)
                 break;
         }
 
         Thread.sleep(2000);
-        System.err.println(__endp);
+        // System.err.println(__endp);
 
         while ((line=in.readLine())!=null)
-            System.err.println(line);
+            //System.err.println(line);
+            Thread.yield();
 
     }
 
@@ -147,7 +148,7 @@ public class SSLCloseTest extends TestCase
 
                 for (int i=0;i<2;i++)
                 {
-                    System.err.println("Write "+i+" "+bytes.length);
+                    // System.err.println("Write "+i+" "+bytes.length);
                     out.write(bytes);
                 }
             }

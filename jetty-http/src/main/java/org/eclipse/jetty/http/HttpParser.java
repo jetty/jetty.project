@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
@@ -898,7 +899,7 @@ public class HttpParser
                             buffer.position(buffer.position()-1);
                             String chars = BufferUtil.toDetailString(buffer);
                             BufferUtil.clear(buffer);
-                            throw new IOException(this+" Extra data after oshut: "+chars);
+                            throw new EofException(this+" Extra data after oshut: "+chars);
                         }
                     }
                     return false;
@@ -1075,16 +1076,25 @@ public class HttpParser
 
             return false;
         }
+        catch(EofException e)
+        {
+            LOG.debug(e);
+            BufferUtil.clear(buffer);
+            return false;
+        }
         catch(Exception e)
         {
+            BufferUtil.clear(buffer);
             if (isClosed())
             {
                 LOG.debug(e);
                 throw new IllegalStateException(e);
             }
 
-            LOG.warn(e);
+            LOG.warn("badMessage: "+e.toString()+" for "+_handler);
+            LOG.debug(e);
             _handler.badMessage(400, e.toString());
+            BufferUtil.clear(buffer);
             return true;
         }
     }

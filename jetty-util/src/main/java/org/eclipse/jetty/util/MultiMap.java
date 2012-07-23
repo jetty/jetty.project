@@ -50,7 +50,7 @@ public class MultiMap implements Map<String,Object>
      * @param name The entry key. 
      * @return Unmodifieable List of values.
      */
-    public List getValues(Object name)
+    public List getValues(String name)
     {
         return LazyList.getList(_map.get(name),true);
     }
@@ -63,7 +63,7 @@ public class MultiMap implements Map<String,Object>
      * @param i Index of element to get.
      * @return Unmodifieable List of values.
      */
-    public Object getValue(Object name,int i)
+    public Object getValue(String name,int i)
     {
         Object l=_map.get(name);
         if (i==0 && LazyList.size(l)==0)
@@ -80,7 +80,7 @@ public class MultiMap implements Map<String,Object>
      * @param name The entry key. 
      * @return String value.
      */
-    public String getString(Object name)
+    public String getString(String name)
     {
         Object l=_map.get(name);
         switch(LazyList.size(l))
