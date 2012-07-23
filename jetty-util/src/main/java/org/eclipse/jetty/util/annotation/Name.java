@@ -24,5 +24,5 @@ import java.lang.annotation.RetentionPolicy;
 public @interface Name
 {
     String value();
-    String description() default "not specified";
+    String description() default "";
 }

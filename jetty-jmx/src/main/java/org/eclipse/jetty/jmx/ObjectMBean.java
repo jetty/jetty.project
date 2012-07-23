@@ -227,6 +227,8 @@ public class ObjectMBean implements DynamicMBean
                 Class o_class=_managed.getClass();
                 Object influences = findInfluences(null, _managed.getClass());
 
+                LOG.debug("Influence Count: " + LazyList.size(influences) );
+
                 // Set to record defined items
                 Set defined=new HashSet();
 
@@ -234,6 +236,8 @@ public class ObjectMBean implements DynamicMBean
                 for (int i=0;i<LazyList.size(influences);i++)
                 {
                     Class oClass = (Class)LazyList.get(influences, i);
+
+                    LOG.debug("Influence: " + oClass.getCanonicalName() );
 
                     // look for a bundle defining methods
                     if (Object.class.equals(oClass))
