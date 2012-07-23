@@ -20,8 +20,8 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target( { ElementType.TYPE, ElementType.METHOD, ElementType.FIELD } )
-public @interface Managed
+@Target( { ElementType.METHOD, ElementType.FIELD } )
+public @interface ManagedAttribute
 {
     /**
      * Description of the Managed Object
@@ -33,46 +33,28 @@ public @interface Managed
     /**
      * Is the managed field read-only?
      * 
-     * NOTE: applies to FIELD
-     * 
      * @return true if readonly
      */
     boolean readonly() default false;
     
     /**
      * Is the managed field itself a Managed Object?
-     * 
-     * NOTE: applies to FIELD
-     * 
+     *
      * @return true if the target is a Managed Object
      */
     boolean managed() default false;
     
     /**
-     * Does the managed field or method exist on a proxy object?
+     * Does the managed field exist on a proxy object?
      * 
-     * NOTE: applies to FIELD and METHOD
      * 
      * @return true if a proxy object is involved
      */
     boolean proxied() default false;
     
     /**
-     * The impact of an operation. 
-     * 
-     * NOTE: Valid values are UNKNOWN, ACTION, INFO, ACTION_INFO
-     * 
-     * NOTE: applies to METHOD
-     * 
-     * @return String representing the impact of the operation
-     */
-    String impact() default "UNKNOWN";
-    
-    /**
      * If is a field references a getter that doesn't conform to standards for discovery
      * it can be set here.
-     * 
-     * NOTE: applies to FIELD
      * 
      * @return the full name of the getter in question
      */
@@ -82,18 +64,8 @@ public @interface Managed
      * If is a field references a setter that doesn't conform to standards for discovery
      * it can be set here.
      * 
-     * NOTE: applies to FIELD
-     * 
      * @return the full name of the setter in question
      */
     String setter() default "";
     
-    /**
-     * Treat method as an attribute and not an operation
-     * 
-     * NOTE: applies to METHOD
-     * 
-     * @return true of the method should be treating as an attribute
-     */
-    boolean attribute() default false;
 }

@@ -51,12 +51,17 @@ public class ObjectMBeanTest
         Assert.assertEquals("name does not match", "com.acme.Derived", info.getClassName());
         Assert.assertEquals("description does not match", "Test the mbean stuff", info.getDescription());
 
+        for ( MBeanAttributeInfo i : info.getAttributes())
+        {
+            LOG.debug(i.toString());
+        }
+        
         /*
          * 6 attributes from lifecycle and 1 from Derived
          */
         Assert.assertEquals("attribute count does not match", 7, info.getAttributes().length);
 
-        Assert.assertEquals("attribute values does not match", "Full Name", mbean.getAttribute("fullName") );
+        Assert.assertEquals("attribute values does not match", "Full Name", mbean.getAttribute("fname") );
         
         Assert.assertEquals("operation count does not match", 4, info.getOperations().length);
         
@@ -82,8 +87,8 @@ public class ObjectMBeanTest
                 
                 MBeanParameterInfo[] pinfos = opinfo.getSignature();
                 
-                Assert.assertEquals("parameter description doesn't match", "A description of the argument.", pinfos[0].getDescription());
-                Assert.assertEquals("parameter name doesn't match", "argname", pinfos[0].getName());
+                Assert.assertEquals("parameter description doesn't match", "A description of the argument", pinfos[0].getDescription());
+                Assert.assertEquals("parameter name doesn't match", "doodle", pinfos[0].getName());
             }
         }
         
