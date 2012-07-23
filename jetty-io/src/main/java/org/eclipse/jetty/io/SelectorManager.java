@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.Name;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -61,7 +61,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         this((Runtime.getRuntime().availableProcessors() + 1) / 2);
     }
 
-    protected SelectorManager(@Name("selectors") int selectors)
+    protected SelectorManager(@Name(value="selectors") int selectors)
     {
         _selectors = new ManagedSelector[selectors];
         setIdleCheckPeriod(1000);

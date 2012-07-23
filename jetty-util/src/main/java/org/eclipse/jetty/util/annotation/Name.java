@@ -15,15 +15,14 @@ package org.eclipse.jetty.util.annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target( { ElementType.TYPE, ElementType.METHOD, ElementType.FIELD } )
-public @interface Managed
+@Target( { ElementType.PARAMETER } )
+public @interface Name
 {
-    String value() default "Not Specified";
-    boolean readonly() default false;
-    boolean managed() default false;
+    String value();
+    String description() default "not specified";
 }

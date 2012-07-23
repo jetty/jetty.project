@@ -20,7 +20,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
-import org.eclipse.jetty.util.Name;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -73,7 +73,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /* ------------------------------------------------------------ */
     /**
      */
-    public AbstractConnector(@Name("acceptors") int acceptors)
+    public AbstractConnector(@Name(value="acceptors") int acceptors)
     {
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
             LOG.warn("Acceptors should be <=2*availableProcessors: " + this);
