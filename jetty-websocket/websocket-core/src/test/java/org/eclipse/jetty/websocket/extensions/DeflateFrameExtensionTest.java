@@ -101,10 +101,10 @@ public class DeflateFrameExtensionTest
     }
 
     /**
-     * Verify that incoming frames are unmodified
+     * Verify that incoming compressed frames are properly decompressed
      */
     @Test
-    public void testIncomingFrames()
+    public void testIncomingCompressedFrames()
     {
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
@@ -187,6 +187,60 @@ public class DeflateFrameExtensionTest
         ByteBuffer expected = BufferUtil.toBuffer(payload,StringUtil.__UTF8_CHARSET);
         Assert.assertThat("Frame.payloadLength",actual.getPayloadLength(),is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload",expected,actual.getPayload().slice());
+    }
+
+    /**
+     * Verify that incoming uncompressed frames are properly passed through
+     */
+    @Test
+    public void testIncomingUncompressedFrames()
+    {
+        IncomingFramesCapture capture = new IncomingFramesCapture();
+
+        DeflateFrameExtension ext = new DeflateFrameExtension();
+        ext.setBufferPool(new StandardByteBufferPool());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
+        ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=16");
+        ext.setConfig(config);
+
+        ext.setNextIncomingFrames(capture);
+
+        // Quote
+        List<String> quote = new ArrayList<>();
+        quote.add("No amount of experimentation can ever prove me right;");
+        quote.add("a single experiment can prove me wrong.");
+        quote.add("-- Albert Einstein");
+
+        // leave frames as-is, no compression, and pass into extension
+        for (String q : quote)
+        {
+            WebSocketFrame frame = new WebSocketFrame(OpCode.TEXT);
+            frame.setPayload(q);
+            frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
+            ext.incoming(frame);
+        }
+
+        int len = quote.size();
+        capture.assertFrameCount(len);
+        capture.assertHasFrame(OpCode.TEXT,len);
+
+        String prefix;
+        for (int i = 0; i < len; i++)
+        {
+            prefix = "Frame[" + i + "]";
+
+            WebSocketFrame actual = capture.getFrames().get(i);
+
+            Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
+            Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
+            Assert.assertThat(prefix + ".rsv1",actual.isRsv1(),is(false));
+            Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
+            Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
+
+            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i),StringUtil.__UTF8_CHARSET);
+            Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.remaining()));
+            ByteBufferAssert.assertEquals(prefix + ".payload",expected,actual.getPayload().slice());
+        }
     }
 
     /**
