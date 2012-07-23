@@ -17,8 +17,7 @@ package org.eclipse.jetty.websocket.protocol;
 
 import static org.hamcrest.Matchers.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -26,11 +25,21 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.junit.Assert;
 
-public class FrameParseCapture implements IncomingFrames
+public class IncomingFramesCapture implements IncomingFrames
 {
-    private static final Logger LOG = Log.getLogger(FrameParseCapture.class);
-    private List<WebSocketFrame> frames = new ArrayList<>();
-    private List<WebSocketException> errors = new ArrayList<>();
+    private static final Logger LOG = Log.getLogger(IncomingFramesCapture.class);
+    private LinkedList<WebSocketFrame> frames = new LinkedList<>();
+    private LinkedList<WebSocketException> errors = new LinkedList<>();
+
+    public void assertErrorCount(int expectedCount)
+    {
+        Assert.assertThat("Captured error count",errors.size(),is(expectedCount));
+    }
+
+    public void assertFrameCount(int expectedCount)
+    {
+        Assert.assertThat("Captured frame count",frames.size(),is(expectedCount));
+    }
 
     public void assertHasErrors(Class<? extends WebSocketException> errorType, int expectedCount)
     {
@@ -69,7 +78,7 @@ public class FrameParseCapture implements IncomingFrames
         return count;
     }
 
-    public List<WebSocketException> getErrors()
+    public LinkedList<WebSocketException> getErrors()
     {
         return errors;
     }
@@ -86,7 +95,7 @@ public class FrameParseCapture implements IncomingFrames
         return count;
     }
 
-    public List<WebSocketFrame> getFrames()
+    public LinkedList<WebSocketFrame> getFrames()
     {
         return frames;
     }
@@ -94,7 +103,7 @@ public class FrameParseCapture implements IncomingFrames
     @Override
     public void incoming(WebSocketException e)
     {
-        LOG.warn(e);
+        LOG.debug(e);
         errors.add(e);
     }
 
