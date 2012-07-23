@@ -12,7 +12,9 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.jsp;
 
-import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleDeployerHelper;
+
+import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
+import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
 import org.eclipse.jetty.osgi.boot.jasper.PluggableWebAppRegistrationCustomizerImpl;
 import org.eclipse.jetty.osgi.boot.jasper.WebappRegistrationCustomizerImpl;
 import org.osgi.framework.BundleActivator;
@@ -24,7 +26,7 @@ import org.osgi.framework.BundleContext;
  * called back by the host bundle.
  * <p>
  * It must be placed in the org.eclipse.jetty.osgi.boot.jsp package: this is
- * because org.eclipse.jetty.osgi.boot.jsp is the sympbolic-name of this
+ * because org.eclipse.jetty.osgi.boot.jsp is the symbolic-name of this
  * fragment. From that name, the PackageadminTracker will call this class. IN a
  * different package it won't be called.
  * </p>
@@ -37,8 +39,11 @@ public class FragmentActivator implements BundleActivator
     public void start(BundleContext context) throws Exception
     {
         System.setProperty("org.apache.jasper.compiler.disablejsr199", Boolean.TRUE.toString());
-        WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS.add(new WebappRegistrationCustomizerImpl());
-        WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS.add(new PluggableWebAppRegistrationCustomizerImpl());
+        WebBundleTrackerCustomizer.JSP_REGISTRATION_HELPERS.add(new WebappRegistrationCustomizerImpl());
+        WebBundleTrackerCustomizer.JSP_REGISTRATION_HELPERS.add(new PluggableWebAppRegistrationCustomizerImpl());
+        //Put in the support for the tag libs
+        addTagLibSupport();
+      
     }
 
     /**
@@ -47,5 +52,13 @@ public class FragmentActivator implements BundleActivator
     public void stop(BundleContext context) throws Exception
     {
 
+    }
+    
+    public void addTagLibSupport ()
+    {
+        String[] defaultConfigurations = new String[BundleWebAppProvider.getDefaultConfigurations().length+1];
+        System.arraycopy(BundleWebAppProvider.getDefaultConfigurations(), 0, defaultConfigurations, 0, BundleWebAppProvider.getDefaultConfigurations().length);
+        defaultConfigurations[defaultConfigurations.length-1] = "org.eclipse.jetty.osgi.boot.jsp.TagLibOSGiConfiguration";
+        BundleWebAppProvider.setDefaultConfigurations(defaultConfigurations);
     }
 }

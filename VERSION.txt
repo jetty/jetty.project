@@ -1,6 +1,6 @@
 jetty-7.6.6-SNAPSHOT
 
-jetty-7.6.5.v20120713 - 13 July 2012
+jetty-7.6.5.v20120716 - 16 July 2012
  + 376717 Balancer Servlet with round robin support, contribution, added
    missing license
  + 379250 Server is added to shutdown hook twice
@@ -19,6 +19,8 @@ jetty-7.6.5.v20120713 - 13 July 2012
  + 383881 WebSocketHandler sets request as handled
  + 384254 revert change to writable when not dispatched
  + 384847 CrossOriginFilter is not working.
+ + 384896 JDBCSessionManager fails to load existing sessions on oracle when
+   contextPath is /
  + 384980 Jetty client unable to recover from Time outs when connection count
    per address hits max.
  + JETTY-1525 Show handle status in response debug message

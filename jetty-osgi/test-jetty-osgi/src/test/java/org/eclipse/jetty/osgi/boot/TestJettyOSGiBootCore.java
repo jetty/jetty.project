@@ -16,6 +16,7 @@ package org.eclipse.jetty.osgi.boot;
 
 import static org.ops4j.pax.exam.CoreOptions.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,8 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Inject;
@@ -50,6 +53,13 @@ import org.osgi.service.http.HttpService;
 
 
 /**
+ * TestJettyOSGiBootCore
+ * 
+ * Tests deploying a bundle (org.eclipse.jetty.osgi.httpservice) that contains a context xml file
+ * that starts up the equinox http servlet. 
+ * 
+ * This tests the BundleContextProvider.
+ * 
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the httpservice web-bundle.
  * Then make sure we can deploy an OSGi service on the top of this.
  */
@@ -65,10 +75,17 @@ public class TestJettyOSGiBootCore
      */
     public static List<Option> provisionCoreJetty()
     {
+        File base = MavenTestingUtils.getBasedir();
+        File src = new File (base, "src");
+        File tst = new File (src, "test");
+        File config = new File (tst, "config");
+        
         return Arrays.asList(options(
                 // get the jetty home config from the osgi boot bundle.
-                PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
+               // PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
+               
                 
+                PaxRunnerOptions.vmOptions("-Djetty.port=9876 -Djetty.home=" +  config.getAbsolutePath()),
                 // CoreOptions.equinox(),
                 
                 mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet" ).versionAsInProject().noStart(),
@@ -132,7 +149,6 @@ public class TestJettyOSGiBootCore
         for( Bundle b : bundleContext.getBundles() )
         {
             bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-          System.err.println("got " + b.getSymbolicName());
         }
         Bundle osgiBoot = bundlesIndexedBySymbolicName.get("org.eclipse.jetty.osgi.boot");
         Assert.assertNotNull("Could not find the org.eclipse.jetty.osgi.boot bundle", osgiBoot);
@@ -190,6 +206,9 @@ public class TestJettyOSGiBootCore
         {
             client.stop();
         }
+        ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
+        Assert.assertNotNull(refs);
+        Assert.assertEquals(1,refs.length);
     }
     
 }

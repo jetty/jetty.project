@@ -30,6 +30,7 @@ import java.util.jar.JarFile;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
+import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -82,12 +83,12 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * @param contributor The bundle that defines this web-application.
      * @throws IOException
      */
-    public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor, BundleClassLoaderHelper bundleClassLoaderHelper)
+    public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor)
     throws IOException
     {
         super(parent, context);
         _contributor = contributor;
-        _osgiBundleClassLoader = bundleClassLoaderHelper.getBundleClassLoader(contributor);
+        _osgiBundleClassLoader = BundleClassLoaderHelperFactory.getFactory().getHelper().getBundleClassLoader(contributor);
     }
 
     /**

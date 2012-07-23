@@ -83,5 +83,31 @@ public interface BundleFileLocatorHelper
      * @return null or all the entries found for that path.
      */
     public Enumeration<URL> findEntries(Bundle bundle, String entryPath);
+    
+    /**
+     * Only useful for equinox: on felix we get the file:// or jar:// url
+     * already. Other OSGi implementations have not been tested
+     * <p>
+     * Get a URL to the bundle entry that uses a common protocol (i.e. file:
+     * jar: or http: etc.).
+     * </p>
+     * 
+     * @return a URL to the bundle entry that uses a common protocol
+     */
+    public URL getLocalURL(URL url);
+    
+    /**
+     * Only useful for equinox: on felix we get the file:// url already. Other
+     * OSGi implementations have not been tested
+     * <p>
+     * Get a URL to the content of the bundle entry that uses the file:
+     * protocol. The content of the bundle entry may be downloaded or extracted
+     * to the local file system in order to create a file: URL.
+     * 
+     * @return a URL to the content of the bundle entry that uses the file:
+     *         protocol
+     *         </p>
+     */
+    public URL getFileURL(URL url);
 
 }

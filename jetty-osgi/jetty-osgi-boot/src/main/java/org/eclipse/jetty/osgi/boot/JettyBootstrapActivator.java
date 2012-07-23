@@ -62,8 +62,6 @@ public class JettyBootstrapActivator implements BundleActivator
 
     private ServiceRegistration _registeredServer;
 
-    private Server _server;
-
     private JettyContextHandlerServiceTracker _jettyContextHandlerTracker;
 
     private PackageAdminServiceTracker _packageAdminServiceTracker;
@@ -91,12 +89,12 @@ public class JettyBootstrapActivator implements BundleActivator
         // should activate.
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
-        // track Server instances that we should support as deployment targets
+        // track jetty Server instances that we should support as deployment targets
         _jettyServerServiceTracker = new JettyServerServiceTracker();
         context.addServiceListener(_jettyServerServiceTracker, "(objectclass=" + Server.class.getName() + ")");
 
         // track ContextHandler class instances and deploy them to one of the known Servers
-        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(_jettyServerServiceTracker);
+        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker();
         context.addServiceListener(_jettyContextHandlerTracker, "(objectclass=" + ContextHandler.class.getName() + ")");
 
         // Create a default jetty instance right now.
@@ -125,7 +123,6 @@ public class JettyBootstrapActivator implements BundleActivator
             }
             if (_jettyContextHandlerTracker != null)
             {
-                _jettyContextHandlerTracker.stop();
                 context.removeServiceListener(_jettyContextHandlerTracker);
                 _jettyContextHandlerTracker = null;
             }
@@ -159,10 +156,6 @@ public class JettyBootstrapActivator implements BundleActivator
         }
         finally
         {
-            if (_server != null)
-            {
-                _server.stop();
-            }
             INSTANCE = null;
         }
     }
