@@ -21,6 +21,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
@@ -33,7 +35,7 @@ public class LocalHttpConnector extends HttpConnector
 {
     private static final Logger LOG = Log.getLogger(LocalHttpConnector.class);
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<LocalEndPoint>();
-    private Timer _timer;
+    private ScheduledExecutorService _timer;
     private LocalExecutor _executor;
 
     public LocalHttpConnector()
@@ -109,7 +111,7 @@ public class LocalHttpConnector extends HttpConnector
     protected void doStart() throws Exception
     {
         super.doStart();
-        _timer=new Timer(String.format("LocalHttpConnector@%x:Timer",hashCode()),true);
+        _timer=new ScheduledThreadPoolExecutor(1);
         _executor=new LocalExecutor(findExecutor());
     }
 
@@ -117,7 +119,7 @@ public class LocalHttpConnector extends HttpConnector
     protected void doStop() throws Exception
     {
         super.doStop();
-        _timer.cancel();
+        _timer.shutdownNow();
         _executor=null;
     }
 

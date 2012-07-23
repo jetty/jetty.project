@@ -8,21 +8,38 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.nio.ByteBuffer;
-import java.util.Timer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.hamcrest.Matchers;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class AsyncByteArrayEndPointTest
 {
+    ScheduledExecutorService _timer;
+    
+    @Before
+    public void before()
+    {
+        _timer = new ScheduledThreadPoolExecutor(1);
+    }
+    
+    @After
+    public void after()
+    {
+        _timer.shutdownNow();
+    }
+    
     @Test
     public void testReadable() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(new Timer());
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
         endp.setInput("test input");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
@@ -81,7 +98,7 @@ public class AsyncByteArrayEndPointTest
     @Test
     public void testWrite() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(new Timer(),(byte[])null,15);
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer,(byte[])null,15);
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(10));
 
@@ -109,7 +126,7 @@ public class AsyncByteArrayEndPointTest
     @Test
     public void testIdle() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(new Timer());
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
         endp.setIdleTimeout(500);
         endp.setInput("test");
         endp.setGrowOutput(false);

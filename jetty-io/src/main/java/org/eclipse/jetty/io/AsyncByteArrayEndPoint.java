@@ -1,11 +1,10 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -17,10 +16,22 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
 {
     private static final int TICK=Integer.getInteger("org.eclipse.jetty.io.AsyncByteArrayEndPoint.TICK",100);
     public static final Logger LOG=Log.getLogger(AsyncByteArrayEndPoint.class);
-    private final Timer _timer;
+    private final ScheduledExecutorService _timer;
     private AsyncConnection _connection;
 
-    private final TimerTask _checkTimeout=new TimeoutTask(this);
+    private final Runnable _checkTimeout=new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            if (isOpen())
+            {    
+                checkTimeout(System.currentTimeMillis());
+                if (isOpen())
+                    _timer.schedule(_checkTimeout,TICK,TimeUnit.MILLISECONDS);
+            }
+        }
+    };
 
     private final ReadInterest _readInterest = new ReadInterest()
     {
@@ -42,25 +53,25 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
         }
     };
 
-    public AsyncByteArrayEndPoint(Timer timer)
+    public AsyncByteArrayEndPoint(ScheduledExecutorService timer)
     {
         super();
         _timer=timer;
-        _timer.schedule(_checkTimeout,TICK,TICK);
+        _timer.schedule(_checkTimeout,TICK,TimeUnit.MILLISECONDS);
     }
 
-    public AsyncByteArrayEndPoint(Timer timer, byte[] input, int outputSize)
+    public AsyncByteArrayEndPoint(ScheduledExecutorService timer, byte[] input, int outputSize)
     {
         super(input,outputSize);
         _timer=timer;
-        _timer.schedule(_checkTimeout,TICK,TICK);
+        _timer.schedule(_checkTimeout,TICK,TimeUnit.MILLISECONDS);
     }
 
-    public AsyncByteArrayEndPoint(Timer timer, String input, int outputSize)
+    public AsyncByteArrayEndPoint(ScheduledExecutorService timer, String input, int outputSize)
     {
         super(input,outputSize);
         _timer=timer;
-        _timer.schedule(_checkTimeout,TICK,TICK);
+        _timer.schedule(_checkTimeout,TICK,TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -156,25 +167,4 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     public void onClose()
     {
     }
-
-    private static class TimeoutTask extends TimerTask
-    {
-        final WeakReference<AsyncByteArrayEndPoint> _endp;
-
-        TimeoutTask(AsyncByteArrayEndPoint endp)
-        {
-            _endp=new WeakReference<AsyncByteArrayEndPoint>(endp);
-        }
-
-        @Override
-        public void run()
-        {
-            AsyncByteArrayEndPoint endp = _endp.get();
-            if (endp==null)
-                cancel();
-            else
-                endp.checkTimeout(System.currentTimeMillis());
-        }
-    };
-
 }

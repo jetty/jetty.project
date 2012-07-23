@@ -28,6 +28,8 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -58,6 +60,7 @@ public class ResponseTest
     private Server _server;
     private LocalHttpConnector _connector;
     private HttpChannel _channel;
+    private ScheduledExecutorService _timer;
 
     @Before
     public void init() throws Exception
@@ -67,8 +70,9 @@ public class ResponseTest
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
         _server.start();
-
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(new Timer(true));
+        _timer=new ScheduledThreadPoolExecutor(1);
+        
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
         HttpInput input = new HttpInput();
         AsyncConnection connection = new AbstractAsyncConnection(endp,new Executor()
         {
@@ -172,6 +176,7 @@ public class ResponseTest
     {
         _server.stop();
         _server.join();
+        _timer.shutdownNow();
     }
 
     @Test
