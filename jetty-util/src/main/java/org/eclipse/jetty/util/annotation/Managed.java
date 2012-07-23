@@ -57,9 +57,34 @@ public @interface Managed
      */
     boolean proxied() default false;
     
+    /**
+     * The impact of an operation. 
+     * 
+     * NOTE: Valid values are UNKNOWN, ACTION, INFO, ACTION_INFO
+     * 
+     * NOTE: applies to METHOD
+     * 
+     * @return String representing the impact of the operation
+     */
     String impact() default "UNKNOWN";
     
+    /**
+     * If is a field references a getter that doesn't conform to standards for discovery
+     * it can be set here.
+     * 
+     * NOTE: applies to FIELD
+     * 
+     * @return the full name of the getter in question
+     */
     String getter() default "";
     
+    /**
+     * If is a field references a setter that doesn't conform to standards for discovery
+     * it can be set here.
+     * 
+     * NOTE: applies to FIELD
+     * 
+     * @return the full name of the setter in question
+     */
     String setter() default "";
 }
