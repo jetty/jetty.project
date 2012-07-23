@@ -35,18 +35,16 @@
 
     <!-- Use this connector for many frequently idle connections
          and for threadless continuations.
-    -->    
+    -->
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+          <New class="org.eclipse.jetty.server.SelectChannelConnector">
             <Set name="host"><SystemProperty name="jetty.host" /></Set>
             <Set name="port"><SystemProperty name="jetty.port" default="8080"/></Set>
-            <Set name="maxIdleTime">30000</Set>
+            <Set name="idleTimeout">30000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>
             <Set name="confidentialPort">8443</Set>
-      <Set name="lowResourcesConnections">10000</Set>
-      <Set name="lowResourcesMaxIdleTime">5000</Set>
           </New>
       </Arg>
     </Call>
@@ -56,7 +54,7 @@
     <!-- see jetty-ssl.xml to add an ssl connector. use                  -->
     <!-- java -jar start.jar etc/jetty-ssl.xml                           -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    
+
     <!-- =========================================================== -->
     <!-- Set up global session ID manager                            -->
     <!-- =========================================================== -->
@@ -69,10 +67,10 @@
     -->
 
     <!-- =========================================================== -->
-    <!-- Set handler Collection Structure                            --> 
+    <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-    
+
       <!-- ==========================================================  -->
       <!-- RewriteHandler Sample Configuration                         -->
       <!-- ==========================================================  -->
@@ -80,7 +78,7 @@
 
         <Set name="originalPathAttribute">requestedPath</Set>
         <Set name="rewriteRequestURI">true</Set>
-        
+
         <Set name="rules">
           <Array type="org.eclipse.jetty.rewrite.handler.Rule">
 
@@ -90,7 +88,7 @@
                 <Set name="replacement">/test</Set>
               </New>
             </Item>
-            
+
             <Item>
               <New id="response" class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
                 <Set name="pattern">/session/</Set>
@@ -128,7 +126,7 @@
                 <Set name="replacement">/demo</Set>
               </New>
             </Item>
-            
+
             <Item>
               <New id="forwardedHttps" class="org.eclipse.jetty.rewrite.handler.ForwardedSchemeHeaderRule">
                 <Set name="header">X-Forwarded-Scheme</Set>
@@ -158,10 +156,10 @@
                     </New>
                   </Arg>
                 </Call>
-     
+
              </New>
            </Item>
- 
+
           </Array>
         </Set>
 
@@ -184,7 +182,7 @@
         </Set>
       </New>
     </Set>
-    
+
     <!-- =========================================================== -->
     <!-- Configure the context deployer                              -->
     <!-- A context deployer will deploy contexts described in        -->

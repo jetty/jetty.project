@@ -40,14 +40,16 @@ import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
 public class WebSocketClientSelectorManager extends SelectorManager
 {
     private SslContextFactory sslContextFactory;
-    private Executor executor;
-    private ByteBufferPool bufferPool;
+    private final Executor executor;
+    private final WebSocketPolicy policy;
+    private final ByteBufferPool bufferPool;
 
-    public WebSocketClientSelectorManager(ByteBufferPool bufferPool, Executor executor)
+    public WebSocketClientSelectorManager(ByteBufferPool bufferPool, Executor executor, WebSocketPolicy policy)
     {
         super();
         this.bufferPool = bufferPool;
         this.executor = executor;
+        this.policy = policy;
     }
 
     @Override
@@ -133,7 +135,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
     {
-        return new SelectChannelEndPoint(channel,selectSet, selectionKey, getIdleTimeout());
+        return new SelectChannelEndPoint(channel,selectSet, selectionKey, policy.getIdleTimeout());
     }
 
     public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)

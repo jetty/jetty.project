@@ -298,9 +298,9 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
 
     private <C> void scheduleTimeout(FrameBytes<C> bytes)
     {
-        if (policy.getMaxIdleTime() > 0)
+        if (policy.getIdleTimeout() > 0)
         {
-            bytes.task = scheduler.schedule(bytes,policy.getMaxIdleTime(),TimeUnit.MILLISECONDS);
+            bytes.task = scheduler.schedule(bytes,policy.getIdleTimeout(),TimeUnit.MILLISECONDS);
         }
     }
 

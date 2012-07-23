@@ -1,30 +1,30 @@
+// ========================================================================
+// Copyright (c) Webtide LLC
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+//
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+//
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
+
 package org.eclipse.jetty.security;
-//========================================================================
-//Copyright (c) Webtide LLC
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//
-//The Eclipse Public License is available at 
-//http://www.eclipse.org/legal/epl-v10.html
-//
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//
-//You may elect to redistribute this code under either of these licenses. 
-//========================================================================
 
 import java.util.Properties;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.B64Code;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -39,25 +39,25 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
     protected IdentityService _identityService;// = new LdapIdentityService();
     protected String _name;
     private String _config;
-    
+
     private String _targetName;
 
     public SpnegoLoginService()
     {
-        
+
     }
-    
+
     public SpnegoLoginService( String name )
     {
         setName(name);
     }
-    
+
     public SpnegoLoginService( String name, String config )
     {
         setName(name);
         setConfig(config);
     }
-    
+
     public String getName()
     {
         return _name;
@@ -69,38 +69,38 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         {
             throw new IllegalStateException("Running");
         }
-        
+
         _name = name;
     }
-    
+
     public String getConfig()
     {
         return _config;
     }
-    
+
     public void setConfig( String config )
     {
         if (isRunning())
         {
             throw new IllegalStateException("Running");
         }
-        
+
         _config = config;
     }
-    
-    
-    
+
+
+
     @Override
     protected void doStart() throws Exception
     {
         Properties properties = new Properties();
         Resource resource = Resource.newResource(_config);
         properties.load(resource.getInputStream());
-        
+
         _targetName = properties.getProperty("targetName");
-        
+
         LOG.debug("Target Name {}", _targetName);
-        
+
         super.doStart();
     }
 
@@ -110,9 +110,9 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
     public UserIdentity login(String username, Object credentials)
     {
         String encodedAuthToken = (String)credentials;
-        
+
         byte[] authToken = B64Code.decode(encodedAuthToken);
-        
+
         GSSManager manager = GSSManager.getInstance();
         try
         {
@@ -135,7 +135,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
                 {
                     String clientName = gContext.getSrcName().toString();
                     String role = clientName.substring(clientName.indexOf('@') + 1);
-                    
+
                     LOG.debug("SpnegoUserRealm: established a security context");
                     LOG.debug("Client Principal is: " + gContext.getSrcName());
                     LOG.debug("Server Principal is: " + gContext.getTargName());
@@ -145,7 +145,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
 
                     Subject subject = new Subject();
                     subject.getPrincipals().add(user);
-                    
+
                     return _identityService.newUserIdentity(subject,user, new String[]{role});
                 }
             }
@@ -176,7 +176,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
 
 	public void logout(UserIdentity user) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

@@ -64,7 +64,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     /**
      * Establish the driver for the Websocket POJO
-     * 
+     *
      * @param websocket
      */
     public WebSocketEventDriver(Object websocket, EventMethodsCache methodsCache, WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -81,7 +81,7 @@ public class WebSocketEventDriver implements IncomingFrames
             policy.setBufferSize(anno.maxBufferSize());
             policy.setMaxBinaryMessageSize(anno.maxBinarySize());
             policy.setMaxTextMessageSize(anno.maxTextSize());
-            policy.setMaxIdleTime(anno.maxIdleTime());
+            policy.setIdleTimeout(anno.maxIdleTime());
         }
     }
 
@@ -101,7 +101,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     /**
      * Get the Websocket POJO in use
-     * 
+     *
      * @return the Websocket POJO
      */
     public Object getWebSocketObject()
@@ -131,7 +131,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     /**
      * Internal entry point for incoming frames
-     * 
+     *
      * @param frame
      *            the frame that appeared
      */
@@ -351,7 +351,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     /**
      * Set the connection to use for this driver
-     * 
+     *
      * @param conn
      *            the connection
      */

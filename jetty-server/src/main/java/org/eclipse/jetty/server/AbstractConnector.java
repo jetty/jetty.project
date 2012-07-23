@@ -57,7 +57,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
     private final Statistics _stats = new ConnectionStatistics();
 
-    protected int _idleTimeout = 200000;
+    protected long _idleTimeout = 200000;
     protected int _soLingerTime = -1;
 
 
@@ -216,7 +216,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
      * @param idleTimeout
      *            The idleTimeout to set.
      */
-    public void setIdleTimeout(int idleTimeout)
+    public void setIdleTimeout(long idleTimeout)
     {
         _idleTimeout = idleTimeout;
     }

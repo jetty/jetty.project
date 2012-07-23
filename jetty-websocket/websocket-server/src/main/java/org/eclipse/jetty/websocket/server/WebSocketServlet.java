@@ -16,7 +16,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,14 +34,14 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
  * appropriate conditions.
  * <p>
  * The most basic implementation would be as follows.
- * 
+ *
  * <pre>
  * package my.example;
- * 
+ *
  * import javax.servlet.http.HttpServletRequest;
  * import org.eclipse.jetty.websocket.WebSocket;
  * import org.eclipse.jetty.websocket.server.WebSocketServlet;
- * 
+ *
  * public class MyEchoServlet extends WebSocketServlet
  * {
  *     &#064;Override
@@ -52,29 +51,29 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
  *     }
  * }
  * </pre>
- * 
+ *
  * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketServerFactory} handling of creating
  * WebSockets.<br>
  * All other requests are treated as normal servlet requests.
- * 
+ *
  * <p>
  * <b>Configuration / Init-Parameters:</b><br>
  * Note: If you use the {@link WebSocket &#064;WebSocket} annotation, these configuration settings can be specified on a per WebSocket basis, vs a per Servlet
  * basis.
- * 
+ *
  * <dl>
  * <dt>bufferSize</dt>
  * <dd>can be used to set the buffer size, which is also the max frame byte size<br>
  * <i>Default: 8192</i></dd>
- * 
+ *
  * <dt>maxIdleTime</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
  * <i>Default:</i></dd>
- * 
+ *
  * <dt>maxTextMessagesSize</dt>
  * <dd>set the size in characters that a websocket may be accept before closing<br>
  * <i>Default:</i></dd>
- * 
+ *
  * <dt>maxBinaryMessagesSize</dt>
  * <dd>set the size in bytes that a websocket may be accept before closing<br>
  * <i>Default:</i></dd>
@@ -117,7 +116,7 @@ public abstract class WebSocketServlet extends HttpServlet
             String max = getInitParameter("maxIdleTime");
             if (max != null)
             {
-                policy.setMaxIdleTime(Integer.parseInt(max));
+                policy.setIdleTimeout(Integer.parseInt(max));
             }
 
             max = getInitParameter("maxTextMessageSize");

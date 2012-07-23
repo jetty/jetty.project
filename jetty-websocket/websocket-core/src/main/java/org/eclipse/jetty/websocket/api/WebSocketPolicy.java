@@ -75,7 +75,7 @@ public class WebSocketPolicy
      * <p>
      * Default: 300000 (ms)
      */
-    private int maxIdleTime = 300000;
+    private int idleTimeout = 300000;
 
     /**
      * The implementation for masking
@@ -131,7 +131,7 @@ public class WebSocketPolicy
         clone.bufferSize = this.bufferSize;
         clone.masker = this.masker;
         clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
-        clone.maxIdleTime = this.maxIdleTime;
+        clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         return clone;
     }
@@ -156,9 +156,9 @@ public class WebSocketPolicy
         return maxBinaryMessageSize;
     }
 
-    public int getMaxIdleTime()
+    public int getIdleTimeout()
     {
-        return maxIdleTime;
+        return idleTimeout;
     }
 
     public int getMaxPayloadSize()
@@ -196,9 +196,9 @@ public class WebSocketPolicy
         this.maxBinaryMessageSize = maxBinaryMessageSize;
     }
 
-    public void setMaxIdleTime(int maxIdleTime)
+    public void setIdleTimeout(int idleTimeout)
     {
-        this.maxIdleTime = maxIdleTime;
+        this.idleTimeout = idleTimeout;
     }
 
     public void setMaxPayloadSize(int maxPayloadSize)

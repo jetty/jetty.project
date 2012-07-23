@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server.handler;
@@ -33,7 +33,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     public AbstractHandlerContainer()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public Handler[] getChildHandlers()
@@ -41,7 +41,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         Object list = expandChildren(null,null);
         return (Handler[])LazyList.toArray(list, Handler.class);
     }
-        
+
     /* ------------------------------------------------------------ */
     @Override
     public Handler[] getChildHandlersByClass(Class<?> byclass)
@@ -49,7 +49,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         Object list = expandChildren(null,byclass);
         return (Handler[])LazyList.toArray(list, byclass);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public <T extends Handler> T getChildHandlerByClass(Class<T> byclass)
@@ -60,7 +60,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             return null;
         return (T)LazyList.get(list, 0);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected Object expandChildren(Object list, Class<?> byClass)
     {
@@ -72,7 +72,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     {
         if (handler==null)
             return list;
-        
+
         if (byClass==null || byClass.isAssignableFrom(handler.getClass()))
             list=LazyList.add(list, handler);
 
@@ -84,17 +84,17 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             Handler[] handlers=byClass==null?container.getChildHandlers():container.getChildHandlersByClass(byClass);
             list=LazyList.addArray(list, handlers);
         }
-        
+
         return list;
     }
-    
+
     /* ------------------------------------------------------------ */
     public static <T extends HandlerContainer> T findContainerOf(HandlerContainer root,Class<T>type, Handler handler)
     {
         if (root==null || handler==null)
             return null;
-        
-        Handler[] branches=root.getChildHandlersByClass((Class<Handler>)type);
+
+        Handler[] branches=root.getChildHandlersByClass(type);
         if (branches!=null)
         {
             for (Handler h:branches)
@@ -111,7 +111,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         }
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void dump(Appendable out,String indent) throws IOException

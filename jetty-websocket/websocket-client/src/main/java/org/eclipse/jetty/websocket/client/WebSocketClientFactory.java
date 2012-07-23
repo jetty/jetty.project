@@ -76,13 +76,13 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             addBean(sslContextFactory);
         }
 
-        selector = new WebSocketClientSelectorManager(bufferPool,executor);
+        this.policy = WebSocketPolicy.newClientPolicy();
+
+        selector = new WebSocketClientSelectorManager(bufferPool,executor,policy);
         selector.setSslContextFactory(sslContextFactory);
         addBean(selector);
 
         this.methodsCache = new EventMethodsCache();
-
-        this.policy = WebSocketPolicy.newClientPolicy();
     }
 
     public WebSocketClientFactory(SslContextFactory sslContextFactory)

@@ -55,7 +55,7 @@ public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
     @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey key) throws IOException
     {
-        NetworkTrafficSelectChannelEndPoint endPoint = new NetworkTrafficSelectChannelEndPoint(channel, selectSet, key, _idleTimeout, listeners);
+        NetworkTrafficSelectChannelEndPoint endPoint = new NetworkTrafficSelectChannelEndPoint(channel, selectSet, key, getIdleTimeout(), listeners);
         endPoint.notifyOpened();
         return endPoint;
     }

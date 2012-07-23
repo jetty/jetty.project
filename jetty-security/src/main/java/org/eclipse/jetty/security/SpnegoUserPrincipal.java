@@ -1,4 +1,3 @@
-package org.eclipse.jetty.security;
 //========================================================================
 //Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
@@ -12,28 +11,30 @@ package org.eclipse.jetty.security;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
+package org.eclipse.jetty.security;
+
 import java.security.Principal;
 
-import org.eclipse.jetty.util.security.B64Code;
+import org.eclipse.jetty.util.B64Code;
 
 public class SpnegoUserPrincipal implements Principal
 {
     private final String _name;
     private byte[] _token;
     private String _encodedToken;
-    
+
     public SpnegoUserPrincipal( String name, String encodedToken )
     {
         _name = name;
         _encodedToken = encodedToken;
     }
-    
+
     public SpnegoUserPrincipal( String name, byte[] token )
     {
         _name = name;
         _token = token;
     }
-    
+
     public String getName()
     {
         return _name;
@@ -47,7 +48,7 @@ public class SpnegoUserPrincipal implements Principal
         }
         return _token;
     }
-    
+
     public String getEncodedToken()
     {
         if ( _encodedToken == null )
@@ -55,5 +56,5 @@ public class SpnegoUserPrincipal implements Principal
             _encodedToken = new String(B64Code.encode(_token,true));
         }
         return _encodedToken;
-    }   
+    }
 }

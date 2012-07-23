@@ -321,7 +321,7 @@ public class TestClient
     private void open() throws Exception
     {
         WebSocketClient client = factory.newWebSocketClient();
-        client.getPolicy().setMaxIdleTime(_timeout);
+        client.getPolicy().setIdleTimeout(_timeout);
         client.setProtocol(_protocol);
         socket = new TestSocket();
         URI wsUri = new URI("ws://" + _host + ":" + _port + "/");

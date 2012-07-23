@@ -15,8 +15,6 @@
 //========================================================================
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -45,6 +43,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 
 @Ignore("Client not yet functional")
 public class WebSocketClientTest
@@ -259,7 +261,7 @@ public class WebSocketClientTest
     {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
-        client.getPolicy().setMaxIdleTime(60000);
+        client.getPolicy().setIdleTimeout(60000);
 
         final AtomicBoolean open = new AtomicBoolean(false);
         final AtomicInteger close = new AtomicInteger();
@@ -388,7 +390,7 @@ public class WebSocketClientTest
     {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
-        client.getPolicy().setMaxIdleTime(10000);
+        client.getPolicy().setIdleTimeout(10000);
 
         TrackingSocket wsocket = new TrackingSocket();
 
@@ -521,7 +523,7 @@ public class WebSocketClientTest
     {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
-        client.getPolicy().setMaxIdleTime(500);
+        client.getPolicy().setIdleTimeout(500);
 
         TrackingSocket wsocket = new TrackingSocket();
 
@@ -579,7 +581,7 @@ public class WebSocketClientTest
     {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
-        client.getPolicy().setMaxIdleTime(500);
+        client.getPolicy().setIdleTimeout(500);
 
         TrackingSocket wsocket = new TrackingSocket();
 

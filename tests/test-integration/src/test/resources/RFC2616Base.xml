@@ -31,24 +31,22 @@
     <!--   NIOHttps.xml                                              -->
     <!-- =========================================================== -->
 
-    <!-- 
+    <!--
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+          <New class="org.eclipse.jetty.server.SelectChannelConnector">
             <Set name="host"><SystemProperty name="jetty.host" /></Set>
             <Set name="port"><SystemProperty name="jetty.port" default="0"/></Set>
-            <Set name="maxIdleTime">300000</Set>
+            <Set name="idleTimeout">300000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>
-	    <Set name="lowResourcesConnections">20000</Set>
-	    <Set name="lowResourcesMaxIdleTime">5000</Set>
           </New>
       </Arg>
-    </Call> 
+    </Call>
      -->
 
     <!-- =========================================================== -->
-    <!-- Set handler Collection Structure                            --> 
+    <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
       <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
@@ -89,7 +87,7 @@
         </Set>
       </New>
     </Set>
-    
+
     <Call name="addLifeCycle">
 	  <Arg>
 	    <New class="org.eclipse.jetty.deploy.ContextDeployer">
@@ -104,7 +102,7 @@
 	    </New>
 	  </Arg>
 	</Call>
-    
+
     <!-- =========================================================== -->
     <!-- Configure the webapp deployer.                              -->
     <!-- A webapp  deployer will deploy standard webapps discovered  -->
@@ -118,7 +116,7 @@
     <!-- Normally only one type of deployer need be used.            -->
     <!--                                                             -->
     <!-- =========================================================== -->
-    <!-- 
+    <!--
     <Call name="addBean">
       <Arg>
         <New class="org.eclipse.jetty.deploy.WebAppDeployer">
@@ -136,7 +134,7 @@
       </Arg>
     </Call>
      -->
-    
+
     <!-- =========================================================== -->
     <!-- extra options                                               -->
     <!-- =========================================================== -->
