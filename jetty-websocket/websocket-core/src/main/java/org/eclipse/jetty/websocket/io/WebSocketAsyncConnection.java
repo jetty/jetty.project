@@ -163,7 +163,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
      * Get the list of extensions in use.
      * <p>
      * This list is negotiated during the WebSocket Upgrade Request/Response handshake.
-     * 
+     *
      * @return the list of negotiated extensions in use.
      */
     public List<ExtensionConfig> getExtensions()
@@ -236,12 +236,9 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     @Override
     public void onOpen()
     {
-        LOG.debug("onOpen()");
         super.onOpen();
         // TODO: websocket.setConnection(this);
         // TODO: websocket.onConnect();
-
-        fillInterested();
     }
 
     /**
@@ -311,7 +308,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
      * Get the list of extensions in use.
      * <p>
      * This list is negotiated during the WebSocket Upgrade Request/Response handshake.
-     * 
+     *
      * @param extensions
      *            the list of negotiated extensions in use.
      */
@@ -322,7 +319,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
 
     /**
      * For terminating connections forcefully.
-     * 
+     *
      * @param statusCode
      *            the WebSocket status code.
      * @param reason

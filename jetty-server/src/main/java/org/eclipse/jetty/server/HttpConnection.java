@@ -53,16 +53,16 @@ public class HttpConnection extends AbstractAsyncConnection
     private final HttpChannel _channel;
     private final ByteBufferPool _bufferPool;
     private final HttpHttpInput _httpInput;
-    
+
     private volatile Thread _thread;
     private ResponseInfo _info;
     ByteBuffer _requestBuffer=null;
     ByteBuffer _responseHeader=null;
     ByteBuffer _chunk=null;
-    ByteBuffer _responseBuffer=null; 
+    ByteBuffer _responseBuffer=null;
     private int _headerBytes;
-    
-    
+
+
     /* ------------------------------------------------------------ */
     public static HttpConnection getCurrentConnection()
     {
@@ -82,21 +82,21 @@ public class HttpConnection extends AbstractAsyncConnection
     public HttpConnection(HttpConnector connector, AsyncEndPoint endpoint, Server server)
     {
         super(endpoint,connector.findExecutor());
-        
+
         _connector = connector;
         _bufferPool=_connector.getByteBufferPool();
         if (_bufferPool==null)
             new Throwable().printStackTrace();
-        
+
         _server = server;
 
         _httpInput = new HttpHttpInput();
         _channel = new HttpChannelOverHttp(server);
-       
+
         _parser = new HttpParser(_channel.getEventHandler());
         _generator = new HttpGenerator();
         _generator.setSendServerVersion(_server.getSendServerVersion());
-        
+
         LOG.debug("New HTTP Connection {}",this);
     }
 
@@ -147,7 +147,7 @@ public class HttpConnection extends AbstractAsyncConnection
             _parser.reset();
         else
             _parser.close();
-        
+
         _generator.reset();
         _channel.reset();
         _httpInput.recycle();
@@ -158,7 +158,7 @@ public class HttpConnection extends AbstractAsyncConnection
             _responseHeader=null;
         }
         if (_responseBuffer!=null && !_responseBuffer.hasRemaining())
-        {    
+        {
             _bufferPool.release(_responseBuffer);
             _responseBuffer=null;
         }
@@ -168,7 +168,7 @@ public class HttpConnection extends AbstractAsyncConnection
         _info=null;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     public HttpGenerator getGenerator()
     {
@@ -187,15 +187,6 @@ public class HttpConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public void onOpen()
-    {
-        LOG.debug("Opened HTTP Connection {}",this);
-        super.onOpen();
-        fillInterested();
-    }
-    
-    /* ------------------------------------------------------------ */
     private void releaseRequestBuffer()
     {
         if (_requestBuffer!=null && !_requestBuffer.hasRemaining())
@@ -204,28 +195,28 @@ public class HttpConnection extends AbstractAsyncConnection
             _requestBuffer=null;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Parse and handle HTTP messages.
      * <p>
-     * This method is normally called as the {@link AbstractAsyncConnection} onReadable callback. 
-     * However, it can also be called {@link HttpChannelOverHttp#completed()} if there is unconsumed 
-     * data in the _requestBuffer, as a result of resuming a suspended request when there is a pipelined 
+     * This method is normally called as the {@link AbstractAsyncConnection} onReadable callback.
+     * However, it can also be called {@link HttpChannelOverHttp#completed()} if there is unconsumed
+     * data in the _requestBuffer, as a result of resuming a suspended request when there is a pipelined
      * request already read into the buffer.
      * <p>
-     * This method will fill data and parse it until either: EOF is filled; 0 bytes are filled; 
+     * This method will fill data and parse it until either: EOF is filled; 0 bytes are filled;
      * the HttpChannel becomes !idle; or the connection has been changed
      */
     @Override
     public synchronized void onFillable()
-    {        
+    {
         LOG.debug("{} onReadable {}",this,_channel.isIdle());
-        
+
         try
         {
             _thread=Thread.currentThread();
             setCurrentConnection(this);
-            
+
             // TODO try to generalize this loop into AbstractAsyncConnection
             while (true)
             {
@@ -234,14 +225,14 @@ public class HttpConnection extends AbstractAsyncConnection
                 {
                     if (_requestBuffer==null)
                         _requestBuffer=_bufferPool.acquire(_connector.getRequestHeaderSize(),false);
-           
+
                     int filled=getEndPoint().fill(_requestBuffer);
-                    
+
                     LOG.debug("{} filled {}",this,filled);
-                                        
+
                     // If we failed to fill
                     if (filled==0)
-                    {                        
+                    {
                         // Somebody wanted to read, we didn't so schedule another attempt
                         fillInterested();
                         releaseRequestBuffer();
@@ -250,7 +241,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     else if (filled<0)
                     {
                         _parser.inputShutdown();
-                        // We were only filling if fully consumed, so if we have 
+                        // We were only filling if fully consumed, so if we have
                         // read -1 then we have nothing to parse and thus nothing that
                         // will generate a response.  If we had a suspended request pending
                         // a response or a request waiting in the buffer, we would not be here.
@@ -267,19 +258,19 @@ public class HttpConnection extends AbstractAsyncConnection
 
                 // Parse the buffer
                 if (_parser.parseNext(_requestBuffer))
-                {                    
+                {
                     // For most requests, there will not be a body, so we can try to recycle the buffer now
                     releaseRequestBuffer();
-                    
+
                     _headerBytes=0;
-                    // The parser returned true, which indicates the channel is ready 
-                    // to handle a request. Call the channel and this will either handle the 
+                    // The parser returned true, which indicates the channel is ready
+                    // to handle a request. Call the channel and this will either handle the
                     // request/response to completion OR if the request suspends, the channel
                     // will be left in !idle state so our outer loop will exit.
                     if (!_parser.isPersistent())
                         _generator.setPersistent(false);
                     _channel.handle();
-                    
+
                     // Return if the channel is still processing the request
                     if (_channel.isSuspended())
                     {
@@ -288,11 +279,11 @@ public class HttpConnection extends AbstractAsyncConnection
                             releaseRequestBuffer();
                         return;
                     }
-                    
+
                     // return if the connection has been changed
                     if (getEndPoint().getAsyncConnection()!=this)
                         return;
-                } 
+                }
                 else if (_headerBytes>= _connector.getRequestHeaderSize())
                 {
                     _parser.reset();
@@ -315,7 +306,7 @@ public class HttpConnection extends AbstractAsyncConnection
             getEndPoint().close();
         }
         finally
-        {   
+        {
             _thread=null;
             setCurrentConnection(null);
         }
@@ -328,8 +319,8 @@ public class HttpConnection extends AbstractAsyncConnection
     {
         _channel.onClose();
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -339,20 +330,20 @@ public class HttpConnection extends AbstractAsyncConnection
         {
             super(server,HttpConnection.this,_httpInput);
         }
-        
+
         @Override
         protected int write(ByteBuffer content) throws IOException
         {
             return generate(content,Action.PREPARE);
         }
-        
+
         @Override
         protected void resetBuffer()
         {
             if (_responseBuffer!=null)
                 BufferUtil.clear(_responseBuffer);
         }
-        
+
         @Override
         protected void increaseContentBufferSize(int size)
         {
@@ -369,36 +360,36 @@ public class HttpConnection extends AbstractAsyncConnection
             }
             _responseBuffer=r;
         }
-        
+
         @Override
         protected int getContentBufferSize()
         {
             ByteBuffer buffer=_responseBuffer;
             if (buffer!=null)
                 return buffer.capacity();
-            
+
             return _connector.getResponseBufferSize();
         }
-        
+
         @Override
         public HttpConnector getHttpConnector()
         {
             return _connector;
         }
-        
+
         @Override
         protected void flushResponse() throws IOException
         {
             generate(null,Action.FLUSH);
         }
-        
+
         @Override
         protected void completeResponse() throws IOException
         {
             generate(null,Action.COMPLETE);
         }
-        
-        
+
+
         @Override
         protected synchronized boolean commitError(int status, String reason, String content)
         {
@@ -408,7 +399,7 @@ public class HttpConnection extends AbstractAsyncConnection
                 // the client something is wrong
 
                 getEndPoint().close();
-                
+
                 if (BufferUtil.hasContent(_responseBuffer))
                 {
                     BufferUtil.clear(_responseBuffer);
@@ -423,16 +414,16 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         protected synchronized void completed()
         {
-            // This is called by HttpChannel#handle when it knows that it's handling of the request/response cycle 
+            // This is called by HttpChannel#handle when it knows that it's handling of the request/response cycle
             // is complete.  This may be in the original thread dispatched to the connection that has called process from
             // the connection#onReadable method, or it may be from a thread dispatched to call process as the result
             // of a resumed suspended request.
             // At this point the HttpChannel will have completed the generation of any response (although it might remain to
-            // be asynchronously flushed TBD), but it may not have consumed the entire 
-            
+            // be asynchronously flushed TBD), but it may not have consumed the entire
+
             LOG.debug("{} completed");
-                
-            
+
+
             // Handle connection upgrades
             if (getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
             {
@@ -445,14 +436,14 @@ public class HttpConnection extends AbstractAsyncConnection
                     return;
                 }
             }
-            
-            
+
+
             // Reset everything for the next cycle.
             HttpConnection.this.reset();
-            
+
             // are called from non connection thread (ie dispatched from a resume)
             if (getThread()!=Thread.currentThread())
-            {                
+            {
                 if (_parser.isStart())
                 {
                     // it wants to eat more
@@ -461,7 +452,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     else if (getConnector().isStarted())
                     {
                         LOG.debug("{} pipelined",this);
-                        
+
                         try
                         {
                             execute(this);
@@ -504,7 +495,7 @@ public class HttpConnection extends AbstractAsyncConnection
             else
                 onFillable();
         }
-        
+
         /* ------------------------------------------------------------ */
         private int generate(ByteBuffer content, Action action) throws IOException
         {
@@ -533,7 +524,7 @@ public class HttpConnection extends AbstractAsyncConnection
                                     BufferUtil.toSummaryString(_responseBuffer),
                                     BufferUtil.toSummaryString(content),
                                     _generator.getState());
-                        
+
                         switch(result)
                         {
                             case NEED_INFO:
@@ -543,7 +534,7 @@ public class HttpConnection extends AbstractAsyncConnection
                                 if (_responseHeader==null)
                                     _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                                 continue;
-                                
+
                             case NEED_HEADER:
                                 _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                                 continue;
@@ -610,11 +601,11 @@ public class HttpConnection extends AbstractAsyncConnection
 
         @Override
         protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
-        {            
+        {
             _info=info;
 
             LOG.debug("{} commit {}",this,_info);
-            
+
             synchronized (_lock)
             {
                 try
@@ -645,7 +636,7 @@ public class HttpConnection extends AbstractAsyncConnection
                                 if (_responseHeader==null)
                                     _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                                 break;
-                                
+
                             case NEED_HEADER:
                                 _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
                                 break;
@@ -701,7 +692,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     FutureCallback.rethrow(e);
                 }
             }
-            
+
         }
 
         @Override
@@ -757,7 +748,7 @@ public class HttpConnection extends AbstractAsyncConnection
         }
 
     };
-    
+
     private class HttpHttpInput extends HttpInput
     {
         @Override
@@ -768,13 +759,13 @@ public class HttpConnection extends AbstractAsyncConnection
             that uses the calling thread to block on a readable callback and
             then to do the parsing before before attempting the read.
             */
-                        
+
             // While progress and the connection has not changed
             boolean parsed_event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
             while (!parsed_event && !getEndPoint().isInputShutdown())
             {
                 try
-                {                    
+                {
                     // Do we have content ready to parse?
                     if (BufferUtil.isEmpty(_requestBuffer))
                     {
@@ -793,7 +784,7 @@ public class HttpConnection extends AbstractAsyncConnection
                         if (filled<0)
                             _parser.inputShutdown();
                     }
-                    
+
                     // If we parse to an event, return
                     while (BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
                             parsed_event|=_parser.parseNext(_requestBuffer);
@@ -855,22 +846,22 @@ public class HttpConnection extends AbstractAsyncConnection
             }
         }
 
-        
+
         @Override
         protected void onContentQueued(ByteBuffer ref)
         {
             /* This callback could be used to tell the connection
              * that the request did contain content and thus the request
              * buffer needs to be held until a call to #onAllContentConsumed
-             * 
+             *
              * However it turns out that nothing is needed here because either a
              * request will have content, in which case the request buffer will be
              * released by a call to onAllContentConsumed; or it will not have content.
-             * If it does not have content, either it will complete quickly and the 
-             * buffers will be released in completed() or it will be suspended and 
+             * If it does not have content, either it will complete quickly and the
+             * buffers will be released in completed() or it will be suspended and
              * onReadable() contains explicit handling to release if it is suspended.
-             * 
-             * We extend this method anyway, to turn off the notify done by the 
+             *
+             * We extend this method anyway, to turn off the notify done by the
              * default implementation as this is not needed by our implementation
              * of blockForContent
              */

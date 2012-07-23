@@ -16,7 +16,6 @@ package org.eclipse.jetty.io.ssl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -86,8 +85,6 @@ public class SslConnection extends AbstractAsyncConnection
     {
         try
         {
-            super.onOpen();
-
             // Begin the handshake
             _sslEngine.setUseClientMode(false);
             _sslEngine.beginHandshake();
@@ -117,13 +114,6 @@ public class SslConnection extends AbstractAsyncConnection
 
     /* ------------------------------------------------------------ */
     @Override
-    public void onClose()
-    {
-        super.onClose();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
     public void onFillable()
     {
         LOG.debug("{} onReadable", this);
@@ -143,9 +133,9 @@ public class SslConnection extends AbstractAsyncConnection
 
     /* ------------------------------------------------------------ */
     @Override
-    public void onReadFail(Throwable cause)
+    public void onFillInterestedFailed(Throwable cause)
     {
-        super.onReadFail(cause);
+        super.onFillInterestedFailed(cause);
 
         if (_appEndPoint._readInterest.isInterested())
             _appEndPoint._readInterest.failed(cause);

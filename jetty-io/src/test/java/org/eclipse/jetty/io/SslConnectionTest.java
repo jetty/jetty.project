@@ -11,12 +11,10 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -108,13 +106,7 @@ public class SslConnectionTest
 
         public TestConnection(AsyncEndPoint endp)
         {
-            super(endp,_threadPool);
-        }
-
-        @Override
-        public void onOpen()
-        {
-            fillInterested();
+            super(endp, _threadPool);
         }
 
         @Override
@@ -183,7 +175,7 @@ public class SslConnectionTest
     public void testHelloWorld() throws Exception
     {
         Socket client = newClient();
-        client.setSoTimeout(60000); 
+        client.setSoTimeout(60000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
@@ -194,7 +186,7 @@ public class SslConnectionTest
         int len=client.getInputStream().read(buffer);
         Assert.assertEquals(10,len);
         Assert.assertEquals("HelloWorld",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
-        
+
         client.close();
     }
 
@@ -211,8 +203,8 @@ public class SslConnectionTest
 
         final int LINES=20;
         final CountDownLatch count=new CountDownLatch(LINES);
-        
-        
+
+
         new Thread()
         {
             @Override
