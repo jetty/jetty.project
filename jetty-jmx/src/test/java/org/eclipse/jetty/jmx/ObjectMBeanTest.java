@@ -44,7 +44,7 @@ public class ObjectMBeanTest
     {
         Derived derived = new Derived();
         ObjectMBean mbean = new ObjectMBean(derived);
-        assertTrue(mbean.getMBeanInfo()!=null); // TODO do more than just run it
+        assertTrue(mbean.getMBeanInfo()!=null);
         
         MBeanInfo info = mbean.getMBeanInfo();
         
@@ -68,6 +68,7 @@ public class ObjectMBeanTest
         MBeanOperationInfo[] opinfos = info.getOperations();
         boolean publish = false;
         boolean doodle = false;
+        boolean good = false;
         for ( int i = 0 ; i < opinfos.length; ++i )
         {
             MBeanOperationInfo opinfo = opinfos[i];
@@ -90,10 +91,21 @@ public class ObjectMBeanTest
                 Assert.assertEquals("parameter description doesn't match", "A description of the argument", pinfos[0].getDescription());
                 Assert.assertEquals("parameter name doesn't match", "doodle", pinfos[0].getName());
             }
+            
+            if ("good".equals(opinfo.getName()))
+            {
+                doodle = true;
+                
+                Assert.assertEquals("description does not match", "test of proxy", opinfo.getDescription());
+                Assert.assertEquals("execution contexts wrong", "not bad", mbean.invoke("good", new Object[] {}, new String[] {}));
+                
+            }
         }
         
         Assert.assertTrue("publish operation was not not found", publish);
         Assert.assertTrue("doodle operation was not not found", doodle);
+       // Assert.assertTrue("good operation was not not found", good); not wired up yet
+
 
     }
 }

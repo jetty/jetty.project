@@ -512,6 +512,23 @@ public class ObjectMBean implements DynamicMBean
             // This class is an influence
             influences=LazyList.add(influences,aClass);
 
+            /* enabled mbean influence
+            String pack = aClass.getPackage().getName();
+            String clazz = aClass.getSimpleName();
+            
+            try
+            {
+                Class mbean = Class.forName(pack + ".jmx." + clazz + "MBean");
+                
+                LOG.debug("MBean Influence found for " + aClass.getSimpleName() );
+                influences = LazyList.add(influences, mbean);
+            }
+            catch ( ClassNotFoundException cnfe )
+            {
+                LOG.debug("No MBean Influence for " + aClass.getSimpleName() );
+            }
+            */
+            
             // So are the super classes
             influences=findInfluences(influences,aClass.getSuperclass());
 
