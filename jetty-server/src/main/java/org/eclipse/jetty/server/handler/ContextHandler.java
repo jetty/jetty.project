@@ -69,7 +69,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Managed;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -1204,8 +1203,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /*
      * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
      */
-    @Managed("Remove context attribute")
-    public void removeAttribute( @Name(value = "name", description="attribute name") String name)
+    public void removeAttribute(String name)
     {
         checkManagedAttribute(name,null);
         _attributes.removeAttribute(name);
@@ -1218,8 +1216,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      *
      * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
      */
-    @Managed("Set context attribute")
-    public void setAttribute(@Name(value = "name", description="attribute name") String name, @Name(value = "value", description="attribute value") Object value)
+    public void setAttribute( String name, Object value)
     {
         checkManagedAttribute(name,value);
         _attributes.setAttribute(name,value);

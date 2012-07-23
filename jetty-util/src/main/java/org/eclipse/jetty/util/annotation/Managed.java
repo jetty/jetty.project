@@ -87,4 +87,13 @@ public @interface Managed
      * @return the full name of the setter in question
      */
     String setter() default "";
+    
+    /**
+     * Treat method as an attribute and not an operation
+     * 
+     * NOTE: applies to METHOD
+     * 
+     * @return true of the method should be treating as an attribute
+     */
+    boolean attribute() default false;
 }

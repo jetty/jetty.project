@@ -262,7 +262,7 @@ public class ObjectMBean implements DynamicMBean
                             if ( fieldAnnotation != null )
                             {
                                 LOG.debug("Field Annotation found for: " + field.getName() );
-                                attributes=LazyList.add(attributes, defineAttribute(field, fieldAnnotation));
+                                attributes=LazyList.add(attributes, defineAttribute(field.getName(), fieldAnnotation));
                             }
                         }
                             
@@ -274,8 +274,17 @@ public class ObjectMBean implements DynamicMBean
                             
                             if ( methodAnnotation != null )
                             {
-                                LOG.debug("Method Annotation found for: " + method.getName() );
-                                operations=LazyList.add(operations, defineOperation(method, methodAnnotation));
+                                if ( methodAnnotation.attribute() )
+                                {
+                                    // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
+                                    LOG.debug("Attribute Annotation found for: " + method.getName() );
+                                    attributes=LazyList.add(attributes,defineAttribute(method.getName(),methodAnnotation));
+                                }
+                                else
+                                {
+                                    LOG.debug("Method Annotation found for: " + method.getName() );
+                                    operations=LazyList.add(operations, defineOperation(method, methodAnnotation));
+                                }
                             }
                         }
                         
@@ -532,9 +541,9 @@ public class ObjectMBean implements DynamicMBean
      * </ul>
      * the access is either "RW" or "RO".
      */
-    public MBeanAttributeInfo defineAttribute(Field field, Managed fieldAnnotation)
+    public MBeanAttributeInfo defineAttribute(String name, Managed fieldAnnotation)
     {
-        String name = field.getName();
+        //String name = field.getName();
         String description = fieldAnnotation.value();
         boolean writable = fieldAnnotation.readonly();   
         boolean onMBean = fieldAnnotation.proxied();
