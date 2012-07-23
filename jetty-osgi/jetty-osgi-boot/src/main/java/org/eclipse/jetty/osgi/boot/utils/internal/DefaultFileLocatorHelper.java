@@ -144,7 +144,6 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         {
             // observed this on felix-2.0.0
             String location = bundle.getLocation();
-            // System.err.println("location  " + location);
             if (location.startsWith("file:/"))
             {
                 URI uri = new URI(URIUtil.encodePath(location));
@@ -292,7 +291,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * 
      * @return a URL to the bundle entry that uses a common protocol
      */
-    public static URL getLocalURL(URL url)
+    public URL getLocalURL(URL url)
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {
@@ -328,7 +327,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      *         protocol
      *         </p>
      */
-    public static URL getFileURL(URL url)
+    public URL getFileURL(URL url)
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {

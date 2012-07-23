@@ -29,6 +29,11 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.webapp.WebAppContext;
+
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,8 +44,15 @@ import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 /**
+ * TestJettyOSGiBootWithJsp
+ * 
+ * 
+ * Tests deploying a war (standard jetty test webapp). Tests the BundleWebAppProvider.
+ * 
+ * 
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the httpservice web-bundle.
  * Then make sure we can deploy an OSGi service on the top of this.
  */
@@ -57,7 +69,13 @@ public class TestJettyOSGiBootWithJsp
     public static Option[] configure()
     {
     	File testrealm = new File("src/test/config/etc/jetty-testrealm.xml");
+    	File base = MavenTestingUtils.getBasedir();
+    	File src = new File (base, "src");
+    	File tst = new File (src, "test");
+    	File config = new File (tst, "config");
     	
+    	
+
     	ArrayList<Option> options = new ArrayList<Option>();
     	options.addAll(TestJettyOSGiBootCore.provisionCoreJetty());
     	
@@ -81,8 +99,8 @@ public class TestJettyOSGiBootWithJsp
 
     	// Standard Options
     	options.addAll(Arrays.asList(options(
-            PaxRunnerOptions.vmOption("-Djetty.port=9876 -D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
-                "=etc/jetty.xml;" + testrealm.getAbsolutePath()),
+            PaxRunnerOptions.vmOption("-Djetty.port=9876 -Djetty.home="+config.getAbsolutePath()+" -D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
+                "=etc/jetty.xml;etc/jetty-deployer.xml;etc/jetty-selector.xml;etc/jetty-testrealm.xml"),
 
             /* orbit deps */
             mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet.jsp" ).versionAsInProject(),
@@ -110,14 +128,14 @@ public class TestJettyOSGiBootWithJsp
      * plus your testcase, wrapped into a bundle called pax-exam-probe
      */
     @Test
-    @Ignore
+    @Ignore 
     public void listBundles() throws Exception
     {
     	Map<String,Bundle> bundlesIndexedBySymbolicName = new HashMap<String, Bundle>();
         for( Bundle b : bundleContext.getBundles() )
         {
         	bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-        	//System.err.println("Got " + b.getSymbolicName());
+        	System.err.println("Got " + b.getSymbolicName());
         }
         
         Bundle osgiBoot = bundlesIndexedBySymbolicName.get("org.eclipse.jetty.osgi.boot");
@@ -129,8 +147,8 @@ public class TestJettyOSGiBootWithJsp
         Assert.assertTrue("The fragment jsp is not correctly resolved", osgiBootJsp.getState() == Bundle.RESOLVED);
         
         Bundle testWebBundle = bundlesIndexedBySymbolicName.get("org.eclipse.jetty.test-jetty-webapp");
-        Assert.assertNotNull("Could not find the org.eclipse.jetty.osgi.boot.jsp bundle", osgiBootJsp);
-        Assert.assertTrue("The fragment jsp is not correctly resolved", testWebBundle.getState() == Bundle.ACTIVE);
+        Assert.assertNotNull("Could not find the test-jetty-webapp bundle", testWebBundle);
+        Assert.assertTrue("The test-jetty-webapp bundle is not correctly resolved", testWebBundle.getState() == Bundle.ACTIVE);
         
         //now test the jsp/dump.jsp
         HttpClient client = new HttpClient();
@@ -153,7 +171,7 @@ public class TestJettyOSGiBootWithJsp
             if (responseStatus == HttpStatus.OK_200) {
                 content = getExchange.getResponseContent();
             }
-            //System.err.println("content: " + content);
+
             Assert.assertTrue(content.indexOf("<tr><th>ServletPath:</th><td>/jsp/dump.jsp</td></tr>") != -1);
         }
         finally
@@ -161,6 +179,11 @@ public class TestJettyOSGiBootWithJsp
             client.stop();
         }
         
+        ServiceReference[] refs = bundleContext.getServiceReferences(ContextHandler.class.getName(), null);
+        Assert.assertNotNull(refs);
+        Assert.assertEquals(1,refs.length);
+        
+        //TODO check that the events got sent
     }
 
 	

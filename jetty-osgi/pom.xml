@@ -23,6 +23,8 @@
     <module>jetty-osgi-boot-jsp</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
+    <module>test-jetty-osgi-webapp</module>
+    <module>test-jetty-osgi-context</module>
     <module>test-jetty-osgi</module>
   </modules>
   <build>

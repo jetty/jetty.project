@@ -139,7 +139,7 @@
                         </Import-Package>
                         <DynamicImport-Package>org.eclipse.jetty.*;version="[8.1,9)"</DynamicImport-Package>
                         <!--Require-Bundle/-->
-                        <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment> 
+                        <!-- Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment--> 
                     </instructions>
                 </configuration>
             </plugin>

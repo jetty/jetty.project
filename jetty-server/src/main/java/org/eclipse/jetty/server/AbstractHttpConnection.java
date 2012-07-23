@@ -379,7 +379,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                         }
                     }
                 };
-
         }
         _writer.setCharacterEncoding(encoding);
         return _printWriter;
@@ -403,6 +402,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _responseFields.clear();
         _response.recycle();
         _uri.clear();
+        _writer=null;
     }
 
     /* ------------------------------------------------------------ */
