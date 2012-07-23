@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
-import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
@@ -42,10 +41,8 @@ public class DeflateFrameExtension extends Extension
     private Deflater deflater;
     private Inflater inflater;
 
-    // TODO: bring this method into some sort of ProtocolEnforcement class to share with Parser
-    private void assertSanePayloadLength(WebSocketFrame frame, int len)
+    private void assertSanePayloadLength(int len)
     {
-        LOG.debug("Payload Length: " + len);
         // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
         if (len > Integer.MAX_VALUE)
         {
@@ -53,24 +50,59 @@ public class DeflateFrameExtension extends Extension
             throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
         }
         getPolicy().assertValidPayloadLength(len);
+    }
 
-        switch (frame.getOpCode())
+    public ByteBuffer deflate(ByteBuffer data)
+    {
+        int length = data.remaining();
+
+        // prepare the uncompressed input
+        deflater.reset();
+        deflater.setInput(BufferUtil.toArray(data));
+        deflater.finish();
+
+        // prepare the output buffer
+        ByteBuffer buf = getBufferPool().acquire(length,false);
+        BufferUtil.clearToFill(buf);
+
+        // write the uncompressed length
+        if (length > 0xFF_FF)
         {
-            case CLOSE:
-                if (len == 1)
-                {
-                    throw new ProtocolException("Invalid close frame payload length, [" + len + "]");
-                }
-                // fall thru
-            case PING:
-            case PONG:
-                if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
-                {
-                    throw new ProtocolException("Invalid control frame payload length, [" + len + "] cannot exceed [" + WebSocketFrame.MAX_CONTROL_PAYLOAD
-                            + "]");
-                }
-                break;
+            buf.put((byte)0x7F);
+            buf.put((byte)0x00);
+            buf.put((byte)0x00);
+            buf.put((byte)0x00);
+            buf.put((byte)0x00);
+            buf.put((byte)((length >> 24) & 0xFF));
+            buf.put((byte)((length >> 16) & 0xFF));
+            buf.put((byte)((length >> 8) & 0xFF));
+            buf.put((byte)(length & 0xFF));
         }
+        else if (length >= 0x7E)
+        {
+            buf.put((byte)0x7E);
+            buf.put((byte)(length >> 8));
+            buf.put((byte)(length & 0xFF));
+        }
+        else
+        {
+            buf.put((byte)(length & 0x7F));
+        }
+
+        while (!deflater.finished())
+        {
+            byte out[] = new byte[length];
+            int len = deflater.deflate(out,0,length,Deflater.FULL_FLUSH);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Deflater: finished={}, needsInput={}, len={} / input.len={}",deflater.finished(),deflater.needsInput(),len,length);
+            }
+
+            buf.put(out,0,len);
+        }
+        BufferUtil.flipToFlush(buf,0);
+        return buf;
     }
 
     @Override
@@ -84,41 +116,61 @@ public class DeflateFrameExtension extends Extension
         }
 
         ByteBuffer data = frame.getPayload();
-        // first 1 to 8 bytes contains post-inflated payload size.
-        int uncompressedLength = readUncompresseLength(frame,data);
-
-        // Set the data that is compressed to the inflater
-        inflater.setInput(BufferUtil.toArray(frame.getPayload()));
-
-        // Establish place for inflated data
-        byte buf[] = new byte[uncompressedLength];
         try
         {
-            int left = buf.length;
-            while (inflater.getRemaining() > 0)
-            {
-                // TODO: worry about the ByteBuffer.array here??
-                int inflated = inflater.inflate(buf,0,left);
-                if (inflated == 0)
-                {
-                    throw new DataFormatException("insufficient data");
-                }
-                left -= inflated;
-            }
-
-            frame.setPayload(buf);
-
+            ByteBuffer uncompressed = inflate(data);
+            frame.setPayload(uncompressed);
             nextIncoming(frame);
-        }
-        catch (DataFormatException e)
-        {
-            LOG.warn(e);
-            throw new BadPayloadException(e);
         }
         finally
         {
             // release original buffer (no longer needed)
             getBufferPool().release(data);
+        }
+    }
+
+    public ByteBuffer inflate(ByteBuffer data)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("inflate: {}",BufferUtil.toDetailString(data));
+        }
+        // first 1 to 8 bytes contains post-inflated payload size.
+        int uncompressedLength = readUncompresseLength(data);
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("uncompressedLength={}, data={}",uncompressedLength,BufferUtil.toDetailString(data));
+        }
+
+        // Set the data that is compressed to the inflater
+        byte compressed[] = BufferUtil.toArray(data);
+        inflater.reset();
+        inflater.setInput(compressed,0,compressed.length);
+
+        // Establish place for inflated data
+        byte buf[] = new byte[uncompressedLength];
+        try
+        {
+            int inflated = inflater.inflate(buf);
+            if (inflated == 0)
+            {
+                throw new DataFormatException("Insufficient compressed data");
+            }
+
+            ByteBuffer ret = ByteBuffer.wrap(buf);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("uncompressed={}",BufferUtil.toDetailString(ret));
+            }
+
+            return ret;
+        }
+        catch (DataFormatException e)
+        {
+            LOG.warn(e);
+            throw new BadPayloadException(e);
         }
     }
 
@@ -140,52 +192,30 @@ public class DeflateFrameExtension extends Extension
         }
 
         ByteBuffer data = frame.getPayload();
-        int length = frame.getPayloadLength();
-
-        // prepare the uncompressed input
-        deflater.reset();
-        deflater.setInput(BufferUtil.toArray(data));
-        deflater.finish();
-
-        // prepare the output buffer
-        byte out[] = new byte[length];
-        int out_offset = 0;
-
-        // write the uncompressed length
-        if (length > 0xFF_FF)
+        try
         {
-            out[out_offset++] = 0x7F;
-            out[out_offset++] = (byte)0;
-            out[out_offset++] = (byte)0;
-            out[out_offset++] = (byte)0;
-            out[out_offset++] = (byte)0;
-            out[out_offset++] = (byte)((length >> 24) & 0xff);
-            out[out_offset++] = (byte)((length >> 16) & 0xff);
-            out[out_offset++] = (byte)((length >> 8) & 0xff);
-            out[out_offset++] = (byte)(length & 0xff);
+            // deflate data
+            ByteBuffer buf = deflate(data);
+            frame.setPayload(buf);
+            frame.setRsv1(deflater.finished());
+            nextOutput(context,callback,frame);
         }
-        else if (length >= 0x7E)
+        finally
         {
-            out[out_offset++] = 0x7E;
-            out[out_offset++] = (byte)(length >> 8);
-            out[out_offset++] = (byte)(length & 0xff);
+            // free original data buffer
+            getBufferPool().release(data);
         }
-        else
-        {
-            out[out_offset++] = (byte)(length & 0x7f);
-        }
-
-        deflater.deflate(out,out_offset,length - out_offset);
-
-        frame.setPayload(out);
-        frame.setRsv1(deflater.finished());
-        nextOutput(context,callback,frame);
-
-        // free original data buffer
-        getBufferPool().release(data);
     }
 
-    private int readUncompresseLength(WebSocketFrame frame, ByteBuffer data)
+    /**
+     * Read the uncompressed length indicator in the frame.
+     * <p>
+     * Will modify the position of the buffer.
+     * 
+     * @param data
+     * @return
+     */
+    public int readUncompresseLength(ByteBuffer data)
     {
         int length = data.get();
         int bytes = 0;
@@ -208,7 +238,7 @@ public class DeflateFrameExtension extends Extension
             length |= (b & 0xFF) << (8 * bytes);
         }
 
-        assertSanePayloadLength(frame,length);
+        assertSanePayloadLength(length);
 
         return length;
     }
@@ -220,7 +250,8 @@ public class DeflateFrameExtension extends Extension
 
         minLength = config.getParameter("minLength",minLength);
 
-        deflater = new Deflater();
+        deflater = new Deflater(Deflater.BEST_COMPRESSION);
+        deflater.setStrategy(Deflater.DEFAULT_STRATEGY);
         inflater = new Inflater();
     }
 }

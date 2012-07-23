@@ -93,7 +93,7 @@ public class GeneratorTest
         // Parse complete buffer.
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Parser parser = new Parser(policy);
-        FrameParseCapture capture = new FrameParseCapture();
+        IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
         BufferUtil.flipToFlush(completeBuf,0);
