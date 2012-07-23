@@ -42,6 +42,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -1010,7 +1012,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
-            // ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             OutputStream os=client.getOutputStream();
             InputStream is=client.getInputStream();
 
@@ -1039,7 +1041,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         finally
         {
-            // ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
 
             if (!client.isClosed())
                 client.close();

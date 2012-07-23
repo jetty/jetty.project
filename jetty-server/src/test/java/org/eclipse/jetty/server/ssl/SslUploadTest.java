@@ -136,7 +136,7 @@ public class SslUploadTest
         // System.err.println(response);
 
         long end = System.nanoTime();
-        System.out.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
+        // System.out.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
         assertEquals(requestContent.length, total);
     }
 
