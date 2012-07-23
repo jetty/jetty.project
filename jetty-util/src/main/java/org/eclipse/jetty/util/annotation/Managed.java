@@ -23,7 +23,43 @@ import java.lang.annotation.Target;
 @Target( { ElementType.TYPE, ElementType.METHOD, ElementType.FIELD } )
 public @interface Managed
 {
+    /**
+     * Description of the Managed Object
+     * 
+     * @return
+     */
     String value() default "Not Specified";
+    
+    /**
+     * Is the managed field read-only?
+     * 
+     * NOTE: applies to FIELD
+     * 
+     * @return true if readonly
+     */
     boolean readonly() default false;
+    
+    /**
+     * Is the managed field itself a Managed Object?
+     * 
+     * NOTE: applies to FIELD
+     * 
+     * @return true if the target is a Managed Object
+     */
     boolean managed() default false;
+    
+    /**
+     * Does the managed field or method exist on a proxy object?
+     * 
+     * NOTE: applies to FIELD and METHOD
+     * 
+     * @return true if a proxy object is involved
+     */
+    boolean proxied() default false;
+    
+    String impact() default "UNKNOWN";
+    
+    String getter() default "";
+    
+    String setter() default "";
 }

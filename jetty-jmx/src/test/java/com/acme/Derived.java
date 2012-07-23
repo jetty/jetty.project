@@ -19,7 +19,7 @@ import org.eclipse.jetty.util.annotation.Name;
 @Managed("Test the mbean stuff")
 public class Derived extends Base implements Signature
 {
-    @Managed("The full name of something")
+    @Managed(value="The full name of something", getter="getFullName", setter="setFullName")
     String fname="Full Name";
 
     public String getFullName()

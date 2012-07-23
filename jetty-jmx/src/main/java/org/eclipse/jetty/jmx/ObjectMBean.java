@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.jmx;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -48,6 +50,8 @@ import javax.management.modelmbean.ModelMBean;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.Managed;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -224,69 +228,57 @@ public class ObjectMBean implements DynamicMBean
                 Object notifications=null;
 
                 // Find list of classes that can influence the mbean
-                Class o_class=_managed.getClass();
+                Class<?> o_class=_managed.getClass();
                 Object influences = findInfluences(null, _managed.getClass());
 
                 LOG.debug("Influence Count: " + LazyList.size(influences) );
 
-                // Set to record defined items
-                Set defined=new HashSet();
+                // Process Type Annotations
+                Managed primary = o_class.getAnnotation( Managed.class);
+                desc = primary.value();
 
                 // For each influence
                 for (int i=0;i<LazyList.size(influences);i++)
                 {
-                    Class oClass = (Class)LazyList.get(influences, i);
+                    Class<?> oClass = (Class<?>)LazyList.get(influences, i);
 
-                    LOG.debug("Influence: " + oClass.getCanonicalName() );
+                    Managed typeAnnotation = oClass.getAnnotation( Managed.class);
 
-                    // look for a bundle defining methods
-                    if (Object.class.equals(oClass))
-                        oClass=ObjectMBean.class;
-                    String pName = oClass.getPackage().getName();
-                    String cName = oClass.getName().substring(pName.length() + 1);
-                    String rName = pName.replace('.', '/') + "/jmx/" + cName+"-mbean";
-
-                    try
+                    LOG.debug("Influenced by: " + oClass.getCanonicalName() );
+                    if ( typeAnnotation == null )
                     {
-                        LOG.debug(rName);
-                        ResourceBundle bundle = Loader.getResourceBundle(o_class, rName,true,Locale.getDefault());
-
-                        
-                        // Extract meta data from bundle
-                        Enumeration e = bundle.getKeys();
-                        while (e.hasMoreElements())
+                        LOG.debug("Annotations not found for: " + oClass.getCanonicalName() );
+                        continue;
+                    }
+                    
+                    try
+                    {                                      
+                        // Process Field Annotations
+                        for ( Field field : oClass.getDeclaredFields())
                         {
-                            String key = (String)e.nextElement();
-                            String value = bundle.getString(key);
-
-                            // Determin if key is for mbean , attribute or for operation
-                            if (key.equals(cName))
+                            LOG.debug("Checking: " + field.getName());
+                            Managed fieldAnnotation = field.getAnnotation(Managed.class);
+                                                      
+                            if ( fieldAnnotation != null )
                             {
-                                // set the mbean description
-                                if (desc==null)
-                                    desc=value;
-                            }
-                            else if (key.indexOf('(')>0)
-                            {
-                                // define an operation
-                                if (!defined.contains(key) && key.indexOf('[')<0)
-                                {
-                                    defined.add(key);
-                                    operations=LazyList.add(operations,defineOperation(key, value, bundle));
-                                }
-                            }
-                            else
-                            {
-                                // define an attribute
-                                if (!defined.contains(key))
-                                {
-                                    defined.add(key);
-                                    MBeanAttributeInfo info=defineAttribute(key, value);
-                                    if (info!=null)
-                                        attributes=LazyList.add(attributes,info);
-                                }
+                                LOG.debug("Field Annotation found for: " + field.getName() );
+                                attributes=LazyList.add(attributes, defineAttribute(field, fieldAnnotation));
                             }
                         }
+                            
+                        // Process Method Annotations
+                        
+                        for ( Method method : oClass.getDeclaredMethods() )
+                        {
+                            Managed methodAnnotation = method.getAnnotation(Managed.class);
+                            
+                            if ( methodAnnotation != null )
+                            {
+                                LOG.debug("Method Annotation found for: " + method.getName() );
+                                operations=LazyList.add(operations, defineOperation(method, methodAnnotation));
+                            }
+                        }
+                        
                     }
                     catch(MissingResourceException e)
                     {
@@ -524,6 +516,8 @@ public class ObjectMBean implements DynamicMBean
 
     /* ------------------------------------------------------------ */
     /**
+     * TODO update to new behavior
+     * 
      * Define an attribute on the managed object. The meta data is defined by looking for standard
      * getter and setter methods. Descriptions are obtained with a call to findDescription with the
      * attribute name.
@@ -538,31 +532,14 @@ public class ObjectMBean implements DynamicMBean
      * </ul>
      * the access is either "RW" or "RO".
      */
-    public MBeanAttributeInfo defineAttribute(String name, String metaData)
+    public MBeanAttributeInfo defineAttribute(Field field, Managed fieldAnnotation)
     {
-        String description = "";
-        boolean writable = true;
-        boolean onMBean = false;
-        boolean convert = false;
-
-        if (metaData!= null)
-        {
-            String[] tokens = metaData.split(":", 3);
-            for (int t=0;t<tokens.length-1;t++)
-            {
-                tokens[t]=tokens[t].trim();
-                if ("RO".equals(tokens[t]))
-                    writable=false;
-                else 
-                {
-                    onMBean=("MMBean".equalsIgnoreCase(tokens[t]) || "MBean".equalsIgnoreCase(tokens[t]));
-                    convert=("MMBean".equalsIgnoreCase(tokens[t]) || "MObject".equalsIgnoreCase(tokens[t]));
-                }
-            }
-            description=tokens[tokens.length-1];
-        }
-        
-
+        String name = field.getName();
+        String description = fieldAnnotation.value();
+        boolean writable = fieldAnnotation.readonly();   
+        boolean onMBean = fieldAnnotation.proxied();
+        boolean convert = fieldAnnotation.managed();
+                
         String uName = name.substring(0, 1).toUpperCase() + name.substring(1);
         Class oClass = onMBean ? this.getClass() : _managed.getClass();
 
@@ -572,12 +549,35 @@ public class ObjectMBean implements DynamicMBean
         Class type = null;
         Method getter = null;
         Method setter = null;
+        
+        String declaredGetter = fieldAnnotation.getter();
+        String declaredSetter = fieldAnnotation.setter();
+        
         Method[] methods = oClass.getMethods();
         for (int m = 0; m < methods.length; m++)
         {
             if ((methods[m].getModifiers() & Modifier.PUBLIC) == 0)
                 continue;
 
+            // Check if it is a declared getter
+            if (methods[m].getName().equals(declaredGetter) && methods[m].getParameterTypes().length == 0)
+            {
+                if (getter != null)
+                {
+                    LOG.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
+                    continue;
+                }
+                getter = methods[m];
+                if (type != null && !type.equals(methods[m].getReturnType()))
+                {
+                    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
+                    continue;
+                }
+                type = methods[m].getReturnType();
+                
+                LOG.debug("Declared Getter: " + declaredGetter);
+            }
+            
             // Look for a getter
             if (methods[m].getName().equals("get" + uName) && methods[m].getParameterTypes().length == 0)
             {
@@ -612,8 +612,8 @@ public class ObjectMBean implements DynamicMBean
                 type = methods[m].getReturnType();
             }
 
-            // look for a setter
-            if (writable && methods[m].getName().equals("set" + uName) && methods[m].getParameterTypes().length == 1)
+            // look for a declared setter
+            if (writable && methods[m].getName().equals(declaredSetter) && methods[m].getParameterTypes().length == 1)
             {
                 if (setter != null)
                 {
@@ -626,6 +626,24 @@ public class ObjectMBean implements DynamicMBean
 		    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
 		    continue;
 		}
+                LOG.debug("Declared Setter: " + declaredSetter);
+                type = methods[m].getParameterTypes()[0];
+            }
+            
+            // look for a setter
+            if (writable && methods[m].getName().equals("set" + uName) && methods[m].getParameterTypes().length == 1)
+            {
+                if (setter != null)
+                {
+                    LOG.warn("Multiple setters for mbean attr " + name+ " in "+oClass);
+                    continue;
+                }
+                setter = methods[m];
+                if (type != null && !type.equals(methods[m].getParameterTypes()[0]))
+                {
+                    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
+                    continue;
+                }
                 type = methods[m].getParameterTypes()[0];
             }
         }
@@ -674,7 +692,7 @@ public class ObjectMBean implements DynamicMBean
         }
         catch (Exception e)
         {
-            LOG.warn(name+": "+metaData, e);
+            LOG.warn(e);
             throw new IllegalArgumentException(e.toString());
         }
     }
@@ -682,6 +700,8 @@ public class ObjectMBean implements DynamicMBean
 
     /* ------------------------------------------------------------ */
     /**
+     *  TODO update to new behavior
+     * 
      * Define an operation on the managed object. Defines an operation with parameters. Refection is
      * used to determine find the method and it's return type. The description of the method is
      * found with a call to findDescription on "name(signature)". The name and description of each
@@ -693,77 +713,59 @@ public class ObjectMBean implements DynamicMBean
      * the "Object","MBean", "MMBean" or "MObject" to indicate the method is on the object, the MBean or on the
      * object but converted to an MBean reference, and impact is either "ACTION","INFO","ACTION_INFO" or "UNKNOWN".
      */
-    private MBeanOperationInfo defineOperation(String signature, String metaData, ResourceBundle bundle)
+    private MBeanOperationInfo defineOperation(Method method, Managed methodAnnotation)
     {
-        String[] tokens=metaData.split(":",3);
-        int i=tokens.length-1;
-        String description=tokens[i--];
-        String impact_name = i<0?"UNKNOWN":tokens[i--].trim();
-        if (i==0)
-            tokens[0]=tokens[0].trim();
-        boolean onMBean= i==0 && ("MBean".equalsIgnoreCase(tokens[0])||"MMBean".equalsIgnoreCase(tokens[0]));
-        boolean convert= i==0 && ("MObject".equalsIgnoreCase(tokens[0])||"MMBean".equalsIgnoreCase(tokens[0]));
+        String description = methodAnnotation.value();
+        boolean onMBean = methodAnnotation.proxied();
+        boolean convert = methodAnnotation.managed();
+        String impactName = methodAnnotation.impact();
+        
+        String signature = method.getName();
+        
+        LOG.debug("defineOperation "+method.getName()+" "+onMBean+":"+impactName+":"+description);
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("defineOperation "+signature+" "+onMBean+":"+impact_name+":"+description);
-
-        Class oClass = onMBean ? this.getClass() : _managed.getClass();
 
         try
         {
             // Resolve the impact
             int impact=MBeanOperationInfo.UNKNOWN;
-            if (impact_name==null || impact_name.equals("UNKNOWN"))
+            if (impactName==null || impactName.equals("UNKNOWN"))
                 impact=MBeanOperationInfo.UNKNOWN;
-            else if (impact_name.equals("ACTION"))
+            else if (impactName.equals("ACTION"))
                 impact=MBeanOperationInfo.ACTION;
-            else if (impact_name.equals("INFO"))
+            else if (impactName.equals("INFO"))
                 impact=MBeanOperationInfo.INFO;
-            else if (impact_name.equals("ACTION_INFO"))
+            else if (impactName.equals("ACTION_INFO"))
                 impact=MBeanOperationInfo.ACTION_INFO;
             else
-                LOG.warn("Unknown impact '"+impact_name+"' for "+signature);
+                LOG.warn("Unknown impact '"+impactName+"' for "+signature);
 
 
-            // split the signature
-            String[] parts=signature.split("[\\(\\)]");
-            String method_name=parts[0];
-            String arguments=parts.length==2?parts[1]:null;
-            String[] args=arguments==null?new String[0]:arguments.split(" *, *");
+            Annotation[][] allParameterAnnotations = method.getParameterAnnotations();
+            Class<?>[] methodTypes = method.getParameterTypes();
+            MBeanParameterInfo[] pInfo = new MBeanParameterInfo[allParameterAnnotations.length];
 
-            // Check types and normalize signature.
-            Class[] types = new Class[args.length];
-            MBeanParameterInfo[] pInfo = new MBeanParameterInfo[args.length];
-            signature=method_name;
-            for (i = 0; i < args.length; i++)
+            for ( int i = 0 ; i < allParameterAnnotations.length ; ++i )
             {
-                Class type = TypeUtil.fromName(args[i]);
-                if (type == null)
-                    type = Thread.currentThread().getContextClassLoader().loadClass(args[i]);
-                types[i] = type;
-                args[i] = type.isPrimitive() ? TypeUtil.toName(type) : args[i];
-                signature+=(i>0?",":"(")+args[i];
+                Annotation[] parameterAnnotations = allParameterAnnotations[i];
+                
+                for ( Annotation anno : parameterAnnotations )
+                {
+                    if ( anno instanceof Name )
+                    {
+                        Name nameAnnotation = (Name) anno;
+                        
+                        pInfo[i] = new MBeanParameterInfo(nameAnnotation.value(),methodTypes[i].getName(),nameAnnotation.description());
+                    }
+                }
             }
-            signature+=(i>0?")":"()");
-
-            // Build param infos
-            for (i = 0; i < args.length; i++)
-            {
-                String param_desc = bundle.getString(signature + "[" + i + "]");
-                parts=param_desc.split(" *: *",2);
-                if (LOG.isDebugEnabled())
-                    LOG.debug(parts[0]+": "+parts[1]);
-                pInfo[i] = new MBeanParameterInfo(parts[0].trim(), args[i], parts[1].trim());
-            }
-
-            // build the operation info
-            Method method = oClass.getMethod(method_name, types);
+          
             Class returnClass = method.getReturnType();
             _methods.put(signature, method);
             if (convert)
                 _convert.add(signature);
-
-            return new MBeanOperationInfo(method_name, description, pInfo, returnClass.isPrimitive() ? TypeUtil.toName(returnClass) : (returnClass.getName()), impact);
+             
+            return new MBeanOperationInfo(method.getName(), description, pInfo, returnClass.isPrimitive() ? TypeUtil.toName(returnClass) : (returnClass.getName()), impact);
         }
         catch (Exception e)
         {
