@@ -76,7 +76,7 @@ public class FragmentExtensionTest
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new StandardByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4;minFragments=7");
+        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
         ext.setNextIncomingFrames(capture);
@@ -127,7 +127,7 @@ public class FragmentExtensionTest
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new StandardByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4;minFragments=7");
+        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
         ext.setNextIncomingFrames(capture);
@@ -152,10 +152,10 @@ public class FragmentExtensionTest
     }
 
     /**
-     * Verify that outgoing text frames are compressed.
+     * Verify that outgoing text frames are fragmented by the maxLength configuration.
      */
     @Test
-    public void testOutgoingFrames()
+    public void testOutgoingFramesByMaxLength()
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
@@ -234,6 +234,83 @@ public class FragmentExtensionTest
     }
 
     /**
+     * Verify that outgoing text frames are fragmented by default configuration
+     */
+    @Test
+    public void testOutgoingFramesDefaultConfig()
+    {
+        OutgoingFramesCapture capture = new OutgoingFramesCapture();
+
+        FragmentExtension ext = new FragmentExtension();
+        ext.setBufferPool(new StandardByteBufferPool());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
+        ExtensionConfig config = ExtensionConfig.parse("fragment");
+        ext.setConfig(config);
+
+        ext.setNextOutgoingFrames(capture);
+
+        // Quote
+        List<String> quote = new ArrayList<>();
+        quote.add("No amount of experimentation can ever prove me right;");
+        quote.add("a single experiment can prove me wrong.");
+        quote.add("-- Albert Einstein");
+
+        // Write quote as separate frames
+        List<Callback<String>> callbacks = new ArrayList<>();
+        for (String section : quote)
+        {
+            WebSocketFrame frame = WebSocketFrame.text(section);
+            FutureCallback<String> callback = new FutureCallback<>();
+            ext.output("Q" + (callbacks.size()),callback,frame);
+            callbacks.add(callback);
+        }
+
+        // Expected Frames
+        ExpectedWrites expectedWrites = new ExpectedWrites();
+        expectedWrites.add("Q0",callbacks.get(0)).frame = new WebSocketFrame(OpCode.TEXT).setPayload("No amount of experimentation can ever prove me right;");
+        expectedWrites.add("Q1",callbacks.get(1)).frame = new WebSocketFrame(OpCode.TEXT).setPayload("a single experiment can prove me wrong.");
+        expectedWrites.add("Q2",callbacks.get(2)).frame = new WebSocketFrame(OpCode.TEXT).setPayload("-- Albert Einstein");
+
+        // capture.dump();
+
+        int len = expectedWrites.size();
+        capture.assertFrameCount(len);
+
+        String prefix;
+        LinkedList<Write<?>> writes = capture.getWrites();
+        for (int i = 0; i < len; i++)
+        {
+            prefix = "Write[" + i + "]";
+            Write<?> actualWrite = writes.get(i);
+            Write<String> expectedWrite = expectedWrites.get(i);
+
+            if (expectedWrite.context != null)
+            {
+                // Validate callbacks have original settings
+                Assert.assertThat(prefix + ".context",(String)actualWrite.context,is(expectedWrite.context));
+                Assert.assertSame(prefix + ".callback",expectedWrite.callback,actualWrite.callback);
+            }
+
+            // Validate Frame
+            WebSocketFrame actualFrame = actualWrite.frame;
+            WebSocketFrame expectedFrame = expectedWrite.frame;
+            prefix += ".frame";
+            Assert.assertThat(prefix + ".opcode",actualFrame.getOpCode(),is(expectedFrame.getOpCode()));
+            Assert.assertThat(prefix + ".fin",actualFrame.isFin(),is(expectedFrame.isFin()));
+            Assert.assertThat(prefix + ".rsv1",actualFrame.isRsv1(),is(expectedFrame.isRsv1()));
+            Assert.assertThat(prefix + ".rsv2",actualFrame.isRsv2(),is(expectedFrame.isRsv2()));
+            Assert.assertThat(prefix + ".rsv3",actualFrame.isRsv3(),is(expectedFrame.isRsv3()));
+
+            // Validate Payload
+            ByteBuffer expectedData = expectedFrame.getPayload().slice();
+            ByteBuffer actualData = actualFrame.getPayload().slice();
+
+            Assert.assertThat(prefix + ".payloadLength",actualData.remaining(),is(expectedData.remaining()));
+            ByteBufferAssert.assertEquals(prefix + ".payload",expectedData,actualData);
+        }
+    }
+
+    /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
      */
     @Test
@@ -244,7 +321,7 @@ public class FragmentExtensionTest
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(new StandardByteBufferPool());
         ext.setPolicy(WebSocketPolicy.newServerPolicy());
-        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4;minFragments=7");
+        ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
         ext.setNextOutgoingFrames(capture);

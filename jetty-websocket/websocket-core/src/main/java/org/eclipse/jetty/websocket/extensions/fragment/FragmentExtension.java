@@ -26,8 +26,6 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public class FragmentExtension extends Extension
 {
     private int maxLength = -1;
-    private int minFragments = 1;
-
 
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
@@ -39,7 +37,6 @@ public class FragmentExtension extends Extension
             return;
         }
 
-        int fragments = 1;
         int length = frame.getPayloadLength();
 
         OpCode opcode = frame.getOpCode(); // original opcode
@@ -47,63 +44,35 @@ public class FragmentExtension extends Extension
         int originalLimit = payload.limit();
         int currentPosition = payload.position();
 
-        // break apart payload based on maxLength rules
-        if (maxLength > 0)
+        if (maxLength <= 0)
         {
-            while (length > maxLength)
-            {
-                fragments++;
-
-                WebSocketFrame frag = new WebSocketFrame(frame);
-                frag.setOpCode(opcode);
-                frag.setFin(false); // always false here
-                payload.position(currentPosition);
-                payload.limit(Math.min(payload.position() + maxLength,originalLimit));
-                frag.setPayload(payload);
-
-                nextOutputNoCallback(frag);
-
-                length -= maxLength;
-                opcode = OpCode.CONTINUATION;
-                currentPosition = payload.limit();
-            }
-
-            // write remaining
-            WebSocketFrame frag = new WebSocketFrame(frame);
-            frag.setOpCode(opcode);
-            frag.setFin(frame.isFin()); // use original fin
-            payload.position(currentPosition);
-            payload.limit(originalLimit);
-            frag.setPayload(payload);
-
-            nextOutput(context,callback,frag);
+            // output original frame
+            nextOutput(context,callback,frame);
             return;
         }
 
-        // break apart payload based on minimum # of fragments
-        if (fragments < minFragments)
+        // break apart payload based on maxLength rules
+        while (length > maxLength)
         {
-            int fragmentsLeft = (minFragments - fragments);
-            int fragLength = length / fragmentsLeft; // equal sized fragments
+            WebSocketFrame frag = new WebSocketFrame(frame);
+            frag.setOpCode(opcode);
+            frag.setFin(false); // always false here
+            payload.position(currentPosition);
+            payload.limit(Math.min(payload.position() + maxLength,originalLimit));
+            frag.setPayload(payload);
 
-            while (fragments < minFragments)
-            {
-                fragments++;
+            nextOutputNoCallback(frag);
 
-                WebSocketFrame frag = new WebSocketFrame(frame);
-                frag.setOpCode(opcode);
-                frag.setFin(false);
-                frag.setPayload(payload);
-
-                nextOutputNoCallback(frag);
-                length -= fragLength;
-                opcode = OpCode.CONTINUATION;
-            }
+            length -= maxLength;
+            opcode = OpCode.CONTINUATION;
+            currentPosition = payload.limit();
         }
 
-        // output whatever is left
+        // write remaining
         WebSocketFrame frag = new WebSocketFrame(frame);
         frag.setOpCode(opcode);
+        frag.setFin(frame.isFin()); // use original fin
+        payload.position(currentPosition);
         payload.limit(originalLimit);
         frag.setPayload(payload);
 
@@ -116,6 +85,5 @@ public class FragmentExtension extends Extension
         super.setConfig(config);
 
         maxLength = config.getParameter("maxLength",maxLength);
-        minFragments = config.getParameter("minFragments",minFragments);
     }
 }
