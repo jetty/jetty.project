@@ -426,6 +426,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         boolean connected = channel.finishConnect();
                         if (connected)
                         {
+                            key.interestOps(0);
                             AsyncEndPoint endpoint = createEndPoint(channel, key);
                             key.attach(endpoint);
                         }
