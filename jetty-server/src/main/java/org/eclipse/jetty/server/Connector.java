@@ -65,7 +65,7 @@ public interface Connector extends LifeCycle
     /* ------------------------------------------------------------ */
     Statistics getStatistics();
 
-    interface NetConnector extends Connector
+    interface NetConnector extends Connector, AutoCloseable
     {
         /* ------------------------------------------------------------ */
         /**
@@ -75,7 +75,7 @@ public interface Connector extends LifeCycle
         void open() throws IOException;
 
         /* ------------------------------------------------------------ */
-        void close();
+        void close() throws IOException;
 
         /* ------------------------------------------------------------ */
         /**

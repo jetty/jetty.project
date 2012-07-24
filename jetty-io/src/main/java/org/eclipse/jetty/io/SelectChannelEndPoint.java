@@ -17,8 +17,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.Callback;
@@ -32,21 +36,19 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
-    private final SelectorManager.ManagedSelector _selector;
-    private final SelectionKey _key;
-
-    /**
-     * The desired value for {@link SelectionKey#interestOps()}
-     */
-    private volatile int _interestOps;
-
+    private final AtomicReference<Future<?>> _timeout = new AtomicReference<>();
+    private final Runnable _idleTask = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            checkIdleTimeout();
+        }
+    };
     /**
      * true if {@link ManagedSelector#destroyEndPoint(AsyncEndPoint)} has not been called
      */
     private final AtomicBoolean _open = new AtomicBoolean();
-
-    private volatile AsyncConnection _connection;
-
     private final ReadInterest _readInterest = new ReadInterest()
     {
         @Override
@@ -56,7 +58,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             return false;
         }
     };
-
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
@@ -65,13 +66,37 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             updateKey(SelectionKey.OP_WRITE, true);
         }
     };
+    private final SelectorManager.ManagedSelector _selector;
+    private final SelectionKey _key;
+    private final ScheduledExecutorService _scheduler;
+    private volatile AsyncConnection _connection;
+    /**
+     * The desired value for {@link SelectionKey#interestOps()}
+     */
+    private volatile int _interestOps;
 
-    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, long idleTimeout) throws IOException
+    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, ScheduledExecutorService scheduler, long idleTimeout) throws IOException
     {
         super(channel);
         _selector = selector;
         _key = key;
+        _scheduler = scheduler;
         setIdleTimeout(idleTimeout);
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        super.setIdleTimeout(idleTimeout);
+        scheduleIdleTimeout(idleTimeout);
+    }
+
+    private void scheduleIdleTimeout(long delay)
+    {
+        Future<?> newTimeout = isOpen() && delay > 0 ? _scheduler.schedule(_idleTask, delay, TimeUnit.MILLISECONDS) : null;
+        Future<?> oldTimeout = _timeout.getAndSet(newTimeout);
+        if (oldTimeout != null)
+            oldTimeout.cancel(false);
     }
 
     @Override
@@ -111,32 +136,32 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             _writeFlusher.completeWrite();
     }
 
-    @Override
-    public void checkTimeout(long now)
+    private void checkIdleTimeout()
     {
-        synchronized (this)
+        if (isOpen())
         {
+            long idleTimestamp = getIdleTimestamp();
+            long idleTimeout = getIdleTimeout();
+            long idleElapsed = System.currentTimeMillis() - idleTimestamp;
+            long idleLeft = idleTimeout - idleElapsed;
+
             if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
-                long idleTimestamp = getIdleTimestamp();
-                long idleTimeout = getIdleTimeout();
-
                 if (idleTimestamp != 0 && idleTimeout > 0)
                 {
-                    long idleForMs = now - idleTimestamp;
-
-                    if (idleForMs > idleTimeout)
+                    if (idleLeft < 0)
                     {
                         if (isOutputShutdown())
                             close();
                         notIdle();
 
-                        TimeoutException timeout = new TimeoutException("idle " + idleForMs + "ms");
+                        TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
                         _readInterest.failed(timeout);
                         _writeFlusher.failed(timeout);
                     }
                 }
             }
+            scheduleIdleTimeout(idleLeft > 0 ? idleLeft : idleTimeout);
         }
     }
 

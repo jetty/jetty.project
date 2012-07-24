@@ -57,30 +57,30 @@
            </Item>
            <Item>
              <New id="vcontexts" class="org.eclipse.jetty.server.handler.ContextHandler">
-		       <Set name="contextPath">/tests</Set>
-		       <Set name="VirtualHosts">
-		         <Array type="java.lang.String">
-		           <Item>VirtualHost</Item>
-		         </Array>
-		       </Set>
-		       <Set name="ResourceBase"><Property name="test.docroot.base"/>/virtualhost</Set>
-		       <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
-		       <Set name="DisplayName">virtual</Set>
+               <Set name="contextPath">/tests</Set>
+               <Set name="VirtualHosts">
+                 <Array type="java.lang.String">
+                   <Item>VirtualHost</Item>
+                 </Array>
+               </Set>
+               <Set name="ResourceBase"><Property name="test.docroot.base"/>/virtualhost</Set>
+               <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+               <Set name="DisplayName">virtual</Set>
              </New>
            </Item>
            <Item>
              <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/tests</Set>
                <Set name="ResourceBase"><Property name="test.docroot.base"/>/default</Set>
-		       <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
-		       <Set name="DisplayName">default</Set>
+               <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+               <Set name="DisplayName">default</Set>
              </New>
            </Item>
            <Item>
              <New id="echocontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/echo</Set>
-		       <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.test.support.EchoHandler"/></Set>
-		       <Set name="DisplayName">echo</Set>
+               <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.test.support.EchoHandler"/></Set>
+               <Set name="DisplayName">echo</Set>
              </New>
            </Item>
          </Array>
@@ -88,20 +88,20 @@
       </New>
     </Set>
 
-    <Call name="addLifeCycle">
-	  <Arg>
-	    <New class="org.eclipse.jetty.deploy.ContextDeployer">
-	      <Set name="contexts"><Ref id="WebappContexts"/></Set>
-	      <Set name="configurationDir"><Property name="test.resourcesdir" default="src/test/resources"/>/webapp-contexts/RFC2616</Set>
-	      <Set name="scanInterval">0</Set>
-	      <Set name="configurationManager">
-	        <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
-	          <Set name="file"><Property name="test.targetdir" default="target"/>/testable-jetty-server-config.properties</Set>
-	        </New>
-	      </Set>
-	    </New>
-	  </Arg>
-	</Call>
+    <Call name="addBean">
+      <Arg>
+        <New class="org.eclipse.jetty.deploy.ContextDeployer">
+          <Set name="contexts"><Ref id="WebappContexts"/></Set>
+          <Set name="configurationDir"><Property name="test.resourcesdir" default="src/test/resources"/>/webapp-contexts/RFC2616</Set>
+          <Set name="scanInterval">0</Set>
+          <Set name="configurationManager">
+            <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
+              <Set name="file"><Property name="test.targetdir" default="target"/>/testable-jetty-server-config.properties</Set>
+            </New>
+          </Set>
+        </New>
+      </Arg>
+    </Call>
 
     <!-- =========================================================== -->
     <!-- Configure the webapp deployer.                              -->
@@ -122,9 +122,9 @@
         <New class="org.eclipse.jetty.deploy.WebAppDeployer">
           <Set name="contexts"><Ref id="WebappContexts"/></Set>
           <Set name="webAppDir"><Property name="test.targetdir" default="target"/>/webapps</Set>
-		  <Set name="parentLoaderPriority">false</Set>
-		  <Set name="extract">true</Set>
-		  <Set name="allowDuplicates">false</Set>
+          <Set name="parentLoaderPriority">false</Set>
+          <Set name="extract">true</Set>
+          <Set name="allowDuplicates">false</Set>
           <Set name="defaultsDescriptor"><Property name="test.resourcesdir" default="src/test/resources"/>/webdefault.xml</Set>
           <Call name="setAttribute">
             <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>

@@ -179,11 +179,6 @@ public class SslConnection extends AbstractAsyncConnection
         {
         }
 
-        @Override
-        public void checkTimeout(long now)
-        {
-        }
-
         private final Callback<Void> _writeCallback = new Callback<Void>()
         {
 

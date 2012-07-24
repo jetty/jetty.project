@@ -15,14 +15,11 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Phaser;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
@@ -34,9 +31,9 @@ import org.eclipse.jetty.util.log.Logger;
 public class LocalHttpConnector extends HttpConnector
 {
     private static final Logger LOG = Log.getLogger(LocalHttpConnector.class);
-    private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<LocalEndPoint>();
-    private ScheduledExecutorService _timer;
-    private LocalExecutor _executor;
+
+    private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
+    private volatile LocalExecutor _executor;
 
     public LocalHttpConnector()
     {
@@ -49,12 +46,12 @@ public class LocalHttpConnector extends HttpConnector
         return this;
     }
 
-    /** Sends requests and get's responses based on thread activity.
+    /** Sends requests and get responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
-     * @param requests
-     * @return
-     * @throws Exception
+     * @param requests the requests
+     * @return the responses
+     * @throws Exception if the requests fail
      */
     public String getResponses(String requests) throws Exception
     {
@@ -65,6 +62,9 @@ public class LocalHttpConnector extends HttpConnector
     /** Sends requests and get's responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
+     * @param requestsBuffer the requests
+     * @return the responses
+     * @throws Exception if the requests fail
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
@@ -81,8 +81,8 @@ public class LocalHttpConnector extends HttpConnector
     /**
      * Execute a request and return the EndPoint through which
      * responses can be received.
-     * @param rawRequest
-     * @return
+     * @param rawRequest the request
+     * @return the local endpoint
      */
     public LocalEndPoint executeRequest(String rawRequest)
     {
@@ -111,7 +111,6 @@ public class LocalHttpConnector extends HttpConnector
     protected void doStart() throws Exception
     {
         super.doStart();
-        _timer=new ScheduledThreadPoolExecutor(1);
         _executor=new LocalExecutor(findExecutor());
     }
 
@@ -119,7 +118,6 @@ public class LocalHttpConnector extends HttpConnector
     protected void doStop() throws Exception
     {
         super.doStop();
-        _timer.shutdownNow();
         _executor=null;
     }
 
@@ -175,9 +173,8 @@ public class LocalHttpConnector extends HttpConnector
 
         public LocalEndPoint()
         {
-            super(_timer);
+            super(getScheduler(), LocalHttpConnector.this.getIdleTimeout());
             setGrowOutput(true);
-            setIdleTimeout(LocalHttpConnector.this.getIdleTimeout());
         }
 
         public void addInput(String s)

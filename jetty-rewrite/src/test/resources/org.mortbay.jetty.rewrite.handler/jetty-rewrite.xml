@@ -194,7 +194,7 @@
     <!-- in the $JETTY_HOME/contexts directory                       -->
     <!--                                                             -->
     <!-- =========================================================== -->
-    <Call name="addLifeCycle">
+    <Call name="addBean">
       <Arg>
         <New class="org.eclipse.jetty.server.deployer.ContextDeployer">
           <Set name="contexts"><Ref id="Contexts"/></Set>
@@ -217,7 +217,7 @@
     <!-- Normally only one type of deployer need be used.            -->
     <!--                                                             -->
     <!-- =========================================================== -->
-    <Call name="addLifeCycle">
+    <Call name="addBean">
       <Arg>
         <New class="org.eclipse.jetty.server.deployer.WebAppDeployer">
           <Set name="contexts"><Ref id="Contexts"/></Set>

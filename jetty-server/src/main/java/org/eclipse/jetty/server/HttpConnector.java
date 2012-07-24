@@ -2,8 +2,9 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Timer;
-
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -11,7 +12,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 
 
-public abstract class HttpConnector extends AbstractConnector 
+public abstract class HttpConnector extends AbstractNetConnector
 {
     private String _integralScheme = HttpScheme.HTTPS.asString();
     private int _integralPort = 0;
@@ -19,52 +20,65 @@ public abstract class HttpConnector extends AbstractConnector
     private int _confidentialPort = 0;
     private boolean _forwarded;
     private String _hostHeader;
-    private Timer _timer = new Timer(true);
-
+    private ScheduledExecutorService _scheduler;
+    private boolean _shutdownScheduler;
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
     private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
     private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
     private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
     private String _forwardedCipherSuiteHeader;
     private String _forwardedSslSessionIdHeader;
-
-    private int _requestHeaderSize=6*1024;;
+    private int _requestHeaderSize=6*1024;
     private int _requestBufferSize=16*1024;
     private int _responseHeaderSize=6*1024;
     private int _responseBufferSize=16*1024;
 
-    
     public HttpConnector()
     {
-        super();
     }
 
     public HttpConnector(int acceptors)
     {
         super(acceptors);
     }
-    
+
+    public ScheduledExecutorService getScheduler()
+    {
+        return _scheduler;
+    }
+
+    public void setScheduler(ScheduledExecutorService scheduler)
+    {
+        _scheduler = scheduler;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
-        _timer=new Timer("Timer-"+getName(),true);
+        if (_scheduler == null)
+        {
+            _scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+            {
+                @Override
+                public Thread newThread(Runnable r)
+                {
+                    return new Thread(r, "Timer-" + HttpConnector.this.getName());
+                }
+            });
+            _shutdownScheduler = true;
+        }
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        if (_timer!=null)
-            _timer.cancel();
-        _timer=null;
+        if (_shutdownScheduler)
+            _scheduler.shutdownNow();
+        _scheduler = null;
         super.doStop();
     }
 
-    public Timer getTimer()
-    {
-        return _timer;
-    }
-    
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
@@ -307,12 +321,11 @@ public abstract class HttpConnector extends AbstractConnector
      * Set reverse proxy handling. If set to true, then the X-Forwarded headers (or the headers set in their place) are looked for to set the request protocol,
      * host, server and client ip.
      *
-     * @param check
-     *            true if this connector is checking the x-forwarded-for/host/server headers
-     * @set {@link #setForwardedForHeader(String)}
-     * @set {@link #setForwardedHostHeader(String)}
-     * @set {@link #setForwardedProtoHeader(String)}
-     * @set {@link #setForwardedServerHeader(String)}
+     * @param check true if this connector is checking the x-forwarded-for/host/server headers
+     * @see #setForwardedForHeader(String)
+     * @see #setForwardedHostHeader(String)
+     * @see #setForwardedProtoHeader(String)
+     * @see #setForwardedServerHeader(String)
      */
     public void setForwarded(boolean check)
     {
@@ -384,6 +397,7 @@ public abstract class HttpConnector extends AbstractConnector
 
     /* ------------------------------------------------------------ */
     /**
+     * @return the forwarded for header
      * @see #setForwarded(boolean)
      */
     public String getForwardedForHeader()
@@ -464,6 +478,4 @@ public abstract class HttpConnector extends AbstractConnector
     {
         _forwardedSslSessionIdHeader = forwardedSslSessionId;
     }
-
-
 }

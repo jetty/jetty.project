@@ -119,10 +119,10 @@ public interface EndPoint
     long getIdleTimeout();
 
     /* ------------------------------------------------------------ */
-    /** Set the max idle time.
-     * @param timeMs the max idle time in MS. Timeout <= 0 implies an infinite timeout
+    /** Set the idle timeout.
+     * @param idleTimeout the idle timeout in MS. Timeout <= 0 implies an infinite timeout
      */
-    void setIdleTimeout(long timeMs);
+    void setIdleTimeout(long idleTimeout);
 
 
 

@@ -15,9 +15,9 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Timer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.Action;
@@ -41,7 +41,7 @@ public class HttpConnection extends AbstractAsyncConnection
 {
     public static final Logger LOG = Log.getLogger(HttpConnection.class);
 
-    private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
+    private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
     public static final String UPGRADE_CONNECTION_ATTR = "org.eclispe.jetty.server.HttpConnection.UPGRADE";
 
@@ -76,17 +76,12 @@ public class HttpConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    /** Constructor
-     *
-     */
     public HttpConnection(HttpConnector connector, AsyncEndPoint endpoint, Server server)
     {
         super(endpoint,connector.findExecutor());
 
         _connector = connector;
         _bufferPool=_connector.getByteBufferPool();
-        if (_bufferPool==null)
-            new Throwable().printStackTrace();
 
         _server = server;
 
@@ -696,9 +691,9 @@ public class HttpConnection extends AbstractAsyncConnection
         }
 
         @Override
-        public Timer getTimer()
+        public ScheduledExecutorService getScheduler()
         {
-            return _connector.getTimer();
+            return _connector.getScheduler();
         }
 
         @Override
@@ -747,7 +742,7 @@ public class HttpConnection extends AbstractAsyncConnection
             return fcb;
         }
 
-    };
+    }
 
     private class HttpHttpInput extends HttpInput
     {
