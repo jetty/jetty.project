@@ -42,9 +42,10 @@ public class FragmentExtension extends Extension
         int fragments = 1;
         int length = frame.getPayloadLength();
 
-        OpCode opcode = frame.getOpCode();
+        OpCode opcode = frame.getOpCode(); // original opcode
         ByteBuffer payload = frame.getPayload().slice();
         int originalLimit = payload.limit();
+        int currentPosition = payload.position();
 
         // break apart payload based on maxLength rules
         if (maxLength > 0)
@@ -55,15 +56,28 @@ public class FragmentExtension extends Extension
 
                 WebSocketFrame frag = new WebSocketFrame(frame);
                 frag.setOpCode(opcode);
-                frag.setFin(false);
-                payload.limit(Math.min(payload.limit() + maxLength,originalLimit));
+                frag.setFin(false); // always false here
+                payload.position(currentPosition);
+                payload.limit(Math.min(payload.position() + maxLength,originalLimit));
                 frag.setPayload(payload);
 
                 nextOutputNoCallback(frag);
 
                 length -= maxLength;
                 opcode = OpCode.CONTINUATION;
+                currentPosition = payload.limit();
             }
+
+            // write remaining
+            WebSocketFrame frag = new WebSocketFrame(frame);
+            frag.setOpCode(opcode);
+            frag.setFin(frame.isFin()); // use original fin
+            payload.position(currentPosition);
+            payload.limit(originalLimit);
+            frag.setPayload(payload);
+
+            nextOutput(context,callback,frag);
+            return;
         }
 
         // break apart payload based on minimum # of fragments

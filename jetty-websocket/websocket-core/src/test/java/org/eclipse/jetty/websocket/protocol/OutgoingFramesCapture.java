@@ -19,6 +19,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.util.LinkedList;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.io.OutgoingFrames;
 import org.junit.Assert;
@@ -52,6 +53,17 @@ public class OutgoingFramesCapture implements OutgoingFrames
     public void assertHasNoFrames()
     {
         Assert.assertThat("Has no frames",writes.size(),is(0));
+    }
+
+    public void dump()
+    {
+        System.out.printf("Captured %d outgoing writes%n",writes.size());
+        for (int i = 0; i < writes.size(); i++)
+        {
+            Write<?> write = writes.get(i);
+            System.out.printf("[%3d] %s | %s | %s%n",i,write.context,write.callback,write.frame);
+            System.out.printf("          %s%n",BufferUtil.toDetailString(write.frame.getPayload()));
+        }
     }
 
     public int getFrameCount(OpCode op)
