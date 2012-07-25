@@ -1,16 +1,9 @@
 package org.eclipse.jetty.io;
 
-import static junit.framework.Assert.assertEquals;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -20,85 +13,91 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static junit.framework.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 public class AsyncByteArrayEndPointTest
 {
-    ScheduledExecutorService _timer;
-    
+    private ScheduledExecutorService _scheduler;
+
     @Before
     public void before()
     {
-        _timer = new ScheduledThreadPoolExecutor(1);
+        _scheduler = Executors.newSingleThreadScheduledExecutor();
     }
-    
+
     @After
     public void after()
     {
-        _timer.shutdownNow();
+        _scheduler.shutdownNow();
     }
-    
+
     @Test
     public void testReadable() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_scheduler, 5000);
         endp.setInput("test input");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
         FutureCallback<String> fcb = new FutureCallback<>();
 
-        endp.fillInterested("CTX",fcb);
+        endp.fillInterested("CTX", fcb);
         assertTrue(fcb.isDone());
-        assertEquals("CTX",fcb.get());
-        assertEquals(10,endp.fill(buffer));
-        assertEquals("test input",BufferUtil.toString(buffer));
+        assertEquals("CTX", fcb.get());
+        assertEquals(10, endp.fill(buffer));
+        assertEquals("test input", BufferUtil.toString(buffer));
 
         fcb = new FutureCallback<>();
-        endp.fillInterested("CTX",fcb);
+        endp.fillInterested("CTX", fcb);
         assertFalse(fcb.isDone());
-        assertEquals(0,endp.fill(buffer));
+        assertEquals(0, endp.fill(buffer));
 
         endp.setInput(" more");
         assertTrue(fcb.isDone());
-        assertEquals("CTX",fcb.get());
-        assertEquals(5,endp.fill(buffer));
-        assertEquals("test input more",BufferUtil.toString(buffer));
+        assertEquals("CTX", fcb.get());
+        assertEquals(5, endp.fill(buffer));
+        assertEquals("test input more", BufferUtil.toString(buffer));
 
         fcb = new FutureCallback<>();
-        endp.fillInterested("CTX",fcb);
+        endp.fillInterested("CTX", fcb);
         assertFalse(fcb.isDone());
-        assertEquals(0,endp.fill(buffer));
+        assertEquals(0, endp.fill(buffer));
 
         endp.setInput((ByteBuffer)null);
         assertTrue(fcb.isDone());
-        assertEquals("CTX",fcb.get());
-        assertEquals(-1,endp.fill(buffer));
+        assertEquals("CTX", fcb.get());
+        assertEquals(-1, endp.fill(buffer));
 
         fcb = new FutureCallback<>();
-        endp.fillInterested("CTX",fcb);
+        endp.fillInterested("CTX", fcb);
         assertTrue(fcb.isDone());
-        assertEquals("CTX",fcb.get());
-        assertEquals(-1,endp.fill(buffer));
+        assertEquals("CTX", fcb.get());
+        assertEquals(-1, endp.fill(buffer));
 
         endp.close();
 
         fcb = new FutureCallback<>();
-        endp.fillInterested("CTX",fcb);
+        endp.fillInterested("CTX", fcb);
         assertTrue(fcb.isDone());
         try
         {
             fcb.get();
             fail();
         }
-        catch(ExecutionException e)
+        catch (ExecutionException e)
         {
-            assertThat(e.toString(),containsString("Closed"));
+            assertThat(e.toString(), containsString("Closed"));
         }
-
     }
 
     @Test
     public void testWrite() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer,(byte[])null,15);
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_scheduler, 5000, (byte[])null, 15);
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(10));
 
@@ -106,28 +105,27 @@ public class AsyncByteArrayEndPointTest
         ByteBuffer more = BufferUtil.toBuffer(" Some more.");
 
         FutureCallback<String> fcb = new FutureCallback<>();
-        endp.write("CTX",fcb,data);
+        endp.write("CTX", fcb, data);
         assertTrue(fcb.isDone());
-        assertEquals("CTX",fcb.get());
-        assertEquals("Data.",endp.getOutputString());
+        assertEquals("CTX", fcb.get());
+        assertEquals("Data.", endp.getOutputString());
 
         fcb = new FutureCallback<>();
-        endp.write("CTX",fcb,more);
+        endp.write("CTX", fcb, more);
         assertFalse(fcb.isDone());
 
-        assertEquals("Data. Some",endp.getOutputString());
-        assertEquals("Data. Some",endp.takeOutputString());
+        assertEquals("Data. Some", endp.getOutputString());
+        assertEquals("Data. Some", endp.takeOutputString());
 
         assertTrue(fcb.isDone());
-        assertEquals("CTX",fcb.get());
-        assertEquals(" more.",endp.getOutputString());
+        assertEquals("CTX", fcb.get());
+        assertEquals(" more.", endp.getOutputString());
     }
 
     @Test
     public void testIdle() throws Exception
     {
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
-        endp.setIdleTimeout(500);
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_scheduler, 500);
         endp.setInput("test");
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(5));
@@ -141,43 +139,43 @@ public class AsyncByteArrayEndPointTest
         ByteBuffer buffer = BufferUtil.allocate(1024);
         FutureCallback<Void> fcb = new FutureCallback<>();
 
-        endp.fillInterested(null,fcb);
+        endp.fillInterested(null, fcb);
         assertTrue(fcb.isDone());
-        assertEquals(null,fcb.get());
-        assertEquals(4,endp.fill(buffer));
-        assertEquals("test",BufferUtil.toString(buffer));
+        assertEquals(null, fcb.get());
+        assertEquals(4, endp.fill(buffer));
+        assertEquals("test", BufferUtil.toString(buffer));
 
         // read timeout
         fcb = new FutureCallback<>();
-        endp.fillInterested(null,fcb);
-        long start=System.currentTimeMillis();
+        endp.fillInterested(null, fcb);
+        long start = System.currentTimeMillis();
         try
         {
             fcb.get();
             fail();
         }
-        catch(ExecutionException t)
+        catch (ExecutionException t)
         {
-            assertThat(t.getCause(),Matchers.instanceOf(TimeoutException.class));
+            assertThat(t.getCause(), Matchers.instanceOf(TimeoutException.class));
         }
-        assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(100L));
+        assertThat(System.currentTimeMillis() - start, Matchers.greaterThan(100L));
         assertTrue(endp.isOpen());
 
         // write timeout
         fcb = new FutureCallback<>();
-        start=System.currentTimeMillis();
+        start = System.currentTimeMillis();
 
-        endp.write(null,fcb,BufferUtil.toBuffer("This is too long"));
+        endp.write(null, fcb, BufferUtil.toBuffer("This is too long"));
         try
         {
             fcb.get();
             fail();
         }
-        catch(ExecutionException t)
+        catch (ExecutionException t)
         {
-            assertThat(t.getCause(),Matchers.instanceOf(TimeoutException.class));
+            assertThat(t.getCause(), Matchers.instanceOf(TimeoutException.class));
         }
-        assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(100L));
+        assertThat(System.currentTimeMillis() - start, Matchers.greaterThan(100L));
         assertTrue(endp.isOpen());
 
         // Still no idle close
@@ -190,8 +188,5 @@ public class AsyncByteArrayEndPointTest
         // idle close
         Thread.sleep(1000);
         assertFalse(endp.isOpen());
-
     }
-
-
 }

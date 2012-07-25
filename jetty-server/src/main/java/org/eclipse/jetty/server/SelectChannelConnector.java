@@ -50,8 +50,6 @@ import org.eclipse.jetty.server.Connector.NetConnector;
  * thus if possible it should be read after the continuation or saved as a request attribute or as the
  * associated object of the Continuation instance.
  * </p>
- *
- * @org.apache.xbean.XBean element="nioConnector" description="Creates an NIO based socket connector"
  */
 public class SelectChannelConnector extends HttpConnector implements NetConnector
 {
@@ -96,22 +94,15 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         synchronized(this)
         {
             if (_acceptChannel != null)
             {
                 removeBean(_acceptChannel);
-                try
-                {
-                    if (_acceptChannel.isOpen())
-                        _acceptChannel.close();
-                }
-                catch(IOException e)
-                {
-                    LOG.warn(e);
-                }
+                if (_acceptChannel.isOpen())
+                    _acceptChannel.close();
             }
             _acceptChannel = null;
             _localPort=-2;
@@ -182,7 +173,7 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
 
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
     {
-        return new SelectChannelEndPoint(channel,selectSet,key, this._idleTimeout);
+        return new SelectChannelEndPoint(channel,selectSet,key, getScheduler(), getIdleTimeout());
     }
 
     protected void endPointClosed(AsyncEndPoint endpoint)

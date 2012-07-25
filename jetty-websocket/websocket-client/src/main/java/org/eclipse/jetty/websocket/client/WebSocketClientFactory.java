@@ -41,53 +41,55 @@ import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 public class WebSocketClientFactory extends AggregateLifeCycle
 {
     private static final Logger LOG = Log.getLogger(WebSocketClientFactory.class);
-    /**
-     * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
-     */
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final Queue<WebSocketConnection> connections = new ConcurrentLinkedQueue<>();
     private final ByteBufferPool bufferPool = new StandardByteBufferPool();
     private final Executor executor;
+    private final ScheduledExecutorService scheduler;
     private final WebSocketClientSelectorManager selector;
     private final EventMethodsCache methodsCache;
     private final WebSocketPolicy policy;
 
     public WebSocketClientFactory()
     {
-        this(new QueuedThreadPool(),null);
+        this(new QueuedThreadPool());
     }
 
     public WebSocketClientFactory(Executor threadPool)
     {
-        this(threadPool,null);
-    }
-
-    public WebSocketClientFactory(Executor executor, SslContextFactory sslContextFactory)
-    {
-        if (executor == null)
-        {
-            throw new IllegalArgumentException("Executor is required");
-        }
-        this.executor = executor;
-        addBean(executor);
-
-        if (sslContextFactory != null)
-        {
-            addBean(sslContextFactory);
-        }
-
-        this.policy = WebSocketPolicy.newClientPolicy();
-
-        selector = new WebSocketClientSelectorManager(bufferPool,executor,policy);
-        selector.setSslContextFactory(sslContextFactory);
-        addBean(selector);
-
-        this.methodsCache = new EventMethodsCache();
+        this(threadPool, Executors.newSingleThreadScheduledExecutor());
     }
 
     public WebSocketClientFactory(SslContextFactory sslContextFactory)
     {
-        this(null,sslContextFactory);
+        this(new QueuedThreadPool(), Executors.newSingleThreadScheduledExecutor(), sslContextFactory);
+    }
+
+    public WebSocketClientFactory(Executor threadPool, ScheduledExecutorService scheduler)
+    {
+        this(threadPool, scheduler, null);
+    }
+
+    public WebSocketClientFactory(Executor executor, ScheduledExecutorService scheduler, SslContextFactory sslContextFactory)
+    {
+        if (executor == null)
+            throw new IllegalArgumentException("Executor is required");
+        this.executor = executor;
+        addBean(executor);
+
+        if (scheduler == null)
+            throw new IllegalArgumentException("Scheduler is required");
+        this.scheduler = scheduler;
+
+        if (sslContextFactory != null)
+            addBean(sslContextFactory);
+
+        this.policy = WebSocketPolicy.newClientPolicy();
+
+        selector = new WebSocketClientSelectorManager(bufferPool, executor, scheduler, policy);
+        selector.setSslContextFactory(sslContextFactory);
+        addBean(selector);
+
+        this.methodsCache = new EventMethodsCache();
     }
 
     private void closeConnections()
@@ -150,6 +152,6 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketEventDriver newWebSocketDriver(Object websocketPojo)
     {
-        return new WebSocketEventDriver(websocketPojo,methodsCache,policy,getBufferPool());
+        return new WebSocketEventDriver(websocketPojo, methodsCache, policy, getBufferPool());
     }
 }

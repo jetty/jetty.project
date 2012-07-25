@@ -4,20 +4,20 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -39,32 +39,32 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Implementation of Continuation and AsyncContext interfaces
- * 
+ *
  */
 public class HttpChannelState implements AsyncContext, Continuation
 {
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
 
     private final static long DEFAULT_TIMEOUT=30000L;
-    
+
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
-    
+
     // STATES:
     //                handling()    suspend()     unhandle()    resume()       complete()     completed()
-    //                              startAsync()                dispatch()   
+    //                              startAsync()                dispatch()
     // IDLE           DISPATCHED                                               COMPLETECALLED
     // DISPATCHED                   ASYNCSTARTED  COMPLETING
     // ASYNCSTARTED                               ASYNCWAIT     REDISPATCHING  COMPLETECALLED
-    // REDISPATCHING                              REDISPATCHED  
+    // REDISPATCHING                              REDISPATCHED
     // ASYNCWAIT                                                REDISPATCH     COMPLETECALLED
     // REDISPATCH     REDISPATCHED
     // REDISPATCHED                 ASYNCSTARTED  COMPLETING
     // COMPLETECALLED COMPLETING                  COMPLETING
     // COMPLETING     COMPLETING                                                              COMPLETED
-    // COMPLETED 
+    // COMPLETED
 
-    public enum State 
-    { 
+    public enum State
+    {
         IDLE,          // Idle request
         DISPATCHED,    // Request dispatched to filter/servlet
         ASYNCSTARTED,  // Suspend called, but not yet returned to container
@@ -75,8 +75,8 @@ public class HttpChannelState implements AsyncContext, Continuation
         COMPLETECALLED,// complete called
         COMPLETING,    // Request is completable
         COMPLETED      // Request is complete
-    };
-    
+    }
+
     /* ------------------------------------------------------------ */
     private final HttpChannel _channel;
     private List<AsyncListener> _lastAsyncListeners;
@@ -90,9 +90,9 @@ public class HttpChannelState implements AsyncContext, Continuation
     private boolean _expired;
     private volatile boolean _responseWrapped;
     private long _timeoutMs=DEFAULT_TIMEOUT;
-    private AsyncEventState _event;   
+    private AsyncEventState _event;
     private volatile boolean _continuation;
-    
+
     /* ------------------------------------------------------------ */
     protected HttpChannelState(HttpChannel channel)
     {
@@ -103,13 +103,13 @@ public class HttpChannelState implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     public State getState()
-    {        
+    {
         synchronized(this)
         {
             return _state;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void addListener(AsyncListener listener)
@@ -117,7 +117,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         synchronized(this)
         {
             if (_asyncListeners==null)
-                _asyncListeners=new ArrayList<AsyncListener>();
+                _asyncListeners=new ArrayList<>();
             _asyncListeners.add(listener);
         }
     }
@@ -130,7 +130,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         {
             // TODO handle the request/response ???
             if (_asyncListeners==null)
-                _asyncListeners=new ArrayList<AsyncListener>();
+                _asyncListeners=new ArrayList<>();
             _asyncListeners.add(listener);
         }
     }
@@ -142,7 +142,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         synchronized(this)
         {
             if (_continuationListeners==null)
-                _continuationListeners=new ArrayList<ContinuationListener>();
+                _continuationListeners=new ArrayList<>();
             _continuationListeners.add(listener);
         }
     }
@@ -155,7 +155,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         {
             _timeoutMs=ms;
         }
-    } 
+    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -165,7 +165,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         {
             return _timeoutMs;
         }
-    } 
+    }
 
     /* ------------------------------------------------------------ */
     public AsyncEventState getAsyncEventState()
@@ -174,8 +174,8 @@ public class HttpChannelState implements AsyncContext, Continuation
         {
             return _event;
         }
-    } 
-   
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.continuation.Continuation#isResponseWrapped()
@@ -198,7 +198,7 @@ public class HttpChannelState implements AsyncContext, Continuation
             return _initial;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#isSuspended()
@@ -215,9 +215,9 @@ public class HttpChannelState implements AsyncContext, Continuation
                 case COMPLETECALLED:
                 case ASYNCWAIT:
                     return true;
-                    
+
                 default:
-                    return false;   
+                    return false;
             }
         }
     }
@@ -230,7 +230,7 @@ public class HttpChannelState implements AsyncContext, Continuation
             return _state==State.IDLE;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isSuspending()
     {
@@ -241,13 +241,13 @@ public class HttpChannelState implements AsyncContext, Continuation
                 case ASYNCSTARTED:
                 case ASYNCWAIT:
                     return true;
-                    
+
                 default:
-                    return false;   
+                    return false;
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isDispatchable()
     {
@@ -260,9 +260,9 @@ public class HttpChannelState implements AsyncContext, Continuation
                 case REDISPATCHING:
                 case COMPLETECALLED:
                     return true;
-                    
+
                 default:
-                    return false;   
+                    return false;
             }
         }
     }
@@ -299,7 +299,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         {
             _continuation=false;
             _responseWrapped=false;
-            
+
             switch(_state)
             {
                 case IDLE:
@@ -315,7 +315,7 @@ public class HttpChannelState implements AsyncContext, Continuation
                         _lastAsyncListeners=null;
                     }
                     return true;
-                    
+
                 case COMPLETECALLED:
                     _state=State.COMPLETING;
                     return false;
@@ -323,7 +323,7 @@ public class HttpChannelState implements AsyncContext, Continuation
                 case COMPLETING:
                 case ASYNCWAIT:
                     return false;
-                    
+
                 case REDISPATCH:
                     _state=State.REDISPATCHED;
                     return true;
@@ -370,7 +370,7 @@ public class HttpChannelState implements AsyncContext, Continuation
                     throw new IllegalStateException(this.getStatusString());
             }
         }
-        
+
         if (_lastAsyncListeners!=null)
         {
             for (AsyncListener listener : _lastAsyncListeners)
@@ -397,13 +397,13 @@ public class HttpChannelState implements AsyncContext, Continuation
                 _event._cause=th;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Signal that the HttpConnection has finished handling the request.
      * For blocking connectors, this call may block if the request has
      * been suspended (startAsync called).
-     * @return true if handling is complete, false if the request should 
+     * @return true if handling is complete, false if the request should
      * be handled again (eg because of a resume that happened before unhandle was called)
      */
     protected boolean unhandle()
@@ -423,22 +423,22 @@ public class HttpChannelState implements AsyncContext, Continuation
                 case ASYNCSTARTED:
                     _initial=false;
                     _state=State.ASYNCWAIT;
-                    scheduleTimeout(); 
+                    scheduleTimeout();
                     if (_state==State.ASYNCWAIT)
                         return true;
                     else if (_state==State.COMPLETECALLED)
                     {
                         _state=State.COMPLETING;
                         return true;
-                    }         
+                    }
                     _initial=false;
                     _state=State.REDISPATCHED;
-                    return false; 
+                    return false;
 
                 case REDISPATCHING:
                     _initial=false;
                     _state=State.REDISPATCHED;
-                    return false; 
+                    return false;
 
                 case COMPLETECALLED:
                     _initial=false;
@@ -470,15 +470,15 @@ public class HttpChannelState implements AsyncContext, Continuation
                     _state=State.REDISPATCH;
                     _resumed=true;
                     break;
-                    
+
                 case REDISPATCH:
                     return;
-                    
+
                 default:
                     throw new IllegalStateException(this.getStatusString());
             }
         }
-        
+
         if (dispatch)
         {
             cancelTimeout();
@@ -507,7 +507,7 @@ public class HttpChannelState implements AsyncContext, Continuation
             }
             _expired=true;
         }
-        
+
         if (aListeners!=null)
         {
             for (AsyncListener listener : aListeners)
@@ -536,16 +536,16 @@ public class HttpChannelState implements AsyncContext, Continuation
                 }
             }
         }
-            
-           
-        
+
+
+
         synchronized (this)
         {
             switch(_state)
             {
                 case ASYNCSTARTED:
                 case ASYNCWAIT:
-                    if (_continuation) 
+                    if (_continuation)
                         dispatch();
                    else
                         // TODO maybe error dispatch?
@@ -555,7 +555,7 @@ public class HttpChannelState implements AsyncContext, Continuation
 
         scheduleDispatch();
     }
-    
+
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#complete()
@@ -577,17 +577,17 @@ public class HttpChannelState implements AsyncContext, Continuation
                 case ASYNCSTARTED:
                     _state=State.COMPLETECALLED;
                     return;
-                    
+
                 case ASYNCWAIT:
                     _state=State.COMPLETECALLED;
                     dispatch=!_expired;
                     break;
-                    
+
                 default:
                     throw new IllegalStateException(this.getStatusString());
             }
         }
-        
+
         if (dispatch)
         {
             cancelTimeout();
@@ -597,7 +597,7 @@ public class HttpChannelState implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     @Override
-    public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException 
+    public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException
     {
         try
         {
@@ -628,14 +628,14 @@ public class HttpChannelState implements AsyncContext, Continuation
                     cListeners=_continuationListeners;
                     aListeners=_asyncListeners;
                     break;
-                    
+
                 default:
                     cListeners=null;
                     aListeners=null;
                     throw new IllegalStateException(this.getStatusString());
             }
         }
-        
+
         if (aListeners!=null)
         {
             for (AsyncListener listener : aListeners)
@@ -696,8 +696,8 @@ public class HttpChannelState implements AsyncContext, Continuation
             if (_event!=null)
                 _event._cause=null;
         }
-    }    
-    
+    }
+
     /* ------------------------------------------------------------ */
     public void cancel()
     {
@@ -717,12 +717,9 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected void scheduleTimeout()
     {
-        Timer timer = _channel.getTimer();
-        if (timer!=null)
-        {
-            _event._timeout= new AsyncTimeout();
-            timer.schedule(_event._timeout,_timeoutMs);
-        }
+        ScheduledExecutorService scheduler = _channel.getScheduler();
+        if (scheduler!=null)
+            _event._timeout=scheduler.schedule(new AsyncTimeout(),_timeoutMs,TimeUnit.MILLISECONDS);
     }
 
     /* ------------------------------------------------------------ */
@@ -731,9 +728,9 @@ public class HttpChannelState implements AsyncContext, Continuation
         AsyncEventState event=_event;
         if (event!=null)
         {
-            TimerTask task=event._timeout;
+            Future<?> task=event._timeout;
             if (task!=null)
-                task.cancel();
+                task.cancel(false);
         }
     }
 
@@ -745,7 +742,7 @@ public class HttpChannelState implements AsyncContext, Continuation
             return _state==State.COMPLETECALLED;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     boolean isCompleting()
     {
@@ -753,8 +750,8 @@ public class HttpChannelState implements AsyncContext, Continuation
         {
             return _state==State.COMPLETING;
         }
-    } 
-    
+    }
+
     /* ------------------------------------------------------------ */
     public boolean isCompleted()
     {
@@ -826,7 +823,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         return _channel.getRequest();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public ServletRequest getRequest()
@@ -917,7 +914,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         dispatch();
     }
-    
+
 
 
     /* ------------------------------------------------------------ */
@@ -936,7 +933,7 @@ public class HttpChannelState implements AsyncContext, Continuation
         }
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see Continuation#suspend()
@@ -946,7 +943,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         _continuation=true;
         _responseWrapped=!(response instanceof Response);
-        doSuspend(_channel.getRequest().getServletContext(),_channel.getRequest(),response); 
+        doSuspend(_channel.getRequest().getServletContext(),_channel.getRequest(),response);
     }
 
     /* ------------------------------------------------------------ */
@@ -958,7 +955,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     {
         _responseWrapped=false;
         _continuation=true;
-        doSuspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());       
+        doSuspend(_channel.getRequest().getServletContext(),_channel.getRequest(),_channel.getResponse());
     }
 
     /* ------------------------------------------------------------ */
@@ -1022,7 +1019,7 @@ public class HttpChannelState implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class AsyncTimeout extends TimerTask
+    public class AsyncTimeout implements Runnable
     {
         @Override
         public void run()
@@ -1035,25 +1032,25 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     public class AsyncEventState extends AsyncEvent
     {
-        private TimerTask _timeout;  
+        private Future<?> _timeout;
         private final ServletContext _suspendedContext;
         private ServletContext _dispatchContext;
         private String _pathInContext;
         private Throwable _cause;
-        
+
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
             super(HttpChannelState.this, request,response);
             _suspendedContext=context;
             // Get the base request So we can remember the initial paths
             Request r=_channel.getRequest();
- 
+
             // If we haven't been async dispatched before
             if (r.getAttribute(AsyncContext.ASYNC_REQUEST_URI)==null)
             {
-                // We are setting these attributes during startAsync, when the spec implies that 
+                // We are setting these attributes during startAsync, when the spec implies that
                 // they are only available after a call to AsyncContext.dispatch(...);
-                
+
                 // have we been forwarded before?
                 String uri=(String)r.getAttribute(Dispatcher.FORWARD_REQUEST_URI);
                 if (uri!=null)
@@ -1074,22 +1071,22 @@ public class HttpChannelState implements AsyncContext, Continuation
                 }
             }
         }
-        
+
         public ServletContext getSuspendedContext()
         {
             return _suspendedContext;
         }
-        
+
         public ServletContext getDispatchContext()
         {
             return _dispatchContext;
         }
-        
+
         public ServletContext getServletContext()
         {
             return _dispatchContext==null?_suspendedContext:_dispatchContext;
         }
-        
+
         /* ------------------------------------------------------------ */
         /**
          * @return The path in the context
@@ -1099,11 +1096,11 @@ public class HttpChannelState implements AsyncContext, Continuation
             return _pathInContext;
         }
     }
-    
+
     private final Runnable _handleRequest = new Runnable()
     {
         @Override
-        public void run() 
+        public void run()
         {
             _channel.handle();
         }

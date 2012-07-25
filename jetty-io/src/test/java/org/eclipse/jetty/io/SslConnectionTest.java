@@ -10,6 +10,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -36,6 +38,7 @@ public class SslConnectionTest
     protected volatile AsyncEndPoint _lastEndp;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
+    protected ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
     protected SelectorManager _manager = new SelectorManager()
     {
         @Override
@@ -61,7 +64,7 @@ public class SslConnectionTest
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, 60000);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet, selectionKey, _scheduler, 60000);
             _lastEndp=endp;
             return endp;
         }

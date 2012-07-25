@@ -25,17 +25,15 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -54,7 +52,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     private final ManagedSelector[] _selectors;
     private volatile long _selectorIndex;
-    private volatile long _idleCheckPeriod;
 
     protected SelectorManager()
     {
@@ -64,23 +61,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected SelectorManager(@Name(value="selectors") int selectors)
     {
         _selectors = new ManagedSelector[selectors];
-        setIdleCheckPeriod(1000);
-    }
-
-    /**
-     * @return the period, in milliseconds, a background thread checks for idle expiration
-     */
-    public long getIdleCheckPeriod()
-    {
-        return _idleCheckPeriod;
-    }
-
-    /**
-     * @param idleCheckPeriod the period, in milliseconds, a background thread checks for idle expiration
-     */
-    public void setIdleCheckPeriod(long idleCheckPeriod)
-    {
-        _idleCheckPeriod = idleCheckPeriod;
     }
 
     /**
@@ -145,7 +125,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             _selectors[i] = selectSet;
             selectSet.start();
             execute(selectSet);
-            execute(new Expirer());
         }
     }
 
@@ -252,37 +231,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
-     * <p>The task that performs a periodic idle check of the connections managed by the selectors.</p>
-     * @see #getIdleCheckPeriod()
-     */
-    private class Expirer implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            while (isRunning())
-            {
-                for (ManagedSelector selector : _selectors)
-                    if (selector != null)
-                        selector.timeoutCheck();
-                sleep(getIdleCheckPeriod());
-            }
-        }
-
-        private void sleep(long delay)
-        {
-            try
-            {
-                Thread.sleep(delay);
-            }
-            catch (InterruptedException x)
-            {
-                LOG.ignore(x);
-            }
-        }
-    }
-
-    /**
      * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
      * <p>{@link ManagedSelector} runs the select loop, which waits on {@link Selector#select()} until events
      * happen for registered channels. When events happen, it notifies the {@link AsyncEndPoint} associated
@@ -291,7 +239,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
         private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
-        private final Set<AsyncEndPoint> _endPoints = Collections.newSetFromMap(new ConcurrentHashMap<AsyncEndPoint, Boolean>());
         private final int _id;
         private Selector _selector;
         private Thread _thread;
@@ -517,7 +464,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
         {
             AsyncEndPoint endPoint = newEndPoint(channel, this, selectionKey);
-            _endPoints.add(endPoint);
             endPointOpened(endPoint);
             AsyncConnection asyncConnection = newConnection(channel, endPoint, selectionKey.attachment());
             endPoint.setAsyncConnection(asyncConnection);
@@ -529,11 +475,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void destroyEndPoint(AsyncEndPoint endPoint)
         {
             LOG.debug("Destroyed {}", endPoint);
-            _endPoints.remove(endPoint);
             endPoint.getAsyncConnection().onClose();
             endPointClosed(endPoint);
         }
-        
+
         @Override
         public String dump()
         {
@@ -595,15 +540,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     super.toString(),
                     selector != null && selector.isOpen() ? selector.keys().size() : -1,
                     selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
-        }
-
-        private void timeoutCheck()
-        {
-            // We cannot use the _selector.keys() because the returned Set is not thread
-            // safe so it may be modified by the selector thread while we iterate here.
-            long now = System.currentTimeMillis();
-            for (AsyncEndPoint endPoint : _endPoints)
-                endPoint.checkTimeout(now);
         }
 
         private class DumpKeys implements Runnable

@@ -21,30 +21,30 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExecutorCallback;
 import org.eclipse.jetty.util.FutureCallback;
 
-/* ------------------------------------------------------------ */
-/**Asynchronous End Point
- * <p>
- * This extension of EndPoint provides asynchronous scheduling methods.
- * The design of these has been influenced by NIO.2 Futures and Completion
- * handlers, but does not use those actual interfaces because: they have
- * some inefficiencies.
- * <p>
- * This class will frequently be used in conjunction with some of the utility
+/**
+ * <p>{@link AsyncEndPoint} add asynchronous scheduling methods to {@link EndPoint}.</p>
+ * <p>The design of these has been influenced by NIO.2 Futures and Completion
+ * handlers, but does not use those actual interfaces because they have
+ * some inefficiencies.</p>
+ * <p>This class will frequently be used in conjunction with some of the utility
  * implementations of {@link Callback}, such as {@link FutureCallback} and
- * {@link ExecutorCallback}. Examples are:
+ * {@link ExecutorCallback}. Examples are:</p>
+ *
  * <h3>Blocking Read</h3>
- * A FutureCallback can be used to block until an endpoint is ready to be filled
+ * <p>A FutureCallback can be used to block until an endpoint is ready to be filled
  * from:
  * <blockquote><pre>
- * FutureCallback<String> future = new FutureCallback<>();
+ * FutureCallback&lt;String&gt; future = new FutureCallback&lt;&gt;();
  * endpoint.fillInterested("ContextObj",future);
  * ...
  * String context = future.get(); // This blocks
- * int filled=endpoint.fill(mybuffer);</pre></blockquote>
+ * int filled=endpoint.fill(mybuffer);
+ * </pre></blockquote></p>
+ *
  * <h3>Dispatched Read</h3>
- * By using a different callback, the read can be done asynchronously in its own dispatched thread:
+ * <p>By using a different callback, the read can be done asynchronously in its own dispatched thread:
  * <blockquote><pre>
- * endpoint.fillInterested("ContextObj",new ExecutorCallback<String>(executor)
+ * endpoint.fillInterested("ContextObj",new ExecutorCallback&lt;String&gt;(executor)
  * {
  *   public void onCompleted(String context)
  *   {
@@ -52,25 +52,25 @@ import org.eclipse.jetty.util.FutureCallback;
  *     ...
  *   }
  *   public void onFailed(String context,Throwable cause) {...}
- * });</pre></blockquote>
- * The executor callback can also be customized to not dispatch in some circumstances when
- * it knows it can use the callback thread and does not need to dispatch.
+ * });
+ * </pre></blockquote></p>
+ * <p>The executor callback can also be customized to not dispatch in some circumstances when
+ * it knows it can use the callback thread and does not need to dispatch.</p>
  *
  * <h3>Blocking Write</h3>
- * The write contract is that the callback complete is not called until all data has been
+ * <p>The write contract is that the callback complete is not called until all data has been
  * written or there is a failure.  For blocking this looks like:
- *
  * <blockquote><pre>
- * FutureCallback<String> future = new FutureCallback<>();
+ * FutureCallback&lt;String&gt; future = new FutureCallback&lt;&gt;();
  * endpoint.write("ContextObj",future,headerBuffer,contentBuffer);
  * String context = future.get(); // This blocks
- * </pre></blockquote>
+ * </pre></blockquote></p>
  *
  * <h3>Dispatched Write</h3>
- * Note also that multiple buffers may be passed in write so that gather writes
+ * <p>Note also that multiple buffers may be passed in write so that gather writes
  * can be done:
  * <blockquote><pre>
- * endpoint.write("ContextObj",new ExecutorCallback<String>(executor)
+ * endpoint.write("ContextObj",new ExecutorCallback&lt;String&gt;(executor)
  * {
  *   public void onCompleted(String context)
  *   {
@@ -78,45 +78,52 @@ import org.eclipse.jetty.util.FutureCallback;
  *     ...
  *   }
  *   public void onFailed(String context,Throwable cause) {...}
- * },headerBuffer,contentBuffer);</pre></blockquote>
- *
+ * },headerBuffer,contentBuffer);
+ * </pre></blockquote></p>
  */
 public interface AsyncEndPoint extends EndPoint
 {
-    /** Asynchronous a fillable notification.
-     * <p>
-     * This method schedules a callback operations when a call to {@link #fill(ByteBuffer)} will return data or EOF.
-     * @param context Context to return via the callback
-     * @param callback The callback to call when an error occurs or we are readable.
+    /**
+     * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
+     *
+     * @param context the context to return via the callback
+     * @param callback the callback to call when an error occurs or we are readable.
      * @throws ReadPendingException if another read operation is concurrent.
      */
     <C> void fillInterested(C context, Callback<C> callback) throws ReadPendingException;
 
-    /** Asynchronous write operation.
-     * <p>
-     * This method performs {@link #flush(ByteBuffer...)} operation(s) and do a callback when all the data
-     * has been flushed or an error occurs.
-     * @param context Context to return via the callback
-     * @param callback The callback to call when an error occurs or we are readable.
-     * @param buffers One or more {@link ByteBuffer}s that will be flushed.
+    /**
+     * <p>Writes the given buffers via {@link #flush(ByteBuffer...)} and invokes callback methods when either
+     * all the data has been flushed or an error occurs.</p>
+     *
+     * @param context the context to return via the callback
+     * @param callback the callback to call when an error occurs or the write completed.
+     * @param buffers one or more {@link ByteBuffer}s that will be flushed.
      * @throws WritePendingException if another write operation is concurrent.
      */
     <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException;
 
     /**
-     * @return Timestamp in ms since epoch of when the last data was
-     * filled or flushed from this endpoint.
+     * @return the {@link AsyncConnection} associated with this {@link AsyncEndPoint}
+     * @see #setAsyncConnection(AsyncConnection)
      */
-    long getIdleTimestamp();
-
     AsyncConnection getAsyncConnection();
 
+    /**
+     * @param connection the {@link AsyncConnection} associated with this {@link AsyncEndPoint}
+     * @see #getAsyncConnection()
+     */
     void setAsyncConnection(AsyncConnection connection);
 
+    /**
+     * <p>Callback method invoked when this {@link AsyncEndPoint} is opened.</p>
+     * @see #onClose()
+     */
     void onOpen();
 
+    /**
+     * <p>Callback method invoked when this {@link AsyncEndPoint} is close.</p>
+     * @see #onOpen()
+     */
     void onClose();
-
-    void checkTimeout(long now);
-    
 }

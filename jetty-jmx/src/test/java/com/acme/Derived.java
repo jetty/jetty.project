@@ -44,8 +44,8 @@ public class Derived extends Base implements Signature
         System.err.println("doodle "+doodle);
     }
 
-    public void somethingElse()
+    public String bad()
     {
-        
+        return "bad";
     }
 }

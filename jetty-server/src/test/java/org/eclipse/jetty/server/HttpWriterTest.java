@@ -12,11 +12,9 @@ package org.eclipse.jetty.server;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Timer;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.util.BufferUtil;
@@ -25,6 +23,8 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class HttpWriterTest
 {
@@ -94,13 +94,13 @@ public class HttpWriterTest
             }
 
             @Override
-            public Timer getTimer()
+            public ScheduledExecutorService getScheduler()
             {
                 return null;
             }
-            
+
         };
-   
+
         HttpOutput httpOut = new HttpOutput(channel);
         _writer = new HttpWriter(httpOut);
     }
@@ -120,7 +120,7 @@ public class HttpWriterTest
         _writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
     }
-    
+
     @Test
     public void testNotCESU8() throws Exception
     {
@@ -130,11 +130,11 @@ public class HttpWriterTest
         assertEquals("787878F0909080787878",TypeUtil.toHexString(BufferUtil.toArray(_bytes)));
         assertArrayEquals(data.getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
         assertEquals(3+4+3,_bytes.remaining());
-        
+
         Utf8StringBuilder buf = new Utf8StringBuilder();
         buf.append(BufferUtil.toArray(_bytes),0,_bytes.remaining());
         assertEquals(data,buf.toString());
-        
+
     }
 
     @Test
@@ -203,7 +203,7 @@ public class HttpWriterTest
 
         final String singleByteStr = "a";
         int remainSize = 1;
-        final String multiByteDuplicateStr = "\uD842\uDF9F"; 
+        final String multiByteDuplicateStr = "\uD842\uDF9F";
         int adjustSize = -1;
 
         StringBuilder sb = new StringBuilder();
@@ -233,7 +233,7 @@ public class HttpWriterTest
         assertArrayEquals(bytes,BufferUtil.toArray(_bytes));
         assertArrayEquals(baos.toByteArray(),BufferUtil.toArray(_bytes));
     }
-    
+
     @Test
     public void testMultiByteOverflowUTF16x2_2() throws Exception
     {
@@ -241,8 +241,8 @@ public class HttpWriterTest
 
         final String singleByteStr = "a";
         int remainSize = 1;
-        final String multiByteDuplicateStr = "\uD842\uDF9F"; 
-        int adjustSize = -2;   
+        final String multiByteDuplicateStr = "\uD842\uDF9F";
+        int adjustSize = -2;
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < HttpWriter.MAX_OUTPUT_CHARS + adjustSize; i++)

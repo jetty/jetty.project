@@ -18,8 +18,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Timer;
-
+import java.util.concurrent.ScheduledExecutorService;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -55,7 +54,7 @@ public abstract class HttpChannel
 {
     static final Logger LOG = Log.getLogger(HttpChannel.class);
 
-    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<HttpChannel>();
+    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
 
     /* ------------------------------------------------------------ */
     public static HttpChannel getCurrentHttpChannel()
@@ -68,8 +67,8 @@ public abstract class HttpChannel
     {
         __currentChannel.set(channel);
     }
-    
-    
+
+
 
     private final Server _server;
     private final AsyncConnection _connection;
@@ -77,7 +76,7 @@ public abstract class HttpChannel
 
     private final ChannelEventHandler _handler = new ChannelEventHandler();
     private final HttpChannelState _state;
-    
+
     private final HttpFields _requestFields;
     private final Request _request;
     private final HttpInput _in;
@@ -90,19 +89,16 @@ public abstract class HttpChannel
 
     private int _requests;
     private int _include;
-    
+
     private HttpVersion _version = HttpVersion.HTTP_1_1;
 
     private boolean _expect = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     private boolean _host = false;
-    
-    
+
+
     /* ------------------------------------------------------------ */
-    /** Constructor
-     *
-     */
     public HttpChannel(Server server,AsyncConnection connection,HttpInput input)
     {
         _server = server;
@@ -116,31 +112,31 @@ public abstract class HttpChannel
         _in=input;
         _out=new Output();
     }
-    
+
     /* ------------------------------------------------------------ */
     public HttpChannelState getState()
     {
         return _state;
     }
-    
+
     /* ------------------------------------------------------------ */
     public EventHandler getEventHandler()
     {
         return _handler;
     }
-    
+
     /* ------------------------------------------------------------ */
     public AsyncEndPoint getEndPoint()
     {
         return getConnection().getEndPoint();
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return _state.isIdle();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return the number of requests handled by this connection
@@ -197,7 +193,7 @@ public abstract class HttpChannel
     {
         return _connection;
     }
-    
+
     /* ------------------------------------------------------------ */
     public InetSocketAddress getLocalAddress()
     {
@@ -209,7 +205,7 @@ public abstract class HttpChannel
     {
         return _connection.getEndPoint().getRemoteAddress();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Get the inputStream from the connection.
@@ -220,6 +216,7 @@ public abstract class HttpChannel
      *
      * @return The input stream for this connection.
      * The stream will be created if it does not already exist.
+     * @throws IOException if the InputStream cannot be created
      */
     public ServletInputStream getInputStream() throws IOException
     {
@@ -251,6 +248,7 @@ public abstract class HttpChannel
 
     /* ------------------------------------------------------------ */
     /**
+     * @param charset the character set for the PrintWriter
      * @return A {@link PrintWriter} wrapping the {@link #getOutputStream output stream}. The writer is created if it
      *    does not already exist.
      */
@@ -319,7 +317,7 @@ public abstract class HttpChannel
             // Loop here to handle async request redispatches.
             // The loop is controlled by the call to async.unhandle in the
             // finally block below.  Unhandle will return false only if an async dispatch has
-            // already happened when unhandle is called. 
+            // already happened when unhandle is called.
             boolean handling=_state.handling();
 
             while(handling && getServer().isRunning())
@@ -328,7 +326,7 @@ public abstract class HttpChannel
                 {
                     _request.setHandled(false);
                     _out.reopen();
-                    
+
                     if (_state.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
@@ -340,7 +338,7 @@ public abstract class HttpChannel
                         _request.setDispatcherType(DispatcherType.ASYNC);
                         getServer().handleAsync(this);
                     }
-                   
+
                 }
                 catch (ContinuationThrowable e)
                 {
@@ -377,7 +375,7 @@ public abstract class HttpChannel
             __currentChannel.set(null);
             if (threadName!=null)
                 Thread.currentThread().setName(threadName);
-            
+
             if (_state.isCompleting())
             {
                 try
@@ -401,7 +399,7 @@ public abstract class HttpChannel
 
                     // Complete generating the response
                     _response.complete();
-                    
+
                     // Complete reading the request
                     _in.consumeAll();
                 }
@@ -420,7 +418,7 @@ public abstract class HttpChannel
                     completed();
                 }
             }
-            
+
             LOG.debug("{} !process",this);
         }
     }
@@ -429,10 +427,10 @@ public abstract class HttpChannel
     protected boolean commitError(final int status, final String reason, String content)
     {
         LOG.debug("{} sendError {} {}",this,status,reason);
-        
+
         if (_response.isCommitted())
             return false;
-        
+
         try
         {
             _response.setStatus(status,reason);
@@ -447,7 +445,7 @@ public abstract class HttpChannel
 
             HttpGenerator.ResponseInfo info = _handler.commit();
             commit(info,buffer);
-            
+
             return true;
         }
         catch(Exception e)
@@ -481,11 +479,8 @@ public abstract class HttpChannel
         _include--;
         _out.reopen();
     }
-    
+
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.io.AsyncConnection#isSuspended()
-     */
     public boolean isSuspended()
     {
         return _request.getAsyncContinuation().isSuspended();
@@ -508,7 +503,7 @@ public abstract class HttpChannel
     {
         return _expect102Processing;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -536,7 +531,7 @@ public abstract class HttpChannel
             if(_request.getTimeStamp()==0)
                 _request.setTimeStamp(System.currentTimeMillis());
             _request.setMethod(httpMethod,method);
-            
+
             if (httpMethod==HttpMethod.CONNECT)
                 _uri.parseConnect(uri);
             else
@@ -545,7 +540,7 @@ public abstract class HttpChannel
             _request.setPathInfo(_uri.getDecodedPath());
             _version=version==null?HttpVersion.HTTP_0_9:version;
             _request.setHttpVersion(_version);
-                
+
             return false;
         }
 
@@ -576,7 +571,7 @@ public abstract class HttpChannel
                                 break;
 
                             default:
-                                String[] values = value.toString().split(",");
+                                String[] values = value.split(",");
                                 for  (int i=0;values!=null && i<values.length;i++)
                                 {
                                     expect=HttpHeaderValue.CACHE.get(values[i].trim());
@@ -633,7 +628,7 @@ public abstract class HttpChannel
 
                     if (!persistent)
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
-                    
+
                     if (_server.getSendDateHeader())
                         _responseFields.putDateField(HttpHeader.DATE.toString(),_request.getTimeStamp());
 
@@ -656,10 +651,10 @@ public abstract class HttpChannel
             // Either handle now or wait for first content/message complete
             if (_expect100Continue)
                 return true;
-            
+
             return false;
         }
-        
+
         @Override
         public boolean content(ByteBuffer ref)
         {
@@ -704,7 +699,7 @@ public abstract class HttpChannel
             }
             return _response.commit();
         }
-        
+
         @Override
         public String toString()
         {
@@ -754,10 +749,10 @@ public abstract class HttpChannel
                 String contentType = httpContent.getContentType();
                 if (contentType != null)
                     _responseFields.put(HttpHeader.CONTENT_TYPE, contentType);
-                    
+
                 if (httpContent.getContentLength() > 0)
                     _responseFields.putLongField(HttpHeader.CONTENT_LENGTH, httpContent.getContentLength());
-                
+
                 String lm = httpContent.getLastModified();
                 if (lm != null)
                     _responseFields.put(HttpHeader.LAST_MODIFIED, lm);
@@ -794,40 +789,34 @@ public abstract class HttpChannel
                 throw new IllegalArgumentException("unknown content type?");
         }
     }
-    
+
     public abstract HttpConnector getHttpConnector();
-        
+
     protected abstract int write(ByteBuffer content) throws IOException;
-                
+
     /* Called by the channel or application to commit a specific response info */
     protected abstract void commit(ResponseInfo info, ByteBuffer content) throws IOException;
-    
+
     protected abstract int getContentBufferSize();
 
     protected abstract void increaseContentBufferSize(int size);
 
     protected abstract void resetBuffer();
-    
+
     protected abstract void flushResponse() throws IOException;
 
     protected abstract void completeResponse() throws IOException;
 
     protected abstract void completed();
-    
-    protected abstract void execute(Runnable task);
-    
-    // TODO replace with ScheduledExecutorService?
-    // TODO constructor inject
-    public abstract Timer getTimer();
-    
 
+    protected abstract void execute(Runnable task);
+
+    // TODO use constructor injection ?
+    public abstract ScheduledExecutorService getScheduler();
 
     /* ------------------------------------------------------------ */
     public interface EventHandler extends HttpParser.RequestHandler
     {
         ResponseInfo commit();
     }
-
-    
-
 }

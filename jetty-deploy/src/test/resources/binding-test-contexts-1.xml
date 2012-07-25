@@ -25,13 +25,13 @@
     <Item>org.eclipse.jetty.servlet.DefaultServlet</Item>
   </Array>
 
-  <Call name="addLifeCycle">
+  <Call name="addBean">
     <Arg>
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
           <Ref id="Contexts" />
-        </Set>      
-        
+        </Set>
+
         <Ref id="DeploymentManager">
           <Call name="addLifeCycleBinding">
             <Arg>
@@ -41,7 +41,7 @@
             </Arg>
           </Call>
        </Ref>
-        
+
         <!-- Providers of Apps -->
         <Set name="appProviders">
           <Array type="org.eclipse.jetty.deploy.AppProvider">

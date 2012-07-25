@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -26,11 +21,9 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.Timer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -52,6 +45,11 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 /**
  *
  */
@@ -71,8 +69,8 @@ public class ResponseTest
         _server.setHandler(new DumpHandler());
         _server.start();
         _timer=new ScheduledThreadPoolExecutor(1);
-        
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer);
+
+        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer,5000);
         HttpInput input = new HttpInput();
         AsyncConnection connection = new AbstractAsyncConnection(endp,new Executor()
         {
@@ -114,7 +112,7 @@ public class ResponseTest
             }
 
             @Override
-            public Timer getTimer()
+            public ScheduledExecutorService getScheduler()
             {
                 // TODO Auto-generated method stub
                 return null;
