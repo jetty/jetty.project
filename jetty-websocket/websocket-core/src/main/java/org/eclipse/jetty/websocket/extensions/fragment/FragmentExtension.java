@@ -52,12 +52,15 @@ public class FragmentExtension extends Extension
             return;
         }
 
+        boolean continuation = false;
+
         // break apart payload based on maxLength rules
         while (length > maxLength)
         {
             WebSocketFrame frag = new WebSocketFrame(frame);
             frag.setOpCode(opcode);
             frag.setFin(false); // always false here
+            frag.setContinuation(continuation);
             payload.position(currentPosition);
             payload.limit(Math.min(payload.position() + maxLength,originalLimit));
             frag.setPayload(payload);
@@ -66,6 +69,7 @@ public class FragmentExtension extends Extension
 
             length -= maxLength;
             opcode = OpCode.CONTINUATION;
+            continuation = true;
             currentPosition = payload.limit();
         }
 
@@ -73,6 +77,7 @@ public class FragmentExtension extends Extension
         WebSocketFrame frag = new WebSocketFrame(frame);
         frag.setOpCode(opcode);
         frag.setFin(frame.isFin()); // use original fin
+        frag.setContinuation(continuation);
         payload.position(currentPosition);
         payload.limit(originalLimit);
         frag.setPayload(payload);

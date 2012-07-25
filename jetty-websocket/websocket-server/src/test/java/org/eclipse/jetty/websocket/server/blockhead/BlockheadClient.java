@@ -31,32 +31,40 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.UnitGenerator;
 import org.junit.Assert;
 
 /**
@@ -71,7 +79,7 @@ import org.junit.Assert;
  * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
  * scope.
  */
-public class BlockheadClient implements IncomingFrames
+public class BlockheadClient implements IncomingFrames, OutgoingFrames
 {
     private static final Logger LOG = Log.getLogger(BlockheadClient.class);
     /** Set to true to disable timeouts (for debugging reasons) */
@@ -83,6 +91,7 @@ public class BlockheadClient implements IncomingFrames
     private final Generator generator;
     private final Parser parser;
     private final LinkedBlockingDeque<WebSocketFrame> incomingFrameQueue;
+    private final WebSocketExtensionRegistry extensionRegistry;
 
     private Socket socket;
     private OutputStream out;
@@ -94,6 +103,8 @@ public class BlockheadClient implements IncomingFrames
     { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
     private int timeout = 1000;
     private AtomicInteger parseCount;
+    private IncomingFrames incoming = this;
+    private OutgoingFrames outgoing = this;
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
@@ -108,12 +119,13 @@ public class BlockheadClient implements IncomingFrames
 
         policy = WebSocketPolicy.newClientPolicy();
         bufferPool = new StandardByteBufferPool(policy.getBufferSize());
-        generator = new UnitGenerator();
+        generator = new Generator(policy,bufferPool);
         parser = new Parser(policy);
-        parser.setIncomingFramesHandler(this);
         parseCount = new AtomicInteger(0);
 
         incomingFrameQueue = new LinkedBlockingDeque<>();
+
+        extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
     }
 
     public void addExtensions(String xtension)
@@ -176,14 +188,90 @@ public class BlockheadClient implements IncomingFrames
     public String expectUpgradeResponse() throws IOException
     {
         String respHeader = readResponseHeader();
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Response Header: {}{}",'\n',respHeader);
+        }
+
         Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
         Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
         Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
+
+        // collect extensions configured in response header
+        List<Extension> extensions = getExtensions(respHeader);
+
+        // Start with default routing
+        incoming = this;
+        outgoing = this;
+
+        // Connect extensions
+        if (extensions != null)
+        {
+            Iterator<Extension> extIter;
+            // Connect outgoings
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextOutgoingFrames(outgoing);
+                outgoing = ext;
+
+                // Handle RSV reservations
+                if (ext.useRsv1())
+                {
+                    generator.setRsv1InUse(true);
+                }
+                if (ext.useRsv2())
+                {
+                    generator.setRsv2InUse(true);
+                }
+                if (ext.useRsv3())
+                {
+                    generator.setRsv3InUse(true);
+                }
+            }
+
+            // Connect incomings
+            Collections.reverse(extensions);
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextIncomingFrames(incoming);
+                incoming = ext;
+            }
+        }
+
+        // configure parser
+        parser.setIncomingFramesHandler(incoming);
+
         return respHeader;
     }
 
     public List<String> getExtensions()
     {
+        return extensions;
+    }
+
+    private List<Extension> getExtensions(String respHeader)
+    {
+        List<Extension> extensions = new ArrayList<>();
+
+        Pattern expat = Pattern.compile("Sec-WebSocket-Extensions: (.*)\r",Pattern.CASE_INSENSITIVE);
+        Matcher mat = expat.matcher(respHeader);
+        int offset = 0;
+        while (mat.find(offset))
+        {
+            String econf = mat.group(1);
+            LOG.debug("Found Extension Response: {}",econf);
+
+            ExtensionConfig config = ExtensionConfig.parse(econf);
+            Extension ext = extensionRegistry.newInstance(config);
+            extensions.add(ext);
+
+            offset = mat.end(1);
+        }
         return extensions;
     }
 
@@ -255,6 +343,24 @@ public class BlockheadClient implements IncomingFrames
         {
             System.err.println("IOE while looking for \"" + orig + "\" in '" + scanned + "'");
             throw e;
+        }
+    }
+
+    @Override
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+    {
+        ByteBuffer buf = generator.generate(frame);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
+        }
+        BufferUtil.writeTo(buf,out);
+        out.flush();
+
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            // FIXME terminate the connection?
+            disconnect();
         }
     }
 
@@ -422,33 +528,21 @@ public class BlockheadClient implements IncomingFrames
 
     public void write(WebSocketFrame frame) throws IOException
     {
-        LOG.debug("write(Frame->{})",frame);
+        LOG.debug("write(Frame->{}) to {}",frame,outgoing);
         frame.setMask(clientmask);
         // frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
-        ByteBuffer buf = generator.generate(frame);
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
-        }
-        BufferUtil.writeTo(buf,out);
-        out.flush();
-
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            // FIXME terminate the connection?
-            disconnect();
-        }
+        outgoing.output(null,null,frame);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException
     {
-        LOG.debug("write(ByteBuffer->{})",BufferUtil.toDetailString(buf));
+        LOG.debug("write(ByteBuffer) {}",BufferUtil.toDetailString(buf));
         BufferUtil.writeTo(buf,out);
     }
 
     public void writeRaw(String str) throws IOException
     {
-        LOG.debug("write(String->{})",str);
+        LOG.debug("write((String)[{}]){}{})",str.length(),'\n',str);
         out.write(StringUtil.getBytes(str,StringUtil.__ISO_8859_1));
     }
 }

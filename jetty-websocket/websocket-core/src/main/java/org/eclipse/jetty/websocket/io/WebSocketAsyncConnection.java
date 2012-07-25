@@ -348,7 +348,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
-            LOG.debug("EndPoint: {}",endpoint);
         }
         try
         {

@@ -363,6 +363,20 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
                 Extension ext = extIter.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
+
+                // Handle RSV reservations
+                if (ext.useRsv1())
+                {
+                    connection.getGenerator().setRsv1InUse(true);
+                }
+                if (ext.useRsv2())
+                {
+                    connection.getGenerator().setRsv2InUse(true);
+                }
+                if (ext.useRsv3())
+                {
+                    connection.getGenerator().setRsv3InUse(true);
+                }
             }
 
             // Connect incomings

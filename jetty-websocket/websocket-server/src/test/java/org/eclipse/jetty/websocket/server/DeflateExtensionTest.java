@@ -21,8 +21,8 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.WebSocketServletRFCTest.RFCServlet;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -35,7 +35,7 @@ public class DeflateExtensionTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new SimpleServletServer(new RFCServlet());
+        server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
 
@@ -50,8 +50,7 @@ public class DeflateExtensionTest
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.clearExtensions();
-        client.addExtensions("x-deflate-frame;minLength=64");
-        // client.addExtensions("fragment;minFragments=2");
+        client.addExtensions("x-deflate-frame;minLength=8");
         client.setProtocols("echo");
 
         try
@@ -65,18 +64,18 @@ public class DeflateExtensionTest
             Assert.assertThat("Response",resp,containsString("x-deflate"));
 
             // Server sends a big message
-            String text = "0123456789ABCDEF ";
-            text = text + text + text + text;
-            text = text + text + text + text;
-            text = text + text + text + text + 'X';
+            StringBuilder msg = new StringBuilder();
+            for (int i = 0; i < 400; i++)
+            {
+                msg.append("0123456789ABCDEF ");
+            }
+            msg.append('X'); // so we can see the end in our debugging
 
-            client.write(WebSocketFrame.text(text));
-
-            // TODO: use socket that captures frame payloads to verify fragmentation
+            client.write(WebSocketFrame.text(msg.toString()));
 
             Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
             WebSocketFrame frame = frames.remove();
-            Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(text));
+            Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg.toString()));
         }
         finally
         {

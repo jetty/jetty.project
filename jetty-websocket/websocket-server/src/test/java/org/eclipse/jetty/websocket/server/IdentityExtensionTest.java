@@ -21,8 +21,8 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.WebSocketServletRFCTest.RFCServlet;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -35,7 +35,7 @@ public class IdentityExtensionTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new SimpleServletServer(new RFCServlet());
+        server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
 
@@ -53,7 +53,6 @@ public class IdentityExtensionTest
         client.addExtensions("identity;param=0");
         client.addExtensions("identity;param=1, identity ; param = '2' ; other = ' some = value '");
         client.setProtocols("onConnect");
-        client.setDebug(true);
 
         try
         {

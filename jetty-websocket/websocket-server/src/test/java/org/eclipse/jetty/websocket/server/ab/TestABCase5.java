@@ -84,6 +84,7 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
+            // Intentionally bad PING (spec says control frames must be FIN==true)
             buf.put((byte)(NOFIN | OpCode.PING.getCode()));
 
             byte b = 0x00; // no masking

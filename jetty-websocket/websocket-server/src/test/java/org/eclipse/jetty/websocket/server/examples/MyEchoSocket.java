@@ -19,6 +19,9 @@ import java.io.IOException;
 
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
+/**
+ * Example of a basic blocking echo socket.
+ */
 public class MyEchoSocket extends WebSocketAdapter
 {
     @Override

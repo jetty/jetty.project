@@ -98,7 +98,7 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("output({},{},{})",context,callback,frame);
+            LOG.debug("output({},{},{}) - {}",context,callback,frame,outgoing);
         }
         // forward on to chain
         outgoing.output(context,callback,frame);

@@ -56,8 +56,7 @@ public class Generator
      */
     public static final int OVERHEAD = 28;
 
-    @SuppressWarnings("unused")
-    private final WebSocketPolicy policy; // TODO: remove as unused?
+    private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private boolean validating;
 
@@ -378,7 +377,26 @@ public class Generator
     @Override
     public String toString()
     {
-        return String.format("Generator [basic=%s]",this.getClass().getSimpleName());
+        StringBuilder builder = new StringBuilder();
+        builder.append("Generator[");
+        builder.append(policy.getBehavior());
+        if (validating)
+        {
+            builder.append(",validating");
+        }
+        if (rsv1InUse)
+        {
+            builder.append(",+rsv1");
+        }
+        if (rsv2InUse)
+        {
+            builder.append(",+rsv2");
+        }
+        if (rsv3InUse)
+        {
+            builder.append(",+rsv3");
+        }
+        builder.append("]");
+        return builder.toString();
     }
-
 }
