@@ -94,7 +94,7 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     }
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
         if (LOG.isDebugEnabled())
         {

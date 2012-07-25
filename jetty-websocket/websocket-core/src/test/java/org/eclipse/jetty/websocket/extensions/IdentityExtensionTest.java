@@ -17,6 +17,7 @@ package org.eclipse.jetty.websocket.extensions;
 
 import static org.hamcrest.Matchers.*;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -68,7 +69,7 @@ public class IdentityExtensionTest
      * Verify that outgoing frames are unmodified
      */
     @Test
-    public void testOutgoingFrames()
+    public void testOutgoingFrames() throws IOException
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 

@@ -142,7 +142,10 @@ public class Parser
 
     protected void notifyFrame(final WebSocketFrame f)
     {
-        LOG.debug("Notify Frame: {}",f);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{} Notify Frame: {} to {}",policy.getBehavior(),f,incomingFramesHandler);
+        }
         if (incomingFramesHandler == null)
         {
             return;
@@ -183,7 +186,7 @@ public class Parser
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {
-                LOG.debug("Parsed Frame: " + frame);
+                LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
                 notifyFrame(frame);
             }
 
@@ -221,7 +224,7 @@ public class Parser
             return false;
         }
 
-        LOG.debug("Parsing {} bytes",buffer.remaining());
+        LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
         while (buffer.hasRemaining())
         {
             switch (state)

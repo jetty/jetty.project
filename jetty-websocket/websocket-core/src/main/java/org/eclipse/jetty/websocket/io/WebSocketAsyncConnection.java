@@ -277,7 +277,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
                     break;
                 }
 
-                if (LOG.isDebugEnabled())
+                if (LOG.isDebugEnabled() && (filled > 0))
                 {
                     LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
                 }

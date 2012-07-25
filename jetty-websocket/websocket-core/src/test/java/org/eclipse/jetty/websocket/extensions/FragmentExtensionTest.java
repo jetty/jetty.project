@@ -17,6 +17,7 @@ package org.eclipse.jetty.websocket.extensions;
 
 import static org.hamcrest.Matchers.*;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -121,7 +122,8 @@ public class FragmentExtensionTest
      * Incoming PING (Control Frame) should pass through extension unmodified
      */
     @Test
-    public void testIncomingPing() {
+    public void testIncomingPing()
+    {
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
@@ -155,7 +157,7 @@ public class FragmentExtensionTest
      * Verify that outgoing text frames are fragmented by the maxLength configuration.
      */
     @Test
-    public void testOutgoingFramesByMaxLength()
+    public void testOutgoingFramesByMaxLength() throws IOException
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
@@ -237,7 +239,7 @@ public class FragmentExtensionTest
      * Verify that outgoing text frames are fragmented by default configuration
      */
     @Test
-    public void testOutgoingFramesDefaultConfig()
+    public void testOutgoingFramesDefaultConfig() throws IOException
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
@@ -314,7 +316,7 @@ public class FragmentExtensionTest
      * Outgoing PING (Control Frame) should pass through extension unmodified
      */
     @Test
-    public void testOutgoingPing()
+    public void testOutgoingPing() throws IOException
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 

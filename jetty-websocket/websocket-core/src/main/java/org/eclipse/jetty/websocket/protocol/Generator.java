@@ -61,6 +61,13 @@ public class Generator
     private final ByteBufferPool bufferPool;
     private boolean validating;
 
+    /** Is there an extension using RSV1 */
+    private boolean rsv1InUse = false;
+    /** Is there an extension using RSV2 */
+    private boolean rsv2InUse = false;
+    /** Is there an extension using RSV3 */
+    private boolean rsv3InUse = false;
+
     /**
      * Construct Generator with provided policy and bufferPool
      * 
@@ -104,21 +111,18 @@ public class Generator
          * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
          * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
          */
-        if (frame.isRsv1())
+        if (!rsv1InUse && frame.isRsv1())
         {
-            // TODO: extensions can negotiate this (somehow)
             throw new ProtocolException("RSV1 not allowed to be set");
         }
 
-        if (frame.isRsv2())
+        if (!rsv2InUse && frame.isRsv2())
         {
-            // TODO: extensions can negotiate this (somehow)
             throw new ProtocolException("RSV2 not allowed to be set");
         }
 
-        if (frame.isRsv3())
+        if (!rsv3InUse && frame.isRsv3())
         {
-            // TODO: extensions can negotiate this (somehow)
             throw new ProtocolException("RSV3 not allowed to be set");
         }
 
@@ -168,10 +172,22 @@ public class Generator
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug(String.format(
-                    "Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d,payloadStart=%s,remaining=%d,position=%s]",frame
-                    .getOpCode().toString(),frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame
-                    .getPayloadLength(),frame.getPayloadStart(),frame.remaining(),frame.position()));
+            StringBuilder dbg = new StringBuilder();
+            dbg.append(policy.getBehavior());
+            dbg.append(" Generate.Frame[");
+            dbg.append("opcode=").append(frame.getOpCode());
+            dbg.append(",fin=").append(frame.isFin());
+            dbg.append(",cont=").append(frame.isContinuation());
+            dbg.append(",rsv1=").append(frame.isRsv1());
+            dbg.append(",rsv2=").append(frame.isRsv2());
+            dbg.append(",rsv3=").append(frame.isRsv3());
+            dbg.append(",mask=").append(frame.isMasked());
+            dbg.append(",payloadLength=").append(frame.getPayloadLength());
+            dbg.append(",payloadStart=").append(frame.getPayloadStart());
+            dbg.append(",remaining=").append(frame.remaining());
+            dbg.append(",position=").append(frame.position());
+            dbg.append(']');
+            LOG.debug(dbg.toString());
         }
 
         /*
@@ -326,8 +342,37 @@ public class Generator
     public ByteBuffer generate(WebSocketFrame frame)
     {
         int bufferSize = frame.getPayloadLength() + OVERHEAD;
-
         return generate(bufferSize,frame);
+    }
+
+    public boolean isRsv1InUse()
+    {
+        return rsv1InUse;
+    }
+
+    public boolean isRsv2InUse()
+    {
+        return rsv2InUse;
+    }
+
+    public boolean isRsv3InUse()
+    {
+        return rsv3InUse;
+    }
+
+    public void setRsv1InUse(boolean rsv1InUse)
+    {
+        this.rsv1InUse = rsv1InUse;
+    }
+
+    public void setRsv2InUse(boolean rsv2InUse)
+    {
+        this.rsv2InUse = rsv2InUse;
+    }
+
+    public void setRsv3InUse(boolean rsv3InUse)
+    {
+        this.rsv3InUse = rsv3InUse;
     }
 
     @Override

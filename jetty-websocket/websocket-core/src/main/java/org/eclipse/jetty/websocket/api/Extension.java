@@ -15,9 +15,13 @@
 //========================================================================
 package org.eclipse.jetty.websocket.api;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
@@ -25,6 +29,7 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 public abstract class Extension implements OutgoingFrames, IncomingFrames
 {
+    private Logger LOG = Log.getLogger(this.getClass());
     private WebSocketPolicy policy;
     private ByteBufferPool bufferPool;
     private ExtensionConfig config;
@@ -70,14 +75,14 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
     public void incoming(WebSocketException e)
     {
         // pass thru, un-modified
-        nextIncomingFrames.incoming(e);
+        nextIncoming(e);
     }
 
     @Override
     public void incoming(WebSocketFrame frame)
     {
         // pass thru, un-modified
-        nextIncomingFrames.incoming(frame);
+        nextIncoming(frame);
     }
 
     /**
@@ -88,6 +93,10 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
      */
     public void nextIncoming(WebSocketException e)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("nextIncoming({}) - {}",e,nextIncomingFrames);
+        }
         nextIncomingFrames.incoming(e);
     }
 
@@ -99,6 +108,10 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
      */
     public void nextIncoming(WebSocketFrame frame)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("nextIncoming({}) - {}",frame,nextIncomingFrames);
+        }
         nextIncomingFrames.incoming(frame);
     }
 
@@ -108,21 +121,29 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
      * @param frame
      *            the frame to send to the next output
      */
-    public <C> void nextOutput(C context, Callback<C> callback, WebSocketFrame frame)
+    public <C> void nextOutput(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("nextOutput({}) - {}",frame,nextOutgoingFrames);
+        }
         nextOutgoingFrames.output(context,callback,frame);
     }
 
-    public <C> void nextOutputNoCallback(WebSocketFrame frame)
+    public <C> void nextOutputNoCallback(WebSocketFrame frame) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("nextOutput({}) - {}",frame,nextOutgoingFrames);
+        }
         nextOutgoingFrames.output(null,new FutureCallback<Void>(),frame);
     }
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
         // pass thru, un-modified
-        nextOutgoingFrames.output(context,callback,frame);
+        nextOutput(context,callback,frame);
     }
 
     public void setBufferPool(ByteBufferPool bufferPool)
@@ -148,5 +169,20 @@ public abstract class Extension implements OutgoingFrames, IncomingFrames
     public void setPolicy(WebSocketPolicy policy)
     {
         this.policy = policy;
+    }
+
+    public boolean useRsv1()
+    {
+        return false;
+    }
+
+    public boolean useRsv2()
+    {
+        return false;
+    }
+
+    public boolean useRsv3()
+    {
+        return false;
     }
 }

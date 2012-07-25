@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket.io;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
@@ -8,5 +10,5 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
  */
 public interface OutgoingFrames
 {
-    <C> void output(C context, Callback<C> callback, WebSocketFrame frame);
+    <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException;
 }

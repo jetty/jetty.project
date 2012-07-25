@@ -15,6 +15,7 @@
 //========================================================================
 package org.eclipse.jetty.websocket.extensions.fragment;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
@@ -28,7 +29,7 @@ public class FragmentExtension extends Extension
     private int maxLength = -1;
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
         if (frame.getOpCode().isControlFrame())
         {

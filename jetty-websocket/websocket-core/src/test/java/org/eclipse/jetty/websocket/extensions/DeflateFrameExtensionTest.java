@@ -17,6 +17,7 @@ package org.eclipse.jetty.websocket.extensions;
 
 import static org.hamcrest.Matchers.*;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -41,8 +42,88 @@ import org.junit.Test;
 
 public class DeflateFrameExtensionTest
 {
+    /**
+     * Test a large payload (a payload length over 65535 bytes)
+     */
     @Test
-    public void testFlate()
+    public void testFlateLarge()
+    {
+        // Server sends a big message
+        StringBuilder msg = new StringBuilder();
+        for (int i = 0; i < 5000; i++)
+        {
+            msg.append("0123456789ABCDEF ");
+        }
+        msg.append('X'); // so we can see the end in our debugging
+
+        // ensure that test remains sane
+        Assert.assertThat("Large Payload Length",msg.length(),greaterThan(0xFF_FF));
+
+        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        // allow large payload for this test
+        policy.setBufferSize(100000);
+        policy.setMaxPayloadSize(150000);
+
+        DeflateFrameExtension ext = new DeflateFrameExtension();
+        ext.setBufferPool(new StandardByteBufferPool());
+        ext.setPolicy(policy);
+
+        ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=8");
+        ext.setConfig(config);
+
+        String expected = msg.toString();
+
+        ByteBuffer orig = BufferUtil.toBuffer(expected,StringUtil.__UTF8_CHARSET);
+        // compress
+        ByteBuffer compressed = ext.deflate(orig);
+
+        // decompress
+        ByteBuffer decompressed = ext.inflate(compressed);
+
+        // validate
+        String actual = BufferUtil.toUTF8String(decompressed);
+        Assert.assertEquals(expected,actual);
+    }
+
+    /**
+     * Test a medium payload (a payload length between 128 - 65535 bytes)
+     */
+    @Test
+    public void testFlateMedium()
+    {
+        // Server sends a big message
+        StringBuilder msg = new StringBuilder();
+        for (int i = 0; i < 1000; i++)
+        {
+            msg.append("0123456789ABCDEF ");
+        }
+        msg.append('X'); // so we can see the end in our debugging
+
+        // ensure that test remains sane
+        Assert.assertThat("Medium Payload Length",msg.length(),allOf(greaterThanOrEqualTo(0x7E),lessThanOrEqualTo(0xFF_FF)));
+
+        DeflateFrameExtension ext = new DeflateFrameExtension();
+        ext.setBufferPool(new StandardByteBufferPool());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
+        ExtensionConfig config = ExtensionConfig.parse("x-deflate-frame;minLength=8");
+        ext.setConfig(config);
+
+        String expected = msg.toString();
+
+        ByteBuffer orig = BufferUtil.toBuffer(expected,StringUtil.__UTF8_CHARSET);
+        // compress
+        ByteBuffer compressed = ext.deflate(orig);
+
+        // decompress
+        ByteBuffer decompressed = ext.inflate(compressed);
+
+        // validate
+        String actual = BufferUtil.toUTF8String(decompressed);
+        Assert.assertEquals(expected,actual);
+    }
+
+    @Test
+    public void testFlateSmall()
     {
         DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(new StandardByteBufferPool());
@@ -55,6 +136,9 @@ public class DeflateFrameExtensionTest
         quote.append("No amount of experimentation can ever prove me right;\n");
         quote.append("a single experiment can prove me wrong.\n");
         quote.append("-- Albert Einstein");
+
+        // ensure that test remains sane
+        Assert.assertThat("Small Payload Length",quote.length(),lessThan(0x7E));
 
         String expected = quote.toString();
 
@@ -70,8 +154,11 @@ public class DeflateFrameExtensionTest
         Assert.assertEquals(expected,actual);
     }
 
+    /**
+     * Test round-trips of many small frames (no frame larger than 126 bytes)
+     */
     @Test
-    public void testFlateManySmall()
+    public void testFlateSmall_Many()
     {
         DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(new StandardByteBufferPool());
@@ -247,7 +334,7 @@ public class DeflateFrameExtensionTest
      * Verify that outgoing text frames are compressed.
      */
     @Test
-    public void testOutgoingFrames()
+    public void testOutgoingFrames() throws IOException
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
@@ -317,7 +404,7 @@ public class DeflateFrameExtensionTest
      * Outgoing PING (Control Frame) should pass through extension unmodified
      */
     @Test
-    public void testOutgoingPing()
+    public void testOutgoingPing() throws IOException
     {
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 

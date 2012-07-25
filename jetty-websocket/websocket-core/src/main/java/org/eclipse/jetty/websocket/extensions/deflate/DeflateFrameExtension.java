@@ -15,6 +15,7 @@
 //========================================================================
 package org.eclipse.jetty.websocket.extensions.deflate;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -87,6 +88,11 @@ public class DeflateFrameExtension extends Extension
         else
         {
             buf.put((byte)(length & 0x7F));
+        }
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Uncompressed length={} - {}",length,buf.position());
         }
 
         while (!deflater.finished())
@@ -175,7 +181,7 @@ public class DeflateFrameExtension extends Extension
     }
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
         if (frame.getOpCode().isControlFrame())
         {
@@ -219,13 +225,13 @@ public class DeflateFrameExtension extends Extension
     {
         int length = data.get();
         int bytes = 0;
-        if (length == 0x7F)
+        if (length == 127) // 0x7F
         {
             // length 8 bytes (extended payload length)
             length = 0;
             bytes = 8;
         }
-        else if (length == 0x7F)
+        else if (length == 126) // 0x7E
         {
             // length 2 bytes (extended payload length)
             length = 0;
@@ -234,6 +240,7 @@ public class DeflateFrameExtension extends Extension
 
         while (bytes > 0)
         {
+            --bytes;
             byte b = data.get();
             length |= (b & 0xFF) << (8 * bytes);
         }
@@ -253,5 +260,20 @@ public class DeflateFrameExtension extends Extension
         deflater = new Deflater(Deflater.BEST_COMPRESSION);
         deflater.setStrategy(Deflater.DEFAULT_STRATEGY);
         inflater = new Inflater();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("DeflateFrameExtension[minLength=%d]",minLength);
+    }
+
+    /**
+     * Indicates use of RSV1 flag for indicating deflation is in use.
+     */
+    @Override
+    public boolean useRsv1()
+    {
+        return true;
     }
 }
