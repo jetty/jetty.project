@@ -51,9 +51,15 @@ public class HttpInput extends ServletInputStream
     }
 
     /* ------------------------------------------------------------ */
+    public Object lock()
+    {
+        return _inputQ.lock();
+    }
+    
+    /* ------------------------------------------------------------ */
     public void recycle()
     {
-        synchronized (_inputQ.lock())
+        synchronized (lock())
         {
             _inputEOF=false;
             
@@ -82,7 +88,7 @@ public class HttpInput extends ServletInputStream
     @Override
     public int available()
     {
-        synchronized (_inputQ.lock())
+        synchronized (lock())
         {
             ByteBuffer content=_inputQ.peekUnsafe();
             if (content==null)
@@ -99,7 +105,7 @@ public class HttpInput extends ServletInputStream
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        synchronized (_inputQ.lock())
+        synchronized (lock())
         {
             ByteBuffer content=null;            
             while(content==null)
@@ -132,13 +138,13 @@ public class HttpInput extends ServletInputStream
     
     protected void blockForContent() throws IOException
     {
-        synchronized (_inputQ.lock())
+        synchronized (lock())
         {
             while(_inputQ.isEmpty())
             {
                 try
                 {
-                    _inputQ.lock().wait();
+                    lock().wait();
                 }
                 catch (InterruptedException e)
                 {
@@ -150,7 +156,7 @@ public class HttpInput extends ServletInputStream
     
     protected void onContentQueued(ByteBuffer ref)
     {
-        _inputQ.lock().notify();
+        lock().notify();
     }
     
     protected void onContentConsumed(ByteBuffer ref)
@@ -167,7 +173,7 @@ public class HttpInput extends ServletInputStream
     
     public boolean content(ByteBuffer ref)
     {
-        synchronized (_inputQ.lock())
+        synchronized (lock())
         {
             _inputQ.add(ref);
             onContentQueued(ref);
@@ -177,7 +183,7 @@ public class HttpInput extends ServletInputStream
 
     public void shutdownInput()
     {
-        synchronized (_inputQ.lock())
+        synchronized (lock())
         {             
             _inputEOF=true;
         }
@@ -187,7 +193,7 @@ public class HttpInput extends ServletInputStream
     {
         while (true)
         {
-            synchronized (_inputQ.lock())
+            synchronized (lock())
             {
                 _inputQ.clear();
             }
