@@ -1,6 +1,8 @@
 jetty-8.1.6-SNAPSHOT
+ + 385925: make SslContextFactory.setProtocols and
+   SslContextFactory.setCipherSuites preserve the order of the given parameters
 
-jetty-8.1.5.v20120716 - 16 July 2012
+jetty-7.6.6-SNAPSHOT
  + 376717 Balancer Servlet with round robin support, contribution, added
    missing license
  + 379250 Server is added to shutdown hook twice
