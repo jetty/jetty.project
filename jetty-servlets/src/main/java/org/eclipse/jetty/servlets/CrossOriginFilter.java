@@ -108,6 +108,7 @@ public class CrossOriginFilter implements Filter
     public static final String PREFLIGHT_MAX_AGE_PARAM = "preflightMaxAge";
     public static final String ALLOW_CREDENTIALS_PARAM = "allowCredentials";
     public static final String EXPOSED_HEADERS_PARAM = "exposedHeaders";
+    public static final String OLD_CHAIN_PREFLIGHT_PARAM = "forwardPreflight";
     public static final String CHAIN_PREFLIGHT_PARAM = "chainPreflight";
     private static final String ANY_ORIGIN = "*";
     private static final List<String> SIMPLE_HTTP_METHODS = Arrays.asList("GET", "POST", "HEAD");
@@ -177,7 +178,11 @@ public class CrossOriginFilter implements Filter
             exposedHeadersConfig = "";
         exposedHeaders.addAll(Arrays.asList(exposedHeadersConfig.split(",")));
 
-        String chainPreflightConfig = config.getInitParameter(CHAIN_PREFLIGHT_PARAM);
+        String chainPreflightConfig = config.getInitParameter(OLD_CHAIN_PREFLIGHT_PARAM);
+        if (chainPreflightConfig!=null) // TODO remove this
+            LOG.warn("DEPRECATED CONFIGURATION: Use "+CHAIN_PREFLIGHT_PARAM+ " instead of "+OLD_CHAIN_PREFLIGHT_PARAM);
+        else
+            chainPreflightConfig = config.getInitParameter(CHAIN_PREFLIGHT_PARAM);
         if (chainPreflightConfig == null)
             chainPreflightConfig = "true";
         chainPreflight = Boolean.parseBoolean(chainPreflightConfig);
