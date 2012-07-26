@@ -14,6 +14,9 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -464,11 +467,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             
             // Handle configuring servlets that implement org.apache.jasper.servlet.JspServlet
             if (isJspServlet())
-            {
                 initJspServlet();
-            }
 
             _servlet.init(_config);
+            
+            if (isJspServlet())
+               postInitJspServlet();
         }
         catch (UnavailableException e)
         {
@@ -522,6 +526,51 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (classpath != null) 
                 setInitParameter("classpath", classpath);
         }
+    }
+    
+    protected void postInitJspServlet() throws Exception
+    {
+        try
+        {
+            //Check that jasper's SystemLogHandler class is on the classpath
+            Class systemLogHandlerClass = Loader.loadClass(this.getClass(), "org.apache.jasper.util.SystemLogHandler");
+            PrintStream rootSystemLogHandler = null;
+            while (systemLogHandlerClass.isAssignableFrom(System.err.getClass()))
+            {
+                rootSystemLogHandler = System.err;
+                Method getWrapped = systemLogHandlerClass.getMethod("getWrapped", new Class[]{});
+                PrintStream ps = (PrintStream)getWrapped.invoke(System.err, new Object[]{});
+                System.setErr(ps);
+            }
+            
+            if (rootSystemLogHandler != null)
+                System.setErr(rootSystemLogHandler);
+        }
+        catch (ClassNotFoundException e)
+        {
+            //jasper not on classpath, ignore
+        }
+        catch (NoSuchMethodException e)
+        {
+            LOG.info("Problem unwrapping SystemLogHandler from System.err", e);
+        }
+        catch (SecurityException e)
+        {
+            LOG.warn("Problem unwrapping SystemLogHandler from System.err", e);
+        }
+        catch (IllegalAccessException e)
+        {
+            LOG.warn("Problem unwrapping SystemLogHandler from System.err", e);
+        }
+        catch (IllegalArgumentException e)
+        {
+            LOG.warn("Problem unwrapping SystemLogHandler from System.err", e);
+        }
+        catch (InvocationTargetException e)
+        {
+            LOG.warn("Problem unwrapping SystemLogHandler from System.err", e);
+        }
+        
     }
     
     
