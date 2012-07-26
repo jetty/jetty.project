@@ -228,7 +228,7 @@ public abstract class HttpChannel
             {
                 if (_response.isCommitted())
                     throw new IllegalStateException("Committed before 100 Continues");
-                commit(HttpGenerator.CONTINUE_100_INFO,null);
+                commitResponse(HttpGenerator.CONTINUE_100_INFO,null);
             }
             _expect100Continue=false;
         }
@@ -444,7 +444,7 @@ public abstract class HttpChannel
             }
 
             HttpGenerator.ResponseInfo info = _handler.commit();
-            commit(info,buffer);
+            commitResponse(info,buffer);
 
             return true;
         }
@@ -779,7 +779,7 @@ public abstract class HttpChannel
             // Process content.
             if (content instanceof ByteBuffer)
             {
-                commit(_handler.commit(),(ByteBuffer)content);
+                commitResponse(_handler.commit(),(ByteBuffer)content);
             }
             else if (content instanceof InputStream)
             {
@@ -795,7 +795,7 @@ public abstract class HttpChannel
     protected abstract int write(ByteBuffer content) throws IOException;
 
     /* Called by the channel or application to commit a specific response info */
-    protected abstract void commit(ResponseInfo info, ByteBuffer content) throws IOException;
+    protected abstract void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException;
 
     protected abstract int getContentBufferSize();
 

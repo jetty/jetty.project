@@ -158,7 +158,7 @@ public class SSLEngineTest
         {
             for (int l=0;l<loops;l++)
             {
-                System.err.print('.');
+                // System.err.print('.');
                 try
                 {
                     for (int i=0; i<numConns; ++i)
@@ -203,7 +203,7 @@ public class SSLEngineTest
         }
         finally
         {
-            System.err.println();
+            // System.err.println();
         }
     }
 

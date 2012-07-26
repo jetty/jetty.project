@@ -51,7 +51,7 @@ public class HttpWriterTest
             }
 
             @Override
-            protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
+            protected void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException
             {
             }
 

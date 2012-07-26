@@ -161,7 +161,7 @@ public class ResponseTest
             }
 
             @Override
-            protected void commit(ResponseInfo info, ByteBuffer content) throws IOException
+            protected void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException
             {
                 // TODO Auto-generated method stub
 

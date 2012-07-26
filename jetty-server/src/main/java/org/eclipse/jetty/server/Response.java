@@ -419,7 +419,7 @@ public class Response implements HttpServletResponse
     public void sendProcessing() throws IOException
     {
         if (_channel.isExpecting102Processing() && !isCommitted())
-            _channel.commit(HttpGenerator.PROGRESS_102_INFO,null);
+            _channel.commitResponse(HttpGenerator.PROGRESS_102_INFO,null);
     }
 
     /* ------------------------------------------------------------ */
