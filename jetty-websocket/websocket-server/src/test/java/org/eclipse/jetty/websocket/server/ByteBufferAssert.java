@@ -34,6 +34,12 @@ public class ByteBufferAssert
         }
     }
 
+    public static void assertEquals(String message, byte[] expectedBytes, ByteBuffer actualBuffer)
+    {
+        byte actualBytes[] = BufferUtil.toArray(actualBuffer);
+        assertEquals(message,expectedBytes,actualBytes);
+    }
+
     public static void assertEquals(String message, ByteBuffer expectedBuffer, ByteBuffer actualBuffer)
     {
         byte expectedBytes[] = BufferUtil.toArray(expectedBuffer);

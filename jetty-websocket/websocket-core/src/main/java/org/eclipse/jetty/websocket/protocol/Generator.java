@@ -192,7 +192,7 @@ public class Generator
         /*
          * prepare the byte buffer to put frame into
          */
-        ByteBuffer buffer = bufferPool.acquire(bufferSize,true);
+        ByteBuffer buffer = bufferPool.acquire(bufferSize + OVERHEAD,true);
         BufferUtil.clearToFill(buffer);
 
         if (frame.remaining() == frame.getPayloadLength())

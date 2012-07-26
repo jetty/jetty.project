@@ -64,7 +64,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     /**
      * Establish the driver for the Websocket POJO
-     *
+     * 
      * @param websocket
      */
     public WebSocketEventDriver(Object websocket, EventMethodsCache methodsCache, WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -87,6 +87,11 @@ public class WebSocketEventDriver implements IncomingFrames
 
     private void appendBuffer(ByteBuffer msgBuf, ByteBuffer byteBuffer)
     {
+        if (byteBuffer == null)
+        {
+            // nothing to do (empty payload is possible)
+            return;
+        }
         if (msgBuf.remaining() < byteBuffer.remaining())
         {
             throw new MessageTooLargeException("Message exceeded maximum buffer");
@@ -101,7 +106,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     /**
      * Get the Websocket POJO in use
-     *
+     * 
      * @return the Websocket POJO
      */
     public Object getWebSocketObject()
@@ -131,7 +136,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     /**
      * Internal entry point for incoming frames
-     *
+     * 
      * @param frame
      *            the frame that appeared
      */
@@ -351,7 +356,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     /**
      * Set the connection to use for this driver
-     *
+     * 
      * @param conn
      *            the connection
      */
