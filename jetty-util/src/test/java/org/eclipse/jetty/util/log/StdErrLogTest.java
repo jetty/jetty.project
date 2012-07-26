@@ -360,6 +360,31 @@ public class StdErrLogTest
     }
 
     /**
+     * Tests {@link StdErrLog#LEVEL_OFF} filtering.
+     */
+    @Test
+    public void testOffFiltering() throws UnsupportedEncodingException
+    {
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
+        log.setHideStacks(false);
+        log.setLevel(StdErrLog.LEVEL_OFF);
+
+        StdErrCapture output = new StdErrCapture(log);
+
+        // Various logging events
+        log.debug("Squelch");
+        log.debug("Squelch", new RuntimeException("Squelch"));
+        log.info("Squelch");
+        log.info("Squelch", new IllegalStateException("Squelch"));
+        log.warn("Squelch");
+        log.warn("Squelch", new Exception("Squelch"));
+        log.ignore(new Throwable("Squelch"));
+
+        // Validate Output
+        output.assertNotContains("Squelch");
+    }        
+
+    /**
      * Tests StdErrLog.debug() methods with level filtering.
      * <p>
      * Should only see DEBUG level messages when level is set to {@link StdErrLog#LEVEL_DEBUG} and below.
@@ -454,6 +479,9 @@ public class StdErrLogTest
 
         log.setLevel(StdErrLog.LEVEL_WARN);
         Assert.assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
+
+        log.setLevel(StdErrLog.LEVEL_OFF);
+        Assert.assertThat("log.level(off).isDebugEnabled", log.isDebugEnabled(), is(false));
     }
     
     @Test
@@ -473,6 +501,9 @@ public class StdErrLogTest
 
         log.setLevel(StdErrLog.LEVEL_WARN);
         Assert.assertThat("log.level(warn).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_WARN));
+
+        log.setLevel(StdErrLog.LEVEL_OFF);
+        Assert.assertThat("log.level(off).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_OFF));
     }
     
     @Test
@@ -511,7 +542,7 @@ public class StdErrLogTest
         Assert.assertThat("Logger.name", log.getName(), is("jetty"));
         
         // Pass null as child reference, should return parent logger
-        Logger log2 = log.getLogger(null);
+        Logger log2 = log.getLogger((String)null);
         Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
         Assert.assertSame("Should have returned same logger", log2, log);
     }

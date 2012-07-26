@@ -38,7 +38,7 @@ public class LifeCycleListenerTest
 
         try
         {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+            StdErrLog.getLogger(AbstractLifeCycle.class).setHideStacks(true);
             lifecycle.start();
             assertTrue(false);
         }
@@ -49,11 +49,9 @@ public class LifeCycleListenerTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(false);
+            StdErrLog.getLogger(AbstractLifeCycle.class).setHideStacks(false);
         }
         lifecycle.setCause(null);
-        ((StdErrLog)Log.getLog()).setHideStacks(false);
-
 
         lifecycle.start();
 

@@ -73,6 +73,7 @@ public class StdErrLog extends AbstractLogger
     public static final int LEVEL_DEBUG = 1;
     public static final int LEVEL_INFO = 2;
     public static final int LEVEL_WARN = 3;
+    public static final int LEVEL_OFF = 10;
 
     private int _level = LEVEL_INFO;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
@@ -86,6 +87,16 @@ public class StdErrLog extends AbstractLogger
     // The abbreviated log name (used by default, unless _long is specified)
     private final String _abbrevname;
     private boolean _hideStacks = false;
+    
+    public static StdErrLog getLogger(Class<?> clazz)
+    {
+        Logger log = Log.getLogger(clazz);
+        if (log instanceof StdErrLog)
+        {
+            return (StdErrLog)log;
+        }
+        throw new RuntimeException("Logger for " + clazz + " is not of type StdErrLog");
+    }
 
     public StdErrLog()
     {
@@ -181,8 +192,12 @@ public class StdErrLog extends AbstractLogger
         {
             return LEVEL_WARN;
         }
+        else if ("OFF".equalsIgnoreCase(levelStr))
+        {
+            return LEVEL_OFF;
+        }
 
-        System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN] as values.");
+        System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN, OFF] as values.");
         return -1;
     }
 
