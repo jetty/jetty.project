@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 /**
  * Support class for reading binary message data as an InputStream.
  */
@@ -28,6 +30,7 @@ public class MessageInputStream extends InputStream implements StreamAppender
 
     public MessageInputStream(ByteBuffer buf)
     {
+        BufferUtil.clearToFill(buf);
         this.buffer = buf;
     }
 

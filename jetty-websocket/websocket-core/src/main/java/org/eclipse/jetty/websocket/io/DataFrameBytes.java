@@ -62,15 +62,9 @@ public class DataFrameBytes<C> extends FrameBytes<C>
         try
         {
             int windowSize = connection.getPolicy().getBufferSize();
-            // TODO: create a window size?
 
-            size = frame.getPayloadLength();
-            if (size > windowSize)
-            {
-                size = windowSize;
-            }
-
-            buffer = connection.getGenerator().generate(size,frame);
+            // TODO: windowSize should adjust according to some sort of flow control rules.
+            buffer = connection.getGenerator().generate(windowSize,frame);
             return buffer;
         }
         catch (Throwable x)

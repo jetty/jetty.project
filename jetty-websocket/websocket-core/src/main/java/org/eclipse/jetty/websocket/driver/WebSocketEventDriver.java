@@ -54,6 +54,7 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public class WebSocketEventDriver implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketEventDriver.class);
+    private final Logger socketLog;
     private final Object websocket;
     private final WebSocketPolicy policy;
     private final EventMethods events;
@@ -74,29 +75,48 @@ public class WebSocketEventDriver implements IncomingFrames
         this.events = methodsCache.getMethods(websocket.getClass());
         this.bufferPool = bufferPool;
 
+        this.socketLog = Log.getLogger(websocket.getClass());
+
         if (events.isAnnotated())
         {
             WebSocket anno = websocket.getClass().getAnnotation(WebSocket.class);
             // Setup the policy
-            policy.setBufferSize(anno.maxBufferSize());
-            policy.setMaxBinaryMessageSize(anno.maxBinarySize());
-            policy.setMaxTextMessageSize(anno.maxTextSize());
-            policy.setIdleTimeout(anno.maxIdleTime());
+            if (anno.maxBufferSize() > 0)
+            {
+                this.policy.setBufferSize(anno.maxBufferSize());
+            }
+            if (anno.maxBinarySize() > 0)
+            {
+                this.policy.setMaxBinaryMessageSize(anno.maxBinarySize());
+            }
+            if (anno.maxTextSize() > 0)
+            {
+                this.policy.setMaxTextMessageSize(anno.maxTextSize());
+            }
+            if (anno.maxIdleTime() > 0)
+            {
+                this.policy.setIdleTimeout(anno.maxIdleTime());
+            }
         }
     }
 
-    private void appendBuffer(ByteBuffer msgBuf, ByteBuffer byteBuffer)
+    private void appendBuffer(ByteBuffer msgBuf, ByteBuffer payloadBuf)
     {
-        if (byteBuffer == null)
+        if (payloadBuf == null)
         {
             // nothing to do (empty payload is possible)
             return;
         }
-        if (msgBuf.remaining() < byteBuffer.remaining())
+        if (msgBuf.remaining() < payloadBuf.remaining())
         {
-            throw new MessageTooLargeException("Message exceeded maximum buffer");
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("    msgBuf = {}",BufferUtil.toDetailString(msgBuf));
+                LOG.debug("payloadBuf = {}",BufferUtil.toDetailString(msgBuf));
+            }
+            throw new MessageTooLargeException("Message exceeded maximum buffer size of [" + payloadBuf.capacity() + "]");
         }
-        msgBuf.put(byteBuffer);
+        msgBuf.put(payloadBuf);
     }
 
     public WebSocketPolicy getPolicy()
@@ -389,7 +409,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
     private void unhandled(Throwable t)
     {
-        LOG.warn("Unhandled Error (closing connection)",t);
+        socketLog.warn("Unhandled Error (closing connection)",t);
 
         // Unhandled Error, close the connection.
         switch (policy.getBehavior())

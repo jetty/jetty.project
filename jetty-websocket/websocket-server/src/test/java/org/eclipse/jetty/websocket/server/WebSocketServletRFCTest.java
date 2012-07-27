@@ -17,28 +17,21 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.RFCServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -52,68 +45,6 @@ import org.junit.Test;
  */
 public class WebSocketServletRFCTest
 {
-    @SuppressWarnings("serial")
-    public static class RFCServlet extends WebSocketServlet
-    {
-        @Override
-        public void registerWebSockets(WebSocketServerFactory factory)
-        {
-            factory.register(RFCSocket.class);
-        }
-    }
-
-    @WebSocket
-    public static class RFCSocket
-    {
-        private static Logger LOG = Log.getLogger(RFCSocket.class);
-
-        private WebSocketConnection conn;
-
-        @OnWebSocketMessage
-        public void onBinary(byte buf[], int offset, int len)
-        {
-            LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
-
-            // echo the message back.
-            try
-            {
-                this.conn.write(null,new FutureCallback<Void>(),buf,offset,len);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace(System.err);
-            }
-        }
-
-        @OnWebSocketConnect
-        public void onOpen(WebSocketConnection conn)
-        {
-            this.conn = conn;
-        }
-
-        @OnWebSocketMessage
-        public void onText(String message)
-        {
-            LOG.debug("onText({})",message);
-            // Test the RFC 6455 close code 1011 that should close
-            // trigger a WebSocket server terminated close.
-            if (message.equals("CRASH"))
-            {
-                throw new RuntimeException("Something bad happened");
-            }
-
-            // echo the message back.
-            try
-            {
-                this.conn.write(null,new FutureCallback<Void>(),message);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace(System.err);
-            }
-        }
-    }
-
     private static Generator generator = new UnitGenerator();
     private static SimpleServletServer server;
 

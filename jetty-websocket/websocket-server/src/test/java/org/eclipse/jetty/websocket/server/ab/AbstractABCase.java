@@ -3,7 +3,6 @@ package org.eclipse.jetty.websocket.server.ab;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
-import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -20,7 +19,7 @@ public abstract class AbstractABCase
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new SimpleServletServer(new MyEchoServlet());
+        server = new SimpleServletServer(new ABServlet());
         server.start();
     }
 

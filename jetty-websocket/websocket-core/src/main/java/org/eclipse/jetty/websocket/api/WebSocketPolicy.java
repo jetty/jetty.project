@@ -128,10 +128,12 @@ public class WebSocketPolicy
     public WebSocketPolicy clonePolicy()
     {
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
-        clone.bufferSize = this.bufferSize;
+        clone.autoFragment = this.autoFragment;
         clone.masker = this.masker;
-        clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
         clone.idleTimeout = this.idleTimeout;
+        clone.bufferSize = this.bufferSize;
+        clone.maxPayloadSize = this.maxPayloadSize;
+        clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         return clone;
     }
@@ -146,6 +148,11 @@ public class WebSocketPolicy
         return bufferSize;
     }
 
+    public int getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
     public Masker getMasker()
     {
         return masker;
@@ -154,11 +161,6 @@ public class WebSocketPolicy
     public int getMaxBinaryMessageSize()
     {
         return maxBinaryMessageSize;
-    }
-
-    public int getIdleTimeout()
-    {
-        return idleTimeout;
     }
 
     public int getMaxPayloadSize()
@@ -186,6 +188,11 @@ public class WebSocketPolicy
         this.bufferSize = bufferSize;
     }
 
+    public void setIdleTimeout(int idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+    }
+
     public void setMasker(Masker masker)
     {
         this.masker = masker;
@@ -194,11 +201,6 @@ public class WebSocketPolicy
     public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
     {
         this.maxBinaryMessageSize = maxBinaryMessageSize;
-    }
-
-    public void setIdleTimeout(int idleTimeout)
-    {
-        this.idleTimeout = idleTimeout;
     }
 
     public void setMaxPayloadSize(int maxPayloadSize)

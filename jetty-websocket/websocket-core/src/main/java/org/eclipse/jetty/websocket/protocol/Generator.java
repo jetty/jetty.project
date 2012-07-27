@@ -160,15 +160,17 @@ public class Generator
 
     }
 
-    /*
-     * The generate method needs to perform two functions.
-     * 
-     * 1 - on the initial call for a given frame it needs to generate the framing bytecode and as much of the payload as will fit in the given buffer size
-     * 
-     * 2 - on subsequent calls it needs to return as much of the payload as will fit in the given buffer size
+    /**
+     * Generate, into a ByteBuffer, no more than bufferSize of contents from the frame. If the frame exceeds the bufferSize, then multiple calls to
+     * {@link #generate(int, WebSocketFrame)} are required to obtain each window of ByteBuffer to complete the frame.
      */
-    public ByteBuffer generate(int bufferSize, WebSocketFrame frame)
+    public ByteBuffer generate(int windowSize, WebSocketFrame frame)
     {
+        if (windowSize < OVERHEAD)
+        {
+            throw new IllegalArgumentException("Cannot have windowSize less than " + OVERHEAD);
+        }
+
         if (LOG.isDebugEnabled())
         {
             StringBuilder dbg = new StringBuilder();
@@ -192,8 +194,11 @@ public class Generator
         /*
          * prepare the byte buffer to put frame into
          */
-        ByteBuffer buffer = bufferPool.acquire(bufferSize + OVERHEAD,true);
+        ByteBuffer buffer = bufferPool.acquire(windowSize,true);
         BufferUtil.clearToFill(buffer);
+        // since the buffer from the pool can exceed the window size, artificially
+        // limit the buffer to the window size.
+        buffer.limit(buffer.position() + windowSize);
 
         if (frame.remaining() == frame.getPayloadLength())
         {

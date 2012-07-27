@@ -391,10 +391,6 @@ public class DeflateFrameExtensionTest
             ByteBuffer compressed = actual.getPayload().slice();
             ByteBuffer uncompressed = ext.inflate(compressed);
 
-            System.err.printf("Expected    : %s%n",BufferUtil.toDetailString(expected));
-            System.err.printf("Compressed  : %s%n",BufferUtil.toDetailString(compressed));
-            System.err.printf("Uncompressed: %s%n",BufferUtil.toDetailString(uncompressed));
-
             Assert.assertThat(prefix + ".payloadLength",uncompressed.remaining(),is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload",expected,uncompressed);
         }
