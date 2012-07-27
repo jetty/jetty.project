@@ -66,6 +66,9 @@ import org.eclipse.jetty.util.log.Logger;
  * <li><b>exposeHeaders</b>, a comma separated list of HTTP headers that
  * are allowed to be exposed on the client. Default value is the
  * <b>empty list</b></li>
+ * <li><b>chainPreflight</b>, if true preflight requests are chained to their
+ * target resource for normal handling (as an OPTION request).  Otherwise the 
+ * filter will response to the preflight. Default is true.</li>
  * </ul></p>
  * <p>A typical configuration could be:
  * <pre>
@@ -105,7 +108,8 @@ public class CrossOriginFilter implements Filter
     public static final String PREFLIGHT_MAX_AGE_PARAM = "preflightMaxAge";
     public static final String ALLOW_CREDENTIALS_PARAM = "allowCredentials";
     public static final String EXPOSED_HEADERS_PARAM = "exposedHeaders";
-    public static final String FORWARD_PREFLIGHT_PARAM = "forwardPreflight";
+    public static final String OLD_CHAIN_PREFLIGHT_PARAM = "forwardPreflight";
+    public static final String CHAIN_PREFLIGHT_PARAM = "chainPreflight";
     private static final String ANY_ORIGIN = "*";
     private static final List<String> SIMPLE_HTTP_METHODS = Arrays.asList("GET", "POST", "HEAD");
 
@@ -116,7 +120,7 @@ public class CrossOriginFilter implements Filter
     private List<String> exposedHeaders = new ArrayList<String>();
     private int preflightMaxAge;
     private boolean allowCredentials;
-    private boolean forwardPreflight;
+    private boolean chainPreflight;
 
     public void init(FilterConfig config) throws ServletException
     {
@@ -174,10 +178,14 @@ public class CrossOriginFilter implements Filter
             exposedHeadersConfig = "";
         exposedHeaders.addAll(Arrays.asList(exposedHeadersConfig.split(",")));
 
-        String forwardPreflightConfig = config.getInitParameter(FORWARD_PREFLIGHT_PARAM);
-        if (forwardPreflightConfig == null)
-            forwardPreflightConfig = "true";
-        forwardPreflight = Boolean.parseBoolean(forwardPreflightConfig);
+        String chainPreflightConfig = config.getInitParameter(OLD_CHAIN_PREFLIGHT_PARAM);
+        if (chainPreflightConfig!=null) // TODO remove this
+            LOG.warn("DEPRECATED CONFIGURATION: Use "+CHAIN_PREFLIGHT_PARAM+ " instead of "+OLD_CHAIN_PREFLIGHT_PARAM);
+        else
+            chainPreflightConfig = config.getInitParameter(CHAIN_PREFLIGHT_PARAM);
+        if (chainPreflightConfig == null)
+            chainPreflightConfig = "true";
+        chainPreflight = Boolean.parseBoolean(chainPreflightConfig);
 
         if (LOG.isDebugEnabled())
         {
@@ -188,7 +196,7 @@ public class CrossOriginFilter implements Filter
                     PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
                     ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
                     EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
-                    FORWARD_PREFLIGHT_PARAM + " = " + forwardPreflightConfig
+                    CHAIN_PREFLIGHT_PARAM + " = " + chainPreflightConfig
             );
         }
     }
@@ -215,7 +223,7 @@ public class CrossOriginFilter implements Filter
                 {
                     LOG.debug("Cross-origin request to {} is a preflight cross-origin request", request.getRequestURI());
                     handlePreflightResponse(request, response, origin);
-                    if (forwardPreflight)
+                    if (chainPreflight)
                         LOG.debug("Preflight cross-origin request to {} forwarded to application", request.getRequestURI());
                     else
                         return;

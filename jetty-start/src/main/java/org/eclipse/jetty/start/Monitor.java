@@ -62,7 +62,7 @@ public class Monitor extends Thread
         catch(Exception e)
         {
             Config.debug(e);
-            System.err.println(e.toString());
+            System.err.println("Error binding monitor port "+port+": "+e.toString());
         }
         finally
         {
