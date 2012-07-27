@@ -204,7 +204,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 UserIdentity user = _loginService.login(username,password);
                 if (user!=null)
                 {
-                    session=renewSessionOnAuthentication(request,response);
+                    session=renewSession(request,response);
                     
                     // Redirect to original request
                     String nuri;

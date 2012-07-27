@@ -83,7 +83,7 @@ public class BasicAuthenticator extends LoginAuthenticator
                             UserIdentity user = _loginService.login(username,password);
                             if (user!=null)
                             {
-                                renewSessionOnAuthentication(request,response);
+                                renewSession(request,response);
                                 return new UserAuthentication(getAuthMethod(),user);
                             }
                         }

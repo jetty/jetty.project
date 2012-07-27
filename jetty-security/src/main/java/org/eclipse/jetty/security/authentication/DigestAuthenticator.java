@@ -183,7 +183,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     UserIdentity user = _loginService.login(digest.username,digest);
                     if (user!=null)
                     {
-                        renewSessionOnAuthentication(request,response);
+                        renewSession(request,response);
                         return new UserAuthentication(getAuthMethod(),user);
                     }
                 }
