@@ -31,7 +31,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
     @BeforeClass
     public static void init() throws Exception
     {
-        SelectChannelConnector connector = new SelectChannelConnector();
+        SelectChannelConnector connector = new SelectChannelConnector(_server);
         connector.setIdleTimeout(MAX_IDLE_TIME); // 250 msec max idle
         startServer(connector);
     }

@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
@@ -55,7 +55,7 @@ public class ConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
     private static Server _server;
-    private static LocalHttpConnector _connector;
+    private static LocalConnector _connector;
     private static SessionHandler _session;
     private ConstraintSecurityHandler _security;
 
@@ -63,7 +63,7 @@ public class ConstraintTest
     public static void startServer()
     {
         _server = new Server();
-        _connector = new LocalHttpConnector();
+        _connector = new LocalConnector(_server);
         _server.setConnectors(new Connector[]{_connector});
 
         ContextHandler _context = new ContextHandler();

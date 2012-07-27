@@ -88,7 +88,7 @@ public class SSLEngineTest
     public void startServer() throws Exception
     {
         server=new Server();
-        connector=new SslSelectChannelConnector();
+        connector=new SslSelectChannelConnector(server);
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
@@ -96,8 +96,8 @@ public class SSLEngineTest
         cf.setKeyStorePath(keystore);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        connector.setRequestBufferSize(512);
-        connector.setRequestHeaderSize(512);
+        connector.getHttpConfig().setRequestBufferSize(512);
+        connector.getHttpConfig().setRequestHeaderSize(512);
 
         server.setConnectors(new Connector[]{connector });
     }

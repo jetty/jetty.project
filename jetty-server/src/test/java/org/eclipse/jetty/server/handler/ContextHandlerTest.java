@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
@@ -58,7 +58,7 @@ public class ContextHandlerTest
     public void testVirtualHostNormalization() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[]
         { connector });
 
@@ -117,7 +117,7 @@ public class ContextHandlerTest
     public void testContextGetContext() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
@@ -149,7 +149,7 @@ public class ContextHandlerTest
     public void testContextVirtualGetContext() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
@@ -196,7 +196,7 @@ public class ContextHandlerTest
     public void testVirtualHostWildcard() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
 
         ContextHandler context = new ContextHandler("/");
@@ -365,7 +365,7 @@ public class ContextHandlerTest
     {
         Server server = new Server();
         server.setUncheckedPrintWriter(true);
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
         ContextHandler context = new ContextHandler("/");
         WriterHandler handler = new WriterHandler();
@@ -391,7 +391,7 @@ public class ContextHandlerTest
 
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
     {
-        LocalHttpConnector connector = (LocalHttpConnector)server.getConnectors()[0];
+        LocalConnector connector = (LocalConnector)server.getConnectors()[0];
         ContextHandler context = (ContextHandler)server.getHandler();
         context.setVirtualHosts(contextHosts);
 

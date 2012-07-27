@@ -77,7 +77,7 @@ public class SSLCloseTest extends TestCase
     public void testClose() throws Exception
     {
         Server server=new Server();
-        SslSelectChannelConnector connector=new SslSelectChannelConnector();
+        SslSelectChannelConnector connector=new SslSelectChannelConnector(server);
 
         String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
 

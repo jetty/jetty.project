@@ -58,7 +58,7 @@ public class SelectChannelStatisticsTest
         _connect = new CyclicBarrier(2);
 
         _server = new Server();
-        _connector = new SelectChannelConnector()
+        _connector = new SelectChannelConnector(_server)
         {
             @Override
             protected void endPointClosed(AsyncEndPoint endpoint)

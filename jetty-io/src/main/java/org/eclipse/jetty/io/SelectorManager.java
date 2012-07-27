@@ -200,9 +200,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param endpoint   the endpoint
      * @param attachment the attachment
      * @return a new connection
+     * @throws IOException 
      * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
-    public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment);
+    public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment) throws IOException;
 
     /**
      * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>

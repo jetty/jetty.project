@@ -44,12 +44,12 @@ public class SlowClientWithPipelinedRequestTest
     public void startServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new SelectChannelConnector()
+        connector = new SelectChannelConnector(server)
         {
             @Override
-            protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+            protected AsyncConnection newConnection(AsyncEndPoint endpoint)
             {
-                return new HttpConnection(this,endpoint,getServer())
+                return new HttpConnection(getHttpConfig(),this,endpoint)
                 {
                     @Override
                     public synchronized void onFillable()
@@ -57,7 +57,6 @@ public class SlowClientWithPipelinedRequestTest
                         handles.incrementAndGet();
                         super.onFillable();
                     }
-                    
                 };
             }
         };

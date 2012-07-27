@@ -28,7 +28,7 @@ import javax.servlet.ServletResponse;
 
 import junit.framework.AssertionFailedError;
 
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -48,7 +48,7 @@ public class DefaultServletTest
     public TestingDir testdir = new TestingDir();
 
     private Server server;
-    private LocalHttpConnector connector;
+    private LocalConnector connector;
     private ServletContextHandler context;
 
     @Before
@@ -57,7 +57,7 @@ public class DefaultServletTest
         server = new Server();
         server.setSendServerVersion(false);
 
-        connector = new LocalHttpConnector();
+        connector = new LocalConnector(server);
 
         context = new ServletContextHandler();
         context.setContextPath("/context");

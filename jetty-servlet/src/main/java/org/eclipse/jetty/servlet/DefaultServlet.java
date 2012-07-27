@@ -39,17 +39,16 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.HttpConnector;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
 import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.ssl.SslConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
@@ -779,7 +778,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         else
         {
-            HttpConnector connector = HttpChannel.getCurrentHttpChannel().getHttpConnector();
+            Connector connector = HttpChannel.getCurrentHttpChannel().getConnector();
             // TODO either make this more targeted and/or configurable or just get rid of the choice
             direct=!(connector instanceof SslConnector);
             content_length=content.getContentLength();

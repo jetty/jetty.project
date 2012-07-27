@@ -53,7 +53,7 @@ public class SSLSelectChannelConnectorLoadTest
     public static void startServer() throws Exception
     {
         server = new Server();
-        connector = new SslSelectChannelConnector();
+        connector = new SslSelectChannelConnector(server);
         server.addConnector(connector);
 
         String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
@@ -69,7 +69,7 @@ public class SSLSelectChannelConnectorLoadTest
         server.start();
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(connector.getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         sslContext = SSLContext.getInstance("SSL");

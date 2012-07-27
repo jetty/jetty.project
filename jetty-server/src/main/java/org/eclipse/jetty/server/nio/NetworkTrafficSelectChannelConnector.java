@@ -19,13 +19,18 @@ import java.nio.channels.SocketChannel;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * <p>A specialized version of {@link SelectChannelConnector} that supports {@link NetworkTrafficListener}s.</p>
@@ -35,6 +40,28 @@ import org.eclipse.jetty.server.SelectChannelConnector;
 public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
 {
     private final List<NetworkTrafficListener> listeners = new CopyOnWriteArrayList<NetworkTrafficListener>();
+
+    
+    public NetworkTrafficSelectChannelConnector(Server server, boolean ssl)
+    {
+        super(server,ssl);
+    }
+
+    public NetworkTrafficSelectChannelConnector(Server server, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
+        SslContextFactory sslContextFactory, boolean ssl, int acceptors, int selectors)
+    {
+        super(server,executor,scheduler,pool,sslContextFactory,ssl,acceptors,selectors);
+    }
+
+    public NetworkTrafficSelectChannelConnector(Server server, SslContextFactory sslContextFactory)
+    {
+        super(server,sslContextFactory);
+    }
+
+    public NetworkTrafficSelectChannelConnector(Server server)
+    {
+        super(server);
+    }
 
     /**
      * @param listener the listener to add

@@ -39,7 +39,7 @@ public class HttpWriterTest
         HttpChannel channel = new HttpChannel(null,null,null)
         {
             @Override
-            public HttpConnector getHttpConnector()
+            public HttpConfiguration getHttpConfiguration()
             {
                 return null;
             }
@@ -95,6 +95,12 @@ public class HttpWriterTest
 
             @Override
             public ScheduledExecutorService getScheduler()
+            {
+                return null;
+            }
+            
+            @Override
+            public Connector getConnector()
             {
                 return null;
             }

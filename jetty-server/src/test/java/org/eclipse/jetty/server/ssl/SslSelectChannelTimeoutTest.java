@@ -37,7 +37,7 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
     @BeforeClass
     public static void init() throws Exception
     {
-        SslSelectChannelConnector connector = new SslSelectChannelConnector();
+        SslSelectChannelConnector connector = new SslSelectChannelConnector(_server);
         connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         SslContextFactory cf = connector.getSslContextFactory();
@@ -49,7 +49,7 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         startServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(connector.getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("SSL");

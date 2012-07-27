@@ -23,20 +23,25 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class LocalHttpConnector extends HttpConnector
+public class LocalConnector extends AbstractConnector
 {
-    private static final Logger LOG = Log.getLogger(LocalHttpConnector.class);
+    private static final Logger LOG = Log.getLogger(LocalConnector.class);
 
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
-    private volatile LocalExecutor _executor;
+    
+    // TODO this sux
+    private final LocalExecutor _executor;
 
-    public LocalHttpConnector()
+    public LocalConnector(Server server)
     {
+        super(server,new LocalExecutor(server.getThreadPool()),null,null,null, false,-1);
+        _executor=(LocalExecutor)getExecutor();
         setIdleTimeout(30000);
     }
 
@@ -99,7 +104,7 @@ public class LocalHttpConnector extends HttpConnector
     {
         LOG.debug("accepting {}",acceptorID);
         LocalEndPoint endp = _connects.take();
-        HttpConnection connection=new HttpConnection(this,endp,getServer());
+        AsyncConnection connection=newConnection(endp);
         endp.setAsyncConnection(connection);
         endp.onOpen();
         connection.onOpen();
@@ -107,27 +112,7 @@ public class LocalHttpConnector extends HttpConnector
         _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
 
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        _executor=new LocalExecutor(findExecutor());
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        _executor=null;
-    }
-
-    @Override
-    public Executor findExecutor()
-    {
-        return _executor==null?super.findExecutor():_executor;
-    }
-
-    private class LocalExecutor implements Executor
+    private static class LocalExecutor implements Executor
     {
         private final Phaser _phaser=new Phaser()
         {
@@ -173,7 +158,7 @@ public class LocalHttpConnector extends HttpConnector
 
         public LocalEndPoint()
         {
-            super(getScheduler(), LocalHttpConnector.this.getIdleTimeout());
+            super(getScheduler(), LocalConnector.this.getIdleTimeout());
             setGrowOutput(true);
         }
 

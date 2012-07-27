@@ -42,13 +42,13 @@ import org.junit.Test;
 public class RFC2616Test
 {
     private Server server;
-    private LocalHttpConnector connector;
+    private LocalConnector connector;
 
     @Before
     public void init() throws Exception
     {
         server = new Server();
-        connector = new LocalHttpConnector();
+        connector = new LocalConnector(server);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
 
@@ -490,7 +490,7 @@ public class RFC2616Test
     {
         int offset=0;
         // Expect 100
-        LocalHttpConnector.LocalEndPoint endp =connector.executeRequest("GET /R1 HTTP/1.1\n"+
+        LocalConnector.LocalEndPoint endp =connector.executeRequest("GET /R1 HTTP/1.1\n"+
                 "Host: localhost\n"+
                 "Connection: close\n"+
                 "Expect: 100-continue\n"+
@@ -898,7 +898,7 @@ public class RFC2616Test
         }
     }
 
-    private void checkContentRange(LocalHttpConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange, String expectedData)
+    private void checkContentRange(LocalConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange, String expectedData)
     {
         try
         {

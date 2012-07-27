@@ -66,7 +66,7 @@ public class Server extends HandlerWrapper implements Attributes
 
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
-    private ThreadPool _threadPool;
+    private final ThreadPool _threadPool;
     private Connector[] _connectors;
     private SessionIdManager _sessionIdManager;
     private boolean _sendServerVersion = true; //send Server: header
@@ -81,7 +81,7 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     public Server()
     {
-        setServer(this);
+        this((ThreadPool)null);
     }
 
     /* ------------------------------------------------------------ */
@@ -90,9 +90,8 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public Server(int port)
     {
-        setServer(this);
-
-        SelectChannelConnector connector=new SelectChannelConnector();
+        this((ThreadPool)null);
+        SelectChannelConnector connector=new SelectChannelConnector(this);
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
     }
@@ -103,14 +102,22 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public Server(InetSocketAddress addr)
     {
-        setServer(this);
-
-        SelectChannelConnector connector=new SelectChannelConnector();
+        this((ThreadPool)null);
+        SelectChannelConnector connector=new SelectChannelConnector(this);
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
         setConnectors(new Connector[]{connector});
     }
 
+
+    /* ------------------------------------------------------------ */
+    public Server(ThreadPool pool)
+    {
+        _threadPool=pool!=null?pool:new QueuedThreadPool();
+        addBean(_threadPool,pool==null);
+        setServer(this);
+    }
+    
 
     /* ------------------------------------------------------------ */
     public static String getVersion()
@@ -189,9 +196,8 @@ public class Server extends HandlerWrapper implements Attributes
         {
             for (int i=0;i<connectors.length;i++)
             {
-                // TODO review
-                if (connectors[i] instanceof AbstractConnector)
-                    ((AbstractConnector)connectors[i]).setServer(this);
+                if (connectors[i].getServer()!=this)
+                    throw new IllegalArgumentException();
             }
         }
 
@@ -206,20 +212,6 @@ public class Server extends HandlerWrapper implements Attributes
     public ThreadPool getThreadPool()
     {
         return _threadPool;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param threadPool The threadPool to set.
-     */
-    public void setThreadPool(ThreadPool threadPool)
-    {
-        if (_threadPool!=null)
-            removeBean(_threadPool);
-        _container.update(this, _threadPool, threadPool, "threadpool",false);
-        _threadPool = threadPool;
-        if (_threadPool!=null)
-            addBean(_threadPool);
     }
 
     /**
@@ -266,9 +258,6 @@ public class Server extends HandlerWrapper implements Attributes
         LOG.info("jetty-"+__version);
         HttpGenerator.setServerVersion(__version);
         MultiException mex=new MultiException();
-
-        if (_threadPool==null)
-            setThreadPool(new QueuedThreadPool());
 
         try
         {

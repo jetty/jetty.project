@@ -52,7 +52,7 @@ public class AsyncRequestReadTest
     public static void startServer() throws Exception
     {
         server = new Server();
-        connector = new SelectChannelConnector();
+        connector = new SelectChannelConnector(server);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
         server.setHandler(new EmptyHandler());

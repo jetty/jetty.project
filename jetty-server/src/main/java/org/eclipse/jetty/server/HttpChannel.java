@@ -330,7 +330,7 @@ public abstract class HttpChannel
                     if (_state.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
-                        getHttpConnector().customize(_request);
+                        getHttpConfiguration().customize(_request);
                         getServer().handle(this);
                     }
                     else
@@ -790,7 +790,9 @@ public abstract class HttpChannel
         }
     }
 
-    public abstract HttpConnector getHttpConnector();
+    public abstract Connector getConnector();
+    
+    public abstract HttpConfiguration getHttpConfiguration();
 
     protected abstract int write(ByteBuffer content) throws IOException;
 

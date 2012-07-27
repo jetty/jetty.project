@@ -15,9 +15,11 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /** HTTP Connector.
  * Implementations of this interface provide connectors for the HTTP protocol.
@@ -42,14 +44,17 @@ public interface Connector extends LifeCycle
     Server getServer();
 
     /* ------------------------------------------------------------ */
-    Executor findExecutor();
-
-    /* ------------------------------------------------------------ */
     Executor getExecutor();
+    
+    /* ------------------------------------------------------------ */
+    ScheduledExecutorService getScheduler();
 
     /* ------------------------------------------------------------ */
     ByteBufferPool getByteBufferPool();
-
+    
+    /* ------------------------------------------------------------ */
+    SslContextFactory getSslContextFactory();
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Max Idle time for connections in milliseconds

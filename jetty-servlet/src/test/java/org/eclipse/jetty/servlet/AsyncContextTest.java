@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import junit.framework.Assert;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -50,14 +50,14 @@ public class AsyncContextTest
 
     private Server _server;
     private ServletContextHandler _contextHandler;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
 
     @Before
     public void setUp() throws Exception
     {
         _server = new Server();
         _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        _connector = new LocalHttpConnector();
+        _connector = new LocalConnector(_server);
         _connector.setIdleTimeout(30000);
         _server.setConnectors(new Connector[]
         { _connector });

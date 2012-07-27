@@ -56,7 +56,7 @@ import static org.junit.Assert.fail;
 public class ResponseTest
 {
     private Server _server;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
     private HttpChannel _channel;
     private ScheduledExecutorService _timer;
 
@@ -64,7 +64,7 @@ public class ResponseTest
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalHttpConnector();
+        _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
         _server.start();
@@ -100,35 +100,28 @@ public class ResponseTest
             @Override
             protected void resetBuffer()
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             protected void increaseContentBufferSize(int size)
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             public ScheduledExecutorService getScheduler()
             {
-                // TODO Auto-generated method stub
                 return null;
             }
 
             @Override
-            public HttpConnector getHttpConnector()
+            public HttpConfiguration getHttpConfiguration()
             {
-                // TODO Auto-generated method stub
                 return null;
             }
 
             @Override
             protected int getContentBufferSize()
             {
-                // TODO Auto-generated method stub
                 return 0;
             }
 
@@ -142,29 +135,27 @@ public class ResponseTest
             @Override
             protected void execute(Runnable task)
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             protected void completed()
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             protected void completeResponse() throws IOException
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             protected void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException
             {
-                // TODO Auto-generated method stub
-
+            }
+            
+            @Override
+            public Connector getConnector()
+            {
+                return null;
             }
         };
     }

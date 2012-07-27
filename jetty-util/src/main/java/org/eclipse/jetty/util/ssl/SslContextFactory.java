@@ -22,6 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
@@ -1525,6 +1528,19 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
+    public SSLEngine createSSLEngine(InetSocketAddress address) throws IOException
+    {
+        SSLEngine engine = (address != null)
+            ?newSslEngine(address.getAddress().getHostAddress(), address.getPort())
+            :newSslEngine();
+        engine.setUseClientMode(false);
+ 
+        customize(engine);
+        return engine;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return String.format("%s@%x(%s,%s)",

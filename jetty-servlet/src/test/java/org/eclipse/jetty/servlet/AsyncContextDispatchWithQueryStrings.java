@@ -23,7 +23,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -45,7 +45,7 @@ public class AsyncContextDispatchWithQueryStrings {
 
 	private Server _server = new Server();
 	private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-	private LocalHttpConnector _connector = new LocalHttpConnector();
+	private LocalConnector _connector = new LocalConnector(_server);
 
 	@Before
 	public void setUp() throws Exception {

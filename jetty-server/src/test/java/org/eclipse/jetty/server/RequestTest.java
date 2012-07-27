@@ -49,19 +49,19 @@ public class RequestTest
 {
     private static final Logger LOG = Log.getLogger(RequestTest.class);
     private Server _server;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
     private RequestHandler _handler;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalHttpConnector();
-        _connector.setRequestHeaderSize(512);
-        _connector.setRequestBufferSize(1024);
-        _connector.setResponseHeaderSize(512);
-        _connector.setResponseBufferSize(2048);
-        _connector.setForwarded(true);
+        _connector = new LocalConnector(_server);
+        _connector.getHttpConfig().setRequestHeaderSize(512);
+        _connector.getHttpConfig().setRequestBufferSize(1024);
+        _connector.getHttpConfig().setResponseHeaderSize(512);
+        _connector.getHttpConfig().setResponseBufferSize(2048);
+        _connector.getHttpConfig().setForwarded(true);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
         _server.setHandler(_handler);

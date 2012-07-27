@@ -16,15 +16,23 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+
+import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * Abstract Connector implementation. This abstract implementation of the Connector interface provides:
@@ -43,22 +51,96 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
     private final Statistics _stats = new ConnectionStatistics();
     private final Thread[] _acceptors;
+    private final Executor _executor;
+    private final ScheduledExecutorService _scheduler;
+    private final Server _server;
+    private final ByteBufferPool _byteBufferPool;
+    private final boolean _ssl;
+    private final SslContextFactory _sslContextFactory;
+
+    /**
+     * @deprecated  Make this part of pluggable factory
+     */
+    private final HttpConfiguration _httpConfig;
+    
     private volatile String _name;
-    private volatile Server _server;
-    private volatile Executor _executor;
     private volatile int _acceptQueueSize = 128;
     private volatile boolean _reuseAddress = true;
-    private volatile ByteBufferPool _byteBufferPool;
     private volatile long _idleTimeout = 200000;
     private volatile int _soLingerTime = -1;
 
-    public AbstractConnector()
+    public AbstractConnector(@Name("server") Server server)
     {
-        this(Math.max(1, (Runtime.getRuntime().availableProcessors()) / 4));
+        this(server,null);
     }
 
-    public AbstractConnector(@Name("acceptors") int acceptors)
+    public AbstractConnector(
+        @Name("server") Server server,
+        @Name("sslContextFactory") SslContextFactory sslContextFactory)
     {
+        this(server,null,null,null,sslContextFactory, sslContextFactory!=null, 0);
+    }
+    
+    public AbstractConnector(
+        @Name("server") Server server,
+        @Name("ssl") boolean ssl)
+    {
+        this(server,null,null,null,ssl?new SslContextFactory():null, ssl, 0);
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param server The server this connector will be added to. Must not be null.
+     * @param executor An executor for this connector or null to use the servers executor 
+     * @param scheduler A scheduler for this connector or null to use the servers scheduler
+     * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
+     * @param sslContextFactory An SslContextFactory to use or null if no ssl is required or to use default {@link SslContextFactory} 
+     * @param ssl If true, then new connections will assumed to be SSL. If false, connections can only become SSL if they upgrade and a SslContextFactory is passed.
+     * @param acceptors the number of acceptor threads to use, or 0 for a default value.
+     */
+    public AbstractConnector(
+        Server server,
+        Executor executor,
+        ScheduledExecutorService scheduler,
+        ByteBufferPool pool, 
+        SslContextFactory sslContextFactory, 
+        boolean ssl, 
+        int acceptors)
+    {
+        _server=server;
+        _executor=executor!=null?executor:_server.getThreadPool();
+        _scheduler=scheduler!=null?scheduler:Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+        {
+            @Override
+            public Thread newThread(Runnable r)
+            {
+                return new Thread(r, "Timer-" + getName());
+            }
+        });
+        _byteBufferPool = pool!=null?pool:new StandardByteBufferPool();
+        
+        _ssl=ssl;
+        _sslContextFactory=sslContextFactory!=null?sslContextFactory:(ssl?new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH):null);
+
+        addBean(_server,false);
+        addBean(_executor,executor==null);
+        addBean(_scheduler,scheduler==null);
+        addBean(_byteBufferPool,pool==null);
+        if (_sslContextFactory!=null)
+            addBean(_sslContextFactory,sslContextFactory==null);
+        
+        if (_sslContextFactory!=null)
+        {
+            addBean(_sslContextFactory,false);
+            setSoLingerTime(30000);
+        }
+        
+        // TODO make this pluggable
+        _httpConfig = new HttpConfiguration(_sslContextFactory,ssl);
+
+        if (acceptors<=0)
+            acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
             LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
@@ -76,29 +158,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         return _server;
     }
 
-    public void setServer(Server server)
-    {
-        _server = server;
-    }
-
-    public Executor findExecutor()
-    {
-        if (_executor == null && getServer() != null)
-            return getServer().getThreadPool();
-        return _executor;
-    }
-
     @Override
     public Executor getExecutor()
     {
         return _executor;
-    }
-
-    public void setExecutor(Executor executor)
-    {
-        removeBean(_executor);
-        _executor = executor;
-        addBean(_executor);
     }
 
     @Override
@@ -107,13 +170,33 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         return _byteBufferPool;
     }
 
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
+    @Override
+    public SslContextFactory getSslContextFactory()
     {
-        removeBean(byteBufferPool);
-        _byteBufferPool = byteBufferPool;
-        addBean(_byteBufferPool);
+        return _sslContextFactory;
     }
 
+    public HttpConfiguration getHttpConfig()
+    {
+        return _httpConfig;
+    }
+
+    protected AsyncConnection newConnection(AsyncEndPoint endp) throws IOException
+    {
+        // TODO make this a plugable configurable connection factory for HTTP, HTTPS, SPDY & Websocket
+        
+        if (_ssl)
+        {
+            SSLEngine engine = _sslContextFactory.createSSLEngine(endp.getRemoteAddress());
+            SslConnection ssl_connection = new SslConnection(getByteBufferPool(), getExecutor(), endp, engine);
+            
+            AsyncConnection http_connection = new HttpConnection(_httpConfig,this,ssl_connection.getSslEndPoint());
+            ssl_connection.getSslEndPoint().setAsyncConnection(http_connection);
+            return ssl_connection;
+        }
+        return new HttpConnection(_httpConfig,this,endp);
+    }
+    
     /**
      * @return Returns the maxIdleTime.
      */
@@ -190,18 +273,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
-        if (_server == null)
-            throw new IllegalStateException("No server");
-
-        _byteBufferPool = new StandardByteBufferPool();
-
         super.doStart();
 
         // Start selector thread
         synchronized (this)
         {
             for (int i = 0; i < _acceptors.length; i++)
-                findExecutor().execute(new Acceptor(i));
+                getExecutor().execute(new Acceptor(i));
         }
 
         LOG.info("Started {}", this);
@@ -351,5 +429,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
+    }
+
+    public ScheduledExecutorService getScheduler()
+    {
+        return _scheduler;
     }
 }

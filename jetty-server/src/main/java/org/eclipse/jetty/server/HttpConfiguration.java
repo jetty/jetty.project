@@ -3,25 +3,37 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSession;
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.ssl.SslCertificates;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
-public abstract class HttpConnector extends AbstractNetConnector
+public class HttpConfiguration extends AggregateLifeCycle
 {
+    static final Logger LOG = Log.getLogger(HttpConfiguration.class);
+    
+    private final SslContextFactory _sslContextFactory;
+    private final boolean _ssl;
+    
     private String _integralScheme = HttpScheme.HTTPS.asString();
     private int _integralPort = 0;
     private String _confidentialScheme = HttpScheme.HTTPS.asString();
     private int _confidentialPort = 0;
     private boolean _forwarded;
     private String _hostHeader;
-    private ScheduledExecutorService _scheduler;
-    private boolean _shutdownScheduler;
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
     private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
     private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
@@ -32,51 +44,23 @@ public abstract class HttpConnector extends AbstractNetConnector
     private int _requestBufferSize=16*1024;
     private int _responseHeaderSize=6*1024;
     private int _responseBufferSize=16*1024;
-
-    public HttpConnector()
+    
+    public HttpConfiguration(SslContextFactory sslContextFactory,boolean ssl)
     {
+        _sslContextFactory=sslContextFactory!=null?sslContextFactory:ssl?new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH):null;
+        _ssl=ssl;
+        if (_sslContextFactory!=null)
+            addBean(_sslContextFactory,sslContextFactory==null);
+    }
+    
+    public SslContextFactory getSslContextFactory()
+    {
+        return _sslContextFactory;
     }
 
-    public HttpConnector(int acceptors)
+    public boolean isSecure()
     {
-        super(acceptors);
-    }
-
-    public ScheduledExecutorService getScheduler()
-    {
-        return _scheduler;
-    }
-
-    public void setScheduler(ScheduledExecutorService scheduler)
-    {
-        _scheduler = scheduler;
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        if (_scheduler == null)
-        {
-            _scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
-            {
-                @Override
-                public Thread newThread(Runnable r)
-                {
-                    return new Thread(r, "Timer-" + HttpConnector.this.getName());
-                }
-            });
-            _shutdownScheduler = true;
-        }
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        if (_shutdownScheduler)
-            _scheduler.shutdownNow();
-        _scheduler = null;
-        super.doStop();
+        return _ssl;
     }
 
     public int getRequestHeaderSize()
@@ -120,8 +104,37 @@ public abstract class HttpConnector extends AbstractNetConnector
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Allow the Listener a chance to customise the request. before the server
+     * does its stuff. <br>
+     * This allows the required attributes to be set for SSL requests. <br>
+     * The requirements of the Servlet specs are:
+     * <ul>
+     * <li> an attribute named "javax.servlet.request.ssl_session_id" of type
+     * String (since Servlet Spec 3.0).</li>
+     * <li> an attribute named "javax.servlet.request.cipher_suite" of type
+     * String.</li>
+     * <li> an attribute named "javax.servlet.request.key_size" of type Integer.</li>
+     * <li> an attribute named "javax.servlet.request.X509Certificate" of type
+     * java.security.cert.X509Certificate[]. This is an array of objects of type
+     * X509Certificate, the order of this array is defined as being in ascending
+     * order of trust. The first certificate in the chain is the one set by the
+     * client, the next is the one used to authenticate the first, and so on.
+     * </li>
+     * </ul>
+     */
     public void customize(Request request) throws IOException
-    {
+    {        
+        if (isSecure())
+        {
+            request.setScheme(HttpScheme.HTTPS.asString());
+            SslConnection.SslEndPoint ssl_endp = (SslConnection.SslEndPoint)request.getHttpChannel().getEndPoint();
+            SslConnection sslConnection = ssl_endp.getSslConnection();
+            SSLEngine sslEngine=sslConnection.getSSLEngine();
+            SslCertificates.customize(sslEngine,request);
+        }
+        
+        request.setTimeStamp(System.currentTimeMillis());
         if (isForwarded())
             checkForwardedHeaders(request);
     }
@@ -230,12 +243,23 @@ public abstract class HttpConnector extends AbstractNetConnector
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server .Request)
+    /**
+     * The request is integral IFF it is secure AND the server port
+     * matches any configured {@link #getIntegralPort()}. 
+     * This allows separation of listeners providing INTEGRAL versus
+     * CONFIDENTIAL constraints, such as one SSL listener configured to require
+     * client certs providing CONFIDENTIAL, whereas another SSL listener not
+     * requiring client certs providing mere INTEGRAL constraints.
+     * <p>
+     * The request is secure if it is SSL or it {@link #isForwarded()} is true 
+     * and the scheme matches {@link #getIntegralScheme()()}
      */
     public boolean isIntegral(Request request)
     {
-        return false;
+        boolean https = isSecure() || _forwarded && _integralScheme.equalsIgnoreCase(request.getScheme());
+        int iPort=getIntegralPort();
+        boolean port = iPort<=0||iPort==request.getServerPort();
+        return https && port;
     }
 
     /* ------------------------------------------------------------ */
@@ -257,12 +281,23 @@ public abstract class HttpConnector extends AbstractNetConnector
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server.Request)
+    /**
+     * The request is confidential IFF it is secure AND the server port
+     * matches any configured {@link #getConfidentialPort()}. 
+     * This allows separation of listeners providing INTEGRAL versus
+     * CONFIDENTIAL constraints, such as one SSL listener configured to require
+     * client certs providing CONFIDENTIAL, whereas another SSL listener not
+     * requiring client certs providing mere INTEGRAL constraints.
+     * <p>
+     * The request is secure if it is SSL or it {@link #isForwarded()} is true 
+     * and the scheme matches {@link #getConfidentialScheme()}
      */
     public boolean isConfidential(Request request)
     {
-        return _forwarded && request.getScheme().equalsIgnoreCase(HttpScheme.HTTPS.toString());
+        boolean https = isSecure() || _forwarded && _confidentialScheme.equalsIgnoreCase(request.getScheme());
+        int confidentialPort=getConfidentialPort();
+        boolean port = confidentialPort<=0||confidentialPort==request.getServerPort();
+        return https && port;
     }
 
     /* ------------------------------------------------------------ */
@@ -477,5 +512,31 @@ public abstract class HttpConnector extends AbstractNetConnector
     public void setForwardedSslSessionIdHeader(String forwardedSslSessionId)
     {
         _forwardedSslSessionIdHeader = forwardedSslSessionId;
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (_sslContextFactory!=null)
+        {
+            _sslContextFactory.checkKeyStore();
+
+            super.doStart();
+            
+            SSLEngine sslEngine = _sslContextFactory.newSslEngine();
+
+            sslEngine.setUseClientMode(false);
+
+            SSLSession sslSession = sslEngine.getSession();
+
+            if (getRequestHeaderSize()<sslSession.getApplicationBufferSize())
+                setRequestHeaderSize(sslSession.getApplicationBufferSize());
+            if (getRequestBufferSize()<sslSession.getApplicationBufferSize())
+                setRequestBufferSize(sslSession.getApplicationBufferSize());
+        }
+        else
+            super.doStart();
     }
 }

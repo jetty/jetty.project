@@ -81,7 +81,7 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
-        SslSelectChannelConnector connector = new SslSelectChannelConnector()
+        SslSelectChannelConnector connector = new SslSelectChannelConnector(server)
         {
             @Override
             protected SslConnection newSslConnection(AsyncEndPoint endPoint, SSLEngine engine)

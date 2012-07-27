@@ -49,7 +49,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @BeforeClass
     public static void init() throws Exception
     {   
-        SslSelectChannelConnector connector = new SslSelectChannelConnector();
+        SslSelectChannelConnector connector = new SslSelectChannelConnector(_server);
         
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         SslContextFactory cf = connector.getSslContextFactory();
@@ -62,7 +62,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(connector.getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("TLS");

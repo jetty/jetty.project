@@ -46,7 +46,8 @@ public class HttpConnection extends AbstractAsyncConnection
     public static final String UPGRADE_CONNECTION_ATTR = "org.eclispe.jetty.server.HttpConnection.UPGRADE";
 
     private final Server _server;
-    private final HttpConnector _connector;
+    private final HttpConfiguration _httpConfig;
+    private final Connector _connector;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
@@ -74,17 +75,18 @@ public class HttpConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public HttpConnection(HttpConnector connector, AsyncEndPoint endpoint, Server server)
+    public HttpConnection(HttpConfiguration config, Connector connector, AsyncEndPoint endpoint)
     {
-        super(endpoint,connector.findExecutor());
+        super(endpoint,connector.getExecutor());
 
+        _httpConfig=config;
         _connector = connector;
         _bufferPool=_connector.getByteBufferPool();
 
-        _server = server;
+        _server = connector.getServer();
 
         _httpInput = new HttpHttpInput();
-        _channel = new HttpChannelOverHttp(server);
+        _channel = new HttpChannelOverHttp(connector.getServer());
 
         _parser = new HttpParser(_channel.getEventHandler());
         _generator = new HttpGenerator();
@@ -220,7 +222,7 @@ public class HttpConnection extends AbstractAsyncConnection
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
                     if (_requestBuffer==null)
-                        _requestBuffer=_bufferPool.acquire(_connector.getRequestHeaderSize(),false);
+                        _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestHeaderSize(),false);
 
                     int filled=getEndPoint().fill(_requestBuffer);
 
@@ -280,7 +282,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     if (getEndPoint().getAsyncConnection()!=this)
                         return;
                 }
-                else if (_headerBytes>= _connector.getRequestHeaderSize())
+                else if (_headerBytes>= _httpConfig.getRequestHeaderSize())
                 {
                     _parser.reset();
                     _parser.close();
@@ -346,7 +348,7 @@ public class HttpConnection extends AbstractAsyncConnection
         {
             if (_responseBuffer!=null && _responseBuffer.capacity()>=size)
                 return;
-            if (_responseBuffer==null && _connector.getResponseBufferSize()>=size)
+            if (_responseBuffer==null && _httpConfig.getResponseBufferSize()>=size)
                 return;
 
             ByteBuffer r=_bufferPool.acquire(size,false);
@@ -365,13 +367,17 @@ public class HttpConnection extends AbstractAsyncConnection
             if (buffer!=null)
                 return buffer.capacity();
 
-            return _connector.getResponseBufferSize();
+            return _httpConfig.getResponseBufferSize();
         }
 
-        @Override
-        public HttpConnector getHttpConnector()
+        public Connector getConnector()
         {
             return _connector;
+        }
+        
+        public HttpConfiguration getHttpConfiguration()
+        {
+            return _httpConfig;
         }
 
         @Override
@@ -522,15 +528,15 @@ public class HttpConnection extends AbstractAsyncConnection
                                     _info=_channel.getEventHandler().commit();
                                 LOG.debug("{} Gcommit {}",this,_info);
                                 if (_responseHeader==null)
-                                    _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
+                                    _responseHeader=_bufferPool.acquire(_httpConfig.getResponseHeaderSize(),false);
                                 continue;
 
                             case NEED_HEADER:
-                                _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
+                                _responseHeader=_bufferPool.acquire(_httpConfig.getResponseHeaderSize(),false);
                                 continue;
 
                             case NEED_BUFFER:
-                                _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
+                                _responseBuffer=_bufferPool.acquire(_httpConfig.getResponseBufferSize(),false);
                                 continue;
 
                             case NEED_CHUNK:
@@ -625,15 +631,15 @@ public class HttpConnection extends AbstractAsyncConnection
                             case NEED_INFO:
                                 _info=_channel.getEventHandler().commit();
                                 if (_responseHeader==null)
-                                    _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
+                                    _responseHeader=_bufferPool.acquire(_httpConfig.getResponseHeaderSize(),false);
                                 break;
 
                             case NEED_HEADER:
-                                _responseHeader=_bufferPool.acquire(_connector.getResponseHeaderSize(),false);
+                                _responseHeader=_bufferPool.acquire(_httpConfig.getResponseHeaderSize(),false);
                                 break;
 
                             case NEED_BUFFER:
-                                _responseBuffer=_bufferPool.acquire(_connector.getResponseBufferSize(),false);
+                                _responseBuffer=_bufferPool.acquire(_httpConfig.getResponseBufferSize(),false);
                                 break;
 
                             case NEED_CHUNK:
@@ -694,7 +700,7 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         protected void execute(Runnable task)
         {
-            _connector.findExecutor().execute(task);
+            _connector.getExecutor().execute(task);
         }
 
         private FutureCallback<Void> write(ByteBuffer b0,ByteBuffer b1,ByteBuffer b2)
@@ -767,7 +773,7 @@ public class HttpConnection extends AbstractAsyncConnection
 
                         // We will need a buffer to read into
                         if (_requestBuffer==null)
-                            _requestBuffer=_bufferPool.acquire(_connector.getRequestBufferSize(),false);
+                            _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestBufferSize(),false);
 
                         int filled=getEndPoint().fill(_requestBuffer);
                         LOG.debug("{} block filled {}",this,filled);

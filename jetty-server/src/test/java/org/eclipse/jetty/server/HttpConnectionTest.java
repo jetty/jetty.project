@@ -52,16 +52,16 @@ public class HttpConnectionTest
     private static final Logger LOG = Log.getLogger(HttpConnectionTest.class);
 
     private Server server;
-    private LocalHttpConnector connector;
+    private LocalConnector connector;
 
     @Before
     public void init() throws Exception
     {
         server = new Server();
-        connector = new LocalHttpConnector();
+        connector = new LocalConnector(server);
         server.addConnector(connector);
-        connector.setRequestHeaderSize(1024);
-        connector.setResponseHeaderSize(1024);
+        connector.getHttpConfig().setRequestHeaderSize(1024);
+        connector.getHttpConfig().setResponseHeaderSize(1024);
         server.setHandler(new DumpHandler());
         server.start();
     }
