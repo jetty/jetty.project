@@ -51,7 +51,6 @@ public class SslConnection extends AbstractAsyncConnection
     private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
     private final SslEndPoint _appEndPoint;
-    private final Executor _executor;
     private ByteBuffer _appIn;
     private ByteBuffer _netIn;
     private ByteBuffer _netOut;
@@ -63,8 +62,6 @@ public class SslConnection extends AbstractAsyncConnection
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, AsyncEndPoint endPoint, SSLEngine sslEngine)
     {
         super(endPoint, executor, true);
-
-        _executor = executor;
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._appEndPoint = new SslEndPoint();
@@ -85,25 +82,13 @@ public class SslConnection extends AbstractAsyncConnection
     {
         try
         {
+            super.onOpen();
+
             // Begin the handshake
-            _sslEngine.setUseClientMode(false);
             _sslEngine.beginHandshake();
 
-            LOG.debug("{} onopen", this);
-
-            // Tell the app that we are open, even though we have
-            // not completed the handshake.  All handshaking will be
-            // done in calls to fill and flush, as it has to be with
-            // rehandshakes.  We dispatch here because it will probably
-            // result in a call to onReadable
-            _executor.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    _appEndPoint.getAsyncConnection().onOpen();
-                }
-            });
+            if (_sslEngine.getUseClientMode())
+                _appEndPoint.write(null, new Callback.Empty<>(), BufferUtil.EMPTY_BUFFER);
         }
         catch (SSLException x)
         {
@@ -346,6 +331,7 @@ public class SslConnection extends AbstractAsyncConnection
                 {
                     // Let's try reading some encrypted data... even if we have some already.
                     int net_filled = getEndPoint().fill(_netIn);
+                    LOG.debug("{} filled {} encrypted bytes", SslConnection.this, net_filled);
                     if (net_filled > 0)
                         _underflown = false;
 
@@ -482,7 +468,12 @@ public class SslConnection extends AbstractAsyncConnection
         @Override
         public synchronized int flush(ByteBuffer... appOuts) throws IOException
         {
-            LOG.debug("{} flush enter", SslConnection.this);
+            // TODO: it is possible that an application flushes during the SSL handshake,
+            // TODO: the flush wraps 0 application bytes, and then a need for unwrap is
+            // TODO: triggered. In that case, we need to save the appOuts and re-attempt
+            // TODO: to flush it at the first occasion (which may be on a fill ?)
+
+            LOG.debug("{} flush enter {}", SslConnection.this, appOuts);
             try
             {
                 if (_netWriting)

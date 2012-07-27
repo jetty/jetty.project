@@ -254,7 +254,6 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
 
     private void goAway(SessionStatus sessionStatus, long timeout, TimeUnit unit, Callback<Void> callback)
     {
-        new Exception().printStackTrace();
         if (goAwaySent.compareAndSet(false,true))
         {
             if (!goAwayReceived.get())
@@ -1100,8 +1099,8 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     {
         return String.format("%s@%x{v%d,queuSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(), hashCode(), version, queue.size(), getWindowSize(), streams.size());
     }
-    
-    
+
+
     @Override
     public String dump()
     {
