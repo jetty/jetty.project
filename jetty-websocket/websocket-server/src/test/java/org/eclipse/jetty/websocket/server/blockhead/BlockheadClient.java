@@ -415,7 +415,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
                 }
                 if (!debug && (System.currentTimeMillis() > expireOn))
                 {
-                    throw new TimeoutException(String.format("Timeout reading all [%d] expected frames. (managed to read [%d] frames)",expectedCount,
+                    throw new TimeoutException(String.format("Timeout reading all %d expected frames. (managed to only read %d frame(s))",expectedCount,
                             incomingFrameQueue.size()));
                 }
             }

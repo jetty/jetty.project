@@ -23,6 +23,8 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
@@ -45,22 +47,40 @@ public class TestABCase1 extends AbstractABCase
             ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD);
             BufferUtil.clearToFill(buf);
 
+            // Prepare Frame
             buf.put((byte)(0x00 | FIN | opcode.getCode()));
             putPayloadLength(buf,0);
             putMask(buf);
 
+            // Write Data Frame
             BufferUtil.flipToFlush(buf,0);
             client.writeRaw(buf);
 
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            // Prepare Close Frame
+            CloseInfo close = new CloseInfo(StatusCode.NORMAL);
+            buf = strictGenerator.generate(close.asFrame());
+
+            // Write Close Frame
+            client.writeRaw(buf);
+            client.flush();
+
+            // Read frames
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+
+            // Validate echo'd frame
             WebSocketFrame frame = frames.remove();
             Assert.assertThat("frame should be " + opcode + " frame",frame.getOpCode(),is(opcode));
             Assert.assertThat(opcode + ".payloadLength",frame.getPayloadLength(),is(0));
+
+            // Validate close
+            frame = frames.remove();
+            Assert.assertThat("CLOSE.frame.opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            close = new CloseInfo(frame);
+            Assert.assertThat("CLOSE.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
         }
         finally
         {
-            client.close();
+            client.disconnect();
         }
     }
 
@@ -76,24 +96,42 @@ public class TestABCase1 extends AbstractABCase
             ByteBuffer buf = ByteBuffer.allocate(payload.length + Generator.OVERHEAD);
             BufferUtil.clearToFill(buf);
 
+            // Prepare Frame
             buf.put((byte)(0x00 | FIN | opcode.getCode()));
             putPayloadLength(buf,payload.length);
             putMask(buf);
             buf.put(masked(payload));
 
+            // Write Data Frame
             BufferUtil.flipToFlush(buf,0);
             client.writeRaw(buf);
 
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            // Prepare Close Frame
+            CloseInfo close = new CloseInfo(StatusCode.NORMAL);
+            buf = strictGenerator.generate(close.asFrame());
+
+            // Write Close Frame
+            client.writeRaw(buf);
+            client.flush();
+
+            // Read frames
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+
+            // Validate echo'd frame
             WebSocketFrame frame = frames.remove();
             Assert.assertThat("frame should be " + opcode + " frame",frame.getOpCode(),is(opcode));
             Assert.assertThat(opcode + ".payloadLength",frame.getPayloadLength(),is(payload.length));
             ByteBufferAssert.assertEquals(opcode + ".payload",payload,frame.getPayload());
+
+            // Validate close
+            frame = frames.remove();
+            Assert.assertThat("CLOSE.frame.opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            close = new CloseInfo(frame);
+            Assert.assertThat("CLOSE.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
         }
         finally
         {
-            client.close();
+            client.disconnect();
         }
     }
 
@@ -109,11 +147,13 @@ public class TestABCase1 extends AbstractABCase
             ByteBuffer buf = ByteBuffer.allocate(payload.length + Generator.OVERHEAD);
             BufferUtil.clearToFill(buf);
 
+            // Prepare Frame
             buf.put((byte)(0x00 | FIN | opcode.getCode()));
             putPayloadLength(buf,payload.length);
             putMask(buf);
             buf.put(masked(payload));
 
+            // Write frame, in small blocks of segmentSize
             BufferUtil.flipToFlush(buf,0);
             int origLimit = buf.limit();
             int limit = buf.limit();
@@ -132,16 +172,32 @@ public class TestABCase1 extends AbstractABCase
                 client.flush();
             }
 
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            // Prepare Close Frame
+            CloseInfo close = new CloseInfo(StatusCode.NORMAL);
+            buf = strictGenerator.generate(close.asFrame());
+
+            // Write Close Frame
+            client.writeRaw(buf);
+            client.flush();
+
+            // Read frames
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+
+            // Validate echo'd frame
             WebSocketFrame frame = frames.remove();
             Assert.assertThat("frame should be " + opcode + " frame",frame.getOpCode(),is(opcode));
             Assert.assertThat(opcode + ".payloadLength",frame.getPayloadLength(),is(payload.length));
             ByteBufferAssert.assertEquals(opcode + ".payload",payload,frame.getPayload());
+
+            // Validate close
+            frame = frames.remove();
+            Assert.assertThat("CLOSE.frame.opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            close = new CloseInfo(frame);
+            Assert.assertThat("CLOSE.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
         }
         finally
         {
-            client.close();
+            client.disconnect();
         }
     }
 

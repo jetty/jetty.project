@@ -2,6 +2,10 @@ package org.eclipse.jetty.websocket.server.ab;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -14,7 +18,18 @@ public abstract class AbstractABCase
     private static final byte[] MASK =
     { 0x12, 0x34, 0x56, 0x78 };
 
+    protected static Generator strictGenerator;
+    protected static Generator laxGenerator;
     protected static SimpleServletServer server;
+
+    @BeforeClass
+    public static void initGenerators()
+    {
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+        ByteBufferPool bufferPool = new StandardByteBufferPool();
+        strictGenerator = new Generator(policy,bufferPool,true);
+        laxGenerator = new Generator(policy,bufferPool,false);
+    }
 
     @BeforeClass
     public static void startServer() throws Exception
