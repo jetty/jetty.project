@@ -1,16 +1,15 @@
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
-
+// ========================================================================
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
 
 package org.eclipse.jetty.spdy;
 
@@ -30,7 +29,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -38,7 +36,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -189,7 +187,8 @@ public class SPDYServerConnector extends SelectChannelConnector
         if (sslContextFactory != null)
         {
             final SSLEngine engine = newSSLEngine(sslContextFactory, channel);
-            SslConnection sslConnection = new SslConnection(bufferPool, findExecutor(), endPoint, engine)
+            Executor executor = findExecutor();
+            SslConnection sslConnection = new SslConnection(bufferPool, executor, endPoint, engine)
             {
                 @Override
                 public void onClose()
@@ -198,37 +197,13 @@ public class SPDYServerConnector extends SelectChannelConnector
                     super.onClose();
                 }
             };
-            endPoint.setAsyncConnection(sslConnection);
+
             final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-            NextProtoNego.put(engine, new NextProtoNego.ServerProvider()
-            {
-                @Override
-                public void unsupported()
-                {
-                    AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
-                    sslEndPoint.setAsyncConnection(connection);
-                }
-
-                @Override
-                public List<String> protocols()
-                {
-                    return provideProtocols();
-                }
-
-                @Override
-                public void protocolSelected(String protocol)
-                {
-                    AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory(protocol);
-                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
-                    sslEndPoint.setAsyncConnection(connection);
-                }
-            });
-
-            AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
+            NextProtoNegoServerAsyncConnection connection = new NextProtoNegoServerAsyncConnection(channel, sslEndPoint, this);
             sslEndPoint.setAsyncConnection(connection);
+            getSelectorManager().connectionOpened(connection);
 
-            startHandshake(engine);
+            NextProtoNego.put(engine, connection);
 
             return sslConnection;
         }
@@ -253,18 +228,6 @@ public class SPDYServerConnector extends SelectChannelConnector
         SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
         engine.setUseClientMode(false);
         return engine;
-    }
-
-    private void startHandshake(SSLEngine engine)
-    {
-        try
-        {
-            engine.beginHandshake();
-        }
-        catch (SSLException x)
-        {
-            throw new RuntimeException(x);
-        }
     }
 
     protected boolean sessionOpened(Session session)
@@ -302,6 +265,13 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.initialWindowSize = initialWindowSize;
     }
 
+    public void replaceAsyncConnection(AsyncEndPoint endPoint, AsyncConnection connection)
+    {
+        AsyncConnection oldConnection = endPoint.getAsyncConnection();
+        endPoint.setAsyncConnection(connection);
+        getSelectorManager().connectionUpgraded(endPoint, oldConnection);
+    }
+
     private class LazyExecutor implements Executor
     {
         @Override
@@ -321,6 +291,6 @@ public class SPDYServerConnector extends SelectChannelConnector
         super.dump(out,indent);
         AggregateLifeCycle.dump(out, indent, new ArrayList<Session>(sessions));
     }
-    
-    
+
+
 }

@@ -172,7 +172,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just opened
      */
-    protected void connectionOpened(AsyncConnection connection)
+    public void connectionOpened(AsyncConnection connection)
     {
         connection.onOpen();
     }
@@ -182,7 +182,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just closed
      */
-    protected void connectionClosed(AsyncConnection connection)
+    public void connectionClosed(AsyncConnection connection)
     {
         connection.onClose();
     }
@@ -193,7 +193,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param endpoint      the endpoint holding the new connection
      * @param oldConnection the previous connection
      */
-    protected void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+    public void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
     {
         connectionClosed(oldConnection);
         connectionOpened(endpoint.getAsyncConnection());
