@@ -1,47 +1,53 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 
 package org.eclipse.jetty.spdy;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.IOFuture;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.util.thread.Timeout;
 
 public class EmptyAsyncEndPoint implements AsyncEndPoint
 {
     private boolean checkForIdle;
-    private AsyncConnection connection;
+    private Connection connection;
     private boolean oshut;
+    private boolean ishut;
     private boolean closed;
     private int maxIdleTime;
 
     @Override
-    public long getCreatedTimeStamp()
+    public void dispatch()
     {
-        return 0;
+    }
+    
+    @Override
+    public void asyncDispatch()
+    {
     }
 
     @Override
-    public long getIdleTimestamp()
+    public void scheduleWrite()
     {
-        return 0;
+    }
+
+    @Override
+    public void onIdleExpired(long idleForMs)
+    {
     }
 
     @Override
@@ -57,19 +63,41 @@ public class EmptyAsyncEndPoint implements AsyncEndPoint
     }
 
     @Override
-    public AsyncConnection getAsyncConnection()
+    public boolean isWritable()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean hasProgressed()
+    {
+        return false;
+    }
+
+    @Override
+    public void scheduleTimeout(Timeout.Task task, long timeoutMs)
+    {
+    }
+
+    @Override
+    public void cancelTimeout(Timeout.Task task)
+    {
+    }
+
+    @Override
+    public Connection getConnection()
     {
         return connection;
     }
 
     @Override
-    public void setAsyncConnection(AsyncConnection connection)
+    public void setConnection(Connection connection)
     {
         this.connection = connection;
     }
 
     @Override
-    public void shutdownOutput()
+    public void shutdownOutput() throws IOException
     {
         oshut = true;
     }
@@ -81,51 +109,93 @@ public class EmptyAsyncEndPoint implements AsyncEndPoint
     }
 
     @Override
-    public boolean isInputShutdown()
+    public void shutdownInput() throws IOException
     {
-        return false;
+        ishut = true;
     }
 
     @Override
-    public void close()
+    public boolean isInputShutdown()
+    {
+        return ishut;
+    }
+
+    @Override
+    public void close() throws IOException
     {
         closed = true;
     }
 
     @Override
-    public int fill(ByteBuffer buffer) throws IOException
+    public int fill(Buffer buffer) throws IOException
     {
         return 0;
     }
 
     @Override
-    public IOFuture readable() throws IllegalStateException
-    {
-        return null;
-    }
-
-    @Override
-    public int flush(ByteBuffer... buffer) throws IOException
+    public int flush(Buffer buffer) throws IOException
     {
         return 0;
     }
 
     @Override
-    public IOFuture write(ByteBuffer... buffers) throws IllegalStateException
+    public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+    {
+        return 0;
+    }
+
+    @Override
+    public String getLocalAddr()
     {
         return null;
     }
 
     @Override
-    public InetSocketAddress getLocalAddress()
+    public String getLocalHost()
     {
         return null;
     }
 
     @Override
-    public InetSocketAddress getRemoteAddress()
+    public int getLocalPort()
+    {
+        return -1;
+    }
+
+    @Override
+    public String getRemoteAddr()
     {
         return null;
+    }
+
+    @Override
+    public String getRemoteHost()
+    {
+        return null;
+    }
+
+    @Override
+    public int getRemotePort()
+    {
+        return -1;
+    }
+
+    @Override
+    public boolean isBlocking()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean blockReadable(long millisecs) throws IOException
+    {
+        return false;
+    }
+
+    @Override
+    public boolean blockWritable(long millisecs) throws IOException
+    {
+        return false;
     }
 
     @Override
@@ -138,6 +208,11 @@ public class EmptyAsyncEndPoint implements AsyncEndPoint
     public Object getTransport()
     {
         return null;
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
     }
 
     @Override

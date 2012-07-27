@@ -1,28 +1,26 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 package org.eclipse.jetty.spdy;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.spdy.api.Handler;
 
 /**
  * <p>A {@link Promise} is a {@link Future} that allows a result or a failure to be set,
@@ -30,7 +28,7 @@ import org.eclipse.jetty.util.Callback;
  *
  * @param <T> the type of the result object
  */
-public class Promise<T> implements Callback<T>, Future<T>
+public class Promise<T> implements Handler<T>, Future<T>
 {
     private final CountDownLatch latch = new CountDownLatch(1);
     private boolean cancelled;
@@ -38,16 +36,15 @@ public class Promise<T> implements Callback<T>, Future<T>
     private T promise;
 
     @Override
-    public void completed(T context)
+    public void completed(T result)
     {
-        this.promise = context;
+        this.promise = result;
         latch.countDown();
     }
 
     @Override
     public void failed(T context, Throwable x)
     {
-        this.promise = context;
         this.failure = x;
         latch.countDown();
     }
@@ -90,6 +87,8 @@ public class Promise<T> implements Callback<T>, Future<T>
 
     private T result() throws ExecutionException
     {
+        if (isCancelled())
+            throw new CancellationException();
         Throwable failure = this.failure;
         if (failure != null)
             throw new ExecutionException(failure);

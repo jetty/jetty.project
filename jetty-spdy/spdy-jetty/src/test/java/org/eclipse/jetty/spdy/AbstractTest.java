@@ -1,18 +1,16 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 
 package org.eclipse.jetty.spdy;
 
@@ -53,8 +51,16 @@ public abstract class AbstractTest
 
     protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
     {
+        return startServer(SPDY.V2, listener);
+    }
+
+    protected InetSocketAddress startServer(short version, ServerSessionFrameListener listener) throws Exception
+    {
         if (connector == null)
             connector = newSPDYServerConnector(listener);
+        if (listener == null)
+            listener = connector.getServerSessionFrameListener();
+        connector.setDefaultAsyncConnectionFactory(new ServerSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), listener));
         connector.setPort(0);
         server = new Server();
         server.addConnector(connector);
@@ -69,6 +75,11 @@ public abstract class AbstractTest
 
     protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
     {
+        return startClient(SPDY.V2, socketAddress, listener);
+    }
+
+    protected Session startClient(short version, InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
+    {
         if (clientFactory == null)
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -76,7 +87,7 @@ public abstract class AbstractTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
-        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
+        return clientFactory.newSPDYClient(version).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
     }
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)

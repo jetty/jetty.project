@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 package org.eclipse.jetty.spdy.api;
 
@@ -20,8 +17,6 @@ import java.util.EventListener;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>A {@link Session} represents the client-side endpoint of a SPDY connection to a single origin server.</p>
@@ -74,7 +69,7 @@ public interface Session
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
      * @return a future for the stream that will be created
-     * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Callback)
+     * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Handler)
      */
     public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
 
@@ -87,10 +82,10 @@ public interface Session
      * @param listener the listener to invoke when events happen on the stream just created
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback  the completion handler that gets notified of stream creation
+     * @param handler  the completion handler that gets notified of stream creation
      * @see #syn(SynInfo, StreamFrameListener)
      */
-    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Callback<Stream> callback);
+    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
 
 
     /**
@@ -99,7 +94,7 @@ public interface Session
      *
      * @param rstInfo the metadata to reset the stream
      * @return a future to wait for the reset to be sent
-     * @see #rst(RstInfo, long, TimeUnit, Callback)
+     * @see #rst(RstInfo, long, TimeUnit, Handler)
      */
     public Future<Void> rst(RstInfo rstInfo);
 
@@ -111,10 +106,10 @@ public interface Session
      * @param rstInfo the metadata to reset the stream
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback the completion handler that gets notified of reset's send
+     * @param handler the completion handler that gets notified of reset's send
      * @see #rst(RstInfo)
      */
-    public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
@@ -122,7 +117,7 @@ public interface Session
      *
      * @param settingsInfo the metadata to send
      * @return a future to wait for the settings to be sent
-     * @see #settings(SettingsInfo, long, TimeUnit, Callback)
+     * @see #settings(SettingsInfo, long, TimeUnit, Handler)
      */
     public Future<Void> settings(SettingsInfo settingsInfo);
 
@@ -134,17 +129,17 @@ public interface Session
      * @param settingsInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback      the completion handler that gets notified of settings' send
+     * @param handler      the completion handler that gets notified of settings' send
      * @see #settings(SettingsInfo)
      */
-    public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
      * <p>Callers may use the returned future to wait for the ping to be sent.</p>
      *
      * @return a future for the metadata sent
-     * @see #ping(long, TimeUnit, Callback)
+     * @see #ping(long, TimeUnit, Handler)
      */
     public Future<PingInfo> ping();
 
@@ -155,17 +150,17 @@ public interface Session
      *
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback the completion handler that gets notified of ping's send
+     * @param handler the completion handler that gets notified of ping's send
      * @see #ping()
      */
-    public void ping(long timeout, TimeUnit unit, Callback<PingInfo> callback);
+    public void ping(long timeout, TimeUnit unit, Handler<PingInfo> handler);
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
      * <p>Callers may use the returned future to wait for the go away to be sent.</p>
      *
      * @return a future to wait for the go away to be sent
-     * @see #goAway(long, TimeUnit, Callback)
+     * @see #goAway(long, TimeUnit, Handler)
      */
     public Future<Void> goAway();
 
@@ -176,15 +171,45 @@ public interface Session
      *
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback the completion handler that gets notified of go away's send
+     * @param handler the completion handler that gets notified of go away's send
      * @see #goAway()
      */
-    public void goAway(long timeout, TimeUnit unit, Callback<Void> callback);
+    public void goAway(long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
-     * @return the streams currently active in this session
+     * @return a snapshot of the streams currently active in this session
+     * @see #getStream(int)
      */
     public Set<Stream> getStreams();
+
+    /**
+     * @param streamId the id of the stream to retrieve
+     * @return the stream with the given stream id
+     * @see #getStreams()
+     */
+    public Stream getStream(int streamId);
+
+    /**
+     * @param key the attribute key
+     * @return an arbitrary object associated with the given key to this session
+     * @see #setAttribute(String, Object)
+     */
+    public Object getAttribute(String key);
+
+    /**
+     * @param key   the attribute key
+     * @param value an arbitrary object to associate with the given key to this session
+     * @see #getAttribute(String)
+     * @see #removeAttribute(String)
+     */
+    public void setAttribute(String key, Object value);
+
+    /**
+     * @param key the attribute key
+     * @return the arbitrary object associated with the given key to this session
+     * @see #setAttribute(String, Object)
+     */
+    public Object removeAttribute(String key);
 
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>

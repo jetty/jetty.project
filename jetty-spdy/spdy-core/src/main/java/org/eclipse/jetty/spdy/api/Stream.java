@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 package org.eclipse.jetty.spdy.api;
 
@@ -20,8 +17,6 @@ import java.nio.channels.WritePendingException;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
@@ -47,7 +42,7 @@ import org.eclipse.jetty.util.Callback;
  * stream.data(StringDataInfo("chunk1", false), 5, TimeUnit.SECONDS, new Handler&lt;Void&gt;() { ... });
  * stream.data(StringDataInfo("chunk2", true), 1, TimeUnit.SECONDS, new Handler&lt;Void&gt;() { ... });
  * </pre>
- * <p>where the second call to {@link #data(DataInfo, long, TimeUnit, Callback)} has a timeout smaller
+ * <p>where the second call to {@link #data(DataInfo, long, TimeUnit, Handler)} has a timeout smaller
  * than the previous call.</p>
  * <p>The behavior of such style of invocations is unspecified (it may even throw an exception - similar
  * to {@link WritePendingException}).</p>
@@ -94,7 +89,7 @@ public interface Stream
      *
      * @param synInfo the metadata to send on stream creation
      * @return a future containing the stream once it got established
-     * @see #syn(SynInfo, long, TimeUnit, Callback)
+     * @see #syn(SynInfo, long, TimeUnit, Handler)
      */
     public Future<Stream> syn(SynInfo synInfo);
 
@@ -106,10 +101,10 @@ public interface Stream
      * @param synInfo the metadata to send on stream creation
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback   the completion handler that gets notified once the pushstream is established
+     * @param handler   the completion handler that gets notified once the pushstream is established
      * @see #syn(SynInfo)
      */
-    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Callback<Stream> callback);
+    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler);
 
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>
@@ -117,7 +112,7 @@ public interface Stream
      *
      * @param replyInfo the metadata to send
      * @return a future to wait for the reply to be sent
-     * @see #reply(ReplyInfo, long, TimeUnit, Callback)
+     * @see #reply(ReplyInfo, long, TimeUnit, Handler)
      * @see SessionFrameListener#onSyn(Stream, SynInfo)
      */
     public Future<Void> reply(ReplyInfo replyInfo);
@@ -130,10 +125,10 @@ public interface Stream
      * @param replyInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback   the completion handler that gets notified of reply sent
+     * @param handler   the completion handler that gets notified of reply sent
      * @see #reply(ReplyInfo)
      */
-    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a DATA frame on this stream.</p>
@@ -142,7 +137,7 @@ public interface Stream
      *
      * @param dataInfo the metadata to send
      * @return a future to wait for the data to be sent
-     * @see #data(DataInfo, long, TimeUnit, Callback)
+     * @see #data(DataInfo, long, TimeUnit, Handler)
      * @see #reply(ReplyInfo)
      */
     public Future<Void> data(DataInfo dataInfo);
@@ -156,10 +151,10 @@ public interface Stream
      * @param dataInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback  the completion handler that gets notified of data sent
+     * @param handler  the completion handler that gets notified of data sent
      * @see #data(DataInfo)
      */
-    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a HEADER frame on this stream.</p>
@@ -168,7 +163,7 @@ public interface Stream
      *
      * @param headersInfo the metadata to send
      * @return a future to wait for the headers to be sent
-     * @see #headers(HeadersInfo, long, TimeUnit, Callback)
+     * @see #headers(HeadersInfo, long, TimeUnit, Handler)
      * @see #reply(ReplyInfo)
      */
     public Future<Void> headers(HeadersInfo headersInfo);
@@ -182,10 +177,10 @@ public interface Stream
      * @param headersInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param callback     the completion handler that gets notified of headers sent
+     * @param handler     the completion handler that gets notified of headers sent
      * @see #headers(HeadersInfo)
      */
-    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback<Void> callback);
+    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * @return whether this stream is unidirectional or not

@@ -1,18 +1,16 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 
 package org.eclipse.jetty.spdy;
 
@@ -25,9 +23,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -39,6 +39,9 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class FlowControlTest extends AbstractTest
 {
@@ -53,7 +56,7 @@ public class FlowControlTest extends AbstractTest
         final AtomicReference<DataInfo> dataInfoRef = new AtomicReference<>();
         final CountDownLatch dataLatch = new CountDownLatch(2);
         final CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        Session session = startClient(SPDY.V3, startServer(SPDY.V3, new ServerSessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -112,7 +115,7 @@ public class FlowControlTest extends AbstractTest
         final int windowSize = 1536;
         final int length = 5 * windowSize;
         final CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        Session session = startClient(SPDY.V3, startServer(SPDY.V3, new ServerSessionFrameListener.Adapter()
         {
             @Override
             public void onSettings(Session session, SettingsInfo settingsInfo)
@@ -183,43 +186,22 @@ public class FlowControlTest extends AbstractTest
         });
 
         DataInfo dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        // Check that we are flow control stalled
-        expectException(TimeoutException.class, new Callable<DataInfo>()
-        {
-            @Override
-            public DataInfo call() throws Exception
-            {
-                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
-            }
-        });
+        checkThatWeAreFlowControlStalled(exchanger);
+
         Assert.assertEquals(windowSize, dataInfo.available());
         Assert.assertEquals(0, dataInfo.consumed());
         dataInfo.asByteBuffer(true);
 
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        // Check that we are flow control stalled
-        expectException(TimeoutException.class, new Callable<DataInfo>()
-        {
-            @Override
-            public DataInfo call() throws Exception
-            {
-                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
-            }
-        });
+        checkThatWeAreFlowControlStalled(exchanger);
+
         Assert.assertEquals(0, dataInfo.available());
         Assert.assertEquals(0, dataInfo.consumed());
         dataInfo.consume(dataInfo.length());
 
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        // Check that we are flow control stalled
-        expectException(TimeoutException.class, new Callable<DataInfo>()
-        {
-            @Override
-            public DataInfo call() throws Exception
-            {
-                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
-            }
-        });
+        checkThatWeAreFlowControlStalled(exchanger);
+
         Assert.assertEquals(dataInfo.length() / 2, dataInfo.consumed());
         dataInfo.asByteBuffer(true);
 
@@ -236,7 +218,7 @@ public class FlowControlTest extends AbstractTest
         final int windowSize = 1536;
         final Exchanger<DataInfo> exchanger = new Exchanger<>();
         final CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        Session session = startClient(SPDY.V3, startServer(SPDY.V3, new ServerSessionFrameListener.Adapter()
         {
             @Override
             public void onConnect(Session session)
@@ -312,43 +294,22 @@ public class FlowControlTest extends AbstractTest
         stream.data(new BytesDataInfo(new byte[length], true));
 
         DataInfo dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        // Check that we are flow control stalled
-        expectException(TimeoutException.class, new Callable<DataInfo>()
-        {
-            @Override
-            public DataInfo call() throws Exception
-            {
-                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
-            }
-        });
+        checkThatWeAreFlowControlStalled(exchanger);
+
         Assert.assertEquals(windowSize, dataInfo.available());
         Assert.assertEquals(0, dataInfo.consumed());
         dataInfo.asByteBuffer(true);
 
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        // Check that we are flow control stalled
-        expectException(TimeoutException.class, new Callable<DataInfo>()
-        {
-            @Override
-            public DataInfo call() throws Exception
-            {
-                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
-            }
-        });
+        checkThatWeAreFlowControlStalled(exchanger);
+
         Assert.assertEquals(0, dataInfo.available());
         Assert.assertEquals(0, dataInfo.consumed());
         dataInfo.consume(dataInfo.length());
 
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        // Check that we are flow control stalled
-        expectException(TimeoutException.class, new Callable<DataInfo>()
-        {
-            @Override
-            public DataInfo call() throws Exception
-            {
-                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
-            }
-        });
+        checkThatWeAreFlowControlStalled(exchanger);
+
         Assert.assertEquals(dataInfo.length() / 2, dataInfo.consumed());
         dataInfo.asByteBuffer(true);
 
@@ -364,7 +325,7 @@ public class FlowControlTest extends AbstractTest
     {
         final int windowSize = 1024;
         final CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        Session session = startClient(SPDY.V3, startServer(SPDY.V3, new ServerSessionFrameListener.Adapter()
         {
             @Override
             public void onSettings(Session session, SettingsInfo settingsInfo)
@@ -449,6 +410,64 @@ public class FlowControlTest extends AbstractTest
         }).get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSendBigFileWithoutFlowControl() throws Exception
+    {
+        testSendBigFile(SPDY.V2);
+    }
+
+    @Test
+    public void testSendBigFileWithFlowControl() throws Exception
+    {
+        testSendBigFile(SPDY.V3);
+    }
+
+    private void testSendBigFile(short version) throws Exception
+    {
+        final int dataSize = 1024 * 1024;
+        final ByteBufferDataInfo bigByteBufferDataInfo = new ByteBufferDataInfo(ByteBuffer.allocate(dataSize),false);
+        final CountDownLatch allDataReceivedLatch = new CountDownLatch(1);
+
+        Session session = startClient(version, startServer(version, new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                stream.reply(new ReplyInfo(false));
+                stream.data(bigByteBufferDataInfo);
+                return null;
+            }
+        }),new SessionFrameListener.Adapter());
+
+        session.syn(new SynInfo(false),new StreamFrameListener.Adapter()
+        {
+            private int dataBytesReceived;
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataBytesReceived = dataBytesReceived + dataInfo.length();
+                dataInfo.consume(dataInfo.length());
+                if (dataBytesReceived == dataSize)
+                    allDataReceivedLatch.countDown();
+            }
+        });
+
+        assertThat("all data bytes have been received by the client", allDataReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
+    }
+
+    private void checkThatWeAreFlowControlStalled(final Exchanger<DataInfo> exchanger)
+    {
+        expectException(TimeoutException.class, new Callable<DataInfo>()
+        {
+            @Override
+            public DataInfo call() throws Exception
+            {
+                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
+            }
+        });
     }
 
     private void expectException(Class<? extends Exception> exception, Callable<DataInfo> command)
