@@ -1,41 +1,61 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 
 package org.eclipse.jetty.spdy;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
+import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
+import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.spdy.frames.ControlFrame;
+import org.eclipse.jetty.spdy.frames.DataFrame;
+import org.eclipse.jetty.spdy.frames.GoAwayFrame;
+import org.eclipse.jetty.spdy.frames.RstStreamFrame;
+import org.eclipse.jetty.spdy.frames.SynStreamFrame;
+import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
+import org.eclipse.jetty.spdy.generator.Generator;
+import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.spdy.parser.Parser.Listener;
 import org.eclipse.jetty.util.Callback;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
@@ -66,10 +86,10 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                assertThat("streamId is even", stream.getId() % 2, is(0));
-                assertThat("stream is unidirectional", stream.isUnidirectional(), is(true));
-                assertThat("stream is closed", stream.isClosed(), is(true));
-                assertThat("stream has associated stream", stream.getAssociatedStream(), notNullValue());
+                assertThat("streamId is even",stream.getId() % 2,is(0));
+                assertThat("stream is unidirectional",stream.isUnidirectional(),is(true));
+                assertThat("stream is closed",stream.isClosed(),is(true));
+                assertThat("stream has associated stream",stream.getAssociatedStream(),notNullValue());
                 try
                 {
                     stream.reply(new ReplyInfo(false));
@@ -85,10 +105,10 @@ public class PushStreamTest extends AbstractTest
             }
         });
 
-        Stream stream = clientSession.syn(new SynInfo(true), null).get();
-        assertThat("onSyn has been called", pushStreamLatch.await(5, TimeUnit.SECONDS), is(true));
+        Stream stream = clientSession.syn(new SynInfo(true),null).get();
+        assertThat("onSyn has been called",pushStreamLatch.await(5,TimeUnit.SECONDS),is(true));
         Stream pushStream = pushStreamRef.get();
-        assertThat("main stream and associated stream are the same", stream, sameInstance(pushStream.getAssociatedStream()));
+        assertThat("main stream and associated stream are the same",stream,sameInstance(pushStream.getAssociatedStream()));
     }
 
     @Test
@@ -218,10 +238,10 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
-                stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Callback.Adapter<Stream>()
+                stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Callback.Empty<Stream>()
                 {
                     @Override
-                    public void failed(Throwable x)
+                    public void failed(Stream stream, Throwable x)
                     {
                         pushStreamFailedLatch.countDown();
                     }
@@ -321,6 +341,170 @@ public class PushStreamTest extends AbstractTest
         return bytes;
     }
 
+
+    @Test
+    public void testClientResetsStreamAfterPushSynDoesPreventSendingDataFramesWithFlowControl() throws Exception
+    {
+        final boolean flowControl = true;
+        testNoMoreFramesAreSentOnPushStreamAfterClientResetsThePushStream(flowControl);
+    }
+
+    @Test
+    public void testClientResetsStreamAfterPushSynDoesPreventSendingDataFramesWithoutFlowControl() throws Exception
+    {
+        final boolean flowControl = false;
+        testNoMoreFramesAreSentOnPushStreamAfterClientResetsThePushStream(flowControl);
+    }
+
+    private volatile boolean read = true;
+    private void testNoMoreFramesAreSentOnPushStreamAfterClientResetsThePushStream(final boolean flowControl) throws Exception, IOException, InterruptedException
+    {
+        final short version = SPDY.V3;
+        final AtomicBoolean unexpectedExceptionOccured = new AtomicBoolean(false);
+        final CountDownLatch resetReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch allDataFramesReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch goAwayReceivedLatch = new CountDownLatch(1);
+        final int dataSizeInBytes = 1024 * 256;
+        final byte[] transferBytes = createHugeByteArray(dataSizeInBytes);
+
+        InetSocketAddress serverAddress = startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(final Stream stream, SynInfo synInfo)
+            {
+                new Thread(new Runnable()
+                {
+
+                    @Override
+                    public void run()
+                    {
+                        Stream pushStream=null;
+                        try
+                        {
+                            stream.reply(new ReplyInfo(false));
+                            pushStream = stream.syn(new SynInfo(false)).get();
+                            resetReceivedLatch.await(5,TimeUnit.SECONDS);
+                        }
+                        catch (InterruptedException | ExecutionException e)
+                        {
+                            e.printStackTrace();
+                            unexpectedExceptionOccured.set(true);
+                        }
+                        pushStream.data(new BytesDataInfo(transferBytes,true));
+                        stream.data(new StringDataInfo("close",true));
+                    }
+                }).start();
+                return null;
+            }
+
+            @Override
+            public void onRst(Session session, RstInfo rstInfo)
+            {
+                resetReceivedLatch.countDown();
+            }
+
+            @Override
+            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
+            {
+                goAwayReceivedLatch.countDown();
+            }
+        }/*TODO, flowControl*/);
+
+        final SocketChannel channel = SocketChannel.open(serverAddress);
+        final Generator generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory.StandardCompressor());
+        int streamId = 1;
+        ByteBuffer writeBuffer = generator.control(new SynStreamFrame(version,(byte)0,streamId,0,(byte)0,(short)0,new Headers()));
+        channel.write(writeBuffer);
+        assertThat("writeBuffer is fully written",writeBuffer.hasRemaining(), is(false));
+
+        final Parser parser = new Parser(new StandardCompressionFactory.StandardDecompressor());
+        parser.addListener(new Listener.Adapter()
+        {
+            int bytesRead = 0;
+
+            @Override
+            public void onControlFrame(ControlFrame frame)
+            {
+                if(frame instanceof SynStreamFrame){
+                    int pushStreamId = ((SynStreamFrame)frame).getStreamId();
+                    ByteBuffer writeBuffer = generator.control(new RstStreamFrame(version,pushStreamId,StreamStatus.CANCEL_STREAM.getCode(version)));
+                    try
+                    {
+                        channel.write(writeBuffer);
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                        unexpectedExceptionOccured.set(true);
+                    }
+                }
+            }
+
+            @Override
+            public void onDataFrame(DataFrame frame, ByteBuffer data)
+            {
+                if(frame.getStreamId() == 2)
+                    bytesRead = bytesRead + frame.getLength();
+                if(bytesRead == dataSizeInBytes){
+                    allDataFramesReceivedLatch.countDown();
+                    return;
+                }
+                if (flowControl)
+                {
+                    ByteBuffer writeBuffer = generator.control(new WindowUpdateFrame(version,frame.getStreamId(),frame.getLength()));
+                    try
+                    {
+                        channel.write(writeBuffer);
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                        unexpectedExceptionOccured.set(true);
+                    }
+                }
+            }
+        });
+
+        Thread reader = new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                ByteBuffer readBuffer = ByteBuffer.allocate(dataSizeInBytes*2);
+                while (read)
+                {
+                    try
+                    {
+                        channel.read(readBuffer);
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                        unexpectedExceptionOccured.set(true);
+                    }
+                    readBuffer.flip();
+                    parser.parse(readBuffer);
+                    readBuffer.clear();
+                }
+
+            }
+        });
+        reader.start();
+        read = false;
+
+        assertThat("no unexpected exceptions occured", unexpectedExceptionOccured.get(), is(false));
+        assertThat("not all dataframes have been received as the pushstream has been reset by the client.",allDataFramesReceivedLatch.await(streamId,TimeUnit.SECONDS),is(false));
+
+
+        ByteBuffer buffer = generator.control(new GoAwayFrame(version, streamId, SessionStatus.OK.getCode()));
+        channel.write(buffer);
+        Assert.assertThat(buffer.hasRemaining(), is(false));
+
+        assertThat("GoAway frame is received by server", goAwayReceivedLatch.await(5,TimeUnit.SECONDS), is(true));
+        channel.shutdownOutput();
+        channel.close();
+    }
+
     @Test
     public void testOddEvenStreamIds() throws Exception
     {
@@ -367,6 +551,6 @@ public class PushStreamTest extends AbstractTest
 
     private void assertThatNoExceptionOccured(final CountDownLatch exceptionCountDownLatch) throws InterruptedException
     {
-        assertThat("No exception occured", exceptionCountDownLatch.await(1,TimeUnit.SECONDS),is(false));
+        assertThat("No exception occured",exceptionCountDownLatch.await(1,TimeUnit.SECONDS),is(false));
     }
 }

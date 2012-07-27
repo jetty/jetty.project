@@ -45,7 +45,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     public AbstractAsyncConnection(AsyncEndPoint endp, Executor executor, final boolean executeOnlyFailure)
     {
         if (executor == null)
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Executor must not be null!");
 
         _endp = endp;
         _readCallback = new ExecutorCallback<Void>(executor)
@@ -129,7 +129,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     @Override
     public void onOpen()
     {
-        LOG.debug("Opened {}",this);
+        LOG.debug("{} opened",this);
         fillInterested();
     }
 

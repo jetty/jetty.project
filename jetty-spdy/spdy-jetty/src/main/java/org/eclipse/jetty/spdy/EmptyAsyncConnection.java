@@ -16,6 +16,8 @@
 
 package org.eclipse.jetty.spdy;
 
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 
@@ -23,11 +25,19 @@ public class EmptyAsyncConnection extends AbstractAsyncConnection
 {
     public EmptyAsyncConnection(AsyncEndPoint endPoint)
     {
-        super(endPoint);
+        super(endPoint, new Executor()
+        {
+            @Override
+            public void execute(Runnable command)
+            {
+                command.run();
+            }
+        });
     }
 
     @Override
-    public void onReadable()
+    public void onFillable()
     {
     }
+
 }

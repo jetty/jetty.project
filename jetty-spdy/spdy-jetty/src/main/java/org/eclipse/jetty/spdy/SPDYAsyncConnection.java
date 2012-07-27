@@ -18,15 +18,14 @@ package org.eclipse.jetty.spdy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.IOFuture;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.parser.Parser;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -37,26 +36,27 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     private final ByteBufferPool bufferPool;
     private final Parser parser;
     private volatile Session session;
+    private volatile boolean idle = false;
 
-    public SPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser)
+    public SPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
     {
-        super(endPoint);
+        super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);
     }
 
     @Override
-    public void onReadable()
+    public void onFillable()
     {
-        ByteBuffer buffer = bufferPool.acquire(8192, true);
-        BufferUtil.clear(buffer);
-        read(buffer);
+        ByteBuffer buffer = bufferPool.acquire(8192, true); //TODO: 8k window?
+        boolean readMore = read(buffer) == 0;
         bufferPool.release(buffer);
-        scheduleOnReadable();
+        if (readMore)
+            fillInterested();
     }
 
-    protected void read(ByteBuffer buffer)
+    protected int read(ByteBuffer buffer)
     {
         AsyncEndPoint endPoint = getEndPoint();
         while (true)
@@ -64,12 +64,12 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
             int filled = fill(endPoint, buffer);
             if (filled == 0)
             {
-                break;
+                return 0;
             }
             else if (filled < 0)
             {
                 close(false);
-                break;
+                return -1;
             }
             else
             {
@@ -94,15 +94,9 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     @Override
     public int write(ByteBuffer buffer, final Callback<StandardSession.FrameBytes> callback, StandardSession.FrameBytes context)
     {
-        int remaining = buffer.remaining();
         AsyncEndPoint endPoint = getEndPoint();
-        IOFuture write = endPoint.write(buffer);
-        int written = remaining - buffer.remaining();
-        if (write.isDone())
-            callback.completed(context);
-        else
-            write.setCallback(callback, context);
-        return written;
+        endPoint.write(context, callback, buffer);
+        return -1; //TODO: void or have endPoint.write return int
     }
 
     @Override
@@ -123,13 +117,15 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     @Override
     public void onIdle(boolean idle)
     {
-        getEndPoint().setCheckForIdle(idle);
+        this.idle = idle;
     }
 
     @Override
-    public void onIdleExpired(long idleForMs)
+    protected boolean onReadTimeout()
     {
-        session.goAway();
+        if(idle)
+            session.goAway();
+        return idle;
     }
 
     protected Session getSession()

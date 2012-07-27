@@ -19,10 +19,12 @@ package org.eclipse.jetty.spdy;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadPendingException;
+import java.nio.channels.WritePendingException;
 
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.IOFuture;
+import org.eclipse.jetty.util.Callback;
 
 public class EmptyAsyncEndPoint implements AsyncEndPoint
 {
@@ -30,30 +32,12 @@ public class EmptyAsyncEndPoint implements AsyncEndPoint
     private AsyncConnection connection;
     private boolean oshut;
     private boolean closed;
-    private int maxIdleTime;
+    private long maxIdleTime;
 
     @Override
     public long getCreatedTimeStamp()
     {
         return 0;
-    }
-
-    @Override
-    public long getIdleTimestamp()
-    {
-        return 0;
-    }
-
-    @Override
-    public void setCheckForIdle(boolean check)
-    {
-        this.checkForIdle = check;
-    }
-
-    @Override
-    public boolean isCheckForIdle()
-    {
-        return checkForIdle;
     }
 
     @Override
@@ -99,21 +83,9 @@ public class EmptyAsyncEndPoint implements AsyncEndPoint
     }
 
     @Override
-    public IOFuture readable() throws IllegalStateException
-    {
-        return null;
-    }
-
-    @Override
     public int flush(ByteBuffer... buffer) throws IOException
     {
         return 0;
-    }
-
-    @Override
-    public IOFuture write(ByteBuffer... buffers) throws IllegalStateException
-    {
-        return null;
     }
 
     @Override
@@ -141,14 +113,34 @@ public class EmptyAsyncEndPoint implements AsyncEndPoint
     }
 
     @Override
-    public int getMaxIdleTime()
+    public long getIdleTimeout()
     {
         return maxIdleTime;
     }
 
     @Override
-    public void setMaxIdleTime(int timeMs) throws IOException
+    public void setIdleTimeout(long timeMs)
     {
         this.maxIdleTime = timeMs;
+    }
+
+    @Override
+    public void onOpen()
+    {
+    }
+
+    @Override
+    public void onClose()
+    {
+    }
+
+    @Override
+    public <C> void fillInterested(C context, Callback<C> callback) throws ReadPendingException
+    {
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException
+    {
     }
 }

@@ -1,10 +1,12 @@
 jetty-8.1.6-SNAPSHOT
+ + 385925: make SslContextFactory.setProtocols and
+   SslContextFactory.setCipherSuites preserve the order of the given parameters
 
-jetty-8.1.5.v20120716 - 16 July 2012
+jetty-7.6.6-SNAPSHOT
  + 376717 Balancer Servlet with round robin support, contribution, added
    missing license
  + 379250 Server is added to shutdown hook twice
- + 380866 maxIdleTime set to 0 after session migration
+ + 380866 idleTimeout set to 0 after session migration
  + 381399 Unable to stop a jetty instance that has not finished starting
  + 381401 Print log warning when stop attempt made with incorrect STOP.KEY
  + 381402 Make ContextHandler take set of protected directories
@@ -176,7 +178,7 @@ jetty-8.1.0.RC4 - 13 January 2012
  + 367548 jetty-osgi-boot must not import the nested package twice
  + 367591 corrected configuration.xml version to 7.6
  + 367635 Added support for start.d directory
- + 367716 simplified maxIdleTime logic
+ + 367716 simplified idleTimeout logic
  + 368035 WebSocketClientFactory does not invoke super.doStop().
  + 368060 do not encode sendRedirect URLs
  + 368112 NPE on <jsp-config><taglib> element parsing web.xml
@@ -255,7 +257,7 @@ jetty-7.6.0.RC4 - 13 January 2012
    a Https-resource through a web-proxy.
  + 366774 removed XSS vulnerbility
  + 367099 Upgrade jetty-websocket for RFC 6455 - Addendum.
- + 367716 simplified maxIdleTime logic
+ + 367716 simplified idleTimeout logic
  + 368035 WebSocketClientFactory does not invoke super.doStop().
  + 368060 do not encode sendRedirect URLs
  + 368114 Protect against non-Strings in System properties for Log
@@ -623,7 +625,7 @@ jetty-7.4.3.v20110701 - 01 July 2011
    String) does not yield an empty map
  + 349738 set buffer sizes for http client in proxy servlet
  + 349870 proxy servlet protect continuation against fast failing exchanges
- + 349896 SCEP supports zero maxIdleTime
+ + 349896 SCEP supports zero idleTimeout
  + 349897 draft -09 websockets
  + 349997 MBeanContainer uses weak references
  + 350533 Add "Origin" to the list of allowed headers in CrossOriginFilter
@@ -1068,7 +1070,7 @@ jetty-7.1.4.v20100610
  + 315748 Removed --fromDaemon from start.jar (replaced with --daemon)
  + 315925 Improved context xml configuration handling
  + 315995 Incorrect package name in system classes list
- + 316119 Fixed maxIdleTime for SocketEndPoint
+ + 316119 Fixed idleTimeout for SocketEndPoint
  + 316254 Implement @DeclareRoles
  + 316334 Breaking change on org.eclipse.jetty.client.HttpExchange
  + 316399 Debug output in MultiPartFilter
@@ -2490,7 +2492,7 @@ jetty-6.1.5rc0 - 15 July 0200
 
 jetty-6.1.4 - 15 June 2007
  + fixed early open() call in NIO connectors
- + JETTY-370 ensure maxIdleTime<=0 means connections never expire
+ + JETTY-370 ensure idleTimeout<=0 means connections never expire
  + JETTY-371 Fixed chunked HEAD response
  + JETTY-372 make test for cookie caching more rigorous
 
