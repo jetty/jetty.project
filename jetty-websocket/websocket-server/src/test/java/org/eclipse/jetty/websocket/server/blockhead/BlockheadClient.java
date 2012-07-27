@@ -249,6 +249,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return respHeader;
     }
 
+    public void flush() throws IOException
+    {
+        out.flush();
+    }
+
     public List<String> getExtensions()
     {
         return extensions;

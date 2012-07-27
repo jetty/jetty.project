@@ -25,7 +25,6 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public class DataFrameBytes<C> extends FrameBytes<C>
 {
     private static final Logger LOG = Log.getLogger(DataFrameBytes.class);
-    private int size;
     private ByteBuffer buffer;
 
     public DataFrameBytes(WebSocketAsyncConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
