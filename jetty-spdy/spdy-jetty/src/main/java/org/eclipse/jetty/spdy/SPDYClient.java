@@ -1,16 +1,15 @@
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
-
+// ========================================================================
+// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
 
 package org.eclipse.jetty.spdy;
 
@@ -31,7 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -52,10 +50,11 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public class SPDYClient
 {
     private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
+    private final AsyncConnectionFactory defaultAsyncConnectionFactory = new ClientSPDYAsyncConnectionFactory();
     private final short version;
     private final Factory factory;
-    private SocketAddress bindAddress;
-    private long idleTimeout = -1;
+    private volatile SocketAddress bindAddress;
+    private volatile long idleTimeout = -1;
     private volatile int initialWindowSize = 65536;
 
     protected SPDYClient(short version, Factory factory)
@@ -166,6 +165,11 @@ public class SPDYClient
         return factories.remove(protocol);
     }
 
+    public AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+    {
+        return defaultAsyncConnectionFactory;
+    }
+
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
         String peerHost = channel.socket().getInetAddress().getHostAddress();
@@ -178,6 +182,13 @@ public class SPDYClient
     protected FlowControlStrategy newFlowControlStrategy()
     {
         return FlowControlStrategyFactory.newFlowControlStrategy(version);
+    }
+
+    public void replaceAsyncConnection(AsyncEndPoint endPoint, AsyncConnection connection)
+    {
+        AsyncConnection oldConnection = endPoint.getAsyncConnection();
+        endPoint.setAsyncConnection(connection);
+        factory.selector.connectionUpgraded(endPoint, oldConnection);
     }
 
     public static class Factory extends AggregateLifeCycle
@@ -333,43 +344,13 @@ public class SPDYClient
                                 super.onClose();
                             }
                         };
-                        endPoint.setAsyncConnection(sslConnection);
-                        final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-                        NextProtoNego.put(engine, new NextProtoNego.ClientProvider()
-                        {
-                            @Override
-                            public boolean supports()
-                            {
-                                return true;
-                            }
 
-                            @Override
-                            public void unsupported()
-                            {
-                                // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
-                                ClientSPDYAsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
-                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
-                                sslEndPoint.setAsyncConnection(connection);
-                            }
-
-                            @Override
-                            public String selectProtocol(List<String> protocols)
-                            {
-                                String protocol = client.selectProtocol(protocols);
-                                if (protocol == null)
-                                    return null;
-
-                                AsyncConnectionFactory connectionFactory = client.getAsyncConnectionFactory(protocol);
-                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
-                                sslEndPoint.setAsyncConnection(connection);
-                                return protocol;
-                            }
-                        });
-
-                        AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
+                        AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+                        NextProtoNegoClientAsyncConnection connection = new NextProtoNegoClientAsyncConnection(channel, sslEndPoint, attachment, client.factory.threadPool, client);
                         sslEndPoint.setAsyncConnection(connection);
+                        connectionOpened(connection);
 
-                        startHandshake(engine);
+                        NextProtoNego.put(engine, connection);
 
                         return sslConnection;
                     }
@@ -385,18 +366,6 @@ public class SPDYClient
                 {
                     sessionPromise.failed(null,x);
                     throw x;
-                }
-            }
-
-            private void startHandshake(SSLEngine engine)
-            {
-                try
-                {
-                    engine.beginHandshake();
-                }
-                catch (SSLException x)
-                {
-                    throw new RuntimeException(x);
                 }
             }
         }
