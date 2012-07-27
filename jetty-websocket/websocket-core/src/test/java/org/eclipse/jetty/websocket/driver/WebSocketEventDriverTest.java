@@ -58,7 +58,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -74,7 +74,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(makeBinaryFrame("Hello World",true));
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -92,7 +92,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(new WebSocketFrame(OpCode.PING).setPayload("PING"));
         driver.incoming(WebSocketFrame.text("Text Me"));
@@ -115,7 +115,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(makeBinaryFrame("Hello World",true));
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -133,7 +133,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(WebSocketFrame.text("Hello World"));
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());

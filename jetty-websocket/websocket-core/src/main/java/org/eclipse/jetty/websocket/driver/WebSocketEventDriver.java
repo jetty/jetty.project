@@ -59,7 +59,7 @@ public class WebSocketEventDriver implements IncomingFrames
     private final WebSocketPolicy policy;
     private final EventMethods events;
     private final ByteBufferPool bufferPool;
-    private WebSocketSession connection;
+    private WebSocketSession session;
     private ByteBuffer activeMessage;
     private StreamAppender activeStream;
 
@@ -150,7 +150,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
         if (events.onException != null)
         {
-            events.onException.call(websocket,connection,e);
+            events.onException.call(websocket,session,e);
         }
     }
 
@@ -171,7 +171,7 @@ public class WebSocketEventDriver implements IncomingFrames
         // Generic Read-Only Frame version
         if ((frame instanceof Frame) && (events.onFrame != null))
         {
-            events.onFrame.call(websocket,connection,frame);
+            events.onFrame.call(websocket,session,frame);
             // DO NOT return; - as this is just a read-only notification.
         }
 
@@ -184,7 +184,7 @@ public class WebSocketEventDriver implements IncomingFrames
                     CloseInfo close = new CloseInfo(frame);
                     if (events.onClose != null)
                     {
-                        events.onClose.call(websocket,connection,close.getStatusCode(),close.getReason());
+                        events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());
                     }
                     throw new CloseException(close.getStatusCode(),close.getReason());
                 }
@@ -200,7 +200,7 @@ public class WebSocketEventDriver implements IncomingFrames
                         BufferUtil.flipToFlush(pongBuf,0);
                         pong.setPayload(pongBuf);
                     }
-                    connection.output("pong",new FutureCallback<String>(),pong);
+                    session.output("pong",new FutureCallback<String>(),pong);
                     break;
                 }
                 case BINARY:
@@ -230,7 +230,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
                         if (needsNotification)
                         {
-                            events.onBinary.call(websocket,connection,activeStream);
+                            events.onBinary.call(websocket,session,activeStream);
                         }
 
                         if (frame.isFin())
@@ -261,7 +261,7 @@ public class WebSocketEventDriver implements IncomingFrames
                             {
                                 BufferUtil.flipToFlush(activeMessage,0);
                                 byte buf[] = BufferUtil.toArray(activeMessage);
-                                events.onBinary.call(websocket,connection,buf,0,buf.length);
+                                events.onBinary.call(websocket,session,buf,0,buf.length);
                             }
                             finally
                             {
@@ -300,7 +300,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
                         if (needsNotification)
                         {
-                            events.onText.call(websocket,connection,activeStream);
+                            events.onText.call(websocket,session,activeStream);
                         }
 
                         if (frame.isFin())
@@ -335,7 +335,7 @@ public class WebSocketEventDriver implements IncomingFrames
                                 // TODO: FIX EVIL COPY
                                 utf.append(data,0,data.length);
 
-                                events.onText.call(websocket,connection,utf.toString());
+                                events.onText.call(websocket,session,utf.toString());
                             }
                             finally
                             {
@@ -371,7 +371,7 @@ public class WebSocketEventDriver implements IncomingFrames
         {
             LOG.debug("{}.onConnect()",websocket.getClass().getSimpleName());
         }
-        events.onConnect.call(websocket,connection);
+        events.onConnect.call(websocket,session);
     }
 
     /**
@@ -380,9 +380,9 @@ public class WebSocketEventDriver implements IncomingFrames
      * @param conn
      *            the connection
      */
-    public void setConnection(WebSocketSession conn)
+    public void setSession(WebSocketSession conn)
     {
-        this.connection = conn;
+        this.session = conn;
     }
 
     private void terminateConnection(int statusCode, String rawreason)
@@ -399,12 +399,18 @@ public class WebSocketEventDriver implements IncomingFrames
                 }
             }
             LOG.debug("terminateConnection({},{})",statusCode,rawreason);
-            connection.close(statusCode,reason);
+            session.close(statusCode,reason);
         }
         catch (IOException e)
         {
             LOG.debug(e);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return websocket.getClass().getName();
     }
 
     private void unhandled(Throwable t)

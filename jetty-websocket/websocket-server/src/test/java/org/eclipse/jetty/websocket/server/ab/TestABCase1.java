@@ -115,7 +115,7 @@ public class TestABCase1 extends AbstractABCase
             client.flush();
 
             // Read frames
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,1000);
 
             // Validate echo'd frame
             WebSocketFrame frame = frames.remove();

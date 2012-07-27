@@ -50,7 +50,6 @@ import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
 import org.eclipse.jetty.websocket.io.WebSocketSession;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeHixie76;
@@ -62,7 +61,6 @@ import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 public class WebSocketServerFactory extends AbstractLifeCycle implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
-    private final Queue<WebSocketAsyncConnection> connections = new ConcurrentLinkedQueue<WebSocketAsyncConnection>();
 
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     {
@@ -70,6 +68,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         handshakes.put(HandshakeHixie76.VERSION,new HandshakeHixie76());
     }
 
+    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
@@ -142,17 +141,20 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         return upgrade(sockreq,sockresp,websocket);
     }
 
-    protected boolean addConnection(WebSocketAsyncConnection connection)
-    {
-        return isRunning() && connections.add(connection);
-    }
-
     protected void closeConnections()
     {
-        for (WebSocketAsyncConnection connection : connections)
+        for (WebSocketSession session : sessions)
         {
-            connection.getEndPoint().close();
+            try
+            {
+                session.close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to close session",e);
+            }
         }
+        sessions.clear();
     }
 
     @Override
@@ -182,6 +184,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     protected void doStop() throws Exception
     {
         closeConnections();
+        super.doStop();
     }
 
     public WebSocketCreator getCreator()
@@ -278,9 +281,25 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         methodsCache.register(websocketClass);
     }
 
-    protected boolean removeConnection(WebSocketAsyncConnection connection)
+    public boolean sessionClosed(WebSocketSession session)
     {
-        return connections.remove(connection);
+        return isRunning() && sessions.remove(session);
+    }
+
+    public boolean sessionOpened(WebSocketSession session)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Session Opened: {}",session);
+        }
+        if (!isRunning())
+        {
+            LOG.warn("Factory is not running");
+            return false;
+        }
+        boolean ret = sessions.offer(session);
+        session.onConnect();
+        return ret;
     }
 
     public void setCreator(WebSocketCreator creator)
@@ -337,7 +356,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         AsyncEndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().findExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
-        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,scheduler,websocket.getPolicy(),bufferPool);
+        WebSocketServerAsyncConnection connection = new WebSocketServerAsyncConnection(endp,executor,scheduler,websocket.getPolicy(),bufferPool,this);
         // Tell jetty about the new connection
         request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTR,connection);
 
@@ -346,6 +365,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
         // Initialize / Negotiate Extensions
         WebSocketSession session = new WebSocketSession(websocket,connection,getPolicy(),response.getAcceptedSubProtocol());
+        connection.setSession(session);
         List<Extension> extensions = initExtensions(request.getExtensions());
 
         // Start with default routing.
@@ -398,14 +418,6 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);
         handshaker.doHandshakeResponse(request,response);
-
-        // Add connection
-        addConnection(connection);
-
-        // Notify POJO of connection
-        // TODO move to WebSocketAsyncConnection.onOpen
-        websocket.setConnection(session);
-        websocket.onConnect();
 
         LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),version,response.getAcceptedSubProtocol(),connection);
         return true;

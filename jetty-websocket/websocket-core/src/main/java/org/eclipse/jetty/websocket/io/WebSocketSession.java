@@ -93,6 +93,13 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
         return connection.isOpen();
     }
 
+    public void onConnect()
+    {
+        LOG.debug("onConnect()");
+        websocket.setSession(this);
+        websocket.onConnect();
+    }
+
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
@@ -118,6 +125,22 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     public void setOutgoing(OutgoingFrames outgoing)
     {
         this.outgoing = outgoing;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append("WebSocketSession[websocket=");
+        builder.append(websocket);
+        builder.append(",connection=");
+        builder.append(connection);
+        builder.append(",subprotocol=");
+        builder.append(subprotocol);
+        builder.append(",outgoing=");
+        builder.append(outgoing);
+        builder.append("]");
+        return builder.toString();
     }
 
     /**

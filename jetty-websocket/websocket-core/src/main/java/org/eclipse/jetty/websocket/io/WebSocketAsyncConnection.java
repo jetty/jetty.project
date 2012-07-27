@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io
  */
-public class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, OutgoingFrames
+public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, OutgoingFrames
 {
     static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
     private static final ThreadLocal<WebSocketAsyncConnection> CURRENT_CONNECTION = new ThreadLocal<WebSocketAsyncConnection>();
@@ -68,6 +68,7 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     private final Parser parser;
     private final WebSocketPolicy policy;
     private final FrameQueue queue;
+    private WebSocketSession session;
     private List<ExtensionConfig> extensions;
     private boolean flushing;
     private AtomicLong writes;
@@ -202,17 +203,15 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
         return scheduler;
     }
 
+    public WebSocketSession getSession()
+    {
+        return session;
+    }
+
     @Override
     public boolean isOpen()
     {
         return getEndPoint().isOpen();
-    }
-
-    @Override
-    public void onClose()
-    {
-        LOG.debug("onClose()");
-        super.onClose();
     }
 
     @Override
@@ -231,14 +230,6 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
             setCurrentConnection(null);
             bufferPool.release(buffer);
         }
-    }
-
-    @Override
-    public void onOpen()
-    {
-        super.onOpen();
-        // TODO: websocket.setConnection(this);
-        // TODO: websocket.onConnect();
     }
 
     /**
@@ -315,6 +306,11 @@ public class WebSocketAsyncConnection extends AbstractAsyncConnection implements
     public void setExtensions(List<ExtensionConfig> extensions)
     {
         this.extensions = extensions;
+    }
+
+    public void setSession(WebSocketSession session)
+    {
+        this.session = session;
     }
 
     /**
