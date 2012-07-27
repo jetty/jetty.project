@@ -374,8 +374,8 @@
 
     <!--<module>jetty-client</module>-->
     <!--<module>jetty-proxy</module>-->
-    <!--
     <module>jetty-spdy</module>
+    <!--
     <module>jetty-jaspi</module>
     <module>jetty-ajp</module>
     <module>jetty-jndi</module>

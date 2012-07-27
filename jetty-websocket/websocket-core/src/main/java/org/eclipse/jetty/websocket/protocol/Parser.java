@@ -95,41 +95,6 @@ public class Parser
         }
     }
 
-    /**
-     * Copy the bytes from one buffer to the other, demasking the content if necessary.
-     * 
-     * @param src
-     *            the source {@link ByteBuffer}
-     * @param dest
-     *            the destination {@link ByteBuffer}
-     * @param length
-     *            the length of bytes to worry about
-     * @return the number of bytes copied
-     */
-    protected int copyBuffer(ByteBuffer src, ByteBuffer dest, int length)
-    {
-        int amt = Math.min(length,src.remaining());
-        if (frame.isMasked())
-        {
-            // Demask the content 1 byte at a time
-            // FIXME: on partially parsed frames this needs an offset from prior parse
-            byte mask[] = frame.getMask();
-            for (int i = 0; i < amt; i++)
-            {
-                dest.put((byte)(src.get() ^ mask[i % 4]));
-            }
-        }
-        else
-        {
-            // Copy the content as-is
-            // TODO: Look into having a BufferUtil.put(from,to,len) method
-            byte b[] = new byte[amt];
-            src.get(b,0,amt);
-            dest.put(b,0,amt);
-        }
-        return amt;
-    }
-
     public IncomingFrames getIncomingFramesHandler()
     {
         return incomingFramesHandler;
@@ -441,11 +406,23 @@ public class Parser
                 payload = ByteBuffer.allocate(payloadLength);
             }
 
-            copyBuffer(buffer,payload,payload.remaining());
+            BufferUtil.put(buffer,payload);
 
             if (payload.position() >= payloadLength)
             {
                 BufferUtil.flipToFlush(payload,0);
+
+                // demask (if needed)
+                if (frame.isMasked())
+                {
+                    byte mask[] = frame.getMask();
+                    int end = payload.limit();
+                    for (int i = payload.position(); i < end; i++)
+                    {
+                        payload.put(i,(byte)(payload.get(i) ^ mask[i % 4]));
+                    }
+                }
+
                 frame.setPayload(payload);
                 this.payload = null;
                 return true;

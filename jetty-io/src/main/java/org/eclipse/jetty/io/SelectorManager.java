@@ -168,15 +168,48 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
+     * <p>Callback method invoked when a connection is opened.</p>
+     *
+     * @param connection the connection just opened
+     */
+    public void connectionOpened(AsyncConnection connection)
+    {
+        connection.onOpen();
+    }
+
+    /**
+     * <p>Callback method invoked when a connection is closed.</p>
+     *
+     * @param connection the connection just closed
+     */
+    public void connectionClosed(AsyncConnection connection)
+    {
+        connection.onClose();
+    }
+
+    /**
      * <p>Callback method invoked when a connection is upgraded.</p>
      *
      * @param endpoint      the endpoint holding the new connection
      * @param oldConnection the previous connection
      */
-    protected void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+    public void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
     {
-        oldConnection.onClose();
-        endpoint.getAsyncConnection().onOpen();
+        connectionClosed(oldConnection);
+        connectionOpened(endpoint.getAsyncConnection());
+    }
+
+    /**
+     * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
+     * <p>By default it just logs with level warning.</p>
+     *
+     * @param channel the channel that attempted the connect
+     * @param ex the exception that caused the connect to fail
+     * @param attachment the attachment object associated at registration
+     */
+    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+    {
+        LOG.warn(String.format("%s - %s", channel, attachment), ex);
     }
 
     /**
@@ -204,19 +237,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
     public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment) throws IOException;
-
-    /**
-     * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
-     * <p>By default it just logs with level warning.</p>
-     *
-     * @param channel the channel that attempted the connect
-     * @param ex the exception that caused the connect to fail
-     * @param attachment the attachment object associated at registration
-     */
-    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
-    {
-        LOG.warn(String.format("%s - %s", channel, attachment), ex);
-    }
 
     @Override
     public String dump()
@@ -427,6 +447,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         boolean connected = channel.finishConnect();
                         if (connected)
                         {
+                            key.interestOps(0);
                             AsyncEndPoint endpoint = createEndPoint(channel, key);
                             key.attach(endpoint);
                         }
@@ -468,7 +489,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             endPointOpened(endPoint);
             AsyncConnection asyncConnection = newConnection(channel, endPoint, selectionKey.attachment());
             endPoint.setAsyncConnection(asyncConnection);
-            asyncConnection.onOpen();
+            connectionOpened(asyncConnection);
             LOG.debug("Created {}", endPoint);
             return endPoint;
         }
@@ -476,7 +497,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void destroyEndPoint(AsyncEndPoint endPoint)
         {
             LOG.debug("Destroyed {}", endPoint);
-            endPoint.getAsyncConnection().onClose();
+            connectionClosed(endPoint.getAsyncConnection());
             endPointClosed(endPoint);
         }
 

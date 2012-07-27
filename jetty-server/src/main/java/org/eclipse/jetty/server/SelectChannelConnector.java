@@ -273,7 +273,7 @@ public class SelectChannelConnector extends AbstractNetConnector
         }
 
         @Override
-        protected void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+        public void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
         {
             super.connectionUpgraded(endpoint, oldConnection);
             SelectChannelConnector.this.connectionUpgraded(oldConnection, endpoint.getAsyncConnection());

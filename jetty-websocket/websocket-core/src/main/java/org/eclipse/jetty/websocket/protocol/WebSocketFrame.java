@@ -141,7 +141,10 @@ public class WebSocketFrame implements Frame
         }
         payloadLength = copy.payloadLength;
         payloadStart = copy.payloadStart;
-        data = copy.data.slice();
+        if (copy.data != null) // deal with empty payloads
+        {
+            data = copy.data.slice();
+        }
         continuationIndex = copy.continuationIndex;
         continuation = copy.continuation;
     }

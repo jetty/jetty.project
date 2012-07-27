@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+        <Set name="keyStorePath">src/main/resources/keystore.jks</Set>
+        <Set name="keyStorePassword">storepwd</Set>
+        <Set name="trustStore">src/main/resources/truststore.jks</Set>
+        <Set name="trustStorePassword">storepwd</Set>
+        <Set name="protocol">TLSv1</Set>
+    </New>
+
+    <!--
+    <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
+    -->
+
+    <!--
+    This is the upstream server connector. It speaks non-SSL SPDY/2(HTTP) on port 9090.
+    -->
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">
+                <Set name="Port">9090</Set>
+                <Set name="defaultAsyncConnectionFactory">
+                    <Call name="getAsyncConnectionFactory">
+                        <Arg>spdy/2</Arg>
+                    </Call>
+                </Set>
+            </New>
+        </Arg>
+    </Call>
+
+    <!--
+    This ProxyEngine translates the incoming SPDY/x(HTTP) request to SPDY/2(HTTP)
+    -->
+    <New id="spdyProxyEngine" class="org.eclipse.jetty.spdy.proxy.SPDYProxyEngine">
+        <Arg>
+            <New class="org.eclipse.jetty.spdy.SPDYClient$Factory">
+                <Call name="start"/>
+            </New>
+        </Arg>
+    </New>
+
+    <!--
+    The ProxyEngineSelector receives SPDY/x(HTTP) requests from proxy connectors below
+    and is configured to process requests for host "localhost".
+    Such requests are converted from SPDY/x(HTTP) to SPDY/2(HTTP) by the configured ProxyEngine
+    and forwarded to 127.0.0.1:9090, where they are served by the upstream server above.
+    -->
+    <New id="proxyEngineSelector" class="org.eclipse.jetty.spdy.proxy.ProxyEngineSelector">
+        <Call name="putProxyEngine">
+            <Arg>spdy/2</Arg>
+            <Arg><Ref id="spdyProxyEngine" /></Arg>
+        </Call>
+        <Set name="proxyServerInfos">
+            <Map>
+                <Entry>
+                    <Item>localhost</Item>
+                    <Item>
+                        <New class="org.eclipse.jetty.spdy.proxy.ProxyEngineSelector$ProxyServerInfo">
+                            <Arg type="String">spdy/2</Arg>
+                            <Arg>127.0.0.1</Arg>
+                            <Arg type="int">9090</Arg>
+                        </New>
+                    </Item>
+                </Entry>
+            </Map>
+        </Set>
+    </New>
+
+    <!--
+    These are the reverse proxy connectors accepting requests from clients.
+    They accept non-SSL (on port 8080) and SSL (on port 8443) HTTP,
+    SPDY/2(HTTP) and SPDY/3(HTTP).
+    Non-SPDY HTTP requests are converted to SPDY internally and passed to the
+    ProxyEngine above.
+    -->
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.spdy.proxy.HTTPSPDYProxyConnector">
+                <Arg><Ref id="proxyEngineSelector" /></Arg>
+                <Set name="Port">8080</Set>
+            </New>
+        </Arg>
+    </Call>
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.spdy.proxy.HTTPSPDYProxyConnector">
+                <Arg><Ref id="proxyEngineSelector" /></Arg>
+                <Arg><Ref id="sslContextFactory" /></Arg>
+                <Set name="Port">8443</Set>
+            </New>
+        </Arg>
+    </Call>
+
+
+</Configure>

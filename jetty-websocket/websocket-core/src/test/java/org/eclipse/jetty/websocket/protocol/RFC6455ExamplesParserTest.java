@@ -19,11 +19,9 @@ import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.Parser;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,23 +39,24 @@ public class RFC6455ExamplesParserTest
         parser.setIncomingFramesHandler(capture);
 
         ByteBuffer buf = ByteBuffer.allocate(16);
+        BufferUtil.clearToFill(buf);
 
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A fragmented unmasked text message (part 1 of 2 "Hel")
         buf.put(new byte[]
                 { (byte)0x01, (byte)0x03, 0x48, (byte)0x65, 0x6c });
-        buf.flip();
 
         // Parse #1
+        BufferUtil.flipToFlush(buf,0);
         parser.parse(buf);
 
         // part 2 of 2 "lo" (A continuation frame of the prior text message)
-        buf.flip();
+        BufferUtil.flipToFill(buf);
         buf.put(new byte[]
                 { (byte)0x80, 0x02, 0x6c, 0x6f });
-        buf.flip();
 
         // Parse #2
+        BufferUtil.flipToFlush(buf,0);
         parser.parse(buf);
 
         capture.assertNoErrors();

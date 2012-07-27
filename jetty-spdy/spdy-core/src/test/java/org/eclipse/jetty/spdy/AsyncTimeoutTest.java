@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
 
 package org.eclipse.jetty.spdy;
 
@@ -48,7 +45,7 @@ public class AsyncTimeoutTest
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             public void flush()
@@ -74,7 +71,7 @@ public class AsyncTimeoutTest
             }
 
             @Override
-            public void failed(Stream context, Throwable x)
+            public void failed(Stream stream, Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -93,17 +90,17 @@ public class AsyncTimeoutTest
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
-            protected void write(ByteBuffer buffer, Callback<FrameBytes> handler, FrameBytes frameBytes)
+            protected void write(ByteBuffer buffer, Callback<FrameBytes> callback, FrameBytes frameBytes)
             {
                 try
                 {
                     // Wait if we're writing the data frame (control frame's first byte is 0x80)
                     if (buffer.get(0) == 0)
                         unit.sleep(2 * timeout);
-                    super.write(buffer, handler, frameBytes);
+                    super.write(buffer, callback, frameBytes);
                 }
                 catch (InterruptedException x)
                 {
@@ -114,13 +111,8 @@ public class AsyncTimeoutTest
 
         Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.data(new StringDataInfo("data", true), timeout, unit, new Callback<Void>()
+        stream.data(new StringDataInfo("data", true), timeout, unit, new Callback.Empty<Void>()
         {
-            @Override
-            public void completed(Void context)
-            {
-            }
-
             @Override
             public void failed(Void context, Throwable x)
             {

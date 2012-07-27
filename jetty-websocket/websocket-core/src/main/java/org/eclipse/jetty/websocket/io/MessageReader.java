@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 /**
  * Support class for reading text message data as an Reader.
  * <p>
@@ -30,6 +32,7 @@ public class MessageReader extends Reader implements StreamAppender
 
     public MessageReader(ByteBuffer buf)
     {
+        BufferUtil.clearToFill(buf);
         this.buffer = buf;
     }
 

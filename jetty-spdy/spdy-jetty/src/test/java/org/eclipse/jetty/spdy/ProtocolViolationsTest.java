@@ -1,3 +1,16 @@
+//========================================================================
+//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 package org.eclipse.jetty.spdy;
 
 import java.net.InetSocketAddress;
@@ -16,7 +29,6 @@ import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
-import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
@@ -24,11 +36,13 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
-import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class ProtocolViolationsTest extends AbstractTest
 {
@@ -86,6 +100,7 @@ public class ProtocolViolationsTest extends AbstractTest
         byte[] bytes = new byte[1];
         ByteBuffer writeBuffer = generator.data(streamId, bytes.length, new BytesDataInfo(bytes, true));
         channel.write(writeBuffer);
+        assertThat("data is fully written", writeBuffer.hasRemaining(),is(false));
 
         readBuffer.clear();
         channel.read(readBuffer);
@@ -93,11 +108,8 @@ public class ProtocolViolationsTest extends AbstractTest
         Assert.assertEquals(ControlFrameType.RST_STREAM.getCode(), readBuffer.getShort(2));
         Assert.assertEquals(streamId, readBuffer.getInt(8));
 
-        writeBuffer = generator.control(new GoAwayFrame(SPDY.V2, 0, SessionStatus.OK.getCode()));
-        channel.write(writeBuffer);
-        channel.shutdownOutput();
-        channel.close();
-
+        session.goAway().get(5,TimeUnit.SECONDS);
+        
         server.close();
     }
 
@@ -130,7 +142,6 @@ public class ProtocolViolationsTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                System.out.println("ondata");
                 dataLatch.countDown();
             }
         });
@@ -145,21 +156,21 @@ public class ProtocolViolationsTest extends AbstractTest
 
         ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
         channel.write(writeBuffer);
+        assertThat("SynReply is fully written", writeBuffer.hasRemaining(), is(false));
 
         byte[] bytes = new byte[1];
         writeBuffer = generator.data(streamId, bytes.length, new BytesDataInfo(bytes, true));
         channel.write(writeBuffer);
+        assertThat("data is fully written", writeBuffer.hasRemaining(), is(false));
 
         // Write again to simulate the faulty condition
         writeBuffer.flip();
         channel.write(writeBuffer);
+        assertThat("data is fully written", writeBuffer.hasRemaining(), is(false));
 
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
-        writeBuffer = generator.control(new GoAwayFrame(SPDY.V2, 0, SessionStatus.OK.getCode()));
-        channel.write(writeBuffer);
-        channel.shutdownOutput();
-        channel.close();
+        session.goAway().get(5,TimeUnit.SECONDS);
 
         server.close();
     }

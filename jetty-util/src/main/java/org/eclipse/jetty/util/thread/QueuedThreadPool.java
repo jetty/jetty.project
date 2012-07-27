@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -143,17 +144,18 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         int size=_threads.size();
         if (size>0)
         {
-            LOG.warn(size+" threads could not be stopped");
+            LOG.warn("{} threads could not be stopped", size);
 
             if (size==1 || LOG.isDebugEnabled())
             {
                 for (Thread unstopped : _threads)
                 {
-                    LOG.info("Couldn't stop "+unstopped);
+                    StringBuilder dmp = new StringBuilder();
                     for (StackTraceElement element : unstopped.getStackTrace())
                     {
-                        LOG.info(" at "+element);
+                        dmp.append(StringUtil.__LINE_SEPARATOR).append("\tat ").append(element);
                     }
+                    LOG.debug("Couldn't stop {}{}", unstopped, dmp.toString());
                 }
             }
         }

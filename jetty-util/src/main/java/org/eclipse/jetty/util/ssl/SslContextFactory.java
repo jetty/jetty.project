@@ -1219,8 +1219,8 @@ public class SslContextFactory extends AbstractLifeCycle
         if (_includeProtocols!=null)
         {
             // Use only the supported included protocols
-            for (String protocol : supportedProtocols)
-                if (_includeProtocols.contains(protocol))
+            for (String protocol : _includeProtocols)
+                if(Arrays.asList(supportedProtocols).contains(protocol))
                     selected_protocols.add(protocol);
         }
         else
@@ -1251,8 +1251,8 @@ public class SslContextFactory extends AbstractLifeCycle
         if (_includeCipherSuites!=null)
         {
             // Use only the supported included ciphers
-            for (String cipherSuite : supportedCipherSuites)
-                if (_includeCipherSuites.contains(cipherSuite))
+            for (String cipherSuite : _includeCipherSuites)
+                if(Arrays.asList(supportedCipherSuites).contains(cipherSuite))
                     selected_ciphers.add(cipherSuite);
         }
         else
