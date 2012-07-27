@@ -23,10 +23,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardSession.FrameBytes;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
+import org.eclipse.jetty.util.Callback;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -86,19 +88,19 @@ public class StandardSessionTest
     @SuppressWarnings("unchecked")
     private void setControllerWriteExpectationToFail(final boolean fail)
     {
-        when(controller.write(any(ByteBuffer.class),any(Handler.class),any(StandardSession.FrameBytes.class))).thenAnswer(new Answer<Integer>()
+        when(controller.write(any(ByteBuffer.class),any(Callback.class),any(StandardSession.FrameBytes.class))).thenAnswer(new Answer<Integer>()
         {
             public Integer answer(InvocationOnMock invocation)
             {
                 Object[] args = invocation.getArguments();
 
-                Handler<StandardSession.FrameBytes> handler = (Handler<FrameBytes>)args[1];
+                Callback<StandardSession.FrameBytes> callback = (Callback<FrameBytes>)args[1];
                 FrameBytes context = (FrameBytes)args[2];
 
                 if (fail)
-                    handler.failed(context,new ClosedChannelException());
+                    callback.failed(context,new ClosedChannelException());
                 else
-                    handler.completed(context);
+                    callback.completed(context);
                 return 0;
             }
         });
@@ -205,7 +207,7 @@ public class StandardSessionTest
     {
         final CountDownLatch failedLatch = new CountDownLatch(1);
         SynInfo synInfo = new SynInfo(headers,false,stream.getPriority());
-        stream.syn(synInfo,5,TimeUnit.SECONDS,new Handler.Adapter<Stream>()
+        stream.syn(synInfo,5,TimeUnit.SECONDS,new Callback.Empty<Stream>()
         {
             @Override
             public void failed(Stream stream, Throwable x)
@@ -404,22 +406,22 @@ public class StandardSessionTest
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, null);
         IStream stream = new StandardStream(synStreamFrame.getStreamId(), synStreamFrame.getPriority(), session, null);
         stream.updateWindowSize(8192);
-        Handler.Adapter<Void> handler = new Handler.Adapter<Void>()
+        Callback.Empty<Void> callback = new Callback.Empty()
         {
             @Override
-            public void failed(Void context, Throwable x)
+            public void failed(Object context, Throwable x)
             {
                 failedCalledLatch.countDown();
             }
         };
 
         // first data frame should fail on controller.write()
-        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, handler);
+        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, callback);
         // second data frame should fail without controller.writer() as the connection is expected to be broken after first controller.write() call failed.
-        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, handler);
+        stream.data(new StringDataInfo("data", false), 5, TimeUnit.SECONDS, callback);
 
-        verify(controller, times(1)).write(any(ByteBuffer.class), any(Handler.class), any(FrameBytes.class));
-        assertThat("Handler.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
+        verify(controller, times(1)).write(any(ByteBuffer.class), any(Callback.class), any(FrameBytes.class));
+        assertThat("Callback.failed has been called twice", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
     }
 
     private IStream createStream() throws InterruptedException, ExecutionException, TimeoutException

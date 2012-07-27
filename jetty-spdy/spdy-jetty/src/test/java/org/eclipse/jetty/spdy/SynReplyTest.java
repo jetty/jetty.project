@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -194,7 +194,7 @@ public class SynReplyTest extends AbstractTest
                 Assert.assertTrue(stream.isHalfClosed());
 
                 stream.reply(new ReplyInfo(false));
-                stream.data(new StringDataInfo(data1, false), 5, TimeUnit.SECONDS, new Handler.Adapter<Void>()
+                stream.data(new StringDataInfo(data1, false), 5, TimeUnit.SECONDS, new Callback.Empty<Void>()
                 {
                     @Override
                     public void completed(Void context)
@@ -273,7 +273,7 @@ public class SynReplyTest extends AbstractTest
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }
-                }, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
+                }, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
                 {
                     @Override
                     public void completed(Stream stream)

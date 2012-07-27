@@ -33,6 +33,9 @@ import org.junit.Test;
 
 public class IdleTimeoutTest extends AbstractTest
 {
+
+    private final int idleTimeout = 1000;
+
     @Test
     public void testServerEnforcingIdleTimeout() throws Exception
     {
@@ -45,8 +48,7 @@ public class IdleTimeoutTest extends AbstractTest
                 return null;
             }
         });
-        int maxIdleTime = 1000;
-        connector.setMaxIdleTime(maxIdleTime);
+        connector.setIdleTimeout(idleTimeout);
 
         final CountDownLatch latch = new CountDownLatch(1);
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
@@ -60,15 +62,14 @@ public class IdleTimeoutTest extends AbstractTest
 
         session.syn(new SynInfo(true), null);
 
-        Assert.assertTrue(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
     public void testServerEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
         connector = newSPDYServerConnector(null);
-        int maxIdleTime = 1000;
-        connector.setMaxIdleTime(maxIdleTime);
+        connector.setIdleTimeout(idleTimeout);
 
         final CountDownLatch latch = new CountDownLatch(1);
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
@@ -83,13 +84,12 @@ public class IdleTimeoutTest extends AbstractTest
         // The SYN is not replied, and the server should idle timeout
         session.syn(new SynInfo(true), null);
 
-        Assert.assertTrue(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
     public void testServerNotEnforcingIdleTimeoutWithPendingStream() throws Exception
     {
-        final int maxIdleTime = 1000;
         connector = newSPDYServerConnector(new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -97,7 +97,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 try
                 {
-                    Thread.sleep(2 * maxIdleTime);
+                    Thread.sleep(2 * idleTimeout);
                     stream.reply(new ReplyInfo(true));
                     return null;
                 }
@@ -108,7 +108,7 @@ public class IdleTimeoutTest extends AbstractTest
                 }
             }
         });
-        connector.setMaxIdleTime(maxIdleTime);
+        connector.setIdleTimeout(idleTimeout);
 
         final CountDownLatch latch = new CountDownLatch(1);
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
@@ -130,7 +130,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(replyLatch.await(3 * maxIdleTime, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(replyLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
         Assert.assertFalse(latch.await(1000, TimeUnit.MILLISECONDS));
     }
 
@@ -159,13 +159,12 @@ public class IdleTimeoutTest extends AbstractTest
         clientFactory = newSPDYClientFactory(threadPool);
         clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
-        long maxIdleTime = 1000;
-        client.setMaxIdleTime(maxIdleTime);
+        client.setIdleTimeout(idleTimeout);
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
         session.syn(new SynInfo(true), null);
 
-        Assert.assertTrue(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -186,19 +185,17 @@ public class IdleTimeoutTest extends AbstractTest
         clientFactory = newSPDYClientFactory(threadPool);
         clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
-        long maxIdleTime = 1000;
-        client.setMaxIdleTime(maxIdleTime);
+        client.setIdleTimeout(idleTimeout);
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
         session.syn(new SynInfo(true), null);
 
-        Assert.assertTrue(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
     public void testClientNotEnforcingIdleTimeoutWithPendingStream() throws Exception
     {
-        final long maxIdleTime = 1000;
         final CountDownLatch latch = new CountDownLatch(1);
         InetSocketAddress address = startServer(new ServerSessionFrameListener.Adapter()
         {
@@ -221,7 +218,7 @@ public class IdleTimeoutTest extends AbstractTest
         clientFactory = newSPDYClientFactory(threadPool);
         clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
-        client.setMaxIdleTime(maxIdleTime);
+        client.setIdleTimeout(idleTimeout);
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
@@ -232,7 +229,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 try
                 {
-                    Thread.sleep(2 * maxIdleTime);
+                    Thread.sleep(2 * idleTimeout);
                     replyLatch.countDown();
                 }
                 catch (InterruptedException e)
@@ -242,7 +239,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        Assert.assertFalse(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(replyLatch.await(3 * maxIdleTime, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(replyLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 }

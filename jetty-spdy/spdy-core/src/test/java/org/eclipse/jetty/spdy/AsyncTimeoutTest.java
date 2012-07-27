@@ -20,7 +20,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.spdy.api.Handler;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.generator.Generator;
+import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -61,7 +63,7 @@ public class AsyncTimeoutTest
         };
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(true), null, timeout, unit, new Handler<Stream>()
+        session.syn(new SynInfo(true), null, timeout, unit, new Callback<Stream>()
         {
             @Override
             public void completed(Stream stream)
@@ -91,14 +93,14 @@ public class AsyncTimeoutTest
         Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
-            protected void write(ByteBuffer buffer, Handler<FrameBytes> handler, FrameBytes frameBytes)
+            protected void write(ByteBuffer buffer, Callback<FrameBytes> callback, FrameBytes frameBytes)
             {
                 try
                 {
                     // Wait if we're writing the data frame (control frame's first byte is 0x80)
                     if (buffer.get(0) == 0)
                         unit.sleep(2 * timeout);
-                    super.write(buffer, handler, frameBytes);
+                    super.write(buffer, callback, frameBytes);
                 }
                 catch (InterruptedException x)
                 {
@@ -109,13 +111,8 @@ public class AsyncTimeoutTest
 
         Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.data(new StringDataInfo("data", true), timeout, unit, new Handler<Void>()
+        stream.data(new StringDataInfo("data", true), timeout, unit, new Callback.Empty<Void>()
         {
-            @Override
-            public void completed(Void context)
-            {
-            }
-
             @Override
             public void failed(Void context, Throwable x)
             {
@@ -129,9 +126,9 @@ public class AsyncTimeoutTest
     private static class TestController implements Controller<StandardSession.FrameBytes>
     {
         @Override
-        public int write(ByteBuffer buffer, Handler<StandardSession.FrameBytes> handler, StandardSession.FrameBytes context)
+        public int write(ByteBuffer buffer, Callback<StandardSession.FrameBytes> callback, StandardSession.FrameBytes context)
         {
-            handler.completed(context);
+            callback.completed(context);
             return buffer.remaining();
         }
 

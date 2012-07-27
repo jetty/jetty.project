@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.Callback;
+
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
  * <p>Differently from socket streams, where the input and output streams are permanently associated
@@ -42,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  * stream.data(StringDataInfo("chunk1", false), 5, TimeUnit.SECONDS, new Handler&lt;Void&gt;() { ... });
  * stream.data(StringDataInfo("chunk2", true), 1, TimeUnit.SECONDS, new Handler&lt;Void&gt;() { ... });
  * </pre>
- * <p>where the second call to {@link #data(DataInfo, long, TimeUnit, Handler)} has a timeout smaller
+ * <p>where the second call to {@link #data(DataInfo, long, TimeUnit, Callback)} has a timeout smaller
  * than the previous call.</p>
  * <p>The behavior of such style of invocations is unspecified (it may even throw an exception - similar
  * to {@link WritePendingException}).</p>
@@ -89,22 +91,22 @@ public interface Stream
      *
      * @param synInfo the metadata to send on stream creation
      * @return a future containing the stream once it got established
-     * @see #syn(SynInfo, long, TimeUnit, Handler)
+     * @see #syn(SynInfo, long, TimeUnit, Callback)
      */
     public Future<Stream> syn(SynInfo synInfo);
 
     /**
      * <p>Initiate a unidirectional spdy pushstream associated to this stream asynchronously<p>
-     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * <p>Callers may pass a non-null completion callback to be notified of when the
      * pushstream has been established.</p>
      *
      * @param synInfo the metadata to send on stream creation
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param handler   the completion handler that gets notified once the pushstream is established
+     * @param callback   the completion callback that gets notified once the pushstream is established
      * @see #syn(SynInfo)
      */
-    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler);
+    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Callback<Stream> callback);
 
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>
@@ -112,23 +114,23 @@ public interface Stream
      *
      * @param replyInfo the metadata to send
      * @return a future to wait for the reply to be sent
-     * @see #reply(ReplyInfo, long, TimeUnit, Handler)
+     * @see #reply(ReplyInfo, long, TimeUnit, Callback)
      * @see SessionFrameListener#onSyn(Stream, SynInfo)
      */
     public Future<Void> reply(ReplyInfo replyInfo);
 
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>
-     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * <p>Callers may pass a non-null completion callback to be notified of when the
      * reply has been actually sent.</p>
      *
      * @param replyInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param handler   the completion handler that gets notified of reply sent
+     * @param callback   the completion callback that gets notified of reply sent
      * @see #reply(ReplyInfo)
      */
-    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler);
+    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Callback<Void> callback);
 
     /**
      * <p>Sends asynchronously a DATA frame on this stream.</p>
@@ -137,7 +139,7 @@ public interface Stream
      *
      * @param dataInfo the metadata to send
      * @return a future to wait for the data to be sent
-     * @see #data(DataInfo, long, TimeUnit, Handler)
+     * @see #data(DataInfo, long, TimeUnit, Callback)
      * @see #reply(ReplyInfo)
      */
     public Future<Void> data(DataInfo dataInfo);
@@ -145,16 +147,16 @@ public interface Stream
     /**
      * <p>Sends asynchronously a DATA frame on this stream.</p>
      * <p>DATA frames should always be sent after a SYN_REPLY frame.</p>
-     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * <p>Callers may pass a non-null completion callback to be notified of when the
      * data has been actually sent.</p>
      *
      * @param dataInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param handler  the completion handler that gets notified of data sent
+     * @param callback  the completion callback that gets notified of data sent
      * @see #data(DataInfo)
      */
-    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Handler<Void> handler);
+    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Callback<Void> callback);
 
     /**
      * <p>Sends asynchronously a HEADER frame on this stream.</p>
@@ -163,7 +165,7 @@ public interface Stream
      *
      * @param headersInfo the metadata to send
      * @return a future to wait for the headers to be sent
-     * @see #headers(HeadersInfo, long, TimeUnit, Handler)
+     * @see #headers(HeadersInfo, long, TimeUnit, Callback
      * @see #reply(ReplyInfo)
      */
     public Future<Void> headers(HeadersInfo headersInfo);
@@ -171,16 +173,16 @@ public interface Stream
     /**
      * <p>Sends asynchronously a HEADER frame on this stream.</p>
      * <p>HEADERS frames should always be sent after a SYN_REPLY frame.</p>
-     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * <p>Callers may pass a non-null completion callback to be notified of when the
      * headers have been actually sent.</p>
      *
      * @param headersInfo the metadata to send
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
-     * @param handler     the completion handler that gets notified of headers sent
+     * @param callback     the completion callback that gets notified of headers sent
      * @see #headers(HeadersInfo)
      */
-    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler);
+    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Callback<Void> callback);
 
     /**
      * @return whether this stream is unidirectional or not

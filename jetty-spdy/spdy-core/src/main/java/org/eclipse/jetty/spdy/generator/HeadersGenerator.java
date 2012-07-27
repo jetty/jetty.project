@@ -15,12 +15,13 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.ByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class HeadersGenerator extends ControlFrameGenerator
 {
@@ -55,6 +56,7 @@ public class HeadersGenerator extends ControlFrameGenerator
         int totalLength = ControlFrame.HEADER_LENGTH + frameLength;
 
         ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
+        BufferUtil.clearToFill(buffer);
         generateControlFrameHeader(headers, frameLength, buffer);
 
         buffer.putInt(headers.getStreamId() & 0x7F_FF_FF_FF);

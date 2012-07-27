@@ -17,6 +17,7 @@ import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.StandardSession;
+import org.eclipse.jetty.util.Callback;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -80,7 +81,7 @@ public class ClientUsageTest
                 // Then issue another similar request
                 stream.getSession().syn(new SynInfo(true), this);
             }
-        }, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
+        }, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
         {
             @Override
             public void completed(Stream stream)
@@ -135,7 +136,7 @@ public class ClientUsageTest
                 }
 
             }
-        }, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
+        }, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
         {
             @Override
             public void completed(Stream stream)

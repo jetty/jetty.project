@@ -32,9 +32,11 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.io.nio.SslConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -44,7 +46,6 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class SPDYServerConnector extends SelectChannelConnector
 {
@@ -188,7 +189,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         if (sslContextFactory != null)
         {
             final SSLEngine engine = newSSLEngine(sslContextFactory, channel);
-            SslConnection sslConnection = new SslConnection(engine, endPoint)
+            SslConnection sslConnection = new SslConnection(bufferPool, findExecutor(), endPoint, engine)
             {
                 @Override
                 public void onClose()
@@ -197,7 +198,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                     super.onClose();
                 }
             };
-            endPoint.setConnection(sslConnection);
+            endPoint.setAsyncConnection(sslConnection);
             final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
             NextProtoNego.put(engine, new NextProtoNego.ServerProvider()
             {
@@ -206,7 +207,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                 {
                     AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
-                    sslEndPoint.setConnection(connection);
+                    sslEndPoint.setAsyncConnection(connection);
                 }
 
                 @Override
@@ -220,12 +221,12 @@ public class SPDYServerConnector extends SelectChannelConnector
                 {
                     AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory(protocol);
                     AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
-                    sslEndPoint.setConnection(connection);
+                    sslEndPoint.setAsyncConnection(connection);
                 }
             });
 
             AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
-            sslEndPoint.setConnection(connection);
+            sslEndPoint.setAsyncConnection(connection);
 
             startHandshake(engine);
 
@@ -235,7 +236,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         {
             AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
             AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, this);
-            endPoint.setConnection(connection);
+            endPoint.setAsyncConnection(connection);
             return connection;
         }
     }
@@ -306,10 +307,10 @@ public class SPDYServerConnector extends SelectChannelConnector
         @Override
         public void execute(Runnable command)
         {
-            ThreadPool threadPool = getThreadPool();
+            Executor threadPool = findExecutor();
             if (threadPool == null)
                 throw new RejectedExecutionException();
-            threadPool.dispatch(command);
+            threadPool.execute(command);
         }
     }
 

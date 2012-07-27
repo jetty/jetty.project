@@ -14,14 +14,13 @@
 
 package org.eclipse.jetty.spdy;
 
-import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.nio.AsyncConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -64,12 +63,12 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(endPoint, attachment);
         SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, bufferPool, parser, listener, connector);
-        endPoint.setConnection(connection);
+        endPoint.setAsyncConnection(connection);
 
         FlowControlStrategy flowControlStrategy = connector.newFlowControlStrategy(version);
 
         StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator, flowControlStrategy);
-        session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddr());
+        session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddress());
         session.setWindowSize(connector.getInitialWindowSize());
         parser.addListener(session);
         connection.setSession(session);
@@ -92,13 +91,13 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 
         private ServerSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
         {
-            super(endPoint, bufferPool, parser);
+            super(endPoint, bufferPool, parser, connector.findExecutor());
             this.listener = listener;
             this.connector = connector;
         }
 
         @Override
-        public Connection handle() throws IOException
+        public void onOpen()
         {
             if (!connected)
             {
@@ -107,7 +106,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
                     listener.onConnect(getSession());
                 connected = true;
             }
-            return super.handle();
+            super.onOpen();
         }
 
         @Override

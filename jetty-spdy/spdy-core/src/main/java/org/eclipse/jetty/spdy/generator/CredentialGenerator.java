@@ -19,11 +19,12 @@ import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.spdy.ByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.CredentialFrame;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class CredentialGenerator extends ControlFrameGenerator
 {
@@ -48,6 +49,7 @@ public class CredentialGenerator extends ControlFrameGenerator
 
         int totalLength = ControlFrame.HEADER_LENGTH + frameBodyLength;
         ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
+        BufferUtil.clearToFill(buffer);
         generateControlFrameHeader(credential, frameBodyLength, buffer);
 
         buffer.putShort(credential.getSlot());

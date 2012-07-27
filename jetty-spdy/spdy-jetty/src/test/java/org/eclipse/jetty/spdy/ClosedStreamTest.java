@@ -21,6 +21,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
@@ -140,6 +141,7 @@ public class ClosedStreamTest extends AbstractTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
+                System.out.println("ONREPLY CLIENT CALLED");
                 replyReceivedLatch.countDown();
             }
 
@@ -149,11 +151,11 @@ public class ClosedStreamTest extends AbstractTest
                 clientReceivedDataLatch.countDown();
             }
         }).get();
-        assertThat("reply has been received by client",replyReceivedLatch.await(5,TimeUnit.SECONDS),is(true));
+        assertThat("reply has been received by client",replyReceivedLatch.await(500,TimeUnit.SECONDS),is(true));
         assertThat("stream is half closed from server",stream.isHalfClosed(),is(true));
         assertThat("client has not received any data sent after stream was half closed by server",clientReceivedDataLatch.await(1,TimeUnit.SECONDS),
                 is(false));
-        assertThat("sending data threw an exception",exceptionWhenSendingData.await(5,TimeUnit.SECONDS),is(true));
+        assertThat("sending data threw an exception",exceptionWhenSendingData.await(500,TimeUnit.SECONDS),is(true)); //thomas
     }
 
     @Test

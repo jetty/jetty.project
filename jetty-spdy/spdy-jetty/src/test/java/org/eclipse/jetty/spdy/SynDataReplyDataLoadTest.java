@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -167,7 +167,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                                 latch.countDown();
                             }
                         }
-                    }, 0, TimeUnit.SECONDS, new Handler.Adapter<Stream>()
+                    }, 0, TimeUnit.SECONDS, new Callback.Empty<Stream>()
             {
                 @Override
                 public void completed(Stream stream)

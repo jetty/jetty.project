@@ -15,12 +15,13 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.ByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class SynReplyGenerator extends ControlFrameGenerator
 {
@@ -53,6 +54,7 @@ public class SynReplyGenerator extends ControlFrameGenerator
         int totalLength = ControlFrame.HEADER_LENGTH + frameLength;
 
         ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
+        BufferUtil.clearToFill(buffer);
         generateControlFrameHeader(synReply, frameLength, buffer);
 
         buffer.putInt(synReply.getStreamId() & 0x7F_FF_FF_FF);

@@ -20,7 +20,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.spdy.api.Handler;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>A {@link Promise} is a {@link Future} that allows a result or a failure to be set,
@@ -28,7 +28,7 @@ import org.eclipse.jetty.spdy.api.Handler;
  *
  * @param <T> the type of the result object
  */
-public class Promise<T> implements Handler<T>, Future<T>
+public class Promise<T> implements Callback<T>, Future<T>
 {
     private final CountDownLatch latch = new CountDownLatch(1);
     private boolean cancelled;

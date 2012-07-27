@@ -1,228 +1,131 @@
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
-
+/*
+ * Copyright (c) 2012 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.eclipse.jetty.spdy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
-import org.eclipse.jetty.io.nio.NIOBuffer;
-import org.eclipse.jetty.spdy.api.Handler;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class SPDYAsyncConnection extends AbstractConnection implements AsyncConnection, Controller<StandardSession.FrameBytes>, IdleListener
+public class SPDYAsyncConnection extends AbstractAsyncConnection implements Controller<StandardSession.FrameBytes>, IdleListener
 {
     private static final Logger logger = Log.getLogger(SPDYAsyncConnection.class);
     private final ByteBufferPool bufferPool;
     private final Parser parser;
     private volatile Session session;
-    private ByteBuffer writeBuffer;
-    private Handler<StandardSession.FrameBytes> writeHandler;
-    private StandardSession.FrameBytes writeContext;
-    private volatile boolean writePending;
+    private volatile boolean idle = false;
 
-    public SPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser)
+    public SPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
     {
-        super(endPoint);
+        super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);
     }
 
     @Override
-    public Connection handle() throws IOException
+    public void onFillable()
+    {
+        ByteBuffer buffer = bufferPool.acquire(8192, true); //TODO: 8k window?
+        boolean readMore = read(buffer) == 0;
+        bufferPool.release(buffer);
+        if (readMore)
+            fillInterested();
+    }
+
+    protected int read(ByteBuffer buffer)
     {
         AsyncEndPoint endPoint = getEndPoint();
-        boolean progress = true;
-        while (endPoint.isOpen() && progress)
+        while (true)
         {
-            int filled = fill();
-            progress = filled > 0;
-
-            int flushed = flush();
-            progress |= flushed > 0;
-
-            endPoint.flush();
-
-            progress |= endPoint.hasProgressed();
-
-            if (!progress && filled < 0)
+            int filled = fill(endPoint, buffer);
+            if (filled == 0)
             {
-                onInputShutdown();
+                return 0;
+            }
+            else if (filled < 0)
+            {
                 close(false);
+                return -1;
+            }
+            else
+            {
+                parser.parse(buffer);
             }
         }
-        return this;
     }
 
-    public int fill() throws IOException
+    private int fill(AsyncEndPoint endPoint, ByteBuffer buffer)
     {
-        ByteBuffer buffer = bufferPool.acquire(8192, true);
-        NIOBuffer jettyBuffer = new DirectNIOBuffer(buffer, false);
-        jettyBuffer.setPutIndex(jettyBuffer.getIndex());
-        AsyncEndPoint endPoint = getEndPoint();
-        int filled = endPoint.fill(jettyBuffer);
-        logger.debug("Filled {} from {}", filled, endPoint);
-        if (filled <= 0)
-            return filled;
-
-        buffer.limit(jettyBuffer.putIndex());
-        buffer.position(jettyBuffer.getIndex());
-        parser.parse(buffer);
-
-        bufferPool.release(buffer);
-
-        return filled;
-    }
-
-    public int flush()
-    {
-        int result = 0;
-        // Volatile read to ensure visibility of buffer and handler
-        if (writePending)
-            result = write(writeBuffer, writeHandler, writeContext);
-        logger.debug("Flushed {} to {}", result, getEndPoint());
-        return result;
+        try
+        {
+            return endPoint.fill(buffer);
+        }
+        catch (IOException x)
+        {
+            endPoint.close();
+            throw new RuntimeIOException(x);
+        }
     }
 
     @Override
-    public int write(ByteBuffer buffer, Handler<StandardSession.FrameBytes> handler, StandardSession.FrameBytes context)
+    public int write(ByteBuffer buffer, final Callback<StandardSession.FrameBytes> callback, StandardSession.FrameBytes context)
     {
-        int remaining = buffer.remaining();
-        Buffer jettyBuffer = buffer.isDirect() ? new DirectNIOBuffer(buffer, false) : new IndirectNIOBuffer(buffer, false);
         AsyncEndPoint endPoint = getEndPoint();
-        try
-        {
-            int written = endPoint.flush(jettyBuffer);
-            logger.debug("Written {} bytes, {} remaining", written, jettyBuffer.length());
-        }
-        catch (Exception x)
-        {
-            close(false);
-            handler.failed(context, x);
-            return -1;
-        }
-        finally
-        {
-            buffer.limit(jettyBuffer.putIndex());
-            buffer.position(jettyBuffer.getIndex());
-        }
-
-        if (buffer.hasRemaining())
-        {
-            // Save buffer and handler in order to finish the write later in flush()
-            this.writeBuffer = buffer;
-            this.writeHandler = handler;
-            this.writeContext = context;
-            // Volatile write to ensure visibility of write fields
-            writePending = true;
-            endPoint.scheduleWrite();
-        }
-        else
-        {
-            if (writePending)
-            {
-                this.writeBuffer = null;
-                this.writeHandler = null;
-                this.writeContext = null;
-                // Volatile write to ensure visibility of write fields
-                writePending = false;
-            }
-            handler.completed(context);
-        }
-
-        return remaining - buffer.remaining();
+        endPoint.write(context, callback, buffer);
+        return -1; //TODO: void or have endPoint.write return int
     }
 
     @Override
     public void close(boolean onlyOutput)
     {
-        try
+        AsyncEndPoint endPoint = getEndPoint();
+        // We need to gently close first, to allow
+        // SSL close alerts to be sent by Jetty
+        logger.debug("Shutting down output {}", endPoint);
+        endPoint.shutdownOutput();
+        if (!onlyOutput)
         {
-            AsyncEndPoint endPoint = getEndPoint();
-            try
-            {
-                // We need to gently close first, to allow
-                // SSL close alerts to be sent by Jetty
-                logger.debug("Shutting down output {}", endPoint);
-                endPoint.shutdownOutput();
-                if (!onlyOutput)
-                {
-                    logger.debug("Closing {}", endPoint);
-                    endPoint.close();
-                }
-            }
-            catch (IOException x)
-            {
-                endPoint.close();
-            }
-        }
-        catch (IOException x)
-        {
-            logger.ignore(x);
+            logger.debug("Closing {}", endPoint);
+            endPoint.close();
         }
     }
 
     @Override
     public void onIdle(boolean idle)
     {
-        getEndPoint().setCheckForIdle(idle);
+        this.idle = idle;
     }
 
     @Override
-    public AsyncEndPoint getEndPoint()
+    protected boolean onReadTimeout()
     {
-        return (AsyncEndPoint)super.getEndPoint();
-    }
-
-    @Override
-    public boolean isIdle()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isSuspended()
-    {
-        return false;
-    }
-
-    @Override
-    public void onClose()
-    {
-    }
-
-    @Override
-    public void onInputShutdown() throws IOException
-    {
-    }
-
-    @Override
-    public void onIdleExpired(long idleForMs)
-    {
-        logger.debug("Idle timeout expired for {}", getEndPoint());
-        session.goAway();
+        if(idle)
+            session.goAway();
+        return idle;
     }
 
     protected Session getSession()
@@ -233,10 +136,5 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     protected void setSession(Session session)
     {
         this.session = session;
-    }
-
-    public String toString()
-    {
-        return String.format("%s@%x{endp=%s@%x}",getClass().getSimpleName(),hashCode(),getEndPoint().getClass().getSimpleName(),getEndPoint().hashCode());
     }
 }

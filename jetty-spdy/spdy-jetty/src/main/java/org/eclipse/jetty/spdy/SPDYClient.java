@@ -29,18 +29,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager;
-import org.eclipse.jetty.io.nio.SslConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -56,7 +55,7 @@ public class SPDYClient
     private final short version;
     private final Factory factory;
     private SocketAddress bindAddress;
-    private long maxIdleTime = -1;
+    private long idleTimeout = -1;
     private volatile int initialWindowSize = 65536;
 
     protected SPDYClient(short version, Factory factory)
@@ -97,19 +96,19 @@ public class SPDYClient
         SessionPromise result = new SessionPromise(channel, this, listener);
 
         channel.connect(address);
-        factory.selector.register(channel, result);
+        factory.selector.connect(channel, result);
 
         return result;
     }
 
-    public long getMaxIdleTime()
+    public long getIdleTimeout()
     {
-        return maxIdleTime;
+        return idleTimeout;
     }
 
-    public void setMaxIdleTime(long maxIdleTime)
+    public void setIdleTimeout(long idleTimeout)
     {
-        this.maxIdleTime = maxIdleTime;
+        this.idleTimeout = idleTimeout;
     }
 
     public int getInitialWindowSize()
@@ -190,24 +189,43 @@ public class SPDYClient
         private final Executor threadPool;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
+        private final long defaultTimeout = 30000;
+        private final long idleTimeout;
 
+        //TODO: Replace with Builder?!
         public Factory()
         {
-            this(null, null);
+            this(null, null, 30000);
         }
 
         public Factory(SslContextFactory sslContextFactory)
         {
-            this(null, sslContextFactory);
+            this(null, sslContextFactory, 30000);
+        }
+
+        public Factory(SslContextFactory sslContextFactory, long idleTimeout)
+        {
+            this(null, sslContextFactory, idleTimeout);
         }
 
         public Factory(Executor threadPool)
         {
-            this(threadPool, null);
+            this(threadPool, null, 30000);
+        }
+
+        public Factory(Executor threadPool, long idleTimeout)
+        {
+            this(threadPool, null, idleTimeout);
         }
 
         public Factory(Executor threadPool, SslContextFactory sslContextFactory)
         {
+            this(threadPool, sslContextFactory, 30000);
+        }
+
+        public Factory(Executor threadPool, SslContextFactory sslContextFactory, long idleTimeout)
+        {
+            this.idleTimeout = idleTimeout;
             if (threadPool == null)
                 threadPool = new QueuedThreadPool();
             this.threadPool = threadPool;
@@ -275,50 +293,24 @@ public class SPDYClient
 
         private class ClientSelectorManager extends SelectorManager
         {
-            @Override
-            public boolean dispatch(Runnable task)
-            {
-                try
-                {
-                    threadPool.execute(task);
-                    return true;
-                }
-                catch (RejectedExecutionException x)
-                {
-                    return false;
-                }
-            }
 
             @Override
-            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
+            protected AsyncEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
                 SessionPromise attachment = (SessionPromise)key.attachment();
 
-                long maxIdleTime = attachment.client.getMaxIdleTime();
-                if (maxIdleTime < 0)
-                    maxIdleTime = getMaxIdleTime();
-                SelectChannelEndPoint result = new SelectChannelEndPoint(channel, selectSet, key, (int)maxIdleTime);
-
-                AsyncConnection connection = newConnection(channel, result, attachment);
-                result.setConnection(connection);
+                long clientIdleTimeout = attachment.client.getIdleTimeout();
+                if (clientIdleTimeout < 0)
+                    clientIdleTimeout = idleTimeout;
+                AsyncEndPoint result = new SelectChannelEndPoint(channel, selectSet, key, scheduler, clientIdleTimeout);
 
                 return result;
             }
 
             @Override
-            protected void endPointOpened(SelectChannelEndPoint endpoint)
+            protected void execute(Runnable task)
             {
-            }
-
-            @Override
-            protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
-            {
-            }
-
-            @Override
-            protected void endPointClosed(SelectChannelEndPoint endpoint)
-            {
-                endpoint.getConnection().onClose();
+                threadPool.execute(task);
             }
 
             @Override
@@ -332,7 +324,7 @@ public class SPDYClient
                     if (sslContextFactory != null)
                     {
                         final SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
-                        SslConnection sslConnection = new SslConnection(engine, endPoint)
+                        SslConnection sslConnection = new SslConnection(bufferPool, threadPool, endPoint, engine)
                         {
                             @Override
                             public void onClose()
@@ -341,7 +333,7 @@ public class SPDYClient
                                 super.onClose();
                             }
                         };
-                        endPoint.setConnection(sslConnection);
+                        endPoint.setAsyncConnection(sslConnection);
                         final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
                         NextProtoNego.put(engine, new NextProtoNego.ClientProvider()
                         {
@@ -357,7 +349,7 @@ public class SPDYClient
                                 // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
                                 ClientSPDYAsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
                                 AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
-                                sslEndPoint.setConnection(connection);
+                                sslEndPoint.setAsyncConnection(connection);
                             }
 
                             @Override
@@ -369,13 +361,13 @@ public class SPDYClient
 
                                 AsyncConnectionFactory connectionFactory = client.getAsyncConnectionFactory(protocol);
                                 AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
-                                sslEndPoint.setConnection(connection);
+                                sslEndPoint.setAsyncConnection(connection);
                                 return protocol;
                             }
                         });
 
                         AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
-                        sslEndPoint.setConnection(connection);
+                        sslEndPoint.setAsyncConnection(connection);
 
                         startHandshake(engine);
 
@@ -385,7 +377,7 @@ public class SPDYClient
                     {
                         AsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
                         AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
-                        endPoint.setConnection(connection);
+                        endPoint.setAsyncConnection(connection);
                         return connection;
                     }
                 }
@@ -453,7 +445,7 @@ public class SPDYClient
             Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
 
             SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, factory.bufferPool, parser, factory);
-            endPoint.setConnection(connection);
+            endPoint.setAsyncConnection(connection);
 
             FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 
@@ -474,7 +466,7 @@ public class SPDYClient
 
             public ClientSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
             {
-                super(endPoint, bufferPool, parser);
+                super(endPoint, bufferPool, parser, factory.threadPool);
                 this.factory = factory;
             }
 
