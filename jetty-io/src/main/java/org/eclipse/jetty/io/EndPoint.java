@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -23,7 +24,7 @@ import java.nio.ByteBuffer;
  *
  * A transport EndPoint
  */
-public interface EndPoint
+public interface EndPoint extends Closeable
 {
     /* ------------------------------------------------------------ */
     /**

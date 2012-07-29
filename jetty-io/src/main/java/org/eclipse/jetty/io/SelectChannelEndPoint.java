@@ -207,6 +207,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         catch (CancelledKeyException x)
         {
             LOG.debug("Ignoring key update for concurrently closed channel {}", this);
+            close();
+        }
+        catch (Exception x)
+        {
+            LOG.warn("Ignoring key update for " + this, x);
+            close();
         }
     }
 
