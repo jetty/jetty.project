@@ -93,7 +93,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
     private void scheduleIdleTimeout(long delay)
     {
-        Future<?> newTimeout = isOpen() && delay > 0 ? _scheduler.schedule(_idleTask, delay, TimeUnit.MILLISECONDS) : null;
+        Future<?> newTimeout = null;
+        if (isOpen() && delay > 0)
+        {
+            LOG.debug("{} scheduling idle timeout in {} ms", this, delay);
+            newTimeout = _scheduler.schedule(_idleTask, delay, TimeUnit.MILLISECONDS);
+        }
+        else
+        {
+            LOG.debug("{} skipped scheduling idle timeout ({} ms)", this, delay);
+        }
         Future<?> oldTimeout = _timeout.getAndSet(newTimeout);
         if (oldTimeout != null)
             oldTimeout.cancel(false);
@@ -145,12 +154,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             long idleElapsed = System.currentTimeMillis() - idleTimestamp;
             long idleLeft = idleTimeout - idleElapsed;
 
+            LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
+
             if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
             {
                 if (idleTimestamp != 0 && idleTimeout > 0)
                 {
-                    if (idleLeft < 0)
+                    if (idleLeft <= 0)
                     {
+                        LOG.debug("{} idle timeout expired", this);
+
                         if (isOutputShutdown())
                             close();
                         notIdle();
