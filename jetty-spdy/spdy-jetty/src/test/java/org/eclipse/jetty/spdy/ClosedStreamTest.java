@@ -141,7 +141,6 @@ public class ClosedStreamTest extends AbstractTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                System.out.println("ONREPLY CLIENT CALLED");
                 replyReceivedLatch.countDown();
             }
 

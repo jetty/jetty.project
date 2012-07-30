@@ -86,16 +86,8 @@ public class StandardStreamTest
         {
             PushSynInfo pushSynInfo = (PushSynInfo)argument;
             if (pushSynInfo.getAssociatedStreamId() != associatedStreamId)
-            {
-                System.out.println("streamIds do not match!");
                 return false;
-            }
-            if (pushSynInfo.isClose() != synInfo.isClose())
-            {
-                System.out.println("isClose doesn't match");
-                return false;
-            }
-            return true;
+            return pushSynInfo.isClose() == synInfo.isClose();
         }
     }
 
