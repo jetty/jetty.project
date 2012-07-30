@@ -218,13 +218,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * or {@link #accept(SocketChannel)}.</p>
      *
      * @param channel   the channel associated to the endpoint
-     * @param selectSet the selector the channel is registered to
+     * @param selector the selector the channel is registered to
      * @param selectionKey      the selection key
      * @return a new endpoint
      * @throws IOException if the endPoint cannot be created
      * @see #newConnection(SocketChannel, AsyncEndPoint, Object)
      */
-    protected abstract AsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey selectionKey) throws IOException;
+    protected abstract AsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selector, SelectionKey selectionKey) throws IOException;
 
     /**
      * <p>Factory method to create {@link AsyncConnection}.</p>
@@ -414,7 +414,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 if (attachment instanceof SelectableAsyncEndPoint)
                 {
-                    key.interestOps(0);
                     ((SelectableAsyncEndPoint)attachment).onSelected();
                 }
                 else if (key.isConnectable())
