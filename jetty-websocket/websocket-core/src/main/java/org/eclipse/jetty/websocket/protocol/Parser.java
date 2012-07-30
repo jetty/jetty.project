@@ -42,6 +42,8 @@ public class Parser
         PAYLOAD
     }
 
+    private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
+
     // State specific
     private State state = State.START;
     private int cursor = 0;
@@ -107,9 +109,13 @@ public class Parser
 
     protected void notifyFrame(final WebSocketFrame f)
     {
+        if (LOG_FRAMES.isDebugEnabled())
+        {
+            LOG_FRAMES.debug("{} Read Frame: {}",policy.getBehavior(),f);
+        }
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{} Notify Frame: {} to {}",policy.getBehavior(),f,incomingFramesHandler);
+            LOG.debug("{} Notify {}",policy.getBehavior(),incomingFramesHandler);
         }
         if (incomingFramesHandler == null)
         {

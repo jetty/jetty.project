@@ -49,7 +49,8 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
  */
 public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, OutgoingFrames
 {
-    static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
+    private static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
+    private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
 
     private final ByteBufferPool bufferPool;
     private final ScheduledExecutorService scheduler;
@@ -135,6 +136,10 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
             }
 
             flushing = true;
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
+            }
         }
         write(buffer,this,frameBytes);
     }
@@ -211,7 +216,7 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
         boolean readMore = false;
         try
         {
-            readMore = read(buffer) == 0;
+            readMore = (read(buffer) != -1);
         }
         finally
         {
@@ -342,9 +347,9 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
     {
         AsyncEndPoint endpoint = getEndPoint();
 
-        if (LOG.isDebugEnabled())
+        if (LOG_FRAMES.isDebugEnabled())
         {
-            LOG.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
+            LOG_FRAMES.debug("{} Writing {} frame bytes of {}",policy.getBehavior(),buffer.remaining(),frameBytes);
         }
         try
         {
