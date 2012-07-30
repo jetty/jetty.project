@@ -120,9 +120,9 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     @Override
     protected boolean onReadTimeout()
     {
-        if(idle)
+        if (idle)
             session.goAway();
-        return idle;
+        return false;
     }
 
     protected Session getSession()
