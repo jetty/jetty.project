@@ -50,17 +50,6 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, OutgoingFrames
 {
     static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
-    private static final ThreadLocal<WebSocketAsyncConnection> CURRENT_CONNECTION = new ThreadLocal<WebSocketAsyncConnection>();
-
-    public static WebSocketAsyncConnection getCurrentConnection()
-    {
-        return CURRENT_CONNECTION.get();
-    }
-
-    protected static void setCurrentConnection(WebSocketAsyncConnection connection)
-    {
-        CURRENT_CONNECTION.set(connection);
-    }
 
     private final ByteBufferPool bufferPool;
     private final ScheduledExecutorService scheduler;
@@ -217,18 +206,20 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
     @Override
     public void onFillable()
     {
-        setCurrentConnection(this);
         ByteBuffer buffer = bufferPool.acquire(policy.getBufferSize(),false);
         BufferUtil.clear(buffer);
+        boolean readMore = false;
         try
         {
-            read(buffer);
+            readMore = read(buffer) == 0;
         }
         finally
         {
-            fillInterested();
-            setCurrentConnection(null);
             bufferPool.release(buffer);
+        }
+        if (readMore)
+        {
+            fillInterested();
         }
     }
 
@@ -256,34 +247,44 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
         flush();
     }
 
-    private void read(ByteBuffer buffer)
+    private int read(ByteBuffer buffer)
     {
+        AsyncEndPoint endPoint = getEndPoint();
         try
         {
             while (true)
             {
-                int filled = getEndPoint().fill(buffer);
+                int filled = endPoint.fill(buffer);
                 if (filled == 0)
                 {
-                    break;
+                    return 0;
                 }
-
-                if (LOG.isDebugEnabled() && (filled > 0))
+                else if (filled < 0)
                 {
-                    LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
+                    disconnect(false);
+                    return -1;
                 }
-                parser.parse(buffer);
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
+                    }
+                    parser.parse(buffer);
+                }
             }
         }
         catch (IOException e)
         {
             LOG.warn(e);
             terminateConnection(StatusCode.PROTOCOL,e.getMessage());
+            return -1;
         }
         catch (CloseException e)
         {
             LOG.warn(e);
             terminateConnection(e.getStatusCode(),e.getMessage());
+            return -1;
         }
     }
 
