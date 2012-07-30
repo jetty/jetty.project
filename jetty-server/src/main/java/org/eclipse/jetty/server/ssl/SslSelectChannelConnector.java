@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.ssl;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -540,6 +539,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
             SslConnection connection = newSslConnection(endpoint, engine);
             AsyncConnection delegate = newPlainConnection(channel, connection.getSslEndPoint());
             connection.getSslEndPoint().setAsyncConnection(delegate);
+            getSelectorManager().connectionOpened(delegate);
             return connection;
         }
         catch (IOException e)

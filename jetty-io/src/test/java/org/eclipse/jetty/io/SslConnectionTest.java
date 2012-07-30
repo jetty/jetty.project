@@ -56,9 +56,9 @@ public class SslConnectionTest
 
             AsyncConnection appConnection = new TestConnection(sslConnection.getSslEndPoint());
             sslConnection.getSslEndPoint().setAsyncConnection(appConnection);
+            connectionOpened(appConnection);
 
             return sslConnection;
-
         }
 
         @Override

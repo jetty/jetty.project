@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -336,16 +336,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 _thread.setName(name + " Selector" + _id);
                 LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
-                {
-                    try
-                    {
-                        select();
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.warn(e);
-                    }
-                }
+                    select();
                 processChanges();
             }
             finally
@@ -358,10 +349,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         /**
          * <p>Process changes and waits on {@link Selector#select()}.</p>
          *
-         * @throws IOException if the select operation fails
          * @see #submit(Runnable)
          */
-        public void select() throws IOException
+        public void select()
         {
             boolean debug = LOG.isDebugEnabled();
             try
@@ -379,32 +369,22 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 Set<SelectionKey> selectedKeys = _selector.selectedKeys();
                 for (SelectionKey key : selectedKeys)
                 {
-                    try
+                    if (key.isValid())
                     {
-                        if (!key.isValid())
-                        {
-                            if (debug)
-                                LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
-                            continue;
-                        }
-
                         processKey(key);
                     }
-                    catch (Exception x)
+                    else
                     {
-                        if (isRunning())
-                            LOG.warn(x);
-                        else
-                            LOG.debug(x);
-
-                        execute(new Close(key));
+                        if (debug)
+                            LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
+                        Object attachment = key.attachment();
+                        if (attachment instanceof EndPoint)
+                            ((EndPoint)attachment).close();
                     }
                 }
-
-                // Everything always handled
                 selectedKeys.clear();
             }
-            catch (ClosedSelectorException x)
+            catch (IOException x)
             {
                 if (isRunning())
                     LOG.warn(x);
@@ -429,9 +409,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         private void processKey(SelectionKey key)
         {
+            Object attachment = key.attachment();
             try
             {
-                Object attachment = key.attachment();
                 if (attachment instanceof SelectableAsyncEndPoint)
                 {
                     key.interestOps(0);
@@ -458,7 +438,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     catch (Exception x)
                     {
                         connectionFailed(channel, x, attachment);
-                        key.cancel();
+                        closeNoExceptions(channel);
                     }
                 }
                 else
@@ -468,7 +448,27 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
             catch (CancelledKeyException x)
             {
-                LOG.debug("Ignoring cancelled key for channel", key.channel());
+                LOG.debug("Ignoring cancelled key for channel {}", key.channel());
+                if (attachment instanceof EndPoint)
+                    ((EndPoint)attachment).close();
+            }
+            catch (Exception x)
+            {
+                LOG.warn("Could not process key for channel " + key.channel(), x);
+                if (attachment instanceof EndPoint)
+                    ((EndPoint)attachment).close();
+            }
+        }
+
+        private void closeNoExceptions(Closeable closeable)
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch (IOException x)
+            {
+                LOG.ignore(x);
             }
         }
 
@@ -643,29 +643,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
 
-        private class Close implements Runnable
-        {
-            private final SelectionKey key;
-
-            private Close(SelectionKey key)
-            {
-                this.key = key;
-            }
-
-            @Override
-            public void run()
-            {
-                try
-                {
-                    key.channel().close();
-                }
-                catch (IOException x)
-                {
-                    LOG.ignore(x);
-                }
-            }
-        }
-
         private class Stop implements Runnable
         {
             private final CountDownLatch latch = new CountDownLatch(1);
@@ -685,11 +662,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                     }
 
-                    _selector.close();
-                }
-                catch (IOException x)
-                {
-                    LOG.ignore(x);
+                    closeNoExceptions(_selector);
                 }
                 finally
                 {
