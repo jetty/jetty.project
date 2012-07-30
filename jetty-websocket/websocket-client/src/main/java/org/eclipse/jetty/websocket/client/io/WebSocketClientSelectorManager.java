@@ -21,6 +21,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -76,7 +77,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         ByteBufferPool bufferPool = factory.getBufferPool();
         ScheduledExecutorService scheduler = factory.getScheduler();
 
-        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endPoint,executor,scheduler,policy,bufferPool);
+        WebSocketAsyncConnection connection = new WebSocketClientAsyncConnection(endPoint,executor,scheduler,policy,bufferPool,factory);
         endPoint.setAsyncConnection(connection);
         connection.getParser().setIncomingFramesHandler(websocket);
 
@@ -137,7 +138,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
     {
-        return new SelectChannelEndPoint(channel,selectSet, selectionKey, scheduler, policy.getIdleTimeout());
+        return new SelectChannelEndPoint(channel,selectSet,selectionKey,scheduler,policy.getIdleTimeout());
     }
 
     public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
