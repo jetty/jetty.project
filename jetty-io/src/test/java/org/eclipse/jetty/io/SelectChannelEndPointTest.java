@@ -592,10 +592,8 @@ public class SelectChannelEndPointTest
         for (int i = 0; i < _writeCount; i++)
         {
             if (i % 1000 == 0)
-            {
-                //System.out.println(i);
                 TimeUnit.MILLISECONDS.sleep(200);
-            }
+
             // Verify echo server to client
             for (int j = 0; j < data.length(); j++)
             {
@@ -604,18 +602,20 @@ public class SelectChannelEndPointTest
                 assertTrue(b > 0);
                 assertEquals("test-" + i + "/" + j, c, (char)b);
             }
+
             if (i == 0)
                 _lastEndp.setIdleTimeout(60000);
         }
 
-
         client.close();
 
-        int i = 0;
-        while (server.isOpen())
+        for (int i = 0; i < 10; ++i)
         {
-            assert (i++ < 10);
-            Thread.sleep(10);
+            if (server.isOpen())
+                Thread.sleep(10);
+            else
+                break;
         }
+        Assert.assertFalse(server.isOpen());
     }
 }
