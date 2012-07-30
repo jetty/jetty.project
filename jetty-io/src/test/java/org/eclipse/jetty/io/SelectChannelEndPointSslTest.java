@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -189,15 +190,15 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
     @Test
     @Override
-    public void testWriteBlock() throws Exception
+    public void testWriteBlocked() throws Exception
     {
-        super.testWriteBlock();
+        super.testWriteBlocked();
     }
 
     @Override
-    public void testBlockRead() throws Exception
+    public void testReadBlocked() throws Exception
     {
-        super.testBlockRead();
+        super.testReadBlocked();
     }
 
     @Override
@@ -230,8 +231,8 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
             assertEquals(c,(char)b);
         }
 
-        // Set Max idle
-        _lastEndp.setIdleTimeout(500);
+        assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+        _lastEndPoint.setIdleTimeout(500);
 
         // Write 8 and cause block waiting for 10
         _blockAt=10;
@@ -248,7 +249,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
         Thread.sleep(1000);
 
-        assertFalse(_lastEndp.isOpen());
+        assertFalse(_lastEndPoint.isOpen());
     }
 
     @Test
