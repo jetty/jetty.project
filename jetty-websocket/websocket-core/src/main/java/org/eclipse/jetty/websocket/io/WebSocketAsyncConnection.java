@@ -41,6 +41,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.protocol.Generator;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
@@ -234,18 +235,31 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("output({}, {}, {})",context,callback,frame);
+        }
+
         synchronized (queue)
         {
+            FrameBytes<C> bytes = null;
+
             if (frame.getOpCode().isControlFrame())
             {
-                ControlFrameBytes<C> bytes = new ControlFrameBytes<C>(this,callback,context,frame);
-                scheduleTimeout(bytes);
+                bytes = new ControlFrameBytes<C>(this,callback,context,frame);
+            }
+            else
+            {
+                bytes = new DataFrameBytes<C>(this,callback,context,frame);
+            }
+
+            scheduleTimeout(bytes);
+            if (frame.getOpCode() == OpCode.PING)
+            {
                 queue.prepend(bytes);
             }
             else
             {
-                DataFrameBytes<C> bytes = new DataFrameBytes<C>(this,callback,context,frame);
-                scheduleTimeout(bytes);
                 queue.append(bytes);
             }
         }
@@ -266,6 +280,7 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
                 }
                 else if (filled < 0)
                 {
+                    LOG.debug("read - EOF Reached");
                     disconnect(false);
                     return -1;
                 }

@@ -71,12 +71,12 @@ public class IncomingFramesCapture implements IncomingFrames
 
     public void dump()
     {
-        System.out.printf("Captured %d incoming frames%n",frames.size());
+        System.err.printf("Captured %d incoming frames%n",frames.size());
         for (int i = 0; i < frames.size(); i++)
         {
             WebSocketFrame frame = frames.get(i);
-            System.out.printf("[%3d] %s%n",i,frame);
-            System.out.printf("          %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            System.err.printf("[%3d] %s%n",i,frame);
+            System.err.printf("          %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
     }
 
