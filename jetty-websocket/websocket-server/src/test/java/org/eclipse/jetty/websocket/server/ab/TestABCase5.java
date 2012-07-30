@@ -18,7 +18,6 @@ package org.eclipse.jetty.websocket.server.ab;
 import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -110,8 +110,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = capture.getFrames().get(0);
 
             Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
 
@@ -144,8 +144,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = capture.getFrames().pop();
 
             Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
 
@@ -197,8 +197,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = capture.getFrames().pop();
 
             Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
 
@@ -231,8 +231,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = capture.getFrames().pop();
 
             Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
             Assert.assertThat("CloseFrame.status code",new CloseInfo(frame).getStatusCode(),is(1002));
@@ -283,8 +283,8 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = capture.getFrames().pop();
 
             Assert.assertThat("frame should be text frame",frame.getOpCode(),is(OpCode.TEXT));
 
@@ -357,15 +357,15 @@ public class TestABCase5
             client.writeRaw(buf2);
 
             // Should be 2 frames, pong frame followed by combined echo'd text frame
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.SECONDS,1);
+            WebSocketFrame frame = capture.getFrames().pop();
 
             Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PONG));
 
             ByteBuffer payload1 = BufferUtil.toBuffer(pingPayload,StringUtil.__UTF8_CHARSET);
 
             ByteBufferAssert.assertEquals("payloads should be equal",payload1,frame.getPayload());
-            frame = frames.remove();
+            frame = capture.getFrames().pop();
 
             Assert.assertThat("second frame should be text frame",frame.getOpCode(),is(OpCode.TEXT));
             Assert.assertThat("TextFrame.payload",frame.getPayloadAsUTF8(),is(fragment1 + fragment2));
@@ -405,15 +405,15 @@ public class TestABCase5
             client.writeRaw(buf3);
 
             // Should be 2 frames, pong frame followed by combined echo'd text frame
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = capture.getFrames().pop();
 
             Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PONG));
 
             ByteBuffer payload1 = BufferUtil.toBuffer(pingPayload,StringUtil.__UTF8_CHARSET);
             ByteBufferAssert.assertEquals("Payload",payload1,frame.getPayload());
 
-            frame = frames.remove();
+            frame = capture.getFrames().pop();
 
             Assert.assertThat("second frame should be text frame",frame.getOpCode(),is(OpCode.TEXT));
 
@@ -456,8 +456,8 @@ public class TestABCase5
             client.writeRaw(buf);
 
             // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame frame = capture.getFrames().pop();
 
             Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
 

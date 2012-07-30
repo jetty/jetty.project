@@ -17,12 +17,12 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -83,10 +83,10 @@ public class FragmentExtensionTest
             client.write(WebSocketFrame.text(msg));
 
             String parts[] = split(msg,fragSize);
-            Queue<WebSocketFrame> frames = client.readFrames(parts.length,TimeUnit.MILLISECONDS,1000);
+            IncomingFramesCapture capture = client.readFrames(parts.length,TimeUnit.MILLISECONDS,1000);
             for (int i = 0; i < parts.length; i++)
             {
-                WebSocketFrame frame = frames.remove();
+                WebSocketFrame frame = capture.getFrames().get(i);
                 Assert.assertThat("text[" + i + "].payload",frame.getPayloadAsUTF8(),is(parts[i]));
             }
         }

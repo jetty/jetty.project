@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -65,15 +65,15 @@ public class TestABCase1 extends AbstractABCase
             client.flush();
 
             // Read frames
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.MILLISECONDS,500);
 
             // Validate echo'd frame
-            WebSocketFrame frame = frames.remove();
+            WebSocketFrame frame = capture.getFrames().get(0);
             Assert.assertThat("frame should be " + opcode + " frame",frame.getOpCode(),is(opcode));
             Assert.assertThat(opcode + ".payloadLength",frame.getPayloadLength(),is(0));
 
             // Validate close
-            frame = frames.remove();
+            frame = capture.getFrames().get(1);
             Assert.assertThat("CLOSE.frame.opcode",frame.getOpCode(),is(OpCode.CLOSE));
             close = new CloseInfo(frame);
             Assert.assertThat("CLOSE.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
@@ -108,23 +108,25 @@ public class TestABCase1 extends AbstractABCase
 
             // Prepare Close Frame
             CloseInfo close = new CloseInfo(StatusCode.NORMAL);
-            buf = strictGenerator.generate(close.asFrame());
+            WebSocketFrame closeFrame = close.asFrame();
+            closeFrame.setMask(MASK);
+            buf = strictGenerator.generate(closeFrame);
 
             // Write Close Frame
             client.writeRaw(buf);
             client.flush();
 
             // Read frames
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,1000);
+            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.MILLISECONDS,1000);
 
             // Validate echo'd frame
-            WebSocketFrame frame = frames.remove();
+            WebSocketFrame frame = capture.getFrames().get(0);
             Assert.assertThat("frame should be " + opcode + " frame",frame.getOpCode(),is(opcode));
             Assert.assertThat(opcode + ".payloadLength",frame.getPayloadLength(),is(payload.length));
             ByteBufferAssert.assertEquals(opcode + ".payload",payload,frame.getPayload());
 
             // Validate close
-            frame = frames.remove();
+            frame = capture.getFrames().get(1);
             Assert.assertThat("CLOSE.frame.opcode",frame.getOpCode(),is(OpCode.CLOSE));
             close = new CloseInfo(frame);
             Assert.assertThat("CLOSE.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
@@ -181,16 +183,16 @@ public class TestABCase1 extends AbstractABCase
             client.flush();
 
             // Read frames
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.MILLISECONDS,500);
+            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.MILLISECONDS,500);
 
             // Validate echo'd frame
-            WebSocketFrame frame = frames.remove();
+            WebSocketFrame frame = capture.getFrames().get(0);
             Assert.assertThat("frame should be " + opcode + " frame",frame.getOpCode(),is(opcode));
             Assert.assertThat(opcode + ".payloadLength",frame.getPayloadLength(),is(payload.length));
             ByteBufferAssert.assertEquals(opcode + ".payload",payload,frame.getPayload());
 
             // Validate close
-            frame = frames.remove();
+            frame = capture.getFrames().get(1);
             Assert.assertThat("CLOSE.frame.opcode",frame.getOpCode(),is(OpCode.CLOSE));
             close = new CloseInfo(frame);
             Assert.assertThat("CLOSE.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));

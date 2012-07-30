@@ -15,7 +15,7 @@ public abstract class AbstractABCase
     protected static final byte FIN = (byte)0x80;
     protected static final byte NOFIN = 0x00;
     private static final byte MASKED_BIT = (byte)0x80;
-    private static final byte[] MASK =
+    protected static final byte[] MASK =
     { 0x12, 0x34, 0x56, 0x78 };
 
     protected static Generator strictGenerator;

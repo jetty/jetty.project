@@ -17,12 +17,12 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.*;
 
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -66,8 +66,8 @@ public class IdentityExtensionTest
 
             client.write(WebSocketFrame.text("Hello"));
 
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
+            WebSocketFrame frame = capture.getFrames().get(0);
             Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is("Hello"));
         }
         finally

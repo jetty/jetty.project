@@ -17,35 +17,46 @@ package org.eclipse.jetty.websocket.server.helper;
 
 import static org.hamcrest.Matchers.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
-public class FrameParseCapture implements IncomingFrames
+public class IncomingFramesCapture implements IncomingFrames
 {
-    private static final Logger LOG = Log.getLogger(FrameParseCapture.class);
-    private List<WebSocketFrame> frames = new ArrayList<>();
-    private List<WebSocketException> errors = new ArrayList<>();
+    private static final Logger LOG = Log.getLogger(IncomingFramesCapture.class);
+    private LinkedList<WebSocketFrame> frames = new LinkedList<>();
+    private LinkedList<WebSocketException> errors = new LinkedList<>();
+
+    public void assertErrorCount(int expectedCount)
+    {
+        Assert.assertThat("Captured error count",errors.size(),is(expectedCount));
+    }
+
+    public void assertFrameCount(int expectedCount)
+    {
+        Assert.assertThat("Captured frame count",frames.size(),is(expectedCount));
+    }
 
     public void assertHasErrors(Class<? extends WebSocketException> errorType, int expectedCount)
     {
         Assert.assertThat(errorType.getSimpleName(),getErrorCount(errorType),is(expectedCount));
     }
 
-    public void assertHasFrame(Class<? extends WebSocketFrame> frameType)
+    public void assertHasFrame(OpCode op)
     {
-        Assert.assertThat(frameType.getSimpleName(),getFrameCount(frameType),greaterThanOrEqualTo(1));
+        Assert.assertThat(op.name(),getFrameCount(op),greaterThanOrEqualTo(1));
     }
 
-    public void assertHasFrame(Class<? extends WebSocketFrame> frameType, int expectedCount)
+    public void assertHasFrame(OpCode op, int expectedCount)
     {
-        Assert.assertThat(frameType.getSimpleName(),getFrameCount(frameType),is(expectedCount));
+        Assert.assertThat(op.name(),getFrameCount(op),is(expectedCount));
     }
 
     public void assertHasNoFrames()
@@ -56,6 +67,17 @@ public class FrameParseCapture implements IncomingFrames
     public void assertNoErrors()
     {
         Assert.assertThat("Has no errors",errors.size(),is(0));
+    }
+
+    public void dump()
+    {
+        System.out.printf("Captured %d incoming frames%n",frames.size());
+        for (int i = 0; i < frames.size(); i++)
+        {
+            WebSocketFrame frame = frames.get(i);
+            System.out.printf("[%3d] %s%n",i,frame);
+            System.out.printf("          %s%n",BufferUtil.toDetailString(frame.getPayload()));
+        }
     }
 
     public int getErrorCount(Class<? extends WebSocketException> errorType)
@@ -71,17 +93,17 @@ public class FrameParseCapture implements IncomingFrames
         return count;
     }
 
-    public List<WebSocketException> getErrors()
+    public LinkedList<WebSocketException> getErrors()
     {
         return errors;
     }
 
-    public int getFrameCount(Class<? extends WebSocketFrame> frameType)
+    public int getFrameCount(OpCode op)
     {
         int count = 0;
         for (WebSocketFrame frame : frames)
         {
-            if (frameType.isInstance(frame))
+            if (frame.getOpCode() == op)
             {
                 count++;
             }
@@ -89,7 +111,7 @@ public class FrameParseCapture implements IncomingFrames
         return count;
     }
 
-    public List<WebSocketFrame> getFrames()
+    public LinkedList<WebSocketFrame> getFrames()
     {
         return frames;
     }
@@ -97,7 +119,7 @@ public class FrameParseCapture implements IncomingFrames
     @Override
     public void incoming(WebSocketException e)
     {
-        LOG.warn(e);
+        LOG.debug(e);
         errors.add(e);
     }
 
@@ -105,5 +127,10 @@ public class FrameParseCapture implements IncomingFrames
     public void incoming(WebSocketFrame frame)
     {
         frames.add(frame);
+    }
+
+    public int size()
+    {
+        return frames.size();
     }
 }

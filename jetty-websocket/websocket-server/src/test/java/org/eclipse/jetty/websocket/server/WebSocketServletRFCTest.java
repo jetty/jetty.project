@@ -20,7 +20,6 @@ import static org.hamcrest.Matchers.*;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -98,8 +98,8 @@ public class WebSocketServletRFCTest
             client.write(bin); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            WebSocketFrame binmsg = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
+            WebSocketFrame binmsg = capture.getFrames().get(0);
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
 
@@ -164,8 +164,8 @@ public class WebSocketServletRFCTest
             client.write(WebSocketFrame.text(msg));
 
             // Read frame (hopefully text frame)
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame tf = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame tf = capture.getFrames().get(0);
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -193,9 +193,9 @@ public class WebSocketServletRFCTest
 
             // now wait for the server to time out
             // should be 2 frames, the TextFrame echo, and then the Close on disconnect
-            Queue<WebSocketFrame> frames = client.readFrames(2,TimeUnit.SECONDS,2);
-            Assert.assertThat("frames[0].opcode",frames.remove().getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("frames[1].opcode",frames.remove().getOpCode(),is(OpCode.CLOSE));
+            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.SECONDS,2);
+            Assert.assertThat("frames[0].opcode",capture.getFrames().get(0).getOpCode(),is(OpCode.TEXT));
+            Assert.assertThat("frames[1].opcode",capture.getFrames().get(1).getOpCode(),is(OpCode.CLOSE));
         }
         finally
         {
@@ -221,8 +221,8 @@ public class WebSocketServletRFCTest
             client.write(WebSocketFrame.text("CRASH"));
 
             // Read frame (hopefully close frame)
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame cf = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame cf = capture.getFrames().get(0);
             CloseInfo close = new CloseInfo(cf);
             Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
         }
@@ -261,8 +261,8 @@ public class WebSocketServletRFCTest
                 Assert.assertThat("Exception",e.getMessage(),containsString("Broken pipe"));
             }
 
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
+            WebSocketFrame frame = capture.getFrames().get(0);
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
@@ -302,8 +302,8 @@ public class WebSocketServletRFCTest
                 Assert.assertThat("Exception",e.getMessage(),containsString("Broken pipe"));
             }
 
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
+            WebSocketFrame frame = capture.getFrames().get(0);
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
@@ -332,8 +332,8 @@ public class WebSocketServletRFCTest
             ByteBuffer bb = generator.generate(txt);
             client.writeRaw(bb);
 
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.SECONDS,1);
+            WebSocketFrame frame = capture.getFrames().get(0);
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
