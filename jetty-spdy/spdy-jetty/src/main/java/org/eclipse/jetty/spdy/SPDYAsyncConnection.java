@@ -21,7 +21,6 @@ import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -32,7 +31,7 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     private static final Logger logger = Log.getLogger(SPDYAsyncConnection.class);
     private final ByteBufferPool bufferPool;
     private final Parser parser;
-    private volatile Session session;
+    private volatile ISession session;
     private volatile boolean idle = false;
 
     public SPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
@@ -65,7 +64,7 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
             }
             else if (filled < 0)
             {
-                close(false);
+                shutdown(session);
                 return -1;
             }
             else
@@ -121,16 +120,28 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     protected boolean onReadTimeout()
     {
         if (idle)
-            session.goAway();
+            goAway(session);
         return false;
     }
 
-    protected Session getSession()
+    protected void goAway(ISession session)
+    {
+        if (session != null)
+            session.goAway();
+    }
+
+    private void shutdown(ISession session)
+    {
+        if (session != null)
+            session.shutdown();
+    }
+
+    protected ISession getSession()
     {
         return session;
     }
 
-    protected void setSession(Session session)
+    protected void setSession(ISession session)
     {
         this.session = session;
     }
