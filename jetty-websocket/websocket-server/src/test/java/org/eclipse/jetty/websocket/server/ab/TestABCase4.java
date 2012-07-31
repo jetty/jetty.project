@@ -1,10 +1,8 @@
 package org.eclipse.jetty.websocket.server.ab;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
@@ -19,17 +17,9 @@ public class TestABCase4 extends AbstractABCase
     @Test
     public void testCase4_1_1() throws Exception
     {
-        ByteBuffer buf = ByteBuffer.allocate(32);
-        BufferUtil.clearToFill(buf);
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame((byte)3)); // intentionally bad
 
-        // Construct bad frame by hand
-        byte opcode = 3;
-        buf.put((byte)(0x00 | FIN | opcode)); // bad
-        putPayloadLength(buf,0);
-        putMask(buf);
-        BufferUtil.flipToFlush(buf,0);
-
-        // Expectations
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
@@ -38,7 +28,7 @@ public class TestABCase4 extends AbstractABCase
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(buf);
+            fuzzer.send(send);
             fuzzer.expect(expect);
         }
         finally
@@ -54,18 +44,10 @@ public class TestABCase4 extends AbstractABCase
     public void testCase4_1_2() throws Exception
     {
         byte payload[] = StringUtil.getUtf8Bytes("reserved payload");
-        ByteBuffer buf = ByteBuffer.allocate(32);
-        BufferUtil.clearToFill(buf);
 
-        // Construct bad frame by hand
-        byte opcode = 4;
-        buf.put((byte)(0x00 | FIN | opcode)); // bad
-        putPayloadLength(buf,payload.length);
-        putMask(buf);
-        buf.put(masked(payload));
-        BufferUtil.flipToFlush(buf,0);
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame((byte)4).setPayload(payload)); // intentionally bad
 
-        // Expectations
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
@@ -74,7 +56,94 @@ public class TestABCase4 extends AbstractABCase
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(buf);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send small text, then frame with opcode 5 (reserved), then ping
+     */
+    @Test
+    public void testCase4_1_3() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text("hello"));
+        send.add(new WebSocketFrame((byte)5)); // intentionally bad
+        send.add(WebSocketFrame.ping());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send small text, then frame with opcode 6 (reserved) w/payload, then ping
+     */
+    @Test
+    public void testCase4_1_4() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text("hello"));
+        send.add(new WebSocketFrame((byte)6).setPayload("bad")); // intentionally bad
+        send.add(WebSocketFrame.ping());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send small text, then frame with opcode 7 (reserved) w/payload, then ping
+     */
+    @Test
+    public void testCase4_1_5() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text("hello"));
+        send.add(new WebSocketFrame((byte)7).setPayload("bad")); // intentionally bad
+        send.add(WebSocketFrame.ping());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
             fuzzer.expect(expect);
         }
         finally

@@ -162,6 +162,7 @@ public class Fuzzer
         {
             for (WebSocketFrame f : send)
             {
+                f.setMask(MASK); // make sure we have mask set
                 // Using lax generator, generate and send
                 client.writeRaw(generator.generate(f));
                 client.flush();
