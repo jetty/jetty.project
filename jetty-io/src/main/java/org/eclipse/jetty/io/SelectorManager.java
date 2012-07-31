@@ -384,7 +384,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
                 selectedKeys.clear();
             }
-            catch (IOException x)
+            catch (Exception x)
             {
                 if (isRunning())
                     LOG.warn(x);
