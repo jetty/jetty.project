@@ -114,7 +114,7 @@ public class DeflateFrameExtension extends Extension
     @Override
     public void incoming(WebSocketFrame frame)
     {
-        if (frame.getOpCode().isControlFrame() || !frame.isRsv1())
+        if (frame.isControlFrame() || !frame.isRsv1())
         {
             // Cannot modify incoming control frames or ones with RSV1 set.
             super.incoming(frame);
@@ -183,7 +183,7 @@ public class DeflateFrameExtension extends Extension
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
-        if (frame.getOpCode().isControlFrame())
+        if (frame.isControlFrame())
         {
             // skip, cannot compress control frames.
             nextOutput(context,callback,frame);

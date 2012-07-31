@@ -125,7 +125,7 @@ public class Generator
             throw new ProtocolException("RSV3 not allowed to be set");
         }
 
-        if (frame.getOpCode().isControlFrame())
+        if (frame.isControlFrame())
         {
             /*
              * RFC 6455 Section 5.5
@@ -229,12 +229,12 @@ public class Generator
                 b |= 0x10;
             }
 
-            byte opcode = frame.getOpCode().getCode();
+            byte opcode = frame.getOpCode();
 
             if (frame.isContinuation())
             {
                 // Continuations are not the same OPCODE
-                opcode = OpCode.CONTINUATION.getCode();
+                opcode = OpCode.CONTINUATION;
             }
 
             b |= opcode & 0x0F;

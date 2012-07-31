@@ -49,7 +49,7 @@ public class Parser
     private int cursor = 0;
     // Frame
     private WebSocketFrame frame;
-    private OpCode lastDataOpcode;
+    private byte lastDataOpcode;
     // payload specific
     private ByteBuffer payload;
     private int payloadLength;
@@ -83,14 +83,14 @@ public class Parser
 
         switch (frame.getOpCode())
         {
-            case CLOSE:
+            case OpCode.CLOSE:
                 if (len == 1)
                 {
                     throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
                 }
                 // fall thru
-            case PING:
-            case PONG:
+            case OpCode.PING:
+            case OpCode.PONG:
                 if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
                 {
                     throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
@@ -237,14 +237,14 @@ public class Parser
                     boolean rsv2 = ((b & 0x20) != 0);
                     boolean rsv3 = ((b & 0x10) != 0);
                     byte opc = (byte)(b & 0x0F);
-                    OpCode opcode = OpCode.from(opc);
+                    byte opcode = opc;
 
-                    if (opcode == null)
+                    if (!OpCode.isKnown(opcode))
                     {
-                        throw new WebSocketException("Unknown opcode: " + opc);
+                        throw new ProtocolException("Unknown opcode: " + opc);
                     }
 
-                    LOG.debug("OpCode {}, fin={}",opcode.name(),fin);
+                    LOG.debug("OpCode {}, fin={}",OpCode.name(opcode),fin);
 
                     /*
                      * RFC 6455 Section 5.2
@@ -267,9 +267,9 @@ public class Parser
                         throw new ProtocolException("RSV3 not allowed to be set");
                     }
 
-                    if (opcode.isControlFrame() && !fin)
+                    if (OpCode.isControlFrame(opcode) && !fin)
                     {
-                        throw new ProtocolException("Fragmented Control Frame [" + opcode.name() + "]");
+                        throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
                     }
 
                     if (opcode == OpCode.CONTINUATION)
@@ -290,7 +290,7 @@ public class Parser
                     frame.setRsv3(rsv3);
                     frame.setOpCode(opcode);
 
-                    if (opcode.isDataFrame())
+                    if (frame.isDataFrame())
                     {
                         lastDataOpcode = opcode;
                     }

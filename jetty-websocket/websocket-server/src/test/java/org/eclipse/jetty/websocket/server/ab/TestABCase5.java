@@ -85,7 +85,7 @@ public class TestABCase5
             String fragment1 = "fragment1";
 
             // Intentionally bad PING (spec says control frames must be FIN==true)
-            buf.put((byte)(NOFIN | OpCode.PING.getCode()));
+            buf.put((byte)(NOFIN | OpCode.PING));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -100,7 +100,7 @@ public class TestABCase5
 
             String fragment2 = "fragment2";
 
-            buf2.put((byte)(FIN | OpCode.PING.getCode()));
+            buf2.put((byte)(FIN | OpCode.PING));
             b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
@@ -172,7 +172,7 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
-            buf.put((byte)(NOFIN | OpCode.PONG.getCode()));
+            buf.put((byte)(NOFIN | OpCode.PONG));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -187,7 +187,7 @@ public class TestABCase5
 
             String fragment2 = "fragment2";
 
-            buf2.put((byte)(FIN | OpCode.CONTINUATION.getCode()));
+            buf2.put((byte)(FIN | OpCode.CONTINUATION));
             b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
@@ -258,7 +258,7 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
-            buf.put((byte)(NOFIN | OpCode.TEXT.getCode()));
+            buf.put((byte)(NOFIN | OpCode.TEXT));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -273,7 +273,7 @@ public class TestABCase5
 
             String fragment2 = "fragment2";
 
-            buf2.put((byte)(FIN | OpCode.CONTINUATION.getCode()));
+            buf2.put((byte)(FIN | OpCode.CONTINUATION));
             b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
@@ -313,7 +313,7 @@ public class TestABCase5
 
             String fragment1 = "fragment1";
 
-            buf.put((byte)(NOFIN | OpCode.TEXT.getCode()));
+            buf.put((byte)(NOFIN | OpCode.TEXT));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;
@@ -330,7 +330,7 @@ public class TestABCase5
 
             String pingPayload = "ping payload";
 
-            pingBuf.put((byte)(FIN | OpCode.PING.getCode()));
+            pingBuf.put((byte)(FIN | OpCode.PING));
 
             b = 0x00; // no masking
             b |= pingPayload.length() & 0x7F;
@@ -347,7 +347,7 @@ public class TestABCase5
 
             String fragment2 = "fragment2";
 
-            buf2.put((byte)(FIN | OpCode.CONTINUATION.getCode()));
+            buf2.put((byte)(FIN | OpCode.CONTINUATION));
             b = 0x00; // no masking
             b |= fragment2.length() & 0x7F;
             buf2.put(b);
@@ -445,7 +445,7 @@ public class TestABCase5
 
             // continuation w / FIN
 
-            buf.put((byte)(FIN | OpCode.CONTINUATION.getCode()));
+            buf.put((byte)(FIN | OpCode.CONTINUATION));
 
             byte b = 0x00; // no masking
             b |= fragment1.length() & 0x7F;

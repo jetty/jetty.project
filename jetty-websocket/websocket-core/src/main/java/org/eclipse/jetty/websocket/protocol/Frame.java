@@ -26,7 +26,7 @@ public interface Frame
 {
     public byte[] getMask();
 
-    public OpCode getOpCode();
+    public byte getOpCode();
 
     public ByteBuffer getPayload();
 
