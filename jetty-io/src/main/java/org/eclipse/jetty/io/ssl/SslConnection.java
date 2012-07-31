@@ -468,11 +468,13 @@ public class SslConnection extends AbstractAsyncConnection
         @Override
         public synchronized int flush(ByteBuffer... appOuts) throws IOException
         {
-            // TODO: it is possible that an application flushes during the SSL handshake,
-            // TODO: the flush wraps 0 application bytes, and then a need for unwrap is
-            // TODO: triggered. In that case, we need to save the appOuts and re-attempt
-            // TODO: to flush it at the first occasion (which may be on a fill ?)
-
+            // The contract for flush does not require that all appOuts bytes are written
+            // or even that any appOut bytes are written!  If the connection is write block
+            // or busy handshaking, then zero bytes may be taken from appOuts and this method
+            // will return 0 (even if some handshake bytes were flushed and filled).
+            // it is the applications responsibility to call flush again - either in a busy loop
+            // or better yet by using AsyncEndPoint#write to do the flushing.
+            
             LOG.debug("{} flush enter {}", SslConnection.this, appOuts);
             try
             {
