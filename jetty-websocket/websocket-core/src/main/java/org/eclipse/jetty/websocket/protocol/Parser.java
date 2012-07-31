@@ -54,16 +54,19 @@ public class Parser
     private ByteBuffer payload;
     private int payloadLength;
 
+    /** Is there an extension using RSV1 */
+    private boolean rsv1InUse = false;
+    /** Is there an extension using RSV2 */
+    private boolean rsv2InUse = false;
+    /** Is there an extension using RSV3 */
+    private boolean rsv3InUse = false;
+
     private static final Logger LOG = Log.getLogger(Parser.class);
     private IncomingFrames incomingFramesHandler;
     private WebSocketPolicy policy;
 
     public Parser(WebSocketPolicy wspolicy)
     {
-        /*
-         * TODO: Investigate addition of decompression factory similar to SPDY work in situation of negotiated deflate extension?
-         */
-
         this.policy = wspolicy;
     }
 
@@ -105,6 +108,21 @@ public class Parser
     public WebSocketPolicy getPolicy()
     {
         return policy;
+    }
+
+    public boolean isRsv1InUse()
+    {
+        return rsv1InUse;
+    }
+
+    public boolean isRsv2InUse()
+    {
+        return rsv2InUse;
+    }
+
+    public boolean isRsv3InUse()
+    {
+        return rsv3InUse;
     }
 
     protected void notifyFrame(final WebSocketFrame f)
@@ -227,6 +245,27 @@ public class Parser
                     }
 
                     LOG.debug("OpCode {}, fin={}",opcode.name(),fin);
+
+                    /*
+                     * RFC 6455 Section 5.2
+                     * 
+                     * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the
+                     * negotiated extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+                     */
+                    if (!rsv1InUse && rsv1)
+                    {
+                        throw new ProtocolException("RSV1 not allowed to be set");
+                    }
+
+                    if (!rsv2InUse && rsv2)
+                    {
+                        throw new ProtocolException("RSV2 not allowed to be set");
+                    }
+
+                    if (!rsv3InUse && rsv3)
+                    {
+                        throw new ProtocolException("RSV3 not allowed to be set");
+                    }
 
                     if (opcode.isControlFrame() && !fin)
                     {
@@ -440,6 +479,21 @@ public class Parser
     public void setIncomingFramesHandler(IncomingFrames incoming)
     {
         this.incomingFramesHandler = incoming;
+    }
+
+    public void setRsv1InUse(boolean rsv1InUse)
+    {
+        this.rsv1InUse = rsv1InUse;
+    }
+
+    public void setRsv2InUse(boolean rsv2InUse)
+    {
+        this.rsv2InUse = rsv2InUse;
+    }
+
+    public void setRsv3InUse(boolean rsv3InUse)
+    {
+        this.rsv3InUse = rsv3InUse;
     }
 
     @Override

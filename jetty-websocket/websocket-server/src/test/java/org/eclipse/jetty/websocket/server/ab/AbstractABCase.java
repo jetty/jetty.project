@@ -44,6 +44,16 @@ public abstract class AbstractABCase
         server.stop();
     }
 
+    public Generator getLaxGenerator()
+    {
+        return laxGenerator;
+    }
+
+    public SimpleServletServer getServer()
+    {
+        return server;
+    }
+
     protected byte[] masked(final byte[] data)
     {
         int len = data.length;

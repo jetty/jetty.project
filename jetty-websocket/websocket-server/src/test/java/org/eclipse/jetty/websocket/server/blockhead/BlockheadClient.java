@@ -174,13 +174,16 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         LOG.debug("disconnect");
         IO.close(in);
         IO.close(out);
-        try
+        if (socket != null)
         {
-            socket.close();
-        }
-        catch (IOException ignore)
-        {
-            /* ignore */
+            try
+            {
+                socket.close();
+            }
+            catch (IOException ignore)
+            {
+                /* ignore */
+            }
         }
     }
 
@@ -316,6 +319,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         }
         WebSocketFrame copy = new WebSocketFrame(frame);
         incomingFrameQueue.incoming(copy);
+    }
+
+    public boolean isConnected()
+    {
+        return (socket != null) && (socket.isConnected());
     }
 
     public void lookFor(String string) throws IOException
@@ -546,5 +554,25 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     {
         LOG.debug("write((String)[{}]){}{})",str.length(),'\n',str);
         out.write(StringUtil.getBytes(str,StringUtil.__ISO_8859_1));
+    }
+
+    public void writeRawSlowly(ByteBuffer buf, int segmentSize) throws IOException
+    {
+        int origLimit = buf.limit();
+        int limit = buf.limit();
+        int len;
+        int pos = buf.position();
+        int overallLeft = buf.remaining();
+        while (overallLeft > 0)
+        {
+            buf.position(pos);
+            limit = Math.min(origLimit,pos + segmentSize);
+            buf.limit(limit);
+            len = buf.remaining();
+            overallLeft -= len;
+            pos += len;
+            writeRaw(buf);
+            flush();
+        }
     }
 }
