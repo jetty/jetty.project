@@ -36,6 +36,53 @@ abstract public class WriteFlusher
         _endp=endp;
     }
 
+    private enum State
+    {
+        IDLE,
+        WRITING,
+        CLOSED
+    }
+
+    private abstract class WriteFlusherState
+    {
+        private State _state;
+        private ByteBuffer[] _buffers;
+        private Object _context;
+        private Callback<Object> _callback;
+
+        private WriteFlusherState(State state, ByteBuffer[] buffers, Object context, Callback<Object> callback)
+        {
+            _state = state;
+            _buffers = buffers;
+            _context = context;
+            _callback = callback;
+        }
+    }
+
+    private class WriteFlusherIdleState extends WriteFlusherState
+    {
+        private WriteFlusherIdleState()
+        {
+            super(null,null,null,null);
+        }
+    }
+
+    private class WriteFlusherWritingState extends WriteFlusherState
+    {
+        private WriteFlusherWritingState(State state, ByteBuffer[] buffers, Object context, Callback<Object> callback)
+        {
+            super(state, buffers, context, callback);
+        }
+    }
+
+    private class WriteFlusherClosingState extends WriteFlusherState
+    {
+        private WriteFlusherClosingState()
+        {
+            super(null,null,null,null);
+        }
+    }
+
     /* ------------------------------------------------------------ */
     public synchronized <C> void write(C context, Callback<C> callback, ByteBuffer... buffers)
     {
