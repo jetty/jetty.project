@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -108,7 +109,6 @@ public class SSLEngineTest
         server.stop();
         server.join();
     }
-    
 
     @Test
     public void testBigResponse() throws Exception

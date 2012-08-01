@@ -429,31 +429,11 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
-    @Deprecated
-    public String getKeyStore()
-    {
-        return _keyStorePath;
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * @param keyStorePath
      *            The file or URL of the SSL Key store.
      */
     public void setKeyStorePath(String keyStorePath)
-    {
-        checkNotStarted();
-
-        _keyStorePath = keyStorePath;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param keyStorePath the file system path or URL of the keystore
-     * @deprecated Use {@link #setKeyStorePath(String)}
-     */
-    @Deprecated
-    public void setKeyStore(String keyStorePath)
     {
         checkNotStarted();
 
@@ -500,34 +480,6 @@ public class SslContextFactory extends AbstractLifeCycle
         checkNotStarted();
 
         _keyStoreType = keyStoreType;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the _keyStoreInputStream.
-     * @return the _keyStoreInputStream
-     *
-     * @deprecated
-     */
-    @Deprecated
-    public InputStream getKeyStoreInputStream()
-    {
-        checkKeyStore();
-
-        return _keyStoreInputStream;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the keyStoreInputStream.
-     * @param keyStoreInputStream the InputStream to the KeyStore
-     *
-     * @deprecated Use {@link #setKeyStore(KeyStore)}
-     */
-    @Deprecated
-    public void setKeyStoreInputStream(InputStream keyStoreInputStream)
-    {
-        checkNotStarted();
-
-        _keyStoreInputStream = keyStoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
@@ -612,34 +564,6 @@ public class SslContextFactory extends AbstractLifeCycle
         checkNotStarted();
 
         _trustStoreType = trustStoreType;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the _trustStoreInputStream.
-     * @return the _trustStoreInputStream
-     *
-     * @deprecated
-     */
-    @Deprecated
-    public InputStream getTrustStoreInputStream()
-    {
-        checkKeyStore();
-
-        return _trustStoreInputStream;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the _trustStoreInputStream.
-     * @param trustStoreInputStream the InputStream to the TrustStore
-     *
-     * @deprecated
-     */
-    @Deprecated
-    public void setTrustStoreInputStream(InputStream trustStoreInputStream)
-    {
-        checkNotStarted();
-
-        _trustStoreInputStream = trustStoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
@@ -741,32 +665,6 @@ public class SslContextFactory extends AbstractLifeCycle
         _validatePeerCerts = validatePeerCerts;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return True if SSL re-negotiation is allowed (default false)
-     */
-    public boolean isAllowRenegotiate()
-    {
-        return _allowRenegotiate;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
-     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
-     * does not have CVE-2009-3555 fixed, then re-negotiation should
-     * not be allowed.  CVE-2009-3555 was fixed in Sun java 1.6 with a ban
-     * of renegotiates in u19 and with RFC5746 in u22.
-     *
-     * @param allowRenegotiate
-     *            true if re-negotiation is allowed (default false)
-     */
-    public void setAllowRenegotiate(boolean allowRenegotiate)
-    {
-        checkNotStarted();
-
-        _allowRenegotiate = allowRenegotiate;
-    }
 
     /* ------------------------------------------------------------ */
     /**

@@ -17,9 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
@@ -35,13 +33,9 @@ public class LocalConnector extends AbstractConnector
 
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
     
-    // TODO this sux
-    private final LocalExecutor _executor;
-
     public LocalConnector(Server server)
     {
-        super(server,new LocalExecutor(server.getThreadPool()),null,null,null, false,-1);
-        _executor=(LocalExecutor)getExecutor();
+        super(server,null,null,null,null, false,-1);
         setIdleTimeout(30000);
     }
 
@@ -64,6 +58,19 @@ public class LocalConnector extends AbstractConnector
         return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
     }
 
+    /** Sends requests and get responses based on thread activity.
+     * Returns all the responses received once the thread activity has
+     * returned to the level it was before the requests.
+     * @param requests the requests
+     * @return the responses
+     * @throws Exception if the requests fail
+     */
+    public String getResponses(String requests,long idleFor,TimeUnit units) throws Exception
+    {
+        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StringUtil.__UTF8_CHARSET),idleFor,units);
+        return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
+    }
+
     /** Sends requests and get's responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
@@ -73,14 +80,24 @@ public class LocalConnector extends AbstractConnector
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
+        return getResponses(requestsBuffer,100,TimeUnit.MILLISECONDS);
+    }
+
+    /** Sends requests and get's responses based on thread activity.
+     * Returns all the responses received once the thread activity has
+     * returned to the level it was before the requests.
+     * @param requestsBuffer the requests
+     * @return the responses
+     * @throws Exception if the requests fail
+     */
+    public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
+    {
         LOG.debug("getResponses");
-        Phaser phaser=_executor._phaser;
-        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes
-        LocalEndPoint request = new LocalEndPoint();
-        request.setInput(requestsBuffer);
-        _connects.add(request);
-        phaser.awaitAdvance(phase);
-        return request.takeOutput();
+        LocalEndPoint endp = new LocalEndPoint();
+        endp.setInput(requestsBuffer);
+        _connects.add(endp);
+        endp.waitUntilClosedOrIdleFor(idleFor,units);
+        return endp.takeOutput();
     }
 
     /**
@@ -91,8 +108,6 @@ public class LocalConnector extends AbstractConnector
      */
     public LocalEndPoint executeRequest(String rawRequest)
     {
-        Phaser phaser=_executor._phaser;
-        phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
         _connects.add(endp);
@@ -109,48 +124,8 @@ public class LocalConnector extends AbstractConnector
         endp.onOpen();
         connection.onOpen();
         connectionOpened(connection);
-        _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
 
-    private static class LocalExecutor implements Executor
-    {
-        private final Phaser _phaser=new Phaser()
-        {
-            @Override
-            protected boolean onAdvance(int phase, int registeredParties)
-            {
-                return false;
-            }
-        };
-        private final Executor _executor;
-
-        private LocalExecutor(Executor e)
-        {
-            _executor=e;
-        }
-
-        @Override
-        public void execute(final Runnable task)
-        {
-            _phaser.register();
-            LOG.debug("{} execute {} {}",this,task,_phaser);
-            _executor.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        task.run();
-                    }
-                    finally
-                    {
-                        _phaser.arriveAndDeregister();
-                    }
-                }
-            });
-        }
-    }
 
     public class LocalEndPoint extends AsyncByteArrayEndPoint
     {
@@ -178,6 +153,7 @@ public class LocalConnector extends AbstractConnector
             if (was_open)
             {
                 connectionClosed(getAsyncConnection());
+                getAsyncConnection().onClose();
                 onClose();
             }
         }
@@ -216,5 +192,28 @@ public class LocalConnector extends AbstractConnector
                 }
             }
         }
+
+        public void waitUntilClosedOrIdleFor(long idleFor,TimeUnit units)
+        {
+            int size=getOutput().remaining();
+            
+            while (isOpen())
+            {
+                try
+                {
+                    if (!_closed.await(idleFor,units))
+                    {
+                        if (size==getOutput().remaining())
+                            return;
+                        size=getOutput().remaining();
+                    }
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+        }
+        
     }
 }

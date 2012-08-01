@@ -40,11 +40,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public class SslSelectChannelConnector extends SelectChannelConnector 
 {
     public SslSelectChannelConnector(Server server)
-        SslConnection.DecryptedEndPoint ssl_endp = (SslConnection.DecryptedEndPoint)request.getHttpChannel().getEndPoint();
-            getSelectorManager().connectionOpened(delegate);
     {
         super(server,true);
     }
-    
-
 }

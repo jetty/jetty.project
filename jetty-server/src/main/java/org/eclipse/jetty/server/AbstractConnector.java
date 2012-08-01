@@ -295,10 +295,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             if (thread != null)
                 thread.interrupt();
         }
-
-        int i = _name.lastIndexOf("/");
-        if (i > 0)
-            _name = _name.substring(0, i);
     }
 
     public void join() throws InterruptedException

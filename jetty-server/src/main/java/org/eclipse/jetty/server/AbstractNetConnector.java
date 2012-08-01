@@ -99,6 +99,10 @@ public abstract class AbstractNetConnector extends AbstractConnector implements 
             LOG.warn(e);
         }
         super.doStop();
+
+        int i = getName().lastIndexOf("/");
+        if (i > 0)
+            setName(getName().substring(0, i));
     }
 
     @Override

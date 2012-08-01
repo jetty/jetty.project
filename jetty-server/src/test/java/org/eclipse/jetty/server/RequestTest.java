@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -80,6 +81,7 @@ public class RequestTest
     {
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 Map map = null;
@@ -122,6 +124,7 @@ public class RequestTest
     {
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 try
@@ -167,6 +170,7 @@ public class RequestTest
     {
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 String value=request.getParameter("param");
@@ -213,6 +217,7 @@ public class RequestTest
         final ArrayList<String> results = new ArrayList<String>();
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 results.add(request.getContentType());
@@ -263,6 +268,7 @@ public class RequestTest
         final ArrayList<String> results = new ArrayList<String>();
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 results.add(request.getRemoteAddr());
@@ -305,10 +311,11 @@ public class RequestTest
 
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
+                "Connection: close\n"+
                 "x-forwarded-for: remote\n"+
                 "x-forwarded-proto: https\n"+
-                "\n"
-                );
+                "\n",10,TimeUnit.SECONDS);
+        
         
         int i=0;
         assertEquals("0.0.0.0",results.get(i++));
@@ -345,6 +352,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 //assertEquals(request.getContentLength(), ((Request)request).getContentRead());
@@ -377,6 +385,7 @@ public class RequestTest
     {
         Handler handler = new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                     ServletException
             {
@@ -422,6 +431,7 @@ public class RequestTest
     {
         Handler handler = new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
             ServletException
             {
@@ -506,6 +516,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().println("Hello World");
@@ -573,6 +584,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 response.setHeader("Connection","TE");
@@ -609,6 +621,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 javax.servlet.http.Cookie[] ca = request.getCookies();
@@ -759,6 +772,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 for (int i=0;i<cookie.length; i++)
@@ -851,6 +865,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
@@ -883,6 +898,7 @@ public class RequestTest
         private RequestTester _checker;
         private String _content;
 
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);

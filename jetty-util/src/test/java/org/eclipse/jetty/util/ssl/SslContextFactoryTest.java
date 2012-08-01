@@ -54,20 +54,6 @@ public class SslContextFactoryTest
     }
     
     @Test
-    public void testNoTsStreamKs() throws Exception
-    {
-        InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore");
-
-        cf.setKeyStoreInputStream(keystoreInputStream);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-        
-        cf.start();
-        
-        assertTrue(cf.getSslContext()!=null);
-    }
-    
-    @Test
     public void testNoTsSetKs() throws Exception
     {
         InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore");
