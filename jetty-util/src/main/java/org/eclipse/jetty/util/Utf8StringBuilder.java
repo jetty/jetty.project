@@ -72,6 +72,6 @@ public class Utf8StringBuilder extends Utf8Appendable
     private void checkState()
     {
         if (!isUtf8SequenceComplete())
-            throw new IllegalArgumentException("Tried to read incomplete UTF8 decoded String");
+            throw new NotUtf8Exception("Tried to read incomplete UTF8 decoded String");
     }
 }
