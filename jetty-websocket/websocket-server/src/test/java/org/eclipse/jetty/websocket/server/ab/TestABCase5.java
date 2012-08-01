@@ -20,15 +20,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Fragmentation Tests
  */
+@RunWith(AdvancedRunner.class)
 public class TestABCase5 extends AbstractABCase
 {
     /**
@@ -360,22 +364,25 @@ public class TestABCase5 extends AbstractABCase
      * send text message fragmented in 5 frames, with 2 pings and wait between.
      */
     @Test
+    @Slow
     public void testCase5_19() throws Exception
     {
+        // phase 1
         List<WebSocketFrame> send1 = new ArrayList<>();
         send1.add(new WebSocketFrame(OpCode.TEXT).setPayload("f1").setFin(false));
         send1.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
         send1.add(new WebSocketFrame(OpCode.PING).setPayload("pong-1"));
 
+        List<WebSocketFrame> expect1 = new ArrayList<>();
+        expect1.add(WebSocketFrame.pong().setPayload("pong-1"));
+
+        // phase 2
         List<WebSocketFrame> send2 = new ArrayList<>();
         send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
         send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
         send2.add(new WebSocketFrame(OpCode.PING).setPayload("pong-2"));
         send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
         send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect1 = new ArrayList<>();
-        expect1.add(WebSocketFrame.pong().setPayload("pong-1"));
 
         List<WebSocketFrame> expect2 = new ArrayList<>();
         expect2.add(WebSocketFrame.pong().setPayload("pong-2"));
@@ -388,11 +395,14 @@ public class TestABCase5 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
 
+            // phase 1
             fuzzer.send(send1);
             fuzzer.expect(expect1);
 
+            // delay
             TimeUnit.SECONDS.sleep(1);
 
+            // phase 2
             fuzzer.send(send2);
             fuzzer.expect(expect2);
         }

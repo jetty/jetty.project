@@ -550,6 +550,14 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         BufferUtil.writeTo(buf,out);
     }
 
+    public void writeRaw(ByteBuffer buf, int numBytes) throws IOException
+    {
+        int len = Math.min(numBytes,buf.remaining());
+        byte arr[] = new byte[len];
+        buf.get(arr,0,len);
+        out.write(arr);
+    }
+
     public void writeRaw(String str) throws IOException
     {
         LOG.debug("write((String)[{}]){}{})",str.length(),'\n',str);
@@ -558,20 +566,9 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
     public void writeRawSlowly(ByteBuffer buf, int segmentSize) throws IOException
     {
-        int origLimit = buf.limit();
-        int limit = buf.limit();
-        int len;
-        int pos = buf.position();
-        int overallLeft = buf.remaining();
-        while (overallLeft > 0)
+        while (buf.remaining() > 0)
         {
-            buf.position(pos);
-            limit = Math.min(origLimit,pos + segmentSize);
-            buf.limit(limit);
-            len = buf.remaining();
-            overallLeft -= len;
-            pos += len;
-            writeRaw(buf);
+            writeRaw(buf,segmentSize);
             flush();
         }
     }
