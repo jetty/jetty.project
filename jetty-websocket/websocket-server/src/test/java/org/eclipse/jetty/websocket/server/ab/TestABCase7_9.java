@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -118,7 +118,7 @@ public class TestABCase7_9
             BufferUtil.clearToFill(buf);
 
             // Create Close Frame manually, as we are testing the server's behavior of a bad client.
-            buf.put((byte)(0x80 | OpCode.CLOSE.getCode()));
+            buf.put((byte)(0x80 | OpCode.CLOSE));
             buf.put((byte)(0x80 | 2));
             byte mask[] = new byte[]
             { 0x44, 0x44, 0x44, 0x44 };
@@ -130,8 +130,8 @@ public class TestABCase7_9
             client.writeRaw(buf);
 
             // Read frame (hopefully text frame)
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame closeFrame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame closeFrame = capture.getFrames().pop();
             Assert.assertThat("CloseFrame.status code",new CloseInfo(closeFrame).getStatusCode(),is(1002));
         }
         finally
@@ -159,7 +159,7 @@ public class TestABCase7_9
             BufferUtil.clearToFill(buf);
 
             // Create Close Frame manually, as we are testing the server's behavior of a bad client.
-            buf.put((byte)(0x80 | OpCode.CLOSE.getCode()));
+            buf.put((byte)(0x80 | OpCode.CLOSE));
             buf.put((byte)(0x80 | (2 + reason.length())));
             byte mask[] = new byte[]
             { 0x44, 0x44, 0x44, 0x44 };
@@ -172,8 +172,8 @@ public class TestABCase7_9
             client.writeRaw(buf);
 
             // Read frame (hopefully text frame)
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame closeFrame = frames.remove();
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
+            WebSocketFrame closeFrame = capture.getFrames().pop();
             Assert.assertThat("CloseFrame.status code",new CloseInfo(closeFrame).getStatusCode(),is(1002));
         }
         finally

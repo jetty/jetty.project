@@ -15,297 +15,517 @@
 //========================================================================
 package org.eclipse.jetty.websocket.server.ab;
 
-import static org.hamcrest.Matchers.*;
-
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.protocol.Generator;
-import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.ByteBufferAssert;
-import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
-import org.junit.Assert;
+import org.eclipse.jetty.websocket.server.ab.Fuzzer.SendMode;
 import org.junit.Test;
 
 public class TestABCase1 extends AbstractABCase
 {
     /**
-     * Echo 0 byte text message
+     * Echo 0 byte TEXT message
      */
     @Test
     public void testCase1_1_1() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text());
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text());
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            ByteBuffer buf = ByteBuffer.allocate(16);
-            BufferUtil.clearToFill(buf);
-
-            buf.put((byte)(0x00 | FIN | OpCode.TEXT.getCode()));
-            putPayloadLength(buf,0);
-            putMask(buf);
-
-            BufferUtil.flipToFlush(buf,0);
-            client.writeRaw(buf);
-
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("frame should be TEXT frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("Text.payloadLength",frame.getPayloadLength(),is(0));
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
     /**
-     * Echo 125 byte text message (uses small 7-bit payload length)
+     * Echo 125 byte TEXT message (uses small 7-bit payload length)
      */
     @Test
     public void testCase1_1_2() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        byte payload[] = new byte[125];
+        Arrays.fill(payload,(byte)'*');
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            byte msg[] = new byte[125];
-            Arrays.fill(msg,(byte)'*');
-
-            ByteBuffer buf = ByteBuffer.allocate(msg.length + Generator.OVERHEAD);
-            BufferUtil.clearToFill(buf);
-
-            buf.put((byte)(0x00 | FIN | OpCode.TEXT.getCode()));
-            putPayloadLength(buf,msg.length);
-            putMask(buf);
-            buf.put(masked(msg));
-
-            BufferUtil.flipToFlush(buf,0);
-            client.writeRaw(buf);
-
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("frame should be TEXT frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("Text.payloadLength",frame.getPayloadLength(),is(msg.length));
-            ByteBufferAssert.assertEquals("Text.payload",msg,frame.getPayload());
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
     /**
-     * Echo 126 byte text message (uses medium 2 byte payload length)
+     * Echo 126 byte TEXT message (uses medium 2 byte payload length)
      */
     @Test
     public void testCase1_1_3() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        byte payload[] = new byte[126];
+        Arrays.fill(payload,(byte)'*');
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            byte msg[] = new byte[126];
-            Arrays.fill(msg,(byte)'*');
-
-            ByteBuffer buf = ByteBuffer.allocate(msg.length + Generator.OVERHEAD);
-            BufferUtil.clearToFill(buf);
-
-            buf.put((byte)(0x00 | FIN | OpCode.TEXT.getCode()));
-            putPayloadLength(buf,msg.length);
-            putMask(buf);
-            buf.put(masked(msg));
-
-            BufferUtil.flipToFlush(buf,0);
-            client.writeRaw(buf);
-
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("frame should be TEXT frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("Text.payloadLength",frame.getPayloadLength(),is(msg.length));
-            ByteBufferAssert.assertEquals("Text.payload",msg,frame.getPayload());
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
     /**
-     * Echo 127 byte text message (uses medium 2 byte payload length)
+     * Echo 127 byte TEXT message (uses medium 2 byte payload length)
      */
     @Test
     public void testCase1_1_4() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        byte payload[] = new byte[127];
+        Arrays.fill(payload,(byte)'*');
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            byte msg[] = new byte[127];
-            Arrays.fill(msg,(byte)'*');
-
-            ByteBuffer buf = ByteBuffer.allocate(msg.length + Generator.OVERHEAD);
-            BufferUtil.clearToFill(buf);
-
-            buf.put((byte)(0x00 | FIN | OpCode.TEXT.getCode()));
-            putPayloadLength(buf,msg.length);
-            putMask(buf);
-            buf.put(masked(msg));
-
-            BufferUtil.flipToFlush(buf,0);
-            client.writeRaw(buf);
-
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("frame should be TEXT frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("Text.payloadLength",frame.getPayloadLength(),is(msg.length));
-            ByteBufferAssert.assertEquals("Text.payload",msg,frame.getPayload());
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
     /**
-     * Echo 128 byte text message (uses medium 2 byte payload length)
+     * Echo 128 byte TEXT message (uses medium 2 byte payload length)
      */
     @Test
     public void testCase1_1_5() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        byte payload[] = new byte[128];
+        Arrays.fill(payload,(byte)'*');
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            byte msg[] = new byte[128];
-            Arrays.fill(msg,(byte)'*');
-
-            ByteBuffer buf = ByteBuffer.allocate(msg.length + Generator.OVERHEAD);
-            BufferUtil.clearToFill(buf);
-
-            buf.put((byte)(0x00 | FIN | OpCode.TEXT.getCode()));
-            putPayloadLength(buf,msg.length);
-            putMask(buf);
-            buf.put(masked(msg));
-
-            BufferUtil.flipToFlush(buf,0);
-            client.writeRaw(buf);
-
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("frame should be TEXT frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("Text.payloadLength",frame.getPayloadLength(),is(msg.length));
-            ByteBufferAssert.assertEquals("Text.payload",msg,frame.getPayload());
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
     /**
-     * Echo 65535 byte text message (uses medium 2 byte payload length)
+     * Echo 65535 byte TEXT message (uses medium 2 byte payload length)
      */
     @Test
     public void testCase1_1_6() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        byte payload[] = new byte[65535];
+        Arrays.fill(payload,(byte)'*');
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            byte msg[] = new byte[65535];
-            Arrays.fill(msg,(byte)'*');
-
-            ByteBuffer buf = ByteBuffer.allocate(msg.length + Generator.OVERHEAD);
-            BufferUtil.clearToFill(buf);
-
-            buf.put((byte)(0x00 | FIN | OpCode.TEXT.getCode()));
-            putPayloadLength(buf,msg.length);
-            putMask(buf);
-            buf.put(masked(msg));
-
-            BufferUtil.flipToFlush(buf,0);
-            client.writeRaw(buf);
-
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("frame should be TEXT frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("Text.payloadLength",frame.getPayloadLength(),is(msg.length));
-            ByteBufferAssert.assertEquals("Text.payload",msg,frame.getPayload());
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
     /**
-     * Echo 65536 byte text message (uses large 8 byte payload length)
+     * Echo 65536 byte TEXT message (uses large 8 byte payload length)
      */
     @Test
     public void testCase1_1_7() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        byte payload[] = new byte[65536];
+        Arrays.fill(payload,(byte)'*');
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            byte msg[] = new byte[65536];
-            Arrays.fill(msg,(byte)'*');
-
-            ByteBuffer buf = ByteBuffer.allocate(msg.length + Generator.OVERHEAD);
-            BufferUtil.clearToFill(buf);
-
-            buf.put((byte)(0x00 | FIN | OpCode.TEXT.getCode()));
-            putPayloadLength(buf,msg.length);
-            putMask(buf);
-            buf.put(masked(msg));
-
-            BufferUtil.flipToFlush(buf,0);
-            client.writeRaw(buf);
-
-            // Read frame
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("frame should be TEXT frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("Text.payloadLength",frame.getPayloadLength(),is(msg.length));
-            ByteBufferAssert.assertEquals("Text.payload",msg,frame.getPayload());
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
+    /**
+     * Echo 65536 byte TEXT message (uses large 8 byte payload length).
+     * <p>
+     * Only send 1 TEXT frame from client, but in small segments (flushed after each).
+     * <p>
+     * This is done to test the parsing together of the frame on the server side.
+     */
+    @Test
+    public void testCase1_1_8() throws Exception
+    {
+        byte payload[] = new byte[65536];
+        Arrays.fill(payload,(byte)'*');
+        int segmentSize = 997;
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.SLOW);
+            fuzzer.setSlowSendSegmentSize(segmentSize);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Echo 0 byte BINARY message
+     */
+    @Test
+    public void testCase1_2_1() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.binary());
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.binary());
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Echo 125 byte BINARY message (uses small 7-bit payload length)
+     */
+    @Test
+    public void testCase1_2_2() throws Exception
+    {
+        byte payload[] = new byte[125];
+        Arrays.fill(payload,(byte)0xFE);
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.binary().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.binary().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Echo 126 byte BINARY message (uses medium 2 byte payload length)
+     */
+    @Test
+    public void testCase1_2_3() throws Exception
+    {
+        byte payload[] = new byte[126];
+        Arrays.fill(payload,(byte)0xFE);
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.binary().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.binary().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Echo 127 byte BINARY message (uses medium 2 byte payload length)
+     */
+    @Test
+    public void testCase1_2_4() throws Exception
+    {
+        byte payload[] = new byte[127];
+        Arrays.fill(payload,(byte)0xFE);
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.binary().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.binary().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Echo 128 byte BINARY message (uses medium 2 byte payload length)
+     */
+    @Test
+    public void testCase1_2_5() throws Exception
+    {
+        byte payload[] = new byte[128];
+        Arrays.fill(payload,(byte)0xFE);
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.binary().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.binary().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Echo 65535 byte BINARY message (uses medium 2 byte payload length)
+     */
+    @Test
+    public void testCase1_2_6() throws Exception
+    {
+        byte payload[] = new byte[65535];
+        Arrays.fill(payload,(byte)0xFE);
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.binary().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.binary().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Echo 65536 byte BINARY message (uses large 8 byte payload length)
+     */
+    @Test
+    public void testCase1_2_7() throws Exception
+    {
+        byte payload[] = new byte[65536];
+        Arrays.fill(payload,(byte)0xFE);
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.binary().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.binary().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Echo 65536 byte BINARY message (uses large 8 byte payload length).
+     * <p>
+     * Only send 1 BINARY frame from client, but in small segments (flushed after each).
+     * <p>
+     * This is done to test the parsing together of the frame on the server side.
+     */
+    @Test
+    public void testCase1_2_8() throws Exception
+    {
+        byte payload[] = new byte[65536];
+        Arrays.fill(payload,(byte)0xFE);
+        int segmentSize = 997;
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.binary().setPayload(payload));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.binary().setPayload(payload));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(SendMode.SLOW);
+            fuzzer.setSlowSendSegmentSize(segmentSize);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
 }

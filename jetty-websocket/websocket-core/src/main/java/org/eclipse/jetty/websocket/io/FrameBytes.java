@@ -84,7 +84,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
         }
         catch (IOException e)
         {
-            WebSocketAsyncConnection.LOG.ignore(e);
+            LOG.ignore(e);
         }
         failed(context, new InterruptedByTimeoutException());
     }

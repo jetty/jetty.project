@@ -19,6 +19,7 @@ import org.eclipse.jetty.util.Callback;
  * written after a call to flush and should organise for the {@link #completeWrite()}
  * method to be called when a subsequent call to flush should be able to make more progress.
  *
+ * TODO remove synchronisation
  */
 abstract public class WriteFlusher
 {
@@ -36,7 +37,7 @@ abstract public class WriteFlusher
     }
 
     /* ------------------------------------------------------------ */
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers)
+    public synchronized <C> void write(C context, Callback<C> callback, ByteBuffer... buffers)
     {
         if (callback==null)
             throw new IllegalArgumentException();
@@ -86,7 +87,7 @@ abstract public class WriteFlusher
     /* ------------------------------------------------------------ */
     /* Remove empty buffers from the start of a multi buffer array
      */
-    private ByteBuffer[] compact(ByteBuffer[] buffers)
+    private synchronized ByteBuffer[] compact(ByteBuffer[] buffers)
     {
         if (buffers.length<2)
             return buffers;
@@ -110,7 +111,7 @@ abstract public class WriteFlusher
      * method when a call to {@link EndPoint#flush(ByteBuffer...)}
      * is likely to be able to progress.
      */
-    public void completeWrite()
+    public synchronized void completeWrite()
     {
         if (!isWriting())
             return; // TODO throw?
@@ -163,7 +164,7 @@ abstract public class WriteFlusher
      * the cause wrapped as an execution exception.
      * @return true if a write was in progress
      */
-    public boolean failed(Throwable cause)
+    public synchronized boolean failed(Throwable cause)
     {
         if (!_writing.compareAndSet(true,false))
             return false;
@@ -183,7 +184,7 @@ abstract public class WriteFlusher
      * not instantiated unless a write was in progress.
      * @return true if a write was in progress
      */
-    public boolean close()
+    public synchronized boolean close()
     {
         if (!_writing.compareAndSet(true,false))
             return false;
@@ -197,7 +198,7 @@ abstract public class WriteFlusher
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isWriting()
+    public synchronized boolean isWriting()
     {
         return _writing.get();
     }

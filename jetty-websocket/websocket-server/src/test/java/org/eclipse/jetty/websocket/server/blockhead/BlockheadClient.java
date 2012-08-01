@@ -34,8 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,6 +63,7 @@ import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
 
 /**
@@ -90,7 +89,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private final WebSocketPolicy policy;
     private final Generator generator;
     private final Parser parser;
-    private final LinkedBlockingDeque<WebSocketFrame> incomingFrameQueue;
+    private final IncomingFramesCapture incomingFrameQueue;
     private final WebSocketExtensionRegistry extensionRegistry;
 
     private Socket socket;
@@ -123,7 +122,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         parser = new Parser(policy);
         parseCount = new AtomicInteger(0);
 
-        incomingFrameQueue = new LinkedBlockingDeque<>();
+        incomingFrameQueue = new IncomingFramesCapture();
 
         extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
     }
@@ -175,13 +174,16 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         LOG.debug("disconnect");
         IO.close(in);
         IO.close(out);
-        try
+        if (socket != null)
         {
-            socket.close();
-        }
-        catch (IOException ignore)
-        {
-            /* ignore */
+            try
+            {
+                socket.close();
+            }
+            catch (IOException ignore)
+            {
+                /* ignore */
+            }
         }
     }
 
@@ -249,6 +251,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return respHeader;
     }
 
+    public void flush() throws IOException
+    {
+        out.flush();
+    }
+
     public List<String> getExtensions()
     {
         return extensions;
@@ -298,7 +305,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     @Override
     public void incoming(WebSocketException e)
     {
-        LOG.warn(e);
+        incomingFrameQueue.incoming(e);
     }
 
     @Override
@@ -310,11 +317,13 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         {
             LOG.info("Client parsed {} frames",count);
         }
-        WebSocketFrame copy = new WebSocketFrame(frame); // make a copy
-        if (!incomingFrameQueue.offerLast(copy))
-        {
-            throw new RuntimeException("Unable to queue incoming frame: " + copy);
-        }
+        WebSocketFrame copy = new WebSocketFrame(frame);
+        incomingFrameQueue.incoming(copy);
+    }
+
+    public boolean isConnected()
+    {
+        return (socket != null) && (socket.isConnected());
     }
 
     public void lookFor(String string) throws IOException
@@ -375,7 +384,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         return len;
     }
 
-    public Queue<WebSocketFrame> readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
+    public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
     {
         LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
         int startCount = incomingFrameQueue.size();
@@ -410,7 +419,8 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
                 }
                 if (!debug && (System.currentTimeMillis() > expireOn))
                 {
-                    throw new TimeoutException(String.format("Timeout reading all [%d] expected frames. (managed to read [%d] frames)",expectedCount,
+                    incomingFrameQueue.dump();
+                    throw new TimeoutException(String.format("Timeout reading all %d expected frames. (managed to only read %d frame(s))",expectedCount,
                             incomingFrameQueue.size()));
                 }
             }
@@ -544,5 +554,25 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     {
         LOG.debug("write((String)[{}]){}{})",str.length(),'\n',str);
         out.write(StringUtil.getBytes(str,StringUtil.__ISO_8859_1));
+    }
+
+    public void writeRawSlowly(ByteBuffer buf, int segmentSize) throws IOException
+    {
+        int origLimit = buf.limit();
+        int limit = buf.limit();
+        int len;
+        int pos = buf.position();
+        int overallLeft = buf.remaining();
+        while (overallLeft > 0)
+        {
+            buf.position(pos);
+            limit = Math.min(origLimit,pos + segmentSize);
+            buf.limit(limit);
+            len = buf.remaining();
+            overallLeft -= len;
+            pos += len;
+            writeRaw(buf);
+            flush();
+        }
     }
 }

@@ -84,7 +84,7 @@ public class WebSocketFrame implements Frame
     private boolean rsv1 = false;
     private boolean rsv2 = false;
     private boolean rsv3 = false;
-    private OpCode opcode = null;
+    private byte opcode = -1;
     private boolean masked = false;
     private byte mask[];
     /**
@@ -111,7 +111,7 @@ public class WebSocketFrame implements Frame
     /**
      * Construct form opcode
      */
-    public WebSocketFrame(OpCode opcode)
+    public WebSocketFrame(byte opcode)
     {
         reset();
         this.opcode = opcode;
@@ -151,7 +151,7 @@ public class WebSocketFrame implements Frame
 
     public void assertValid()
     {
-        if (opcode.isControlFrame())
+        if (OpCode.isControlFrame(opcode))
         {
             if (getPayloadLength() > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
@@ -211,7 +211,7 @@ public class WebSocketFrame implements Frame
     }
 
     @Override
-    public final OpCode getOpCode()
+    public final byte getOpCode()
     {
         return opcode;
     }
@@ -273,6 +273,16 @@ public class WebSocketFrame implements Frame
     public boolean isContinuation()
     {
         return continuation;
+    }
+
+    public boolean isControlFrame()
+    {
+        return OpCode.isControlFrame(opcode);
+    }
+
+    public boolean isDataFrame()
+    {
+        return OpCode.isDataFrame(opcode);
     }
 
     @Override
@@ -348,7 +358,7 @@ public class WebSocketFrame implements Frame
         rsv1 = false;
         rsv2 = false;
         rsv3 = false;
-        opcode = null;
+        opcode = -1;
         masked = false;
         data = null;
         payloadLength = 0;
@@ -388,9 +398,9 @@ public class WebSocketFrame implements Frame
         return this;
     }
 
-    public WebSocketFrame setOpCode(OpCode opCode)
+    public WebSocketFrame setOpCode(byte op)
     {
-        this.opcode = opCode;
+        this.opcode = op;
         return this;
     }
 
@@ -408,7 +418,7 @@ public class WebSocketFrame implements Frame
             return this;
         }
 
-        if (opcode.isControlFrame())
+        if (OpCode.isControlFrame(opcode))
         {
             if (buf.length > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
@@ -436,7 +446,7 @@ public class WebSocketFrame implements Frame
             return this;
         }
 
-        if (opcode.isControlFrame())
+        if (OpCode.isControlFrame(opcode))
         {
             if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
@@ -468,7 +478,7 @@ public class WebSocketFrame implements Frame
             return this;
         }
 
-        if (opcode.isControlFrame())
+        if (OpCode.isControlFrame(opcode))
         {
             if (buf.remaining() > WebSocketFrame.MAX_CONTROL_PAYLOAD)
             {
@@ -510,14 +520,7 @@ public class WebSocketFrame implements Frame
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-        if (opcode != null)
-        {
-            b.append(opcode.name());
-        }
-        else
-        {
-            b.append("NO-OP");
-        }
+        b.append(OpCode.name(opcode));
         b.append('[');
         b.append("len=").append(payloadLength);
         b.append(",fin=").append(fin);

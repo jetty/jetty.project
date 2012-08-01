@@ -13,7 +13,7 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.protocol;
+package org.eclipse.jetty.websocket.server.helper;
 
 import static org.hamcrest.Matchers.*;
 
@@ -22,6 +22,8 @@ import java.util.LinkedList;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
 public class OutgoingFramesCapture implements OutgoingFrames
