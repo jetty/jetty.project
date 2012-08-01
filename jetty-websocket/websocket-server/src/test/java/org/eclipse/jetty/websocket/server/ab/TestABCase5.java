@@ -15,460 +15,731 @@
 //========================================================================
 package org.eclipse.jetty.websocket.server.ab;
 
-import static org.hamcrest.Matchers.*;
-
-import java.nio.ByteBuffer;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.ByteBufferAssert;
-import org.eclipse.jetty.websocket.server.SimpleServletServer;
-import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
-import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
-import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-public class TestABCase5
+/**
+ * Fragmentation Tests
+ */
+@RunWith(AdvancedRunner.class)
+public class TestABCase5 extends AbstractABCase
 {
-    private static final byte FIN = (byte)0x80;
-    private static final byte NOFIN = 0x00;
-
-    private static SimpleServletServer server;
-    private static Generator laxGenerator;
-
-    @BeforeClass
-    public static void initGenerators()
-    {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ByteBufferPool bufferPool = new StandardByteBufferPool();
-        laxGenerator = new Generator(policy,bufferPool,false);
-    }
-
-    @BeforeClass
-    public static void startServer() throws Exception
-    {
-        server = new SimpleServletServer(new MyEchoServlet());
-        server.start();
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
-    }
-
+    /**
+     * Send ping fragmented in 2 packets
+     */
     @Test
-    public void testCase5_1PingIn2Packets() throws Exception
+    public void testCase5_1() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.PING).setPayload("hello, ").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world"));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf);
-
-            String fragment1 = "fragment1";
-
-            // Intentionally bad PING (spec says control frames must be FIN==true)
-            buf.put((byte)(NOFIN | OpCode.PING));
-
-            byte b = 0x00; // no masking
-            b |= fragment1.length() & 0x7F;
-            buf.put(b);
-            buf.put(fragment1.getBytes());
-            BufferUtil.flipToFlush(buf,0);
-
-            client.writeRaw(buf);
-
-            ByteBuffer buf2 = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf2);
-
-            String fragment2 = "fragment2";
-
-            buf2.put((byte)(FIN | OpCode.PING));
-            b = 0x00; // no masking
-            b |= fragment2.length() & 0x7F;
-            buf2.put(b);
-            buf2.put(fragment2.getBytes());
-            BufferUtil.flipToFlush(buf2,0);
-
-            client.writeRaw(buf2);
-
-            // Read frame
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = capture.getFrames().get(0);
-
-            Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
-
-            Assert.assertThat("CloseFrame.status code",new CloseInfo(frame).getStatusCode(),is(1002));
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
+    /**
+     * Send continuation+fin, then text+fin (framewise)
+     */
     @Test
-    public void testCase5_1PingIn2PacketsWithBuilder() throws Exception
+    public void testCase5_10() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            String fragment1 = "fragment1";
-            WebSocketFrame frame1 = WebSocketFrame.ping().setFin(false).setPayload(fragment1);
-            ByteBuffer buf1 = laxGenerator.generate(frame1);
-            client.writeRaw(buf1);
-
-            String fragment2 = "fragment2";
-            WebSocketFrame frame2 = WebSocketFrame.ping().setPayload(fragment2);
-            ByteBuffer buf2 = laxGenerator.generate(frame2);
-            client.writeRaw(buf2);
-
-            // Read frame
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = capture.getFrames().pop();
-
-            Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
-
-            Assert.assertThat("CloseFrame.status code",new CloseInfo(frame).getStatusCode(),is(1002));
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
+    /**
+     * Send continuation+fin, then text+fin (slowly)
+     */
     @Test
-    public void testCase5_2PongIn2Packets() throws Exception
+    public void testCase5_11() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf);
-
-            String fragment1 = "fragment1";
-
-            buf.put((byte)(NOFIN | OpCode.PONG));
-
-            byte b = 0x00; // no masking
-            b |= fragment1.length() & 0x7F;
-            buf.put(b);
-            buf.put(fragment1.getBytes());
-            BufferUtil.flipToFlush(buf,0);
-
-            client.writeRaw(buf);
-
-            ByteBuffer buf2 = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf2);
-
-            String fragment2 = "fragment2";
-
-            buf2.put((byte)(FIN | OpCode.CONTINUATION));
-            b = 0x00; // no masking
-            b |= fragment2.length() & 0x7F;
-            buf2.put(b);
-            buf2.put(fragment2.getBytes());
-            BufferUtil.flipToFlush(buf2,0);
-
-            client.writeRaw(buf2);
-
-            // Read frame
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = capture.getFrames().pop();
-
-            Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
-
-            Assert.assertThat("CloseFrame.status code",new CloseInfo(frame).getStatusCode(),is(1002));
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
+            fuzzer.setSlowSendSegmentSize(1);
+            try
+            {
+                fuzzer.send(send);
+            }
+            catch (SocketException ignore)
+            {
+                // Potential for SocketException (Broken Pipe) here.
+                // But not in 100% of testing scenarios. It is a safe
+                // exception to ignore in this testing scenario, as the
+                // slow writing of the frames can result in the server
+                // throwing a PROTOCOL ERROR termination/close when it
+                // encounters the bad continuation frame above (this
+                // termination is the expected behavior), and this
+                // early socket close can propagate back to the client
+                // before it has a chance to finish writing out the
+                // remaining frame octets
+            }
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
+    /**
+     * Send continuation+!fin, then text+fin
+     */
     @Test
-    public void testCase5_2PongIn2PacketsWithBuilder() throws Exception
+    public void testCase5_12() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            String fragment1 = "fragment1";
-            WebSocketFrame frame1 = WebSocketFrame.pong().setFin(false).setPayload(fragment1);
-            ByteBuffer buf1 = laxGenerator.generate(frame1);
-            client.writeRaw(buf1);
-
-            String fragment2 = "fragment2";
-            WebSocketFrame frame2 = new WebSocketFrame(OpCode.CONTINUATION).setFin(false).setPayload(fragment2);
-            ByteBuffer buf2 = laxGenerator.generate(frame2);
-            client.writeRaw(buf2);
-
-            // Read frame
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = capture.getFrames().pop();
-
-            Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
-            Assert.assertThat("CloseFrame.status code",new CloseInfo(frame).getStatusCode(),is(1002));
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.disconnect();
+            fuzzer.close();
         }
     }
 
+    /**
+     * Send continuation+!fin, then text+fin (framewise)
+     */
     @Test
-    public void testCase5_3TextIn2Packets() throws Exception
+    public void testCase5_13() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf);
-
-            String fragment1 = "fragment1";
-
-            buf.put((byte)(NOFIN | OpCode.TEXT));
-
-            byte b = 0x00; // no masking
-            b |= fragment1.length() & 0x7F;
-            buf.put(b);
-            buf.put(fragment1.getBytes());
-            BufferUtil.flipToFlush(buf,0);
-
-            client.writeRaw(buf);
-
-            ByteBuffer buf2 = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf2);
-
-            String fragment2 = "fragment2";
-
-            buf2.put((byte)(FIN | OpCode.CONTINUATION));
-            b = 0x00; // no masking
-            b |= fragment2.length() & 0x7F;
-            buf2.put(b);
-            buf2.put(fragment2.getBytes());
-            BufferUtil.flipToFlush(buf2,0);
-
-            client.writeRaw(buf2);
-
-            // Read frame
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = capture.getFrames().pop();
-
-            Assert.assertThat("frame should be text frame",frame.getOpCode(),is(OpCode.TEXT));
-
-            Assert.assertThat("TextFrame.payload",frame.getPayloadAsUTF8(),is(fragment1 + fragment2));
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
+    /**
+     * Send continuation+!fin, then text+fin (slowly)
+     */
     @Test
-    public void testCase5_6TextPingRemainingText() throws Exception
+    public void testCase5_14() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            // Send a text packet
-
-            ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf);
-
-            String fragment1 = "fragment1";
-
-            buf.put((byte)(NOFIN | OpCode.TEXT));
-
-            byte b = 0x00; // no masking
-            b |= fragment1.length() & 0x7F;
-            buf.put(b);
-            buf.put(fragment1.getBytes());
-            BufferUtil.flipToFlush(buf,0);
-
-            client.writeRaw(buf);
-
-            // Send a ping with payload
-
-            ByteBuffer pingBuf = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(pingBuf);
-
-            String pingPayload = "ping payload";
-
-            pingBuf.put((byte)(FIN | OpCode.PING));
-
-            b = 0x00; // no masking
-            b |= pingPayload.length() & 0x7F;
-            pingBuf.put(b);
-            pingBuf.put(pingPayload.getBytes());
-            BufferUtil.flipToFlush(pingBuf,0);
-
-            client.writeRaw(pingBuf);
-
-            // Send remaining text as continuation
-
-            ByteBuffer buf2 = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf2);
-
-            String fragment2 = "fragment2";
-
-            buf2.put((byte)(FIN | OpCode.CONTINUATION));
-            b = 0x00; // no masking
-            b |= fragment2.length() & 0x7F;
-            buf2.put(b);
-            buf2.put(fragment2.getBytes());
-            BufferUtil.flipToFlush(buf2,0);
-
-            client.writeRaw(buf2);
-
-            // Should be 2 frames, pong frame followed by combined echo'd text frame
-            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.SECONDS,1);
-            WebSocketFrame frame = capture.getFrames().pop();
-
-            Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PONG));
-
-            ByteBuffer payload1 = BufferUtil.toBuffer(pingPayload,StringUtil.__UTF8_CHARSET);
-
-            ByteBufferAssert.assertEquals("payloads should be equal",payload1,frame.getPayload());
-            frame = capture.getFrames().pop();
-
-            Assert.assertThat("second frame should be text frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("TextFrame.payload",frame.getPayloadAsUTF8(),is(fragment1 + fragment2));
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
+            fuzzer.setSlowSendSegmentSize(1);
+            try
+            {
+                fuzzer.send(send);
+            }
+            catch (SocketException ignore)
+            {
+                // Potential for SocketException (Broken Pipe) here.
+                // But not in 100% of testing scenarios. It is a safe
+                // exception to ignore in this testing scenario, as the
+                // slow writing of the frames can result in the server
+                // throwing a PROTOCOL ERROR termination/close when it
+                // encounters the bad continuation frame above (this
+                // termination is the expected behavior), and this
+                // early socket close can propagate back to the client
+                // before it has a chance to finish writing out the
+                // remaining frame octets
+            }
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
+    /**
+     * Send text fragmented properly in 2 frames, then continuation!fin, then text unfragmented.
+     */
     @Test
-    public void testCase5_6TextPingRemainingTextWithBuilder() throws Exception
+    public void testCase5_15() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment1").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment2").setFin(true));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment3").setFin(false)); // bad frame
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment4").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        send.add(WebSocketFrame.text("fragment1fragment2"));
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            // Send a text packet
-            String textPayload1 = "fragment1";
-            WebSocketFrame frame1 = WebSocketFrame.text().setFin(false).setPayload(textPayload1);
-            ByteBuffer buf1 = laxGenerator.generate(frame1);
-            client.writeRaw(buf1);
-
-            // Send a ping with payload
-            String pingPayload = "ping payload";
-            WebSocketFrame frame2 = WebSocketFrame.ping().setPayload(pingPayload);
-            ByteBuffer buf2 = laxGenerator.generate(frame2);
-            client.writeRaw(buf2);
-
-            // Send remaining text as continuation
-            String textPayload2 = "fragment2";
-            WebSocketFrame frame3 = new WebSocketFrame(OpCode.CONTINUATION).setPayload(textPayload2);
-            ByteBuffer buf3 = laxGenerator.generate(frame3);
-            client.writeRaw(buf3);
-
-            // Should be 2 frames, pong frame followed by combined echo'd text frame
-            IncomingFramesCapture capture = client.readFrames(2,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = capture.getFrames().pop();
-
-            Assert.assertThat("first frame should be pong frame",frame.getOpCode(),is(OpCode.PONG));
-
-            ByteBuffer payload1 = BufferUtil.toBuffer(pingPayload,StringUtil.__UTF8_CHARSET);
-            ByteBufferAssert.assertEquals("Payload",payload1,frame.getPayload());
-
-            frame = capture.getFrames().pop();
-
-            Assert.assertThat("second frame should be text frame",frame.getOpCode(),is(OpCode.TEXT));
-
-            Assert.assertThat("TextFrame.payload",frame.getPayloadAsUTF8(),is(textPayload1 + textPayload2));
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
         }
     }
 
+    /**
+     * (continuation!fin, text!fin, continuation+fin) * 2
+     */
     @Test
-    @Ignore("AB tests have chop concepts currently unsupported by test...I think, also the string being returns is not Bad Continuation")
-    public void testCase5_9BadContinuation() throws Exception
+    public void testCase5_16() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment1").setFin(false)); // bad frame
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment3").setFin(true));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment4").setFin(false)); // bad frame
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment5").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment6").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
         try
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
-            // Send a text packet
-
-            ByteBuffer buf = ByteBuffer.allocate(Generator.OVERHEAD + 2);
-            BufferUtil.clearToFill(buf);
-
-            String fragment1 = "fragment";
-
-            // continuation w / FIN
-
-            buf.put((byte)(FIN | OpCode.CONTINUATION));
-
-            byte b = 0x00; // no masking
-            b |= fragment1.length() & 0x7F;
-            buf.put(b);
-            buf.put(fragment1.getBytes());
-            BufferUtil.flipToFlush(buf,0);
-
-            client.writeRaw(buf);
-
-            // Read frame
-            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,500);
-            WebSocketFrame frame = capture.getFrames().pop();
-
-            Assert.assertThat("frame should be close frame",frame.getOpCode(),is(OpCode.CLOSE));
-
-            Assert.assertThat("CloseFrame.status code",new CloseInfo(frame).getStatusCode(),is(1002));
-
-            Assert.assertThat("CloseFrame.reason",new CloseInfo(frame).getReason(),is("Bad Continuation"));
-            // TODO put close reasons into public strings in impl someplace?
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
         }
         finally
         {
-            client.close();
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * (continuation+fin, text!fin, continuation+fin) * 2
+     */
+    @Test
+    public void testCase5_17() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment1").setFin(true)); // nothing to continue
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment3").setFin(true));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment4").setFin(true)); // nothing to continue
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment5").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("fragment6").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * text message fragmented in 2 frames, both frames as opcode=TEXT
+     */
+    @Test
+    public void testCase5_18() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment1").setFin(false));
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("fragment2").setFin(true)); // bad frame, must be continuation
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * send text message fragmented in 5 frames, with 2 pings and wait between.
+     */
+    @Test
+    @Slow
+    public void testCase5_19() throws Exception
+    {
+        // phase 1
+        List<WebSocketFrame> send1 = new ArrayList<>();
+        send1.add(new WebSocketFrame(OpCode.TEXT).setPayload("f1").setFin(false));
+        send1.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
+        send1.add(new WebSocketFrame(OpCode.PING).setPayload("pong-1"));
+
+        List<WebSocketFrame> expect1 = new ArrayList<>();
+        expect1.add(WebSocketFrame.pong().setPayload("pong-1"));
+
+        // phase 2
+        List<WebSocketFrame> send2 = new ArrayList<>();
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
+        send2.add(new WebSocketFrame(OpCode.PING).setPayload("pong-2"));
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
+        send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect2 = new ArrayList<>();
+        expect2.add(WebSocketFrame.pong().setPayload("pong-2"));
+        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+
+            // phase 1
+            fuzzer.send(send1);
+            fuzzer.expect(expect1);
+
+            // delay
+            TimeUnit.SECONDS.sleep(1);
+
+            // phase 2
+            fuzzer.send(send2);
+            fuzzer.expect(expect2);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send pong fragmented in 2 packets
+     */
+    @Test
+    public void testCase5_2() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.PONG).setPayload("hello, ").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world"));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * send text message fragmented in 5 frames, with 2 pings and wait between. (framewise)
+     */
+    @Test
+    public void testCase5_20() throws Exception
+    {
+        List<WebSocketFrame> send1 = new ArrayList<>();
+        send1.add(new WebSocketFrame(OpCode.TEXT).setPayload("f1").setFin(false));
+        send1.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
+        send1.add(new WebSocketFrame(OpCode.PING).setPayload("pong-1"));
+
+        List<WebSocketFrame> send2 = new ArrayList<>();
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
+        send2.add(new WebSocketFrame(OpCode.PING).setPayload("pong-2"));
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
+        send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect1 = new ArrayList<>();
+        expect1.add(WebSocketFrame.pong().setPayload("pong-1"));
+
+        List<WebSocketFrame> expect2 = new ArrayList<>();
+        expect2.add(WebSocketFrame.pong().setPayload("pong-2"));
+        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
+
+            fuzzer.send(send1);
+            fuzzer.expect(expect1);
+
+            TimeUnit.SECONDS.sleep(1);
+
+            fuzzer.send(send2);
+            fuzzer.expect(expect2);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * send text message fragmented in 5 frames, with 2 pings and wait between. (framewise)
+     */
+    @Test
+    public void testCase5_20_slow() throws Exception
+    {
+        List<WebSocketFrame> send1 = new ArrayList<>();
+        send1.add(new WebSocketFrame(OpCode.TEXT).setPayload("f1").setFin(false));
+        send1.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
+        send1.add(new WebSocketFrame(OpCode.PING).setPayload("pong-1"));
+
+        List<WebSocketFrame> send2 = new ArrayList<>();
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
+        send2.add(new WebSocketFrame(OpCode.PING).setPayload("pong-2"));
+        send2.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
+        send2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect1 = new ArrayList<>();
+        expect1.add(WebSocketFrame.pong().setPayload("pong-1"));
+
+        List<WebSocketFrame> expect2 = new ArrayList<>();
+        expect2.add(WebSocketFrame.pong().setPayload("pong-2"));
+        expect2.add(WebSocketFrame.text("f1,f2,f3,f4,f5"));
+        expect2.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
+            fuzzer.setSlowSendSegmentSize(1);
+
+            fuzzer.send(send1);
+            fuzzer.expect(expect1);
+
+            TimeUnit.SECONDS.sleep(1);
+
+            fuzzer.send(send2);
+            fuzzer.expect(expect2);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send text fragmented in 2 packets
+     */
+    @Test
+    public void testCase5_3() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send text fragmented in 2 packets (framewise)
+     */
+    @Test
+    public void testCase5_4() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send text fragmented in 2 packets (slowly)
+     */
+    @Test
+    public void testCase5_5() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
+            fuzzer.setSlowSendSegmentSize(1);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send text fragmented in 2 packets, with ping between them
+     */
+    @Test
+    public void testCase5_6() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new WebSocketFrame(OpCode.PING).setPayload("ping"));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.pong().setPayload("ping"));
+        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send text fragmented in 2 packets, with ping between them (framewise)
+     */
+    @Test
+    public void testCase5_7() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new WebSocketFrame(OpCode.PING).setPayload("ping"));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.pong().setPayload("ping"));
+        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send text fragmented in 2 packets, with ping between them (slowly)
+     */
+    @Test
+    public void testCase5_8() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new WebSocketFrame(OpCode.PING).setPayload("ping"));
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.pong().setPayload("ping"));
+        expect.add(WebSocketFrame.text("hello, world"));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.SLOW);
+            fuzzer.setSlowSendSegmentSize(1);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send continuation+fin, then text+fin
+     */
+    @Test
+    public void testCase5_9() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
         }
     }
 }

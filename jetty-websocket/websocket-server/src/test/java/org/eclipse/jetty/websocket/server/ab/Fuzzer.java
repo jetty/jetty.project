@@ -50,6 +50,26 @@ public class Fuzzer
         this.generator = testcase.getLaxGenerator();
     }
 
+    public ByteBuffer asNetworkBuffer(List<WebSocketFrame> send)
+    {
+        int buflen = 0;
+        for (WebSocketFrame f : send)
+        {
+            buflen += f.getPayloadLength() + Generator.OVERHEAD;
+        }
+        ByteBuffer buf = ByteBuffer.allocate(buflen);
+        BufferUtil.clearToFill(buf);
+
+        // Generate frames
+        for (WebSocketFrame f : send)
+        {
+            f.setMask(MASK); // make sure we have mask set
+            BufferUtil.put(generator.generate(f),buf);
+        }
+        BufferUtil.flipToFlush(buf,0);
+        return buf;
+    }
+
     public void close()
     {
         this.client.disconnect();
@@ -80,7 +100,7 @@ public class Fuzzer
 
             prefix = "Frame[" + i + "]";
 
-            Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(expected.getOpCode()));
+            Assert.assertThat(prefix + ".opcode",OpCode.name(actual.getOpCode()),is(OpCode.name(expected.getOpCode())));
             prefix += "/" + actual.getOpCode();
             if (expected.getOpCode() == OpCode.CLOSE)
             {
@@ -123,6 +143,12 @@ public class Fuzzer
         {
             client.writeRaw(buf);
         }
+    }
+
+    public void send(ByteBuffer buf, int numBytes) throws IOException
+    {
+        client.writeRaw(buf,numBytes);
+        client.flush();
     }
 
     public void send(List<WebSocketFrame> send) throws IOException

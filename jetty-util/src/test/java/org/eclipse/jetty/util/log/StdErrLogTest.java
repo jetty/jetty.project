@@ -45,14 +45,14 @@ public class StdErrLogTest
         log.info("testing:{}",null,null);
         log.info("testing",null,null);
 
-        output.assertContains("INFO:oejul.LogTest:testing:test,format1");
-        output.assertContains("INFO:oejul.LogTest:testing:test,format1");
-        output.assertContains("INFO:oejul.LogTest:testing:test format2");
-        output.assertContains("INFO:oejul.LogTest:testing test format3");
-        output.assertContains("INFO:oejul.LogTest:testing:test,null");
-        output.assertContains("INFO:oejul.LogTest:testing null null");
-        output.assertContains("INFO:oejul.LogTest:testing:null");
-        output.assertContains("INFO:oejul.LogTest:testing");
+        output.assertContains("INFO:oejul.LogTest:1: testing:test,format1");
+        output.assertContains("INFO:oejul.LogTest:1: testing:test,format1");
+        output.assertContains("INFO:oejul.LogTest:1: testing:test format2");
+        output.assertContains("INFO:oejul.LogTest:1: testing test format3");
+        output.assertContains("INFO:oejul.LogTest:1: testing:test,null");
+        output.assertContains("INFO:oejul.LogTest:1: testing null null");
+        output.assertContains("INFO:oejul.LogTest:1: testing:null");
+        output.assertContains("INFO:oejul.LogTest:1: testing");
     }
 
     @Test
@@ -75,12 +75,12 @@ public class StdErrLogTest
         log.setDebugEnabled(false);
         log.debug("testing {} {}","test","debug-deprecated-false");
 
-        output.assertContains("DBUG:xxx:testing test debug");
-        output.assertContains("INFO:xxx:testing test info");
-        output.assertContains("WARN:xxx:testing test warn");
+        output.assertContains("DBUG:xxx:1: testing test debug");
+        output.assertContains("INFO:xxx:1: testing test info");
+        output.assertContains("WARN:xxx:1: testing test warn");
         output.assertNotContains("YOU SHOULD NOT SEE THIS!");
-        output.assertContains("DBUG:xxx:testing test debug-deprecated");
-        output.assertNotContains("DBUG:xxx:testing test debug-depdeprecated-false");
+        output.assertContains("DBUG:xxx:1: testing test debug-deprecated");
+        output.assertNotContains("DBUG:xxx:1: testing test debug-depdeprecated-false");
     }
     
     @Test
@@ -95,7 +95,7 @@ public class StdErrLogTest
         Assert.assertThat("Log.name(child)", next.getName(), is("test.next"));
         next.info("testing {} {}","next","info");
         
-        output.assertContains(":test.next:testing next info");
+        output.assertContains(":test.next:1: testing next info");
     }
     
     @Test
@@ -307,7 +307,7 @@ public class StdErrLogTest
         output.assertContains("Cheer Me");
 
         // Validate Stack Traces
-        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains(".StdErrLogTest:1: <zoom>");
         output.assertContains("java.lang.Throwable: out of focus");
         output.assertContains("java.lang.Throwable: scene lost");
     }
@@ -354,7 +354,7 @@ public class StdErrLogTest
         output.assertNotContains("<spoken line>");
         output.assertNotContains("on editing room floor");
 
-        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains(".StdErrLogTest:1: <zoom>");
         output.assertContains("java.lang.Throwable: out of focus");
         output.assertContains("java.lang.Throwable: scene lost");
     }
@@ -427,7 +427,7 @@ public class StdErrLogTest
         output.assertNotContains("<spoken line>");
         output.assertNotContains("on editing room floor");
         
-        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains(".StdErrLogTest:1: <zoom>");
         output.assertContains("java.lang.Throwable: out of focus");
         output.assertContains("java.lang.Throwable: scene lost");
     }

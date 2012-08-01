@@ -151,4 +151,143 @@ public class TestABCase4 extends AbstractABCase
             fuzzer.close();
         }
     }
+
+    /**
+     * Send opcode 11 (reserved)
+     */
+    @Test
+    public void testCase4_2_1() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame((byte)11)); // intentionally bad
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send opcode 12 (reserved)
+     */
+    @Test
+    public void testCase4_2_2() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame((byte)12).setPayload("bad")); // intentionally bad
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send small text, then frame with opcode 13 (reserved), then ping
+     */
+    @Test
+    public void testCase4_2_3() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text("hello"));
+        send.add(new WebSocketFrame((byte)13)); // intentionally bad
+        send.add(WebSocketFrame.ping());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send small text, then frame with opcode 14 (reserved), then ping
+     */
+    @Test
+    public void testCase4_2_4() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text("hello"));
+        send.add(new WebSocketFrame((byte)14).setPayload("bad")); // intentionally bad
+        send.add(WebSocketFrame.ping());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    /**
+     * Send small text, then frame with opcode 15 (reserved), then ping
+     */
+    @Test
+    public void testCase4_2_5() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(WebSocketFrame.text("hello"));
+        send.add(new WebSocketFrame((byte)15).setPayload("bad")); // intentionally bad
+        send.add(WebSocketFrame.ping());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(WebSocketFrame.text("hello")); // echo
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
 }
