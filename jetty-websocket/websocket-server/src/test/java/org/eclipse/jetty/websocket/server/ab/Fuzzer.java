@@ -80,7 +80,7 @@ public class Fuzzer
 
             prefix = "Frame[" + i + "]";
 
-            Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(expected.getOpCode()));
+            Assert.assertThat(prefix + ".opcode",OpCode.name(actual.getOpCode()),is(OpCode.name(expected.getOpCode())));
             prefix += "/" + actual.getOpCode();
             if (expected.getOpCode() == OpCode.CLOSE)
             {
