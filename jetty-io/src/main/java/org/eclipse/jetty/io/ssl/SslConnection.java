@@ -28,7 +28,6 @@ import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.ReadInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -181,7 +180,7 @@ public class SslConnection extends AbstractAsyncConnection
                 hashCode(),
                 _sslEngine.getHandshakeStatus(),
                 _decryptedEndPoint._readInterest.isInterested() ? "R" : "",
-                _decryptedEndPoint._writeFlusher.isWriting() ? "W" : "");
+                _decryptedEndPoint._writeFlusher.isWritePending() ? "W" : "");
     }
 
     /* ------------------------------------------------------------ */
@@ -227,7 +226,7 @@ public class SslConnection extends AbstractAsyncConnection
                         _readInterest.readable();
                     }
 
-                    if (_writeFlusher.isWriting())
+                    if (_writeFlusher.isWritePending())
                         _writeFlusher.completeWrite();
                 }
             }
@@ -253,7 +252,7 @@ public class SslConnection extends AbstractAsyncConnection
                         _readInterest.failed(x);
                     }
 
-                    if (_writeFlusher.isWriting())
+                    if (_writeFlusher.isWritePending())
                         _writeFlusher.failed(x);
 
                     // TODO release all buffers??? or may in onClose
@@ -727,7 +726,7 @@ public class SslConnection extends AbstractAsyncConnection
         @Override
         public String toString()
         {
-            return String.format("%s{%s%s%s}", super.toString(), _readInterest.isInterested() ? "R" : "", _writeFlusher.isWriting() ? "W" : "", _cannotAcceptMoreAppDataToFlush ? "w" : "");
+            return String.format("%s{%s%s%s}", super.toString(), _readInterest.isInterested() ? "R" : "", _writeFlusher.isWritePending() ? "W" : "", _cannotAcceptMoreAppDataToFlush ? "w" : "");
         }
 
     }

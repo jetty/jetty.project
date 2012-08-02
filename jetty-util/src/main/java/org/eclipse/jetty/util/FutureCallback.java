@@ -10,6 +10,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 
+//TODO: Simplify, get rid of DOING. Probably replace states with AtomicBoolean
 public class FutureCallback<C> implements Future<C>,Callback<C>
 {
     // TODO investigate use of a phasor
