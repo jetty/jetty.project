@@ -44,14 +44,8 @@ public class ObjectMBeanTest
     @Test
     public void testMbeanInfo() throws Exception
     {
-        MBeanContainer container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        
-        container.start();
-        
         Derived derived = new Derived();
-        //ObjectMBean mbean = new ObjectMBean(derived);
         ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
-        mbean.setMBeanContainer(container);
         
         assertTrue(mbean.getMBeanInfo()!=null);
         
