@@ -161,6 +161,7 @@ public class WebSocketLoadRFC6455Test
         QueuedThreadPool threadPool = new QueuedThreadPool(200);
         threadPool.setMaxStopTimeMs(1000);
         _server = new Server(threadPool);
+        _server.manage(threadPool);
 
         _connector = new SelectChannelConnector(_server);
         _server.addConnector(_connector);

@@ -62,6 +62,7 @@ public class TestServer
         
         // Setup server
         Server server = new Server(threadPool);
+        server.manage(threadPool);
         server.setSendDateHeader(true);
         
         // Setup JMX

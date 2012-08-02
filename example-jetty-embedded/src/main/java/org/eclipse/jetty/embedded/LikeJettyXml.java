@@ -46,6 +46,7 @@ public class LikeJettyXml
         threadPool.setMaxThreads(500);
         
         Server server = new Server(threadPool);
+        server.manage(threadPool);
         server.setDumpAfterStart(true);
         server.setDumpBeforeStop(true);
 

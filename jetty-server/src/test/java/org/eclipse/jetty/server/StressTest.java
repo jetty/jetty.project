@@ -86,6 +86,7 @@ public class StressTest
         _threads.setMaxThreads(200);
 
         _server = new Server(_threads);
+        _server.manage(_threads);
         _connector = new SelectChannelConnector(_server,null,null,null,null,1,1);
         _connector.setAcceptQueueSize(5000);
         _connector.setIdleTimeout(30000);
