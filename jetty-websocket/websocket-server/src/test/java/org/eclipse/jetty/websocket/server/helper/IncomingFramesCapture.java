@@ -126,7 +126,8 @@ public class IncomingFramesCapture implements IncomingFrames
     @Override
     public void incoming(WebSocketFrame frame)
     {
-        frames.add(frame);
+        WebSocketFrame copy = new WebSocketFrame(frame);
+        frames.add(copy);
     }
 
     public int size()

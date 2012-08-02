@@ -47,7 +47,7 @@ public class DeflateExtensionTest
     }
 
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testDeflateFrameExtension() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());

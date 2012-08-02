@@ -105,7 +105,7 @@ public class WebSocketFrame implements Frame
      */
     public WebSocketFrame()
     {
-        reset();
+        this(OpCode.UNDEFINED);
     }
 
     /**
@@ -113,7 +113,6 @@ public class WebSocketFrame implements Frame
      */
     public WebSocketFrame(byte opcode)
     {
-        reset();
         this.opcode = opcode;
     }
 

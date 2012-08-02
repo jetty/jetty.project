@@ -60,6 +60,11 @@ public final class OpCode
      */
     public static final byte PONG = (byte)0x0A;
 
+    /**
+     * An undefined OpCode
+     */
+    public static final byte UNDEFINED = (byte)-1;
+
     public static boolean isControlFrame(byte opcode)
     {
         return (opcode >= CLOSE);

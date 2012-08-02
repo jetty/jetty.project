@@ -242,7 +242,7 @@ public class TestABCase5 extends AbstractABCase
      * Send text fragmented properly in 2 frames, then continuation!fin, then text unfragmented.
      */
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testCase5_15() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
@@ -338,7 +338,7 @@ public class TestABCase5 extends AbstractABCase
      * text message fragmented in 2 frames, both frames as opcode=TEXT
      */
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testCase5_18() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();

@@ -184,7 +184,7 @@ public class TestABCase1 extends AbstractABCase
      * Echo 65535 byte TEXT message (uses medium 2 byte payload length)
      */
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testCase1_1_6() throws Exception
     {
         byte payload[] = new byte[65535];
@@ -216,7 +216,7 @@ public class TestABCase1 extends AbstractABCase
      * Echo 65536 byte TEXT message (uses large 8 byte payload length)
      */
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testCase1_1_7() throws Exception
     {
         byte payload[] = new byte[65536];
@@ -252,7 +252,7 @@ public class TestABCase1 extends AbstractABCase
      * This is done to test the parsing together of the frame on the server side.
      */
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testCase1_1_8() throws Exception
     {
         byte payload[] = new byte[65536];
@@ -438,7 +438,7 @@ public class TestABCase1 extends AbstractABCase
      * Echo 65535 byte BINARY message (uses medium 2 byte payload length)
      */
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testCase1_2_6() throws Exception
     {
         byte payload[] = new byte[65535];
@@ -470,7 +470,7 @@ public class TestABCase1 extends AbstractABCase
      * Echo 65536 byte BINARY message (uses large 8 byte payload length)
      */
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testCase1_2_7() throws Exception
     {
         byte payload[] = new byte[65536];
@@ -506,7 +506,7 @@ public class TestABCase1 extends AbstractABCase
      * This is done to test the parsing together of the frame on the server side.
      */
     @Test
-    @Ignore("FIXME")
+    @Ignore /* FIXME */
     public void testCase1_2_8() throws Exception
     {
         byte payload[] = new byte[65536];

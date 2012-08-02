@@ -3,15 +3,83 @@ package org.eclipse.jetty.websocket.protocol;
 import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.ByteBufferAssert;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class GeneratorTest
 {
+
+    /**
+     * Prevent regression of masking of many packets.
+     */
+    @Test
+    public void testManyMasked()
+    {
+        byte[] MASK =
+            { 0x11, 0x22, 0x33, 0x44 };
+        int pingCount = 10;
+
+        // the generator
+        Generator generator = new UnitGenerator();
+
+        // Prepare frames
+        List<WebSocketFrame> send = new ArrayList<>();
+        for (int i = 0; i < pingCount; i++)
+        {
+            String payload = String.format("ping-%d[%X]",i,i);
+            send.add(WebSocketFrame.ping().setPayload(payload));
+        }
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        // Generate into single bytebuffer
+        int buflen = 0;
+        for (WebSocketFrame f : send)
+        {
+            buflen += f.getPayloadLength() + Generator.OVERHEAD;
+        }
+        ByteBuffer completeBuf = ByteBuffer.allocate(buflen);
+        BufferUtil.clearToFill(completeBuf);
+
+        // Generate frames
+        for (WebSocketFrame f : send)
+        {
+            f.setMask(MASK); // make sure we have mask set
+            ByteBuffer slice = f.getPayload().slice();
+            BufferUtil.put(generator.generate(f),completeBuf);
+            f.setPayload(slice);
+        }
+        BufferUtil.flipToFlush(completeBuf,0);
+
+        // Parse complete buffer.
+        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        Parser parser = new Parser(policy);
+        IncomingFramesCapture capture = new IncomingFramesCapture();
+        parser.setIncomingFramesHandler(capture);
+
+        parser.parse(completeBuf);
+
+        // Assert validity of frame
+        int frameCount = send.size();
+        capture.assertFrameCount(frameCount);
+        for (int i = 0; i < frameCount; i++)
+        {
+            WebSocketFrame actual = capture.getFrames().get(i);
+            WebSocketFrame expected = send.get(i);
+            String prefix = "Frame[" + i + "]";
+            Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(expected.getOpCode()));
+            Assert.assertThat(prefix + ".payloadLength",actual.getPayloadLength(),is(expected.getPayloadLength()));
+            ByteBufferAssert.assertEquals(prefix + ".payload",expected.getPayload(),actual.getPayload());
+        }
+    }
+
     /**
      * Test the windowed generate of a frame that has no masking.
      */

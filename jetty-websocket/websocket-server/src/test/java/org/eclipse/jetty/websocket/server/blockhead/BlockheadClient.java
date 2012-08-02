@@ -89,7 +89,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     private final WebSocketPolicy policy;
     private final Generator generator;
     private final Parser parser;
-    private final IncomingFramesCapture incomingFrameQueue;
+    private final IncomingFramesCapture incomingFrames;
     private final WebSocketExtensionRegistry extensionRegistry;
 
     private Socket socket;
@@ -122,7 +122,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         parser = new Parser(policy);
         parseCount = new AtomicInteger(0);
 
-        incomingFrameQueue = new IncomingFramesCapture();
+        incomingFrames = new IncomingFramesCapture();
 
         extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
     }
@@ -305,7 +305,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     @Override
     public void incoming(WebSocketException e)
     {
-        incomingFrameQueue.incoming(e);
+        incomingFrames.incoming(e);
     }
 
     @Override
@@ -318,7 +318,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             LOG.info("Client parsed {} frames",count);
         }
         WebSocketFrame copy = new WebSocketFrame(frame);
-        incomingFrameQueue.incoming(copy);
+        incomingFrames.incoming(copy);
     }
 
     public boolean isConnected()
@@ -368,7 +368,6 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            // FIXME terminate the connection?
             disconnect();
         }
     }
@@ -387,7 +386,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
     public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
     {
         LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
-        int startCount = incomingFrameQueue.size();
+        int startCount = incomingFrames.size();
 
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         BufferUtil.clearToFill(buf);
@@ -399,7 +398,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
 
             int len = 0;
-            while (incomingFrameQueue.size() < (startCount + expectedCount))
+            while (incomingFrames.size() < (startCount + expectedCount))
             {
                 BufferUtil.clearToFill(buf);
                 len = read(buf);
@@ -419,9 +418,9 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
                 }
                 if (!debug && (System.currentTimeMillis() > expireOn))
                 {
-                    incomingFrameQueue.dump();
+                    incomingFrames.dump();
                     throw new TimeoutException(String.format("Timeout reading all %d expected frames. (managed to only read %d frame(s))",expectedCount,
-                            incomingFrameQueue.size()));
+                            incomingFrames.size()));
                 }
             }
         }
@@ -430,7 +429,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
             bufferPool.release(buf);
         }
 
-        return incomingFrameQueue;
+        return incomingFrames;
     }
 
     public String readResponseHeader() throws IOException

@@ -199,6 +199,10 @@ public class WebSocketEventDriver implements IncomingFrames
                         BufferUtil.put(frame.getPayload(),pongBuf);
                         BufferUtil.flipToFlush(pongBuf,0);
                         pong.setPayload(pongBuf);
+                        if (LOG.isDebugEnabled())
+                        {
+                            LOG.debug("Pong with {}",BufferUtil.toDetailString(pongBuf));
+                        }
                     }
                     session.output("pong",new FutureCallback<String>(),pong);
                     break;

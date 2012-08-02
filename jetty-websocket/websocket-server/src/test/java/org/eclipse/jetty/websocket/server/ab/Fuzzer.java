@@ -91,6 +91,10 @@ public class Fuzzer
 
         // Read frames
         IncomingFramesCapture capture = client.readFrames(expect.size(),TimeUnit.MILLISECONDS,500);
+        if (LOG.isDebugEnabled())
+        {
+            capture.dump();
+        }
 
         String prefix = "";
         for (int i = 0; i < expectedCount; i++)
