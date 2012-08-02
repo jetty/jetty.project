@@ -244,7 +244,7 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
         {
             FrameBytes<C> bytes = null;
 
-            if (frame.getOpCode().isControlFrame())
+            if (frame.isControlFrame())
             {
                 bytes = new ControlFrameBytes<C>(this,callback,context,frame);
             }

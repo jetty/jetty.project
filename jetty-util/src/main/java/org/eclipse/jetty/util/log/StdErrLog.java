@@ -46,7 +46,7 @@ public class StdErrLog extends AbstractLogger
     static
     {
         __props.putAll(Log.__props);
-        
+
         String deprecatedProperties[] =
         { "DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG" };
 
@@ -87,7 +87,7 @@ public class StdErrLog extends AbstractLogger
     // The abbreviated log name (used by default, unless _long is specified)
     private final String _abbrevname;
     private boolean _hideStacks = false;
-    
+
     public static StdErrLog getLogger(Class<?> clazz)
     {
         Logger log = Log.getLogger(clazz);
@@ -354,7 +354,7 @@ public class StdErrLog extends AbstractLogger
         else
         {
             this._level = this._configuredLevel;
-            
+
             for (Logger log : Log.getLoggers().values())
             {
                 if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
@@ -460,6 +460,7 @@ public class StdErrLog extends AbstractLogger
             buffer.append(_abbrevname);
         }
         buffer.append(':');
+        buffer.append(Thread.currentThread().getId()).append(": ");
         if (_source)
         {
             Throwable source = new Throwable();
@@ -588,7 +589,7 @@ public class StdErrLog extends AbstractLogger
         // Let Level come from configured Properties instead - sel.setLevel(_level);
         logger.setSource(_source);
         logger._stderr = this._stderr;
-        
+
         // Force the child to have any programmatic configuration
         if (_level!=_configuredLevel)
             logger._level=_level;

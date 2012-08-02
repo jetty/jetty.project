@@ -388,14 +388,17 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
                 if (ext.useRsv1())
                 {
                     connection.getGenerator().setRsv1InUse(true);
+                    connection.getParser().setRsv1InUse(true);
                 }
                 if (ext.useRsv2())
                 {
                     connection.getGenerator().setRsv2InUse(true);
+                    connection.getParser().setRsv2InUse(true);
                 }
                 if (ext.useRsv3())
                 {
                     connection.getGenerator().setRsv3InUse(true);
+                    connection.getParser().setRsv3InUse(true);
                 }
             }
 

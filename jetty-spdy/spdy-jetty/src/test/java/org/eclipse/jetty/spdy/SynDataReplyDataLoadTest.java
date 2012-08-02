@@ -65,7 +65,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
         };
         final Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        final int iterations = 500;
+        final int iterations = 100; // thomas 500
         final int count = 50;
 
         final Headers headers = new Headers();

@@ -78,6 +78,8 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     {
         try
         {
+            if (endPoint.isInputShutdown())
+                return -1;
             return endPoint.fill(buffer);
         }
         catch (IOException x)
@@ -91,8 +93,9 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     public int write(ByteBuffer buffer, final Callback<StandardSession.FrameBytes> callback, StandardSession.FrameBytes context)
     {
         AsyncEndPoint endPoint = getEndPoint();
+        int remaining = buffer.remaining();
         endPoint.write(context, callback, buffer);
-        return -1; //TODO: void or have endPoint.write return int
+        return remaining - buffer.remaining();
     }
 
     @Override

@@ -42,6 +42,11 @@ public class ByteBufferAssert
 
     public static void assertEquals(String message, ByteBuffer expectedBuffer, ByteBuffer actualBuffer)
     {
+        if (expectedBuffer == null)
+        {
+            Assert.assertThat(message,actualBuffer,nullValue());
+            return;
+        }
         byte expectedBytes[] = BufferUtil.toArray(expectedBuffer);
         byte actualBytes[] = BufferUtil.toArray(actualBuffer);
         assertEquals(message,expectedBytes,actualBytes);

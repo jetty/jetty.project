@@ -31,7 +31,7 @@ public class FragmentExtension extends Extension
     @Override
     public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
     {
-        if (frame.getOpCode().isControlFrame())
+        if (frame.isControlFrame())
         {
             // Cannot fragment Control Frames
             nextOutput(context,callback,frame);
@@ -40,7 +40,7 @@ public class FragmentExtension extends Extension
 
         int length = frame.getPayloadLength();
 
-        OpCode opcode = frame.getOpCode(); // original opcode
+        byte opcode = frame.getOpCode(); // original opcode
         ByteBuffer payload = frame.getPayload().slice();
         int originalLimit = payload.limit();
         int currentPosition = payload.position();

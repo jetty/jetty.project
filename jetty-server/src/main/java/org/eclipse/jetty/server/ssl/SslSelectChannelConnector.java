@@ -88,7 +88,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         request.setScheme(HttpScheme.HTTPS.asString());
         super.customize(request);
 
-        SslConnection.SslEndPoint ssl_endp = (SslConnection.SslEndPoint)request.getHttpChannel().getEndPoint();
+        SslConnection.DecryptedEndPoint ssl_endp = (SslConnection.DecryptedEndPoint)request.getHttpChannel().getEndPoint();
         SslConnection sslConnection = ssl_endp.getSslConnection();
         SSLEngine sslEngine=sslConnection.getSSLEngine();
         SslCertificates.customize(sslEngine,request);

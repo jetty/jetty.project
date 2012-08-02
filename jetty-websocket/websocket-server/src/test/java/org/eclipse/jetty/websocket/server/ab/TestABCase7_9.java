@@ -118,7 +118,7 @@ public class TestABCase7_9
             BufferUtil.clearToFill(buf);
 
             // Create Close Frame manually, as we are testing the server's behavior of a bad client.
-            buf.put((byte)(0x80 | OpCode.CLOSE.getCode()));
+            buf.put((byte)(0x80 | OpCode.CLOSE));
             buf.put((byte)(0x80 | 2));
             byte mask[] = new byte[]
             { 0x44, 0x44, 0x44, 0x44 };
@@ -159,7 +159,7 @@ public class TestABCase7_9
             BufferUtil.clearToFill(buf);
 
             // Create Close Frame manually, as we are testing the server's behavior of a bad client.
-            buf.put((byte)(0x80 | OpCode.CLOSE.getCode()));
+            buf.put((byte)(0x80 | OpCode.CLOSE));
             buf.put((byte)(0x80 | (2 + reason.length())));
             byte mask[] = new byte[]
             { 0x44, 0x44, 0x44, 0x44 };

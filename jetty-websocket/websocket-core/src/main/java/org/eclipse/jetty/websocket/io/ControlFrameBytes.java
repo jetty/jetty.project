@@ -36,7 +36,7 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
 
         super.completed(context);
 
-        if(frame.getOpCode() == OpCode.CLOSE)
+        if (frame.getOpCode() == OpCode.CLOSE)
         {
             // Disconnect the connection (no more packets/frames)
             connection.disconnect(false);

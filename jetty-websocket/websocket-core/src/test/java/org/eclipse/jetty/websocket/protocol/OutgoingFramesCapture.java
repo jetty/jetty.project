@@ -40,14 +40,14 @@ public class OutgoingFramesCapture implements OutgoingFrames
         Assert.assertThat("Captured frame count",writes.size(),is(expectedCount));
     }
 
-    public void assertHasFrame(OpCode op)
+    public void assertHasFrame(byte op)
     {
-        Assert.assertThat(op.name(),getFrameCount(op),greaterThanOrEqualTo(1));
+        Assert.assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
     }
 
-    public void assertHasFrame(OpCode op, int expectedCount)
+    public void assertHasFrame(byte op, int expectedCount)
     {
-        Assert.assertThat(op.name(),getFrameCount(op),is(expectedCount));
+        Assert.assertThat(OpCode.name(op),getFrameCount(op),is(expectedCount));
     }
 
     public void assertHasNoFrames()
@@ -66,7 +66,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
         }
     }
 
-    public int getFrameCount(OpCode op)
+    public int getFrameCount(byte op)
     {
         int count = 0;
         for (Write<?> write : writes)

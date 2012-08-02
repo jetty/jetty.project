@@ -67,7 +67,7 @@ public class TestClient
             }
         }
 
-        public void send(OpCode op, byte[] data, int maxFragmentLength)
+        public void send(byte op, byte[] data, int maxFragmentLength)
         {
             _starts.add(System.nanoTime());
 
@@ -215,7 +215,7 @@ public class TestClient
             {
                 long next = System.currentTimeMillis() + delay;
 
-                OpCode op = OpCode.TEXT;
+                byte op = OpCode.TEXT;
                 if (binary)
                 {
                     op = OpCode.BINARY;
@@ -225,7 +225,7 @@ public class TestClient
 
                 switch (op)
                 {
-                    case TEXT:
+                    case OpCode.TEXT:
                     {
                         StringBuilder b = new StringBuilder();
                         while (b.length() < size)
@@ -235,7 +235,7 @@ public class TestClient
                         data = b.toString().getBytes(StringUtil.__UTF8_CHARSET);
                         break;
                     }
-                    case BINARY:
+                    case OpCode.BINARY:
                     {
                         data = new byte[size];
                         __random.nextBytes(data);
@@ -328,7 +328,7 @@ public class TestClient
         client.connect(wsUri,socket).get(10,TimeUnit.SECONDS);
     }
 
-    private void send(OpCode op, byte[] data, int fragment)
+    private void send(byte op, byte[] data, int fragment)
     {
         socket.send(op,data,fragment);
     }

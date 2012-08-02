@@ -179,6 +179,7 @@ public abstract class Utf8Appendable
         return _state == UTF8_ACCEPT;
     }
 
+    @SuppressWarnings("serial")
     public static class NotUtf8Exception extends IllegalArgumentException
     {
         public NotUtf8Exception(String reason)

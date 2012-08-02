@@ -23,9 +23,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.CloseInfo;
-import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.Parser;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -43,7 +40,7 @@ public class ClosePayloadParserTest
         payload.flip();
 
         ByteBuffer buf = ByteBuffer.allocate(24);
-        buf.put((byte)(0x80 | OpCode.CLOSE.getCode())); // fin + close
+        buf.put((byte)(0x80 | OpCode.CLOSE)); // fin + close
         buf.put((byte)(0x80 | payload.remaining()));
         MaskedByteBuffer.putMask(buf);
         MaskedByteBuffer.putPayload(buf,payload);

@@ -179,7 +179,7 @@ public class WebSocketEventDriver implements IncomingFrames
         {
             switch (frame.getOpCode())
             {
-                case CLOSE:
+                case OpCode.CLOSE:
                 {
                     CloseInfo close = new CloseInfo(frame);
                     if (events.onClose != null)
@@ -188,7 +188,7 @@ public class WebSocketEventDriver implements IncomingFrames
                     }
                     throw new CloseException(close.getStatusCode(),close.getReason());
                 }
-                case PING:
+                case OpCode.PING:
                 {
                     WebSocketFrame pong = new WebSocketFrame(OpCode.PONG);
                     if (frame.getPayloadLength() > 0)
@@ -203,7 +203,7 @@ public class WebSocketEventDriver implements IncomingFrames
                     session.output("pong",new FutureCallback<String>(),pong);
                     break;
                 }
-                case BINARY:
+                case OpCode.BINARY:
                 {
                     if (events.onBinary == null)
                     {
@@ -273,7 +273,7 @@ public class WebSocketEventDriver implements IncomingFrames
                     }
                     return;
                 }
-                case TEXT:
+                case OpCode.TEXT:
                 {
                     if (events.onText == null)
                     {

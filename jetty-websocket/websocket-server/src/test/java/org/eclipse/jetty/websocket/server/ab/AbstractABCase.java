@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
@@ -42,6 +43,36 @@ public abstract class AbstractABCase
     public static void stopServer()
     {
         server.stop();
+    }
+
+    public static String toUtf8String(byte[] buf)
+    {
+        String raw = StringUtil.toUTF8String(buf,0,buf.length);
+        StringBuilder ret = new StringBuilder();
+        int len = raw.length();
+        for (int i = 0; i < len; i++)
+        {
+            int codepoint = raw.codePointAt(i);
+            if (Character.isUnicodeIdentifierPart(codepoint))
+            {
+                ret.append(String.format("\\u%04X",codepoint));
+            }
+            else
+            {
+                ret.append(Character.toChars(codepoint));
+            }
+        }
+        return ret.toString();
+    }
+
+    public Generator getLaxGenerator()
+    {
+        return laxGenerator;
+    }
+
+    public SimpleServletServer getServer()
+    {
+        return server;
     }
 
     protected byte[] masked(final byte[] data)
