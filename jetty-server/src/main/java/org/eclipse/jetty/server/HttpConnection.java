@@ -24,9 +24,9 @@ import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A Connection that handles the HTTP protocol
  */
-public class HttpConnection extends AbstractAsyncConnection
+public class HttpConnection extends AbstractConnection
 {
     public static final Logger LOG = Log.getLogger(HttpConnection.class);
 
@@ -75,7 +75,7 @@ public class HttpConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public HttpConnection(HttpConfiguration config, Connector connector, AsyncEndPoint endpoint)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endpoint)
     {
         super(endpoint,connector.getExecutor());
 
@@ -195,7 +195,7 @@ public class HttpConnection extends AbstractAsyncConnection
     /* ------------------------------------------------------------ */
     /** Parse and handle HTTP messages.
      * <p>
-     * This method is normally called as the {@link AbstractAsyncConnection} onReadable callback.
+     * This method is normally called as the {@link AbstractConnection} onReadable callback.
      * However, it can also be called {@link HttpChannelOverHttp#completed()} if there is unconsumed
      * data in the _requestBuffer, as a result of resuming a suspended request when there is a pipelined
      * request already read into the buffer.
@@ -279,7 +279,7 @@ public class HttpConnection extends AbstractAsyncConnection
                     }
 
                     // return if the connection has been changed
-                    if (getEndPoint().getAsyncConnection()!=this)
+                    if (getEndPoint().getConnection()!=this)
                         return;
                 }
                 else if (_headerBytes>= _httpConfig.getRequestHeaderSize())
@@ -437,11 +437,11 @@ public class HttpConnection extends AbstractAsyncConnection
             // Handle connection upgrades
             if (getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
             {
-                AsyncConnection connection=(AsyncConnection)getRequest().getAttribute(UPGRADE_CONNECTION_ATTR);
+                Connection connection=(Connection)getRequest().getAttribute(UPGRADE_CONNECTION_ATTR);
                 if (connection!=null)
                 {
                     LOG.debug("Upgrade from {} to {}",this,connection);
-                    getEndPoint().setAsyncConnection(connection);
+                    getEndPoint().setConnection(connection);
                     HttpConnection.this.reset();
                     return;
                 }

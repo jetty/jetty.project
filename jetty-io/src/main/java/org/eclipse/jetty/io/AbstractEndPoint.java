@@ -1,14 +1,23 @@
 package org.eclipse.jetty.io;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadPendingException;
+import java.nio.channels.WritePendingException;
+
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AbstractEndPoint implements EndPoint
 {
+    private static final Logger LOG = Log.getLogger(AbstractEndPoint.class);
     private final long _created=System.currentTimeMillis();
     private final InetSocketAddress _local;
     private final InetSocketAddress _remote;
     private volatile long _idleTimeout;
     private volatile long _idleTimestamp=System.currentTimeMillis();
+    private volatile Connection _connection;
 
 
     protected AbstractEndPoint(InetSocketAddress local,InetSocketAddress remote)
@@ -56,6 +65,30 @@ public abstract class AbstractEndPoint implements EndPoint
     protected void notIdle()
     {
         _idleTimestamp=System.currentTimeMillis();
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return _connection;
+    }
+
+    @Override
+    public void setConnection(Connection connection)
+    {
+        _connection = connection;
+    }
+
+    @Override
+    public void onOpen()
+    {
+        LOG.debug("onOpen {}",this);
+    }
+
+    @Override
+    public void onClose()
+    {
+        LOG.debug("onClose {}",this);
     }
 
     @Override

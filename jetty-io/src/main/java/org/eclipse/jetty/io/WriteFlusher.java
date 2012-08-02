@@ -13,7 +13,7 @@ import org.eclipse.jetty.util.Callback;
 
 /* ------------------------------------------------------------ */
 /**
- * A Utility class to help implement {@link AsyncEndPoint#write(Object, Callback, ByteBuffer...)}
+ * A Utility class to help implement {@link EndPoint#write(Object, Callback, ByteBuffer...)}
  * by calling {@link EndPoint#flush(ByteBuffer...)} until all content is written.
  * The abstract method {@link #onIncompleteFlushed()} is called when not all content has been
  * written after a call to flush and should organise for the {@link #completeWrite()}

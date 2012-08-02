@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
@@ -66,7 +66,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return sslContextFactory;
     }
 
-    public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+    public Connection newAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
     {
         WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
         WebSocketClientFactory factory = confut.getFactory();
@@ -78,7 +78,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         ScheduledExecutorService scheduler = factory.getScheduler();
 
         WebSocketAsyncConnection connection = new WebSocketClientAsyncConnection(endPoint,executor,scheduler,policy,bufferPool,factory);
-        endPoint.setAsyncConnection(connection);
+        endPoint.setConnection(connection);
         connection.getParser().setIncomingFramesHandler(websocket);
 
         // TODO: track open websockets? bind open websocket to connection?
@@ -87,7 +87,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     }
 
     @Override
-    public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
     {
         WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
 
@@ -97,7 +97,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
 
             if ((sslContextFactory != null) && ("wss".equalsIgnoreCase(scheme)))
             {
-                final AtomicReference<AsyncEndPoint> sslEndPointRef = new AtomicReference<>();
+                final AtomicReference<EndPoint> sslEndPointRef = new AtomicReference<>();
                 final AtomicReference<Object> attachmentRef = new AtomicReference<>(attachment);
                 SSLEngine engine = newSSLEngine(sslContextFactory,channel);
                 SslConnection sslConnection = new SslConnection(bufferPool,executor,endPoint,engine)
@@ -110,20 +110,20 @@ public class WebSocketClientSelectorManager extends SelectorManager
                         super.onClose();
                     }
                 };
-                endPoint.setAsyncConnection(sslConnection);
-                AsyncEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
+                endPoint.setConnection(sslConnection);
+                EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
                 sslEndPointRef.set(sslEndPoint);
 
                 startHandshake(engine);
 
-                AsyncConnection connection = newAsyncConnection(channel,sslEndPoint,attachment);
-                endPoint.setAsyncConnection(connection);
+                Connection connection = newAsyncConnection(channel,sslEndPoint,attachment);
+                endPoint.setConnection(connection);
                 return connection;
             }
             else
             {
-                AsyncConnection connection = newAsyncConnection(channel,endPoint,attachment);
-                endPoint.setAsyncConnection(connection);
+                Connection connection = newAsyncConnection(channel,endPoint,attachment);
+                endPoint.setConnection(connection);
                 return connection;
             }
         }

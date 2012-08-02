@@ -26,8 +26,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 import org.junit.Assert;
@@ -46,7 +46,7 @@ public class SlowClientWithPipelinedRequestTest
         connector = new SelectChannelConnector(server)
         {
             @Override
-            protected AsyncConnection newConnection(AsyncEndPoint endpoint)
+            protected Connection newConnection(EndPoint endpoint)
             {
                 return new HttpConnection(getHttpConfig(),this,endpoint)
                 {

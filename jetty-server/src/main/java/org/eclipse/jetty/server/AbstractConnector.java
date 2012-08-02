@@ -22,8 +22,8 @@ import java.util.concurrent.ThreadFactory;
 
 import javax.net.ssl.SSLEngine;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -179,7 +179,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         return _httpConfig;
     }
 
-    protected AsyncConnection newConnection(AsyncEndPoint endp) throws IOException
+    protected Connection newConnection(EndPoint endp) throws IOException
     {
         // TODO make this a plugable configurable connection factory for HTTP, HTTPS, SPDY & Websocket
         
@@ -188,8 +188,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             SSLEngine engine = _sslContextFactory.createSSLEngine(endp.getRemoteAddress());
             SslConnection ssl_connection = new SslConnection(getByteBufferPool(), getExecutor(), endp, engine);
             
-            AsyncConnection http_connection = new HttpConnection(_httpConfig,this,ssl_connection.getDecryptedEndPoint());
-            ssl_connection.getDecryptedEndPoint().setAsyncConnection(http_connection);
+            Connection http_connection = new HttpConnection(_httpConfig,this,ssl_connection.getDecryptedEndPoint());
+            ssl_connection.getDecryptedEndPoint().setConnection(http_connection);
             return ssl_connection;
         }
         return new HttpConnection(_httpConfig,this,endp);
@@ -389,19 +389,19 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _name = name;
     }
 
-    protected void connectionOpened(AsyncConnection connection)
+    protected void connectionOpened(Connection connection)
     {
         _stats.connectionOpened();
     }
 
-    protected void connectionUpgraded(AsyncConnection oldConnection, AsyncConnection newConnection)
+    protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
     {
         long duration = System.currentTimeMillis() - oldConnection.getEndPoint().getCreatedTimeStamp();
         int requests = (oldConnection instanceof HttpConnection) ? ((HttpConnection)oldConnection).getHttpChannel().getRequests() : 0;
         _stats.connectionUpgraded(duration, requests, requests);
     }
 
-    protected void connectionClosed(AsyncConnection connection)
+    protected void connectionClosed(Connection connection)
     {
         long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
         // TODO: remove casts to HttpConnection

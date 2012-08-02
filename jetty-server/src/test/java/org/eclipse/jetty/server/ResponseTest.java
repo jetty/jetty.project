@@ -38,9 +38,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
-import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
@@ -71,9 +72,9 @@ public class ResponseTest
         _server.start();
         _timer=new ScheduledThreadPoolExecutor(1);
 
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer,5000);
+        AbstractEndPoint endp = new ByteArrayEndPoint(_timer,5000);
         HttpInput input = new HttpInput();
-        AsyncConnection connection = new AbstractAsyncConnection(endp,new Executor()
+        Connection connection = new AbstractConnection(endp,new Executor()
         {
             @Override
             public void execute(Runnable command)

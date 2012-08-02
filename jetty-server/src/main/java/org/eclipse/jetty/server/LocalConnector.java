@@ -22,8 +22,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
-import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -158,15 +158,15 @@ public class LocalConnector extends AbstractConnector
     {
         LOG.debug("accepting {}",acceptorID);
         LocalEndPoint endp = _connects.take();
-        AsyncConnection connection=newConnection(endp);
-        endp.setAsyncConnection(connection);
+        Connection connection=newConnection(endp);
+        endp.setConnection(connection);
         endp.onOpen();
         connection.onOpen();
         connectionOpened(connection);
     }
 
 
-    public class LocalEndPoint extends AsyncByteArrayEndPoint
+    public class LocalEndPoint extends ByteArrayEndPoint
     {
         private CountDownLatch _closed = new CountDownLatch(1);
 
@@ -191,8 +191,8 @@ public class LocalConnector extends AbstractConnector
             super.close();
             if (was_open)
             {
-                connectionClosed(getAsyncConnection());
-                getAsyncConnection().onClose();
+                connectionClosed(getConnection());
+                getConnection().onClose();
                 onClose();
             }
         }

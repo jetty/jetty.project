@@ -62,7 +62,7 @@ public class SelectChannelEndPointInterestsTest
             }
 
             @Override
-            protected AsyncEndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+            protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
             {
                 return new SelectChannelEndPoint(channel, selector, selectionKey, scheduler, 60000)
                 {
@@ -76,9 +76,9 @@ public class SelectChannelEndPointInterestsTest
             }
 
             @Override
-            public AsyncConnection newConnection(SocketChannel channel, final AsyncEndPoint endPoint, Object attachment)
+            public Connection newConnection(SocketChannel channel, final EndPoint endPoint, Object attachment)
             {
-                return new AbstractAsyncConnection(endPoint, threadPool)
+                return new AbstractConnection(endPoint, threadPool)
                 {
                     @Override
                     public void onOpen()
@@ -109,7 +109,7 @@ public class SelectChannelEndPointInterestsTest
         init(new Interested()
         {
             @Override
-            public void onFillable(AsyncEndPoint endPoint, AbstractAsyncConnection connection)
+            public void onFillable(EndPoint endPoint, AbstractConnection connection)
             {
                 ByteBuffer input = BufferUtil.allocate(2);
                 int read = fill(endPoint, input);
@@ -143,7 +143,7 @@ public class SelectChannelEndPointInterestsTest
                 writeBlocked.set(true);
             }
 
-            private int fill(AsyncEndPoint endPoint, ByteBuffer buffer)
+            private int fill(EndPoint endPoint, ByteBuffer buffer)
             {
                 try
                 {
@@ -191,7 +191,7 @@ public class SelectChannelEndPointInterestsTest
 
     private interface Interested
     {
-        void onFillable(AsyncEndPoint endPoint, AbstractAsyncConnection connection);
+        void onFillable(EndPoint endPoint, AbstractConnection connection);
 
         void onIncompleteFlush();
     }

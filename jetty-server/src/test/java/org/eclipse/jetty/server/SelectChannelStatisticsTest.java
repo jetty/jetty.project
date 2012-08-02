@@ -28,8 +28,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
@@ -62,14 +62,14 @@ public class SelectChannelStatisticsTest
         _connector = new SelectChannelConnector(_server)
         {
             @Override
-            protected void endPointClosed(AsyncEndPoint endpoint)
+            protected void endPointClosed(EndPoint endpoint)
             {
                 //System.err.println("Endpoint closed "+endpoint);
                 super.endPointClosed(endpoint);
             }
 
             @Override
-            public void connectionClosed(AsyncConnection connection)
+            public void connectionClosed(Connection connection)
             {
                 //System.err.println("Connection closed "+connection);
                 super.connectionClosed(connection);

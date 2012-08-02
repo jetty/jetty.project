@@ -31,8 +31,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
@@ -184,10 +184,10 @@ public class SPDYClient
         return FlowControlStrategyFactory.newFlowControlStrategy(version);
     }
 
-    public void replaceAsyncConnection(AsyncEndPoint endPoint, AsyncConnection connection)
+    public void replaceAsyncConnection(EndPoint endPoint, Connection connection)
     {
-        AsyncConnection oldConnection = endPoint.getAsyncConnection();
-        endPoint.setAsyncConnection(connection);
+        Connection oldConnection = endPoint.getConnection();
+        endPoint.setConnection(connection);
         factory.selector.connectionUpgraded(endPoint, oldConnection);
     }
 
@@ -306,14 +306,14 @@ public class SPDYClient
         {
 
             @Override
-            protected AsyncEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+            protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
                 SessionPromise attachment = (SessionPromise)key.attachment();
 
                 long clientIdleTimeout = attachment.client.getIdleTimeout();
                 if (clientIdleTimeout < 0)
                     clientIdleTimeout = idleTimeout;
-                AsyncEndPoint result = new SelectChannelEndPoint(channel, selectSet, key, scheduler, clientIdleTimeout);
+                EndPoint result = new SelectChannelEndPoint(channel, selectSet, key, scheduler, clientIdleTimeout);
 
                 return result;
             }
@@ -325,7 +325,7 @@ public class SPDYClient
             }
 
             @Override
-            public AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint, final Object attachment)
+            public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment)
             {
                 SessionPromise sessionPromise = (SessionPromise)attachment;
                 final SPDYClient client = sessionPromise.client;
@@ -345,9 +345,9 @@ public class SPDYClient
                             }
                         };
 
-                        AsyncEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
+                        EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
                         NextProtoNegoClientAsyncConnection connection = new NextProtoNegoClientAsyncConnection(channel, sslEndPoint, attachment, client.factory.threadPool, client);
-                        sslEndPoint.setAsyncConnection(connection);
+                        sslEndPoint.setConnection(connection);
                         connectionOpened(connection);
 
                         NextProtoNego.put(engine, connection);
@@ -357,8 +357,8 @@ public class SPDYClient
                     else
                     {
                         AsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
-                        AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
-                        endPoint.setAsyncConnection(connection);
+                        Connection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
+                        endPoint.setConnection(connection);
                         return connection;
                     }
                 }
@@ -403,7 +403,7 @@ public class SPDYClient
     private static class ClientSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     {
         @Override
-        public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+        public Connection newAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
         {
             SessionPromise sessionPromise = (SessionPromise)attachment;
             SPDYClient client = sessionPromise.client;
@@ -414,7 +414,7 @@ public class SPDYClient
             Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
 
             SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, factory.bufferPool, parser, factory);
-            endPoint.setAsyncConnection(connection);
+            endPoint.setConnection(connection);
 
             FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 
@@ -433,7 +433,7 @@ public class SPDYClient
         {
             private final Factory factory;
 
-            public ClientSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
+            public ClientSPDYAsyncConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
             {
                 super(endPoint, bufferPool, parser, factory.threadPool);
                 this.factory = factory;

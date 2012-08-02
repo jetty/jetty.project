@@ -16,27 +16,27 @@ package org.eclipse.jetty.io;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * <p>An {@link AsyncConnection} is associated to an {@link AsyncEndPoint} so that I/O events
- * happening on the {@link AsyncEndPoint} can be processed by the {@link AsyncConnection}.</p>
- * <p>A typical implementation of {@link AsyncConnection} overrides {@link #onOpen()} to
- * {@link AsyncEndPoint#fillInterested(Object, Callback) set read interest} on the {@link AsyncEndPoint},
- * and when the {@link AsyncEndPoint} signals read readyness, this {@link AsyncConnection} can
+ * <p>An {@link Connection} is associated to an {@link EndPoint} so that I/O events
+ * happening on the {@link EndPoint} can be processed by the {@link Connection}.</p>
+ * <p>A typical implementation of {@link Connection} overrides {@link #onOpen()} to
+ * {@link EndPoint#fillInterested(Object, Callback) set read interest} on the {@link EndPoint},
+ * and when the {@link EndPoint} signals read readyness, this {@link Connection} can
  * read bytes from the network and interpret them.</p>
  */
-public interface AsyncConnection
+public interface Connection
 {
     /**
-     * <p>Callback method invoked when this {@link AsyncConnection} is opened.</p>
+     * <p>Callback method invoked when this {@link Connection} is opened.</p>
      */
     void onOpen();
 
     /**
-     * <p>Callback method invoked when this {@link AsyncConnection} is closed.</p>
+     * <p>Callback method invoked when this {@link Connection} is closed.</p>
      */
     void onClose();
 
     /**
-     * @return the {@link AsyncEndPoint} associated with this {@link AsyncConnection}
+     * @return the {@link EndPoint} associated with this {@link Connection}
      */
-    AsyncEndPoint getEndPoint();
+    EndPoint getEndPoint();
 }

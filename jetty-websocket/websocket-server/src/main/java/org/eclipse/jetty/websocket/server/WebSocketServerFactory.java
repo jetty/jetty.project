@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
@@ -353,7 +353,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
         // Create connection
         HttpConnection http = HttpConnection.getCurrentConnection();
-        AsyncEndPoint endp = http.getEndPoint();
+        EndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().getExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
         WebSocketServerAsyncConnection connection = new WebSocketServerAsyncConnection(endp,executor,scheduler,websocket.getPolicy(),bufferPool,this);

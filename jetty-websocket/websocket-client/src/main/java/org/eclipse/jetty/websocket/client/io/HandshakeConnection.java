@@ -22,9 +22,9 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.FutureCallback;
@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
  * <p>
  * Results in a {@link WebSocketAsyncConnection} on successful handshake.
  */
-public class HandshakeConnection extends AbstractAsyncConnection implements AsyncConnection
+public class HandshakeConnection extends AbstractConnection implements Connection
 {
     public static final String COOKIE_DELIM = "\"\\\n\r\t\f\b%+ ;=";
     private final WebSocketClient.ConnectFuture future;
@@ -47,7 +47,7 @@ public class HandshakeConnection extends AbstractAsyncConnection implements Asyn
 
     private String key;
 
-    public HandshakeConnection(AsyncEndPoint endp, Executor executor, ByteBufferPool bufferPool, WebSocketClient.ConnectFuture future)
+    public HandshakeConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, WebSocketClient.ConnectFuture future)
     {
         super(endp,executor);
         this.future = future;

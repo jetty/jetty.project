@@ -16,9 +16,16 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 
 
@@ -30,12 +37,35 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 {
     public final static InetSocketAddress NOIP=new InetSocketAddress(0);
 
+    private final AtomicReference<Future<?>> _timeout = new AtomicReference<>();
+    private final ScheduledExecutorService _scheduler;
+    
     protected ByteBuffer _in;
     protected ByteBuffer _out;
     protected boolean _ishut;
     protected boolean _oshut;
     protected boolean _closed;
     protected boolean _growOutput;
+    
+
+    private final ReadInterest _readInterest = new ReadInterest()
+    {
+        @Override
+        protected boolean needsFill() throws IOException
+        {
+            if (_closed)
+                throw new ClosedChannelException();
+            return _in == null || BufferUtil.hasContent(_in);
+        }
+    };
+    private final WriteFlusher _writeFlusher = new WriteFlusher(this)
+    {
+        @Override
+        protected void onIncompleteFlushed()
+        {
+            // Don't need to do anything here as takeOutput does the signalling.
+        }
+    };
 
     /* ------------------------------------------------------------ */
     /**
@@ -43,9 +73,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint()
     {
-        super(NOIP,NOIP);
-        _in=BufferUtil.EMPTY_BUFFER;
-        _out=BufferUtil.allocate(1024);
+        this(null,0,null,null);
     }
 
     /* ------------------------------------------------------------ */
@@ -54,9 +82,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(byte[] input, int outputSize)
     {
-        super(NOIP,NOIP);
-        _in=input==null?null:ByteBuffer.wrap(input);
-        _out=BufferUtil.allocate(outputSize);
+        this(null,0,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
 
     /* ------------------------------------------------------------ */
@@ -65,10 +91,35 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(String input, int outputSize)
     {
-        super(NOIP,NOIP);
-        setInput(input);
-        _out=BufferUtil.allocate(outputSize);
+        this(null,0,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
+    
+    public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs)
+    {
+        this(timer,idleTimeoutMs,null,null);
+    }
+
+    public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, byte[] input, int outputSize)
+    {
+        this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
+    }
+
+    public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, String input, int outputSize)
+    {
+        this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
+    }
+    
+    public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, ByteBuffer input, ByteBuffer output)
+    {
+        super(NOIP,NOIP);
+        _in=input==null?BufferUtil.EMPTY_BUFFER:input;
+        _out=output==null?BufferUtil.allocate(1024):output;
+        _scheduler = timer;
+        setIdleTimeout(idleTimeoutMs);
+    }
+
+    
+    
 
 
     /* ------------------------------------------------------------ */
@@ -95,6 +146,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void setInput(ByteBuffer in)
     {
         _in = in;
+        if (in == null || BufferUtil.hasContent(in))
+            _readInterest.readable();
     }
 
     /* ------------------------------------------------------------ */
@@ -135,6 +188,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         ByteBuffer b=_out;
         _out=BufferUtil.allocate(b.capacity());
+        _writeFlusher.completeWrite();
         return b;
     }
 
@@ -164,6 +218,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void setOutput(ByteBuffer out)
     {
         _out = out;
+        _writeFlusher.completeWrite();
     }
 
     /* ------------------------------------------------------------ */
@@ -195,7 +250,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    private void shutdownInput() throws IOException
+    private void shutdownInput()
     {
         _ishut=true;
         if (_oshut)
@@ -222,7 +277,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void close()
     {
         _closed=true;
-        // TODO: for sbordet to fix - onClose();  Moved invocation to AsycnByteArrayEndPoint for now (GW)
     }
 
     /* ------------------------------------------------------------ */
@@ -299,6 +353,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void reset()
     {
+        _readInterest.close();
+        _writeFlusher.close();
         _ishut=false;
         _oshut=false;
         _closed=false;
@@ -334,5 +390,73 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         _growOutput=growOutput;
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        super.setIdleTimeout(idleTimeout);
+        scheduleIdleTimeout(idleTimeout);
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void scheduleIdleTimeout(long delay)
+    {
+        if (delay>0 && _scheduler==null)
+            throw new IllegalStateException();
+        
+        Future<?> newTimeout = isOpen() && delay > 0 ? _scheduler.schedule(_timeoutTask, delay, TimeUnit.MILLISECONDS) : null;
+        Future<?> oldTimeout = _timeout.getAndSet(newTimeout);
+        if (oldTimeout != null)
+            oldTimeout.cancel(false);
+    }
+
+    /* ------------------------------------------------------------ */
+    private final Runnable _timeoutTask = new Runnable()
+    {    
+        @Override
+        public void run()
+        {
+            if (isOpen())
+            {
+                long idleTimestamp = getIdleTimestamp();
+                long idleTimeout = getIdleTimeout();
+                long idleElapsed = System.currentTimeMillis() - idleTimestamp;
+                long idleLeft = idleTimeout - idleElapsed;
+
+                if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
+                {
+                    if (idleTimestamp != 0 && idleTimeout > 0)
+                    {
+                        if (idleLeft < 0)
+                        {
+                            if (isOutputShutdown())
+                                close();
+                            notIdle();
+
+                            TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
+                            _readInterest.failed(timeout);
+                            _writeFlusher.failed(timeout);
+                        }
+                    }
+                }
+                scheduleIdleTimeout(idleLeft > 0 ? idleLeft : idleTimeout);
+            }
+        }
+    };
+
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
+    {
+        _readInterest.register(context, callback);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
+    {
+        _writeFlusher.write(context, callback, buffers);
+    }
 
 }

@@ -22,7 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
@@ -88,7 +88,7 @@ public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
     }
 
     @Override
-    protected void endPointClosed(AsyncEndPoint endpoint)
+    protected void endPointClosed(EndPoint endpoint)
     {
         super.endPointClosed(endpoint);
         ((NetworkTrafficSelectChannelEndPoint)endpoint).notifyClosed();

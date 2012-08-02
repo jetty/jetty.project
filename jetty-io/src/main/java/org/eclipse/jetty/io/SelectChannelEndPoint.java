@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * An ChannelEndpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, SelectorManager.SelectableAsyncEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorManager.SelectableEndPoint
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
@@ -45,8 +45,38 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             checkIdleTimeout();
         }
     };
+    
+
+    private final Runnable _updateTask = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                if (getChannel().isOpen())
+                {
+                    int oldInterestOps = _key.interestOps();
+                    int newInterestOps = _interestOps;
+                    if (newInterestOps != oldInterestOps)
+                        setKeyInterests(oldInterestOps, newInterestOps);
+                }
+            }
+            catch (CancelledKeyException x)
+            {
+                LOG.debug("Ignoring key update for concurrently closed channel {}", this);
+                close();
+            }
+            catch (Exception x)
+            {
+                LOG.warn("Ignoring key update for " + this, x);
+                close();
+            }
+        }
+    };
+    
     /**
-     * true if {@link ManagedSelector#destroyEndPoint(AsyncEndPoint)} has not been called
+     * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
     private final AtomicBoolean _open = new AtomicBoolean();
     private final ReadInterest _readInterest = new ReadInterest()
@@ -68,7 +98,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     private final SelectorManager.ManagedSelector _selector;
     private final SelectionKey _key;
     private final ScheduledExecutorService _scheduler;
-    private volatile AsyncConnection _connection;
     /**
      * The desired value for {@link SelectionKey#interestOps()}
      */
@@ -131,16 +160,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     }
 
     @Override
-    public AsyncConnection getAsyncConnection()
+    public void setConnection(Connection connection)
     {
-        return _connection;
-    }
-
-    @Override
-    public void setAsyncConnection(AsyncConnection connection)
-    {
-        AsyncConnection old = getAsyncConnection();
-        _connection = connection;
+        // TODO should this be on AbstractEndPoint?
+        Connection old = getConnection();
+        super.setConnection(connection);
         if (old != null && old != connection)
             _selector.getSelectorManager().connectionUpgraded(this, old);
     }
@@ -210,7 +234,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         {
             _interestOps = newInterestOps;
             LOG.debug("Local interests updated {} -> {} for {}", oldInterestOps, newInterestOps, this);
-            _selector.submit(this);
+            _selector.submit(_updateTask);
         }
         else
         {
@@ -218,30 +242,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
     }
 
-    @Override
-    public void run()
-    {
-        try
-        {
-            if (getChannel().isOpen())
-            {
-                int oldInterestOps = _key.interestOps();
-                int newInterestOps = _interestOps;
-                if (newInterestOps != oldInterestOps)
-                    setKeyInterests(oldInterestOps, newInterestOps);
-            }
-        }
-        catch (CancelledKeyException x)
-        {
-            LOG.debug("Ignoring key update for concurrently closed channel {}", this);
-            close();
-        }
-        catch (Exception x)
-        {
-            LOG.warn("Ignoring key update for " + this, x);
-            close();
-        }
-    }
 
     private void setKeyInterests(int oldInterestOps, int newInterestOps)
     {
@@ -260,12 +260,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     @Override
     public void onOpen()
     {
+        super.onOpen();
         _open.compareAndSet(false, true);
     }
 
     @Override
     public void onClose()
     {
+        super.onClose();
         _writeFlusher.close();
         _readInterest.close();
     }
@@ -290,6 +292,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
         return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",
                 hashCode(), getRemoteAddress(), getLocalAddress(), isOpen(), isInputShutdown(),
-                isOutputShutdown(), _interestOps, keyString, _readInterest, _writeFlusher, getAsyncConnection());
+                isOutputShutdown(), _interestOps, keyString, _readInterest, _writeFlusher, getConnection());
     }
 }

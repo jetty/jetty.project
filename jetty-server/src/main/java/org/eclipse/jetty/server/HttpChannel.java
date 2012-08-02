@@ -37,8 +37,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.util.BufferUtil;
@@ -72,7 +72,7 @@ public abstract class HttpChannel
 
 
     private final Server _server;
-    private final AsyncConnection _connection;
+    private final Connection _connection;
     private final HttpURI _uri;
 
     private final ChannelEventHandler _handler = new ChannelEventHandler();
@@ -100,7 +100,7 @@ public abstract class HttpChannel
 
 
     /* ------------------------------------------------------------ */
-    public HttpChannel(Server server,AsyncConnection connection,HttpInput input)
+    public HttpChannel(Server server,Connection connection,HttpInput input)
     {
         _server = server;
         _connection = connection;
@@ -127,7 +127,7 @@ public abstract class HttpChannel
     }
 
     /* ------------------------------------------------------------ */
-    public AsyncEndPoint getEndPoint()
+    public EndPoint getEndPoint()
     {
         return getConnection().getEndPoint();
     }
@@ -190,7 +190,7 @@ public abstract class HttpChannel
     }
 
     /* ------------------------------------------------------------ */
-    public AsyncConnection getConnection()
+    public Connection getConnection()
     {
         return _connection;
     }

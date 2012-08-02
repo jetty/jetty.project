@@ -19,14 +19,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 
-public class EmptyAsyncEndPoint implements AsyncEndPoint
+public class EmptyEndPoint implements EndPoint
 {
     private boolean checkForIdle;
-    private AsyncConnection connection;
+    private Connection connection;
     private boolean oshut;
     private boolean closed;
     private long maxIdleTime;
@@ -38,13 +38,13 @@ public class EmptyAsyncEndPoint implements AsyncEndPoint
     }
 
     @Override
-    public AsyncConnection getAsyncConnection()
+    public Connection getConnection()
     {
         return connection;
     }
 
     @Override
-    public void setAsyncConnection(AsyncConnection connection)
+    public void setConnection(Connection connection)
     {
         this.connection = connection;
     }

@@ -431,8 +431,8 @@ public class ContextHandlerTest
 
     private static final class WriterHandler extends AbstractHandler
     {
-        boolean error;
-        Throwable throwable;
+        volatile boolean error;
+        volatile Throwable throwable;
 
 
         public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

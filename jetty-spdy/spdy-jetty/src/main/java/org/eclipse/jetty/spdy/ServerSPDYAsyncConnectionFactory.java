@@ -17,8 +17,8 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -52,7 +52,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     }
 
     @Override
-    public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+    public Connection newAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
     {
         CompressionFactory compressionFactory = new StandardCompressionFactory();
         Parser parser = new Parser(compressionFactory.newDecompressor());
@@ -62,7 +62,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(endPoint, attachment);
         SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, bufferPool, parser, listener, connector);
-        endPoint.setAsyncConnection(connection);
+        endPoint.setConnection(connection);
 
         FlowControlStrategy flowControlStrategy = connector.newFlowControlStrategy(version);
 
@@ -77,7 +77,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         return connection;
     }
 
-    protected ServerSessionFrameListener provideServerSessionFrameListener(AsyncEndPoint endPoint, Object attachment)
+    protected ServerSessionFrameListener provideServerSessionFrameListener(EndPoint endPoint, Object attachment)
     {
         return listener;
     }
@@ -88,7 +88,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         private final SPDYServerConnector connector;
         private volatile boolean connected;
 
-        private ServerSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
+        private ServerSPDYAsyncConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
         {
             super(endPoint, bufferPool, parser, connector.getExecutor());
             this.listener = listener;

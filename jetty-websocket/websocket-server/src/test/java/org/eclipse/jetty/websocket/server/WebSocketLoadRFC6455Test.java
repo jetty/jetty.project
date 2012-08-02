@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -59,7 +59,7 @@ public class WebSocketLoadRFC6455Test
         private final BufferedReader input;
         private final int iterations;
         private final CountDownLatch latch;
-        private/* final */AsyncEndPoint _endp;
+        private/* final */EndPoint _endp;
         private final Generator _generator;
         private final Parser _parser;
         private final IncomingFrames _handler = new IncomingFrames()

@@ -24,10 +24,10 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 
-import org.eclipse.jetty.io.AbstractAsyncConnection;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.ReadInterest;
@@ -40,11 +40,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * An AsyncConnection that acts as an intercepter between an AsyncEndPoint providing SSL encrypted data
- * and another consumer of an  AsyncEndPoint (typically an {@link AsyncConnection} like HttpConnection) that 
+ * An AsyncConnection that acts as an intercepter between an EndPoint providing SSL encrypted data
+ * and another consumer of an  EndPoint (typically an {@link Connection} like HttpConnection) that 
  * wants unencrypted data.
  * <p>
- * The connector uses an {@link AsyncEndPoint} (typically {@link SelectChannelEndPoint}) as
+ * The connector uses an {@link EndPoint} (typically {@link SelectChannelEndPoint}) as
  * it's source/sink of encrypted data.   It then provides an endpoint via {@link #getDecryptedEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  * <p>
@@ -52,15 +52,15 @@ import org.eclipse.jetty.util.log.Logger;
  * asynchronous callbacks, and active methods that do schedule asynchronous callbacks.
  * <p>
  * The passive methods are {@link DecryptedEndPoint#fill(ByteBuffer)} and {@link DecryptedEndPoint#flush(ByteBuffer...)}. They make best
- * effort attempts to progress the connection using only calls to the encrypted {@link AsyncEndPoint#fill(ByteBuffer)} and {@link AsyncEndPoint#flush(ByteBuffer...)}
+ * effort attempts to progress the connection using only calls to the encrypted {@link EndPoint#fill(ByteBuffer)} and {@link EndPoint#flush(ByteBuffer...)}
  * methods.  They will never block nor schedule any readInterest or write callbacks.   If a fill/flush cannot progress either because
  * of network congestion or waiting for an SSL handshake message, then the fill/flush will simply return with zero bytes filled/flushed.
  * Specifically, if a flush cannot proceed because it needs to receive a handshake message, then the flush will attempt to fill bytes from the 
- * encrypted endpoint, but if insufficient bytes are read it will NOT call {@link AsyncEndPoint#fillInterested(Object, Callback)}.
+ * encrypted endpoint, but if insufficient bytes are read it will NOT call {@link EndPoint#fillInterested(Object, Callback)}.
  * <p>
  * It is only the active methods : {@link DecryptedEndPoint#fillInterested(Object, Callback)} and 
  * {@link DecryptedEndPoint#write(Object, Callback, ByteBuffer...)} that may schedule callbacks by calling the encrypted 
- * {@link AsyncEndPoint#fillInterested(Object, Callback)} and {@link AsyncEndPoint#write(Object, Callback, ByteBuffer...)}
+ * {@link EndPoint#fillInterested(Object, Callback)} and {@link EndPoint#write(Object, Callback, ByteBuffer...)}
  * methods.  For normal data handling, the decrypted fillInterest method will result in an encrypted fillInterest and a decrypted
  * write will result in an encrypted write. However, due to SSL handshaking requirements, it is also possible for a decrypted fill 
  * to call the encrypted write and for the decrypted flush to call the encrypted fillInterested methods.
@@ -70,7 +70,7 @@ import org.eclipse.jetty.util.log.Logger;
  * be called again and make another best effort attempt to progress the connection.
  * 
  */
-public class SslConnection extends AbstractAsyncConnection
+public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
     private final ByteBufferPool _bufferPool;
@@ -82,7 +82,7 @@ public class SslConnection extends AbstractAsyncConnection
     private final boolean _encryptedDirectBuffers = false;
     private final boolean _decryptedDirectBuffers = false;
 
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, AsyncEndPoint endPoint, SSLEngine sslEngine)
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
         super(endPoint, executor, true);
         this._bufferPool = byteBufferPool;
@@ -95,7 +95,7 @@ public class SslConnection extends AbstractAsyncConnection
         return _sslEngine;
     }
 
-    public AsyncEndPoint getDecryptedEndPoint()
+    public EndPoint getDecryptedEndPoint()
     {
         return _decryptedEndPoint;
     }
@@ -113,7 +113,7 @@ public class SslConnection extends AbstractAsyncConnection
             if (_sslEngine.getUseClientMode())
                 _decryptedEndPoint.write(null, new Callback.Empty<>(), BufferUtil.EMPTY_BUFFER);
             
-            getDecryptedEndPoint().getAsyncConnection().onOpen();
+            getDecryptedEndPoint().getConnection().onOpen();
         }
         catch (SSLException x)
         {
@@ -187,24 +187,13 @@ public class SslConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public class DecryptedEndPoint extends AbstractEndPoint implements AsyncEndPoint
+    public class DecryptedEndPoint extends AbstractEndPoint implements EndPoint
     {
-        private AsyncConnection _connection;
         private boolean _fillRequiresFlushToProgress;
         private boolean _flushRequiresFillToProgress;
         private boolean _cannotAcceptMoreAppDataToFlush;
         private boolean _needToFillMoreDataToProgress;
         private boolean _ishut = false;
-
-        @Override
-        public void onOpen()
-        {
-        }
-
-        @Override
-        public void onClose()
-        {
-        }
 
         private final Callback<Void> _writeCallback = new Callback<Void>()
         {
@@ -553,7 +542,7 @@ public class SslConnection extends AbstractAsyncConnection
             // or busy handshaking, then zero bytes may be taken from appOuts and this method
             // will return 0 (even if some handshake bytes were flushed and filled).
             // it is the applications responsibility to call flush again - either in a busy loop
-            // or better yet by using AsyncEndPoint#write to do the flushing.
+            // or better yet by using EndPoint#write to do the flushing.
 
             LOG.debug("{} flush enter {}", SslConnection.this, Arrays.toString(appOuts));
             try
@@ -712,18 +701,6 @@ public class SslConnection extends AbstractAsyncConnection
         public boolean isInputShutdown()
         {
             return _ishut;
-        }
-
-        @Override
-        public AsyncConnection getAsyncConnection()
-        {
-            return _connection;
-        }
-
-        @Override
-        public void setAsyncConnection(AsyncConnection connection)
-        {
-            _connection = connection;
         }
 
         @Override

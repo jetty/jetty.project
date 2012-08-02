@@ -24,8 +24,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
@@ -237,9 +237,9 @@ public class SelectChannelConnector extends AbstractNetConnector
         return new SelectChannelEndPoint(channel,selectSet,key, getScheduler(), getIdleTimeout());
     }
 
-    protected void endPointClosed(AsyncEndPoint endpoint)
+    protected void endPointClosed(EndPoint endpoint)
     {
-        connectionClosed(endpoint.getAsyncConnection());
+        connectionClosed(endpoint.getConnection());
     }
 
     /* ------------------------------------------------------------ */
@@ -257,25 +257,25 @@ public class SelectChannelConnector extends AbstractNetConnector
         }
 
         @Override
-        protected void endPointClosed(AsyncEndPoint endpoint)
+        protected void endPointClosed(EndPoint endpoint)
         {
-            SelectChannelConnector.this.connectionClosed(endpoint.getAsyncConnection());
+            SelectChannelConnector.this.connectionClosed(endpoint.getConnection());
             super.endPointClosed(endpoint);
         }
 
         @Override
-        protected void endPointOpened(AsyncEndPoint endpoint)
+        protected void endPointOpened(EndPoint endpoint)
         {
             // TODO handle max connections and low resources
             super.endPointOpened(endpoint);
-            SelectChannelConnector.this.connectionOpened(endpoint.getAsyncConnection());
+            SelectChannelConnector.this.connectionOpened(endpoint.getConnection());
         }
 
         @Override
-        public void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+        public void connectionUpgraded(EndPoint endpoint, Connection oldConnection)
         {
             super.connectionUpgraded(endpoint, oldConnection);
-            SelectChannelConnector.this.connectionUpgraded(oldConnection, endpoint.getAsyncConnection());
+            SelectChannelConnector.this.connectionUpgraded(oldConnection, endpoint.getConnection());
         }
 
         @Override
@@ -285,7 +285,7 @@ public class SelectChannelConnector extends AbstractNetConnector
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment) throws IOException
+        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
             return SelectChannelConnector.this.newConnection(endpoint);
         }

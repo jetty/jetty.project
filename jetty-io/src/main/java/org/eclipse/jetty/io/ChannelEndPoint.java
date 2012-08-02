@@ -22,9 +22,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
+import java.nio.channels.ReadPendingException;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.WritePendingException;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -193,5 +196,17 @@ public class ChannelEndPoint extends AbstractEndPoint
     public Socket getSocket()
     {
         return _socket;
+    }
+
+    @Override
+    public <C> void fillInterested(C context, Callback<C> callback) throws ReadPendingException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        throw new UnsupportedOperationException();
     }
 }

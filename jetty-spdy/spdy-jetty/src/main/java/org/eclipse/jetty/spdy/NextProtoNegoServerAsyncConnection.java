@@ -17,22 +17,22 @@ import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class NextProtoNegoServerAsyncConnection extends AbstractAsyncConnection implements NextProtoNego.ServerProvider
+public class NextProtoNegoServerAsyncConnection extends AbstractConnection implements NextProtoNego.ServerProvider
 {
     private final Logger logger = Log.getLogger(getClass());
     private final SocketChannel channel;
     private final SPDYServerConnector connector;
     private volatile boolean completed;
 
-    public NextProtoNegoServerAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, SPDYServerConnector connector)
+    public NextProtoNegoServerAsyncConnection(SocketChannel channel, EndPoint endPoint, SPDYServerConnector connector)
     {
         super(endPoint, connector.getExecutor());
         this.channel = channel;
@@ -77,8 +77,8 @@ public class NextProtoNegoServerAsyncConnection extends AbstractAsyncConnection 
     public void unsupported()
     {
         AsyncConnectionFactory asyncConnectionFactory = connector.getDefaultAsyncConnectionFactory();
-        AsyncEndPoint endPoint = getEndPoint();
-        AsyncConnection connection = asyncConnectionFactory.newAsyncConnection(channel, endPoint, connector);
+        EndPoint endPoint = getEndPoint();
+        Connection connection = asyncConnectionFactory.newAsyncConnection(channel, endPoint, connector);
         connector.replaceAsyncConnection(endPoint, connection);
         completed = true;
     }
@@ -93,8 +93,8 @@ public class NextProtoNegoServerAsyncConnection extends AbstractAsyncConnection 
     public void protocolSelected(String protocol)
     {
         AsyncConnectionFactory asyncConnectionFactory = connector.getAsyncConnectionFactory(protocol);
-        AsyncEndPoint endPoint = getEndPoint();
-        AsyncConnection connection = asyncConnectionFactory.newAsyncConnection(channel, endPoint, connector);
+        EndPoint endPoint = getEndPoint();
+        Connection connection = asyncConnectionFactory.newAsyncConnection(channel, endPoint, connector);
         connector.replaceAsyncConnection(endPoint, connection);
         completed = true;
     }

@@ -23,26 +23,26 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>A convenience base implementation of {@link AsyncConnection}.</p>
- * <p>This class uses the capabilities of the {@link AsyncEndPoint} API to provide a
+ * <p>A convenience base implementation of {@link Connection}.</p>
+ * <p>This class uses the capabilities of the {@link EndPoint} API to provide a
  * more traditional style of async reading.  A call to {@link #fillInterested()}
  * will schedule a callback to {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
  * as appropriate.</p>
  */
-public abstract class AbstractAsyncConnection implements AsyncConnection
+public abstract class AbstractConnection implements Connection
 {
-    private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
+    private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
     private final AtomicBoolean _readInterested = new AtomicBoolean();
-    private final AsyncEndPoint _endp;
+    private final EndPoint _endp;
     private final Callback<Void> _readCallback;
 
-    public AbstractAsyncConnection(AsyncEndPoint endp, Executor executor)
+    public AbstractConnection(EndPoint endp, Executor executor)
     {
         this(endp, executor, false);
     }
 
-    public AbstractAsyncConnection(AsyncEndPoint endp, Executor executor, final boolean executeOnlyFailure)
+    public AbstractConnection(EndPoint endp, Executor executor, final boolean executeOnlyFailure)
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
@@ -72,7 +72,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
             @Override
             public String toString()
             {
-                return String.format("%s@%x", getClass().getSimpleName(), AbstractAsyncConnection.this.hashCode());
+                return String.format("%s@%x", getClass().getSimpleName(), AbstractConnection.this.hashCode());
             }
         };
     }
@@ -139,7 +139,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     }
 
     @Override
-    public AsyncEndPoint getEndPoint()
+    public EndPoint getEndPoint()
     {
         return _endp;
     }

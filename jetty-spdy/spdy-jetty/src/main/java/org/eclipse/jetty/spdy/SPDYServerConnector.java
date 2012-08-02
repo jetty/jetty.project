@@ -30,8 +30,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -182,7 +182,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     }
 
     @Override
-    protected AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint)
+    protected Connection newConnection(final SocketChannel channel, EndPoint endPoint)
     {
         if (sslContextFactory != null)
         {
@@ -198,9 +198,9 @@ public class SPDYServerConnector extends SelectChannelConnector
                 }
             };
 
-            final AsyncEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
+            final EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
             NextProtoNegoServerAsyncConnection connection = new NextProtoNegoServerAsyncConnection(channel, sslEndPoint, this);
-            sslEndPoint.setAsyncConnection(connection);
+            sslEndPoint.setConnection(connection);
             getSelectorManager().connectionOpened(connection);
 
             NextProtoNego.put(engine, connection);
@@ -210,8 +210,8 @@ public class SPDYServerConnector extends SelectChannelConnector
         else
         {
             AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-            AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, this);
-            endPoint.setAsyncConnection(connection);
+            Connection connection = connectionFactory.newAsyncConnection(channel, endPoint, this);
+            endPoint.setConnection(connection);
             return connection;
         }
     }
@@ -265,10 +265,10 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.initialWindowSize = initialWindowSize;
     }
 
-    public void replaceAsyncConnection(AsyncEndPoint endPoint, AsyncConnection connection)
+    public void replaceAsyncConnection(EndPoint endPoint, Connection connection)
     {
-        AsyncConnection oldConnection = endPoint.getAsyncConnection();
-        endPoint.setAsyncConnection(connection);
+        Connection oldConnection = endPoint.getConnection();
+        endPoint.setConnection(connection);
         getSelectorManager().connectionUpgraded(endPoint, oldConnection);
     }
 

@@ -51,7 +51,7 @@ import org.junit.Test;
 public class SelectChannelEndPointTest
 {
     protected CountDownLatch _lastEndPointLatch;
-    protected volatile AsyncEndPoint _lastEndPoint;
+    protected volatile EndPoint _lastEndPoint;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     protected ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -64,7 +64,7 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel, endpoint);
         }
@@ -108,18 +108,18 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(), _connector.socket().getLocalPort());
     }
 
-    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
 
-    public class TestConnection extends AbstractAsyncConnection
+    public class TestConnection extends AbstractConnection
     {
         ByteBuffer _in = BufferUtil.allocate(32 * 1024);
         ByteBuffer _out = BufferUtil.allocate(32 * 1024);
         long _last = -1;
 
-        public TestConnection(AsyncEndPoint endp)
+        public TestConnection(EndPoint endp)
         {
             super(endp, _threadPool);
         }
@@ -134,7 +134,7 @@ public class SelectChannelEndPointTest
         @Override
         public synchronized void onFillable()
         {
-            AsyncEndPoint _endp = getEndPoint();
+            EndPoint _endp = getEndPoint();
             try
             {
                 _last = System.currentTimeMillis();
@@ -547,7 +547,7 @@ public class SelectChannelEndPointTest
                     System.err.println("time=" + (now - start));
                     System.err.println("last=" + (now - last));
                     System.err.println("endp=" + _lastEndPoint);
-                    System.err.println("conn=" + _lastEndPoint.getAsyncConnection());
+                    System.err.println("conn=" + _lastEndPoint.getConnection());
 
                     e.printStackTrace();
                 }

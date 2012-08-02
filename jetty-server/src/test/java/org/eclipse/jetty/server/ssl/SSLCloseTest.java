@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SelectChannelConnector;
@@ -43,7 +43,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
  */
 public class SSLCloseTest extends TestCase
 {
-    private static AsyncEndPoint __endp;
+    private static EndPoint __endp;
     private static class CredulousTM implements TrustManager, X509TrustManager
     {
         public X509Certificate[] getAcceptedIssuers()
