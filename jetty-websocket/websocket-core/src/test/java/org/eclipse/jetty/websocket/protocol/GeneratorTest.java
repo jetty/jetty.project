@@ -17,6 +17,14 @@ import org.junit.Test;
 public class GeneratorTest
 {
 
+    private void parsePartial(Parser parser, ByteBuffer buf, int numBytes)
+    {
+        int len = Math.min(numBytes,buf.remaining());
+        byte arr[] = new byte[len];
+        buf.get(arr,0,len);
+        parser.parse(ByteBuffer.wrap(arr));
+    }
+
     /**
      * Prevent regression of masking of many packets.
      */
@@ -25,7 +33,7 @@ public class GeneratorTest
     {
         byte[] MASK =
             { 0x11, 0x22, 0x33, 0x44 };
-        int pingCount = 1000;
+        int pingCount = 10;
 
         // the generator
         Generator generator = new UnitGenerator();
@@ -67,12 +75,10 @@ public class GeneratorTest
         int segmentSize = 5;
         while (completeBuf.remaining() > 0)
         {
-            ByteBuffer part = completeBuf.slice();
-            int len = Math.min(segmentSize,part.remaining());
-            part.limit(part.position() + len);
-            parser.parse(part);
-            completeBuf.position(completeBuf.position() + len);
+            parsePartial(parser,completeBuf,segmentSize);
         }
+
+        capture.dump();
 
         // Assert validity of frame
         int frameCount = send.size();

@@ -392,8 +392,8 @@ public class Parser
                 case MASK_BYTES:
                 {
                     byte b = buffer.get();
+                    frame.getMask()[4 - cursor] = b;
                     --cursor;
-                    frame.getMask()[cursor] = b;
                     if (cursor == 0)
                     {
                         // special case for empty payloads (no more bytes left in buffer)
@@ -449,6 +449,7 @@ public class Parser
                 getPolicy().assertValidPayloadLength(payloadLength);
                 frame.assertValid();
                 payload = ByteBuffer.allocate(payloadLength);
+                BufferUtil.clearToFill(payload);
             }
 
             BufferUtil.put(buffer,payload);
@@ -457,14 +458,18 @@ public class Parser
             {
                 BufferUtil.flipToFlush(payload,0);
 
+                LOG.debug("PreMask: {}",BufferUtil.toDetailString(payload));
                 // demask (if needed)
                 if (frame.isMasked())
                 {
                     byte mask[] = frame.getMask();
+                    int offset;
+                    int start = payload.position();
                     int end = payload.limit();
-                    for (int i = payload.position(); i < end; i++)
+                    for (int i = start; i < end; i++)
                     {
-                        payload.put(i,(byte)(payload.get(i) ^ mask[i % 4]));
+                        offset = (i - start);
+                        payload.put(i,(byte)(payload.get(i) ^ mask[offset % 4]));
                     }
                 }
 
