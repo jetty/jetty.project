@@ -164,7 +164,7 @@ public class Parser
         incomingFramesHandler.incoming(e);
     }
 
-    public void parse(ByteBuffer buffer)
+    public synchronized void parse(ByteBuffer buffer)
     {
         if (buffer.remaining() <= 0)
         {

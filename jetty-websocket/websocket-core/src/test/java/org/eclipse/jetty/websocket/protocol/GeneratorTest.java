@@ -25,7 +25,7 @@ public class GeneratorTest
     {
         byte[] MASK =
             { 0x11, 0x22, 0x33, 0x44 };
-        int pingCount = 10;
+        int pingCount = 1000;
 
         // the generator
         Generator generator = new UnitGenerator();
@@ -58,13 +58,21 @@ public class GeneratorTest
         }
         BufferUtil.flipToFlush(completeBuf,0);
 
-        // Parse complete buffer.
+        // Parse complete buffer (5 bytes at a time)
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         Parser parser = new Parser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
-        parser.parse(completeBuf);
+        int segmentSize = 5;
+        while (completeBuf.remaining() > 0)
+        {
+            ByteBuffer part = completeBuf.slice();
+            int len = Math.min(segmentSize,part.remaining());
+            part.limit(part.position() + len);
+            parser.parse(part);
+            completeBuf.position(completeBuf.position() + len);
+        }
 
         // Assert validity of frame
         int frameCount = send.size();
