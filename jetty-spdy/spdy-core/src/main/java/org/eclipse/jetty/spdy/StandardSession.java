@@ -644,9 +644,8 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
             notifyOnGoAway(listener,goAwayInfo);
             flush();
             // SPDY does not require to send back a response to a GO_AWAY.
-            // We notified the application of the last good stream id,
-            // tried our best to flush remaining data, and close.
-            close();
+            // We notified the application of the last good stream id and
+            // tried our best to flush remaining data.
         }
     }
 

@@ -17,60 +17,48 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
 import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
 /**
- * A Utility class to help implement {@link AsyncEndPoint#write(Object, Callback, ByteBuffer...)}
- * by calling {@link EndPoint#flush(ByteBuffer...)} until all content is written.
- * The abstract method {@link #onIncompleteFlushed()} is called when not all content has been
- * written after a call to flush and should organise for the {@link #completeWrite()}
- * method to be called when a subsequent call to flush should be able to make more progress.
+ * A Utility class to help implement {@link AsyncEndPoint#write(Object, Callback, ByteBuffer...)} by calling
+ * {@link EndPoint#flush(ByteBuffer...)} until all content is written.
+ * The abstract method {@link #onIncompleteFlushed()} is called when not all content has been written after a call to
+ * flush and should organise for the {@link #completeWrite()} method to be called when a subsequent call to flush
+ * should  be able to make more progress.
  */
 abstract public class WriteFlusher
 {
     private static final Logger logger = Log.getLogger(WriteFlusher.class);
-    private final static ByteBuffer[] NO_BUFFERS = new ByteBuffer[0];
-    private final EndPoint _endp;
+    private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
+    private static final State idleState = new IdleState();
+    private static State writingState = new WritingState();
+    private static final State failedState = new FailedState();
+    private static final State completingState = new CompletingState();
+    private final EndPoint _endPoint;
     private final AtomicReference<State> _state = new AtomicReference<>();
-    private final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class); //TODO: static
-    private final State idleState = new IdleState(); //TODO: static all of them
-    private final State writingState = new WritingState();
-    private final State failedState = new FailedState();
-    private final State completingState = new CompletedState();
     private volatile Throwable failure;
 
-    protected WriteFlusher(EndPoint endp)
+    static
+    {
+        // fill the state machine
+        __stateTransitions.put(StateType.IDLE, EnumSet.of(StateType.WRITING, StateType.FAILED));
+        __stateTransitions.put(StateType.WRITING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.FAILED));
+        __stateTransitions.put(StateType.PENDING, EnumSet.of(StateType.IDLE, StateType.COMPLETING, StateType.FAILED));
+        __stateTransitions.put(StateType.COMPLETING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.FAILED));
+        __stateTransitions.put(StateType.FAILED, EnumSet.noneOf(StateType.class));
+    }
+
+    protected WriteFlusher(EndPoint endPoint)
     {
         _state.set(idleState);
-        _endp = endp;
-
-        // fill the state machine
-        __stateTransitions.put(StateType.IDLE, new HashSet<StateType>());
-        __stateTransitions.put(StateType.WRITING, new HashSet<StateType>());
-        __stateTransitions.put(StateType.PENDING, new HashSet<StateType>());
-        __stateTransitions.put(StateType.COMPLETING, new HashSet<StateType>());
-        __stateTransitions.put(StateType.FAILED, new HashSet<StateType>());
-
-        __stateTransitions.get(StateType.IDLE).add(StateType.WRITING);
-        __stateTransitions.get(StateType.WRITING).add(StateType.IDLE);
-        __stateTransitions.get(StateType.WRITING).add(StateType.PENDING);
-        __stateTransitions.get(StateType.WRITING).add(StateType.FAILED);
-        __stateTransitions.get(StateType.PENDING).add(StateType.IDLE);
-        __stateTransitions.get(StateType.PENDING).add(StateType.COMPLETING);
-        __stateTransitions.get(StateType.PENDING).add(StateType.FAILED);
-        __stateTransitions.get(StateType.COMPLETING).add(StateType.IDLE);
-        __stateTransitions.get(StateType.COMPLETING).add(StateType.PENDING);
-        __stateTransitions.get(StateType.COMPLETING).add(StateType.FAILED);
-
-        __stateTransitions.get(StateType.IDLE).add(StateType.IDLE); // TODO: should never happen?! Probably remove this transition and just throw as this indicates a bug
+        _endPoint = endPoint;
     }
 
     private enum StateType
@@ -82,6 +70,12 @@ abstract public class WriteFlusher
         FAILED
     }
 
+    /**
+     * Tries to update the currenState to the given new state.
+     * @param newState the desired new state
+     * @return the state before the updateState or null if the state transition failed
+     * @throws WritePendingException if currentState is WRITING and new state is WRITING (api usage error)
+     */
     private State updateState(State newState)
     {
         State currentState = _state.get();
@@ -89,7 +83,7 @@ abstract public class WriteFlusher
 
         while (!updated)
         {
-            if(!isTransitionAllowed(newState, currentState))
+            if (!isTransitionAllowed(currentState, newState))
                 return null; // return false + currentState
 
             updated = _state.compareAndSet(currentState, newState);
@@ -101,30 +95,34 @@ abstract public class WriteFlusher
         return currentState;
     }
 
-    private boolean isTransitionAllowed(State newState, State currentState)
+    private boolean isTransitionAllowed(State currentState, State newState)
     {
         Set<StateType> allowedNewStateTypes = __stateTransitions.get(currentState.getType());
         if (currentState.getType() == StateType.WRITING && newState.getType() == StateType.WRITING)
         {
-            logger.debug("WRITE PENDING EXCEPTION"); //TODO: thomas remove, we don't log and throw
             throw new WritePendingException();
         }
         if (!allowedNewStateTypes.contains(newState.getType()))
         {
-            logger.debug("{} -> {} not allowed.", currentState.getType(), newState.getType()); //thomas remove
+            logger.debug("StateType update: {} -> {} not allowed", currentState, newState);
             return false;
         }
         return true;
     }
 
-    private abstract class State
+    /**
+     * State represents a State of WriteFlusher.
+     *
+     * @param <C>
+     */
+    private static class State<C>
     {
-        protected StateType _type;
-        protected ByteBuffer[] _buffers;
-        protected Object _context;
-        protected Callback<Object> _callback;
+        private final StateType _type;
+        private final C _context;
+        private final Callback<C> _callback;
+        private ByteBuffer[] _buffers;
 
-        private State(StateType stateType, ByteBuffer[] buffers, Object context, Callback<Object> callback)
+        private State(StateType stateType, ByteBuffer[] buffers, C context, Callback<C> callback)
         {
             _type = stateType;
             _buffers = buffers;
@@ -135,7 +133,7 @@ abstract public class WriteFlusher
         /**
          * In most States this is a noop. In others it needs to be overwritten.
          *
-         * @param cause
+         * @param cause cause of the failure
          */
         protected void fail(Throwable cause)
         {
@@ -153,9 +151,14 @@ abstract public class WriteFlusher
             return _type;
         }
 
-        public void compactBuffers()
+        protected C getContext()
         {
-            this._buffers = compact(_buffers);
+            return _context;
+        }
+
+        protected Callback<C> getCallback()
+        {
+            return _callback;
         }
 
         public ByteBuffer[] getBuffers()
@@ -170,7 +173,10 @@ abstract public class WriteFlusher
         }
     }
 
-    private class IdleState extends State
+    /**
+     * In IdleState WriteFlusher is idle and accepts new writes
+     */
+    private static class IdleState extends State<Void>
     {
         private IdleState()
         {
@@ -178,7 +184,10 @@ abstract public class WriteFlusher
         }
     }
 
-    private class WritingState extends State
+    /**
+     * In WritingState WriteFlusher is currently writing.
+     */
+    private static class WritingState extends State<Void>
     {
         private WritingState()
         {
@@ -186,7 +195,10 @@ abstract public class WriteFlusher
         }
     }
 
-    private class FailedState extends State
+    /**
+     * In FailedState no more operations are allowed. The current implementation will never recover from this state.
+     */
+    private static class FailedState extends State<Void>
     {
         private FailedState()
         {
@@ -194,17 +206,28 @@ abstract public class WriteFlusher
         }
     }
 
-    private class CompletedState extends State
+    /**
+     * In CompletingState WriteFlusher is flushing buffers that have not been fully written in write(). If write()
+     * didn't flush all buffers in one go, it'll switch the State to PendingState. completeWrite() will then switch to
+     * this state and try to flush the remaining buffers.
+     */
+    private static class CompletingState extends State<Void>
     {
-        private CompletedState()
+        private CompletingState()
         {
             super(StateType.COMPLETING, null, null, null);
         }
     }
 
-    private class PendingState extends State
+    /**
+     * In PendingState not all buffers could be written in one go. Then write() will switch to PendingState() and
+     * preserve the state by creating a new PendingState object with the given parameters.
+     *
+     * @param <C>
+     */
+    private class PendingState<C> extends State<C>
     {
-        private PendingState(ByteBuffer[] buffers, Object context, Callback<Object> callback)
+        private PendingState(ByteBuffer[] buffers, C context, Callback<C> callback)
         {
             super(StateType.PENDING, buffers, context, callback);
         }
@@ -212,37 +235,51 @@ abstract public class WriteFlusher
         @Override
         protected void fail(Throwable cause)
         {
-            _callback.failed(_context, cause);
+            getCallback().failed(getContext(), cause);
         }
 
         @Override
         protected void complete()
         {
-            _callback.completed(_context);
+            getCallback().completed(getContext());
         }
     }
 
+    /**
+     * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
+     * fails it'll fail the callback.
+     *
+     * If not all buffers can be written in one go it creates a new {@link PendingState} object to preserve the state
+     * and then calls {@link #onIncompleteFlushed()}. The remaining buffers will be written in {@link #completeWrite()}.
+     *
+     * If all buffers have been written it calls callback.complete().
+     *
+     * @param context context to pass to the callback
+     * @param callback the callback to call on either failed or complete
+     * @param buffers the buffers to flush to the endpoint
+     * @param <C> type of the context
+     */
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers)
     {
-        logger.debug("write: starting write. {}", _state); //thomas
         if (callback == null)
             throw new IllegalArgumentException();
-        if(updateState(writingState) == null)
+        logger.debug("write: {}", this);
+        if (updateState(writingState) == null)
         {
-            callback.failed(context, failure);
+            fail(context, callback, failure);
             return;
         }
         try
         {
-            _endp.flush(buffers);
+            _endPoint.flush(buffers);
 
             // Are we complete?
             for (ByteBuffer b : buffers)
             {
                 if (b.hasRemaining())
                 {
-                    if(updateState(new PendingState(buffers, context, (Callback<Object>)callback)) == null)
-                        callback.failed(context, failure);
+                    if (updateState(new PendingState<>(buffers, context, callback)) == null)
+                        fail(context, callback, failure);
                     else
                         onIncompleteFlushed();
                     return;
@@ -256,62 +293,47 @@ abstract public class WriteFlusher
         {
             // If updateState didn't succeed, we don't care as writing our buffers failed
             updateState(failedState);
-            callback.failed(context, e);
+            fail(context, callback, e);
         }
     }
 
-    /**
-     * Abstract call to be implemented by specific WriteFlushers.
-     * It should schedule a call to {@link #completeWrite()} or
-     * {@link #failed(Throwable)} when appropriate.
-     *
-     * @return true if a flush can proceed.
-     */
-    abstract protected void onIncompleteFlushed();
-
-
-    /* Remove empty buffers from the start of a multi buffer array
-     */
-    private ByteBuffer[] compact(ByteBuffer[] buffers)
+    private <C> void fail(C context, Callback<C> callback, Throwable failure)
     {
-        if (buffers.length < 2)
-            return buffers;
-        int b = 0;
-        while (b < buffers.length && BufferUtil.isEmpty(buffers[b]))
-            b++;
-        if (b == 0)
-            return buffers;
-        if (b == buffers.length)
-            return NO_BUFFERS;
-
-        ByteBuffer[] compact = new ByteBuffer[buffers.length - b];
-        System.arraycopy(buffers, b, compact, 0, compact.length);
-        return compact;
+        if (failure == null)
+            failure = new IllegalStateException();
+        callback.failed(context, failure);
     }
 
     /**
-     * Complete a write that has not completed and that called
-     * {@link #onIncompleteFlushed()} to request a call to this
-     * method when a call to {@link EndPoint#flush(ByteBuffer...)}
-     * is likely to be able to progress.
+     * Abstract call to be implemented by specific WriteFlushers. It should schedule a call to {@link #completeWrite()}
+     * or {@link #failed(Throwable)} when appropriate.
+     */
+    abstract protected void onIncompleteFlushed();
+
+    /**
+     * Complete a write that has not completed and that called {@link #onIncompleteFlushed()} to request a call to this
+     * method when a call to {@link EndPoint#flush(ByteBuffer...)} is likely to be able to progress.
+     *
+     * It tries to switch from PENDING to COMPLETING. If state transition fails, then it does nothing as the callback
+     * should have been already failed. That's because the only way to switch from PENDING outside this method is
+     * {@link #failed(Throwable)} or {@link #close()}
      */
     public void completeWrite()
     {
         State currentState = updateState(completingState);
-        if (currentState == null || currentState.getType() != StateType.PENDING)
+        if (currentState == null)
             return;
 
         try
         {
-            currentState.compactBuffers(); //TODO: do we need it?
-            _endp.flush(currentState.getBuffers());
+            _endPoint.flush(currentState.getBuffers());
 
             // Are we complete?
             for (ByteBuffer b : currentState.getBuffers())
             {
                 if (b.hasRemaining())
                 {
-                    if(updateState(currentState)==null)
+                    if (updateState(currentState) == null)
                         currentState.fail(failure);
                     else
                         onIncompleteFlushed();
@@ -333,10 +355,9 @@ abstract public class WriteFlusher
     public void failed(Throwable cause)
     {
         failure = cause;
-        State currentState = _state.get();
-        logger.debug("failed: s={} e={}", _state, cause);
+        logger.debug("failed: " + this, cause);
+        _state.get().fail(cause);
         updateState(failedState);
-        currentState.fail(cause);
     }
 
     public void close()

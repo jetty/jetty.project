@@ -85,19 +85,23 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
             long idleElapsed = System.currentTimeMillis() - idleTimestamp;
             long idleLeft = idleTimeout - idleElapsed;
 
+            LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
+
             if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWritePending())
             {
                 if (idleTimestamp != 0 && idleTimeout > 0)
                 {
-                    if (idleLeft < 0)
+                    if (idleLeft <= 0)
                     {
-                        if (isOutputShutdown())
-                            close();
-                        notIdle();
+                        LOG.debug("{} idle timeout expired", this);
 
                         TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
                         _readInterest.failed(timeout);
                         _writeFlusher.failed(timeout);
+
+                        if (isOutputShutdown())
+                            close();
+                        notIdle();
                     }
                 }
             }
