@@ -81,6 +81,13 @@ public class SelectChannelEndPointInterestsTest
                 return new AbstractAsyncConnection(endPoint, threadPool)
                 {
                     @Override
+                    public void onOpen()
+                    {
+                        super.onOpen();
+                        fillInterested();
+                    }
+                    
+                    @Override
                     public void onFillable()
                     {
                         interested.onFillable(endPoint, this);

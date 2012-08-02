@@ -158,14 +158,12 @@ public class WebSocketLoadRFC6455Test
     @BeforeClass
     public static void startServer() throws Exception
     {
-        _server = new Server();
-
-        _connector = new SelectChannelConnector();
-        _server.addConnector(_connector);
-
         QueuedThreadPool threadPool = new QueuedThreadPool(200);
         threadPool.setMaxStopTimeMs(1000);
-        _server.setThreadPool(threadPool);
+        _server = new Server(threadPool);
+
+        _connector = new SelectChannelConnector(_server);
+        _server.addConnector(_connector);
 
         WebSocketHandler wsHandler = new WebSocketHandler.Simple(MyEchoSocket.class);
         wsHandler.setHandler(new DefaultHandler());

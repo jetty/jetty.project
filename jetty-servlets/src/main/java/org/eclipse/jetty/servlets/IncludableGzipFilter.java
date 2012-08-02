@@ -27,8 +27,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.http.gzip.AbstractCompressedStream;
+import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 
 /* ------------------------------------------------------------ */

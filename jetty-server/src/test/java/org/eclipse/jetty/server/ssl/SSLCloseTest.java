@@ -11,11 +11,6 @@
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-// JettyTest.java --
-//
-// Junit test that shows the Jetty SSL bug.
-//
-
 package org.eclipse.jetty.server.ssl;
 
 import java.io.BufferedReader;

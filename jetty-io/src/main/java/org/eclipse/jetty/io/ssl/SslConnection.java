@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -28,7 +29,6 @@ import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.ReadInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
  * wants unencrypted data.
  * <p>
  * The connector uses an {@link AsyncEndPoint} (typically {@link SelectChannelEndPoint}) as
- * it's source/sink of encrypted data.   It then provides an endpoint via {@link #getSslEndPoint()} to
+ * it's source/sink of encrypted data.   It then provides an endpoint via {@link #getDecryptedEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  * <p>
  * The design of this class is based on a clear separation between the passive methods, which do not block nor schedule any 
@@ -95,7 +95,7 @@ public class SslConnection extends AbstractAsyncConnection
         return _sslEngine;
     }
 
-    public AsyncEndPoint getSslEndPoint()
+    public AsyncEndPoint getDecryptedEndPoint()
     {
         return _decryptedEndPoint;
     }
@@ -112,6 +112,8 @@ public class SslConnection extends AbstractAsyncConnection
 
             if (_sslEngine.getUseClientMode())
                 _decryptedEndPoint.write(null, new Callback.Empty<>(), BufferUtil.EMPTY_BUFFER);
+            
+            getDecryptedEndPoint().getAsyncConnection().onOpen();
         }
         catch (SSLException x)
         {

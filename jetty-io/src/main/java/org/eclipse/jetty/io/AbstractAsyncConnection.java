@@ -130,12 +130,12 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     public void onOpen()
     {
         LOG.debug("{} opened",this);
-        fillInterested();
     }
 
     @Override
     public void onClose()
     {
+        LOG.debug("{} closed",this);
     }
 
     @Override

@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -95,7 +96,7 @@ public class WebSocketOverSSLTest
     private void startServer(final Object websocket) throws Exception
     {
         _server = new Server();
-        SslSelectChannelConnector connector = new SslSelectChannelConnector();
+        SelectChannelConnector connector = new SelectChannelConnector(_server,true);
         _server.addConnector(connector);
         SslContextFactory cf = connector.getSslContextFactory();
         cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());

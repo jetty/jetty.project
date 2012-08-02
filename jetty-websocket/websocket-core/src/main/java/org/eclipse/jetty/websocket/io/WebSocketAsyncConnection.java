@@ -78,6 +78,13 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
     }
 
     @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+    
+    @Override
     public void close() throws IOException
     {
         terminateConnection(StatusCode.NORMAL,null);

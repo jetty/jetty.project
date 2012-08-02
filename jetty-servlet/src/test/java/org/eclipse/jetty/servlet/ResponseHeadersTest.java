@@ -1,6 +1,7 @@
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
 
 import java.io.BufferedReader;
 import java.io.IOException;

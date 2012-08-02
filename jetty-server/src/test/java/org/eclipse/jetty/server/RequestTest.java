@@ -13,7 +13,13 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -112,6 +118,7 @@ public class RequestTest
         String request="GET /?param=%ZZaaa HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
@@ -158,6 +165,7 @@ public class RequestTest
         "Host: whatever\r\n"+
         "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
         "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
         "\r\n"+
         multipart;
 
@@ -183,6 +191,7 @@ public class RequestTest
         String request="GET /?param=aaa%E7bbb HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
@@ -203,6 +212,7 @@ public class RequestTest
         String request="GET / HTTP/1.1\r\n"+
         "Host: whatever.com:\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
@@ -245,6 +255,7 @@ public class RequestTest
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Content-Type: text/html; other=foo ; blah=\"charset=wrong;\" ; charset =   \" x=z; \"   ; more=values \n"+
+                "Connection: close\n"+
                 "\n"
                 );
 
@@ -638,6 +649,7 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
+                    "Connection: close\n"+
                     "\n"
                     );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -649,6 +661,7 @@ public class RequestTest
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
                     "Cookie: name=quoted=\\\"value\\\"\n" +
+                    "Connection: close\n"+
                     "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -661,6 +674,7 @@ public class RequestTest
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Cookie: name=value; other=\"quoted=;value\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -682,6 +696,7 @@ public class RequestTest
                 "Host: whatever\n"+
                 "Other: header\n"+
                 "Cookie: name=value; other=\"quoted=;value\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -705,6 +720,7 @@ public class RequestTest
                 "Host: whatever\n"+
                 "Other: header\n"+
                 "Cookie: name=value; other=\"othervalue\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -756,6 +772,7 @@ public class RequestTest
                         "Host: whatever\n"+
                         "Other: header\n"+
                         "Cookie: __utmz=14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html\n"+
+                        "Connection: close\n"+
                         "\n"
                 );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));

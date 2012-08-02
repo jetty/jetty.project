@@ -17,15 +17,19 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
 import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class LocalConnector extends AbstractConnector
 {
@@ -35,10 +39,29 @@ public class LocalConnector extends AbstractConnector
     
     public LocalConnector(Server server)
     {
-        super(server,null,null,null,null, false,-1);
-        setIdleTimeout(30000);
+        super(server,null,null,null,null, null,false, -1);
     }
 
+    public LocalConnector(Server server, boolean ssl)
+    {
+        super(server,ssl);
+    }
+
+    public LocalConnector(Server server, HttpConfiguration httpConfig, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
+        SslContextFactory sslContextFactory, boolean ssl, int acceptors)
+    {
+        super(server,httpConfig,executor,scheduler,pool,sslContextFactory,ssl, acceptors);
+    }
+
+    public LocalConnector(Server server, SslContextFactory sslContextFactory)
+    {
+        super(server,sslContextFactory);
+    }
+
+    {
+        setIdleTimeout(30000);
+    }
+    
     @Override
     public Object getTransport()
     {
@@ -48,6 +71,9 @@ public class LocalConnector extends AbstractConnector
     /** Sends requests and get responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
+     * <p>
+     * This methods waits until the connection is closed or 
+     * is idle for 1s before returning the responses.
      * @param requests the requests
      * @return the responses
      * @throws Exception if the requests fail
@@ -61,7 +87,12 @@ public class LocalConnector extends AbstractConnector
     /** Sends requests and get responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
+     * <p>
+     * This methods waits until the connection is closed or 
+     * an idle period before returning the responses.
      * @param requests the requests
+     * @param idleFor The time the response stream must be idle for before returning
+     * @param units The units of idleFor
      * @return the responses
      * @throws Exception if the requests fail
      */
@@ -74,19 +105,27 @@ public class LocalConnector extends AbstractConnector
     /** Sends requests and get's responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
+     * <p>
+     * This methods waits until the connection is closed or 
+     * is idle for 1s before returning the responses.
      * @param requestsBuffer the requests
      * @return the responses
      * @throws Exception if the requests fail
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
-        return getResponses(requestsBuffer,100,TimeUnit.MILLISECONDS);
+        return getResponses(requestsBuffer,1000,TimeUnit.MILLISECONDS);
     }
 
     /** Sends requests and get's responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
+     * <p>
+     * This methods waits until the connection is closed or 
+     * an idle period before returning the responses.
      * @param requestsBuffer the requests
+     * @param idleFor The time the response stream must be idle for before returning
+     * @param units The units of idleFor
      * @return the responses
      * @throws Exception if the requests fail
      */
@@ -195,8 +234,8 @@ public class LocalConnector extends AbstractConnector
 
         public void waitUntilClosedOrIdleFor(long idleFor,TimeUnit units)
         {
+            Thread.yield();
             int size=getOutput().remaining();
-            
             while (isOpen())
             {
                 try

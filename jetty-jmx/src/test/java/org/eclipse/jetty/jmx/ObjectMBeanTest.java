@@ -15,13 +15,10 @@ package org.eclipse.jetty.jmx;
 
 import static org.junit.Assert.assertTrue;
 
-import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
-import javax.management.ReflectionException;
 
 import junit.framework.Assert;
 

@@ -74,24 +74,21 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         this(server,null);
     }
 
-    public AbstractConnector(
-        @Name("server") Server server,
-        @Name("sslContextFactory") SslContextFactory sslContextFactory)
+    public AbstractConnector(Server server,SslContextFactory sslContextFactory)
     {
-        this(server,null,null,null,sslContextFactory, sslContextFactory!=null, 0);
+        this(server,null,null,null,null, sslContextFactory, sslContextFactory!=null, 0);
     }
     
-    public AbstractConnector(
-        @Name("server") Server server,
-        @Name("ssl") boolean ssl)
+    public AbstractConnector(Server server,boolean ssl)
     {
-        this(server,null,null,null,ssl?new SslContextFactory():null, ssl, 0);
+        this(server,null,null,null,null, ssl?new SslContextFactory():null, ssl, 0);
     }
 
 
     /* ------------------------------------------------------------ */
     /**
      * @param server The server this connector will be added to. Must not be null.
+     * @param httpConfig TODO
      * @param executor An executor for this connector or null to use the servers executor 
      * @param scheduler A scheduler for this connector or null to use the servers scheduler
      * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
@@ -101,12 +98,12 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
      */
     public AbstractConnector(
         Server server,
+        HttpConfiguration httpConfig,
         Executor executor,
-        ScheduledExecutorService scheduler,
+        ScheduledExecutorService scheduler, 
         ByteBufferPool pool, 
         SslContextFactory sslContextFactory, 
-        boolean ssl, 
-        int acceptors)
+        boolean ssl, int acceptors)
     {
         _server=server;
         _executor=executor!=null?executor:_server.getThreadPool();
@@ -123,6 +120,9 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _ssl=ssl;
         _sslContextFactory=sslContextFactory!=null?sslContextFactory:(ssl?new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH):null);
 
+        // TODO make this pluggable
+        _httpConfig = httpConfig!=null?httpConfig:new HttpConfiguration(_sslContextFactory,ssl);
+        
         addBean(_server,false);
         addBean(_executor,executor==null);
         addBean(_scheduler,scheduler==null);
@@ -135,9 +135,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             addBean(_sslContextFactory,false);
             setSoLingerTime(30000);
         }
-        
-        // TODO make this pluggable
-        _httpConfig = new HttpConfiguration(_sslContextFactory,ssl);
+        addBean(_httpConfig,httpConfig==null);
 
         if (acceptors<=0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
@@ -190,8 +188,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             SSLEngine engine = _sslContextFactory.createSSLEngine(endp.getRemoteAddress());
             SslConnection ssl_connection = new SslConnection(getByteBufferPool(), getExecutor(), endp, engine);
             
-            AsyncConnection http_connection = new HttpConnection(_httpConfig,this,ssl_connection.getSslEndPoint());
-            ssl_connection.getSslEndPoint().setAsyncConnection(http_connection);
+            AsyncConnection http_connection = new HttpConnection(_httpConfig,this,ssl_connection.getDecryptedEndPoint());
+            ssl_connection.getDecryptedEndPoint().setAsyncConnection(http_connection);
             return ssl_connection;
         }
         return new HttpConnection(_httpConfig,this,endp);

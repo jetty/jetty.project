@@ -33,7 +33,7 @@ public abstract class AbstractNetConnector extends AbstractConnector implements 
     public AbstractNetConnector(Server server, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool, SslContextFactory sslContextFactory,
         boolean ssl, int acceptors)
     {
-        super(server,executor,scheduler,pool,sslContextFactory,ssl,acceptors);
+        super(server,null,executor,scheduler,pool,sslContextFactory,ssl, acceptors);
     }
 
     public AbstractNetConnector(Server server, SslContextFactory sslContextFactory)

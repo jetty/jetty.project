@@ -16,9 +16,7 @@ package org.eclipse.jetty.embedded;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /* ------------------------------------------------------------ */
 /**
@@ -31,18 +29,16 @@ public class ManyConnectors
     {
         Server server = new Server();
 
-        SelectChannelConnector connector0 = new SelectChannelConnector();
+        SelectChannelConnector connector0 = new SelectChannelConnector(server);
         connector0.setPort(8080);
         connector0.setIdleTimeout(30000);
-        connector0.setRequestHeaderSize(8192);
 
-        SelectChannelConnector connector1 = new SelectChannelConnector();
+        SelectChannelConnector connector1 = new SelectChannelConnector(server);
         connector1.setHost("127.0.0.1");
         connector1.setPort(8888);
-        connector1.setExecutor(new QueuedThreadPool(20));
         connector1.setName("admin");
 
-        SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
+        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,true);
         String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
         System.setProperty("jetty.home",jetty_home);
         ssl_connector.setPort(8443);

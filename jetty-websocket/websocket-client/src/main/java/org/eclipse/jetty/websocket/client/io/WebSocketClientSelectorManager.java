@@ -111,7 +111,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
                     }
                 };
                 endPoint.setAsyncConnection(sslConnection);
-                AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+                AsyncEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
                 sslEndPointRef.set(sslEndPoint);
 
                 startHandshake(engine);

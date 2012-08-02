@@ -308,14 +308,21 @@ public class HttpConnection extends AbstractAsyncConnection
         {
             setCurrentConnection(null);
         }
-
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
 
     /* ------------------------------------------------------------ */
     @Override
     public void onClose()
     {
+        super.onClose();
         _channel.onClose();
     }
 

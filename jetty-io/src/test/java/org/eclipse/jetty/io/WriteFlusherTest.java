@@ -1,8 +1,8 @@
 package org.eclipse.jetty.io;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

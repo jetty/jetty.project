@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -380,6 +381,7 @@ public abstract class HttpChannel
             {
                 try
                 {
+                    _state.completed();
                     if (_expect100Continue)
                     {
                         LOG.debug("100 continues not sent");
@@ -413,7 +415,6 @@ public abstract class HttpChannel
                 }
                 finally
                 {
-                    _state.completed();
                     _request.setHandled(true);
                     completed();
                 }

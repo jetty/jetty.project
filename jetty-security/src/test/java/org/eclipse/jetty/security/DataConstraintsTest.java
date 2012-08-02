@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.security;
 
+import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
 import java.io.IOException;
 import java.util.Arrays;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -23,6 +27,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -34,9 +39,6 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -59,9 +61,8 @@ public class DataConstraintsTest
         _connector.getHttpConfig().setIntegralScheme("FTP");
         _connector.getHttpConfig().setConfidentialPort(9999);
         _connector.getHttpConfig().setConfidentialScheme("SPDY");
-        _connectorS = new LocalConnector(_server)
+        _connectorS = new LocalConnector(_server,new HttpConfiguration(null,false)
         {
-
             @Override
             public void customize(Request request) throws IOException
             {
@@ -81,7 +82,7 @@ public class DataConstraintsTest
             {
                 return true;
             }
-        };
+        },null,null,null,null,false,0);
         _server.setConnectors(new Connector[]{_connector,_connectorS});
 
         ContextHandler _context = new ContextHandler();

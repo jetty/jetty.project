@@ -45,7 +45,7 @@ public class SimpleServletServer
     {
         // Configure Server
         server = new Server();
-        connector = new SelectChannelConnector();
+        connector = new SelectChannelConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();

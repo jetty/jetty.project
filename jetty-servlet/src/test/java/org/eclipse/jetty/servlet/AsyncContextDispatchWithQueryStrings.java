@@ -12,7 +12,11 @@ package org.eclipse.jetty.servlet;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,9 +34,6 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * This tests verifies that merging of queryStrings works when dispatching

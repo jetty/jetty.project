@@ -1,5 +1,11 @@
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -7,6 +13,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -20,12 +27,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
@@ -58,8 +59,8 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         engine.setUseClientMode(false);
         SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
 
-        AsyncConnection appConnection = super.newConnection(channel,sslConnection.getSslEndPoint());
-        sslConnection.getSslEndPoint().setAsyncConnection(appConnection);
+        AsyncConnection appConnection = super.newConnection(channel,sslConnection.getDecryptedEndPoint());
+        sslConnection.getDecryptedEndPoint().setAsyncConnection(appConnection);
         _manager.connectionOpened(appConnection);
 
         return sslConnection;

@@ -376,7 +376,7 @@ public class ContextHandlerTest
         {
             server.start();
 
-            String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
+            String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\nConnection:close\n\n");
 
             Assert.assertTrue(response.indexOf("Goodbye")>0);
             Assert.assertTrue(response.indexOf("dead")<0);
@@ -398,7 +398,7 @@ public class ContextHandlerTest
         IsHandledHandler handler = (IsHandledHandler)context.getHandler();
         for(String host : requestHosts)
         {
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\n\n");
+            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\nConnection:close\n\n");
             if(succeed)
                 assertTrue("'"+host+"' should have been handled.",handler.isHandled());
             else

@@ -13,21 +13,8 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.IOException;
-import java.nio.channels.SocketChannel;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSession;
-
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */

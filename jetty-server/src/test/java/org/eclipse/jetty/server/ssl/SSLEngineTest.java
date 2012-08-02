@@ -45,14 +45,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -82,14 +83,14 @@ public class SSLEngineTest
     private static final int BODY_SIZE=300;
 
     private Server server;
-    private SslSelectChannelConnector connector;
+    private SelectChannelConnector connector;
 
     
     @Before
     public void startServer() throws Exception
     {
         server=new Server();
-        connector=new SslSelectChannelConnector(server);
+        connector=new SelectChannelConnector(server,true);
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
@@ -110,6 +111,36 @@ public class SSLEngineTest
         server.join();
     }
 
+
+    @Test
+    public void testHelloWorld() throws Exception
+    {
+        server.setHandler(new HelloWorldHandler());
+        server.start();
+        
+        SSLContext ctx=SSLContext.getInstance("TLS");
+        ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
+
+        int port=connector.getLocalPort();
+
+        Socket client=ctx.getSocketFactory().createSocket("localhost",port);
+        OutputStream os=client.getOutputStream();
+
+        String request =
+            "GET / HTTP/1.1\r\n"+
+            "Host: localhost:"+port+"\r\n"+
+            "Connection: close\r\n"+
+            "\r\n";
+
+        os.write(request.getBytes());
+        os.flush();
+
+        String response = IO.toString(client.getInputStream());
+
+        assertThat(response,Matchers.containsString("200 OK"));
+        assertThat(response,Matchers.containsString(HELLO_WORLD));
+    }
+    
     @Test
     public void testBigResponse() throws Exception
     {

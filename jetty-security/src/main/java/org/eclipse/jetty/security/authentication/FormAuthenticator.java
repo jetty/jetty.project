@@ -16,6 +16,7 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;

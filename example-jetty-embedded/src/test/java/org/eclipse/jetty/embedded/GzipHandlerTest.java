@@ -27,13 +27,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.GzipHandler;
-import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
@@ -56,14 +56,13 @@ public class GzipHandlerTest
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
     private Server _server;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-
-        _connector = new LocalHttpConnector();
+        _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
         Handler testHandler = new AbstractHandler()
