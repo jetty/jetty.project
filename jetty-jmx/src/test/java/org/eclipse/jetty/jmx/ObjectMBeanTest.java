@@ -17,6 +17,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.management.ManagementFactory;
 
+import javax.management.Attribute;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
@@ -65,6 +66,10 @@ public class ObjectMBeanTest
         Assert.assertEquals("attribute count does not match", 8, info.getAttributes().length);
 
         Assert.assertEquals("attribute values does not match", "Full Name", mbean.getAttribute("fname") );
+        
+        //mbean.setAttribute( new Attribute("fname","Fuller Name"));
+        
+        //Assert.assertEquals("set attribute value does not match", "Fuller Name", mbean.getAttribute("fname") );
         
         Assert.assertEquals("proxy attribute values do not match", "goop", mbean.getAttribute("goop") );
         

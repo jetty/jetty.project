@@ -299,10 +299,10 @@ public class ObjectMBean implements DynamicMBean
 
                 _info = new MBeanInfo(o_class.getName(),
                                 desc,
-                                (MBeanAttributeInfo[])attributes.toArray(),
-                                (MBeanConstructorInfo[])constructors.toArray(),
-                                (MBeanOperationInfo[])operations.toArray(),
-                                (MBeanNotificationInfo[])notifications.toArray());
+                                (MBeanAttributeInfo[])attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
+                                (MBeanConstructorInfo[])constructors.toArray(new MBeanConstructorInfo[constructors.size()]),
+                                (MBeanOperationInfo[])operations.toArray(new MBeanOperationInfo[operations.size()]),
+                                (MBeanNotificationInfo[])notifications.toArray(new MBeanNotificationInfo[notifications.size()]));
             }
         }
         catch(RuntimeException e)
