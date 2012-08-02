@@ -20,15 +20,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
-import java.util.ResourceBundle;
 import java.util.Set;
 
 import javax.management.Attribute;
@@ -47,10 +46,11 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
 
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.annotation.Managed;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -109,21 +109,23 @@ public class ObjectMBean implements DynamicMBean
     {
         try
         {
-            Class oClass = o.getClass();
+            Class<?> oClass = o.getClass();
             Object mbean = null;
 
             while (mbean == null && oClass != null)
             {
-                String pName = oClass.getPackage().getName();
-                String cName = oClass.getName().substring(pName.length() + 1);
-                String mName = pName + ".jmx." + cName + "MBean";
-                
+                ManagedObject mo = oClass.getAnnotation(ManagedObject.class);
+                String mName = "";
+                if ( mo != null )
+                {
+                    mName = mo.wrapper();
+                } 
 
                 try
                 {
                     Class mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName,true);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("mbeanFor " + o + " mClass=" + mClass);
+                    
+                    LOG.debug("ObjectMbean: mbeanFor {} mClass={}", o, mClass);
 
                     try
                     {
@@ -140,8 +142,8 @@ public class ObjectMBean implements DynamicMBean
                         }
                     }
 
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("mbeanFor " + o + " is " + mbean);
+                    LOG.debug("mbeanFor {} is {}", o, mbean);
+                    
                     return mbean;
                 }
                 catch (ClassNotFoundException e)
@@ -222,27 +224,27 @@ public class ObjectMBean implements DynamicMBean
             {
                 // Start with blank lazy lists attributes etc.
                 String desc=null;
-                Object attributes=null;
-                Object constructors=null;
-                Object operations=null;
-                Object notifications=null;
+                List<MBeanAttributeInfo> attributes = new ArrayList<MBeanAttributeInfo>();
+                List<MBeanConstructorInfo> constructors = new ArrayList<MBeanConstructorInfo>();
+                List<MBeanOperationInfo> operations = new ArrayList<MBeanOperationInfo>();
+                List<MBeanNotificationInfo> notifications = new ArrayList<MBeanNotificationInfo>();
 
                 // Find list of classes that can influence the mbean
                 Class<?> o_class=_managed.getClass();
-                Object influences = findInfluences(null, _managed.getClass());
+                List<Class<?>> influences = findInfluences(new ArrayList<Class<?>>(), _managed.getClass());
 
-                LOG.debug("Influence Count: " + LazyList.size(influences) );
+                LOG.debug("Influence Count: " + influences.size() );
 
                 // Process Type Annotations
-                Managed primary = o_class.getAnnotation( Managed.class);
+                ManagedObject primary = o_class.getAnnotation( ManagedObject.class);
                 desc = primary.value();
 
                 // For each influence
-                for (int i=0;i<LazyList.size(influences);i++)
+                for (int i=0;i<influences.size();i++)
                 {
-                    Class<?> oClass = (Class<?>)LazyList.get(influences, i);
+                    Class<?> oClass = influences.get(i);
 
-                    Managed typeAnnotation = oClass.getAnnotation( Managed.class);
+                    ManagedObject typeAnnotation = oClass.getAnnotation( ManagedObject.class);
 
                     LOG.debug("Influenced by: " + oClass.getCanonicalName() );
                     if ( typeAnnotation == null )
@@ -257,12 +259,12 @@ public class ObjectMBean implements DynamicMBean
                         for ( Field field : oClass.getDeclaredFields())
                         {
                             LOG.debug("Checking: " + field.getName());
-                            Managed fieldAnnotation = field.getAnnotation(Managed.class);
+                            ManagedAttribute fieldAnnotation = field.getAnnotation(ManagedAttribute.class);
                                                       
                             if ( fieldAnnotation != null )
                             {
                                 LOG.debug("Field Annotation found for: " + field.getName() );
-                                attributes=LazyList.add(attributes, defineAttribute(field.getName(), fieldAnnotation));
+                                attributes.add( defineAttribute(field.getName(), fieldAnnotation));
                             }
                         }
                             
@@ -270,21 +272,21 @@ public class ObjectMBean implements DynamicMBean
                         
                         for ( Method method : oClass.getDeclaredMethods() )
                         {
-                            Managed methodAnnotation = method.getAnnotation(Managed.class);
+                            ManagedAttribute methodAttributeAnnotation = method.getAnnotation(ManagedAttribute.class);
                             
-                            if ( methodAnnotation != null )
+                            if ( methodAttributeAnnotation != null )
+                            {                   
+                                // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
+                                LOG.debug("Attribute Annotation found for: " + method.getName() );
+                                attributes.add(defineAttribute(method.getName(),methodAttributeAnnotation));
+                            }
+                            
+                            ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
+                            
+                            if (methodOperationAnnotation != null)
                             {
-                                if ( methodAnnotation.attribute() )
-                                {
-                                    // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
-                                    LOG.debug("Attribute Annotation found for: " + method.getName() );
-                                    attributes=LazyList.add(attributes,defineAttribute(method.getName(),methodAnnotation));
-                                }
-                                else
-                                {
-                                    LOG.debug("Method Annotation found for: " + method.getName() );
-                                    operations=LazyList.add(operations, defineOperation(method, methodAnnotation));
-                                }
+                                LOG.debug("Method Annotation found for: " + method.getName());                              
+                                operations.add(defineOperation(method,methodOperationAnnotation));                              
                             }
                         }
                         
@@ -297,10 +299,10 @@ public class ObjectMBean implements DynamicMBean
 
                 _info = new MBeanInfo(o_class.getName(),
                                 desc,
-                                (MBeanAttributeInfo[])LazyList.toArray(attributes, MBeanAttributeInfo.class),
-                                (MBeanConstructorInfo[])LazyList.toArray(constructors, MBeanConstructorInfo.class),
-                                (MBeanOperationInfo[])LazyList.toArray(operations, MBeanOperationInfo.class),
-                                (MBeanNotificationInfo[])LazyList.toArray(notifications, MBeanNotificationInfo.class));
+                                (MBeanAttributeInfo[])attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
+                                (MBeanConstructorInfo[])constructors.toArray(new MBeanConstructorInfo[constructors.size()]),
+                                (MBeanOperationInfo[])operations.toArray(new MBeanOperationInfo[operations.size()]),
+                                (MBeanNotificationInfo[])notifications.toArray(new MBeanNotificationInfo[notifications.size()]));
             }
         }
         catch(RuntimeException e)
@@ -317,7 +319,10 @@ public class ObjectMBean implements DynamicMBean
     {
         Method getter = (Method) _getters.get(name);
         if (getter == null)
+        {
             throw new AttributeNotFoundException(name);
+        }
+        
         try
         {
             Object o = _managed;
@@ -326,7 +331,7 @@ public class ObjectMBean implements DynamicMBean
 
             // get the attribute
             Object r=getter.invoke(o, (java.lang.Object[]) null);
-
+            
             // convert to ObjectName if need be.
             if (r!=null && _convert.contains(name))
             {
@@ -349,11 +354,13 @@ public class ObjectMBean implements DynamicMBean
                 else
                 {
                     ObjectName mbean = _mbeanContainer.findMBean(r);
+                    
                     if (mbean==null)
                         return null;
                     r=mbean;
                 }
             }
+            
             return r;
         }
         catch (IllegalAccessException e)
@@ -462,8 +469,7 @@ public class ObjectMBean implements DynamicMBean
     /* ------------------------------------------------------------ */
     public Object invoke(String name, Object[] params, String[] signature) throws MBeanException, ReflectionException
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("invoke " + name);
+        LOG.debug("ObjectMBean:invoke " + name);
 
         String methodKey = name + "(";
         if (signature != null)
@@ -480,8 +486,11 @@ public class ObjectMBean implements DynamicMBean
                 throw new NoSuchMethodException(methodKey);
 
             Object o = _managed;
+            
             if (method.getDeclaringClass().isInstance(this))
+            {
                 o = this;
+            }
             return method.invoke(o, params);
         }
         catch (NoSuchMethodException e)
@@ -505,38 +514,42 @@ public class ObjectMBean implements DynamicMBean
         }
     }
 
-    private static Object findInfluences(Object influences, Class aClass)
-    {
+    private static List<Class<?>> findInfluences(List<Class<?>> influences, Class<?> aClass)
+    {        
         if (aClass!=null)
         {
             // This class is an influence
-            influences=LazyList.add(influences,aClass);
+            influences.add(aClass);
 
-            /* enabled mbean influence
-            String pack = aClass.getPackage().getName();
-            String clazz = aClass.getSimpleName();
+            // check for mbean influence
+            ManagedObject mo = aClass.getAnnotation(ManagedObject.class);
             
-            try
+            if ( mo != null && !"".equals(mo.wrapper()))
             {
-                Class mbean = Class.forName(pack + ".jmx." + clazz + "MBean");
+                String clazz = mo.wrapper();
                 
-                LOG.debug("MBean Influence found for " + aClass.getSimpleName() );
-                influences = LazyList.add(influences, mbean);
+                try
+                {
+                    Class<?> mbean = Class.forName(clazz);
+                    
+                    LOG.debug("MBean Influence found for " + aClass.getSimpleName() );
+                    influences.add(mbean);
+                }
+                catch ( ClassNotFoundException cnfe )
+                {
+                    LOG.debug("No MBean Influence for " + aClass.getSimpleName() );
+                }
             }
-            catch ( ClassNotFoundException cnfe )
-            {
-                LOG.debug("No MBean Influence for " + aClass.getSimpleName() );
-            }
-            */
             
             // So are the super classes
             influences=findInfluences(influences,aClass.getSuperclass());
 
             // So are the interfaces
-            Class[] ifs = aClass.getInterfaces();
+            Class<?>[] ifs = aClass.getInterfaces();
             for (int i=0;ifs!=null && i<ifs.length;i++)
                 influences=findInfluences(influences,ifs[i]);
         }
+        
         return influences;
     }
 
@@ -558,26 +571,26 @@ public class ObjectMBean implements DynamicMBean
      * </ul>
      * the access is either "RW" or "RO".
      */
-    public MBeanAttributeInfo defineAttribute(String name, Managed fieldAnnotation)
+    public MBeanAttributeInfo defineAttribute(String name, ManagedAttribute attributeAnnotation)
     {
         //String name = field.getName();
-        String description = fieldAnnotation.value();
-        boolean writable = fieldAnnotation.readonly();   
-        boolean onMBean = fieldAnnotation.proxied();
-        boolean convert = fieldAnnotation.managed();
+        String description = attributeAnnotation.value();
+        boolean writable = attributeAnnotation.readonly();   
+        boolean onMBean = attributeAnnotation.proxied();
+        boolean convert = attributeAnnotation.managed();
                 
         String uName = name.substring(0, 1).toUpperCase() + name.substring(1);
         Class oClass = onMBean ? this.getClass() : _managed.getClass();
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("defineAttribute "+name+" "+onMBean+":"+writable+":"+oClass+":"+description);
+        LOG.debug("defineAttribute {} {}:{}:{}:{}",name,onMBean,writable,oClass,description);
 
         Class type = null;
         Method getter = null;
         Method setter = null;
         
-        String declaredGetter = fieldAnnotation.getter();
-        String declaredSetter = fieldAnnotation.setter();
+        String declaredGetter = attributeAnnotation.getter();
+        String declaredSetter = attributeAnnotation.setter();
+        
         
         Method[] methods = oClass.getMethods();
         for (int m = 0; m < methods.length; m++)
@@ -585,6 +598,9 @@ public class ObjectMBean implements DynamicMBean
             if ((methods[m].getModifiers() & Modifier.PUBLIC) == 0)
                 continue;
 
+            LOG.debug("Declared Getter: {} vs {}", declaredGetter, methods[m].getName());
+
+            
             // Check if it is a declared getter
             if (methods[m].getName().equals(declaredGetter) && methods[m].getParameterTypes().length == 0)
             {
@@ -739,17 +755,17 @@ public class ObjectMBean implements DynamicMBean
      * the "Object","MBean", "MMBean" or "MObject" to indicate the method is on the object, the MBean or on the
      * object but converted to an MBean reference, and impact is either "ACTION","INFO","ACTION_INFO" or "UNKNOWN".
      */
-    private MBeanOperationInfo defineOperation(Method method, Managed methodAnnotation)
+    private MBeanOperationInfo defineOperation(Method method, ManagedOperation methodAnnotation)
     {
         String description = methodAnnotation.value();
         boolean onMBean = methodAnnotation.proxied();
         boolean convert = methodAnnotation.managed();
         String impactName = methodAnnotation.impact();
         
-        String signature = method.getName();
         
         LOG.debug("defineOperation "+method.getName()+" "+onMBean+":"+impactName+":"+description);
 
+        String signature = method.getName();
 
         try
         {
@@ -785,8 +801,21 @@ public class ObjectMBean implements DynamicMBean
                     }
                 }
             }
-          
+            
+            signature += "(";
+            for ( int i = 0 ; i < methodTypes.length ; ++i )
+            {   
+                signature += methodTypes[i].getName();
+                
+                if ( i != methodTypes.length - 1 )
+                {
+                    signature += ",";
+                }
+            }
+            signature += ")";                    
+            
             Class returnClass = method.getReturnType();
+            LOG.debug("Method Cache: " + signature );
             _methods.put(signature, method);
             if (convert)
                 _convert.add(signature);
