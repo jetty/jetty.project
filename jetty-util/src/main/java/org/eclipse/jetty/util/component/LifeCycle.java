@@ -15,7 +15,8 @@ package org.eclipse.jetty.util.component;
 
 import java.util.EventListener;
 
-import org.eclipse.jetty.util.annotation.Managed;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 
 /* ------------------------------------------------------------ */
 /**
@@ -26,7 +27,7 @@ import org.eclipse.jetty.util.annotation.Managed;
  *
  * 
  */
-@Managed("Lifecycle Interface for startable components")
+@ManagedObject("Lifecycle Interface for startable components")
 public interface LifeCycle
 {
     /* ------------------------------------------------------------ */
@@ -37,7 +38,7 @@ public interface LifeCycle
      * @see #stop()
      * @see #isFailed()
      */
-    @Managed("Starts the instance")
+    @ManagedOperation("Starts the instance")
     public void start()
         throws Exception;
 
@@ -51,7 +52,7 @@ public interface LifeCycle
      * @see #start()
      * @see #isFailed()
      */
-    @Managed("Stops the instance")
+    @ManagedOperation("Stops the instance")
     public void stop()
         throws Exception;
 

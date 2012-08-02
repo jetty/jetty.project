@@ -15,6 +15,8 @@ package org.eclipse.jetty.jmx;
 
 import static org.junit.Assert.assertTrue;
 
+import java.lang.management.ManagementFactory;
+
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
@@ -39,8 +41,15 @@ public class ObjectMBeanTest
     @Test
     public void testMbeanInfo() throws Exception
     {
+        MBeanContainer container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        
+        container.start();
+        
         Derived derived = new Derived();
-        ObjectMBean mbean = new ObjectMBean(derived);
+        //ObjectMBean mbean = new ObjectMBean(derived);
+        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
+        mbean.setMBeanContainer(container);
+        
         assertTrue(mbean.getMBeanInfo()!=null);
         
         MBeanInfo info = mbean.getMBeanInfo();
@@ -54,13 +63,15 @@ public class ObjectMBeanTest
         }
         
         /*
-         * 6 attributes from lifecycle and 1 from Derived
+         * 6 attributes from lifecycle and 1 from Derived and 1 from MBean
          */
-        Assert.assertEquals("attribute count does not match", 7, info.getAttributes().length);
+        Assert.assertEquals("attribute count does not match", 8, info.getAttributes().length);
 
         Assert.assertEquals("attribute values does not match", "Full Name", mbean.getAttribute("fname") );
         
-        Assert.assertEquals("operation count does not match", 4, info.getOperations().length);
+        Assert.assertEquals("proxy attribute values do not match", "goop", mbean.getAttribute("goop") );
+        
+        Assert.assertEquals("operation count does not match", 5, info.getOperations().length);
         
         MBeanOperationInfo[] opinfos = info.getOperations();
         boolean publish = false;
@@ -91,17 +102,16 @@ public class ObjectMBeanTest
             
             if ("good".equals(opinfo.getName()))
             {
-                doodle = true;
+                good = true;
                 
-                Assert.assertEquals("description does not match", "test of proxy", opinfo.getDescription());
-                Assert.assertEquals("execution contexts wrong", "not bad", mbean.invoke("good", new Object[] {}, new String[] {}));
-                
+                Assert.assertEquals("description does not match", "test of proxy operations", opinfo.getDescription());               
+                Assert.assertEquals("execution contexts wrong", "not bad", mbean.invoke("good", new Object[] {}, new String[] {}));             
             }
         }
         
         Assert.assertTrue("publish operation was not not found", publish);
         Assert.assertTrue("doodle operation was not not found", doodle);
-       // Assert.assertTrue("good operation was not not found", good); not wired up yet
+        Assert.assertTrue("good operation was not not found", good);
 
 
     }
