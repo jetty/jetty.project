@@ -16,27 +16,13 @@ import org.junit.Test;
 
 public class GeneratorTest
 {
-
-    private void parsePartial(Parser parser, ByteBuffer buf, int numBytes)
-    {
-        int len = Math.min(numBytes,buf.remaining());
-        byte arr[] = new byte[len];
-        buf.get(arr,0,len);
-        parser.parse(ByteBuffer.wrap(arr));
-    }
-
     /**
      * Prevent regression of masking of many packets.
      */
     @Test
     public void testManyMasked()
     {
-        byte[] MASK =
-            { 0x11, 0x22, 0x33, 0x44 };
         int pingCount = 10;
-
-        // the generator
-        Generator generator = new UnitGenerator();
 
         // Prepare frames
         List<WebSocketFrame> send = new ArrayList<>();
@@ -47,38 +33,15 @@ public class GeneratorTest
         }
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
-        // Generate into single bytebuffer
-        int buflen = 0;
-        for (WebSocketFrame f : send)
-        {
-            buflen += f.getPayloadLength() + Generator.OVERHEAD;
-        }
-        ByteBuffer completeBuf = ByteBuffer.allocate(buflen);
-        BufferUtil.clearToFill(completeBuf);
-
-        // Generate frames
-        for (WebSocketFrame f : send)
-        {
-            f.setMask(MASK); // make sure we have mask set
-            ByteBuffer slice = f.getPayload().slice();
-            BufferUtil.put(generator.generate(f),completeBuf);
-            f.setPayload(slice);
-        }
-        BufferUtil.flipToFlush(completeBuf,0);
+        ByteBuffer completeBuf = UnitGenerator.generate(send);
 
         // Parse complete buffer (5 bytes at a time)
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        Parser parser = new Parser(policy);
+        UnitParser parser = new UnitParser();
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
         int segmentSize = 5;
-        while (completeBuf.remaining() > 0)
-        {
-            parsePartial(parser,completeBuf,segmentSize);
-        }
-
-        capture.dump();
+        parser.parseSlowly(completeBuf,segmentSize);
 
         // Assert validity of frame
         int frameCount = send.size();

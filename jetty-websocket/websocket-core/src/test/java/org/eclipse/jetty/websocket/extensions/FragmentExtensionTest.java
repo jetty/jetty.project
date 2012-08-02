@@ -88,7 +88,7 @@ public class FragmentExtensionTest
         quote.add("a single experiment can prove me wrong.");
         quote.add("-- Albert Einstein");
 
-        // Manually compress frame and pass into extension
+        // Manually create frame and pass into extension
         for (String q : quote)
         {
             WebSocketFrame frame = WebSocketFrame.text(q);

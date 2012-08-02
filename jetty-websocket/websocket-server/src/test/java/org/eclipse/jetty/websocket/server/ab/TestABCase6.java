@@ -38,6 +38,27 @@ import org.junit.runner.RunWith;
 public class TestABCase6 extends AbstractABCase
 {
     /**
+     * Split a message byte array into a series of fragments (frames + continuations) of 1 byte message contents each.
+     */
+    protected void fragmentText(List<WebSocketFrame> frames, byte msg[])
+    {
+        int len = msg.length;
+        byte opcode = OpCode.TEXT;
+        byte mini[];
+        for (int i = 0; i < len; i++)
+        {
+            WebSocketFrame frame = new WebSocketFrame(opcode);
+            mini = new byte[1];
+            mini[0] = msg[i];
+            frame.setPayload(mini);
+            boolean isLast = (i >= (len - 1));
+            frame.setFin(isLast);
+            frames.add(frame);
+            opcode = OpCode.CONTINUATION;
+        }
+    }
+
+    /**
      * text message, 1 frame, 0 length
      */
     @Test
@@ -198,18 +219,7 @@ public class TestABCase6 extends AbstractABCase
         byte msg[] = StringUtil.getUtf8Bytes(utf8);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        int len = msg.length;
-        byte opcode = OpCode.TEXT;
-        byte mini[];
-        for (int i = 0; i < len; i++)
-        {
-            WebSocketFrame frame = new WebSocketFrame(opcode);
-            mini = new byte[1];
-            mini[0] = msg[i];
-            frame.setPayload(mini);
-            frame.setFin(!(i < (len - 1)));
-            send.add(frame);
-        }
+        fragmentText(send,msg);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -239,18 +249,7 @@ public class TestABCase6 extends AbstractABCase
         byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        int len = msg.length;
-        byte opcode = OpCode.TEXT;
-        byte mini[];
-        for (int i = 0; i < len; i++)
-        {
-            WebSocketFrame frame = new WebSocketFrame(opcode);
-            mini = new byte[1];
-            mini[0] = msg[i];
-            frame.setPayload(mini);
-            frame.setFin(!(i < (len - 1)));
-            send.add(frame);
-        }
+        fragmentText(send,msg);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -309,18 +308,7 @@ public class TestABCase6 extends AbstractABCase
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        int len = invalid.length;
-        byte opcode = OpCode.TEXT;
-        byte mini[];
-        for (int i = 0; i < len; i++)
-        {
-            WebSocketFrame frame = new WebSocketFrame(opcode);
-            mini = new byte[1];
-            mini[0] = invalid[i];
-            frame.setPayload(mini);
-            frame.setFin(!(i < (len - 1)));
-            send.add(frame);
-        }
+        fragmentText(send,invalid);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();

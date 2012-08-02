@@ -49,6 +49,7 @@ public class Parser
     private int cursor = 0;
     // Frame
     private WebSocketFrame frame;
+    private WebSocketFrame priorDataFrame;
     private byte lastDataOpcode;
     // payload specific
     private ByteBuffer payload;
@@ -177,8 +178,15 @@ public class Parser
             {
                 LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
                 notifyFrame(frame);
+                if (frame.isDataFrame() && frame.isFin())
+                {
+                    priorDataFrame = null;
+                }
+                else
+                {
+                    priorDataFrame = frame;
+                }
             }
-
         }
         catch (WebSocketException e)
         {
@@ -267,19 +275,34 @@ public class Parser
                         throw new ProtocolException("RSV3 not allowed to be set");
                     }
 
-                    if (OpCode.isControlFrame(opcode) && !fin)
-                    {
-                        throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
-                    }
+                    boolean isContinuation = false;
 
-                    if (opcode == OpCode.CONTINUATION)
+                    if (OpCode.isControlFrame(opcode))
                     {
-                        if (frame == null)
+                        // control frame validation
+                        if (!fin)
                         {
-                            throw new ProtocolException("Fragment continuation frame without prior !FIN");
+                            throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
+                        }
+                    }
+                    else if (opcode == OpCode.CONTINUATION)
+                    {
+                        isContinuation = true;
+                        // continuation validation
+                        if (priorDataFrame == null)
+                        {
+                            throw new ProtocolException("CONTINUATION frame without prior !FIN");
                         }
                         // Be careful to use the original opcode
                         opcode = lastDataOpcode;
+                    }
+                    else if (OpCode.isDataFrame(opcode))
+                    {
+                        // data validation
+                        if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
+                        {
+                            throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
+                        }
                     }
 
                     // base framing flags
@@ -289,6 +312,7 @@ public class Parser
                     frame.setRsv2(rsv2);
                     frame.setRsv3(rsv3);
                     frame.setOpCode(opcode);
+                    frame.setContinuation(isContinuation);
 
                     if (frame.isDataFrame())
                     {
@@ -435,7 +459,7 @@ public class Parser
      *            the payload buffer
      * @return true if payload is done reading, false if incomplete
      */
-    public boolean parsePayload(ByteBuffer buffer)
+    private boolean parsePayload(ByteBuffer buffer)
     {
         if (payloadLength == 0)
         {
