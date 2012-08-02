@@ -50,14 +50,14 @@ public class SPDYServerConnector extends SelectChannelConnector
     private static final Logger logger = Log.getLogger(SPDYServerConnector.class);
 
     // Order is important on server side, so we use a LinkedHashMap
-    private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
+    private final Map<String, ConnectionFactory> factories = new LinkedHashMap<>();
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final ByteBufferPool bufferPool = new StandardByteBufferPool();
     private final Executor executor = new LazyExecutor();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ServerSessionFrameListener listener;
     private final SslContextFactory sslContextFactory;
-    private volatile AsyncConnectionFactory defaultConnectionFactory;
+    private volatile ConnectionFactory defaultConnectionFactory;
     private volatile int initialWindowSize = 65536;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
@@ -123,7 +123,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         super.join();
     }
 
-    public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
+    public ConnectionFactory getAsyncConnectionFactory(String protocol)
     {
         synchronized (factories)
         {
@@ -131,7 +131,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
-    public AsyncConnectionFactory putAsyncConnectionFactory(String protocol, AsyncConnectionFactory factory)
+    public ConnectionFactory putAsyncConnectionFactory(String protocol, ConnectionFactory factory)
     {
         synchronized (factories)
         {
@@ -139,7 +139,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
-    public AsyncConnectionFactory removeAsyncConnectionFactory(String protocol)
+    public ConnectionFactory removeAsyncConnectionFactory(String protocol)
     {
         synchronized (factories)
         {
@@ -147,7 +147,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
-    public Map<String, AsyncConnectionFactory> getAsyncConnectionFactories()
+    public Map<String, ConnectionFactory> getAsyncConnectionFactories()
     {
         synchronized (factories)
         {
@@ -171,12 +171,12 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
-    public AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+    public ConnectionFactory getDefaultAsyncConnectionFactory()
     {
         return defaultConnectionFactory;
     }
 
-    public void setDefaultAsyncConnectionFactory(AsyncConnectionFactory defaultConnectionFactory)
+    public void setDefaultAsyncConnectionFactory(ConnectionFactory defaultConnectionFactory)
     {
         this.defaultConnectionFactory = defaultConnectionFactory;
     }
@@ -209,8 +209,8 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
         else
         {
-            AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-            Connection connection = connectionFactory.newAsyncConnection(channel, endPoint, this);
+            ConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
+            Connection connection = connectionFactory.newConnection(channel, endPoint, this);
             endPoint.setConnection(connection);
             return connection;
         }

@@ -76,9 +76,9 @@ public class NextProtoNegoServerAsyncConnection extends AbstractConnection imple
     @Override
     public void unsupported()
     {
-        AsyncConnectionFactory asyncConnectionFactory = connector.getDefaultAsyncConnectionFactory();
+        ConnectionFactory asyncConnectionFactory = connector.getDefaultAsyncConnectionFactory();
         EndPoint endPoint = getEndPoint();
-        Connection connection = asyncConnectionFactory.newAsyncConnection(channel, endPoint, connector);
+        Connection connection = asyncConnectionFactory.newConnection(channel, endPoint, connector);
         connector.replaceAsyncConnection(endPoint, connection);
         completed = true;
     }
@@ -92,9 +92,9 @@ public class NextProtoNegoServerAsyncConnection extends AbstractConnection imple
     @Override
     public void protocolSelected(String protocol)
     {
-        AsyncConnectionFactory asyncConnectionFactory = connector.getAsyncConnectionFactory(protocol);
+        ConnectionFactory asyncConnectionFactory = connector.getAsyncConnectionFactory(protocol);
         EndPoint endPoint = getEndPoint();
-        Connection connection = asyncConnectionFactory.newAsyncConnection(channel, endPoint, connector);
+        Connection connection = asyncConnectionFactory.newConnection(channel, endPoint, connector);
         connector.replaceAsyncConnection(endPoint, connection);
         completed = true;
     }

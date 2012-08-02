@@ -49,8 +49,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class SPDYClient
 {
-    private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
-    private final AsyncConnectionFactory defaultAsyncConnectionFactory = new ClientSPDYAsyncConnectionFactory();
+    private final Map<String, ConnectionFactory> factories = new ConcurrentHashMap<>();
+    private final ConnectionFactory defaultAsyncConnectionFactory = new ClientSPDYAsyncConnectionFactory();
     private final short version;
     private final Factory factory;
     private volatile SocketAddress bindAddress;
@@ -140,14 +140,14 @@ public class SPDYClient
         return null;
     }
 
-    public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
+    public ConnectionFactory getAsyncConnectionFactory(String protocol)
     {
-        for (Map.Entry<String, AsyncConnectionFactory> entry : factories.entrySet())
+        for (Map.Entry<String, ConnectionFactory> entry : factories.entrySet())
         {
             if (protocol.equals(entry.getKey()))
                 return entry.getValue();
         }
-        for (Map.Entry<String, AsyncConnectionFactory> entry : factory.factories.entrySet())
+        for (Map.Entry<String, ConnectionFactory> entry : factory.factories.entrySet())
         {
             if (protocol.equals(entry.getKey()))
                 return entry.getValue();
@@ -155,17 +155,17 @@ public class SPDYClient
         return null;
     }
 
-    public void putAsyncConnectionFactory(String protocol, AsyncConnectionFactory factory)
+    public void putAsyncConnectionFactory(String protocol, ConnectionFactory factory)
     {
         factories.put(protocol, factory);
     }
 
-    public AsyncConnectionFactory removeAsyncConnectionFactory(String protocol)
+    public ConnectionFactory removeAsyncConnectionFactory(String protocol)
     {
         return factories.remove(protocol);
     }
 
-    public AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+    public ConnectionFactory getDefaultAsyncConnectionFactory()
     {
         return defaultAsyncConnectionFactory;
     }
@@ -193,7 +193,7 @@ public class SPDYClient
 
     public static class Factory extends AggregateLifeCycle
     {
-        private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
+        private final Map<String, ConnectionFactory> factories = new ConcurrentHashMap<>();
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
         private final ByteBufferPool bufferPool = new StandardByteBufferPool();
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -356,8 +356,8 @@ public class SPDYClient
                     }
                     else
                     {
-                        AsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
-                        Connection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
+                        ConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
+                        Connection connection = connectionFactory.newConnection(channel, endPoint, attachment);
                         endPoint.setConnection(connection);
                         return connection;
                     }
@@ -400,10 +400,10 @@ public class SPDYClient
         }
     }
 
-    private static class ClientSPDYAsyncConnectionFactory implements AsyncConnectionFactory
+    private static class ClientSPDYAsyncConnectionFactory implements ConnectionFactory
     {
         @Override
-        public Connection newAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+        public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
         {
             SessionPromise sessionPromise = (SessionPromise)attachment;
             SPDYClient client = sessionPromise.client;

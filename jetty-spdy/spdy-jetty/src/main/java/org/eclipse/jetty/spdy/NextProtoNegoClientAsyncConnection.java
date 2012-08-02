@@ -87,7 +87,7 @@ public class NextProtoNegoClientAsyncConnection extends AbstractConnection imple
     {
         // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
         EndPoint endPoint = getEndPoint();
-        Connection connection = client.getDefaultAsyncConnectionFactory().newAsyncConnection(channel, endPoint, attachment);
+        Connection connection = client.getDefaultAsyncConnectionFactory().newConnection(channel, endPoint, attachment);
         client.replaceAsyncConnection(endPoint, connection);
         completed = true;
     }
@@ -99,7 +99,7 @@ public class NextProtoNegoClientAsyncConnection extends AbstractConnection imple
         if (protocol == null)
             return null;
         EndPoint endPoint = getEndPoint();
-        Connection connection = client.getAsyncConnectionFactory(protocol).newAsyncConnection(channel, endPoint, attachment);
+        Connection connection = client.getAsyncConnectionFactory(protocol).newConnection(channel, endPoint, attachment);
         client.replaceAsyncConnection(endPoint, connection);
         completed = true;
         return protocol;

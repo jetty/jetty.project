@@ -48,9 +48,9 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link Connection} framework of jetty-io
  */
-public abstract class WebSocketAsyncConnection extends AbstractConnection implements RawConnection, OutgoingFrames
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements RawConnection, OutgoingFrames
 {
-    private static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
+    private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
     private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
 
     private final ByteBufferPool bufferPool;
@@ -64,7 +64,7 @@ public abstract class WebSocketAsyncConnection extends AbstractConnection implem
     private boolean flushing;
     private AtomicLong writes;
 
-    public WebSocketAsyncConnection(EndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public AbstractWebSocketConnection(EndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor);
         this.policy = policy;
@@ -365,7 +365,7 @@ public abstract class WebSocketAsyncConnection extends AbstractConnection implem
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
-    private <C> void write(ByteBuffer buffer, WebSocketAsyncConnection webSocketAsyncConnection, FrameBytes<C> frameBytes)
+    private <C> void write(ByteBuffer buffer, AbstractWebSocketConnection webSocketConnection, FrameBytes<C> frameBytes)
     {
         EndPoint endpoint = getEndPoint();
 

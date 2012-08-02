@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * An AsyncConnection that acts as an intercepter between an EndPoint providing SSL encrypted data
+ * A Connection that acts as an intercepter between an EndPoint providing SSL encrypted data
  * and another consumer of an  EndPoint (typically an {@link Connection} like HttpConnection) that 
  * wants unencrypted data.
  * <p>

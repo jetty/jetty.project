@@ -25,7 +25,7 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
 {
     private ByteBuffer buffer;
 
-    public ControlFrameBytes(WebSocketAsyncConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    public ControlFrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
     {
         super(connection,callback,context,frame);
     }

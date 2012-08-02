@@ -18,7 +18,7 @@ import java.nio.channels.SocketChannel;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 
-public interface AsyncConnectionFactory
+public interface ConnectionFactory
 {
-    public Connection newAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment);
+    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment);
 }

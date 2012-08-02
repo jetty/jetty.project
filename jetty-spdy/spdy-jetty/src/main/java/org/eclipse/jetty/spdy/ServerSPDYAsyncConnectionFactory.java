@@ -24,7 +24,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 
-public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
+public class ServerSPDYAsyncConnectionFactory implements ConnectionFactory
 {
     private final ByteBufferPool bufferPool;
     private final Executor threadPool;
@@ -52,7 +52,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     }
 
     @Override
-    public Connection newAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
     {
         CompressionFactory compressionFactory = new StandardCompressionFactory();
         Parser parser = new Parser(compressionFactory.newDecompressor());

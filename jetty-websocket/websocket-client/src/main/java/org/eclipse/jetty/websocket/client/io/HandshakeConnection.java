@@ -32,12 +32,12 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClient.ConnectFuture;
-import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
+import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
 
 /**
  * Default Handshake Connection.
  * <p>
- * Results in a {@link WebSocketAsyncConnection} on successful handshake.
+ * Results in a {@link AbstractWebSocketConnection} on successful handshake.
  */
 public class HandshakeConnection extends AbstractConnection implements Connection
 {

@@ -28,14 +28,14 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public abstract class FrameBytes<C> implements Callback<C>, Runnable
 {
     private final static Logger LOG = Log.getLogger(FrameBytes.class);
-    protected final WebSocketAsyncConnection connection;
+    protected final AbstractWebSocketConnection connection;
     protected final Callback<C> callback;
     protected final C context;
     protected final WebSocketFrame frame;
     // Task used to timeout the bytes
     protected volatile ScheduledFuture<?> task;
 
-    protected FrameBytes(WebSocketAsyncConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    protected FrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
     {
         this.connection = connection;
         this.callback = callback;

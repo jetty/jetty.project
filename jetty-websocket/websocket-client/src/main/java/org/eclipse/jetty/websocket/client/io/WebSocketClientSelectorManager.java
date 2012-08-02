@@ -32,11 +32,12 @@ import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
-import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
+import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
 
 public class WebSocketClientSelectorManager extends SelectorManager
 {
@@ -66,7 +67,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return sslContextFactory;
     }
 
-    public Connection newAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+    public AbstractWebSocketConnection newWebSocketConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
     {
         WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
         WebSocketClientFactory factory = confut.getFactory();
@@ -77,7 +78,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
         ByteBufferPool bufferPool = factory.getBufferPool();
         ScheduledExecutorService scheduler = factory.getScheduler();
 
-        WebSocketAsyncConnection connection = new WebSocketClientAsyncConnection(endPoint,executor,scheduler,policy,bufferPool,factory);
+        AbstractWebSocketConnection connection = new WebSocketClientConnection(endPoint,executor,scheduler,policy,bufferPool,factory);
         endPoint.setConnection(connection);
         connection.getParser().setIncomingFramesHandler(websocket);
 
@@ -116,13 +117,13 @@ public class WebSocketClientSelectorManager extends SelectorManager
 
                 startHandshake(engine);
 
-                Connection connection = newAsyncConnection(channel,sslEndPoint,attachment);
+                Connection connection = newWebSocketConnection(channel,sslEndPoint,attachment);
                 endPoint.setConnection(connection);
                 return connection;
             }
             else
             {
-                Connection connection = newAsyncConnection(channel,endPoint,attachment);
+                Connection connection = newWebSocketConnection(channel,endPoint,attachment);
                 endPoint.setConnection(connection);
                 return connection;
             }

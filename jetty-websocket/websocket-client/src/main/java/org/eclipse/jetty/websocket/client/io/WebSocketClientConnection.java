@@ -7,13 +7,13 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
+import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
 
-public class WebSocketClientAsyncConnection extends WebSocketAsyncConnection
+public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
     private final WebSocketClientFactory factory;
 
-    public WebSocketClientAsyncConnection(EndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy,
+    public WebSocketClientConnection(EndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy,
             ByteBufferPool bufferPool, WebSocketClientFactory factory)
     {
         super(endp,executor,scheduler,policy,bufferPool);

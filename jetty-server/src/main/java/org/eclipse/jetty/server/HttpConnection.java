@@ -212,7 +212,7 @@ public class HttpConnection extends AbstractConnection
         {
             setCurrentConnection(this);
 
-            // TODO try to generalize this loop into AbstractAsyncConnection
+            // TODO try to generalize this loop into AbstractConnection
             while (true)
             {
                 // synchronized (_lock)

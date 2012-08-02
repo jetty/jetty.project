@@ -27,7 +27,7 @@ public class DataFrameBytes<C> extends FrameBytes<C>
     private static final Logger LOG = Log.getLogger(DataFrameBytes.class);
     private ByteBuffer buffer;
 
-    public DataFrameBytes(WebSocketAsyncConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    public DataFrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
     {
         super(connection,callback,context,frame);
     }
