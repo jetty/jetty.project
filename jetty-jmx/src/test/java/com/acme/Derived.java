@@ -13,13 +13,15 @@
 
 package com.acme;
 
-import org.eclipse.jetty.util.annotation.Managed;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 
-@Managed("Test the mbean stuff")
+@ManagedObject(value="Test the mbean stuff", wrapper="com.acme.jmx.DerivedMBean")
 public class Derived extends Base implements Signature
 {
-    @Managed(value="The full name of something", getter="getFullName", setter="setFullName")
+    @ManagedAttribute(value="The full name of something", getter="getFullName", setter="setFullName")
     String fname="Full Name";
 
     public String getFullName()
@@ -32,13 +34,13 @@ public class Derived extends Base implements Signature
         fname=name;
     }
 
-    @Managed("publish something")
+    @ManagedOperation("publish something")
     public void publish()
     {
         System.err.println("publish");
     }
     
-    @Managed("Doodle something")
+    @ManagedOperation("Doodle something")
     public void doodle(@Name(value="doodle", description="A description of the argument") String doodle)
     {
         System.err.println("doodle "+doodle);

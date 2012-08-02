@@ -42,4 +42,18 @@ public @interface ManagedOperation
      */
     String impact() default "UNKNOWN";
     
+    /**
+     * Is the managed field itself a Managed Object?
+     *
+     * @return true if the target is a Managed Object
+     */
+    boolean managed() default false;
+    
+    /**
+     * Does the managed field exist on a proxy object?
+     * 
+     * 
+     * @return true if a proxy object is involved
+     */
+    boolean proxied() default false;
 }

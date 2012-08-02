@@ -1,27 +1,34 @@
 package com.acme.jmx;
 
-import org.eclipse.jetty.util.annotation.Managed;
+import org.eclipse.jetty.jmx.ObjectMBean;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import com.acme.Derived;
 
-@Managed("Derived MBean")
-public class DerivedMBean
+@ManagedObject("Derived MBean Wrapper")
+public class DerivedMBean extends ObjectMBean
 {
     private static final Logger LOG = Log.getLogger(DerivedMBean.class);
-
-    Derived managedObject;
     
     public DerivedMBean(Object managedObject)
     {
-        this.managedObject = (Derived)managedObject;
+        super(managedObject);
     }
     
-    @Managed(value="test of proxy", attribute=true, managed=true, getter="good" )
+    @ManagedOperation(value="test of proxy operations", managed=true)
     public String good()
     {
-        return "not " + managedObject.bad();
+        return "not " + ((Derived)_managed).bad();
+    }
+ 
+    @ManagedAttribute(value="test of proxy attributes", getter="goop", proxied=true)
+    public String goop()
+    {
+        return "goop";
     }
     
 }
