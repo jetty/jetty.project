@@ -26,7 +26,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -242,7 +241,6 @@ public class TestABCase5 extends AbstractABCase
      * Send text fragmented properly in 2 frames, then continuation!fin, then text unfragmented.
      */
     @Test
-    @Ignore /* FIXME */
     public void testCase5_15() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
@@ -253,7 +251,7 @@ public class TestABCase5 extends AbstractABCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        send.add(WebSocketFrame.text("fragment1fragment2"));
+        expect.add(WebSocketFrame.text("fragment1fragment2"));
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
@@ -338,7 +336,6 @@ public class TestABCase5 extends AbstractABCase
      * text message fragmented in 2 frames, both frames as opcode=TEXT
      */
     @Test
-    @Ignore /* FIXME */
     public void testCase5_18() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();

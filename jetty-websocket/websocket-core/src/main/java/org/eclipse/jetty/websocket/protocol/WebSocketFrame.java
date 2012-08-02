@@ -113,6 +113,7 @@ public class WebSocketFrame implements Frame
      */
     public WebSocketFrame(byte opcode)
     {
+        reset();
         this.opcode = opcode;
     }
 
@@ -126,7 +127,7 @@ public class WebSocketFrame implements Frame
      */
     public WebSocketFrame(WebSocketFrame copy)
     {
-        fin = copy.rsv1;
+        fin = copy.fin;
         rsv1 = copy.rsv2;
         rsv2 = copy.rsv2;
         rsv3 = copy.rsv3;

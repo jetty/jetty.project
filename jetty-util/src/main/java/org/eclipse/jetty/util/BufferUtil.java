@@ -156,7 +156,7 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /** Flip the buffer to Flush mode.
-     * The limit is set to the first unused byte(the old position) amd
+     * The limit is set to the first unused byte(the old position) and
      * the position is set to the passed position.
      * <p>
      * This method is used as a replacement of {@link Buffer#flip()}.

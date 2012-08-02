@@ -29,7 +29,7 @@ public class FragmentExtension extends Extension
     private int maxLength = -1;
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+    public <C> void output(C context, Callback<C> callback, final WebSocketFrame frame) throws IOException
     {
         if (frame.isControlFrame())
         {

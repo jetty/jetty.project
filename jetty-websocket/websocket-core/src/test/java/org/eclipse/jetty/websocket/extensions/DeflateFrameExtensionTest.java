@@ -232,7 +232,7 @@ public class DeflateFrameExtensionTest
 
             Assert.assertThat(prefix + ".opcode",actual.getOpCode(),is(OpCode.TEXT));
             Assert.assertThat(prefix + ".fin",actual.isFin(),is(true));
-            Assert.assertThat(prefix + ".rsv1",actual.isRsv1(),is(true));
+            Assert.assertThat(prefix + ".rsv1",actual.isRsv1(),is(false)); // RSV1 should be unset at this point
             Assert.assertThat(prefix + ".rsv2",actual.isRsv2(),is(false));
             Assert.assertThat(prefix + ".rsv3",actual.isRsv3(),is(false));
 

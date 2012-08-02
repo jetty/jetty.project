@@ -20,10 +20,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Set;
@@ -44,7 +46,6 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
 
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -223,25 +224,25 @@ public class ObjectMBean implements DynamicMBean
             {
                 // Start with blank lazy lists attributes etc.
                 String desc=null;
-                Object attributes=null;
-                Object constructors=null;
-                Object operations=null;
-                Object notifications=null;
+                List<MBeanAttributeInfo> attributes = new ArrayList<MBeanAttributeInfo>();
+                List<MBeanConstructorInfo> constructors = new ArrayList<MBeanConstructorInfo>();
+                List<MBeanOperationInfo> operations = new ArrayList<MBeanOperationInfo>();
+                List<MBeanNotificationInfo> notifications = new ArrayList<MBeanNotificationInfo>();
 
                 // Find list of classes that can influence the mbean
                 Class<?> o_class=_managed.getClass();
-                Object influences = findInfluences(null, _managed.getClass());
+                List<Class<?>> influences = findInfluences(new ArrayList<Class<?>>(), _managed.getClass());
 
-                LOG.debug("Influence Count: " + LazyList.size(influences) );
+                LOG.debug("Influence Count: " + influences.size() );
 
                 // Process Type Annotations
                 ManagedObject primary = o_class.getAnnotation( ManagedObject.class);
                 desc = primary.value();
 
                 // For each influence
-                for (int i=0;i<LazyList.size(influences);i++)
+                for (int i=0;i<influences.size();i++)
                 {
-                    Class<?> oClass = (Class<?>)LazyList.get(influences, i);
+                    Class<?> oClass = influences.get(i);
 
                     ManagedObject typeAnnotation = oClass.getAnnotation( ManagedObject.class);
 
@@ -263,7 +264,7 @@ public class ObjectMBean implements DynamicMBean
                             if ( fieldAnnotation != null )
                             {
                                 LOG.debug("Field Annotation found for: " + field.getName() );
-                                attributes=LazyList.add(attributes, defineAttribute(field.getName(), fieldAnnotation));
+                                attributes.add( defineAttribute(field.getName(), fieldAnnotation));
                             }
                         }
                             
@@ -277,7 +278,7 @@ public class ObjectMBean implements DynamicMBean
                             {                   
                                 // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
                                 LOG.debug("Attribute Annotation found for: " + method.getName() );
-                                attributes=LazyList.add(attributes,defineAttribute(method.getName(),methodAttributeAnnotation));
+                                attributes.add(defineAttribute(method.getName(),methodAttributeAnnotation));
                             }
                             
                             ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
@@ -285,7 +286,7 @@ public class ObjectMBean implements DynamicMBean
                             if (methodOperationAnnotation != null)
                             {
                                 LOG.debug("Method Annotation found for: " + method.getName());                              
-                                operations = LazyList.add(operations,defineOperation(method,methodOperationAnnotation));                              
+                                operations.add(defineOperation(method,methodOperationAnnotation));                              
                             }
                         }
                         
@@ -298,10 +299,10 @@ public class ObjectMBean implements DynamicMBean
 
                 _info = new MBeanInfo(o_class.getName(),
                                 desc,
-                                (MBeanAttributeInfo[])LazyList.toArray(attributes, MBeanAttributeInfo.class),
-                                (MBeanConstructorInfo[])LazyList.toArray(constructors, MBeanConstructorInfo.class),
-                                (MBeanOperationInfo[])LazyList.toArray(operations, MBeanOperationInfo.class),
-                                (MBeanNotificationInfo[])LazyList.toArray(notifications, MBeanNotificationInfo.class));
+                                (MBeanAttributeInfo[])attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
+                                (MBeanConstructorInfo[])constructors.toArray(new MBeanConstructorInfo[constructors.size()]),
+                                (MBeanOperationInfo[])operations.toArray(new MBeanOperationInfo[operations.size()]),
+                                (MBeanNotificationInfo[])notifications.toArray(new MBeanNotificationInfo[notifications.size()]));
             }
         }
         catch(RuntimeException e)
@@ -513,12 +514,12 @@ public class ObjectMBean implements DynamicMBean
         }
     }
 
-    private static Object findInfluences(Object influences, Class<?> aClass)
-    {
+    private static List<Class<?>> findInfluences(List<Class<?>> influences, Class<?> aClass)
+    {        
         if (aClass!=null)
         {
             // This class is an influence
-            influences=LazyList.add(influences,aClass);
+            influences.add(aClass);
 
             // check for mbean influence
             ManagedObject mo = aClass.getAnnotation(ManagedObject.class);
@@ -532,7 +533,7 @@ public class ObjectMBean implements DynamicMBean
                     Class<?> mbean = Class.forName(clazz);
                     
                     LOG.debug("MBean Influence found for " + aClass.getSimpleName() );
-                    influences = LazyList.add(influences, mbean);
+                    influences.add(mbean);
                 }
                 catch ( ClassNotFoundException cnfe )
                 {
@@ -548,6 +549,7 @@ public class ObjectMBean implements DynamicMBean
             for (int i=0;ifs!=null && i<ifs.length;i++)
                 influences=findInfluences(influences,ifs[i]);
         }
+        
         return influences;
     }
 

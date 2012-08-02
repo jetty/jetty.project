@@ -17,6 +17,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.management.ManagementFactory;
 
+import javax.management.Attribute;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
@@ -41,14 +42,8 @@ public class ObjectMBeanTest
     @Test
     public void testMbeanInfo() throws Exception
     {
-        MBeanContainer container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        
-        container.start();
-        
         Derived derived = new Derived();
-        //ObjectMBean mbean = new ObjectMBean(derived);
         ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
-        mbean.setMBeanContainer(container);
         
         assertTrue(mbean.getMBeanInfo()!=null);
         
@@ -68,6 +63,10 @@ public class ObjectMBeanTest
         Assert.assertEquals("attribute count does not match", 8, info.getAttributes().length);
 
         Assert.assertEquals("attribute values does not match", "Full Name", mbean.getAttribute("fname") );
+        
+        //mbean.setAttribute( new Attribute("fname","Fuller Name"));
+        
+        //Assert.assertEquals("set attribute value does not match", "Fuller Name", mbean.getAttribute("fname") );
         
         Assert.assertEquals("proxy attribute values do not match", "goop", mbean.getAttribute("goop") );
         

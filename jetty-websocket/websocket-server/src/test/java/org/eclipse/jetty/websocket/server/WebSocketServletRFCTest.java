@@ -233,6 +233,7 @@ public class WebSocketServletRFCTest
     }
 
     @Test
+    @Ignore("Should be moved to Fuzzer")
     public void testMaxBinarySize() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
@@ -274,6 +275,7 @@ public class WebSocketServletRFCTest
     }
 
     @Test
+    @Ignore("Should be moved to Fuzzer")
     public void testMaxTextSize() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
