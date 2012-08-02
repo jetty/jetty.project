@@ -96,7 +96,7 @@ public class CheckReverseProxyHeadersTest
         LocalConnector connector = new LocalConnector(server);
 
         // Activate reverse proxy headers checking
-        connector.getHttpConfig().setForwarded(true);
+        connector.getConnectionFactory().getHttpConfig().setForwarded(true);
 
         server.setConnectors(new Connector[] {connector});
         ValidationHandler validationHandler = new ValidationHandler(requestValidator);

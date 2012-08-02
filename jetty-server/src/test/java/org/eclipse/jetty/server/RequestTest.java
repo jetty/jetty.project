@@ -64,11 +64,11 @@ public class RequestTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
-        _connector.getHttpConfig().setRequestHeaderSize(512);
-        _connector.getHttpConfig().setRequestBufferSize(1024);
-        _connector.getHttpConfig().setResponseHeaderSize(512);
-        _connector.getHttpConfig().setResponseBufferSize(2048);
-        _connector.getHttpConfig().setForwarded(true);
+        _connector.getConnectionFactory().getHttpConfig().setRequestHeaderSize(512);
+        _connector.getConnectionFactory().getHttpConfig().setRequestBufferSize(1024);
+        _connector.getConnectionFactory().getHttpConfig().setResponseHeaderSize(512);
+        _connector.getConnectionFactory().getHttpConfig().setResponseBufferSize(2048);
+        _connector.getConnectionFactory().getHttpConfig().setForwarded(true);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
         _server.setHandler(_handler);

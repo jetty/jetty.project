@@ -21,6 +21,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 
@@ -37,10 +38,10 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
     @BeforeClass
     public static void init() throws Exception
     {
-        SslSelectChannelConnector connector = new SslSelectChannelConnector(_server);
+        SelectChannelConnector connector = new SelectChannelConnector(_server,true);
         connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory cf = connector.getSslContextFactory();
+        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(keystorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
@@ -49,7 +50,7 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         startServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(connector.getConnectionFactory().getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("SSL");

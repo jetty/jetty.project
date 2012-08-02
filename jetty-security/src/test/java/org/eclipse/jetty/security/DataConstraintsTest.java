@@ -57,11 +57,12 @@ public class DataConstraintsTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _connector.setIdleTimeout(300000);
-        _connector.getHttpConfig().setIntegralPort(9998);
-        _connector.getHttpConfig().setIntegralScheme("FTP");
-        _connector.getHttpConfig().setConfidentialPort(9999);
-        _connector.getHttpConfig().setConfidentialScheme("SPDY");
-        _connectorS = new LocalConnector(_server,new HttpConfiguration(null,false)
+        _connector.getConnectionFactory().getHttpConfig().setIntegralPort(9998);
+        _connector.getConnectionFactory().getHttpConfig().setIntegralScheme("FTP");
+        _connector.getConnectionFactory().getHttpConfig().setConfidentialPort(9999);
+        _connector.getConnectionFactory().getHttpConfig().setConfidentialScheme("SPDY");
+        _connectorS = new LocalConnector(_server,
+            new HttpConfiguration(null,false)
         {
             @Override
             public void customize(Request request) throws IOException
@@ -82,7 +83,7 @@ public class DataConstraintsTest
             {
                 return true;
             }
-        },null,null,null,null,false,0);
+        });
         _server.setConnectors(new Connector[]{_connector,_connectorS});
 
         ContextHandler _context = new ContextHandler();

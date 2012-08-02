@@ -94,12 +94,12 @@ public class SSLEngineTest
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
-        SslContextFactory cf = connector.getSslContextFactory();
+        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(keystore);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        connector.getHttpConfig().setRequestBufferSize(512);
-        connector.getHttpConfig().setRequestHeaderSize(512);
+        connector.getConnectionFactory().getHttpConfig().setRequestBufferSize(512);
+        connector.getConnectionFactory().getHttpConfig().setRequestHeaderSize(512);
 
         server.setConnectors(new Connector[]{connector });
     }
@@ -117,6 +117,7 @@ public class SSLEngineTest
     {
         server.setHandler(new HelloWorldHandler());
         server.start();
+        server.dumpStdErr();
         
         SSLContext ctx=SSLContext.getInstance("TLS");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());

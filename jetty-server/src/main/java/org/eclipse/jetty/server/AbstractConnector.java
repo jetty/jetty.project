@@ -50,18 +50,12 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     protected final Logger LOG = Log.getLogger(getClass());
 
     private final Statistics _stats = new ConnectionStatistics();
+    private final ConnectionFactory _connectionFactory;
     private final Thread[] _acceptors;
     private final Executor _executor;
     private final ScheduledExecutorService _scheduler;
     private final Server _server;
     private final ByteBufferPool _byteBufferPool;
-    private final boolean _ssl;
-    private final SslContextFactory _sslContextFactory;
-
-    /**
-     * @deprecated  Make this part of pluggable factory
-     */
-    private final HttpConfiguration _httpConfig;
     
     private volatile String _name;
     private volatile int _acceptQueueSize = 128;
@@ -69,41 +63,21 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     private volatile long _idleTimeout = 200000;
     private volatile int _soLingerTime = -1;
 
-    public AbstractConnector(@Name("server") Server server)
-    {
-        this(server,null);
-    }
-
-    public AbstractConnector(Server server,SslContextFactory sslContextFactory)
-    {
-        this(server,null,null,null,null, sslContextFactory, sslContextFactory!=null, 0);
-    }
-    
-    public AbstractConnector(Server server,boolean ssl)
-    {
-        this(server,null,null,null,null, ssl?new SslContextFactory():null, ssl, 0);
-    }
-
-
     /* ------------------------------------------------------------ */
     /**
      * @param server The server this connector will be added to. Must not be null.
-     * @param httpConfig TODO
+     * @param connectionFactory ConnectionFactory or null for default
      * @param executor An executor for this connector or null to use the servers executor 
      * @param scheduler A scheduler for this connector or null to use the servers scheduler
      * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
-     * @param sslContextFactory An SslContextFactory to use or null if no ssl is required or to use default {@link SslContextFactory} 
-     * @param ssl If true, then new connections will assumed to be SSL. If false, connections can only become SSL if they upgrade and a SslContextFactory is passed.
      * @param acceptors the number of acceptor threads to use, or 0 for a default value.
      */
     public AbstractConnector(
         Server server,
-        HttpConfiguration httpConfig,
+        ConnectionFactory connectionFactory,
         Executor executor,
         ScheduledExecutorService scheduler, 
-        ByteBufferPool pool, 
-        SslContextFactory sslContextFactory, 
-        boolean ssl, int acceptors)
+        ByteBufferPool pool, int acceptors)
     {
         _server=server;
         _executor=executor!=null?executor:_server.getThreadPool();
@@ -117,25 +91,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         });
         _byteBufferPool = pool!=null?pool:new StandardByteBufferPool();
         
-        _ssl=ssl;
-        _sslContextFactory=sslContextFactory!=null?sslContextFactory:(ssl?new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH):null);
-
-        // TODO make this pluggable
-        _httpConfig = httpConfig!=null?httpConfig:new HttpConfiguration(_sslContextFactory,ssl);
+        _connectionFactory=connectionFactory!=null?connectionFactory:new ConnectionFactory();
         
         addBean(_server,false);
         addBean(_executor,executor==null);
         addBean(_scheduler,scheduler==null);
         addBean(_byteBufferPool,pool==null);
-        if (_sslContextFactory!=null)
-            addBean(_sslContextFactory,sslContextFactory==null);
-        
-        if (_sslContextFactory!=null)
-        {
-            addBean(_sslContextFactory,false);
-            setSoLingerTime(30000);
-        }
-        addBean(_httpConfig,httpConfig==null);
+        addBean(_connectionFactory,connectionFactory!=null);
 
         if (acceptors<=0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
@@ -155,7 +117,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     {
         return _server;
     }
-
+    
+    @Override
+    public ConnectionFactory getConnectionFactory()
+    {
+        return _connectionFactory;
+    }
+    
     @Override
     public Executor getExecutor()
     {
@@ -168,33 +136,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         return _byteBufferPool;
     }
 
-    @Override
-    public SslContextFactory getSslContextFactory()
-    {
-        return _sslContextFactory;
-    }
-
-    public HttpConfiguration getHttpConfig()
-    {
-        return _httpConfig;
-    }
-
-    protected Connection newConnection(EndPoint endp) throws IOException
-    {
-        // TODO make this a plugable configurable connection factory for HTTP, HTTPS, SPDY & Websocket
-        
-        if (_ssl)
-        {
-            SSLEngine engine = _sslContextFactory.createSSLEngine(endp.getRemoteAddress());
-            SslConnection ssl_connection = new SslConnection(getByteBufferPool(), getExecutor(), endp, engine);
-            
-            Connection http_connection = new HttpConnection(_httpConfig,this,ssl_connection.getDecryptedEndPoint());
-            ssl_connection.getDecryptedEndPoint().setConnection(http_connection);
-            return ssl_connection;
-        }
-        return new HttpConnection(_httpConfig,this,endp);
-    }
-    
     /**
      * @return Returns the maxIdleTime.
      */

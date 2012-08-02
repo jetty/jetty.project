@@ -41,22 +41,6 @@ public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
 {
     private final List<NetworkTrafficListener> listeners = new CopyOnWriteArrayList<NetworkTrafficListener>();
 
-    
-    public NetworkTrafficSelectChannelConnector(Server server, boolean ssl)
-    {
-        super(server,ssl);
-    }
-
-    public NetworkTrafficSelectChannelConnector(Server server, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
-        SslContextFactory sslContextFactory, boolean ssl, int acceptors, int selectors)
-    {
-        super(server,executor,scheduler,pool,sslContextFactory,ssl,acceptors,selectors);
-    }
-
-    public NetworkTrafficSelectChannelConnector(Server server, SslContextFactory sslContextFactory)
-    {
-        super(server,sslContextFactory);
-    }
 
     public NetworkTrafficSelectChannelConnector(Server server)
     {

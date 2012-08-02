@@ -380,6 +380,7 @@ public class ContextHandlerTest
 
             Assert.assertTrue(response.indexOf("Goodbye")>0);
             Assert.assertTrue(response.indexOf("dead")<0);
+            Thread.sleep(100);
             Assert.assertTrue(handler.error);
             Assert.assertTrue(handler.throwable!=null);
         }

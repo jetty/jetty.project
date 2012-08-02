@@ -56,7 +56,12 @@ public class TestServer
         
         String jetty_root = "..";
 
-        Server server = new Server();
+        // Setup Threadpool
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setMaxThreads(100);
+        
+        // Setup server
+        Server server = new Server(threadPool);
         server.setSendDateHeader(true);
         
         // Setup JMX
@@ -65,30 +70,23 @@ public class TestServer
         server.addBean(mbContainer);
         mbContainer.addBean(Log.getLog());
         
-        // Setup Threadpool
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(100);
-        server.setThreadPool(threadPool);
-
         // Setup Connectors
-        SelectChannelConnector connector0 = new SelectChannelConnector();
+        SelectChannelConnector connector0 = new SelectChannelConnector(server);
         connector0.setPort(8080);
-        connector0.setMaxIdleTime(30000);
-        connector0.setConfidentialPort(8443);
+        connector0.setIdleTimeout(30000);
+        connector0.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
         server.addConnector(connector0);
         
         // Setup Connectors
-        SelectChannelConnector connector1 = new SelectChannelConnector();
+        SelectChannelConnector connector1 = new SelectChannelConnector(server);
         connector1.setPort(8081);
-        connector1.setMaxIdleTime(30000);
-        connector1.setConfidentialPort(8443);
+        connector0.setIdleTimeout(30000);
+        connector1.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
         server.addConnector(connector1);
         
-        
-
-        SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
+        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,true);
         ssl_connector.setPort(8443);
-        SslContextFactory cf = ssl_connector.getSslContextFactory();
+        SslContextFactory cf = ssl_connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

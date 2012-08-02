@@ -1392,6 +1392,8 @@ public class SslContextFactory extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     public SSLEngine newSslEngine(String host,int port)
     {
+        if (!isRunning())
+            throw new IllegalStateException("!STARTED");
         SSLEngine sslEngine=isSessionCachingEnabled()
             ?_context.createSSLEngine(host, port)
             :_context.createSSLEngine();
@@ -1403,6 +1405,8 @@ public class SslContextFactory extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     public SSLEngine newSslEngine()
     {
+        if (!isRunning())
+            throw new IllegalStateException("!STARTED");
         SSLEngine sslEngine=_context.createSSLEngine();
         customize(sslEngine);
         return sslEngine;

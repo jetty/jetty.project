@@ -56,7 +56,7 @@ public class SSLSelectChannelConnectorLoadTest
         server.addConnector(connector);
 
         String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
-        SslContextFactory cf = connector.getSslContextFactory();
+        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(keystorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
@@ -68,7 +68,7 @@ public class SSLSelectChannelConnectorLoadTest
         server.start();
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(connector.getConnectionFactory().getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         sslContext = SSLContext.getInstance("SSL");

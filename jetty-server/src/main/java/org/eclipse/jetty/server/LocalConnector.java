@@ -39,26 +39,31 @@ public class LocalConnector extends AbstractConnector
     
     public LocalConnector(Server server)
     {
-        super(server,null,null,null,null, null,false, -1);
+        this(server,null,null,null,null, -1);
     }
 
     public LocalConnector(Server server, boolean ssl)
     {
-        super(server,ssl);
+        this(server,new ConnectionFactory(null,ssl),null,null,null,0);
+        manage(getConnectionFactory());
     }
 
-    public LocalConnector(Server server, HttpConfiguration httpConfig, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
-        SslContextFactory sslContextFactory, boolean ssl, int acceptors)
+    public LocalConnector(Server server, HttpConfiguration httpConfig)
     {
-        super(server,httpConfig,executor,scheduler,pool,sslContextFactory,ssl, acceptors);
+        this(server,new ConnectionFactory(httpConfig,null,false),null,null,null,0);
+        manage(getConnectionFactory());
     }
 
     public LocalConnector(Server server, SslContextFactory sslContextFactory)
     {
-        super(server,sslContextFactory);
+        this(server,new ConnectionFactory(sslContextFactory,sslContextFactory!=null),null,null,null,0);
+        manage(getConnectionFactory());
     }
-
+    
+    public LocalConnector(Server server, ConnectionFactory connectionFactory, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
+        int acceptors)
     {
+        super(server,connectionFactory,executor,scheduler,pool,acceptors);
         setIdleTimeout(30000);
     }
     
@@ -158,7 +163,7 @@ public class LocalConnector extends AbstractConnector
     {
         LOG.debug("accepting {}",acceptorID);
         LocalEndPoint endp = _connects.take();
-        Connection connection=newConnection(endp);
+        Connection connection=getConnectionFactory().newConnection(LocalConnector.this,endp);
         endp.setConnection(connection);
         endp.onOpen();
         connection.onOpen();

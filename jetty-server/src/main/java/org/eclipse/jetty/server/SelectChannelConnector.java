@@ -66,21 +66,29 @@ public class SelectChannelConnector extends AbstractNetConnector
     /* ------------------------------------------------------------ */
     public SelectChannelConnector(Server server)
     {
-        this(server,null,null,null,null,false,0,0);
+        this(server,null,null,null,null,0,0);
     }
     
     /* ------------------------------------------------------------ */
     public SelectChannelConnector(Server server, boolean ssl)
     {
-        this(server,null,null,null,null,ssl,0,0);
+        this(server,new ConnectionFactory(null,ssl));
+        manage(getConnectionFactory());
     }
     
     /* ------------------------------------------------------------ */
     public SelectChannelConnector(Server server, SslContextFactory sslContextFactory)
     {
-        this(server,null,null,null,sslContextFactory,sslContextFactory!=null,0,0);
+        this(server,new ConnectionFactory(sslContextFactory,sslContextFactory!=null));
+        manage(getConnectionFactory());
     }
 
+    
+    /* ------------------------------------------------------------ */
+    public SelectChannelConnector(Server server, ConnectionFactory connectionFactory)
+    {
+        this(server,connectionFactory,null,null,null,0,0);
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -88,23 +96,24 @@ public class SelectChannelConnector extends AbstractNetConnector
      * @param executor An executor for this connector or null to use the servers executor 
      * @param scheduler A scheduler for this connector or null to use the servers scheduler
      * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
-     * @param sslContextFactory An SslContextFactory to use or null if no ssl is required or to use default {@link SslContextFactory} 
-     * @param ssl If true, then new connections will assumed to be SSL. If false, connections can only become SSL if they upgrade and a SslContextFactory is passed.
      * @param acceptors the number of acceptor threads to use, or 0 for a default value.
      */
    public SelectChannelConnector(
        @Name("server") Server server,
+       @Name("connectionFactory") ConnectionFactory connectionFactory,
        @Name("executor") Executor executor,
        @Name("scheduler") ScheduledExecutorService scheduler,
        @Name("bufferPool") ByteBufferPool pool, 
-       @Name("sslContextFactory") SslContextFactory sslContextFactory, 
-       @Name("ssl") boolean ssl, 
        @Name("acceptors") int acceptors,
        @Name("selectors") int selectors)
     {
-        super(server,executor,scheduler,pool,sslContextFactory,ssl,acceptors);
+        super(server,connectionFactory,executor,scheduler,pool,acceptors);
         _manager=new ConnectorSelectorManager(selectors!=0?selectors:Math.max(1,(Runtime.getRuntime().availableProcessors())/4));
         addBean(_manager,true);
+        
+        // TODO yuck
+        if (getConnectionFactory().getSslContextFactory()!=null)
+            setSoLingerTime(30000);
     }
 
 
@@ -287,7 +296,7 @@ public class SelectChannelConnector extends AbstractNetConnector
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return SelectChannelConnector.this.newConnection(endpoint);
+            return getConnectionFactory().newConnection(SelectChannelConnector.this,endpoint);
         }
     }
 }

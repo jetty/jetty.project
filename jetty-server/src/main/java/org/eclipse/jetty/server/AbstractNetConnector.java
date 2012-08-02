@@ -25,25 +25,9 @@ public abstract class AbstractNetConnector extends AbstractConnector implements 
     private volatile String _host;
     private volatile int _port = 0;
 
-    public AbstractNetConnector(Server server, boolean ssl)
+    public AbstractNetConnector(Server server, ConnectionFactory connectionFactory, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool, int acceptors)
     {
-        super(server,ssl);
-    }
-
-    public AbstractNetConnector(Server server, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool, SslContextFactory sslContextFactory,
-        boolean ssl, int acceptors)
-    {
-        super(server,null,executor,scheduler,pool,sslContextFactory,ssl, acceptors);
-    }
-
-    public AbstractNetConnector(Server server, SslContextFactory sslContextFactory)
-    {
-        super(server,sslContextFactory);
-    }
-
-    public AbstractNetConnector(Server server)
-    {
-        super(server);
+        super(server,connectionFactory,executor,scheduler,pool, acceptors);
     }
 
     public void setHost(String host)

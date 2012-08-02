@@ -61,8 +61,8 @@ public class HttpConnectionTest
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
-        connector.getHttpConfig().setRequestHeaderSize(1024);
-        connector.getHttpConfig().setResponseHeaderSize(1024);
+        connector.getConnectionFactory().getHttpConfig().setRequestHeaderSize(1024);
+        connector.getConnectionFactory().getHttpConfig().setResponseHeaderSize(1024);
         server.setHandler(new DumpHandler());
         server.start();
     }

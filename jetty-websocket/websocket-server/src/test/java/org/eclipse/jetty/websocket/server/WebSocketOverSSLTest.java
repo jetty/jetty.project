@@ -98,7 +98,7 @@ public class WebSocketOverSSLTest
         _server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector(_server,true);
         _server.addConnector(connector);
-        SslContextFactory cf = connector.getSslContextFactory();
+        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");

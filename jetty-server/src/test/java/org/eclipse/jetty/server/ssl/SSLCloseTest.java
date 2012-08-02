@@ -78,9 +78,9 @@ public class SSLCloseTest extends TestCase
         String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
 
         connector.setPort(0);
-        connector.getSslContextFactory().setKeyStorePath(keystore);
-        connector.getSslContextFactory().setKeyStorePassword("storepwd");
-        connector.getSslContextFactory().setKeyManagerPassword("keypwd");
+        connector.getConnectionFactory().getSslContextFactory().setKeyStorePath(keystore);
+        connector.getConnectionFactory().getSslContextFactory().setKeyStorePassword("storepwd");
+        connector.getConnectionFactory().getSslContextFactory().setKeyManagerPassword("keypwd");
 
         server.setConnectors(new Connector[]
         { connector });

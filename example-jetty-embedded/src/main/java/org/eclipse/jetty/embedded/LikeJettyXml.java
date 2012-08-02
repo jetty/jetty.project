@@ -60,7 +60,7 @@ public class LikeJettyXml
         SelectChannelConnector connector = new SelectChannelConnector(server);
         connector.setPort(8080);
         connector.setIdleTimeout(30000);
-        connector.getHttpConfig().setConfidentialPort(8443);
+        connector.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
         // TODO connector.setStatsOn(false);
 
         server.setConnectors(new Connector[]
@@ -68,7 +68,7 @@ public class LikeJettyXml
 
         SelectChannelConnector ssl_connector = new SelectChannelConnector(server,true);
         ssl_connector.setPort(8443);
-        SslContextFactory cf = ssl_connector.getSslContextFactory();
+        SslContextFactory cf = ssl_connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(jetty_home + "/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

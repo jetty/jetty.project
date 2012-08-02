@@ -99,7 +99,7 @@ public class SslBytesServerTest extends SslBytesTest
         connector.setPort(0);
 
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory cf = connector.getSslContextFactory();
+        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(keyStore.getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
