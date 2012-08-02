@@ -99,6 +99,7 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
             }
             flushing = false;
         }
+        flush();
     }
 
     @Override
@@ -281,7 +282,7 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
                 else if (filled < 0)
                 {
                     LOG.debug("read - EOF Reached");
-                    disconnect(false);
+                    // disconnect(false); // FIXME Simone says this is bad
                     return -1;
                 }
                 else
@@ -369,15 +370,9 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
         try
         {
             endpoint.write(frameBytes.context,frameBytes,buffer);
-            long count = writes.incrementAndGet();
-            if ((count % 10) == 0)
-            {
-                LOG.info("Server wrote {} ByteBuffers",count);
-            }
         }
         catch (Throwable t)
         {
-            LOG.debug(t);
             frameBytes.failed(frameBytes.context,t);
         }
     }

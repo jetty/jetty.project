@@ -18,11 +18,14 @@ package org.eclipse.jetty.websocket.io;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 public class ControlFrameBytes<C> extends FrameBytes<C>
 {
+    private static final Logger LOG = Log.getLogger(ControlFrameBytes.class);
     private ByteBuffer buffer;
 
     public ControlFrameBytes(WebSocketAsyncConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
@@ -32,6 +35,7 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
 
     @Override
     public void completed(C context) {
+        LOG.debug("completed() - frame: {}",frame);
         connection.getBufferPool().release(buffer);
 
         super.completed(context);
@@ -39,7 +43,7 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
         if (frame.getOpCode() == OpCode.CLOSE)
         {
             // Disconnect the connection (no more packets/frames)
-            connection.disconnect(false);
+            connection.disconnect(true); // FIXME (should only shutdown output here)
         }
     }
 

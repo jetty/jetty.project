@@ -57,7 +57,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("completed({})",context);
+            LOG.debug("completed({}) - {}",context,this.getClass().getName());
         }
         cancelTask();
         connection.complete(this);
