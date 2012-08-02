@@ -345,7 +345,7 @@ public class SPDYClient
                             }
                         };
 
-                        AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+                        AsyncEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
                         NextProtoNegoClientAsyncConnection connection = new NextProtoNegoClientAsyncConnection(channel, sslEndPoint, attachment, client.factory.threadPool, client);
                         sslEndPoint.setAsyncConnection(connection);
                         connectionOpened(connection);

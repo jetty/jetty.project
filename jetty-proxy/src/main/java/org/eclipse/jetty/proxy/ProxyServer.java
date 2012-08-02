@@ -26,7 +26,7 @@ public class ProxyServer
     public static void main(String[] args) throws Exception
     {
         Server server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
+        SelectChannelConnector connector = new SelectChannelConnector(server);
         connector.setPort(8888);
         server.addConnector(connector);
 

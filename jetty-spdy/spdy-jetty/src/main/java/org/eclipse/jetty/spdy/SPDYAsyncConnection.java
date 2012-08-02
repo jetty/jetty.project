@@ -43,6 +43,13 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     }
 
     @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+    
+    @Override
     public void onFillable()
     {
         ByteBuffer buffer = bufferPool.acquire(8192, true); //TODO: 8k window?

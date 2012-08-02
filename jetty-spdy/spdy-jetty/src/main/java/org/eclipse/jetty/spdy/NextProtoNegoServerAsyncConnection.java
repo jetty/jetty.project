@@ -34,11 +34,18 @@ public class NextProtoNegoServerAsyncConnection extends AbstractAsyncConnection 
 
     public NextProtoNegoServerAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, SPDYServerConnector connector)
     {
-        super(endPoint, connector.findExecutor());
+        super(endPoint, connector.getExecutor());
         this.channel = channel;
         this.connector = connector;
     }
 
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+    
     @Override
     public void onFillable()
     {

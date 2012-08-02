@@ -43,6 +43,13 @@ public class NextProtoNegoClientAsyncConnection extends AbstractAsyncConnection 
     }
 
     @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+    
+    @Override
     public void onFillable()
     {
         while (true)

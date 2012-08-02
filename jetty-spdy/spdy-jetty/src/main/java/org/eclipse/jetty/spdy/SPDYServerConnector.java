@@ -187,7 +187,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         if (sslContextFactory != null)
         {
             final SSLEngine engine = newSSLEngine(sslContextFactory, channel);
-            Executor executor = findExecutor();
+            Executor executor = getExecutor();
             SslConnection sslConnection = new SslConnection(bufferPool, executor, endPoint, engine)
             {
                 @Override
@@ -198,7 +198,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                 }
             };
 
-            final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+            final AsyncEndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
             NextProtoNegoServerAsyncConnection connection = new NextProtoNegoServerAsyncConnection(channel, sslEndPoint, this);
             sslEndPoint.setAsyncConnection(connection);
             getSelectorManager().connectionOpened(connection);
@@ -277,7 +277,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         @Override
         public void execute(Runnable command)
         {
-            Executor threadPool = findExecutor();
+            Executor threadPool = getExecutor();
             if (threadPool == null)
                 throw new RejectedExecutionException();
             threadPool.execute(command);

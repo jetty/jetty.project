@@ -90,7 +90,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 
         private ServerSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
         {
-            super(endPoint, bufferPool, parser, connector.findExecutor());
+            super(endPoint, bufferPool, parser, connector.getExecutor());
             this.listener = listener;
             this.connector = connector;
         }
