@@ -170,7 +170,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
             LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
 
-            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
+            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWritePending())
             {
                 if (idleTimestamp != 0 && idleTimeout > 0)
                 {
@@ -178,13 +178,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                     {
                         LOG.debug("{} idle timeout expired", this);
 
-                        if (isOutputShutdown())
-                            close();
-                        notIdle();
-
                         TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
                         _readInterest.failed(timeout);
                         _writeFlusher.failed(timeout);
+
+                        if (isOutputShutdown())
+                            close();
+                        notIdle();
                     }
                 }
             }

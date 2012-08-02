@@ -85,7 +85,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
             long idleElapsed = System.currentTimeMillis() - idleTimestamp;
             long idleLeft = idleTimeout - idleElapsed;
 
-            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
+            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWritePending())
             {
                 if (idleTimestamp != 0 && idleTimeout > 0)
                 {

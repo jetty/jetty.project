@@ -109,7 +109,7 @@ public class SslConnection extends AbstractAsyncConnection
             _appEndPoint._readInterest.readable();
 
         // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
-        if (_appEndPoint._writeFlusher.isWriting() && _appEndPoint._flushUnwrap)
+        if (_appEndPoint._writeFlusher.isWritePending() && _appEndPoint._flushUnwrap)
         {
             _appEndPoint._flushUnwrap = false;
             _appEndPoint._writeFlusher.completeWrite();
@@ -125,7 +125,7 @@ public class SslConnection extends AbstractAsyncConnection
         if (_appEndPoint._readInterest.isInterested())
             _appEndPoint._readInterest.failed(cause);
 
-        if (_appEndPoint._writeFlusher.isWriting() && _appEndPoint._flushUnwrap)
+        if (_appEndPoint._writeFlusher.isWritePending() && _appEndPoint._flushUnwrap)
         {
             _appEndPoint._flushUnwrap = false;
             _appEndPoint._writeFlusher.failed(cause);
@@ -141,7 +141,7 @@ public class SslConnection extends AbstractAsyncConnection
                 hashCode(),
                 _sslEngine.getHandshakeStatus(),
                 _appEndPoint._readInterest.isInterested() ? "R" : "",
-                _appEndPoint._writeFlusher.isWriting() ? "W" : "");
+                _appEndPoint._writeFlusher.isWritePending() ? "W" : "");
     }
 
     /* ------------------------------------------------------------ */
@@ -183,7 +183,7 @@ public class SslConnection extends AbstractAsyncConnection
                         _readInterest.readable();
                     }
 
-                    if (_writeFlusher.isWriting())
+                    if (_writeFlusher.isWritePending())
                         _writeFlusher.completeWrite();
                 }
             }
@@ -204,7 +204,7 @@ public class SslConnection extends AbstractAsyncConnection
                         _readInterest.failed(x);
                     }
 
-                    if (_writeFlusher.isWriting())
+                    if (_writeFlusher.isWritePending())
                         _writeFlusher.failed(x);
 
                     // TODO release all buffers??? or may in onClose
@@ -640,7 +640,7 @@ public class SslConnection extends AbstractAsyncConnection
         @Override
         public String toString()
         {
-            return String.format("%s{%s%s%s}", super.toString(), _readInterest.isInterested() ? "R" : "", _writeFlusher.isWriting() ? "W" : "", _netWriting ? "w" : "");
+            return String.format("%s{%s%s%s}", super.toString(), _readInterest.isInterested() ? "R" : "", _writeFlusher.isWritePending() ? "W" : "", _netWriting ? "w" : "");
         }
 
     }
