@@ -439,7 +439,12 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     _uri.getPort();
                     info=URIUtil.canonicalPath(_uri.getDecodedPath());
                     if (info==null && !_request.getMethod().equals(HttpMethods.CONNECT))
-                        throw new HttpException(400);
+                    {
+                        if (_uri.getScheme()!=null && _uri.getHost()!=null)
+                            info="/";
+                        else
+                            throw new HttpException(400);
+                    }
                     _request.setPathInfo(info);
 
                     if (_out!=null)

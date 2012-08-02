@@ -110,6 +110,19 @@ public class HttpConnectionTest
                 System.err.println(response);
         }
     }
+    
+    @Test
+    public void testNoPath() throws Exception
+    {
+        String response=connector.getResponses("GET http://localhost:80 HTTP/1.1\n"+
+                "Host: localhost:80\n"+
+                "\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"pathInfo=/");
+    }
+    
 
     @Test
     public void testEmpty() throws Exception
