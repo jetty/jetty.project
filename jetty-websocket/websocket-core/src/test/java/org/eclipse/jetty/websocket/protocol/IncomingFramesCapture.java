@@ -24,6 +24,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
 public class IncomingFramesCapture implements IncomingFrames
@@ -69,19 +71,20 @@ public class IncomingFramesCapture implements IncomingFrames
 
     public void dump()
     {
-        System.out.printf("Captured %d incoming frames%n",frames.size());
+        System.err.printf("Captured %d incoming frames%n",frames.size());
         for (int i = 0; i < frames.size(); i++)
         {
             WebSocketFrame frame = frames.get(i);
-            System.out.printf("[%3d] %s%n",i,frame);
-            System.out.printf("          %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            System.err.printf("[%3d] %s%n",i,frame);
+            System.err.printf("          %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
     }
 
     public int getErrorCount(Class<? extends WebSocketException> errorType)
     {
         int count = 0;
-        for(WebSocketException error: errors) {
+        for (WebSocketException error : errors)
+        {
             if (errorType.isInstance(error))
             {
                 count++;
@@ -98,7 +101,8 @@ public class IncomingFramesCapture implements IncomingFrames
     public int getFrameCount(byte op)
     {
         int count = 0;
-        for(WebSocketFrame frame: frames) {
+        for (WebSocketFrame frame : frames)
+        {
             if (frame.getOpCode() == op)
             {
                 count++;
@@ -122,7 +126,8 @@ public class IncomingFramesCapture implements IncomingFrames
     @Override
     public void incoming(WebSocketFrame frame)
     {
-        frames.add(frame);
+        WebSocketFrame copy = new WebSocketFrame(frame);
+        frames.add(copy);
     }
 
     public int size()

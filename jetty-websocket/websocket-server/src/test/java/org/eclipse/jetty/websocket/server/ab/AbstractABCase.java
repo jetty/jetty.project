@@ -10,6 +10,8 @@ import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 public abstract class AbstractABCase
 {
@@ -64,6 +66,9 @@ public abstract class AbstractABCase
         }
         return ret.toString();
     }
+
+    @Rule
+    public TestName testname = new TestName();
 
     public Generator getLaxGenerator()
     {

@@ -41,6 +41,7 @@ public class Fuzzer
 
     private final BlockheadClient client;
     private final Generator generator;
+    private final String testname;
     private SendMode sendMode = SendMode.BULK;
     private int slowSendSegmentSize = 5;
 
@@ -48,6 +49,7 @@ public class Fuzzer
     {
         this.client = new BlockheadClient(testcase.getServer().getServerUri());
         this.generator = testcase.getLaxGenerator();
+        this.testname = testcase.testname.getMethodName();
     }
 
     public ByteBuffer asNetworkBuffer(List<WebSocketFrame> send)
@@ -91,6 +93,10 @@ public class Fuzzer
 
         // Read frames
         IncomingFramesCapture capture = client.readFrames(expect.size(),TimeUnit.MILLISECONDS,500);
+        if (LOG.isDebugEnabled())
+        {
+            capture.dump();
+        }
 
         String prefix = "";
         for (int i = 0; i < expectedCount; i++)
@@ -154,7 +160,7 @@ public class Fuzzer
     public void send(List<WebSocketFrame> send) throws IOException
     {
         Assert.assertThat("Client connected",client.isConnected(),is(true));
-        LOG.debug("Sending {} frames (mode {})",send.size(),sendMode);
+        LOG.debug("[{}] Sending {} frames (mode {})",testname,send.size(),sendMode);
         if ((sendMode == SendMode.BULK) || (sendMode == SendMode.SLOW))
         {
             int buflen = 0;
@@ -169,6 +175,10 @@ public class Fuzzer
             for (WebSocketFrame f : send)
             {
                 f.setMask(MASK); // make sure we have mask set
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("payload: {}",BufferUtil.toDetailString(f.getPayload()));
+                }
                 BufferUtil.put(generator.generate(f),buf);
             }
             BufferUtil.flipToFlush(buf,0);
