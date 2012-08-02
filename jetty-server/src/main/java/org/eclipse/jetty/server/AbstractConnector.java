@@ -94,7 +94,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _connectionFactory=connectionFactory!=null?connectionFactory:new ConnectionFactory();
         
         addBean(_server,false);
-        addBean(_executor,executor==null);
+        addBean(_executor,false);
         addBean(_scheduler,scheduler==null);
         addBean(_byteBufferPool,pool==null);
         addBean(_connectionFactory,connectionFactory!=null);
