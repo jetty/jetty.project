@@ -330,7 +330,7 @@ public class WriteFlusherTest
     }
 
     @Test
-    public void testConcurrentAccessToWriteAndFailed() throws IOException, InterruptedException, ExecutionException
+    public void testConcurrentAccessToWriteAndOnFail() throws IOException, InterruptedException, ExecutionException
     {
         final CountDownLatch failedCalledLatch = new CountDownLatch(1);
         final CountDownLatch writeCalledLatch = new CountDownLatch(1);
@@ -458,7 +458,8 @@ public class WriteFlusherTest
     }
 
     @Test
-    public void testConcurrentAccessToIncompleteWriteAndFailed() throws IOException, InterruptedException, ExecutionException, TimeoutException
+    public void testConcurrentAccessToIncompleteWriteAndOnFail() throws IOException, InterruptedException,
+            ExecutionException, TimeoutException
     {
         final CountDownLatch failedCalledLatch = new CountDownLatch(1);
         final CountDownLatch onIncompleteFlushedCalledLatch = new CountDownLatch(1);
@@ -470,6 +471,14 @@ public class WriteFlusherTest
             protected void onIncompleteFlushed()
             {
                 onIncompleteFlushedCalledLatch.countDown();
+                try
+                {
+                    failedCalledLatch.await(5, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
                 completeWrite();
                 completeWrite.countDown();
             }
@@ -478,13 +487,15 @@ public class WriteFlusherTest
         ExposingStateCallback callback = new ExposingStateCallback();
         executor.submit(new Writer(writeFlusher, callback));
         assertThat("Write has been called.", writeCalledLatch.await(5, TimeUnit.SECONDS), is(true));
+        // make sure we're in pending state when calling onFail
+        assertThat("onIncompleteFlushed has been called.", onIncompleteFlushedCalledLatch.await(5,
+                TimeUnit.SECONDS), is(true));
         executor.submit(new FailedCaller(writeFlusher, failedCalledLatch));
         assertThat("Failed has been called.", failedCalledLatch.await(5, TimeUnit.SECONDS), is(true));
-        writeFlusher.write(_context, new FutureCallback<String>(), BufferUtil.toBuffer("foobar"));
         assertThat("completeWrite done", completeWrite.await(5, TimeUnit.SECONDS), is(true));
-        callback.get(5, TimeUnit.SECONDS);
-        assertThat("callback failed has not been called", callback.isFailed(), is(false));
-        assertThat("callback complete has been called", callback.isCompleted(), is(true));
+        // when we fail in PENDING state, we should have called callback.failed()
+        assertThat("callback failed has been called", callback.isFailed(), is(true));
+        assertThat("callback complete has not been called", callback.isCompleted(), is(false));
     }
 
     private static class EndPointMock extends ByteArrayEndPoint
@@ -529,7 +540,6 @@ public class WriteFlusherTest
             return byteBuffer.limit() - oldPos;
         }
     }
-
 
     private static class FailedCaller implements Callable
     {
