@@ -24,10 +24,10 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * @deprecated use SelectChannelConnector with {@link SslContextFactory}
  * @org.apache.xbean.XBean element="sslConnector" description="Creates an NIO ssl connector"
  */
-public class SslSelectChannelConnector extends SelectChannelConnector 
+public class SslSelectChannelConnector extends SelectChannelConnector
 {
     public SslSelectChannelConnector(Server server)
     {
-        super(server,true);
+        super(server,new SslContextFactory());
     }
 }

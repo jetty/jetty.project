@@ -12,14 +12,11 @@
 // ========================================================================
 
 package org.eclipse.jetty.server.ssl;
-import static org.junit.Assert.assertEquals;
-
 import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.security.KeyStore;
 import java.util.Arrays;
-
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -31,6 +28,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * HttpServer Tester.
  */
@@ -40,48 +39,47 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     {
         _scheme="https";
     }
-    
+
     @Override
     protected Socket newSocket(String host, int port) throws Exception
     {
         return __sslContext.getSocketFactory().createSocket(host,port);
     }
-    
+
     @BeforeClass
     public static void init() throws Exception
-    {   
-        SelectChannelConnector connector = new SelectChannelConnector(_server,true);
-        
+    {
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
-        cf.setKeyStorePath(keystorePath);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-        cf.setTrustStore(keystorePath);
-        cf.setTrustStorePassword("storepwd");
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keystorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        sslContextFactory.setTrustStore(keystorePath);
+        sslContextFactory.setTrustStorePassword("storepwd");
+        SelectChannelConnector connector = new SelectChannelConnector(_server, sslContextFactory);
+
         startServer(connector);
-        
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getConnectionFactory().getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(connector.getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("TLS");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-        
+
         try
         {
             HttpsURLConnection.setDefaultHostnameVerifier(__hostnameverifier);
-            SSLContext sc = SSLContext.getInstance("TLS"); 
-            sc.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom()); 
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }
         catch(Exception e)
         {
             e.printStackTrace();
             throw new RuntimeException(e);
-        }   
-    }   
+        }
+    }
 
     @Test
     public void testRequest2FixedFragments() throws Exception
@@ -104,7 +102,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             // Write out the fragments
             for (int j=0; j<points.length; ++j)
             {
-                int point=points[j];                
+                int point=points[j];
                 os.write(bytes,last,point-last);
                 last=point;
                 os.flush();
@@ -116,7 +114,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             os.write(bytes,last,bytes.length-last);
             os.flush();
             Thread.sleep(PAUSE);
-            
+
 
             // Read the response
             String response=readResponse(client);
@@ -135,5 +133,5 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     public void testAvailable() throws Exception
     {
     }
-    
+
 }

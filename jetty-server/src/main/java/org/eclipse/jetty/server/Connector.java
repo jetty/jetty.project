@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -21,215 +20,183 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-/** HTTP Connector.
- * Implementations of this interface provide connectors for the HTTP protocol.
- * A connector receives requests (normally from a socket) and calls the
- * handle method of the Handler object.  These operations are performed using
- * threads from the ThreadPool set on the connector.
- *
- * When a connector is registered with an instance of Server, then the server
- * will set itself as both the ThreadPool and the Handler.  Note that a connector
- * can be used without a Server if a thread pool and handler are directly provided.
- *
+/**
+ * <p>A {@link Connector} accept connections and data from remote peers,
+ * and allows applications to send data to remote peers, by setting up
+ * the machinery needed to handle such tasks.</p>
  */
 public interface Connector extends LifeCycle
 {
-    /* ------------------------------------------------------------ */
     /**
-     * @return the name of the connector. Defaults to the HostName:port
+     * @return the name of the connector, defaulting to host:port
      */
-    String getName();
+    public String getName();
 
-    /* ------------------------------------------------------------ */
-    Server getServer();
-
-    /* ------------------------------------------------------------ */
-    ConnectionFactory getConnectionFactory();
-    
-    /* ------------------------------------------------------------ */
-    Executor getExecutor();
-    
-    /* ------------------------------------------------------------ */
-    ScheduledExecutorService getScheduler();
-
-    /* ------------------------------------------------------------ */
-    ByteBufferPool getByteBufferPool();
-    
-    /* ------------------------------------------------------------ */
     /**
-     * @return Max Idle time for connections in milliseconds
+     * @return the {@link Server} instance associated with this {@link Connector}
      */
-    long getIdleTimeout();
+    public Server getServer();
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return the {@link Executor} used to submit tasks
+     */
+    public Executor getExecutor();
+
+    /**
+     * @return the {@link ScheduledExecutorService} used to schedule tasks
+     */
+    public ScheduledExecutorService getScheduler();
+
+    /**
+     * @return the {@link ByteBufferPool} to acquire buffers from and release buffers to
+     */
+    public ByteBufferPool getByteBufferPool();
+
+    /**
+     * @return the {@link SslContextFactory} associated with this {@link Connector}
+     */
+    public SslContextFactory getSslContextFactory();
+
+    /**
+     * @return the dle timeout for connections in milliseconds
+     */
+    public long getIdleTimeout();
+
     /**
      * @return the underlying socket, channel, buffer etc. for the connector.
      */
-    Object getTransport();
+    public Object getTransport();
 
-    /* ------------------------------------------------------------ */
-    Statistics getStatistics();
+    /**
+     * @return the {@link Statistics} associated with this {@link Connector}
+     */
+    public Statistics getStatistics();
 
-    interface NetConnector extends Connector, AutoCloseable
+    /**
+     * <p>{@link Connector} statistics.</p>
+     */
+    public interface Statistics extends LifeCycle
     {
-        /* ------------------------------------------------------------ */
         /**
-         * Opens the connector
-         * @throws IOException
+         * @return true if gathering of statistics is enabled
          */
-        void open() throws IOException;
+        public boolean getStatsOn();
 
-        /* ------------------------------------------------------------ */
-        void close() throws IOException;
-
-        /* ------------------------------------------------------------ */
         /**
-         * @return The hostname representing the interface to which
-         * this connector will bind, or null for all interfaces.
+         * <p>Resets the statistics.</p>
          */
-        String getHost();
+        public void statsReset();
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return The configured port for the connector or 0 if any available
-         * port may be used.
-         */
-        int getPort();
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return The actual port the connector is listening on or
-         * -1 if it has not been opened, or -2 if it has been closed.
-         */
-        int getLocalPort();
-    }
-
-    interface Statistics extends LifeCycle
-    {
-        /* ------------------------------------------------------------ */
-        /**
-         * @return True if statistics collection is turned on.
-         */
-        boolean getStatsOn();
-
-        /* ------------------------------------------------------------ */
-        /** Reset statistics.
-         */
-        void statsReset();
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return Get the number of messages received by this connector
-         * since last call of statsReset(). If setStatsOn(false) then this
-         * is undefined.
+         * @return the number of messages received by this connector
+         * since last call to {@link #statsReset()}.
          */
         public int getMessagesIn();
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Get the number of messages sent by this connector
-         * since last call of statsReset(). If setStatsOn(false) then this
-         * is undefined.
+         * @return the number of messages sent by this connector
+         * since last call to {@link #statsReset()}.
          */
         public int getMessagesOut();
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Get the number of bytes received by this connector
-         * since last call of statsReset(). If setStatsOn(false) then this
-         * is undefined.
+         * @return the number of bytes received by this connector
+         * since last call to {@link #statsReset()}.
          */
         public int getBytesIn();
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Get the number of bytes sent by this connector
-         * since last call of statsReset(). If setStatsOn(false) then this
-         * is undefined.
+         * @return the number of bytes sent by this connector
+         * since last call to {@link #statsReset()}.
          */
         public int getBytesOut();
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Returns the connectionsDurationTotal.
+         * @return the total time connections have been open, in milliseconds,
+         * since last call to {@link #statsReset()}.
          */
         public long getConnectionsDurationTotal();
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Number of connections accepted by the server since
-         * statsReset() called. Undefined if setStatsOn(false).
+         * @return the number of connections accepted by the server
+         * since last call to {@link #statsReset()}.
          */
         public int getConnections() ;
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Number of connections currently open that were opened
-         * since statsReset() called. Undefined if setStatsOn(false).
+         * @return the number of connections currently open that were opened
+         * since last call to {@link #statsReset()}.
          */
         public int getConnectionsOpen() ;
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Maximum number of connections opened simultaneously
-         * since statsReset() called. Undefined if setStatsOn(false).
+         * @return the max number of connections opened simultaneously
+         * since last call to {@link #statsReset()}.
          */
         public int getConnectionsOpenMax() ;
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Maximum duration in milliseconds of an open connection
-         * since statsReset() called. Undefined if setStatsOn(false).
+         * @return the max time a connection has been open, in milliseconds,
+         * since last call to {@link #statsReset()}.
          */
         public long getConnectionsDurationMax();
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Mean duration in milliseconds of open connections
-         * since statsReset() called. Undefined if setStatsOn(false).
+         * @return the mean time connections have been open, in milliseconds,
+         * since last call to {@link #statsReset()}.
          */
         public double getConnectionsDurationMean() ;
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Standard deviation of duration in milliseconds of
-         * open connections since statsReset() called. Undefined if
-         * setStatsOn(false).
+         * @return the standard deviation of the time connections have been open, in milliseconds,
+         * since last call to {@link #statsReset()}.
          */
         public double getConnectionsDurationStdDev() ;
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Mean number of messages received per connection
-         * since statsReset() called. Undefined if setStatsOn(false).
+         * @return the mean number of messages received per connection
+         * since last call to {@link #statsReset()}.
          */
         public double getConnectionsMessagesInMean() ;
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Standard Deviation of number of messages received per connection
-         * since statsReset() called. Undefined if setStatsOn(false).
+         * @return the standard deviation of the number of messages received per connection
+         * since last call to {@link #statsReset()}.
          */
         public double getConnectionsMessagesInStdDev() ;
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Maximum number of messages received per connection
-         * since statsReset() called. Undefined if setStatsOn(false).
+         * @return the max number of messages received by a connection
+         * since last call to {@link #statsReset()}.
          */
         public int getConnectionsMessagesInMax();
 
-        /* ------------------------------------------------------------ */
         /**
-         * @return Timestamp stats were started at.
+         * @return the number of milliseconds the statistics have been started or reset
          */
         public long getStatsOnMs();
 
-        void connectionOpened();
+        /**
+         * <p>Callback method invoked when a new connection is opened.</p>
+         */
+        public void connectionOpened();
 
-        void connectionUpgraded(long duration, int requests, int requests2);
+        /**
+         * <p>Callback method invoked when a connection is upgraded.</p>
+         *
+         * @param duration the time the previous connection was opened
+         * @param messagesIn the number of messages received by the previous connection
+         * @param messagesOut the number of messages send by the previous connection
+         */
+        public void connectionUpgraded(long duration, int messagesIn, int messagesOut);
 
-        void connectionClosed(long duration, int requests, int requests2);
-
+        /**
+         * <p>Callback method invoked when a connection is closed.</p>
+         *
+         * @param duration the time the connection was opened
+         * @param messagesIn the number of messages received by the connection
+         * @param messagesOut the number of messages send by the connection
+         */
+        public void connectionClosed(long duration, int messagesIn, int messagesOut);
     }
 }

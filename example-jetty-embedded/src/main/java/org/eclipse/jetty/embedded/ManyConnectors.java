@@ -38,17 +38,17 @@ public class ManyConnectors
         connector1.setPort(8888);
         connector1.setName("admin");
 
-        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,true);
         String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
-        System.setProperty("jetty.home",jetty_home);
-        ssl_connector.setPort(8443);
-        SslContextFactory cf = ssl_connector.getConnectionFactory().getSslContextFactory();
-        cf.setKeyStorePath(jetty_home + "/etc/keystore");
-        cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        System.setProperty("jetty.home", jetty_home);
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
+        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        SelectChannelConnector sslConnector = new SelectChannelConnector(server,sslContextFactory);
+        sslConnector.setPort(8443);
 
         server.setConnectors(new Connector[]
-        { connector0, connector1, ssl_connector });
+        { connector0, connector1, sslConnector });
 
         server.setHandler(new HelloHandler());
 

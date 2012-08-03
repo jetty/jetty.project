@@ -19,16 +19,9 @@
  */
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,6 +37,12 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -61,8 +60,10 @@ public class HttpConnectionTest
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
-        connector.getConnectionFactory().getHttpConfig().setRequestHeaderSize(1024);
-        connector.getConnectionFactory().getHttpConfig().setResponseHeaderSize(1024);
+        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
+        httpConfiguration.setRequestHeaderSize(1024);
+        httpConfiguration.setResponseHeaderSize(1024);
+        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector, httpConfiguration));
         server.setHandler(new DumpHandler());
         server.start();
     }
@@ -135,7 +136,7 @@ public class HttpConnectionTest
         offset = checkContains(response,offset,"HTTP/1.1 200");
         checkContains(response,offset,"/R1");
     }
-    
+
     @Test
     public void testHead() throws Exception
     {
@@ -143,15 +144,15 @@ public class HttpConnectionTest
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
                 "\015\012");
-        
+
         String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
                 "\015\012");
-        
+
         assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
         assertThat(responsePOST.length(),greaterThan(responseHEAD.length()));
-        
+
         responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
@@ -413,7 +414,7 @@ public class HttpConnectionTest
     {
         String response = null;
         int offset = 0;
-        
+
         StringBuilder request = new StringBuilder();
         request.append("GET / HTTP/1.1\n");
         request.append("Host: localhost\n");
@@ -422,7 +423,7 @@ public class HttpConnectionTest
             request.append(String.format("X-Header-%04d: %08x\n", i, i));
         }
         request.append("\015\012");
-        
+
         response = connector.getResponses(request.toString());
         checkContains(response, offset, "HTTP/1.1 413");
     }
@@ -434,8 +435,8 @@ public class HttpConnectionTest
         for (int i=0;i<500;i++)
             str+="xxxxxxxxxxxx";
         final String longstr = str;
-        
-        String response = null;        
+
+        String response = null;
         server.stop();
         server.setHandler(new DumpHandler()
         {
@@ -488,8 +489,8 @@ public class HttpConnectionTest
         for (int i=0;i<500;i++)
             str+="xxxxxxxxxxxx";
         final String longstr = str;
-        
-        String response = null;        
+
+        String response = null;
         server.stop();
         server.setHandler(new DumpHandler()
         {

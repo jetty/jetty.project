@@ -28,14 +28,14 @@ class ConnectionStatistics extends AbstractLifeCycle implements Statistics
     private final SampleStatistic _messagesOut = new SampleStatistic();
     private final SampleStatistic _connectionDurationStats = new SampleStatistic();
 
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public int getBytesIn()
     {
         return -1;
     }
-    
+
     /* ------------------------------------------------------------ */
 
     @Override
@@ -185,7 +185,7 @@ class ConnectionStatistics extends AbstractLifeCycle implements Statistics
 
         return (start != -1)?(System.currentTimeMillis() - start):0;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void doStart()
@@ -193,12 +193,12 @@ class ConnectionStatistics extends AbstractLifeCycle implements Statistics
         statsReset();
         _statsStartedAt.set(System.currentTimeMillis());
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void doStop()
     {
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -212,7 +212,7 @@ class ConnectionStatistics extends AbstractLifeCycle implements Statistics
         _connectionStats.reset();
         _connectionDurationStats.reset();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void connectionOpened()
@@ -223,18 +223,18 @@ class ConnectionStatistics extends AbstractLifeCycle implements Statistics
 
     /* ------------------------------------------------------------ */
     @Override
-    public void connectionUpgraded(long duration, int msgIn, int msgOut)
+    public void connectionUpgraded(long duration, int messagesIn, int messagesOut)
     {
-        _messagesIn.set(msgIn);
-        _messagesOut.set(msgOut);
+        _messagesIn.set(messagesIn);
+        _messagesOut.set(messagesOut);
     }
 
     /* ------------------------------------------------------------ */
     @Override
-    public void connectionClosed(long duration, int msgIn, int msgOut)
+    public void connectionClosed(long duration, int messagesIn, int messagesOut)
     {
-        _messagesIn.set(msgIn);
-        _messagesOut.set(msgOut);
+        _messagesIn.set(messagesIn);
+        _messagesOut.set(messagesOut);
         _connectionStats.decrement();
         _connectionDurationStats.set(duration);
     }

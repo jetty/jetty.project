@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -23,7 +20,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,12 +36,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class SelectChannelStatisticsTest
 {
     private static final Logger LOG = Log.getLogger(SelectChannelStatisticsTest.class);
 
     private static Server _server;
-    private static AbstractNetConnector _connector;
+    private static AbstractNetworkConnector _connector;
     private static CyclicBarrier _connect;
     private static CountDownLatch _closed;
 

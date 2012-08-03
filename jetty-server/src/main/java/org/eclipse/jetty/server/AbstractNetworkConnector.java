@@ -20,14 +20,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public abstract class AbstractNetConnector extends AbstractConnector implements Connector.NetConnector
+/**
+ * <p>Partial implementation of {@link NetworkConnector}.</p>
+ */
+public abstract class AbstractNetworkConnector extends AbstractConnector implements NetworkConnector
 {
     private volatile String _host;
     private volatile int _port = 0;
 
-    public AbstractNetConnector(Server server, ConnectionFactory connectionFactory, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool, int acceptors)
+    public AbstractNetworkConnector(Server server, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool, SslContextFactory sslContextFactory, int acceptors)
     {
-        super(server,connectionFactory,executor,scheduler,pool, acceptors);
+        super(server, executor, scheduler, pool, sslContextFactory, acceptors);
     }
 
     public void setHost(String host)
@@ -74,14 +77,8 @@ public abstract class AbstractNetConnector extends AbstractConnector implements 
     @Override
     protected void doStop() throws Exception
     {
-        try
-        {
-            close();
-        }
-        catch (IOException e)
-        {
-            LOG.warn(e);
-        }
+        close();
+
         super.doStop();
 
         int i = getName().lastIndexOf("/");

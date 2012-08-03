@@ -12,16 +12,14 @@ package org.eclipse.jetty.server;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-import static org.hamcrest.Matchers.lessThan;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,6 +32,8 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.lessThan;
+
 public class SlowClientWithPipelinedRequestTest
 {
     private final AtomicInteger handles = new AtomicInteger();
@@ -43,23 +43,24 @@ public class SlowClientWithPipelinedRequestTest
     public void startServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new SelectChannelConnector(server,new ConnectionFactory()
+        connector = new SelectChannelConnector(server);
+        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector)
         {
             @Override
-            protected Connection newConnection(Connector connector,EndPoint endpoint)
+            public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
             {
-                return new HttpConnection(getHttpConfig(),connector,endpoint)
+                return new HttpConnection(getHttpConfiguration(), getConnector(), endPoint)
                 {
                     @Override
-                    public synchronized void onFillable()
+                    public void onFillable()
                     {
                         handles.incrementAndGet();
                         super.onFillable();
                     }
                 };
             }
-        },null,null,null,0,0);
-        
+        });
+
         server.addConnector(connector);
         connector.setPort(0);
         server.setHandler(handler);
