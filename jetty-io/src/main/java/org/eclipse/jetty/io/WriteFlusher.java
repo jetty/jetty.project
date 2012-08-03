@@ -106,7 +106,7 @@ abstract public class WriteFlusher
         return _state.compareAndSet(previous,next); 
     }
     
-    private void pendingFail(PendingState<?> pending)
+    private void fail(PendingState<?> pending)
     {
         State current = _state.get();
         if (current.getType()==StateType.FAILED)
@@ -119,6 +119,17 @@ abstract public class WriteFlusher
             }
         }
         throw new IllegalStateException();
+    }
+    
+    private void ignoreFail()
+    {
+        State current = _state.get();
+        while (current.getType()==StateType.FAILED)
+        {
+            if (updateState(current,__IDLE))
+                return;
+            current = _state.get();
+        }
     }
 
     private boolean isTransitionAllowed(State currentState, State newState)
@@ -290,22 +301,23 @@ abstract public class WriteFlusher
                     PendingState<?> pending=new PendingState<>(buffers, context, callback);
                     if (updateState(__WRITING,pending))
                         onIncompleteFlushed();
+                    else 
+                        fail(new PendingState<>(buffers, context, callback));
                     return;
                 }
             }
             
             // If updateState didn't succeed, we don't care as our buffers have been written
-            if (updateState(__WRITING,__IDLE))
-                callback.completed(context);
-            else 
-                pendingFail(new PendingState<>(buffers, context, callback));
+            if (!updateState(__WRITING,__IDLE))
+                ignoreFail();
+            callback.completed(context);
         }
         catch (IOException e)
         {
             if (updateState(__WRITING,__IDLE))
                 callback.failed(context, e);
             else 
-                pendingFail(new PendingState<>(buffers, context, callback));
+                fail(new PendingState<>(buffers, context, callback));
         }
     }
 
@@ -343,22 +355,23 @@ abstract public class WriteFlusher
                 {
                     if (updateState(__COMPLETING,pending))
                         onIncompleteFlushed();
+                    else 
+                        fail(pending);
                     return;
                 }
             }
-            
+
             // If updateState didn't succeed, we don't care as our buffers have been written
-            if(updateState(__COMPLETING,__IDLE))
-                pending.complete();
-            else
-                pendingFail(pending);
+            if (!updateState(__COMPLETING,__IDLE))
+                ignoreFail();
+            pending.complete();
         }
         catch (IOException e)
         {
             if(updateState(__COMPLETING,__IDLE))
                 pending.fail(e);
             else
-                pendingFail(pending);
+                fail(pending);
         }
     }
 

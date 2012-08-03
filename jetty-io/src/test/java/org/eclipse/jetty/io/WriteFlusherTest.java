@@ -262,13 +262,14 @@ public class WriteFlusherTest
         }
         
         @Override
-        public void run()
+        public synchronized void run()
         {
             _content.append(_endp.takeOutputString());
             completeWrite();
         }
         
-        public String toString()
+        @Override
+        public synchronized String toString()
         {
             _content.append(_endp.takeOutputString());
             return _content.toString();
@@ -301,7 +302,7 @@ public class WriteFlusherTest
                     flusher.onFail(new Throwable("THE CAUSE"));
                 }
             }
-            ,50,TimeUnit.MILLISECONDS);
+            ,random.nextInt(75)+1,TimeUnit.MILLISECONDS);
             flusher.write(_context,callback,BufferUtil.toBuffer("How Now Brown Cow."),BufferUtil.toBuffer(" The quick brown fox jumped over the lazy dog!"));
         }
 
