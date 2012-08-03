@@ -950,6 +950,356 @@ public class TestABCase6 extends AbstractABCase
     }
 
     /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_1() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("EFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_10() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F18FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_11() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F19FBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_12() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F19FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_13() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F1AFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_14() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F1AFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_15() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F1BFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_16() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F1BFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_17() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F28FBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_18() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F28FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_19() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F29FBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_2() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("EFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_20() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F29FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_21() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F2AFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_22() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F2AFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_23() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F2BFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_24() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F2BFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_25() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F38FBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_26() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F38FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_27() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F39FBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_28() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F39FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_29() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F3AFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_3() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F09FBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_30() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F3AFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_31() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F3BFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_32() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F3BFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_33() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F48FBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_34() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F48FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_4() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F09FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_5() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F0AFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_6() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F0AFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_7() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F0BFBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_8() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F0BFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (non character code points)
+     */
+    @Test
+    public void testCase6_22_9() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F18FBFBE");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. (unicode replacement character)
+     */
+    @Test
+    public void testCase6_23_1() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("EFBFBD");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
      * invalid utf8 text message, 1 frame/fragments
      */
     @Test
