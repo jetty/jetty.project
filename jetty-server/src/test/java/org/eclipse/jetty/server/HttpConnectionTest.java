@@ -189,12 +189,12 @@ public class HttpConnectionTest
             response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
                     "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
+            checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
 
             response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
                     "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
+            checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
         }
         finally
         {
