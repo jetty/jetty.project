@@ -25,6 +25,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritePendingException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -44,10 +45,11 @@ public class ChannelEndPoint extends AbstractEndPoint
     private volatile boolean _ishut;
     private volatile boolean _oshut;
 
-    public ChannelEndPoint(SocketChannel channel) throws IOException
+    public ChannelEndPoint(ScheduledExecutorService scheduler,SocketChannel channel) throws IOException
     {
-        super((InetSocketAddress)channel.socket().getLocalSocketAddress(),
-              (InetSocketAddress)channel.socket().getRemoteSocketAddress());
+        super(scheduler,
+            (InetSocketAddress)channel.socket().getLocalSocketAddress(),
+            (InetSocketAddress)channel.socket().getRemoteSocketAddress());
         _channel = channel;
         _socket=channel.socket();
     }
@@ -199,13 +201,13 @@ public class ChannelEndPoint extends AbstractEndPoint
     }
 
     @Override
-    public <C> void fillInterested(C context, Callback<C> callback) throws ReadPendingException
+    protected void onIncompleteFlush()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException
+    protected boolean needsFill() throws IOException
     {
         throw new UnsupportedOperationException();
     }

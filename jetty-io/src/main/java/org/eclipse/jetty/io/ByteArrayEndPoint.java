@@ -39,9 +39,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 {
     static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
     public final static InetSocketAddress NOIP=new InetSocketAddress(0);
-
-    private final AtomicReference<Future<?>> _timeout = new AtomicReference<>();
-    private final ScheduledExecutorService _scheduler;
     
     protected ByteBuffer _in;
     protected ByteBuffer _out;
@@ -50,25 +47,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     protected boolean _closed;
     protected boolean _growOutput;
     
-
-    private final FillInterest _fillInterest = new FillInterest()
-    {
-        @Override
-        protected boolean needsFill() throws IOException
-        {
-            if (_closed)
-                throw new ClosedChannelException();
-            return _in == null || BufferUtil.hasContent(_in);
-        }
-    };
-    private final WriteFlusher _writeFlusher = new WriteFlusher(this)
-    {
-        @Override
-        protected void onIncompleteFlushed()
-        {
-            // Don't need to do anything here as takeOutput does the signalling.
-        }
-    };
 
     /* ------------------------------------------------------------ */
     /**
@@ -96,34 +74,53 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         this(null,0,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
-    
+
+    /* ------------------------------------------------------------ */
     public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs)
     {
         this(timer,idleTimeoutMs,null,null);
     }
 
+    /* ------------------------------------------------------------ */
     public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, byte[] input, int outputSize)
     {
         this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
 
+    /* ------------------------------------------------------------ */
     public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, String input, int outputSize)
     {
         this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
-    
+
+    /* ------------------------------------------------------------ */
     public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, ByteBuffer input, ByteBuffer output)
     {
-        super(NOIP,NOIP);
+        super(timer,NOIP,NOIP);
         _in=input==null?BufferUtil.EMPTY_BUFFER:input;
         _out=output==null?BufferUtil.allocate(1024):output;
-        _scheduler = timer;
         setIdleTimeout(idleTimeoutMs);
     }
 
     
     
 
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void onIncompleteFlush()
+    {        
+        // Don't need to do anything here as takeOutput does the signalling.
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected boolean needsFill() throws IOException
+    {
+        if (_closed)
+            throw new ClosedChannelException();
+        return _in == null || BufferUtil.hasContent(_in);
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -150,7 +147,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         _in = in;
         if (in == null || BufferUtil.hasContent(in))
-            _fillInterest.fillable();
+            getFillInterest().fillable();
     }
 
     /* ------------------------------------------------------------ */
@@ -191,7 +188,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         ByteBuffer b=_out;
         _out=BufferUtil.allocate(b.capacity());
-        _writeFlusher.completeWrite();
+        getWriteFlusher().completeWrite();
         return b;
     }
 
@@ -221,7 +218,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void setOutput(ByteBuffer out)
     {
         _out = out;
-        _writeFlusher.completeWrite();
+        getWriteFlusher().completeWrite();
     }
 
     /* ------------------------------------------------------------ */
@@ -356,8 +353,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void reset()
     {
-        _fillInterest.onClose();
-        _writeFlusher.onClose();
+        getFillInterest().onClose();
+        getWriteFlusher().onClose();
         _ishut=false;
         _oshut=false;
         _closed=false;
@@ -401,67 +398,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         scheduleIdleTimeout(idleTimeout);
     }
     
-    /* ------------------------------------------------------------ */
-    private void scheduleIdleTimeout(long delay)
-    {
-        if (delay>0 && _scheduler==null)
-            throw new IllegalStateException();
-        
-        Future<?> newTimeout = isOpen() && delay > 0 ? _scheduler.schedule(_timeoutTask, delay, TimeUnit.MILLISECONDS) : null;
-        Future<?> oldTimeout = _timeout.getAndSet(newTimeout);
-        if (oldTimeout != null)
-            oldTimeout.cancel(false);
-    }
 
-    /* ------------------------------------------------------------ */
-    private final Runnable _timeoutTask = new Runnable()
-    {    
-        @Override
-        public void run()
-        {
-            if (isOpen())
-            {
-                long idleTimestamp = getIdleTimestamp();
-                long idleTimeout = getIdleTimeout();
-                long idleElapsed = System.currentTimeMillis() - idleTimestamp;
-                long idleLeft = idleTimeout - idleElapsed;
-
-                if (isOutputShutdown() || _fillInterest.isInterested() || _writeFlusher.isInProgress())
-                {
-                    if (idleTimestamp != 0 && idleTimeout > 0)
-                    {
-                        if (idleLeft <= 0)
-                        {
-                            LOG.debug("{} idle timeout expired", this);
-
-                            TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
-                            _fillInterest.onFail(timeout);
-                            _writeFlusher.onFail(timeout);
-                            
-                            if (isOutputShutdown())
-                                close();
-                            notIdle();
-                        }
-                    }
-                }
-                scheduleIdleTimeout(idleLeft > 0 ? idleLeft : idleTimeout);
-            }
-        }
-    };
-
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
-    {
-        _fillInterest.register(context, callback);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
-    {
-        _writeFlusher.write(context, callback, buffers);
-    }
 
 }

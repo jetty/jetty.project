@@ -138,14 +138,13 @@ public class SslConnection extends AbstractConnection
         {
             // wake up whoever is doing the fill or the flush so they can
             // do all the filling, unwrapping ,wrapping and flushing
-            if (_decryptedEndPoint._fillInterest.isInterested())
-                _decryptedEndPoint._fillInterest.fillable();
+            _decryptedEndPoint.getFillInterest().fillable();
 
             // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
             if ( _decryptedEndPoint._flushRequiresFillToProgress)
             {
                 _decryptedEndPoint._flushRequiresFillToProgress = false;
-                _decryptedEndPoint._writeFlusher.completeWrite();
+                _decryptedEndPoint.getWriteFlusher().completeWrite();
             }
         }
     }
@@ -164,13 +163,12 @@ public class SslConnection extends AbstractConnection
 
         synchronized(_decryptedEndPoint)
         {
-            if (_decryptedEndPoint._fillInterest.isInterested())
-                _decryptedEndPoint._fillInterest.onFail(cause);
+            _decryptedEndPoint.getFillInterest().onFail(cause);
 
             if (_decryptedEndPoint._flushRequiresFillToProgress)
             {
                 _decryptedEndPoint._flushRequiresFillToProgress = false;
-                _decryptedEndPoint._writeFlusher.onFail(cause);
+                _decryptedEndPoint.getWriteFlusher().onFail(cause);
             }
         }
     }
@@ -179,11 +177,9 @@ public class SslConnection extends AbstractConnection
     @Override
     public String toString()
     {
-        return String.format("SslConnection@%x{%s,%s%s}",
+        return String.format("%s{%s}",
                 hashCode(),
-                _sslEngine.getHandshakeStatus(),
-                _decryptedEndPoint._fillInterest.isInterested() ? "R" : "",
-                _decryptedEndPoint._writeFlusher.isInProgress() ? "W" : "");
+                _sslEngine.getHandshakeStatus());
     }
 
     /* ------------------------------------------------------------ */
@@ -215,11 +211,10 @@ public class SslConnection extends AbstractConnection
                     if (_fillRequiresFlushToProgress)
                     {
                         _fillRequiresFlushToProgress = false;
-                        _fillInterest.fillable();
+                        getFillInterest().fillable();
                     }
 
-                    if (_writeFlusher.isInProgress())
-                        _writeFlusher.completeWrite();
+                    getWriteFlusher().completeWrite();
                 }
             }
 
@@ -241,122 +236,117 @@ public class SslConnection extends AbstractConnection
                     if (_fillRequiresFlushToProgress)
                     {
                         _fillRequiresFlushToProgress = false;
-                        _fillInterest.onFail(x);
+                        getFillInterest().onFail(x);
                     }
 
-                    if (_writeFlusher.isInProgress())
-                        _writeFlusher.onFail(x);
+                    getWriteFlusher().onFail(x);
 
                     // TODO release all buffers??? or may in onClose
                 }
             }
         };
 
-        private final FillInterest _fillInterest = new FillInterest()
-        {
-            @Override
-            protected boolean needsFill() throws IOException
-            {
-                // This means that the decrypted data consumer has called the fillInterested
-                // method on the DecryptedEndPoint, so we have to work out if there is 
-                // decrypted data to be filled or what callbacks to setup to be told when there
-                // might be more encrypted data available to attempt another call to fill
-                
-                synchronized (DecryptedEndPoint.this)
-                {
-                    // Do we already have some app data, then app can fill now so return true
-                    if (BufferUtil.hasContent(_decryptedInput))
-                        return true;
-
-                    // If we have no encrypted data to decrypt OR we have some, but it is not enough
-                    if (BufferUtil.isEmpty(_encryptedInput) || _needToFillMoreDataToProgress)
-                    {
-                        // We are not ready to read data
-
-                        // Are we actually write blocked?
-                        if (_fillRequiresFlushToProgress)
-                        {
-                            // we must be blocked trying to write before we can read
-                            
-                            // Do we have data to write
-                            if (BufferUtil.hasContent(_encryptedOutput))
-                            {
-                                // write it
-                                _cannotAcceptMoreAppDataToFlush = true;
-                                getEndPoint().write(null, _writeCallback, _encryptedOutput);
-                            }
-                            else
-                            {
-                                // we have already written the net data
-                                // pretend we are readable so the wrap is done by next readable callback
-                                _fillRequiresFlushToProgress = false;
-                                return true;
-                            }
-                        }
-                        else
-                            // Normal readable callback
-                            // Get called back on onfillable when then is more data to fill
-                            SslConnection.this.fillInterested();
-
-                        return false;
-                    }
-                    else
-                    {
-                        // We are ready to read data
-                        return true;
-                    }
-                }
-            }
-        };
-
-        private final WriteFlusher _writeFlusher = new WriteFlusher(this)
-        {
-            @Override
-            protected void onIncompleteFlushed()
-            {
-                // This means that the decripted endpoint write method was called and not
-                // all data could be wrapped. So either we need to write some encrypted data,
-                // OR if we are handshaking we need to read some encrypted data OR
-                // if neither than we should just try the flush again.
-                synchronized (DecryptedEndPoint.this)
-                {
-                    // If we have pending output data,
-                    if (BufferUtil.hasContent(_encryptedOutput))
-                    {
-                        // write it
-                        _cannotAcceptMoreAppDataToFlush = true;
-                        getEndPoint().write(null, _writeCallback, _encryptedOutput);
-                    }
-                    else if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_UNWRAP)
-                        // we are actually read blocked in order to write
-                        SslConnection.this.fillInterested();
-                    else
-                        // try the flush again
-                        completeWrite();
-                }
-            }
-        };
-
         public DecryptedEndPoint()
         {
-            super(getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
+            // TODO does this need idle timeouts
+            super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
+        }
+
+        @Override
+        protected FillInterest getFillInterest()
+        {
+            return super.getFillInterest();
+        }
+
+
+        @Override
+        protected WriteFlusher getWriteFlusher()
+        {
+            return super.getWriteFlusher();
+        }
+
+        @Override
+        protected void onIncompleteFlush()
+        {
+            // This means that the decripted endpoint write method was called and not
+            // all data could be wrapped. So either we need to write some encrypted data,
+            // OR if we are handshaking we need to read some encrypted data OR
+            // if neither than we should just try the flush again.
+            synchronized (DecryptedEndPoint.this)
+            {
+                // If we have pending output data,
+                if (BufferUtil.hasContent(_encryptedOutput))
+                {
+                    // write it
+                    _cannotAcceptMoreAppDataToFlush = true;
+                    getEndPoint().write(null, _writeCallback, _encryptedOutput);
+                }
+                else if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_UNWRAP)
+                    // we are actually read blocked in order to write
+                    SslConnection.this.fillInterested();
+                else
+                    // try the flush again
+                    getWriteFlusher().completeWrite();
+            }
+        }
+
+        @Override
+        protected boolean needsFill() throws IOException
+        {
+            // This means that the decrypted data consumer has called the fillInterested
+            // method on the DecryptedEndPoint, so we have to work out if there is 
+            // decrypted data to be filled or what callbacks to setup to be told when there
+            // might be more encrypted data available to attempt another call to fill
+            
+            synchronized (DecryptedEndPoint.this)
+            {
+                // Do we already have some app data, then app can fill now so return true
+                if (BufferUtil.hasContent(_decryptedInput))
+                    return true;
+
+                // If we have no encrypted data to decrypt OR we have some, but it is not enough
+                if (BufferUtil.isEmpty(_encryptedInput) || _needToFillMoreDataToProgress)
+                {
+                    // We are not ready to read data
+
+                    // Are we actually write blocked?
+                    if (_fillRequiresFlushToProgress)
+                    {
+                        // we must be blocked trying to write before we can read
+                        
+                        // Do we have data to write
+                        if (BufferUtil.hasContent(_encryptedOutput))
+                        {
+                            // write it
+                            _cannotAcceptMoreAppDataToFlush = true;
+                            getEndPoint().write(null, _writeCallback, _encryptedOutput);
+                        }
+                        else
+                        {
+                            // we have already written the net data
+                            // pretend we are readable so the wrap is done by next readable callback
+                            _fillRequiresFlushToProgress = false;
+                            return true;
+                        }
+                    }
+                    else
+                        // Normal readable callback
+                        // Get called back on onfillable when then is more data to fill
+                        SslConnection.this.fillInterested();
+
+                    return false;
+                }
+                else
+                {
+                    // We are ready to read data
+                    return true;
+                }
+            }
         }
 
         public SslConnection getSslConnection()
         {
             return SslConnection.this;
-        }
-
-        @Override
-        public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
-        {
-            _fillInterest.register(context, callback);
-        }
-
-        @Override
-        public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
-        {
-            _writeFlusher.write(context, callback, buffers);
         }
 
         @Override
@@ -619,7 +609,7 @@ public class SslConnection extends AbstractConnection
                                 case NEED_UNWRAP:
                                     // Ah we need to fill some data so we can write.
                                     // So if we were not called from fill and the app is not reading anyway
-                                    if (!_fillRequiresFlushToProgress && !_fillInterest.isInterested())
+                                    if (!_fillRequiresFlushToProgress && !getFillInterest().isInterested())
                                     {
                                         // Tell the onFillable method that there might be a write to complete 
                                         // TODO move this to the writeFlusher?
@@ -702,12 +692,5 @@ public class SslConnection extends AbstractConnection
         {
             return _ishut;
         }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s{%s%s%s}", super.toString(), _fillInterest.isInterested() ? "R" : "", _writeFlusher.isInProgress() ? "W" : "", _cannotAcceptMoreAppDataToFlush ? "w" : "");
-        }
-
     }
 }

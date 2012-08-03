@@ -41,8 +41,8 @@ public class ChannelEndPointTest extends EndPointTest<ChannelEndPoint>
     {
         EndPointPair<ChannelEndPoint> c = new EndPointPair<>();
 
-        c.client=new ChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()));
-        c.server=new ChannelEndPoint(connector.accept());
+        c.client=new ChannelEndPoint(null,SocketChannel.open(connector.socket().getLocalSocketAddress()));
+        c.server=new ChannelEndPoint(null,connector.accept());
         return c;
     }
 
