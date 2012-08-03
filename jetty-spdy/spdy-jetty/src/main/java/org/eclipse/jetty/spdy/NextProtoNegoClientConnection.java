@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class NextProtoNegoClientAsyncConnection extends AbstractConnection implements NextProtoNego.ClientProvider
+public class NextProtoNegoClientConnection extends AbstractConnection implements NextProtoNego.ClientProvider
 {
     private final Logger logger = Log.getLogger(getClass());
     private final SocketChannel channel;
@@ -34,7 +34,7 @@ public class NextProtoNegoClientAsyncConnection extends AbstractConnection imple
     private final SPDYClient client;
     private volatile boolean completed;
 
-    public NextProtoNegoClientAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment, Executor executor, SPDYClient client)
+    public NextProtoNegoClientConnection(SocketChannel channel, EndPoint endPoint, Object attachment, Executor executor, SPDYClient client)
     {
         super(endPoint, executor);
         this.channel = channel;
@@ -48,7 +48,7 @@ public class NextProtoNegoClientAsyncConnection extends AbstractConnection imple
         super.onOpen();
         fillInterested();
     }
-    
+
     @Override
     public void onFillable()
     {
