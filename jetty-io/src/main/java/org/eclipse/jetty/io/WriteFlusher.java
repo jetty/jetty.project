@@ -62,11 +62,10 @@ abstract public class WriteFlusher
     //     IDLE-->WRITING-->PENDING-->COMPLETING-->PENDING-->COMPLETING-->IDLE
     //
     // If a failure happens while in IDLE, it is a noop since there is no operation to tell of the failure.
+    // If a failure happens while in WRITING, but the the write has finished successfully or with an IOExceptions,
+    // the callback's complete or respectively failed methods will be called.
     // If a failure happens in PENDING state, then the fail method calls the pending callback and moves to IDLE state
-    // Otherwise if a fail happens, the state is set to FAIL, so that a subsequent attempt to move out of WRITING or COMPLETING
-    // will discover the failure and call the callbacks before returning to IDLE
-    // Thus the possible paths for a failure are:
-    // 
+    //
     //   IDLE--(fail)-->IDLE
     //   IDLE-->WRITING--(fail)-->FAILED-->IDLE
     //   IDLE-->WRITING-->PENDING--(fail)-->IDLE
@@ -94,7 +93,8 @@ abstract public class WriteFlusher
 
     /**
      * Tries to update the current state to the given new state.
-     * @param nextState the desired new state
+     * @param previous the expected current state
+     * @param next the desired new state
      * @return the previous state or null if the state transition failed
      * @throws WritePendingException if currentState is WRITING and new state is WRITING (api usage error)
      */
@@ -135,10 +135,6 @@ abstract public class WriteFlusher
     private boolean isTransitionAllowed(State currentState, State newState)
     {
         Set<StateType> allowedNewStateTypes = __stateTransitions.get(currentState.getType());
-        if (currentState.getType() == StateType.WRITING && newState.getType() == StateType.WRITING)
-        {
-            throw new WritePendingException();
-        }
         if (!allowedNewStateTypes.contains(newState.getType()))
         {
             LOG.debug("StateType update: {} -> {} not allowed", currentState, newState);
@@ -288,7 +284,7 @@ abstract public class WriteFlusher
         
         if (!updateState(__IDLE,__WRITING))
             throw new WritePendingException();
-        
+
         try
         {
             _endPoint.flush(buffers);
@@ -333,12 +329,11 @@ abstract public class WriteFlusher
     public void completeWrite()
     {
         State previous = _state.get();
-        PendingState<?> pending=null;
-        
+
         if (previous.getType()!=StateType.PENDING)
             return; // failure already handled.
 
-        pending=(PendingState<?>)previous;
+        PendingState<?> pending = (PendingState<?>)previous;
         if (!updateState(pending,__COMPLETING))
             return; // failure already handled.
        
@@ -412,7 +407,7 @@ abstract public class WriteFlusher
         onFail(new ClosedChannelException());
     }
 
-    public boolean isIdle()
+    boolean isIdle()
     {
         return _state.get().getType() == StateType.IDLE;
     }
