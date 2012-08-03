@@ -347,7 +347,7 @@ public class SPDYClient
                         };
 
                         EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
-                        NextProtoNegoClientAsyncConnection connection = new NextProtoNegoClientAsyncConnection(channel, sslEndPoint, attachment, client.factory.threadPool, client);
+                        NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, client.factory.threadPool, client);
                         sslEndPoint.setConnection(connection);
                         connectionOpened(connection);
 
@@ -414,7 +414,7 @@ public class SPDYClient
             Parser parser = new Parser(compressionFactory.newDecompressor());
             Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
 
-            SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, factory.bufferPool, parser, factory);
+            SPDYConnection connection = new ClientSPDYConnection(endPoint, factory.bufferPool, parser, factory);
             endPoint.setConnection(connection);
 
             FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
@@ -430,11 +430,11 @@ public class SPDYClient
             return connection;
         }
 
-        private class ClientSPDYAsyncConnection extends SPDYAsyncConnection
+        private class ClientSPDYConnection extends SPDYConnection
         {
             private final Factory factory;
 
-            public ClientSPDYAsyncConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
+            public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
             {
                 super(endPoint, bufferPool, parser, factory.threadPool);
                 this.factory = factory;

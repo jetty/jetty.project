@@ -18,23 +18,23 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class SPDYAsyncConnection extends AbstractConnection implements Controller<StandardSession.FrameBytes>, IdleListener
+public class SPDYConnection extends AbstractConnection implements Controller<StandardSession.FrameBytes>, IdleListener
 {
-    private static final Logger logger = Log.getLogger(SPDYAsyncConnection.class);
+    private static final Logger logger = Log.getLogger(SPDYConnection.class);
     private final ByteBufferPool bufferPool;
     private final Parser parser;
     private volatile ISession session;
     private volatile boolean idle = false;
 
-    public SPDYAsyncConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -48,7 +48,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements Controlle
         super.onOpen();
         fillInterested();
     }
-    
+
     @Override
     public void onFillable()
     {

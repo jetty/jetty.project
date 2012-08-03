@@ -21,8 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.Connection;
@@ -42,7 +40,7 @@ public class SPDYServerConnector extends SelectChannelConnector
 {
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final ServerSessionFrameListener listener;
-    private volatile int initialWindowSize = 65536;
+    private volatile int initialWindowSize;
 
     public SPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {
@@ -53,6 +51,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     {
         super(server, sslContextFactory);
         this.listener = listener;
+        setInitialWindowSize(65536);
         putConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), listener));
         putConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), listener));
         setDefaultConnectionFactory(getConnectionFactory("spdy/2"));
@@ -173,25 +172,10 @@ public class SPDYServerConnector extends SelectChannelConnector
         getSelectorManager().connectionUpgraded(endPoint, oldConnection);
     }
 
-    private class LazyExecutor implements Executor
-    {
-        @Override
-        public void execute(Runnable command)
-        {
-            Executor threadPool = getExecutor();
-            if (threadPool == null)
-                throw new RejectedExecutionException();
-            threadPool.execute(command);
-        }
-    }
-
-
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out,indent);
-        AggregateLifeCycle.dump(out, indent, new ArrayList<Session>(sessions));
+        super.dump(out, indent);
+        AggregateLifeCycle.dump(out, indent, new ArrayList<>(sessions));
     }
-
-
 }

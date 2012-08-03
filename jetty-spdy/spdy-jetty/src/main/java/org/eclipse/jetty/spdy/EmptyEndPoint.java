@@ -23,7 +23,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 
-public class EmptyAsyncEndPoint implements EndPoint
+public class EmptyEndPoint implements EndPoint
 {
     private boolean checkForIdle;
     private Connection connection;
