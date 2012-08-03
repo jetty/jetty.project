@@ -406,6 +406,296 @@ public class TestABCase6 extends AbstractABCase
     }
 
     /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("C0");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_10() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FDBFBFBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("E080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F08080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_4() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F8808080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FC80808080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_6() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("DF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_7() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_8() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F7BFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (last continuation byte missing)
+     */
+    @Test
+    public void testCase6_14_9() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FBBFBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (incomplete sequences)
+     */
+    @Test
+    public void testCase6_15_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("C0E080F08080F8808080FC80808080DFEFBFF7BFBFFBBFBFBFFDBFBFBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (impossible bytes)
+     */
+    @Test
+    public void testCase6_16_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FE");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (impossible bytes)
+     */
+    @Test
+    public void testCase6_16_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (impossible bytes)
+     */
+    @Test
+    public void testCase6_16_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FEFEFFFF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong ascii character)
+     */
+    @Test
+    public void testCase6_17_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("C0AF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong ascii character)
+     */
+    @Test
+    public void testCase6_17_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("E080AF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong ascii character)
+     */
+    @Test
+    public void testCase6_17_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F08080AF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong ascii character)
+     */
+    @Test
+    public void testCase6_17_4() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F8808080AF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong ascii character)
+     */
+    @Test
+    public void testCase6_17_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FC80808080AF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (maximum overlong sequences)
+     */
+    @Test
+    public void testCase6_18_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("C1BF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (maximum overlong sequences)
+     */
+    @Test
+    public void testCase6_18_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("E09FBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (maximum overlong sequences)
+     */
+    @Test
+    public void testCase6_18_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F08FBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (maximum overlong sequences)
+     */
+    @Test
+    public void testCase6_18_4() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F887BFBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (maximum overlong sequences)
+     */
+    @Test
+    public void testCase6_18_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FC83BFBFBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong representation of the NUL character)
+     */
+    @Test
+    public void testCase6_19_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("C080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong representation of the NUL character)
+     */
+    @Test
+    public void testCase6_19_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("E08080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong representation of the NUL character)
+     */
+    @Test
+    public void testCase6_19_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F0808080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong representation of the NUL character)
+     */
+    @Test
+    public void testCase6_19_4() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F880808080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (overlong representation of the NUL character)
+     */
+    @Test
+    public void testCase6_19_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FC8080808080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
      * valid utf8 text message, 1 frame/fragment.
      */
     @Test
@@ -507,6 +797,156 @@ public class TestABCase6 extends AbstractABCase
         {
             fuzzer.close();
         }
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (single UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_20_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDA080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (single UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_20_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDADBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (single UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_20_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDAE80");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (single UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_20_4() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDAFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (single UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_20_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDB080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (single UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_20_6() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDBE80");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (single UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_20_7() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (paired UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_21_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDA080EDB080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (paired UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_21_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDA080EDBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (paired UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_21_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDADBFEDB080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (paired UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_21_4() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDADBFEDBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (paired UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_21_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDAE80EDB080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (paired UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_21_6() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDAE80EDBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (paired UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_21_7() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDAFBFEDB080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. (paired UTF-16 surrogates)
+     */
+    @Test
+    public void testCase6_21_8() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("EDAFBFEDBFBF");
+        assertBadTextPayload(invalid);
     }
 
     /**
