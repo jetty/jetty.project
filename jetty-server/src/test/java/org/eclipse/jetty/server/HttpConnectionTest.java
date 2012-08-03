@@ -110,6 +110,19 @@ public class HttpConnectionTest
                 System.err.println(response);
         }
     }
+    
+    @Test
+    public void testNoPath() throws Exception
+    {
+        String response=connector.getResponses("GET http://localhost:80 HTTP/1.1\n"+
+                "Host: localhost:80\n"+
+                "\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"pathInfo=/");
+    }
+    
 
     @Test
     public void testEmpty() throws Exception
@@ -176,12 +189,12 @@ public class HttpConnectionTest
             response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
                     "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
+            checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
 
             response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
                     "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"HTTP/1.1 400");
+            checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
         }
         finally
         {

@@ -439,9 +439,27 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 try
                 {
                     _uri.getPort();
-                    info=URIUtil.canonicalPath(_uri.getDecodedPath());
+                    String path = null;
+                    
+                    try
+                    {
+                        path = _uri.getDecodedPath();
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
+                        LOG.ignore(e);
+                        path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
+                    }
+                    
+                    info=URIUtil.canonicalPath(path);
                     if (info==null && !_request.getMethod().equals(HttpMethods.CONNECT))
-                        throw new HttpException(400);
+                    {
+                        if (_uri.getScheme()!=null && _uri.getHost()!=null)
+                            info="/";
+                        else
+                            throw new HttpException(400);
+                    }
                     _request.setPathInfo(info);
 
                     if (_out!=null)

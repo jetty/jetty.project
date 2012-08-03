@@ -69,18 +69,28 @@ public class StdErrLogTest
         log.debug("YOU SHOULD NOT SEE THIS!",null,null);
         
         // Test for backward compat with old (now deprecated) method
+        Logger before = log.getLogger("before");
         log.setDebugEnabled(true);
+        Logger after = log.getLogger("after");
+        before.debug("testing {} {}","test","debug-before");
         log.debug("testing {} {}","test","debug-deprecated");
+        after.debug("testing {} {}","test","debug-after");
 
         log.setDebugEnabled(false);
+        before.debug("testing {} {}","test","debug-before-false");
         log.debug("testing {} {}","test","debug-deprecated-false");
-
+        after.debug("testing {} {}","test","debug-after-false");
+        
         output.assertContains("DBUG:xxx:testing test debug");
         output.assertContains("INFO:xxx:testing test info");
         output.assertContains("WARN:xxx:testing test warn");
         output.assertNotContains("YOU SHOULD NOT SEE THIS!");
+        output.assertContains("DBUG:x.before:testing test debug-before");
         output.assertContains("DBUG:xxx:testing test debug-deprecated");
-        output.assertNotContains("DBUG:xxx:testing test debug-depdeprecated-false");
+        output.assertContains("DBUG:x.after:testing test debug-after");
+        output.assertNotContains("DBUG:x.before:testing test debug-before-false");
+        output.assertNotContains("DBUG:xxx:testing test debug-deprecated-false");
+        output.assertNotContains("DBUG:x.after:testing test debug-after-false");
     }
     
     @Test
