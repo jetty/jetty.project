@@ -13,19 +13,13 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -200,6 +194,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         {
             keyString += "!";
         }
-        return String.format("%s{io=%d,k=%s}",_interestOps, keyString);
+        return String.format("%s{io=%d,k=%s}",super.toString(), _interestOps, keyString);
     }
 }
