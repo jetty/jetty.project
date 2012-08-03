@@ -37,6 +37,53 @@ import org.junit.runner.RunWith;
 @RunWith(AdvancedRunner.class)
 public class TestABCase6 extends AbstractABCase
 {
+    private void assertBadTextPayload(byte[] invalid) throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
+    private void assertEchoTextMessage(byte[] msg) throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+        Fuzzer fuzzer = new Fuzzer(this);
+        try
+        {
+            fuzzer.connect();
+            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
+            fuzzer.send(send);
+            fuzzer.expect(expect);
+        }
+        finally
+        {
+            fuzzer.close();
+        }
+    }
+
     /**
      * Split a message byte array into a series of fragments (frames + continuations) of 1 byte message contents each.
      */
@@ -147,6 +194,218 @@ public class TestABCase6 extends AbstractABCase
     }
 
     /**
+     * invalid utf8 text message, 1 frame/fragment, 4 bytes
+     */
+    @Test
+    public void testCase6_10_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F7BFBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment, 5 bytes
+     */
+    @Test
+    public void testCase6_10_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FBBFBFBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment, 6 bytes
+     */
+    @Test
+    public void testCase6_10_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FDBFBFBFBFBF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. 3 bytes, 1 codepoint (other boundary conditions)
+     */
+    @Test
+    public void testCase6_11_1() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("ED9FBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. 3 bytes, 1 codepoint (other boundary conditions)
+     */
+    @Test
+    public void testCase6_11_2() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("EE8080");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. 3 bytes, 1 codepoint (other boundary conditions)
+     */
+    @Test
+    public void testCase6_11_3() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("EFBFBD");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment. 4 bytes, 1 codepoint (other boundary conditions)
+     */
+    @Test
+    public void testCase6_11_4() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F48FBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 4 bytes (other boundary conditions)
+     */
+    @Test
+    public void testCase6_11_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F4908080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 1 byte (unexpected continuation bytes)
+     */
+    @Test
+    public void testCase6_12_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("80");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 1 byte (unexpected continuation bytes)
+     */
+    @Test
+    public void testCase6_12_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("BF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 2 bytes (unexpected continuation bytes)
+     */
+    @Test
+    public void testCase6_12_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("80BF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 3 bytes (unexpected continuation bytes)
+     */
+    @Test
+    public void testCase6_12_4() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("80BF80");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 4 bytes (unexpected continuation bytes)
+     */
+    @Test
+    public void testCase6_12_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("80BF80BF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 5 bytes (unexpected continuation bytes)
+     */
+    @Test
+    public void testCase6_12_6() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("80BF80BF80");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 6 bytes (unexpected continuation bytes)
+     */
+    @Test
+    public void testCase6_12_7() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("80BF80BF80BF");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. many bytes (unexpected continuation bytes)
+     */
+    @Test
+    public void testCase6_12_8() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("808182838485868788898A8B8C8D8E8F909192939495969798999A9B9C9D9E9"
+                + "FA0A1A2A3A4A5A6A7A8A9AAABACADAEAFB0B1B2B3B4B5B6B7B8B9BABBBCBDBE");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. many bytes (lonely start characters)
+     */
+    @Test
+    public void testCase6_13_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("C020C120C220C320C420C520C620C720C820C920CA20CB20CC20CD20CE20CF2"
+                + "0D020D120D220D320D420D520D620D720D820D920DA20DB20DC20DD20DE20");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. many bytes (lonely start characters)
+     */
+    @Test
+    public void testCase6_13_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("E020E120E220E320E420E520E620E720E820E920EA20EB20EC20ED20EE20");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. many bytes (lonely start characters)
+     */
+    @Test
+    public void testCase6_13_3() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F020F120F220F320F420F520F620");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 6 bytes (lonely start characters)
+     */
+    @Test
+    public void testCase6_13_4() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F820F920FA20");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment. 2 bytes (lonely start characters)
+     */
+    @Test
+    public void testCase6_13_5() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FC20");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
      * valid utf8 text message, 1 frame/fragment.
      */
     @Test
@@ -154,27 +413,7 @@ public class TestABCase6 extends AbstractABCase
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
         byte msg[] = StringUtil.getUtf8Bytes(utf8);
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertEchoTextMessage(msg);
     }
 
     /**
@@ -277,26 +516,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_3_1() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertBadTextPayload(invalid);
     }
 
     /**
@@ -485,27 +705,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_5_1() throws Exception
     {
         byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertEchoTextMessage(msg);
     }
 
     /**
@@ -515,26 +715,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_1() throws Exception
     {
         byte incomplete[] = Hex.asByteArray("CE");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(incomplete));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertBadTextPayload(incomplete);
     }
 
     /**
@@ -544,26 +725,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_10() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCE");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertBadTextPayload(invalid);
     }
 
     /**
@@ -572,28 +734,7 @@ public class TestABCase6 extends AbstractABCase
     @Test
     public void testCase6_6_11() throws Exception
     {
-        byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertEchoTextMessage(Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5"));
     }
 
     /**
@@ -602,28 +743,7 @@ public class TestABCase6 extends AbstractABCase
     @Test
     public void testCase6_6_2() throws Exception
     {
-        byte msg[] = Hex.asByteArray("CEBA");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertEchoTextMessage(Hex.asByteArray("CEBA"));
     }
 
     /**
@@ -633,26 +753,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_3() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertBadTextPayload(invalid);
     }
 
     /**
@@ -662,26 +763,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_4() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BD");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertBadTextPayload(invalid);
     }
 
     /**
@@ -691,27 +773,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_5() throws Exception
     {
         byte msg[] = Hex.asByteArray("CEBAE1BDB9");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertEchoTextMessage(msg);
     }
 
     /**
@@ -721,26 +783,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_6() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertBadTextPayload(invalid);
     }
 
     /**
@@ -750,27 +793,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_7() throws Exception
     {
         byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertEchoTextMessage(msg);
     }
 
     /**
@@ -780,26 +803,7 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_8() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CE");
-
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+        assertBadTextPayload(invalid);
     }
 
     /**
@@ -809,26 +813,106 @@ public class TestABCase6 extends AbstractABCase
     public void testCase6_6_9() throws Exception
     {
         byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBC");
+        assertEchoTextMessage(msg);
+    }
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+    /**
+     * valid utf8 text message, 1 frame/fragment, 1 byte, 1 codepoint
+     */
+    @Test
+    public void testCase6_7_1() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("00");
+        assertEchoTextMessage(msg);
+    }
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new WebSocketFrame(OpCode.TEXT).setPayload(msg));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+    /**
+     * valid utf8 text message, 1 frame/fragment, 2 bytes, 1 codepoint
+     */
+    @Test
+    public void testCase6_7_2() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("C280");
+        assertEchoTextMessage(msg);
+    }
 
-        Fuzzer fuzzer = new Fuzzer(this);
-        try
-        {
-            fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(send);
-            fuzzer.expect(expect);
-        }
-        finally
-        {
-            fuzzer.close();
-        }
+    /**
+     * valid utf8 text message, 1 frame/fragment, 3 bytes, 1 codepoint
+     */
+    @Test
+    public void testCase6_7_3() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("E0A080");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment, 4 bytes, 1 codepoint
+     */
+    @Test
+    public void testCase6_7_4() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F0908080");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment, 5 bytes
+     */
+    @Test
+    public void testCase6_8_1() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("F888808080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * invalid utf8 text message, 1 frame/fragment, 6 bytes
+     */
+    @Test
+    public void testCase6_8_2() throws Exception
+    {
+        byte invalid[] = Hex.asByteArray("FC8480808080");
+        assertBadTextPayload(invalid);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment, 1 byte, 1 codepoint
+     */
+    @Test
+    public void testCase6_9_1() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("7F");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment, 2 bytes, 1 codepoint
+     */
+    @Test
+    public void testCase6_9_2() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("DFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment, 3 bytes, 1 codepoint
+     */
+    @Test
+    public void testCase6_9_3() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("EFBFBF");
+        assertEchoTextMessage(msg);
+    }
+
+    /**
+     * valid utf8 text message, 1 frame/fragment, 4 bytes, 1 codepoint
+     */
+    @Test
+    public void testCase6_9_4() throws Exception
+    {
+        byte msg[] = Hex.asByteArray("F48FBFBF");
+        assertEchoTextMessage(msg);
     }
 }
