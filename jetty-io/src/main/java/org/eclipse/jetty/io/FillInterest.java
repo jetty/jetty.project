@@ -14,14 +14,14 @@ import org.eclipse.jetty.util.Callback;
  * by keeping state and calling the context and callback objects.
  * 
  */
-public abstract class ReadInterest
+public abstract class FillInterest
 {
     private final AtomicBoolean _interested = new AtomicBoolean(false);
     private volatile Callback<Object> _callback;
     private Object _context;
 
     /* ------------------------------------------------------------ */
-    protected ReadInterest()
+    protected FillInterest()
     {
     }
 

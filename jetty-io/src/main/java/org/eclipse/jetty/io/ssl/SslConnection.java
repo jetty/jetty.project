@@ -30,7 +30,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.ReadInterest;
+import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -138,8 +138,8 @@ public class SslConnection extends AbstractConnection
         {
             // wake up whoever is doing the fill or the flush so they can
             // do all the filling, unwrapping ,wrapping and flushing
-            if (_decryptedEndPoint._readInterest.isInterested())
-                _decryptedEndPoint._readInterest.readable();
+            if (_decryptedEndPoint._fillInterest.isInterested())
+                _decryptedEndPoint._fillInterest.readable();
 
             // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
             if ( _decryptedEndPoint._flushRequiresFillToProgress)
@@ -164,8 +164,8 @@ public class SslConnection extends AbstractConnection
 
         synchronized(_decryptedEndPoint)
         {
-            if (_decryptedEndPoint._readInterest.isInterested())
-                _decryptedEndPoint._readInterest.failed(cause);
+            if (_decryptedEndPoint._fillInterest.isInterested())
+                _decryptedEndPoint._fillInterest.failed(cause);
 
             if (_decryptedEndPoint._flushRequiresFillToProgress)
             {
@@ -182,12 +182,12 @@ public class SslConnection extends AbstractConnection
         return String.format("SslConnection@%x{%s,%s%s}",
                 hashCode(),
                 _sslEngine.getHandshakeStatus(),
-                _decryptedEndPoint._readInterest.isInterested() ? "R" : "",
+                _decryptedEndPoint._fillInterest.isInterested() ? "R" : "",
                 _decryptedEndPoint._writeFlusher.isInProgress() ? "W" : "");
     }
 
     /* ------------------------------------------------------------ */
-    public class DecryptedEndPoint extends AbstractEndPoint implements EndPoint
+    public class DecryptedEndPoint extends AbstractEndPoint
     {
         private boolean _fillRequiresFlushToProgress;
         private boolean _flushRequiresFillToProgress;
@@ -215,7 +215,7 @@ public class SslConnection extends AbstractConnection
                     if (_fillRequiresFlushToProgress)
                     {
                         _fillRequiresFlushToProgress = false;
-                        _readInterest.readable();
+                        _fillInterest.readable();
                     }
 
                     if (_writeFlusher.isInProgress())
@@ -241,7 +241,7 @@ public class SslConnection extends AbstractConnection
                     if (_fillRequiresFlushToProgress)
                     {
                         _fillRequiresFlushToProgress = false;
-                        _readInterest.failed(x);
+                        _fillInterest.failed(x);
                     }
 
                     if (_writeFlusher.isInProgress())
@@ -252,7 +252,7 @@ public class SslConnection extends AbstractConnection
             }
         };
 
-        private final ReadInterest _readInterest = new ReadInterest()
+        private final FillInterest _fillInterest = new FillInterest()
         {
             @Override
             protected boolean needsFill() throws IOException
@@ -350,7 +350,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
         {
-            _readInterest.register(context, callback);
+            _fillInterest.register(context, callback);
         }
 
         @Override
@@ -619,7 +619,7 @@ public class SslConnection extends AbstractConnection
                                 case NEED_UNWRAP:
                                     // Ah we need to fill some data so we can write.
                                     // So if we were not called from fill and the app is not reading anyway
-                                    if (!_fillRequiresFlushToProgress && !_readInterest.isInterested())
+                                    if (!_fillRequiresFlushToProgress && !_fillInterest.isInterested())
                                     {
                                         // Tell the onFillable method that there might be a write to complete 
                                         // TODO move this to the writeFlusher?
@@ -706,7 +706,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public String toString()
         {
-            return String.format("%s{%s%s%s}", super.toString(), _readInterest.isInterested() ? "R" : "", _writeFlusher.isInProgress() ? "W" : "", _cannotAcceptMoreAppDataToFlush ? "w" : "");
+            return String.format("%s{%s%s%s}", super.toString(), _fillInterest.isInterested() ? "R" : "", _writeFlusher.isInProgress() ? "W" : "", _cannotAcceptMoreAppDataToFlush ? "w" : "");
         }
 
     }

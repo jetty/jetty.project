@@ -67,10 +67,14 @@ abstract public class WriteFlusher
     // will discover the failure and call the callbacks before returning to IDLE
     // Thus the possible paths for a failure are:
     // 
-    //  IDLE--(fail)-->IDLE
-    //  IDLE-->WRITING--(fail)-->FAILED-->IDLE
-    //  IDLE-->WRITING-->PENDING--(fail)-->IDLE
-    //  IDLE-->WRITING-->PENDING-->COMPLETING--(fail)-->FAILED-->IDLE
+    //   IDLE--(fail)-->IDLE
+    //   IDLE-->WRITING--(fail)-->FAILED-->IDLE
+    //   IDLE-->WRITING-->PENDING--(fail)-->IDLE
+    //   IDLE-->WRITING-->PENDING-->COMPLETING--(fail)-->FAILED-->IDLE
+    //
+    // So a call to fail in the PENDING state will be directly handled and the state changed to IDLE
+    // A call to fail in the WRITING or COMPLETING states will just set the state to FAILED and the failure will be 
+    // handled with the write or completeWrite methods try to move the state from what they thought it was.
     //
     
     protected WriteFlusher(EndPoint endPoint)

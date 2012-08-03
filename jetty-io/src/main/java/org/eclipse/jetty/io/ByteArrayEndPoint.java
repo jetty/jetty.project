@@ -51,7 +51,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     protected boolean _growOutput;
     
 
-    private final ReadInterest _readInterest = new ReadInterest()
+    private final FillInterest _fillInterest = new FillInterest()
     {
         @Override
         protected boolean needsFill() throws IOException
@@ -150,7 +150,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         _in = in;
         if (in == null || BufferUtil.hasContent(in))
-            _readInterest.readable();
+            _fillInterest.readable();
     }
 
     /* ------------------------------------------------------------ */
@@ -356,7 +356,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void reset()
     {
-        _readInterest.close();
+        _fillInterest.close();
         _writeFlusher.onClose();
         _ishut=false;
         _oshut=false;
@@ -426,7 +426,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 long idleElapsed = System.currentTimeMillis() - idleTimestamp;
                 long idleLeft = idleTimeout - idleElapsed;
 
-                if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isInProgress())
+                if (isOutputShutdown() || _fillInterest.isInterested() || _writeFlusher.isInProgress())
                 {
                     if (idleTimestamp != 0 && idleTimeout > 0)
                     {
@@ -435,7 +435,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                             LOG.debug("{} idle timeout expired", this);
 
                             TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
-                            _readInterest.failed(timeout);
+                            _fillInterest.failed(timeout);
                             _writeFlusher.onFail(timeout);
                             
                             if (isOutputShutdown())
@@ -454,7 +454,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
     {
-        _readInterest.register(context, callback);
+        _fillInterest.register(context, callback);
     }
 
     /* ------------------------------------------------------------ */

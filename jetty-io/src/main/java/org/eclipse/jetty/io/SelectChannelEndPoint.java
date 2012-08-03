@@ -79,7 +79,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
      * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
     private final AtomicBoolean _open = new AtomicBoolean();
-    private final ReadInterest _readInterest = new ReadInterest()
+    private final FillInterest _fillInterest = new FillInterest()
     {
         @Override
         protected boolean needsFill()
@@ -150,7 +150,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override
     public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
     {
-        _readInterest.register(context, callback);
+        _fillInterest.register(context, callback);
     }
 
     @Override
@@ -178,7 +178,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         setKeyInterests(oldInterestOps, newInterestOps);
         updateLocalInterests(readyOps, false);
         if (_key.isReadable())
-            _readInterest.readable();
+            _fillInterest.readable();
         if (_key.isWritable())
             _writeFlusher.completeWrite();
     }
@@ -194,7 +194,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
 
             LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
 
-            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isInProgress())
+            if (isOutputShutdown() || _fillInterest.isInterested() || _writeFlusher.isInProgress())
             {
                 if (idleTimestamp != 0 && idleTimeout > 0)
                 {
@@ -203,7 +203,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                         LOG.debug("{} idle timeout expired", this);
 
                         TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
-                        _readInterest.failed(timeout);
+                        _fillInterest.failed(timeout);
                         _writeFlusher.onFail(timeout);
 
                         if (isOutputShutdown())
@@ -269,7 +269,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     {
         super.onClose();
         _writeFlusher.onClose();
-        _readInterest.close();
+        _fillInterest.close();
     }
 
     @Override
@@ -292,6 +292,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         }
         return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",
                 hashCode(), getRemoteAddress(), getLocalAddress(), isOpen(), isInputShutdown(),
-                isOutputShutdown(), _interestOps, keyString, _readInterest, _writeFlusher, getConnection());
+                isOutputShutdown(), _interestOps, keyString, _fillInterest, _writeFlusher, getConnection());
     }
 }
