@@ -53,6 +53,7 @@ public class DataFrameBytes<C> extends FrameBytes<C>
         {
             super.completed(context);
         }
+        connection.flush();
     }
 
     @Override

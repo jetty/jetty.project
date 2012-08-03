@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.concurrent.ScheduledFuture;
 
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -67,7 +68,15 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     @Override
     public void failed(C context, Throwable x)
     {
-        LOG.warn("failed(" + context + ")",x);
+        if (x instanceof EofException)
+        {
+            // Abbreviate the EofException
+            LOG.warn("failed(" + context + ") - " + EofException.class);
+        }
+        else
+        {
+            LOG.warn("failed(" + context + ")",x);
+        }
         cancelTask();
         callback.failed(context,x);
     }

@@ -43,7 +43,11 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
         if (frame.getOpCode() == OpCode.CLOSE)
         {
             // Disconnect the connection (no more packets/frames)
-            connection.disconnect(true); // FIXME (should only shutdown output here)
+            connection.disconnect(false);
+        }
+        else
+        {
+            connection.flush();
         }
     }
 

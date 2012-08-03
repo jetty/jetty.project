@@ -99,7 +99,6 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
             }
             flushing = false;
         }
-        flush();
     }
 
     @Override
