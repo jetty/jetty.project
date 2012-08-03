@@ -57,7 +57,11 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized ObjectName findMBean(Object object)
     {
+
         ObjectName bean = _beans.get(object);
+
+        LOG.debug("findMBean {} {}", object, bean );
+
         return bean == null ? null : bean;
     }
 
@@ -69,6 +73,8 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized Object findBean(ObjectName oname)
     {
+        LOG.debug("findBean {}", oname );
+        
         for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
         {
             ObjectName bean = entry.getValue();

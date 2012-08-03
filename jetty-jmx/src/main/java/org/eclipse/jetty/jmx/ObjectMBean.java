@@ -237,7 +237,16 @@ public class ObjectMBean implements DynamicMBean
 
                 // Process Type Annotations
                 ManagedObject primary = o_class.getAnnotation( ManagedObject.class);
-                desc = primary.value();
+                
+                if ( primary != null )
+                {
+                    desc = primary.value();
+                }
+                else
+                {
+                    LOG.debug("No @ManagedObject declared on {}", _managed.getClass());
+                }
+                
 
                 // For each influence
                 for (int i=0;i<influences.size();i++)
@@ -252,49 +261,42 @@ public class ObjectMBean implements DynamicMBean
                         LOG.debug("Annotations not found for: " + oClass.getCanonicalName() );
                         continue;
                     }
-                    
-                    try
-                    {                                      
-                        // Process Field Annotations
-                        for ( Field field : oClass.getDeclaredFields())
-                        {
-                            LOG.debug("Checking: " + field.getName());
-                            ManagedAttribute fieldAnnotation = field.getAnnotation(ManagedAttribute.class);
-                                                      
-                            if ( fieldAnnotation != null )
-                            {
-                                LOG.debug("Field Annotation found for: " + field.getName() );
-                                attributes.add( defineAttribute(field.getName(), fieldAnnotation));
-                            }
-                        }
-                            
-                        // Process Method Annotations
-                        
-                        for ( Method method : oClass.getDeclaredMethods() )
-                        {
-                            ManagedAttribute methodAttributeAnnotation = method.getAnnotation(ManagedAttribute.class);
-                            
-                            if ( methodAttributeAnnotation != null )
-                            {                   
-                                // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
-                                LOG.debug("Attribute Annotation found for: " + method.getName() );
-                                attributes.add(defineAttribute(method.getName(),methodAttributeAnnotation));
-                            }
-                            
-                            ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
-                            
-                            if (methodOperationAnnotation != null)
-                            {
-                                LOG.debug("Method Annotation found for: " + method.getName());                              
-                                operations.add(defineOperation(method,methodOperationAnnotation));                              
-                            }
-                        }
-                        
-                    }
-                    catch(MissingResourceException e)
+
+                    // Process Field Annotations
+                    for (Field field : oClass.getDeclaredFields())
                     {
-                        LOG.ignore(e);
+                        LOG.debug("Checking: " + field.getName());
+                        ManagedAttribute fieldAnnotation = field.getAnnotation(ManagedAttribute.class);
+
+                        if (fieldAnnotation != null)
+                        {
+                            LOG.debug("Field Annotation found for: " + field.getName());
+                            attributes.add(defineAttribute(field.getName(),fieldAnnotation));
+                        }
                     }
+
+                    // Process Method Annotations
+
+                    for (Method method : oClass.getDeclaredMethods())
+                    {
+                        ManagedAttribute methodAttributeAnnotation = method.getAnnotation(ManagedAttribute.class);
+
+                        if (methodAttributeAnnotation != null)
+                        {
+                            // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
+                            LOG.debug("Attribute Annotation found for: " + method.getName());
+                            attributes.add(defineAttribute(method.getName(),methodAttributeAnnotation));
+                        }
+
+                        ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
+
+                        if (methodOperationAnnotation != null)
+                        {
+                            LOG.debug("Method Annotation found for: " + method.getName());
+                            operations.add(defineOperation(method,methodOperationAnnotation));
+                        }
+                    }
+
                 }
 
                 _info = new MBeanInfo(o_class.getName(),
@@ -575,7 +577,7 @@ public class ObjectMBean implements DynamicMBean
     {
         //String name = field.getName();
         String description = attributeAnnotation.value();
-        boolean writable = attributeAnnotation.readonly();   
+        boolean writable = !attributeAnnotation.readonly();   
         boolean onMBean = attributeAnnotation.proxied();
         boolean convert = attributeAnnotation.managed();
                 
@@ -597,9 +599,6 @@ public class ObjectMBean implements DynamicMBean
         {
             if ((methods[m].getModifiers() & Modifier.PUBLIC) == 0)
                 continue;
-
-            LOG.debug("Declared Getter: {} vs {}", declaredGetter, methods[m].getName());
-
             
             // Check if it is a declared getter
             if (methods[m].getName().equals(declaredGetter) && methods[m].getParameterTypes().length == 0)
@@ -694,20 +693,21 @@ public class ObjectMBean implements DynamicMBean
         {
             if (type==null)
             {
-	        LOG.warn("No mbean type for " + name+" on "+_managed.getClass());
+	        LOG.warn("No mbean type for {} on {}", name, _managed.getClass());
 		return null;
 	    }
                 
             if (type.isPrimitive() && !type.isArray())
             {
-	        LOG.warn("Cannot convert mbean primative " + name);
+	        LOG.warn("Cannot convert mbean primative {}", name);
 		return null;
 	    }
+            LOG.debug("passed convert checks {} for type {}", name, type);
         }
 
         if (getter == null && setter == null)
         {
-	    LOG.warn("No mbean getter or setters found for " + name+ " in "+oClass);
+	    LOG.warn("No mbean getter or setters found for {} in {}", name, oClass);
 	    return null;
 	}
 
@@ -721,15 +721,21 @@ public class ObjectMBean implements DynamicMBean
             if (convert)
             {
                 _convert.add(name);
+                
                 if (type.isArray())
+                {
                     info= new MBeanAttributeInfo(name,OBJECT_NAME_ARRAY_CLASS,description,getter!=null,setter!=null,getter!=null&&getter.getName().startsWith("is"));
-
+                }
                 else
+                {
                     info= new MBeanAttributeInfo(name,OBJECT_NAME_CLASS,description,getter!=null,setter!=null,getter!=null&&getter.getName().startsWith("is"));
+                }
             }
             else
+            {
                 info= new MBeanAttributeInfo(name,description,getter,setter);
-
+            }
+            
             return info;
         }
         catch (Exception e)

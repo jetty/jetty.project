@@ -24,6 +24,9 @@ public class Derived extends Base implements Signature
     @ManagedAttribute(value="The full name of something", getter="getFullName", setter="setFullName")
     String fname="Full Name";
 
+    @ManagedAttribute( value="sample managed object")
+    Managed managedInstance = new Managed();
+    
     public String getFullName()
     {
         return fname;
@@ -50,4 +53,16 @@ public class Derived extends Base implements Signature
     {
         return "bad";
     }
+
+    public Managed getManagedInstance()
+    {
+        return managedInstance;
+    }
+
+    public void setManagedInstance(Managed managedInstance)
+    {
+        this.managedInstance = managedInstance;
+    }
+    
+    
 }

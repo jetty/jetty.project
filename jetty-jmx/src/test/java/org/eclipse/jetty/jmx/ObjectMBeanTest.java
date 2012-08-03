@@ -27,25 +27,54 @@ import junit.framework.Assert;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.acme.Derived;
+import com.acme.Managed;
 
 
 public class ObjectMBeanTest
 {
     private static final Logger LOG = Log.getLogger(ObjectMBeanTest.class);
 
+    private static MBeanContainer container;
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
+        container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        container.start();
+    }
+    
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        container.stop();
+        container = null;
+    }
+    
     /*
      * this test uses the com.acme.Derived test classes
      */
     @Test
     public void testMbeanInfo() throws Exception
     {
+        
         Derived derived = new Derived();
         ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
         
-        assertTrue(mbean.getMBeanInfo()!=null);
+        ObjectMBean managed = (ObjectMBean)ObjectMBean.mbeanFor(derived.getManagedInstance());
+        mbean.setMBeanContainer(container);
+        managed.setMBeanContainer(container);
+                
+        container.addBean(mbean);
+        container.addBean(managed);                
+        
+        MBeanInfo toss = managed.getMBeanInfo();
+        
+        Assert.assertNotNull(mbean.getMBeanInfo());
         
         MBeanInfo info = mbean.getMBeanInfo();
         
@@ -58,15 +87,15 @@ public class ObjectMBeanTest
         }
         
         /*
-         * 6 attributes from lifecycle and 1 from Derived and 1 from MBean
+         * 6 attributes from lifecycle and 2 from Derived and 1 from MBean
          */
-        Assert.assertEquals("attribute count does not match", 8, info.getAttributes().length);
+        Assert.assertEquals("attribute count does not match", 9, info.getAttributes().length);
 
         Assert.assertEquals("attribute values does not match", "Full Name", mbean.getAttribute("fname") );
         
-        //mbean.setAttribute( new Attribute("fname","Fuller Name"));
+        mbean.setAttribute( new Attribute("fname","Fuller Name"));
         
-        //Assert.assertEquals("set attribute value does not match", "Fuller Name", mbean.getAttribute("fname") );
+        Assert.assertEquals("set attribute value does not match", "Fuller Name", mbean.getAttribute("fname") );
         
         Assert.assertEquals("proxy attribute values do not match", "goop", mbean.getAttribute("goop") );
         
@@ -112,6 +141,10 @@ public class ObjectMBeanTest
         Assert.assertTrue("doodle operation was not not found", doodle);
         Assert.assertTrue("good operation was not not found", good);
 
-
+        // TODO sort out why this is not working...something off in Bean vs MBean ism's
+        
+        Managed managedInstance = (Managed)mbean.getAttribute("managedInstance");
+        Assert.assertNotNull(managedInstance);
+        Assert.assertEquals("managed instance returning nonsense", "foo", managedInstance.getManaged());
     }
 }
