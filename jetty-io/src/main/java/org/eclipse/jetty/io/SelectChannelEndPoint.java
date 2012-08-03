@@ -178,7 +178,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         setKeyInterests(oldInterestOps, newInterestOps);
         updateLocalInterests(readyOps, false);
         if (_key.isReadable())
-            _fillInterest.readable();
+            _fillInterest.fillable();
         if (_key.isWritable())
             _writeFlusher.completeWrite();
     }
@@ -203,7 +203,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                         LOG.debug("{} idle timeout expired", this);
 
                         TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
-                        _fillInterest.failed(timeout);
+                        _fillInterest.onFail(timeout);
                         _writeFlusher.onFail(timeout);
 
                         if (isOutputShutdown())
@@ -269,7 +269,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     {
         super.onClose();
         _writeFlusher.onClose();
-        _fillInterest.close();
+        _fillInterest.onClose();
     }
 
     @Override

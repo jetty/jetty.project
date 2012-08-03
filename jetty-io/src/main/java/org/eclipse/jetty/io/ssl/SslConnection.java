@@ -139,7 +139,7 @@ public class SslConnection extends AbstractConnection
             // wake up whoever is doing the fill or the flush so they can
             // do all the filling, unwrapping ,wrapping and flushing
             if (_decryptedEndPoint._fillInterest.isInterested())
-                _decryptedEndPoint._fillInterest.readable();
+                _decryptedEndPoint._fillInterest.fillable();
 
             // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
             if ( _decryptedEndPoint._flushRequiresFillToProgress)
@@ -165,7 +165,7 @@ public class SslConnection extends AbstractConnection
         synchronized(_decryptedEndPoint)
         {
             if (_decryptedEndPoint._fillInterest.isInterested())
-                _decryptedEndPoint._fillInterest.failed(cause);
+                _decryptedEndPoint._fillInterest.onFail(cause);
 
             if (_decryptedEndPoint._flushRequiresFillToProgress)
             {
@@ -215,7 +215,7 @@ public class SslConnection extends AbstractConnection
                     if (_fillRequiresFlushToProgress)
                     {
                         _fillRequiresFlushToProgress = false;
-                        _fillInterest.readable();
+                        _fillInterest.fillable();
                     }
 
                     if (_writeFlusher.isInProgress())
@@ -241,7 +241,7 @@ public class SslConnection extends AbstractConnection
                     if (_fillRequiresFlushToProgress)
                     {
                         _fillRequiresFlushToProgress = false;
-                        _fillInterest.failed(x);
+                        _fillInterest.onFail(x);
                     }
 
                     if (_writeFlusher.isInProgress())

@@ -28,7 +28,7 @@ public abstract class FillInterest
     /* ------------------------------------------------------------ */
     /** Call to register interest in a callback when a read is possible.
      * The callback will be called either immediately if {@link #needsFill()} 
-     * returns true or eventually once {@link #readable()} is called.
+     * returns true or eventually once {@link #fillable()} is called.
      * @param context
      * @param callback
      * @throws ReadPendingException
@@ -42,18 +42,18 @@ public abstract class FillInterest
         try
         {
             if (needsFill())
-                readable();
+                fillable();
         }
         catch(IOException e)
         {
-            failed(e);
+            onFail(e);
         }
     }
 
     /* ------------------------------------------------------------ */
     /** Call to signal that a read is now possible.
      */
-    public void readable()
+    public void fillable()
     {
         if (_interested.compareAndSet(true,false))
         {
@@ -77,7 +77,7 @@ public abstract class FillInterest
     /* ------------------------------------------------------------ */
     /** Call to signal a failure to a registered interest
      */
-    public void failed(Throwable cause)
+    public void onFail(Throwable cause)
     {
         if (_interested.compareAndSet(true,false))
         {
@@ -90,7 +90,7 @@ public abstract class FillInterest
     }
     
     /* ------------------------------------------------------------ */
-    public void close()
+    public void onClose()
     {
         if (_interested.compareAndSet(true,false))
         {
@@ -106,14 +106,14 @@ public abstract class FillInterest
     @Override
     public String toString()
     {
-        return String.format("ReadInterest@%x{%b,%s,%s}",hashCode(),_interested.get(),_callback,_context);
+        return String.format("FillInterest@%x{%b,%s,%s}",hashCode(),_interested.get(),_callback,_context);
     }
     
     /* ------------------------------------------------------------ */
     /** Register the read interest 
      * Abstract method to be implemented by the Specific ReadInterest to
      * enquire if a read is immediately possible and if not to schedule a future
-     * call to {@link #readable()} or {@link #failed(Throwable)}
+     * call to {@link #fillable()} or {@link #onFail(Throwable)}
      * @return true if a read is possible
      * @throws IOException
      */

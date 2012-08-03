@@ -150,7 +150,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         _in = in;
         if (in == null || BufferUtil.hasContent(in))
-            _fillInterest.readable();
+            _fillInterest.fillable();
     }
 
     /* ------------------------------------------------------------ */
@@ -356,7 +356,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void reset()
     {
-        _fillInterest.close();
+        _fillInterest.onClose();
         _writeFlusher.onClose();
         _ishut=false;
         _oshut=false;
@@ -435,7 +435,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                             LOG.debug("{} idle timeout expired", this);
 
                             TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
-                            _fillInterest.failed(timeout);
+                            _fillInterest.onFail(timeout);
                             _writeFlusher.onFail(timeout);
                             
                             if (isOutputShutdown())
