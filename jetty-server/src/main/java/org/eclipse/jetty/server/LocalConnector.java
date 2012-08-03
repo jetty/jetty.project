@@ -23,50 +23,34 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class LocalConnector extends AbstractConnector
 {
-    private static final Logger LOG = Log.getLogger(LocalConnector.class);
-
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
-    
+
     public LocalConnector(Server server)
     {
-        this(server,null,null,null,null, -1);
-    }
-
-    public LocalConnector(Server server, boolean ssl)
-    {
-        this(server,new ConnectionFactory(null,ssl),null,null,null,0);
-        manage(getConnectionFactory());
-    }
-
-    public LocalConnector(Server server, HttpConfiguration httpConfig)
-    {
-        this(server,new ConnectionFactory(httpConfig,null,false),null,null,null,0);
-        manage(getConnectionFactory());
+        this(server,null);
     }
 
     public LocalConnector(Server server, SslContextFactory sslContextFactory)
     {
-        this(server,new ConnectionFactory(sslContextFactory,sslContextFactory!=null),null,null,null,0);
-        manage(getConnectionFactory());
+        this(server, null, null, null, sslContextFactory, 0);
     }
-    
-    public LocalConnector(Server server, ConnectionFactory connectionFactory, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
-        int acceptors)
+
+    public LocalConnector(Server server, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
+                          SslContextFactory sslContextFactory, int acceptors)
     {
-        super(server,connectionFactory,executor,scheduler,pool,acceptors);
+        super(server,executor,scheduler,pool, sslContextFactory, acceptors);
         setIdleTimeout(30000);
+        setDefaultConnectionFactory(new HttpServerConnectionFactory(this));
     }
-    
+
     @Override
     public Object getTransport()
     {
@@ -77,7 +61,7 @@ public class LocalConnector extends AbstractConnector
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
      * <p>
-     * This methods waits until the connection is closed or 
+     * This methods waits until the connection is closed or
      * is idle for 1s before returning the responses.
      * @param requests the requests
      * @return the responses
@@ -93,7 +77,7 @@ public class LocalConnector extends AbstractConnector
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
      * <p>
-     * This methods waits until the connection is closed or 
+     * This methods waits until the connection is closed or
      * an idle period before returning the responses.
      * @param requests the requests
      * @param idleFor The time the response stream must be idle for before returning
@@ -111,7 +95,7 @@ public class LocalConnector extends AbstractConnector
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
      * <p>
-     * This methods waits until the connection is closed or 
+     * This methods waits until the connection is closed or
      * is idle for 1s before returning the responses.
      * @param requestsBuffer the requests
      * @return the responses
@@ -126,7 +110,7 @@ public class LocalConnector extends AbstractConnector
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
      * <p>
-     * This methods waits until the connection is closed or 
+     * This methods waits until the connection is closed or
      * an idle period before returning the responses.
      * @param requestsBuffer the requests
      * @param idleFor The time the response stream must be idle for before returning
@@ -136,7 +120,7 @@ public class LocalConnector extends AbstractConnector
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
-        LOG.debug("getResponses");
+        logger.debug("getResponses");
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(requestsBuffer);
         _connects.add(endp);
@@ -161,15 +145,14 @@ public class LocalConnector extends AbstractConnector
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-        LOG.debug("accepting {}",acceptorID);
+        logger.debug("accepting {}", acceptorID);
         LocalEndPoint endp = _connects.take();
-        Connection connection=getConnectionFactory().newConnection(LocalConnector.this,endp);
+        Connection connection = getDefaultConnectionFactory().newConnection(null, endp, null);
         endp.setConnection(connection);
         endp.onOpen();
         connection.onOpen();
         connectionOpened(connection);
     }
-
 
     public class LocalEndPoint extends ByteArrayEndPoint
     {
@@ -232,7 +215,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch(Exception e)
                 {
-                    LOG.warn(e);
+                    logger.warn(e);
                 }
             }
         }
@@ -254,10 +237,10 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch(Exception e)
                 {
-                    LOG.warn(e);
+                    logger.warn(e);
                 }
             }
         }
-        
+
     }
 }

@@ -21,7 +21,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -30,13 +29,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * HttpServer Tester.
@@ -72,15 +71,15 @@ public class SSLCloseTest extends TestCase
      */
     public void testClose() throws Exception
     {
-        Server server=new Server();
-        SelectChannelConnector connector=new SelectChannelConnector(server,true);
-
         String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
 
+        Server server=new Server();
+        SelectChannelConnector connector=new SelectChannelConnector(server, sslContextFactory);
         connector.setPort(0);
-        connector.getConnectionFactory().getSslContextFactory().setKeyStorePath(keystore);
-        connector.getConnectionFactory().getSslContextFactory().setKeyStorePassword("storepwd");
-        connector.getConnectionFactory().getSslContextFactory().setKeyManagerPassword("keypwd");
 
         server.setConnectors(new Connector[]
         { connector });

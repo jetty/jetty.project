@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.ServletException;
@@ -80,7 +79,12 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
-        SelectChannelConnector connector = new SelectChannelConnector(server,true)
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        SelectChannelConnector connector = new SelectChannelConnector(server, sslContextFactory)
         {
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
@@ -89,20 +93,12 @@ public class SslBytesServerTest extends SslBytesTest
                 serverEndPoint.set(endp);
                 return endp;
             }
-            
-        };
-        
-        
-        connector.setIdleTimeout(idleTimeout);
 
-        //        connector.setPort(5870);
+        };
+        connector.setIdleTimeout(idleTimeout);
+//        connector.setPort(5870);
         connector.setPort(0);
 
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
-        cf.setKeyStorePath(keyStore.getAbsolutePath());
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
         server.addConnector(connector);
         server.setHandler(new AbstractHandler()
         {
@@ -139,7 +135,7 @@ public class SslBytesServerTest extends SslBytesTest
         server.start();
         serverPort = connector.getLocalPort();
 
-        sslContext = cf.getSslContext();
+        sslContext = sslContextFactory.getSslContext();
 
         proxy = new SimpleProxy(threadPool, "localhost", serverPort);
         proxy.start();

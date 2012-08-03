@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -95,13 +94,13 @@ public class WebSocketOverSSLTest
 
     private void startServer(final Object websocket) throws Exception
     {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
         _server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector(_server,true);
+        SelectChannelConnector connector = new SelectChannelConnector(_server, sslContextFactory);
         _server.addConnector(connector);
-        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
-        cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
         _server.setHandler(new WebSocketHandler.Simple(websocket.getClass()));
         _server.start();
         _port = connector.getLocalPort();

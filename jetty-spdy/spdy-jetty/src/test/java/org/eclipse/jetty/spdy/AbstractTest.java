@@ -56,13 +56,13 @@ public abstract class AbstractTest
 
     protected InetSocketAddress startServer(short version, ServerSessionFrameListener listener) throws Exception
     {
+        server = new Server();
         if (connector == null)
             connector = newSPDYServerConnector(listener);
         if (listener == null)
             listener = connector.getServerSessionFrameListener();
-        connector.setDefaultAsyncConnectionFactory(new ServerSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), listener));
+        connector.setDefaultConnectionFactory(new ServerSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), listener));
         connector.setPort(0);
-        server = new Server();
         server.addConnector(connector);
         server.start();
         return new InetSocketAddress("localhost", connector.getLocalPort());
@@ -70,7 +70,7 @@ public abstract class AbstractTest
 
     protected SPDYServerConnector newSPDYServerConnector(ServerSessionFrameListener listener)
     {
-        return new SPDYServerConnector(listener);
+        return new SPDYServerConnector(server, listener);
     }
 
     protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception

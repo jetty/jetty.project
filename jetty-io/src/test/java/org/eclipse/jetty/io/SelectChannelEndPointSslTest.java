@@ -1,11 +1,5 @@
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,7 +7,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -27,6 +20,12 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
@@ -55,7 +54,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     @Override
     protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
     {
-        SSLEngine engine = __sslCtxFactory.newSslEngine();
+        SSLEngine engine = __sslCtxFactory.newSSLEngine();
         engine.setUseClientMode(false);
         SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
 
@@ -94,7 +93,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         server.configureBlocking(false);
         _manager.accept(server);
 
-        SSLEngine engine = __sslCtxFactory.newSslEngine();
+        SSLEngine engine = __sslCtxFactory.newSSLEngine();
         engine.setUseClientMode(true);
         engine.beginHandshake();
 
@@ -263,8 +262,8 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     @Test
     public void checkSslEngineBehaviour() throws Exception
     {
-        SSLEngine server = __sslCtxFactory.newSslEngine();
-        SSLEngine client = __sslCtxFactory.newSslEngine();
+        SSLEngine server = __sslCtxFactory.newSSLEngine();
+        SSLEngine client = __sslCtxFactory.newSSLEngine();
 
         ByteBuffer netC2S = ByteBuffer.allocate(server.getSession().getPacketBufferSize());
         ByteBuffer netS2C = ByteBuffer.allocate(server.getSession().getPacketBufferSize());

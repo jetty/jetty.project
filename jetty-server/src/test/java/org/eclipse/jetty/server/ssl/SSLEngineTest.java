@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +28,6 @@ import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -43,7 +37,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
@@ -55,6 +50,11 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -85,23 +85,25 @@ public class SSLEngineTest
     private Server server;
     private SelectChannelConnector connector;
 
-    
+
     @Before
     public void startServer() throws Exception
     {
-        server=new Server();
-        connector=new SelectChannelConnector(server,true);
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
 
+        server=new Server();
+        connector=new SelectChannelConnector(server, sslContextFactory);
         connector.setPort(0);
-        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
-        cf.setKeyStorePath(keystore);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-        connector.getConnectionFactory().getHttpConfig().setRequestBufferSize(512);
-        connector.getConnectionFactory().getHttpConfig().setRequestHeaderSize(512);
+        HttpConfiguration httpConfiguration = new HttpConfiguration(sslContextFactory, true);
+        httpConfiguration.setRequestBufferSize(512);
+        httpConfiguration.setRequestHeaderSize(512);
+        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector, httpConfiguration));
 
-        server.setConnectors(new Connector[]{connector });
+        server.addConnector(connector);
     }
 
     @After
@@ -111,14 +113,13 @@ public class SSLEngineTest
         server.join();
     }
 
-
     @Test
     public void testHelloWorld() throws Exception
     {
         server.setHandler(new HelloWorldHandler());
         server.start();
         server.dumpStdErr();
-        
+
         SSLContext ctx=SSLContext.getInstance("TLS");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
@@ -141,13 +142,13 @@ public class SSLEngineTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertThat(response,Matchers.containsString(HELLO_WORLD));
     }
-    
+
     @Test
     public void testBigResponse() throws Exception
     {
         server.setHandler(new HelloWorldHandler());
         server.start();
-        
+
         SSLContext ctx=SSLContext.getInstance("TLS");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
@@ -175,7 +176,7 @@ public class SSLEngineTest
     {
         server.setHandler(new HelloWorldHandler());
         server.start();
-        
+
         final int loops=20;
         final int numConns=20;
 
@@ -384,5 +385,5 @@ public class SSLEngineTest
             response.flushBuffer();
         }
     }
-    
+
 }

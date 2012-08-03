@@ -21,18 +21,19 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class NextProtoNegoServerAsyncConnection extends AbstractConnection implements NextProtoNego.ServerProvider
+public class NextProtoNegoServerConnection extends AbstractConnection implements NextProtoNego.ServerProvider
 {
     private final Logger logger = Log.getLogger(getClass());
     private final SocketChannel channel;
     private final SPDYServerConnector connector;
     private volatile boolean completed;
 
-    public NextProtoNegoServerAsyncConnection(SocketChannel channel, EndPoint endPoint, SPDYServerConnector connector)
+    public NextProtoNegoServerConnection(SocketChannel channel, EndPoint endPoint, SPDYServerConnector connector)
     {
         super(endPoint, connector.getExecutor());
         this.channel = channel;
@@ -45,7 +46,7 @@ public class NextProtoNegoServerAsyncConnection extends AbstractConnection imple
         super.onOpen();
         fillInterested();
     }
-    
+
     @Override
     public void onFillable()
     {
@@ -76,10 +77,10 @@ public class NextProtoNegoServerAsyncConnection extends AbstractConnection imple
     @Override
     public void unsupported()
     {
-        ConnectionFactory asyncConnectionFactory = connector.getDefaultAsyncConnectionFactory();
+        ConnectionFactory ConnectionFactory = connector.getDefaultConnectionFactory();
         EndPoint endPoint = getEndPoint();
-        Connection connection = asyncConnectionFactory.newConnection(channel, endPoint, connector);
-        connector.replaceAsyncConnection(endPoint, connection);
+        Connection connection = ConnectionFactory.newConnection(channel, endPoint, connector);
+        connector.replaceConnection(endPoint, connection);
         completed = true;
     }
 
@@ -92,10 +93,10 @@ public class NextProtoNegoServerAsyncConnection extends AbstractConnection imple
     @Override
     public void protocolSelected(String protocol)
     {
-        ConnectionFactory asyncConnectionFactory = connector.getAsyncConnectionFactory(protocol);
+        ConnectionFactory ConnectionFactory = connector.getConnectionFactory(protocol);
         EndPoint endPoint = getEndPoint();
-        Connection connection = asyncConnectionFactory.newConnection(channel, endPoint, connector);
-        connector.replaceAsyncConnection(endPoint, connection);
+        Connection connection = ConnectionFactory.newConnection(channel, endPoint, connector);
+        connector.replaceConnection(endPoint, connection);
         completed = true;
     }
 }

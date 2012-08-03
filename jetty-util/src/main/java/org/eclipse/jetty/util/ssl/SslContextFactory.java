@@ -39,7 +39,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -295,7 +294,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 _context = (_sslProvider == null)?SSLContext.getInstance(_sslProtocol):SSLContext.getInstance(_sslProtocol,_sslProvider);
                 _context.init(keyManagers,trustManagers,secureRandom);
 
-                SSLEngine engine=newSslEngine();
+                SSLEngine engine= newSSLEngine();
 
                 LOG.info("Enabled Protocols {} of {}",Arrays.asList(engine.getEnabledProtocols()),Arrays.asList(engine.getSupportedProtocols()));
                 if (LOG.isDebugEnabled())
@@ -1390,20 +1389,19 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
-    public SSLEngine newSslEngine(String host,int port)
+    public SSLEngine newSSLEngine(String host, int port)
     {
         if (!isRunning())
             throw new IllegalStateException("!STARTED");
         SSLEngine sslEngine=isSessionCachingEnabled()
             ?_context.createSSLEngine(host, port)
             :_context.createSSLEngine();
-
         customize(sslEngine);
         return sslEngine;
     }
 
     /* ------------------------------------------------------------ */
-    public SSLEngine newSslEngine()
+    public SSLEngine newSSLEngine()
     {
         if (!isRunning())
             throw new IllegalStateException("!STARTED");
@@ -1428,17 +1426,11 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
-    public SSLEngine createSSLEngine(InetSocketAddress address) throws IOException
+    public SSLEngine newSSLEngine(InetSocketAddress address)
     {
-        SSLEngine engine = (address != null)
-            ?newSslEngine(address.getAddress().getHostAddress(), address.getPort())
-            :newSslEngine();
-        engine.setUseClientMode(false);
- 
-        customize(engine);
-        return engine;
+        return address != null ? newSSLEngine(address.getAddress().getHostAddress(), address.getPort()) : newSSLEngine();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

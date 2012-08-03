@@ -15,19 +15,16 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
-import javax.net.ssl.SSLEngine;
-
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.StandardByteBufferPool;
-import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -35,49 +32,39 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
- * Abstract Connector implementation. This abstract implementation of the Connector interface provides:
- * <ul>
- * <li>AbstractLifeCycle implementation</li>
- * <li>Implementations for connector getters and setters</li>
- * <li>Buffer management</li>
- * <li>Socket configuration</li>
- * <li>Base acceptor thread</li>
- * <li>Optional reverse proxy headers checking</li>
- * </ul>
+ * <p>Partial implementation of {@link Connector}</p>
  */
 public abstract class AbstractConnector extends AggregateLifeCycle implements Connector, Dumpable
 {
-    protected final Logger LOG = Log.getLogger(getClass());
-
+    protected final Logger logger = Log.getLogger(getClass());
+    // Order is important on server side, so we use a LinkedHashMap
+    private final Map<String, ConnectionFactory> factories = new LinkedHashMap<>();
     private final Statistics _stats = new ConnectionStatistics();
-    private final ConnectionFactory _connectionFactory;
-    private final Thread[] _acceptors;
+    private final Server _server;
+    private final SslContextFactory _sslContextFactory;
     private final Executor _executor;
     private final ScheduledExecutorService _scheduler;
-    private final Server _server;
     private final ByteBufferPool _byteBufferPool;
-    
+    private final Thread[] _acceptors;
     private volatile String _name;
-    private volatile int _acceptQueueSize = 128;
-    private volatile boolean _reuseAddress = true;
     private volatile long _idleTimeout = 200000;
-    private volatile int _soLingerTime = -1;
+    private volatile ConnectionFactory defaultConnectionFactory;
 
-    /* ------------------------------------------------------------ */
     /**
      * @param server The server this connector will be added to. Must not be null.
-     * @param connectionFactory ConnectionFactory or null for default
-     * @param executor An executor for this connector or null to use the servers executor 
+     * @param executor An executor for this connector or null to use the servers executor
      * @param scheduler A scheduler for this connector or null to use the servers scheduler
      * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
+     * @param sslContextFactory the SSL context factory to make this connector SSL enabled, or null
      * @param acceptors the number of acceptor threads to use, or 0 for a default value.
      */
     public AbstractConnector(
-        Server server,
-        ConnectionFactory connectionFactory,
-        Executor executor,
-        ScheduledExecutorService scheduler, 
-        ByteBufferPool pool, int acceptors)
+            Server server,
+            Executor executor,
+            ScheduledExecutorService scheduler,
+            ByteBufferPool pool,
+            SslContextFactory sslContextFactory,
+            int acceptors)
     {
         _server=server;
         _executor=executor!=null?executor:_server.getThreadPool();
@@ -86,23 +73,22 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             @Override
             public Thread newThread(Runnable r)
             {
-                return new Thread(r, "Timer-" + getName());
+                return new Thread(r, "Scheduler-" + getName());
             }
         });
         _byteBufferPool = pool!=null?pool:new StandardByteBufferPool();
-        
-        _connectionFactory=connectionFactory!=null?connectionFactory:new ConnectionFactory();
-        
+        _sslContextFactory = sslContextFactory;
+
         addBean(_server,false);
         addBean(_executor,false);
         addBean(_scheduler,scheduler==null);
         addBean(_byteBufferPool,pool==null);
-        addBean(_connectionFactory,connectionFactory!=null);
+        addBean(_sslContextFactory,true);
 
         if (acceptors<=0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
-            LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
+            logger.warn("Acceptors should be <= 2*availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
     }
 
@@ -117,13 +103,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     {
         return _server;
     }
-    
-    @Override
-    public ConnectionFactory getConnectionFactory()
-    {
-        return _connectionFactory;
-    }
-    
+
     @Override
     public Executor getExecutor()
     {
@@ -136,9 +116,11 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         return _byteBufferPool;
     }
 
-    /**
-     * @return Returns the maxIdleTime.
-     */
+    public SslContextFactory getSslContextFactory()
+    {
+        return _sslContextFactory;
+    }
+
     @Override
     public long getIdleTimeout()
     {
@@ -146,50 +128,21 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     }
 
     /**
-     * Set the maximum Idle time for a connection, which roughly translates to the {@link Socket#setSoTimeout(int)} call, although with NIO implementations
-     * other mechanisms may be used to implement the timeout. The max idle time is applied:
+     * <p>Sets the maximum Idle time for a connection, which roughly translates to the {@link Socket#setSoTimeout(int)}
+     * call, although with NIO implementations other mechanisms may be used to implement the timeout.</p>
+     * <p>The max idle time is applied:</p>
      * <ul>
-     * <li>When waiting for a new request to be received on a connection</li>
-     * <li>When reading the headers and content of a request</li>
-     * <li>When writing the headers and content of a response</li>
+     * <li>When waiting for a new message to be received on a connection</li>
+     * <li>When waiting for a new message to be sent on a connection</li>
      * </ul>
-     * Jetty interprets this value as the maximum time between some progress being made on the connection. So if a single byte is read or written, then the
-     * timeout (if implemented by jetty) is reset. However, in many instances, the reading/writing is delegated to the JVM, and the semantic is more strictly
-     * enforced as the maximum time a single read/write operation can take. Note, that as Jetty supports writes of memory mapped file buffers, then a write may
-     * take many 10s of seconds for large content written to a slow device.
-     * <p/>
-     * Previously, Jetty supported separate idle timeouts and IO operation timeouts, however the expense of changing the value of soTimeout was significant, so
-     * these timeouts were merged. With the advent of NIO, it may be possible to again differentiate these values (if there is demand).
+     * <p>This value is interpreted as the maximum time between some progress being made on the connection.
+     * So if a single byte is read or written, then the timeout is reset.</p>
      *
-     * @param idleTimeout The idleTimeout to set.
+     * @param idleTimeout the idle timeout
      */
     public void setIdleTimeout(long idleTimeout)
     {
         _idleTimeout = idleTimeout;
-    }
-
-    /**
-     * @return Returns the soLingerTime.
-     */
-    public int getSoLingerTime()
-    {
-        return _soLingerTime;
-    }
-
-    /**
-     * @return Returns the acceptQueueSize.
-     */
-    public int getAcceptQueueSize()
-    {
-        return _acceptQueueSize;
-    }
-
-    /**
-     * @param acceptQueueSize The acceptQueueSize to set.
-     */
-    public void setAcceptQueueSize(int acceptQueueSize)
-    {
-        _acceptQueueSize = acceptQueueSize;
     }
 
     /**
@@ -201,72 +154,100 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     }
 
 
-    /**
-     * @param soLingerTime The soLingerTime to set or -1 to disable.
-     */
-    public void setSoLingerTime(int soLingerTime)
-    {
-        _soLingerTime = soLingerTime;
-    }
-
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
 
-        // Start selector thread
-        synchronized (this)
-        {
-            for (int i = 0; i < _acceptors.length; i++)
-                getExecutor().execute(new Acceptor(i));
-        }
+        for (int i = 0; i < _acceptors.length; i++)
+            getExecutor().execute(new Acceptor(i));
 
-        LOG.info("Started {}", this);
+        logger.info("Started {}", this);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        super.doStop();
-
         for (Thread thread : _acceptors)
         {
             if (thread != null)
                 thread.interrupt();
         }
+
+        super.doStop();
+
+        logger.info("Stopped {}", this);
     }
 
     public void join() throws InterruptedException
     {
-        for (Thread thread : _acceptors)
-            if (thread != null)
-                thread.join();
+        join(0);
     }
 
-    protected void configure(Socket socket)
+    public void join(long timeout) throws InterruptedException
     {
-        try
-        {
-            socket.setTcpNoDelay(true);
-            if (_soLingerTime >= 0)
-                socket.setSoLinger(true, _soLingerTime / 1000);
-            else
-                socket.setSoLinger(false, 0);
-        }
-        catch (Exception e)
-        {
-            LOG.ignore(e);
-        }
+        for (Thread thread : _acceptors)
+            if (thread != null)
+                thread.join(timeout);
     }
 
     protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
 
-    /* ------------------------------------------------------------ */
+    public ConnectionFactory getConnectionFactory(String protocol)
+    {
+        synchronized (factories)
+        {
+            return factories.get(protocol);
+        }
+    }
+
+    public ConnectionFactory putConnectionFactory(String protocol, ConnectionFactory factory)
+    {
+        synchronized (factories)
+        {
+            return factories.put(protocol, factory);
+        }
+    }
+
+    public ConnectionFactory removeConnectionFactory(String protocol)
+    {
+        synchronized (factories)
+        {
+            return factories.remove(protocol);
+        }
+    }
+
+    public Map<String, ConnectionFactory> getConnectionFactories()
+    {
+        synchronized (factories)
+        {
+            return new LinkedHashMap<>(factories);
+        }
+    }
+
+    public void clearConnectionFactories()
+    {
+        synchronized (factories)
+        {
+            factories.clear();
+        }
+    }
+
+    public ConnectionFactory getDefaultConnectionFactory()
+    {
+        return defaultConnectionFactory;
+    }
+
+    public void setDefaultConnectionFactory(ConnectionFactory defaultConnectionFactory)
+    {
+        this.defaultConnectionFactory = defaultConnectionFactory;
+    }
+
     private class Acceptor implements Runnable
     {
-        int _acceptor = 0;
+        private final int _acceptor;
 
-        Acceptor(int id)
+        private Acceptor(int id)
         {
             _acceptor = id;
         }
@@ -275,22 +256,17 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         public void run()
         {
             Thread current = Thread.currentThread();
-            String name;
+            String name = current.getName();
+            current.setName(name + " Acceptor" + _acceptor + " " + AbstractConnector.this);
+
             synchronized (AbstractConnector.this)
             {
-                if (!isRunning())
-                    return;
-
                 _acceptors[_acceptor] = current;
-                name = _acceptors[_acceptor].getName();
-                current.setName(name + " Acceptor" + _acceptor + " " + AbstractConnector.this);
             }
-            int old_priority = current.getPriority();
 
             try
             {
-                current.setPriority(old_priority);
-                while (isRunning() && getTransport() != null)
+                while (isRunning())
                 {
                     try
                     {
@@ -298,17 +274,16 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
                     }
                     catch (IOException | InterruptedException e)
                     {
-                        LOG.ignore(e);
+                        logger.ignore(e);
                     }
                     catch (Throwable e)
                     {
-                        LOG.warn(e);
+                        logger.warn(e);
                     }
                 }
             }
             finally
             {
-                current.setPriority(old_priority);
                 current.setName(name);
 
                 synchronized (AbstractConnector.this)
@@ -348,22 +323,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         // TODO: remove casts to HttpConnection
         int requests = (connection instanceof HttpConnection) ? ((HttpConnection)connection).getHttpChannel().getRequests() : 0;
         _stats.connectionClosed(duration, requests, requests);
-    }
-
-    /**
-     * @return True if the the server socket will be opened in SO_REUSEADDR mode.
-     */
-    public boolean getReuseAddress()
-    {
-        return _reuseAddress;
-    }
-
-    /**
-     * @param reuseAddress True if the the server socket will be opened in SO_REUSEADDR mode.
-     */
-    public void setReuseAddress(boolean reuseAddress)
-    {
-        _reuseAddress = reuseAddress;
     }
 
     public ScheduledExecutorService getScheduler()

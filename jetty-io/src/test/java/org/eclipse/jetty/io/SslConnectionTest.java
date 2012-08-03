@@ -13,12 +13,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -52,7 +50,7 @@ public class SslConnectionTest
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
-            SSLEngine engine = __sslCtxFactory.newSslEngine();
+            SSLEngine engine = __sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
             SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
 
@@ -120,7 +118,7 @@ public class SslConnectionTest
             super.onOpen();
             fillInterested();
         }
-        
+
         @Override
         public void onClose()
         {

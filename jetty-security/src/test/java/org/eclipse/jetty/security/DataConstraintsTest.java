@@ -13,12 +13,8 @@
 
 package org.eclipse.jetty.security;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,6 +24,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -39,6 +36,9 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -57,12 +57,15 @@ public class DataConstraintsTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _connector.setIdleTimeout(300000);
-        _connector.getConnectionFactory().getHttpConfig().setIntegralPort(9998);
-        _connector.getConnectionFactory().getHttpConfig().setIntegralScheme("FTP");
-        _connector.getConnectionFactory().getHttpConfig().setConfidentialPort(9999);
-        _connector.getConnectionFactory().getHttpConfig().setConfidentialScheme("SPDY");
-        _connectorS = new LocalConnector(_server,
-            new HttpConfiguration(null,false)
+        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
+        httpConfiguration.setIntegralPort(9998);
+        httpConfiguration.setIntegralScheme("FTP");
+        httpConfiguration.setConfidentialPort(9999);
+        httpConfiguration.setConfidentialScheme("SPDY");
+        _connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(_connector, httpConfiguration));
+
+        _connectorS = new LocalConnector(_server);
+        _connectorS.setDefaultConnectionFactory(new HttpServerConnectionFactory(_connectorS, new HttpConfiguration(null,false)
         {
             @Override
             public void customize(Request request) throws IOException
@@ -83,7 +86,7 @@ public class DataConstraintsTest
             {
                 return true;
             }
-        });
+        }));
         _server.setConnectors(new Connector[]{_connector,_connectorS});
 
         ContextHandler _context = new ContextHandler();
