@@ -23,8 +23,9 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.proxy.BalancerServlet;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -103,7 +104,7 @@ public abstract class AbstractBalancerServletTest
     private Server createServer(ServletHolder servletHolder, String appContext, String servletUrlPattern)
     {
         Server server = new Server();
-        SelectChannelConnector httpConnector = new SelectChannelConnector();
+        SelectChannelConnector httpConnector = new SelectChannelConnector(server);
         server.addConnector(httpConnector);
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -122,9 +123,9 @@ public abstract class AbstractBalancerServletTest
         node.setSessionIdManager(sessionIdManager);
     }
 
-    private int getServerPort(Server node)
+    private int getServerPort(Server server)
     {
-        return node.getConnectors()[0].getLocalPort();
+        return ((Connector.NetConnector)server.getConnectors()[0]).getLocalPort();
     }
 
     protected byte[] sendRequestToBalancer(String requestUri) throws IOException, InterruptedException

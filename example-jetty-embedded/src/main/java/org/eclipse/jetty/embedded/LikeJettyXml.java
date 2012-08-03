@@ -30,7 +30,6 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -42,7 +41,12 @@ public class LikeJettyXml
         String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
         System.setProperty("jetty.home",jetty_home);
 
-        Server server = new Server();
+        // Setup Threadpool
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setMaxThreads(500);
+        
+        Server server = new Server(threadPool);
+        server.manage(threadPool);
         server.setDumpAfterStart(true);
         server.setDumpBeforeStop(true);
 
@@ -53,24 +57,19 @@ public class LikeJettyXml
         server.addBean(mbContainer,true);
         mbContainer.addBean(new Log());
 
-        // Setup Threadpool
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(500);
-        server.setThreadPool(threadPool);
-
         // Setup Connectors
-        SelectChannelConnector connector = new SelectChannelConnector();
+        SelectChannelConnector connector = new SelectChannelConnector(server);
         connector.setPort(8080);
         connector.setIdleTimeout(30000);
-        connector.setConfidentialPort(8443);
+        connector.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
         // TODO connector.setStatsOn(false);
 
         server.setConnectors(new Connector[]
         { connector });
 
-        SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
+        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,true);
         ssl_connector.setPort(8443);
-        SslContextFactory cf = ssl_connector.getSslContextFactory();
+        SslContextFactory cf = ssl_connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(jetty_home + "/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

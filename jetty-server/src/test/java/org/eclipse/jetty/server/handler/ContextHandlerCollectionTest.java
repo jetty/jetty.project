@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public class ContextHandlerCollectionTest
     public void testVirtualHostNormalization() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[]
         { connector });
 
@@ -93,7 +93,7 @@ public class ContextHandlerCollectionTest
     public void testVirtualHostWildcard() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
 
         ContextHandler context = new ContextHandler("/");
@@ -133,7 +133,7 @@ public class ContextHandlerCollectionTest
 
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
     {
-        LocalHttpConnector connector = (LocalHttpConnector)server.getConnectors()[0];
+        LocalConnector connector = (LocalConnector)server.getConnectors()[0];
         ContextHandlerCollection handlerCollection = (ContextHandlerCollection)server.getHandler();
         ContextHandler context = (ContextHandler)handlerCollection.getHandlers()[0];
         IsHandledHandler handler = (IsHandledHandler)context.getHandler();
@@ -144,7 +144,7 @@ public class ContextHandlerCollectionTest
 
         for(String host : requestHosts)
         {
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\n\n");
+            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\nConnection:close\n\n");
             if(succeed)
                 assertTrue("'"+host+"' should have been handled.",handler.isHandled());
             else

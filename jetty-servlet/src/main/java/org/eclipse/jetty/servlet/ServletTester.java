@@ -1,9 +1,7 @@
 package org.eclipse.jetty.servlet;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Map;
@@ -12,24 +10,18 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class ServletTester extends AggregateLifeCycle
 {
     private final Server _server=new Server();
-    private final LocalHttpConnector _connector=new LocalHttpConnector();
+    private final LocalConnector _connector=new LocalConnector(_server);
     private final ServletContextHandler _context;
     public void setVirtualHosts(String[] vhosts)
     {
@@ -184,7 +176,7 @@ public class ServletTester extends AggregateLifeCycle
      */
     public String createConnector(boolean localhost) throws Exception
     {        
-        SelectChannelConnector connector = new SelectChannelConnector();
+        SelectChannelConnector connector = new SelectChannelConnector(_server);
         if (localhost)
             connector.setHost("127.0.0.1");
         _server.addConnector(connector);
@@ -198,9 +190,9 @@ public class ServletTester extends AggregateLifeCycle
         )+":"+connector.getLocalPort();
     }
 
-    public LocalHttpConnector createLocalConnector()
+    public LocalConnector createLocalConnector()
     {
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(_server);
         _server.addConnector(connector);
         return connector;
     }

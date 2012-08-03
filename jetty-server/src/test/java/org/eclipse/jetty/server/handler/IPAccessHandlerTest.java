@@ -63,7 +63,7 @@ public class IPAccessHandlerTest
         throws Exception
     {
         _server = new Server();
-        _connector = new SelectChannelConnector();
+        _connector = new SelectChannelConnector(_server);
         _server.setConnectors(new Connector[] { _connector });
 
         _handler = new IPAccessHandler();

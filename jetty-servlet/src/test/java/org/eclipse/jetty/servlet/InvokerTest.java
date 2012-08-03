@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
@@ -35,13 +35,13 @@ import org.junit.Test;
 public class InvokerTest
 {
     private Server _server;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalHttpConnector();
+        _connector = new LocalConnector(_server);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
         _server.setSendServerVersion(false);

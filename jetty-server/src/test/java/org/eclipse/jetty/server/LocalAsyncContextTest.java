@@ -59,7 +59,7 @@ public class LocalAsyncContextTest
 
     protected Connector initConnector()
     {
-        return new LocalHttpConnector();
+        return new LocalConnector(_server);
     }
 
     @After
@@ -247,8 +247,8 @@ public class LocalAsyncContextTest
 
     protected String getResponse(String request) throws Exception
     {
-        LocalHttpConnector connector=(LocalHttpConnector)_connector;
-        LocalHttpConnector.LocalEndPoint endp = connector.executeRequest(request);
+        LocalConnector connector=(LocalConnector)_connector;
+        LocalConnector.LocalEndPoint endp = connector.executeRequest(request);
         endp.waitUntilClosed();
         return endp.takeOutputString();
     }

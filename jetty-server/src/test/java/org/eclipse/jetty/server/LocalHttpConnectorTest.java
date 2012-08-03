@@ -10,13 +10,13 @@ import org.junit.Test;
 public class LocalHttpConnectorTest
 {
     private Server _server;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
     
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalHttpConnector();
+        _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
         _server.start();

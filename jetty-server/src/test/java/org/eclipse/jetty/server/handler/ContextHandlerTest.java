@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
@@ -58,7 +58,7 @@ public class ContextHandlerTest
     public void testVirtualHostNormalization() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[]
         { connector });
 
@@ -117,7 +117,7 @@ public class ContextHandlerTest
     public void testContextGetContext() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
@@ -149,7 +149,7 @@ public class ContextHandlerTest
     public void testContextVirtualGetContext() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
@@ -196,7 +196,7 @@ public class ContextHandlerTest
     public void testVirtualHostWildcard() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
 
         ContextHandler context = new ContextHandler("/");
@@ -365,7 +365,7 @@ public class ContextHandlerTest
     {
         Server server = new Server();
         server.setUncheckedPrintWriter(true);
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
         ContextHandler context = new ContextHandler("/");
         WriterHandler handler = new WriterHandler();
@@ -376,10 +376,11 @@ public class ContextHandlerTest
         {
             server.start();
 
-            String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
+            String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\nConnection:close\n\n");
 
             Assert.assertTrue(response.indexOf("Goodbye")>0);
             Assert.assertTrue(response.indexOf("dead")<0);
+            Thread.sleep(100);
             Assert.assertTrue(handler.error);
             Assert.assertTrue(handler.throwable!=null);
         }
@@ -391,14 +392,14 @@ public class ContextHandlerTest
 
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
     {
-        LocalHttpConnector connector = (LocalHttpConnector)server.getConnectors()[0];
+        LocalConnector connector = (LocalConnector)server.getConnectors()[0];
         ContextHandler context = (ContextHandler)server.getHandler();
         context.setVirtualHosts(contextHosts);
 
         IsHandledHandler handler = (IsHandledHandler)context.getHandler();
         for(String host : requestHosts)
         {
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\n\n");
+            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\nConnection:close\n\n");
             if(succeed)
                 assertTrue("'"+host+"' should have been handled.",handler.isHandled());
             else
@@ -431,8 +432,8 @@ public class ContextHandlerTest
 
     private static final class WriterHandler extends AbstractHandler
     {
-        boolean error;
-        Throwable throwable;
+        volatile boolean error;
+        volatile Throwable throwable;
 
 
         public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

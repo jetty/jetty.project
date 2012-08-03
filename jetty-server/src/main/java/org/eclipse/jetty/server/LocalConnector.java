@@ -19,27 +19,54 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Phaser;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
+import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class LocalHttpConnector extends HttpConnector
+public class LocalConnector extends AbstractConnector
 {
-    private static final Logger LOG = Log.getLogger(LocalHttpConnector.class);
+    private static final Logger LOG = Log.getLogger(LocalConnector.class);
 
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
-    private volatile LocalExecutor _executor;
-
-    public LocalHttpConnector()
+    
+    public LocalConnector(Server server)
     {
-        setIdleTimeout(30000);
+        this(server,null,null,null,null, -1);
     }
 
+    public LocalConnector(Server server, boolean ssl)
+    {
+        this(server,new ConnectionFactory(null,ssl),null,null,null,0);
+        manage(getConnectionFactory());
+    }
+
+    public LocalConnector(Server server, HttpConfiguration httpConfig)
+    {
+        this(server,new ConnectionFactory(httpConfig,null,false),null,null,null,0);
+        manage(getConnectionFactory());
+    }
+
+    public LocalConnector(Server server, SslContextFactory sslContextFactory)
+    {
+        this(server,new ConnectionFactory(sslContextFactory,sslContextFactory!=null),null,null,null,0);
+        manage(getConnectionFactory());
+    }
+    
+    public LocalConnector(Server server, ConnectionFactory connectionFactory, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
+        int acceptors)
+    {
+        super(server,connectionFactory,executor,scheduler,pool,acceptors);
+        setIdleTimeout(30000);
+    }
+    
     @Override
     public Object getTransport()
     {
@@ -49,6 +76,9 @@ public class LocalHttpConnector extends HttpConnector
     /** Sends requests and get responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
+     * <p>
+     * This methods waits until the connection is closed or 
+     * is idle for 1s before returning the responses.
      * @param requests the requests
      * @return the responses
      * @throws Exception if the requests fail
@@ -59,23 +89,59 @@ public class LocalHttpConnector extends HttpConnector
         return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
     }
 
+    /** Sends requests and get responses based on thread activity.
+     * Returns all the responses received once the thread activity has
+     * returned to the level it was before the requests.
+     * <p>
+     * This methods waits until the connection is closed or 
+     * an idle period before returning the responses.
+     * @param requests the requests
+     * @param idleFor The time the response stream must be idle for before returning
+     * @param units The units of idleFor
+     * @return the responses
+     * @throws Exception if the requests fail
+     */
+    public String getResponses(String requests,long idleFor,TimeUnit units) throws Exception
+    {
+        ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StringUtil.__UTF8_CHARSET),idleFor,units);
+        return result==null?null:BufferUtil.toString(result,StringUtil.__UTF8_CHARSET);
+    }
+
     /** Sends requests and get's responses based on thread activity.
      * Returns all the responses received once the thread activity has
      * returned to the level it was before the requests.
+     * <p>
+     * This methods waits until the connection is closed or 
+     * is idle for 1s before returning the responses.
      * @param requestsBuffer the requests
      * @return the responses
      * @throws Exception if the requests fail
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
+        return getResponses(requestsBuffer,1000,TimeUnit.MILLISECONDS);
+    }
+
+    /** Sends requests and get's responses based on thread activity.
+     * Returns all the responses received once the thread activity has
+     * returned to the level it was before the requests.
+     * <p>
+     * This methods waits until the connection is closed or 
+     * an idle period before returning the responses.
+     * @param requestsBuffer the requests
+     * @param idleFor The time the response stream must be idle for before returning
+     * @param units The units of idleFor
+     * @return the responses
+     * @throws Exception if the requests fail
+     */
+    public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
+    {
         LOG.debug("getResponses");
-        Phaser phaser=_executor._phaser;
-        int phase = phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes
-        LocalEndPoint request = new LocalEndPoint();
-        request.setInput(requestsBuffer);
-        _connects.add(request);
-        phaser.awaitAdvance(phase);
-        return request.takeOutput();
+        LocalEndPoint endp = new LocalEndPoint();
+        endp.setInput(requestsBuffer);
+        _connects.add(endp);
+        endp.waitUntilClosedOrIdleFor(idleFor,units);
+        return endp.takeOutput();
     }
 
     /**
@@ -86,8 +152,6 @@ public class LocalHttpConnector extends HttpConnector
      */
     public LocalEndPoint executeRequest(String rawRequest)
     {
-        Phaser phaser=_executor._phaser;
-        phaser.register(); // the corresponding arrival will be done by the acceptor thread when it takes
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(BufferUtil.toBuffer(rawRequest,StringUtil.__UTF8_CHARSET));
         _connects.add(endp);
@@ -99,81 +163,21 @@ public class LocalHttpConnector extends HttpConnector
     {
         LOG.debug("accepting {}",acceptorID);
         LocalEndPoint endp = _connects.take();
-        HttpConnection connection=new HttpConnection(this,endp,getServer());
-        endp.setAsyncConnection(connection);
+        Connection connection=getConnectionFactory().newConnection(LocalConnector.this,endp);
+        endp.setConnection(connection);
         endp.onOpen();
         connection.onOpen();
         connectionOpened(connection);
-        _executor._phaser.arriveAndDeregister(); // arrive for the register done in getResponses
     }
 
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        _executor=new LocalExecutor(findExecutor());
-    }
 
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        _executor=null;
-    }
-
-    @Override
-    public Executor findExecutor()
-    {
-        return _executor==null?super.findExecutor():_executor;
-    }
-
-    private class LocalExecutor implements Executor
-    {
-        private final Phaser _phaser=new Phaser()
-        {
-            @Override
-            protected boolean onAdvance(int phase, int registeredParties)
-            {
-                return false;
-            }
-        };
-        private final Executor _executor;
-
-        private LocalExecutor(Executor e)
-        {
-            _executor=e;
-        }
-
-        @Override
-        public void execute(final Runnable task)
-        {
-            _phaser.register();
-            LOG.debug("{} execute {} {}",this,task,_phaser);
-            _executor.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        task.run();
-                    }
-                    finally
-                    {
-                        _phaser.arriveAndDeregister();
-                    }
-                }
-            });
-        }
-    }
-
-    public class LocalEndPoint extends AsyncByteArrayEndPoint
+    public class LocalEndPoint extends ByteArrayEndPoint
     {
         private CountDownLatch _closed = new CountDownLatch(1);
 
         public LocalEndPoint()
         {
-            super(getScheduler(), LocalHttpConnector.this.getIdleTimeout());
+            super(getScheduler(), LocalConnector.this.getIdleTimeout());
             setGrowOutput(true);
         }
 
@@ -192,7 +196,8 @@ public class LocalHttpConnector extends HttpConnector
             super.close();
             if (was_open)
             {
-                connectionClosed(getAsyncConnection());
+                connectionClosed(getConnection());
+                getConnection().onClose();
                 onClose();
             }
         }
@@ -231,5 +236,28 @@ public class LocalHttpConnector extends HttpConnector
                 }
             }
         }
+
+        public void waitUntilClosedOrIdleFor(long idleFor,TimeUnit units)
+        {
+            Thread.yield();
+            int size=getOutput().remaining();
+            while (isOpen())
+            {
+                try
+                {
+                    if (!_closed.await(idleFor,units))
+                    {
+                        if (size==getOutput().remaining())
+                            return;
+                        size=getOutput().remaining();
+                    }
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+        }
+        
     }
 }

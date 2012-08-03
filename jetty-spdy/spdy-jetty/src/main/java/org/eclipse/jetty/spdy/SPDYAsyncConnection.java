@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class SPDYAsyncConnection extends AbstractAsyncConnection implements Controller<StandardSession.FrameBytes>, IdleListener
+public class SPDYAsyncConnection extends AbstractConnection implements Controller<StandardSession.FrameBytes>, IdleListener
 {
     private static final Logger logger = Log.getLogger(SPDYAsyncConnection.class);
     private final ByteBufferPool bufferPool;
@@ -34,7 +34,7 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     private volatile ISession session;
     private volatile boolean idle = false;
 
-    public SPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
+    public SPDYAsyncConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -42,6 +42,13 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
         onIdle(true);
     }
 
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+    
     @Override
     public void onFillable()
     {
@@ -54,7 +61,7 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
 
     protected int read(ByteBuffer buffer)
     {
-        AsyncEndPoint endPoint = getEndPoint();
+        EndPoint endPoint = getEndPoint();
         while (true)
         {
             int filled = fill(endPoint, buffer);
@@ -74,7 +81,7 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
         }
     }
 
-    private int fill(AsyncEndPoint endPoint, ByteBuffer buffer)
+    private int fill(EndPoint endPoint, ByteBuffer buffer)
     {
         try
         {
@@ -92,7 +99,7 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     @Override
     public int write(ByteBuffer buffer, final Callback<StandardSession.FrameBytes> callback, StandardSession.FrameBytes context)
     {
-        AsyncEndPoint endPoint = getEndPoint();
+        EndPoint endPoint = getEndPoint();
         int remaining = buffer.remaining();
         endPoint.write(context, callback, buffer);
         return remaining - buffer.remaining();
@@ -101,7 +108,7 @@ public class SPDYAsyncConnection extends AbstractAsyncConnection implements Cont
     @Override
     public void close(boolean onlyOutput)
     {
-        AsyncEndPoint endPoint = getEndPoint();
+        EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
         logger.debug("Shutting down output {}", endPoint);

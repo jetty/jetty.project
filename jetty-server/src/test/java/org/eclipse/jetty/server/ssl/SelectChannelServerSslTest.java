@@ -25,6 +25,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.server.HttpServerTestBase;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -49,10 +50,10 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @BeforeClass
     public static void init() throws Exception
     {   
-        SslSelectChannelConnector connector = new SslSelectChannelConnector();
+        SelectChannelConnector connector = new SelectChannelConnector(_server,true);
         
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory cf = connector.getSslContextFactory();
+        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(keystorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
@@ -62,7 +63,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(connector.getConnectionFactory().getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("TLS");

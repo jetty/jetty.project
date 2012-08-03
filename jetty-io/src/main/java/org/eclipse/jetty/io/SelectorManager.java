@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>{@link SelectorManager} manages a number of {@link ManagedSelector}s that
  * simplify the non-blocking primitives provided by the JVM via the {@code java.nio} package.</p>
  * <p>{@link SelectorManager} subclasses implement methods to return protocol-specific
- * {@link AsyncEndPoint}s and {@link AsyncConnection}s.</p>
+ * {@link EndPoint}s and {@link Connection}s.</p>
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
@@ -152,7 +152,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param endpoint the endpoint being opened
      */
-    protected void endPointOpened(AsyncEndPoint endpoint)
+    protected void endPointOpened(EndPoint endpoint)
     {
         endpoint.onOpen();
     }
@@ -162,7 +162,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param endpoint the endpoint being closed
      */
-    protected void endPointClosed(AsyncEndPoint endpoint)
+    protected void endPointClosed(EndPoint endpoint)
     {
         endpoint.onClose();
     }
@@ -172,7 +172,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just opened
      */
-    public void connectionOpened(AsyncConnection connection)
+    public void connectionOpened(Connection connection)
     {
         connection.onOpen();
     }
@@ -182,7 +182,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just closed
      */
-    public void connectionClosed(AsyncConnection connection)
+    public void connectionClosed(Connection connection)
     {
         connection.onClose();
     }
@@ -193,10 +193,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param endpoint      the endpoint holding the new connection
      * @param oldConnection the previous connection
      */
-    public void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+    public void connectionUpgraded(EndPoint endpoint, Connection oldConnection)
     {
         connectionClosed(oldConnection);
-        connectionOpened(endpoint.getAsyncConnection());
+        connectionOpened(endpoint.getConnection());
     }
 
     /**
@@ -213,7 +213,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
-     * <p>Factory method to create {@link AsyncEndPoint}.</p>
+     * <p>Factory method to create {@link EndPoint}.</p>
      * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SocketChannel, Object)}
      * or {@link #accept(SocketChannel)}.</p>
      *
@@ -222,20 +222,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param selectionKey      the selection key
      * @return a new endpoint
      * @throws IOException if the endPoint cannot be created
-     * @see #newConnection(SocketChannel, AsyncEndPoint, Object)
+     * @see #newConnection(SocketChannel, EndPoint, Object)
      */
-    protected abstract AsyncEndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selector, SelectionKey selectionKey) throws IOException;
+    protected abstract EndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selector, SelectionKey selectionKey) throws IOException;
 
     /**
-     * <p>Factory method to create {@link AsyncConnection}.</p>
+     * <p>Factory method to create {@link Connection}.</p>
      *
      * @param channel    the channel associated to the connection
      * @param endpoint   the endpoint
      * @param attachment the attachment
      * @return a new connection
+     * @throws IOException 
      * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
-    public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment);
+    public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException;
 
     @Override
     public String dump()
@@ -253,7 +254,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     /**
      * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
      * <p>{@link ManagedSelector} runs the select loop, which waits on {@link Selector#select()} until events
-     * happen for registered channels. When events happen, it notifies the {@link AsyncEndPoint} associated
+     * happen for registered channels. When events happen, it notifies the {@link EndPoint} associated
      * with the channel.</p>
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
@@ -412,9 +413,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             Object attachment = key.attachment();
             try
             {
-                if (attachment instanceof SelectableAsyncEndPoint)
+                if (attachment instanceof SelectableEndPoint)
                 {
-                    ((SelectableAsyncEndPoint)attachment).onSelected();
+                    ((SelectableEndPoint)attachment).onSelected();
                 }
                 else if (key.isConnectable())
                 {
@@ -426,7 +427,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         if (connected)
                         {
                             key.interestOps(0);
-                            AsyncEndPoint endpoint = createEndPoint(channel, key);
+                            EndPoint endpoint = createEndPoint(channel, key);
                             key.attach(endpoint);
                         }
                         else
@@ -481,21 +482,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             _selector.wakeup();
         }
 
-        private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
+        private EndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
         {
-            AsyncEndPoint endPoint = newEndPoint(channel, this, selectionKey);
+            EndPoint endPoint = newEndPoint(channel, this, selectionKey);
             endPointOpened(endPoint);
-            AsyncConnection asyncConnection = newConnection(channel, endPoint, selectionKey.attachment());
-            endPoint.setAsyncConnection(asyncConnection);
+            Connection asyncConnection = newConnection(channel, endPoint, selectionKey.attachment());
+            endPoint.setConnection(asyncConnection);
             connectionOpened(asyncConnection);
             LOG.debug("Created {}", endPoint);
             return endPoint;
         }
 
-        public void destroyEndPoint(AsyncEndPoint endPoint)
+        public void destroyEndPoint(EndPoint endPoint)
         {
             LOG.debug("Destroyed {}", endPoint);
-            connectionClosed(endPoint.getAsyncConnection());
+            connectionClosed(endPoint.getConnection());
             endPointClosed(endPoint);
         }
 
@@ -607,7 +608,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 try
                 {
                     SelectionKey key = _channel.register(_selector, 0, null);
-                    AsyncEndPoint endpoint = createEndPoint(_channel, key);
+                    EndPoint endpoint = createEndPoint(_channel, key);
                     key.attach(endpoint);
                 }
                 catch (IOException x)
@@ -684,10 +685,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
-     * A {@link SelectableAsyncEndPoint} is an {@link AsyncEndPoint} that wish to be notified of
+     * A {@link SelectableEndPoint} is an {@link EndPoint} that wish to be notified of
      * non-blocking events by the {@link ManagedSelector}.
      */
-    public interface SelectableAsyncEndPoint extends AsyncEndPoint
+    public interface SelectableEndPoint extends EndPoint
     {
         /**
          * <p>Callback method invoked when a read or write events has been detected by the {@link ManagedSelector}

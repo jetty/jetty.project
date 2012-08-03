@@ -16,6 +16,12 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -42,16 +48,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class SelectChannelEndPointTest
 {
     protected CountDownLatch _lastEndPointLatch;
-    protected volatile AsyncEndPoint _lastEndPoint;
+    protected volatile EndPoint _lastEndPoint;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     protected ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -64,7 +64,7 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel, endpoint);
         }
@@ -108,26 +108,33 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(), _connector.socket().getLocalPort());
     }
 
-    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
 
-    public class TestConnection extends AbstractAsyncConnection
+    public class TestConnection extends AbstractConnection
     {
         ByteBuffer _in = BufferUtil.allocate(32 * 1024);
         ByteBuffer _out = BufferUtil.allocate(32 * 1024);
         long _last = -1;
 
-        public TestConnection(AsyncEndPoint endp)
+        public TestConnection(EndPoint endp)
         {
             super(endp, _threadPool);
+        }
+        
+        @Override
+        public void onOpen()
+        {
+            super.onOpen();
+            fillInterested();
         }
 
         @Override
         public synchronized void onFillable()
         {
-            AsyncEndPoint _endp = getEndPoint();
+            EndPoint _endp = getEndPoint();
             try
             {
                 _last = System.currentTimeMillis();
@@ -462,12 +469,11 @@ public class SelectChannelEndPointTest
         }
 
         // But endpoint is still open.
-        assertTrue(_lastEndPoint.isOpen());
-
-        // Wait for another idle callback
-        Thread.sleep(idleTimeout * 2);
+        if(_lastEndPoint.isOpen())
+            // Wait for another idle callback
+            Thread.sleep(idleTimeout * 2);
+        
         // endpoint is closed.
-
         assertFalse(_lastEndPoint.isOpen());
     }
 
@@ -540,7 +546,7 @@ public class SelectChannelEndPointTest
                     System.err.println("time=" + (now - start));
                     System.err.println("last=" + (now - last));
                     System.err.println("endp=" + _lastEndPoint);
-                    System.err.println("conn=" + _lastEndPoint.getAsyncConnection());
+                    System.err.println("conn=" + _lastEndPoint.getConnection());
 
                     e.printStackTrace();
                 }

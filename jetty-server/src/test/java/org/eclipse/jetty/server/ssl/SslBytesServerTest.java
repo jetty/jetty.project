@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -34,7 +35,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -42,11 +42,11 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -73,7 +73,6 @@ public class SslBytesServerTest extends SslBytesTest
     private int serverPort;
     private SSLContext sslContext;
     private SimpleProxy proxy;
-    private Runnable idleHook;
 
     @Before
     public void init() throws Exception
@@ -81,76 +80,26 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
-        SslSelectChannelConnector connector = new SslSelectChannelConnector()
+        SelectChannelConnector connector = new SelectChannelConnector(server,true)
         {
             @Override
-            protected SslConnection newSslConnection(AsyncEndPoint endPoint, SSLEngine engine)
+            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                serverEndPoint.set(endPoint);
-                return super.newSslConnection(endPoint, engine);
-                //                return new SslConnection(engine, endPoint)
-                //                {
-                //                    @Override
-                //                    public Connection handle() throws IOException
-                //                    {
-                //                        sslHandles.incrementAndGet();
-                //                        return super.handle();
-                //                    }
-                //
-                //                    @Override
-                //                    protected SslEndPoint newSslEndPoint()
-                //                    {
-                //                        return new SslEndPoint()
-                //                        {
-                //                            @Override
-                //                            public int flush(ByteBuffer buffer) throws IOException
-                //                            {
-                //                                sslFlushes.incrementAndGet();
-                //                                return super.flush(buffer);
-                //                            }
-                //                        };
-                //                    }
-                //
-                //                    @Override
-                //                    public void onIdleExpired(long idleForMs)
-                //                    {
-                //                        final Runnable idleHook = SslBytesServerTest.this.idleHook;
-                //                        if (idleHook != null)
-                //                            idleHook.run();
-                //                        super.onIdleExpired(idleForMs);
-                //                    }
-                //                };
+                SelectChannelEndPoint endp = super.newEndPoint(channel,selectSet,key);
+                serverEndPoint.set(endp);
+                return endp;
             }
-
-            @Override
-            protected AsyncConnection newPlainConnection(SocketChannel channel, AsyncEndPoint endPoint)
-            {
-                return super.newPlainConnection(channel, endPoint);
-                //                return new HttpConnection(this, endPoint, getServer())
-                //                {
-                //                    @Override
-                //                    protected HttpParser newHttpParser(Buffers requestBuffers, EndPoint endPoint, HttpParser.EventHandler requestHandler)
-                //                    {
-                //                        return new HttpParser(requestBuffers, endPoint, requestHandler)
-                //                        {
-                //                            @Override
-                //                            public int parseNext() throws IOException
-                //                            {
-                //                                httpParses.incrementAndGet();
-                //                                return super.parseNext();
-                //                            }
-                //                        };
-                //                    }
-                //                };
-            }
+            
         };
+        
+        
         connector.setIdleTimeout(idleTimeout);
 
         //        connector.setPort(5870);
         connector.setPort(0);
 
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory cf = connector.getSslContextFactory();
+        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(keyStore.getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
@@ -1573,32 +1522,7 @@ public class SslBytesServerTest extends SslBytesTest
     public void testRequestConcurrentWithIdleExpiration() throws Exception
     {
         final SSLSocket client = newClient();
-        final OutputStream clientOutput = client.getOutputStream();
         final CountDownLatch latch = new CountDownLatch(1);
-
-        idleHook = new Runnable()
-        {
-            public void run()
-            {
-                if (latch.getCount() == 0)
-                    return;
-                try
-                {
-                    // Send request
-                    clientOutput.write(("" +
-                            "GET / HTTP/1.1\r\n" +
-                            "Host: localhost\r\n" +
-                            "\r\n").getBytes("UTF-8"));
-                    clientOutput.flush();
-                    latch.countDown();
-                }
-                catch (Exception x)
-                {
-                    // Latch won't trigger and test will fail
-                    x.printStackTrace();
-                }
-            }
-        };
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
         client.startHandshake();

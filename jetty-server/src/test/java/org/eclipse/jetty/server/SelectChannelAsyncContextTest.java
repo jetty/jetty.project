@@ -21,7 +21,7 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
     @Override
     protected Connector initConnector()
     {
-        return new SelectChannelConnector();
+        return new SelectChannelConnector(_server);
     }
 
     @Override

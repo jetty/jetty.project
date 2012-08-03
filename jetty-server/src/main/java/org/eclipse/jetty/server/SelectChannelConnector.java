@@ -16,17 +16,22 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.Channel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
-import org.eclipse.jetty.server.Connector.NetConnector;
+import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * Selecting NIO connector.
@@ -51,27 +56,85 @@ import org.eclipse.jetty.server.Connector.NetConnector;
  * associated object of the Continuation instance.
  * </p>
  */
-public class SelectChannelConnector extends HttpConnector implements NetConnector
+public class SelectChannelConnector extends AbstractNetConnector
 {
     private final SelectorManager _manager;
     protected ServerSocketChannel _acceptChannel;
+    protected boolean _inheritChannel;
     private int _localPort=-1;
-
-    /**
-     * Constructor.
-     *
-     */
-    public SelectChannelConnector()
+    
+    /* ------------------------------------------------------------ */
+    public SelectChannelConnector(Server server)
     {
-        this(Math.max(1,(Runtime.getRuntime().availableProcessors())/4),
-             Math.max(1,(Runtime.getRuntime().availableProcessors())/4));
+        this(server,null,null,null,null,0,0);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public SelectChannelConnector(Server server, boolean ssl)
+    {
+        this(server,new ConnectionFactory(null,ssl));
+        manage(getConnectionFactory());
+    }
+    
+    /* ------------------------------------------------------------ */
+    public SelectChannelConnector(Server server, SslContextFactory sslContextFactory)
+    {
+        this(server,new ConnectionFactory(sslContextFactory,sslContextFactory!=null));
+        manage(getConnectionFactory());
     }
 
-    public SelectChannelConnector(int acceptors, int selectors)
+    
+    /* ------------------------------------------------------------ */
+    public SelectChannelConnector(Server server, ConnectionFactory connectionFactory)
     {
-        super(acceptors);
-        _manager=new ConnectorSelectorManager(selectors);
+        this(server,connectionFactory,null,null,null,0,0);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param server The server this connector will be added to. Must not be null.
+     * @param executor An executor for this connector or null to use the servers executor 
+     * @param scheduler A scheduler for this connector or null to use the servers scheduler
+     * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
+     * @param acceptors the number of acceptor threads to use, or 0 for a default value.
+     */
+   public SelectChannelConnector(
+       @Name("server") Server server,
+       @Name("connectionFactory") ConnectionFactory connectionFactory,
+       @Name("executor") Executor executor,
+       @Name("scheduler") ScheduledExecutorService scheduler,
+       @Name("bufferPool") ByteBufferPool pool, 
+       @Name("acceptors") int acceptors,
+       @Name("selectors") int selectors)
+    {
+        super(server,connectionFactory,executor,scheduler,pool,acceptors);
+        _manager=new ConnectorSelectorManager(selectors!=0?selectors:Math.max(1,(Runtime.getRuntime().availableProcessors())/4));
         addBean(_manager,true);
+        
+        // TODO yuck
+        if (getConnectionFactory().getSslContextFactory()!=null)
+            setSoLingerTime(30000);
+    }
+
+
+    public boolean isInheritChannel()
+    {
+        return _inheritChannel;
+    }
+
+    /**
+     * If true, the connector first tries to inherit from a channel provided by the system. 
+     * If there is no inherited channel available, or if the inherited channel provided not usable, 
+     * then it will fall back upon normal ServerSocketChannel creation.
+     * <p> 
+     * Use it with xinetd/inetd, to launch an instance of Jetty on demand. The port
+     * used to access pages on the Jetty instance is the same as the port used to
+     * launch Jetty. 
+     * 
+     */
+    public void setInheritChannel(boolean inheritChannel)
+    {
+        _inheritChannel = inheritChannel;
     }
 
     @Override
@@ -109,13 +172,6 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         }
     }
 
-    @Override
-    public void customize(Request request) throws IOException
-    {
-        request.setTimeStamp(System.currentTimeMillis());
-        super.customize(request);
-    }
-
     public SelectorManager getSelectorManager()
     {
         return _manager;
@@ -143,25 +199,39 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         {
             if (_acceptChannel == null)
             {
-                // Create a new server socket
-                _acceptChannel = ServerSocketChannel.open();
-                // Set to blocking mode
+                if (_inheritChannel)
+                {
+                    Channel channel = System.inheritedChannel();
+                    if ( channel instanceof ServerSocketChannel )
+                        _acceptChannel = (ServerSocketChannel)channel;
+                    else
+                        LOG.warn("Unable to use System.inheritedChannel() [" +channel+ "]. Trying a new ServerSocketChannel at " + getHost() + ":" + getPort());
+                }
+
+                if (_acceptChannel == null)
+                {
+                    // Create a new server socket
+                    _acceptChannel = ServerSocketChannel.open();
+
+                    // Bind the server socket to the local host and port
+                    _acceptChannel.socket().setReuseAddress(getReuseAddress());
+                    InetSocketAddress addr = getHost()==null?new InetSocketAddress(getPort()):new InetSocketAddress(getHost(),getPort());
+                    _acceptChannel.socket().bind(addr,getAcceptQueueSize());
+
+                    _localPort=_acceptChannel.socket().getLocalPort();
+                    if (_localPort<=0)
+                        throw new IOException("Server channel not bound");
+
+                    addBean(_acceptChannel);
+                }
+
                 _acceptChannel.configureBlocking(true);
-
-                // Bind the server socket to the local host and port
-                _acceptChannel.socket().setReuseAddress(getReuseAddress());
-                InetSocketAddress addr = getHost()==null?new InetSocketAddress(getPort()):new InetSocketAddress(getHost(),getPort());
-                _acceptChannel.socket().bind(addr,getAcceptQueueSize());
-
-                _localPort=_acceptChannel.socket().getLocalPort();
-                if (_localPort<=0)
-                    throw new IOException("Server channel not bound");
-
                 addBean(_acceptChannel);
             }
         }
     }
-
+    
+    
     /*
      * @see org.eclipse.jetty.server.server.AbstractConnector#doStart()
      */
@@ -176,16 +246,10 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         return new SelectChannelEndPoint(channel,selectSet,key, getScheduler(), getIdleTimeout());
     }
 
-    protected void endPointClosed(AsyncEndPoint endpoint)
+    protected void endPointClosed(EndPoint endpoint)
     {
-        connectionClosed(endpoint.getAsyncConnection());
+        connectionClosed(endpoint.getConnection());
     }
-
-    protected AsyncConnection newConnection(SocketChannel channel,final AsyncEndPoint endpoint)
-    {
-        return new HttpConnection(SelectChannelConnector.this,endpoint,getServer());
-    }
-
 
     /* ------------------------------------------------------------ */
     private final class ConnectorSelectorManager extends SelectorManager
@@ -198,29 +262,29 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         @Override
         protected void execute(Runnable task)
         {
-            findExecutor().execute(task);
+            getExecutor().execute(task);
         }
 
         @Override
-        protected void endPointClosed(AsyncEndPoint endpoint)
+        protected void endPointClosed(EndPoint endpoint)
         {
-            SelectChannelConnector.this.connectionClosed(endpoint.getAsyncConnection());
+            SelectChannelConnector.this.connectionClosed(endpoint.getConnection());
             super.endPointClosed(endpoint);
         }
 
         @Override
-        protected void endPointOpened(AsyncEndPoint endpoint)
+        protected void endPointOpened(EndPoint endpoint)
         {
             // TODO handle max connections and low resources
             super.endPointOpened(endpoint);
-            SelectChannelConnector.this.connectionOpened(endpoint.getAsyncConnection());
+            SelectChannelConnector.this.connectionOpened(endpoint.getConnection());
         }
 
         @Override
-        public void connectionUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+        public void connectionUpgraded(EndPoint endpoint, Connection oldConnection)
         {
             super.connectionUpgraded(endpoint, oldConnection);
-            SelectChannelConnector.this.connectionUpgraded(oldConnection, endpoint.getAsyncConnection());
+            SelectChannelConnector.this.connectionUpgraded(oldConnection, endpoint.getConnection());
         }
 
         @Override
@@ -230,9 +294,9 @@ public class SelectChannelConnector extends HttpConnector implements NetConnecto
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return SelectChannelConnector.this.newConnection(channel, endpoint);
+            return getConnectionFactory().newConnection(SelectChannelConnector.this,endpoint);
         }
     }
 }

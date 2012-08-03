@@ -12,6 +12,8 @@ package org.eclipse.jetty.server;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,8 +25,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class HttpWriterTest
 {
@@ -39,7 +39,7 @@ public class HttpWriterTest
         HttpChannel channel = new HttpChannel(null,null,null)
         {
             @Override
-            public HttpConnector getHttpConnector()
+            public HttpConfiguration getHttpConfiguration()
             {
                 return null;
             }
@@ -95,6 +95,12 @@ public class HttpWriterTest
 
             @Override
             public ScheduledExecutorService getScheduler()
+            {
+                return null;
+            }
+            
+            @Override
+            public Connector getConnector()
             {
                 return null;
             }

@@ -43,7 +43,7 @@ public class ResourceHandlerTest extends TestCase
     public void setUp() throws Exception
     {
         _server = new Server();
-        _connector = new SelectChannelConnector();
+        _connector = new SelectChannelConnector(_server);
         _server.setConnectors(new Connector[] { _connector });
 
         _resourceHandler = new ResourceHandler();

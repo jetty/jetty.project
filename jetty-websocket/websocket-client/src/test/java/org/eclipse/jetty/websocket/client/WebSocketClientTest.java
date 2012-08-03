@@ -143,7 +143,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testAsyncConnectionRefused() throws Exception
+    public void testConnectionRefused() throws Exception
     {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();

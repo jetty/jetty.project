@@ -89,7 +89,7 @@ public class ExampleEchoServer
     public ExampleEchoServer(int port)
     {
         server = new Server();
-        connector = new SelectChannelConnector();
+        connector = new SelectChannelConnector(server);
         connector.setPort(port);
 
         server.addConnector(connector);

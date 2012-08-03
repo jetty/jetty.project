@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -24,6 +29,7 @@ import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -32,9 +38,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncByteArrayEndPoint;
-import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
@@ -45,18 +52,13 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 /**
  *
  */
 public class ResponseTest
 {
     private Server _server;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
     private HttpChannel _channel;
     private ScheduledExecutorService _timer;
 
@@ -64,15 +66,15 @@ public class ResponseTest
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalHttpConnector();
+        _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
         _server.start();
         _timer=new ScheduledThreadPoolExecutor(1);
 
-        AsyncByteArrayEndPoint endp = new AsyncByteArrayEndPoint(_timer,5000);
+        AbstractEndPoint endp = new ByteArrayEndPoint(_timer,5000);
         HttpInput input = new HttpInput();
-        AsyncConnection connection = new AbstractAsyncConnection(endp,new Executor()
+        Connection connection = new AbstractConnection(endp,new Executor()
         {
             @Override
             public void execute(Runnable command)
@@ -81,6 +83,13 @@ public class ResponseTest
             }
         })
         {
+            @Override
+            public void onOpen()
+            {
+                super.onOpen();
+                fillInterested();
+            }
+            
             @Override
             public void onFillable()
             {
@@ -100,35 +109,28 @@ public class ResponseTest
             @Override
             protected void resetBuffer()
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             protected void increaseContentBufferSize(int size)
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             public ScheduledExecutorService getScheduler()
             {
-                // TODO Auto-generated method stub
                 return null;
             }
 
             @Override
-            public HttpConnector getHttpConnector()
+            public HttpConfiguration getHttpConfiguration()
             {
-                // TODO Auto-generated method stub
                 return null;
             }
 
             @Override
             protected int getContentBufferSize()
             {
-                // TODO Auto-generated method stub
                 return 0;
             }
 
@@ -142,29 +144,27 @@ public class ResponseTest
             @Override
             protected void execute(Runnable task)
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             protected void completed()
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             protected void completeResponse() throws IOException
             {
-                // TODO Auto-generated method stub
-
             }
 
             @Override
             protected void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException
             {
-                // TODO Auto-generated method stub
-
+            }
+            
+            @Override
+            public Connector getConnector()
+            {
+                return null;
             }
         };
     }

@@ -25,9 +25,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -46,11 +46,11 @@ import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 /**
- * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link AsyncConnection} framework of jetty-io
+ * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link Connection} framework of jetty-io
  */
-public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection implements RawConnection, OutgoingFrames
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements RawConnection, OutgoingFrames
 {
-    private static final Logger LOG = Log.getLogger(WebSocketAsyncConnection.class);
+    private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
     private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
 
     private final ByteBufferPool bufferPool;
@@ -64,7 +64,7 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
     private boolean flushing;
     private AtomicLong writes;
 
-    public WebSocketAsyncConnection(AsyncEndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public AbstractWebSocketConnection(EndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor);
         this.policy = policy;
@@ -77,6 +77,13 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
         this.writes = new AtomicLong(0);
     }
 
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+    
     @Override
     public void close() throws IOException
     {
@@ -104,7 +111,7 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
     @Override
     public void disconnect(boolean onlyOutput)
     {
-        AsyncEndPoint endPoint = getEndPoint();
+        EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
         LOG.debug("Shutting down output {}",endPoint);
@@ -268,7 +275,7 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
 
     private int read(ByteBuffer buffer)
     {
-        AsyncEndPoint endPoint = getEndPoint();
+        EndPoint endPoint = getEndPoint();
         try
         {
             while (true)
@@ -358,9 +365,9 @@ public abstract class WebSocketAsyncConnection extends AbstractAsyncConnection i
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
-    private <C> void write(ByteBuffer buffer, WebSocketAsyncConnection webSocketAsyncConnection, FrameBytes<C> frameBytes)
+    private <C> void write(ByteBuffer buffer, AbstractWebSocketConnection webSocketConnection, FrameBytes<C> frameBytes)
     {
-        AsyncEndPoint endpoint = getEndPoint();
+        EndPoint endpoint = getEndPoint();
 
         if (LOG_FRAMES.isDebugEnabled())
         {

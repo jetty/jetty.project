@@ -68,6 +68,17 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     {
         for (Bean b:_beans)
         {
+            if (b._bean instanceof LifeCycle)
+            {
+                LifeCycle l=(LifeCycle)b._bean;
+                if (!l.isRunning())
+                {
+                    if (b._managed)
+                        l.start();
+                    else
+                        LOG.warn("!managed !started {}",b);
+                }
+            }
             if (b._managed && b._bean instanceof LifeCycle)
             {
                 LifeCycle l=(LifeCycle)b._bean;

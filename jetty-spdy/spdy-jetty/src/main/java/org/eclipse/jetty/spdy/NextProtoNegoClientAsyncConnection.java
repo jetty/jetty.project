@@ -18,15 +18,15 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class NextProtoNegoClientAsyncConnection extends AbstractAsyncConnection implements NextProtoNego.ClientProvider
+public class NextProtoNegoClientAsyncConnection extends AbstractConnection implements NextProtoNego.ClientProvider
 {
     private final Logger logger = Log.getLogger(getClass());
     private final SocketChannel channel;
@@ -34,7 +34,7 @@ public class NextProtoNegoClientAsyncConnection extends AbstractAsyncConnection 
     private final SPDYClient client;
     private volatile boolean completed;
 
-    public NextProtoNegoClientAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment, Executor executor, SPDYClient client)
+    public NextProtoNegoClientAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment, Executor executor, SPDYClient client)
     {
         super(endPoint, executor);
         this.channel = channel;
@@ -42,6 +42,13 @@ public class NextProtoNegoClientAsyncConnection extends AbstractAsyncConnection 
         this.client = client;
     }
 
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+    
     @Override
     public void onFillable()
     {
@@ -79,8 +86,8 @@ public class NextProtoNegoClientAsyncConnection extends AbstractAsyncConnection 
     public void unsupported()
     {
         // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
-        AsyncEndPoint endPoint = getEndPoint();
-        AsyncConnection connection = client.getDefaultAsyncConnectionFactory().newAsyncConnection(channel, endPoint, attachment);
+        EndPoint endPoint = getEndPoint();
+        Connection connection = client.getDefaultAsyncConnectionFactory().newConnection(channel, endPoint, attachment);
         client.replaceAsyncConnection(endPoint, connection);
         completed = true;
     }
@@ -91,8 +98,8 @@ public class NextProtoNegoClientAsyncConnection extends AbstractAsyncConnection 
         String protocol = client.selectProtocol(protocols);
         if (protocol == null)
             return null;
-        AsyncEndPoint endPoint = getEndPoint();
-        AsyncConnection connection = client.getAsyncConnectionFactory(protocol).newAsyncConnection(channel, endPoint, attachment);
+        EndPoint endPoint = getEndPoint();
+        Connection connection = client.getAsyncConnectionFactory(protocol).newConnection(channel, endPoint, attachment);
         client.replaceAsyncConnection(endPoint, connection);
         completed = true;
         return protocol;

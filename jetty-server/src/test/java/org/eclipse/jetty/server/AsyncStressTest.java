@@ -46,13 +46,13 @@ public class AsyncStressTest
 {
     private static final Logger LOG = Log.getLogger(AsyncStressTest.class);
 
-    protected Server _server = new Server();
+    protected QueuedThreadPool _threads=new QueuedThreadPool();
+    protected Server _server = new Server(_threads);
     protected SuspendHandler _handler = new SuspendHandler();
     protected SelectChannelConnector _connector;
     protected InetAddress _addr;
     protected int _port;
     protected Random _random = new Random();
-    protected QueuedThreadPool _threads=new QueuedThreadPool();
     private final static String[][] __paths =
     {
         {"/path","NORMAL"},
@@ -66,9 +66,9 @@ public class AsyncStressTest
     @Before
     public void init() throws Exception
     {
+        _server.manage(_threads);
         _threads.setMaxThreads(50);
-        _server.setThreadPool(_threads);
-        _connector = new SelectChannelConnector();
+        _connector = new SelectChannelConnector(_server);
         _connector.setIdleTimeout(120000);
         _server.setConnectors(new Connector[]{ _connector });
         _server.setHandler(_handler);

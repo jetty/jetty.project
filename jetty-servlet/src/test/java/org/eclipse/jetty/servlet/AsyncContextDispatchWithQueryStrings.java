@@ -12,7 +12,11 @@ package org.eclipse.jetty.servlet;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -23,16 +27,13 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * This tests verifies that merging of queryStrings works when dispatching
@@ -45,7 +46,7 @@ public class AsyncContextDispatchWithQueryStrings {
 
 	private Server _server = new Server();
 	private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-	private LocalHttpConnector _connector = new LocalHttpConnector();
+	private LocalConnector _connector = new LocalConnector(_server);
 
 	@Before
 	public void setUp() throws Exception {

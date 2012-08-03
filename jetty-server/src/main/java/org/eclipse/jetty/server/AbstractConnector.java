@@ -16,15 +16,23 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
-import org.eclipse.jetty.io.AsyncConnection;
+import javax.net.ssl.SSLEngine;
+
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * Abstract Connector implementation. This abstract implementation of the Connector interface provides:
@@ -42,23 +50,57 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     protected final Logger LOG = Log.getLogger(getClass());
 
     private final Statistics _stats = new ConnectionStatistics();
+    private final ConnectionFactory _connectionFactory;
     private final Thread[] _acceptors;
+    private final Executor _executor;
+    private final ScheduledExecutorService _scheduler;
+    private final Server _server;
+    private final ByteBufferPool _byteBufferPool;
+    
     private volatile String _name;
-    private volatile Server _server;
-    private volatile Executor _executor;
     private volatile int _acceptQueueSize = 128;
     private volatile boolean _reuseAddress = true;
-    private volatile ByteBufferPool _byteBufferPool;
     private volatile long _idleTimeout = 200000;
     private volatile int _soLingerTime = -1;
 
-    public AbstractConnector()
+    /* ------------------------------------------------------------ */
+    /**
+     * @param server The server this connector will be added to. Must not be null.
+     * @param connectionFactory ConnectionFactory or null for default
+     * @param executor An executor for this connector or null to use the servers executor 
+     * @param scheduler A scheduler for this connector or null to use the servers scheduler
+     * @param pool A buffer pool for this connector or null to use a default {@link ByteBufferPool}
+     * @param acceptors the number of acceptor threads to use, or 0 for a default value.
+     */
+    public AbstractConnector(
+        Server server,
+        ConnectionFactory connectionFactory,
+        Executor executor,
+        ScheduledExecutorService scheduler, 
+        ByteBufferPool pool, int acceptors)
     {
-        this(Math.max(1, (Runtime.getRuntime().availableProcessors()) / 4));
-    }
+        _server=server;
+        _executor=executor!=null?executor:_server.getThreadPool();
+        _scheduler=scheduler!=null?scheduler:Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+        {
+            @Override
+            public Thread newThread(Runnable r)
+            {
+                return new Thread(r, "Timer-" + getName());
+            }
+        });
+        _byteBufferPool = pool!=null?pool:new StandardByteBufferPool();
+        
+        _connectionFactory=connectionFactory!=null?connectionFactory:new ConnectionFactory();
+        
+        addBean(_server,false);
+        addBean(_executor,false);
+        addBean(_scheduler,scheduler==null);
+        addBean(_byteBufferPool,pool==null);
+        addBean(_connectionFactory,connectionFactory!=null);
 
-    public AbstractConnector(@Name("acceptors") int acceptors)
-    {
+        if (acceptors<=0)
+            acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
             LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
@@ -75,43 +117,23 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     {
         return _server;
     }
-
-    public void setServer(Server server)
+    
+    @Override
+    public ConnectionFactory getConnectionFactory()
     {
-        _server = server;
+        return _connectionFactory;
     }
-
-    public Executor findExecutor()
-    {
-        if (_executor == null && getServer() != null)
-            return getServer().getThreadPool();
-        return _executor;
-    }
-
+    
     @Override
     public Executor getExecutor()
     {
         return _executor;
     }
 
-    public void setExecutor(Executor executor)
-    {
-        removeBean(_executor);
-        _executor = executor;
-        addBean(_executor);
-    }
-
     @Override
     public ByteBufferPool getByteBufferPool()
     {
         return _byteBufferPool;
-    }
-
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
-    {
-        removeBean(byteBufferPool);
-        _byteBufferPool = byteBufferPool;
-        addBean(_byteBufferPool);
     }
 
     /**
@@ -190,18 +212,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
-        if (_server == null)
-            throw new IllegalStateException("No server");
-
-        _byteBufferPool = new StandardByteBufferPool();
-
         super.doStart();
 
         // Start selector thread
         synchronized (this)
         {
             for (int i = 0; i < _acceptors.length; i++)
-                findExecutor().execute(new Acceptor(i));
+                getExecutor().execute(new Acceptor(i));
         }
 
         LOG.info("Started {}", this);
@@ -217,10 +234,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             if (thread != null)
                 thread.interrupt();
         }
-
-        int i = _name.lastIndexOf("/");
-        if (i > 0)
-            _name = _name.substring(0, i);
     }
 
     public void join() throws InterruptedException
@@ -317,19 +330,19 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _name = name;
     }
 
-    protected void connectionOpened(AsyncConnection connection)
+    protected void connectionOpened(Connection connection)
     {
         _stats.connectionOpened();
     }
 
-    protected void connectionUpgraded(AsyncConnection oldConnection, AsyncConnection newConnection)
+    protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
     {
         long duration = System.currentTimeMillis() - oldConnection.getEndPoint().getCreatedTimeStamp();
         int requests = (oldConnection instanceof HttpConnection) ? ((HttpConnection)oldConnection).getHttpChannel().getRequests() : 0;
         _stats.connectionUpgraded(duration, requests, requests);
     }
 
-    protected void connectionClosed(AsyncConnection connection)
+    protected void connectionClosed(Connection connection)
     {
         long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
         // TODO: remove casts to HttpConnection
@@ -351,5 +364,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
+    }
+
+    public ScheduledExecutorService getScheduler()
+    {
+        return _scheduler;
     }
 }

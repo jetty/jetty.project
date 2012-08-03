@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -42,13 +43,13 @@ import org.junit.Test;
 public class RFC2616Test
 {
     private Server server;
-    private LocalHttpConnector connector;
+    private LocalConnector connector;
 
     @Before
     public void init() throws Exception
     {
         server = new Server();
-        connector = new LocalHttpConnector();
+        connector = new LocalConnector(server);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
 
@@ -360,7 +361,7 @@ public class RFC2616Test
 
         // Default Host
         offset=0;
-        response=connector.getResponses("GET http://VirtualHost:8888/path/R1 HTTP/1.1\n"+"Host: wronghost\n"+"\n");
+        response=connector.getResponses("GET http://VirtualHost:8888/path/R1 HTTP/1.1\n"+"Host: wronghost\n"+"Connection: close\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 200","Default host")+1;
         offset=checkContains(response,offset,"Virtual Dump","virtual host")+1;
         offset=checkContains(response,offset,"pathInfo=/path/R1","Default host")+1;
@@ -374,14 +375,14 @@ public class RFC2616Test
 
         // Default Host
         offset=0;
-        response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: localhost\n"+"\n");
+        response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 200","Default host")+1;
         offset=checkContains(response,offset,"Dump HttpHandler","Default host")+1;
         offset=checkContains(response,offset,"pathInfo=/path/R1","Default host")+1;
 
         // Virtual Host
         offset=0;
-        response=connector.getResponses("GET /path/R2 HTTP/1.1\n"+"Host: VirtualHost\n"+"\n");
+        response=connector.getResponses("GET /path/R2 HTTP/1.1\n"+"Host: VirtualHost\n"+"Connection: close\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 200","Default host")+1;
         offset=checkContains(response,offset,"Virtual Dump","virtual host")+1;
         offset=checkContains(response,offset,"pathInfo=/path/R2","Default host")+1;
@@ -395,14 +396,14 @@ public class RFC2616Test
 
         // Virtual Host
         offset=0;
-        response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: VirtualHost\n"+"\n");
+        response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: VirtualHost\n"+"Connection: close\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 200","2. virtual host field")+1;
         offset=checkContains(response,offset,"Virtual Dump","2. virtual host field")+1;
         offset=checkContains(response,offset,"pathInfo=/path/R1","2. virtual host field")+1;
 
         // Virtual Host case insensitive
         offset=0;
-        response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: ViRtUalhOst\n"+"\n");
+        response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: ViRtUalhOst\n"+"Connection: close\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 200","2. virtual host field")+1;
         offset=checkContains(response,offset,"Virtual Dump","2. virtual host field")+1;
         offset=checkContains(response,offset,"pathInfo=/path/R1","2. virtual host field")+1;
@@ -422,7 +423,7 @@ public class RFC2616Test
             int offset=0;
 
             offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n");
+            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n",250,TimeUnit.MILLISECONDS);
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2 default")+10;
             checkContains(response,offset,"Content-Length: ","8.1.2 default");
 
@@ -490,7 +491,7 @@ public class RFC2616Test
     {
         int offset=0;
         // Expect 100
-        LocalHttpConnector.LocalEndPoint endp =connector.executeRequest("GET /R1 HTTP/1.1\n"+
+        LocalConnector.LocalEndPoint endp =connector.executeRequest("GET /R1 HTTP/1.1\n"+
                 "Host: localhost\n"+
                 "Connection: close\n"+
                 "Expect: 100-continue\n"+
@@ -754,19 +755,19 @@ public class RFC2616Test
 
             // HTTP/1.0 OK with no host
             offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.0\n"+"\n");
+            response=connector.getResponses("GET /R1 HTTP/1.0\n"+"Connection: close\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
             offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"\n");
+            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Connection: close\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
 
             offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n");
+            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
             offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host:\n"+"\n");
+            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host:\n"+"Connection: close\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
         }
@@ -898,7 +899,7 @@ public class RFC2616Test
         }
     }
 
-    private void checkContentRange(LocalHttpConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange, String expectedData)
+    private void checkContentRange(LocalConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange, String expectedData)
     {
         try
         {

@@ -20,6 +20,7 @@ import java.net.URL;
 import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -28,10 +29,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.LocalHttpConnector;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -45,7 +45,7 @@ public class QoSFilterTest
     private static final Logger LOG = Log.getLogger(QoSFilterTest.class);
 
     private ServletTester _tester;
-    private LocalHttpConnector[] _connectors;
+    private LocalConnector[] _connectors;
     private CountDownLatch _doneRequests;
     private final int NUM_CONNECTIONS = 8;
     private final int NUM_LOOPS = 6;
@@ -60,7 +60,7 @@ public class QoSFilterTest
         TestServlet.__maxSleepers=0;
         TestServlet.__sleepers=0;
 
-        _connectors = new LocalHttpConnector[NUM_CONNECTIONS];
+        _connectors = new LocalConnector[NUM_CONNECTIONS];
         for(int i = 0; i < _connectors.length; ++i)
             _connectors[i] = _tester.createLocalConnector();
 

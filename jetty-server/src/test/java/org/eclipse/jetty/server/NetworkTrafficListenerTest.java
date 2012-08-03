@@ -54,7 +54,7 @@ public class NetworkTrafficListenerTest
         server.setSendDateHeader(false);
         server.setSendServerVersion(false);
 
-        connector = new NetworkTrafficSelectChannelConnector();
+        connector = new NetworkTrafficSelectChannelConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();

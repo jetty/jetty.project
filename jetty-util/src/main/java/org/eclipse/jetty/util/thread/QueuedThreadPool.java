@@ -125,7 +125,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
         // kill queued jobs and flush out idle jobs
         _jobs.clear();
-        Runnable noop = new Runnable(){public void run(){}};
+        Runnable noop = new Runnable(){@Override public void run(){}};
         for  (int i=_threadsIdle.get();i-->0;)
             _jobs.offer(noop);
         Thread.yield();
@@ -203,6 +203,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @see #getMaxThreads
      * @param maxThreads maximum number of threads.
      */
+    @Override
     public void setMaxThreads(int maxThreads)
     {
         _maxThreads=maxThreads;
@@ -216,6 +217,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @see #getMinThreads
      * @param minThreads minimum number of threads
      */
+    @Override
     public void setMinThreads(int minThreads)
     {
         _minThreads=minThreads;
@@ -297,6 +299,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @see #setMaxThreads
      * @return maximum number of threads.
      */
+    @Override
     public int getMaxThreads()
     {
         return _maxThreads;
@@ -308,6 +311,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @see #setMinThreads
      * @return minimum number of threads.
      */
+    @Override
     public int getMinThreads()
     {
         return _minThreads;
@@ -353,6 +357,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean dispatch(Runnable job)
     {
         LOG.debug("{} dispatched {}",this,job);
@@ -376,6 +381,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void execute(Runnable job)
     {
         if (!dispatch(job))
@@ -386,6 +392,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /**
      * Blocks until the thread pool is {@link LifeCycle#stop stopped}.
      */
+    @Override
     public void join() throws InterruptedException
     {
         synchronized (_joinLock)
@@ -402,6 +409,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /**
      * @return The total number of threads currently in the pool
      */
+    @Override
     public int getThreads()
     {
         return _threadsStarted.get();
@@ -411,6 +419,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /**
      * @return The number of idle threads in the pool
      */
+    @Override
     public int getIdleThreads()
     {
         return _threadsIdle.get();
@@ -420,6 +429,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /**
      * @return True if the pool is at maxThreads and there are not more idle threads than queued jobs
      */
+    @Override
     public boolean isLowOnThreads()
     {
         return _threadsStarted.get()==_maxThreads && _jobs.size()>=_threadsIdle.get();
@@ -460,12 +470,14 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         List<Object> dump = new ArrayList<Object>(getMaxThreads());
@@ -491,6 +503,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             {
                 dump.add(new Dumpable()
                 {
+                    @Override
                     public void dump(Appendable out, String indent) throws IOException
                     {
                         out.append(String.valueOf(thread.getId())).append(' ').append(thread.getName()).append(' ').append(thread.getState().toString()).append(idle?" IDLE":"").append('\n');
@@ -498,6 +511,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                             AggregateLifeCycle.dump(out,indent,Arrays.asList(trace));
                     }
 
+                    @Override
                     public String dump()
                     {
                         return null;
@@ -530,6 +544,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /* ------------------------------------------------------------ */
     private Runnable _runnable = new Runnable()
     {
+        @Override
         public void run()
         {
             boolean shrink=false;
@@ -584,7 +599,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             {
                 LOG.ignore(e);
             }
-            catch(Exception e)
+            catch(Throwable e)
             {
                 LOG.warn(e);
             }

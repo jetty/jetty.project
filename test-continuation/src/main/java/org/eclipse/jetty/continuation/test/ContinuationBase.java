@@ -76,6 +76,7 @@ public abstract class ContinuationBase
     protected void doSuspendResume() throws Exception
     {
         String response=process("suspend=200&resume=0",null);
+        System.err.println(response);
         assertContains("RESUMED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
@@ -243,7 +244,8 @@ public abstract class ContinuationBase
             Socket socket = new Socket("localhost",port);
             socket.setSoTimeout(10000);
             socket.getOutputStream().write(request.getBytes("UTF-8"));
-
+            socket.getOutputStream().flush();
+            
             response = toString(socket.getInputStream());
         }
         catch(Exception e)
@@ -490,11 +492,13 @@ public abstract class ContinuationBase
     
     private static ContinuationListener __listener = new ContinuationListener()
     {
+        @Override
         public void onComplete(Continuation continuation)
         {
             ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onComplete");
         }
 
+        @Override
         public void onTimeout(Continuation continuation)
         {
             ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onTimeout");

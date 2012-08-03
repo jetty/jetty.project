@@ -18,13 +18,10 @@ import static org.junit.Assert.assertTrue;
 import java.lang.management.ManagementFactory;
 
 import javax.management.Attribute;
-import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
-import javax.management.ReflectionException;
 
 import junit.framework.Assert;
 

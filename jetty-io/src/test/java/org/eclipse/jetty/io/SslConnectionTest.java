@@ -13,10 +13,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import junit.framework.Assert;
+
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -35,7 +37,7 @@ public class SslConnectionTest
     private static SslContextFactory __sslCtxFactory=new SslContextFactory();
     private static ByteBufferPool __byteBufferPool = new StandardByteBufferPool();
 
-    protected volatile AsyncEndPoint _lastEndp;
+    protected volatile EndPoint _lastEndp;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     protected ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -48,14 +50,14 @@ public class SslConnectionTest
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
             SSLEngine engine = __sslCtxFactory.newSslEngine();
             engine.setUseClientMode(false);
             SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
 
-            AsyncConnection appConnection = new TestConnection(sslConnection.getSslEndPoint());
-            sslConnection.getSslEndPoint().setAsyncConnection(appConnection);
+            Connection appConnection = new TestConnection(sslConnection.getDecryptedEndPoint());
+            sslConnection.getDecryptedEndPoint().setConnection(appConnection);
             connectionOpened(appConnection);
 
             return sslConnection;
@@ -103,24 +105,32 @@ public class SslConnectionTest
         _connector.close();
     }
 
-    public class TestConnection extends AbstractAsyncConnection
+    public class TestConnection extends AbstractConnection
     {
         ByteBuffer _in = BufferUtil.allocate(8*1024);
 
-        public TestConnection(AsyncEndPoint endp)
+        public TestConnection(EndPoint endp)
         {
             super(endp, _threadPool);
         }
 
         @Override
+        public void onOpen()
+        {
+            super.onOpen();
+            fillInterested();
+        }
+        
+        @Override
         public void onClose()
         {
+            super.onClose();
         }
 
         @Override
         public synchronized void onFillable()
         {
-            AsyncEndPoint endp = getEndPoint();
+            EndPoint endp = getEndPoint();
             try
             {
                 boolean progress=true;

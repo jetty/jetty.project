@@ -14,9 +14,7 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Queue;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;

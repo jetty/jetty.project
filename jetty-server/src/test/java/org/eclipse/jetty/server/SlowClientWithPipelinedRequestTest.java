@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,8 +26,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 import org.junit.Assert;
@@ -44,12 +43,12 @@ public class SlowClientWithPipelinedRequestTest
     public void startServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new SelectChannelConnector()
+        connector = new SelectChannelConnector(server,new ConnectionFactory()
         {
             @Override
-            protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+            protected Connection newConnection(Connector connector,EndPoint endpoint)
             {
-                return new HttpConnection(this,endpoint,getServer())
+                return new HttpConnection(getHttpConfig(),connector,endpoint)
                 {
                     @Override
                     public synchronized void onFillable()
@@ -57,10 +56,10 @@ public class SlowClientWithPipelinedRequestTest
                         handles.incrementAndGet();
                         super.onFillable();
                     }
-                    
                 };
             }
-        };
+        },null,null,null,0,0);
+        
         server.addConnector(connector);
         connector.setPort(0);
         server.setHandler(handler);

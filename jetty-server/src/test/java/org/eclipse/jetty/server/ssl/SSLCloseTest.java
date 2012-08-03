@@ -11,11 +11,6 @@
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-// JettyTest.java --
-//
-// Junit test that shows the Jetty SSL bug.
-//
-
 package org.eclipse.jetty.server.ssl;
 
 import java.io.BufferedReader;
@@ -36,9 +31,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
@@ -47,7 +43,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
  */
 public class SSLCloseTest extends TestCase
 {
-    private static AsyncEndPoint __endp;
+    private static EndPoint __endp;
     private static class CredulousTM implements TrustManager, X509TrustManager
     {
         public X509Certificate[] getAcceptedIssuers()
@@ -77,14 +73,14 @@ public class SSLCloseTest extends TestCase
     public void testClose() throws Exception
     {
         Server server=new Server();
-        SslSelectChannelConnector connector=new SslSelectChannelConnector();
+        SelectChannelConnector connector=new SelectChannelConnector(server,true);
 
         String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
 
         connector.setPort(0);
-        connector.getSslContextFactory().setKeyStorePath(keystore);
-        connector.getSslContextFactory().setKeyStorePassword("storepwd");
-        connector.getSslContextFactory().setKeyManagerPassword("keypwd");
+        connector.getConnectionFactory().getSslContextFactory().setKeyStorePath(keystore);
+        connector.getConnectionFactory().getSslContextFactory().setKeyStorePassword("storepwd");
+        connector.getConnectionFactory().getSslContextFactory().setKeyManagerPassword("keypwd");
 
         server.setConnectors(new Connector[]
         { connector });
@@ -98,11 +94,13 @@ public class SSLCloseTest extends TestCase
 
         int port=connector.getLocalPort();
 
-        // System.err.println("write:"+i);
         Socket socket=ctx.getSocketFactory().createSocket("localhost",port);
         OutputStream os=socket.getOutputStream();
 
-        os.write("GET /test HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n".getBytes());
+        os.write((
+            "GET /test HTTP/1.1\r\n"+
+            "Host:test\r\n"+
+            "Connection:close\r\n\r\n").getBytes());
         os.flush();
 
         BufferedReader in =new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -110,18 +108,14 @@ public class SSLCloseTest extends TestCase
         String line;
         while ((line=in.readLine())!=null)
         {
-            // System.err.println(line);
             if (line.trim().length()==0)
                 break;
         }
 
         Thread.sleep(2000);
-        // System.err.println(__endp);
 
         while ((line=in.readLine())!=null)
-            //System.err.println(line);
             Thread.yield();
-
     }
 
 

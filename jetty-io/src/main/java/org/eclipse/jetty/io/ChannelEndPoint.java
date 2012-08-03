@@ -22,10 +22,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
+import java.nio.channels.ReadPendingException;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.BrokenBarrierException;
+import java.nio.channels.WritePendingException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -42,10 +45,11 @@ public class ChannelEndPoint extends AbstractEndPoint
     private volatile boolean _ishut;
     private volatile boolean _oshut;
 
-    public ChannelEndPoint(SocketChannel channel) throws IOException
+    public ChannelEndPoint(ScheduledExecutorService scheduler,SocketChannel channel) throws IOException
     {
-        super((InetSocketAddress)channel.socket().getLocalSocketAddress(),
-              (InetSocketAddress)channel.socket().getRemoteSocketAddress());
+        super(scheduler,
+            (InetSocketAddress)channel.socket().getLocalSocketAddress(),
+            (InetSocketAddress)channel.socket().getRemoteSocketAddress());
         _channel = channel;
         _socket=channel.socket();
     }
@@ -194,5 +198,17 @@ public class ChannelEndPoint extends AbstractEndPoint
     public Socket getSocket()
     {
         return _socket;
+    }
+
+    @Override
+    protected void onIncompleteFlush()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected boolean needsFill() throws IOException
+    {
+        throw new UnsupportedOperationException();
     }
 }

@@ -12,6 +12,8 @@ package org.eclipse.jetty.servlets;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
+import static org.hamcrest.Matchers.not;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,8 +28,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.not;
 
 public class PipelineHelper
 {

@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2004-2012 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -15,9 +15,11 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /** HTTP Connector.
  * Implementations of this interface provide connectors for the HTTP protocol.
@@ -42,14 +44,17 @@ public interface Connector extends LifeCycle
     Server getServer();
 
     /* ------------------------------------------------------------ */
-    Executor findExecutor();
-
+    ConnectionFactory getConnectionFactory();
+    
     /* ------------------------------------------------------------ */
     Executor getExecutor();
+    
+    /* ------------------------------------------------------------ */
+    ScheduledExecutorService getScheduler();
 
     /* ------------------------------------------------------------ */
     ByteBufferPool getByteBufferPool();
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Max Idle time for connections in milliseconds

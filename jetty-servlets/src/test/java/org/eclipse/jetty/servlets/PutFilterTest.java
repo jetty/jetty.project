@@ -21,16 +21,16 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
-import java.util.EnumSet;
-import javax.servlet.DispatcherType;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;

@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 
 public class HttpServerTestFixture
@@ -52,9 +53,14 @@ public class HttpServerTestFixture
         return socket;
     }
     
-    protected static void startServer(Connector.NetConnector connector) throws Exception
+    @BeforeClass
+    public static void before()
     {
         _server = new Server();
+    }
+    
+    protected static void startServer(Connector.NetConnector connector) throws Exception
+    {
         _connector = connector;
         _server.addConnector(_connector);
         _server.setHandler(new HandlerWrapper());

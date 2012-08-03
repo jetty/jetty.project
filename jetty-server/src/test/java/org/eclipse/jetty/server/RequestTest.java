@@ -13,7 +13,13 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -49,19 +56,19 @@ public class RequestTest
 {
     private static final Logger LOG = Log.getLogger(RequestTest.class);
     private Server _server;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
     private RequestHandler _handler;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalHttpConnector();
-        _connector.setRequestHeaderSize(512);
-        _connector.setRequestBufferSize(1024);
-        _connector.setResponseHeaderSize(512);
-        _connector.setResponseBufferSize(2048);
-        _connector.setForwarded(true);
+        _connector = new LocalConnector(_server);
+        _connector.getConnectionFactory().getHttpConfig().setRequestHeaderSize(512);
+        _connector.getConnectionFactory().getHttpConfig().setRequestBufferSize(1024);
+        _connector.getConnectionFactory().getHttpConfig().setResponseHeaderSize(512);
+        _connector.getConnectionFactory().getHttpConfig().setResponseBufferSize(2048);
+        _connector.getConnectionFactory().getHttpConfig().setForwarded(true);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
         _server.setHandler(_handler);
@@ -80,6 +87,7 @@ public class RequestTest
     {
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 Map map = null;
@@ -110,6 +118,7 @@ public class RequestTest
         String request="GET /?param=%ZZaaa HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
@@ -122,6 +131,7 @@ public class RequestTest
     {
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 try
@@ -155,6 +165,7 @@ public class RequestTest
         "Host: whatever\r\n"+
         "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
         "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
         "\r\n"+
         multipart;
 
@@ -167,6 +178,7 @@ public class RequestTest
     {
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 String value=request.getParameter("param");
@@ -179,6 +191,7 @@ public class RequestTest
         String request="GET /?param=aaa%E7bbb HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
@@ -199,6 +212,7 @@ public class RequestTest
         String request="GET / HTTP/1.1\r\n"+
         "Host: whatever.com:\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
@@ -213,6 +227,7 @@ public class RequestTest
         final ArrayList<String> results = new ArrayList<String>();
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 results.add(request.getContentType());
@@ -240,6 +255,7 @@ public class RequestTest
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Content-Type: text/html; other=foo ; blah=\"charset=wrong;\" ; charset =   \" x=z; \"   ; more=values \n"+
+                "Connection: close\n"+
                 "\n"
                 );
 
@@ -263,6 +279,7 @@ public class RequestTest
         final ArrayList<String> results = new ArrayList<String>();
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 results.add(request.getRemoteAddr());
@@ -305,10 +322,11 @@ public class RequestTest
 
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
+                "Connection: close\n"+
                 "x-forwarded-for: remote\n"+
                 "x-forwarded-proto: https\n"+
-                "\n"
-                );
+                "\n",10,TimeUnit.SECONDS);
+        
         
         int i=0;
         assertEquals("0.0.0.0",results.get(i++));
@@ -345,6 +363,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 //assertEquals(request.getContentLength(), ((Request)request).getContentRead());
@@ -377,6 +396,7 @@ public class RequestTest
     {
         Handler handler = new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                     ServletException
             {
@@ -422,6 +442,7 @@ public class RequestTest
     {
         Handler handler = new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
             ServletException
             {
@@ -506,6 +527,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().println("Hello World");
@@ -573,6 +595,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 response.setHeader("Connection","TE");
@@ -609,6 +632,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 javax.servlet.http.Cookie[] ca = request.getCookies();
@@ -625,6 +649,7 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
+                    "Connection: close\n"+
                     "\n"
                     );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -636,6 +661,7 @@ public class RequestTest
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
                     "Cookie: name=quoted=\\\"value\\\"\n" +
+                    "Connection: close\n"+
                     "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -648,6 +674,7 @@ public class RequestTest
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Cookie: name=value; other=\"quoted=;value\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -669,6 +696,7 @@ public class RequestTest
                 "Host: whatever\n"+
                 "Other: header\n"+
                 "Cookie: name=value; other=\"quoted=;value\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -692,6 +720,7 @@ public class RequestTest
                 "Host: whatever\n"+
                 "Other: header\n"+
                 "Cookie: name=value; other=\"othervalue\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -743,6 +772,7 @@ public class RequestTest
                         "Host: whatever\n"+
                         "Other: header\n"+
                         "Cookie: __utmz=14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html\n"+
+                        "Connection: close\n"+
                         "\n"
                 );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -759,6 +789,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 for (int i=0;i<cookie.length; i++)
@@ -851,6 +882,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
@@ -883,6 +915,7 @@ public class RequestTest
         private RequestTester _checker;
         private String _content;
 
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);

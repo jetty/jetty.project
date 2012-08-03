@@ -32,43 +32,44 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * An ChannelEndpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, SelectorManager.SelectableAsyncEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorManager.SelectableEndPoint
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
-    private final AtomicReference<Future<?>> _timeout = new AtomicReference<>();
-    private final Runnable _idleTask = new Runnable()
+    private final Runnable _updateTask = new Runnable()
     {
         @Override
         public void run()
         {
-            checkIdleTimeout();
+            try
+            {
+                if (getChannel().isOpen())
+                {
+                    int oldInterestOps = _key.interestOps();
+                    int newInterestOps = _interestOps;
+                    if (newInterestOps != oldInterestOps)
+                        setKeyInterests(oldInterestOps, newInterestOps);
+                }
+            }
+            catch (CancelledKeyException x)
+            {
+                LOG.debug("Ignoring key update for concurrently closed channel {}", this);
+                close();
+            }
+            catch (Exception x)
+            {
+                LOG.warn("Ignoring key update for " + this, x);
+                close();
+            }
         }
     };
+    
     /**
-     * true if {@link ManagedSelector#destroyEndPoint(AsyncEndPoint)} has not been called
+     * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
     private final AtomicBoolean _open = new AtomicBoolean();
-    private final ReadInterest _readInterest = new ReadInterest()
-    {
-        @Override
-        protected boolean needsFill()
-        {
-            return SelectChannelEndPoint.this.needsFill();
-        }
-    };
-    private final WriteFlusher _writeFlusher = new WriteFlusher(this)
-    {
-        @Override
-        protected void onIncompleteFlushed()
-        {
-            SelectChannelEndPoint.this.onIncompleteFlush();
-        }
-    };
     private final SelectorManager.ManagedSelector _selector;
     private final SelectionKey _key;
-    private final ScheduledExecutorService _scheduler;
-    private volatile AsyncConnection _connection;
     /**
      * The desired value for {@link SelectionKey#interestOps()}
      */
@@ -76,10 +77,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
     public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, ScheduledExecutorService scheduler, long idleTimeout) throws IOException
     {
-        super(channel);
+        super(scheduler,channel);
         _selector = selector;
         _key = key;
-        _scheduler = scheduler;
         setIdleTimeout(idleTimeout);
     }
 
@@ -90,57 +90,25 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         scheduleIdleTimeout(idleTimeout);
     }
 
+    @Override
     protected boolean needsFill()
     {
         updateLocalInterests(SelectionKey.OP_READ, true);
         return false;
     }
 
+    @Override
     protected void onIncompleteFlush()
     {
         updateLocalInterests(SelectionKey.OP_WRITE, true);
     }
 
-    private void scheduleIdleTimeout(long delay)
-    {
-        Future<?> newTimeout = null;
-        if (isOpen() && delay > 0)
-        {
-            LOG.debug("{} scheduling idle timeout in {} ms", this, delay);
-            newTimeout = _scheduler.schedule(_idleTask, delay, TimeUnit.MILLISECONDS);
-        }
-        else
-        {
-            LOG.debug("{} skipped scheduling idle timeout ({} ms)", this, delay);
-        }
-        Future<?> oldTimeout = _timeout.getAndSet(newTimeout);
-        if (oldTimeout != null)
-            oldTimeout.cancel(false);
-    }
-
     @Override
-    public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
+    public void setConnection(Connection connection)
     {
-        _readInterest.register(context, callback);
-    }
-
-    @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
-    {
-        _writeFlusher.write(context, callback, buffers);
-    }
-
-    @Override
-    public AsyncConnection getAsyncConnection()
-    {
-        return _connection;
-    }
-
-    @Override
-    public void setAsyncConnection(AsyncConnection connection)
-    {
-        AsyncConnection old = getAsyncConnection();
-        _connection = connection;
+        // TODO should this be on AbstractEndPoint?
+        Connection old = getConnection();
+        super.setConnection(connection);
         if (old != null && old != connection)
             _selector.getSelectorManager().connectionUpgraded(this, old);
     }
@@ -154,43 +122,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         setKeyInterests(oldInterestOps, newInterestOps);
         updateLocalInterests(readyOps, false);
         if (_key.isReadable())
-            _readInterest.readable();
+            getFillInterest().fillable();
         if (_key.isWritable())
-            _writeFlusher.completeWrite();
+            getWriteFlusher().completeWrite();
     }
 
-    private void checkIdleTimeout()
-    {
-        if (isOpen())
-        {
-            long idleTimestamp = getIdleTimestamp();
-            long idleTimeout = getIdleTimeout();
-            long idleElapsed = System.currentTimeMillis() - idleTimestamp;
-            long idleLeft = idleTimeout - idleElapsed;
-
-            LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
-
-            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
-            {
-                if (idleTimestamp != 0 && idleTimeout > 0)
-                {
-                    if (idleLeft <= 0)
-                    {
-                        LOG.debug("{} idle timeout expired", this);
-
-                        if (isOutputShutdown())
-                            close();
-                        notIdle();
-
-                        TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
-                        _readInterest.failed(timeout);
-                        _writeFlusher.failed(timeout);
-                    }
-                }
-            }
-            scheduleIdleTimeout(idleLeft > 0 ? idleLeft : idleTimeout);
-        }
-    }
 
     private void updateLocalInterests(int operation, boolean add)
     {
@@ -210,7 +146,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         {
             _interestOps = newInterestOps;
             LOG.debug("Local interests updated {} -> {} for {}", oldInterestOps, newInterestOps, this);
-            _selector.submit(this);
+            _selector.submit(_updateTask);
         }
         else
         {
@@ -218,30 +154,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         }
     }
 
-    @Override
-    public void run()
-    {
-        try
-        {
-            if (getChannel().isOpen())
-            {
-                int oldInterestOps = _key.interestOps();
-                int newInterestOps = _interestOps;
-                if (newInterestOps != oldInterestOps)
-                    setKeyInterests(oldInterestOps, newInterestOps);
-            }
-        }
-        catch (CancelledKeyException x)
-        {
-            LOG.debug("Ignoring key update for concurrently closed channel {}", this);
-            close();
-        }
-        catch (Exception x)
-        {
-            LOG.warn("Ignoring key update for " + this, x);
-            close();
-        }
-    }
 
     private void setKeyInterests(int oldInterestOps, int newInterestOps)
     {
@@ -260,14 +172,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     @Override
     public void onOpen()
     {
+        super.onOpen();
         _open.compareAndSet(false, true);
     }
 
     @Override
     public void onClose()
     {
-        _writeFlusher.close();
-        _readInterest.close();
+        super.onClose();
     }
 
     @Override
@@ -288,8 +200,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         {
             keyString += "!";
         }
-        return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",
-                hashCode(), getRemoteAddress(), getLocalAddress(), isOpen(), isInputShutdown(),
-                isOutputShutdown(), _interestOps, keyString, _readInterest, _writeFlusher, getAsyncConnection());
+        return String.format("%s{io=%d,k=%s}",_interestOps, keyString);
     }
 }

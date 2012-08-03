@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -52,16 +53,16 @@ public class HttpConnectionTest
     private static final Logger LOG = Log.getLogger(HttpConnectionTest.class);
 
     private Server server;
-    private LocalHttpConnector connector;
+    private LocalConnector connector;
 
     @Before
     public void init() throws Exception
     {
         server = new Server();
-        connector = new LocalHttpConnector();
+        connector = new LocalConnector(server);
         server.addConnector(connector);
-        connector.setRequestHeaderSize(1024);
-        connector.setResponseHeaderSize(1024);
+        connector.getConnectionFactory().getHttpConfig().setRequestHeaderSize(1024);
+        connector.getConnectionFactory().getHttpConfig().setResponseHeaderSize(1024);
         server.setHandler(new DumpHandler());
         server.start();
     }
@@ -87,6 +88,7 @@ public class HttpConnectionTest
                                            "Host: localhost\n"+
                                            "Transfer-Encoding: chunked\n"+
                                            "Content-Type: text/plain\n"+
+                                           "Connection: close\n"+
                                            "\015\012"+
                                            "5;\015\012"+
                                            "12345\015\012"+
@@ -100,6 +102,7 @@ public class HttpConnectionTest
                                            "Host: localhost\n"+
                                            "Transfer-Encoding: chunked\n"+
                                            "Content-Type: text/plain\n"+
+                                           "Connection: close\n"+
                                            "\015\012"+
                                            "5;\015\012"+
                                            "ABCDE\015\012"+
@@ -124,6 +127,7 @@ public class HttpConnectionTest
                 "Host: localhost\n"+
                 "Transfer-Encoding: chunked\n"+
                 "Content-Type: text/plain\n"+
+                "Connection: close\n"+
                 "\015\012"+
         "0\015\012\015\012");
 
@@ -137,10 +141,12 @@ public class HttpConnectionTest
     {
         String responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
+                "Connection: close\015\012"+
                 "\015\012");
         
         String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
+                "Connection: close\015\012"+
                 "\015\012");
         
         assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
@@ -148,6 +154,7 @@ public class HttpConnectionTest
         
         responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
+                "Connection: close\015\012"+
                 "\015\012");
 
         assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
@@ -162,16 +169,19 @@ public class HttpConnectionTest
 
         response=connector.getResponses("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\n"+
             "Host: localhost\n"+
+            "Connection: close\015\012"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
 
         response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\n"+
             "Host: localhost\n"+
+            "Connection: close\n"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
 
         response=connector.getResponses("GET % HTTP/1.1\n"+
             "Host: localhost\n"+
+            "Connection: close\n"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
     }
@@ -180,21 +190,22 @@ public class HttpConnectionTest
     public void testAutoFlush() throws Exception
     {
         String response=null;
-            int offset=0;
+        int offset=0;
 
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+
-                                           "Host: localhost\n"+
-                                           "Transfer-Encoding: chunked\n"+
-                                           "Content-Type: text/plain\n"+
-                                           "\015\012"+
-                                           "5;\015\012"+
-                                           "12345\015\012"+
-                                           "0;\015\012\015\012");
-            offset = checkContains(response,offset,"HTTP/1.1 200");
-            checkNotContained(response,offset,"IgnoreMe");
-            offset = checkContains(response,offset,"/R1");
-            offset = checkContains(response,offset,"12345");
+        offset=0;
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+
+            "Host: localhost\n"+
+            "Transfer-Encoding: chunked\n"+
+            "Content-Type: text/plain\n"+
+            "Connection: close\n"+
+            "\015\012"+
+            "5;\015\012"+
+            "12345\015\012"+
+            "0;\015\012\015\012");
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkNotContained(response,offset,"IgnoreMe");
+        offset = checkContains(response,offset,"/R1");
+        offset = checkContains(response,offset,"12345");
     }
 
     @Test
@@ -211,6 +222,7 @@ public class HttpConnectionTest
                                            "Host: localhost\n"+
                                            "Transfer-Encoding: chunked\n"+
                                            "Content-Type: text/plain; charset=utf-8\n"+
+                                           "Connection: close\n"+
                                            "\015\012"+
                                            "5;\015\012"+
                                            "12345\015\012"+
@@ -225,6 +237,7 @@ public class HttpConnectionTest
                                            "Host: localhost\n"+
                                            "Transfer-Encoding: chunked\n"+
                                            "Content-Type: text/plain; charset =  iso-8859-1 ; other=value\n"+
+                                           "Connection: close\n"+
                                            "\015\012"+
                                            "5;\015\012"+
                                            "12345\015\012"+
@@ -239,6 +252,7 @@ public class HttpConnectionTest
                                            "Host: localhost\n"+
                                            "Transfer-Encoding: chunked\n"+
                                            "Content-Type: text/plain; charset=unknown\n"+
+                                           "Connection: close\n"+
                                            "\015\012"+
                                            "5;\015\012"+
                                            "12345\015\012"+
@@ -281,6 +295,7 @@ public class HttpConnectionTest
         "Host: localhost\n"+
         "Content-Type: text/plain; charset=utf-8\n"+
         "Content-Length: 10\n"+
+        "Connection: close\n"+
         "\n"+
         "abcdefghij\n";
 
@@ -527,6 +542,7 @@ public class HttpConnectionTest
                                            "Host: localhost\n"+
                                            "Transfer-Encoding: chunked\n"+
                                            "Content-Type: text/plain; charset=utf-8\n"+
+                                           "Connection: close\n"+
                                            "\015\012"+
                                            "5;\015\012"+
                                            "12345\015\012"+
@@ -543,6 +559,7 @@ public class HttpConnectionTest
                                            "Host: localhost\n"+
                                            "Transfer-Encoding: chunked\n"+
                                            "Content-Type: text/plain; charset=utf-8\n"+
+                                           "Connection: close\n"+
                                            "\015\012"+
                                            "5;\015\012"+
                                            "12345\015\012"+
@@ -554,6 +571,7 @@ public class HttpConnectionTest
                                            "Host: localhost\n"+
                                            "Transfer-Encoding: chunked\n"+
                                            "Content-Type: text/plain; charset=utf-8\n"+
+                                           "Connection: close\n"+
                                            "\015\012"+
                                            "5;\015\012"+
                                            "12345\015\012"+
@@ -585,7 +603,7 @@ public class HttpConnectionTest
 
             response=connector.getResponses("CONNECT www.webtide.com:8080 HTTP/1.1\n"+
                                            "Host: myproxy:8888\015\012"+
-                                           "\015\012");
+                                           "\015\012",200,TimeUnit.MILLISECONDS);
             checkContains(response,offset,"HTTP/1.1 200");
 
         }

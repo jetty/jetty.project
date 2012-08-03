@@ -21,12 +21,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -35,12 +35,12 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Ignore;
@@ -56,7 +56,13 @@ public class TestServer
         
         String jetty_root = "..";
 
-        Server server = new Server();
+        // Setup Threadpool
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setMaxThreads(100);
+        
+        // Setup server
+        Server server = new Server(threadPool);
+        server.manage(threadPool);
         server.setSendDateHeader(true);
         
         // Setup JMX
@@ -65,30 +71,23 @@ public class TestServer
         server.addBean(mbContainer);
         mbContainer.addBean(Log.getLog());
         
-        // Setup Threadpool
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(100);
-        server.setThreadPool(threadPool);
-
         // Setup Connectors
-        SelectChannelConnector connector0 = new SelectChannelConnector();
+        SelectChannelConnector connector0 = new SelectChannelConnector(server);
         connector0.setPort(8080);
-        connector0.setMaxIdleTime(30000);
-        connector0.setConfidentialPort(8443);
+        connector0.setIdleTimeout(30000);
+        connector0.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
         server.addConnector(connector0);
         
         // Setup Connectors
-        SelectChannelConnector connector1 = new SelectChannelConnector();
+        SelectChannelConnector connector1 = new SelectChannelConnector(server);
         connector1.setPort(8081);
-        connector1.setMaxIdleTime(30000);
-        connector1.setConfidentialPort(8443);
+        connector0.setIdleTimeout(30000);
+        connector1.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
         server.addConnector(connector1);
         
-        
-
-        SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
+        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,true);
         ssl_connector.setPort(8443);
-        SslContextFactory cf = ssl_connector.getSslContextFactory();
+        SslContextFactory cf = ssl_connector.getConnectionFactory().getSslContextFactory();
         cf.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

@@ -14,19 +14,20 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public abstract class AbstractNetConnector extends AbstractConnector implements Connector.NetConnector
 {
     private volatile String _host;
     private volatile int _port = 0;
 
-    protected AbstractNetConnector()
+    public AbstractNetConnector(Server server, ConnectionFactory connectionFactory, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool, int acceptors)
     {
-    }
-
-    protected AbstractNetConnector(int acceptors)
-    {
-        super(acceptors);
+        super(server,connectionFactory,executor,scheduler,pool, acceptors);
     }
 
     public void setHost(String host)
@@ -34,6 +35,7 @@ public abstract class AbstractNetConnector extends AbstractConnector implements 
         _host = host;
     }
 
+    @Override
     public String getHost()
     {
         return _host;
@@ -44,11 +46,13 @@ public abstract class AbstractNetConnector extends AbstractConnector implements 
         _port = port;
     }
 
+    @Override
     public int getPort()
     {
         return _port;
     }
 
+    @Override
     public int getLocalPort()
     {
         return -1;
@@ -79,12 +83,18 @@ public abstract class AbstractNetConnector extends AbstractConnector implements 
             LOG.warn(e);
         }
         super.doStop();
+
+        int i = getName().lastIndexOf("/");
+        if (i > 0)
+            setName(getName().substring(0, i));
     }
 
+    @Override
     public void open() throws IOException
     {
     }
 
+    @Override
     public void close() throws IOException
     {
     }
