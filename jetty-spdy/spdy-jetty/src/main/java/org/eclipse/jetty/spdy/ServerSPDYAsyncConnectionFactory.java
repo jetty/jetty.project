@@ -62,7 +62,7 @@ public class ServerSPDYAsyncConnectionFactory implements ConnectionFactory
         SPDYServerConnector connector = (SPDYServerConnector)attachment;
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(endPoint, attachment);
-        SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, bufferPool, parser, listener, connector);
+        SPDYConnection connection = new ServerSPDYConnection(endPoint, bufferPool, parser, listener, connector);
         endPoint.setConnection(connection);
 
         FlowControlStrategy flowControlStrategy = connector.newFlowControlStrategy(version);
@@ -83,13 +83,13 @@ public class ServerSPDYAsyncConnectionFactory implements ConnectionFactory
         return listener;
     }
 
-    private static class ServerSPDYAsyncConnection extends SPDYAsyncConnection
+    private static class ServerSPDYConnection extends SPDYConnection
     {
         private final ServerSessionFrameListener listener;
         private final SPDYServerConnector connector;
         private volatile boolean connected;
 
-        private ServerSPDYAsyncConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
+        private ServerSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
         {
             super(endPoint, bufferPool, parser, connector.getExecutor());
             this.listener = listener;
