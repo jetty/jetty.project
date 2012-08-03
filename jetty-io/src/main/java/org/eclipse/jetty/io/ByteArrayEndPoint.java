@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -35,6 +37,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
+    static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
     public final static InetSocketAddress NOIP=new InetSocketAddress(0);
 
     private final AtomicReference<Future<?>> _timeout = new AtomicReference<>();
@@ -354,7 +357,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void reset()
     {
         _readInterest.close();
-        _writeFlusher.close();
+        _writeFlusher.onClose();
         _ishut=false;
         _oshut=false;
         _closed=false;
@@ -423,19 +426,21 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 long idleElapsed = System.currentTimeMillis() - idleTimestamp;
                 long idleLeft = idleTimeout - idleElapsed;
 
-                if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
+                if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isInProgress())
                 {
                     if (idleTimestamp != 0 && idleTimeout > 0)
                     {
-                        if (idleLeft < 0)
+                        if (idleLeft <= 0)
                         {
-                            if (isOutputShutdown())
-                                close();
-                            notIdle();
+                            LOG.debug("{} idle timeout expired", this);
 
                             TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
                             _readInterest.failed(timeout);
-                            _writeFlusher.failed(timeout);
+                            _writeFlusher.onFail(timeout);
+                            
+                            if (isOutputShutdown())
+                                close();
+                            notIdle();
                         }
                     }
                 }

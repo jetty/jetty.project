@@ -32,7 +32,7 @@ public class DataFrameGenerator
     {
         ByteBuffer buffer = bufferPool.acquire(DataFrame.HEADER_LENGTH + length, true);
         BufferUtil.clearToFill(buffer);
-        buffer.limit(length + DataFrame.HEADER_LENGTH); //TODO: thomas show Simone :)
+        buffer.limit(length + DataFrame.HEADER_LENGTH);
         buffer.position(DataFrame.HEADER_LENGTH);
         // Guaranteed to always be >= 0
         int read = dataInfo.readInto(buffer);

@@ -27,8 +27,8 @@ import javax.net.ssl.SSLException;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.ReadInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -170,7 +170,7 @@ public class SslConnection extends AbstractConnection
             if (_decryptedEndPoint._flushRequiresFillToProgress)
             {
                 _decryptedEndPoint._flushRequiresFillToProgress = false;
-                _decryptedEndPoint._writeFlusher.failed(cause);
+                _decryptedEndPoint._writeFlusher.onFail(cause);
             }
         }
     }
@@ -183,7 +183,7 @@ public class SslConnection extends AbstractConnection
                 hashCode(),
                 _sslEngine.getHandshakeStatus(),
                 _decryptedEndPoint._readInterest.isInterested() ? "R" : "",
-                _decryptedEndPoint._writeFlusher.isWriting() ? "W" : "");
+                _decryptedEndPoint._writeFlusher.isInProgress() ? "W" : "");
     }
 
     /* ------------------------------------------------------------ */
@@ -218,7 +218,7 @@ public class SslConnection extends AbstractConnection
                         _readInterest.readable();
                     }
 
-                    if (_writeFlusher.isWriting())
+                    if (_writeFlusher.isInProgress())
                         _writeFlusher.completeWrite();
                 }
             }
@@ -244,8 +244,8 @@ public class SslConnection extends AbstractConnection
                         _readInterest.failed(x);
                     }
 
-                    if (_writeFlusher.isWriting())
-                        _writeFlusher.failed(x);
+                    if (_writeFlusher.isInProgress())
+                        _writeFlusher.onFail(x);
 
                     // TODO release all buffers??? or may in onClose
                 }
@@ -706,7 +706,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public String toString()
         {
-            return String.format("%s{%s%s%s}", super.toString(), _readInterest.isInterested() ? "R" : "", _writeFlusher.isWriting() ? "W" : "", _cannotAcceptMoreAppDataToFlush ? "w" : "");
+            return String.format("%s{%s%s%s}", super.toString(), _readInterest.isInterested() ? "R" : "", _writeFlusher.isInProgress() ? "W" : "", _cannotAcceptMoreAppDataToFlush ? "w" : "");
         }
 
     }

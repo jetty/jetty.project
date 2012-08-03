@@ -194,7 +194,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
 
             LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
 
-            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
+            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isInProgress())
             {
                 if (idleTimestamp != 0 && idleTimeout > 0)
                 {
@@ -202,13 +202,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     {
                         LOG.debug("{} idle timeout expired", this);
 
+                        TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
+                        _readInterest.failed(timeout);
+                        _writeFlusher.onFail(timeout);
+
                         if (isOutputShutdown())
                             close();
                         notIdle();
-
-                        TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
-                        _readInterest.failed(timeout);
-                        _writeFlusher.failed(timeout);
                     }
                 }
             }
@@ -268,7 +268,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     public void onClose()
     {
         super.onClose();
-        _writeFlusher.close();
+        _writeFlusher.onClose();
         _readInterest.close();
     }
 

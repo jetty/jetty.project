@@ -469,12 +469,11 @@ public class SelectChannelEndPointTest
         }
 
         // But endpoint is still open.
-        assertTrue(_lastEndPoint.isOpen());
-
-        // Wait for another idle callback
-        Thread.sleep(idleTimeout * 2);
+        if(_lastEndPoint.isOpen())
+            // Wait for another idle callback
+            Thread.sleep(idleTimeout * 2);
+        
         // endpoint is closed.
-
         assertFalse(_lastEndPoint.isOpen());
     }
 
