@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 public class ErrorHandler extends AbstractHandler
 {
     boolean _showStacks=true;
+    boolean _showMessageInTitle=true;
     String _cacheControl="must-revalidate,no-cache,no-store";
     
     /* ------------------------------------------------------------ */
@@ -85,12 +86,16 @@ public class ErrorHandler extends AbstractHandler
     /* ------------------------------------------------------------ */
     protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
-    {
+        {
         writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/>\n");
         writer.write("<title>Error ");
         writer.write(Integer.toString(code));
-        writer.write(' ');
-        write(writer,message);
+
+        if (_showMessageInTitle)
+        {
+            writer.write(' ');
+            write(writer,message);
+        }
         writer.write("</title>\n");    
     }
 
@@ -175,6 +180,22 @@ public class ErrorHandler extends AbstractHandler
     public void setShowStacks(boolean showStacks)
     {
         _showStacks = showStacks;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param showMessageInTitle if true, the error message appears in page title
+     */
+    public void setShowMessageInTitle(boolean showMessageInTitle)
+    {
+        _showMessageInTitle = showMessageInTitle;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    public boolean getShowMessageInTitle()
+    {
+        return _showMessageInTitle;
     }
 
     /* ------------------------------------------------------------ */
