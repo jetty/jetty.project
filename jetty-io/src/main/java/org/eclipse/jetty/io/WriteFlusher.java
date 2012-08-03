@@ -230,7 +230,7 @@ abstract public class WriteFlusher
     {
         private final C _context;
         private final Callback<C> _callback;
-        private ByteBuffer[] _buffers;
+        private final ByteBuffer[] _buffers;
         
         private PendingState(ByteBuffer[] buffers, C context, Callback<C> callback)
         {
