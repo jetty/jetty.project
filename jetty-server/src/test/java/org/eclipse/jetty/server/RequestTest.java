@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -32,7 +24,6 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -52,6 +43,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class RequestTest
 {
     private static final Logger LOG = Log.getLogger(RequestTest.class);
@@ -64,11 +63,14 @@ public class RequestTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
-        _connector.getConnectionFactory().getHttpConfig().setRequestHeaderSize(512);
-        _connector.getConnectionFactory().getHttpConfig().setRequestBufferSize(1024);
-        _connector.getConnectionFactory().getHttpConfig().setResponseHeaderSize(512);
-        _connector.getConnectionFactory().getHttpConfig().setResponseBufferSize(2048);
-        _connector.getConnectionFactory().getHttpConfig().setForwarded(true);
+        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
+        httpConfiguration.setRequestHeaderSize(512);
+        httpConfiguration.setRequestBufferSize(1024);
+        httpConfiguration.setResponseHeaderSize(512);
+        httpConfiguration.setResponseBufferSize(2048);
+        httpConfiguration.setForwarded(true);
+        HttpServerConnectionFactory defaultConnectionFactory = new HttpServerConnectionFactory(_connector, httpConfiguration);
+        _connector.setDefaultConnectionFactory(defaultConnectionFactory);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
         _server.setHandler(_handler);
@@ -125,7 +127,7 @@ public class RequestTest
         assertTrue(responses.startsWith("HTTP/1.1 200"));
 
     }
-    
+
     @Test
     public void testMultiPart() throws Exception
     {
@@ -149,7 +151,7 @@ public class RequestTest
                 }
             }
         };
-        
+
         String multipart =  "--AaB03x\r\n"+
         "content-disposition: form-data; name=\"field1\"\r\n"+
         "\r\n"+
@@ -160,7 +162,7 @@ public class RequestTest
         "\r\n"+
         "000000000000000000000000000000000000000000000000000\r\n"+
         "--AaB03x--\r\n";
-        
+
         String request="GET / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
@@ -275,7 +277,7 @@ public class RequestTest
 
     @Test
     public void testHostPort() throws Exception
-    {        
+    {
         final ArrayList<String> results = new ArrayList<String>();
         _handler._checker = new RequestTester()
         {
@@ -326,8 +328,8 @@ public class RequestTest
                 "x-forwarded-for: remote\n"+
                 "x-forwarded-proto: https\n"+
                 "\n",10,TimeUnit.SECONDS);
-        
-        
+
+
         int i=0;
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -920,7 +922,7 @@ public class RequestTest
         {
             ((Request)request).setHandled(true);
 
-            if (request.getContentLength()>0 
+            if (request.getContentLength()>0
                     && !MimeTypes.Type.FORM_ENCODED.asString().equals(request.getContentType())
                     && !request.getContentType().startsWith("multipart/form-data"))
                 _content=IO.toString(request.getInputStream());

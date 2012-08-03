@@ -12,14 +12,6 @@ package org.eclipse.jetty.servlets;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,10 +28,9 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -58,6 +49,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Test the effects of Gzip filtering when in the context of HTTP/1.1 Pipelining.
  */
@@ -73,20 +72,20 @@ public class GzipWithPipeliningTest
                 { GzipFilter.GZIP },
                 { GzipFilter.DEFLATE + ", " + GzipFilter.GZIP },
                 { GzipFilter.GZIP + ", " + GzipFilter.DEFLATE },
-                { GzipFilter.DEFLATE } 
+                { GzipFilter.DEFLATE }
                 };
-        
+
         return Arrays.asList(data);
     }
-    
+
     @Rule
     public TestingDir testingdir = new TestingDir();
-    
+
     private Server server;
     private URI serverUri;
     private String encodingHeader;
-    
-    
+
+
     public GzipWithPipeliningTest(String encodingHeader)
     {
         this.encodingHeader = encodingHeader;
@@ -114,7 +113,7 @@ public class GzipWithPipeliningTest
         // Start Server
         server.start();
 
-        Connector.NetConnector conn = (Connector.NetConnector)server.getConnectors()[0];
+        NetworkConnector conn = (NetworkConnector)server.getConnectors()[0];
         String host = conn.getHost();
         if (host == null)
         {
@@ -130,13 +129,13 @@ public class GzipWithPipeliningTest
     {
         server.stop();
     }
-    
+
     @Test
     public void testGzipThenImagePipelining() throws Exception
     {
         testingdir.ensureEmpty();
-        File outputDir = testingdir.getDir(); 
-        
+        File outputDir = testingdir.getDir();
+
         PipelineHelper client = new PipelineHelper(serverUri, encodingHeader);
 
         try
@@ -193,7 +192,7 @@ public class GzipWithPipeliningTest
             // Inter-pipeline delim
             line = client.readLine();
             assertThat("Inter-pipeline delim should be an empty line with CR+LF",line,is(""));
-            
+
             // Sha1tracking for 1st Request
             MessageDigest digestTxt = MessageDigest.getInstance("SHA1");
             DigestOutputStream digesterTxt = new DigestOutputStream(new NoOpOutputStream(),digestTxt);
@@ -212,7 +211,7 @@ public class GzipWithPipeliningTest
             }
 
             IO.copy(uncompressedStream, digesterTxt);
-            
+
             // Read 2nd request http response header
             respHeader = client.readResponseHeader();
             System.out.println("Response Header #2 --\n" + respHeader);

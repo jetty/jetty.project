@@ -4,7 +4,7 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
@@ -16,14 +16,12 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Enumeration;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Connector.NetConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
@@ -117,7 +115,7 @@ public class Server extends HandlerWrapper implements Attributes
         addBean(_threadPool,pool==null);
         setServer(this);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     public static String getVersion()
@@ -148,15 +146,15 @@ public class Server extends HandlerWrapper implements Attributes
         {
             //and we weren't stopping before
             if (!_stopAtShutdown)
-            {  
+            {
                 //only register to stop if we're already started (otherwise we'll do it in doStart())
-                if (isStarted()) 
+                if (isStarted())
                     ShutdownThread.register(this);
             }
         }
         else
             ShutdownThread.deregister(this);
-        
+
         _stopAtShutdown=stop;
     }
 
@@ -302,8 +300,8 @@ public class Server extends HandlerWrapper implements Attributes
                 for (int i=_connectors.length;i-->0;)
                 {
                     LOG.info("Graceful shutdown {}",_connectors[i]);
-                    if (_connectors[i] instanceof NetConnector)
-                        ((NetConnector)_connectors[i]).close();
+                    if (_connectors[i] instanceof NetworkConnector)
+                        ((NetworkConnector)_connectors[i]).close();
                 }
             }
 
@@ -457,7 +455,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      */
     @Deprecated
     public int getMaxCookieVersion()
@@ -466,7 +464,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      */
     @Deprecated
     public void setMaxCookieVersion(int maxCookieVersion)

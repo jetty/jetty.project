@@ -2,7 +2,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.servlet.ServletRequest;
@@ -21,10 +20,10 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public class HttpConfiguration extends AggregateLifeCycle
 {
     static final Logger LOG = Log.getLogger(HttpConfiguration.class);
-    
+
     private final SslContextFactory _sslContextFactory;
     private final boolean _ssl;
-    
+
     private String _integralScheme = HttpScheme.HTTPS.asString();
     private int _integralPort = 0;
     private String _confidentialScheme = HttpScheme.HTTPS.asString();
@@ -41,7 +40,7 @@ public class HttpConfiguration extends AggregateLifeCycle
     private int _requestBufferSize=16*1024;
     private int _responseHeaderSize=6*1024;
     private int _responseBufferSize=16*1024;
-    
+
     public HttpConfiguration(SslContextFactory sslContextFactory,boolean ssl)
     {
         _sslContextFactory=sslContextFactory!=null?sslContextFactory:ssl?new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH):null;
@@ -49,7 +48,7 @@ public class HttpConfiguration extends AggregateLifeCycle
         if (_sslContextFactory!=null)
             addBean(_sslContextFactory,sslContextFactory==null);
     }
-    
+
     public SslContextFactory getSslContextFactory()
     {
         return _sslContextFactory;
@@ -121,7 +120,7 @@ public class HttpConfiguration extends AggregateLifeCycle
      * </ul>
      */
     public void customize(Request request) throws IOException
-    {        
+    {
         if (isSecure())
         {
             request.setScheme(HttpScheme.HTTPS.asString());
@@ -130,7 +129,7 @@ public class HttpConfiguration extends AggregateLifeCycle
             SSLEngine sslEngine=sslConnection.getSSLEngine();
             SslCertificates.customize(sslEngine,request);
         }
-        
+
         request.setTimeStamp(System.currentTimeMillis());
         if (isForwarded())
             checkForwardedHeaders(request);
@@ -242,13 +241,13 @@ public class HttpConfiguration extends AggregateLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * The request is integral IFF it is secure AND the server port
-     * matches any configured {@link #getIntegralPort()}. 
+     * matches any configured {@link #getIntegralPort()}.
      * This allows separation of listeners providing INTEGRAL versus
      * CONFIDENTIAL constraints, such as one SSL listener configured to require
      * client certs providing CONFIDENTIAL, whereas another SSL listener not
      * requiring client certs providing mere INTEGRAL constraints.
      * <p>
-     * The request is secure if it is SSL or it {@link #isForwarded()} is true 
+     * The request is secure if it is SSL or it {@link #isForwarded()} is true
      * and the scheme matches {@link #getIntegralScheme()()}
      */
     public boolean isIntegral(Request request)
@@ -280,13 +279,13 @@ public class HttpConfiguration extends AggregateLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * The request is confidential IFF it is secure AND the server port
-     * matches any configured {@link #getConfidentialPort()}. 
+     * matches any configured {@link #getConfidentialPort()}.
      * This allows separation of listeners providing INTEGRAL versus
      * CONFIDENTIAL constraints, such as one SSL listener configured to require
      * client certs providing CONFIDENTIAL, whereas another SSL listener not
      * requiring client certs providing mere INTEGRAL constraints.
      * <p>
-     * The request is secure if it is SSL or it {@link #isForwarded()} is true 
+     * The request is secure if it is SSL or it {@link #isForwarded()} is true
      * and the scheme matches {@link #getConfidentialScheme()}
      */
     public boolean isConfidential(Request request)
@@ -510,7 +509,7 @@ public class HttpConfiguration extends AggregateLifeCycle
     {
         _forwardedSslSessionIdHeader = forwardedSslSessionId;
     }
-    
+
 
     /* ------------------------------------------------------------ */
     @Override
@@ -521,8 +520,8 @@ public class HttpConfiguration extends AggregateLifeCycle
             _sslContextFactory.checkKeyStore();
 
             super.doStart();
-            
-            SSLEngine sslEngine = _sslContextFactory.newSslEngine();
+
+            SSLEngine sslEngine = _sslContextFactory.newSSLEngine();
 
             sslEngine.setUseClientMode(false);
 

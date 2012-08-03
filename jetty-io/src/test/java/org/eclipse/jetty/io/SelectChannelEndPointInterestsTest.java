@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -86,7 +87,7 @@ public class SelectChannelEndPointInterestsTest
                         super.onOpen();
                         fillInterested();
                     }
-                    
+
                     @Override
                     public void onFillable()
                     {
@@ -96,6 +97,19 @@ public class SelectChannelEndPointInterestsTest
             }
         };
         selectorManager.start();
+    }
+
+    @After
+    public void destroy() throws Exception
+    {
+        if (selectorManager != null)
+            selectorManager.stop();
+        if (connector != null)
+            connector.close();
+        if (scheduler != null)
+            scheduler.shutdownNow();
+        if (threadPool != null)
+            threadPool.stop();
     }
 
     @Test

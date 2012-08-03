@@ -36,6 +36,7 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -65,7 +66,7 @@ public class XmlConfiguredJetty
         Properties properties = new Properties();
 
         String jettyHomeBase = testdir.getDir().getAbsolutePath();
-        // Ensure we have a new (pristene) directory to work with. 
+        // Ensure we have a new (pristene) directory to work with.
         int idx = 0;
         _jettyHome = new File(jettyHomeBase + "#" + idx);
         while (_jettyHome.exists())
@@ -412,9 +413,9 @@ public class XmlConfiguredJetty
         Connector connectors[] = _server.getConnectors();
         for (int i = 0; _serverPort<0 && i < connectors.length; i++)
         {
-            if (connectors[i] instanceof Connector.NetConnector)
+            if (connectors[i] instanceof NetworkConnector)
             {
-                int port = ((Connector.NetConnector)connectors[i]).getLocalPort();
+                int port = ((NetworkConnector)connectors[i]).getLocalPort();
                 if (port>0)
                     _serverPort=port;
             }

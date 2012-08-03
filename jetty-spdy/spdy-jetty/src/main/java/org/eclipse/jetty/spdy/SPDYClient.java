@@ -31,14 +31,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -174,7 +175,7 @@ public class SPDYClient
     {
         String peerHost = channel.socket().getInetAddress().getHostAddress();
         int peerPort = channel.socket().getPort();
-        SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
+        SSLEngine engine = sslContextFactory.newSSLEngine(peerHost, peerPort);
         engine.setUseClientMode(true);
         return engine;
     }

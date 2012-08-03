@@ -22,6 +22,8 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
@@ -44,7 +46,7 @@ public class LikeJettyXml
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setMaxThreads(500);
-        
+
         Server server = new Server(threadPool);
         server.manage(threadPool);
         server.setDumpAfterStart(true);
@@ -61,33 +63,35 @@ public class LikeJettyXml
         SelectChannelConnector connector = new SelectChannelConnector(server);
         connector.setPort(8080);
         connector.setIdleTimeout(30000);
-        connector.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
+        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
+        httpConfiguration.setConfidentialPort(8443);
+        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector, httpConfiguration));
         // TODO connector.setStatsOn(false);
 
         server.setConnectors(new Connector[]
         { connector });
 
-        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,true);
-        ssl_connector.setPort(8443);
-        SslContextFactory cf = ssl_connector.getConnectionFactory().getSslContextFactory();
-        cf.setKeyStorePath(jetty_home + "/etc/keystore");
-        cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        cf.setTrustStore(jetty_home + "/etc/keystore");
-        cf.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        cf.setExcludeCipherSuites(
-                new String[] {
-                    "SSL_RSA_WITH_DES_CBC_SHA",
-                    "SSL_DHE_RSA_WITH_DES_CBC_SHA",
-                    "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                    "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-                    "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                    "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                    "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
+        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        sslContextFactory.setTrustStore(jetty_home + "/etc/keystore");
+        sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        sslContextFactory.setExcludeCipherSuites(
+                new String[]{
+                        "SSL_RSA_WITH_DES_CBC_SHA",
+                        "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                        "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+                        "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+                        "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                        "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                        "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
-        // TODO ssl_connector.setStatsOn(false);
-        server.addConnector(ssl_connector);
-        ssl_connector.open();
+        SelectChannelConnector sslConnector = new SelectChannelConnector(server,sslContextFactory);
+        sslConnector.setPort(8443);
+        // TODO sslConnector.setStatsOn(false);
+        server.addConnector(sslConnector);
+        sslConnector.open();
 
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();

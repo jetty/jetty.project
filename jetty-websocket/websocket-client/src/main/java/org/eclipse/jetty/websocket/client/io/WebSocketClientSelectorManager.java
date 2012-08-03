@@ -21,18 +21,16 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
@@ -146,7 +144,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     {
         String peerHost = channel.socket().getInetAddress().getHostAddress();
         int peerPort = channel.socket().getPort();
-        SSLEngine engine = sslContextFactory.newSslEngine(peerHost,peerPort);
+        SSLEngine engine = sslContextFactory.newSSLEngine(peerHost, peerPort);
         engine.setUseClientMode(true);
         return engine;
     }

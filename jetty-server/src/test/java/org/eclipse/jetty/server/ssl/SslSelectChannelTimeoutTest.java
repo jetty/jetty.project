@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.ssl;
 import java.io.FileInputStream;
 import java.net.Socket;
 import java.security.KeyStore;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -38,19 +37,19 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
     @BeforeClass
     public static void init() throws Exception
     {
-        SelectChannelConnector connector = new SelectChannelConnector(_server,true);
-        connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory cf = connector.getConnectionFactory().getSslContextFactory();
-        cf.setKeyStorePath(keystorePath);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-        cf.setTrustStore(keystorePath);
-        cf.setTrustStorePassword("storepwd");
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keystorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        sslContextFactory.setTrustStore(keystorePath);
+        sslContextFactory.setTrustStorePassword("storepwd");
+        SelectChannelConnector connector = new SelectChannelConnector(_server, sslContextFactory);
+        connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle
         startServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getConnectionFactory().getSslContextFactory().getKeyStorePath()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(keystorePath), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("SSL");

@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.Socket;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 import javax.servlet.ServletException;
@@ -39,9 +38,9 @@ public class HttpServerTestFixture
     protected static final long PAUSE=10L;
     protected static final int LOOPS=Stress.isEnabled()?250:50;
     protected static final String HOST="localhost";
-    
+
     protected static Server _server;
-    protected static Connector.NetConnector _connector;
+    protected static NetworkConnector _connector;
     protected String _scheme="http";
 
     protected Socket newSocket(String host,int port) throws Exception
@@ -52,14 +51,14 @@ public class HttpServerTestFixture
         socket.setSoLinger(false,0);
         return socket;
     }
-    
+
     @BeforeClass
     public static void before()
     {
         _server = new Server();
     }
-    
-    protected static void startServer(Connector.NetConnector connector) throws Exception
+
+    protected static void startServer(NetworkConnector connector) throws Exception
     {
         _connector = connector;
         _server.addConnector(_connector);
@@ -81,20 +80,20 @@ public class HttpServerTestFixture
         current.setHandler(handler);
         current.start();
     }
-    
+
 
     protected static class EchoHandler extends AbstractHandler
     {
         boolean musthavecontent=true;
-        
+
         public EchoHandler()
         {}
-        
+
         public EchoHandler(boolean content)
         {
             musthavecontent=false;
         }
-        
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
@@ -111,7 +110,7 @@ public class HttpServerTestFixture
 
             int count=0;
             BufferedReader reader=request.getReader();
-                        
+
             if (request.getContentLength()!=0)
             {
                 String line=reader.readLine();
@@ -123,7 +122,7 @@ public class HttpServerTestFixture
                     line=reader.readLine();
                 }
             }
-            
+
             if (count==0)
             {
                 if (musthavecontent)
@@ -131,7 +130,7 @@ public class HttpServerTestFixture
 
                 writer.println("No content");
             }
-            
+
             // just to be difficult
             reader.close();
             writer.close();
@@ -171,7 +170,7 @@ public class HttpServerTestFixture
             String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             while (data.length()<block)
                 data+=data;
-            
+
             String chunk = (input+data).substring(0,block);
             response.setContentType("text/plain");
             if (encoding==null)
@@ -206,7 +205,7 @@ public class HttpServerTestFixture
         }
     }
 
-    
+
     public final static HostnameVerifier __hostnameverifier = new HostnameVerifier()
     {
         public boolean verify(String hostname, SSLSession session)

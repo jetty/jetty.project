@@ -27,7 +27,7 @@ public class SSLSynReplyTest extends SynReplyTest
     protected SPDYServerConnector newSPDYServerConnector(ServerSessionFrameListener listener)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
-        return new SPDYServerConnector(listener, sslContextFactory);
+        return new SPDYServerConnector(server, sslContextFactory, listener);
     }
 
     @Override
