@@ -17,6 +17,7 @@ import org.junit.runners.Suite;
     TestABCase7.class,
     TestABCase7_GoodStatusCodes.class,
     TestABCase7_BadStatusCodes.class,
+    TestABCase9.class
 })
 // @formatter:on
 public class AllTests

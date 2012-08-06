@@ -107,6 +107,11 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
     {
+        this(WebSocketPolicy.newClientPolicy(),destWebsocketURI);
+    }
+
+    public BlockheadClient(WebSocketPolicy policy, URI destWebsocketURI) throws URISyntaxException
+    {
         Assert.assertThat("Websocket URI scheme",destWebsocketURI.getScheme(),anyOf(is("ws"),is("wss")));
         this.destWebsocketURI = destWebsocketURI;
         String scheme = "http";
@@ -116,15 +121,15 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         }
         this.destHttpURI = new URI(scheme,destWebsocketURI.getSchemeSpecificPart(),destWebsocketURI.getFragment());
 
-        policy = WebSocketPolicy.newClientPolicy();
-        bufferPool = new StandardByteBufferPool(policy.getBufferSize());
-        generator = new Generator(policy,bufferPool);
-        parser = new Parser(policy);
-        parseCount = new AtomicInteger(0);
+        this.policy = policy;
+        this.bufferPool = new StandardByteBufferPool(policy.getBufferSize());
+        this.generator = new Generator(policy,bufferPool);
+        this.parser = new Parser(policy);
+        this.parseCount = new AtomicInteger(0);
 
-        incomingFrames = new IncomingFramesCapture();
+        this.incomingFrames = new IncomingFramesCapture();
 
-        extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
+        this.extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
     }
 
     public void addExtensions(String xtension)

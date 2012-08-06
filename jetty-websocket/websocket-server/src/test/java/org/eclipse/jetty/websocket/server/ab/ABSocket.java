@@ -20,6 +20,15 @@ public class ABSocket
 
     private WebSocketConnection conn;
 
+    private String abbreviate(String message)
+    {
+        if (message.length() > 80)
+        {
+            return '"' + message.substring(0,80) + "\"...";
+        }
+        return '"' + message + '"';
+    }
+
     @OnWebSocketMessage
     public void onBinary(byte buf[], int offset, int len)
     {
@@ -45,7 +54,17 @@ public class ABSocket
     @OnWebSocketMessage
     public void onText(String message)
     {
-        LOG.debug("onText({})",message);
+        if (LOG.isDebugEnabled())
+        {
+            if (message == null)
+            {
+                LOG.debug("onText() msg=null");
+            }
+            else
+            {
+                LOG.debug("onText() size={}, msg={}",message.length(),abbreviate(message));
+            }
+        }
 
         // echo the message back.
         try

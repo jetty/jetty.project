@@ -12,6 +12,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -33,6 +34,9 @@ public class Fuzzer
         SLOW
     }
 
+    private static final int KBYTE = 1024;
+    private static final int MBYTE = KBYTE * KBYTE;
+
     private static final Logger LOG = Log.getLogger(Fuzzer.class);
 
     // Client side framing mask
@@ -47,7 +51,16 @@ public class Fuzzer
 
     public Fuzzer(AbstractABCase testcase) throws Exception
     {
-        this.client = new BlockheadClient(testcase.getServer().getServerUri());
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+
+        int bigMessageSize = 20 * MBYTE;
+
+        policy.setBufferSize(bigMessageSize);
+        policy.setMaxPayloadSize(bigMessageSize);
+        policy.setMaxTextMessageSize(bigMessageSize);
+        policy.setMaxBinaryMessageSize(bigMessageSize);
+
+        this.client = new BlockheadClient(policy,testcase.getServer().getServerUri());
         this.generator = testcase.getLaxGenerator();
         this.testname = testcase.testname.getMethodName();
     }
@@ -89,10 +102,15 @@ public class Fuzzer
 
     public void expect(List<WebSocketFrame> expect) throws IOException, TimeoutException
     {
+        expect(expect,TimeUnit.MILLISECONDS,500);
+    }
+
+    public void expect(List<WebSocketFrame> expect, TimeUnit unit, int duration) throws IOException, TimeoutException
+    {
         int expectedCount = expect.size();
 
         // Read frames
-        IncomingFramesCapture capture = client.readFrames(expect.size(),TimeUnit.MILLISECONDS,500);
+        IncomingFramesCapture capture = client.readFrames(expect.size(),unit,duration);
         if (LOG.isDebugEnabled())
         {
             capture.dump();
