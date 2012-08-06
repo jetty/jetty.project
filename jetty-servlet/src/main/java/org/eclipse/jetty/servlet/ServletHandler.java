@@ -56,6 +56,7 @@ import org.eclipse.jetty.server.ServletResponseHttpWrapper;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -788,7 +789,7 @@ public class ServletHandler extends ScopedHandler
     {
         ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(servlet);
-        setServlets(LazyList.addToArray(getServlets(), holder, ServletHolder.class));
+        setServlets(ArrayUtil.addToArray(getServlets(), holder, ServletHolder.class));
         addServletWithMapping(holder,pathSpec);
 
         return holder;
@@ -807,12 +808,12 @@ public class ServletHandler extends ScopedHandler
 
         try
         {
-            setServlets(LazyList.addToArray(holders, servlet, ServletHolder.class));
+            setServlets(ArrayUtil.addToArray(holders, servlet, ServletHolder.class));
 
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet.getName());
             mapping.setPathSpec(pathSpec);
-            setServletMappings(LazyList.addToArray(getServletMappings(), mapping, ServletMapping.class));
+            setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
         }
         catch (Exception e)
         {
@@ -830,7 +831,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void addServlet(ServletHolder holder)
     {
-        setServlets(LazyList.addToArray(getServlets(), holder, ServletHolder.class));
+        setServlets(ArrayUtil.addToArray(getServlets(), holder, ServletHolder.class));
     }
 
     /* ------------------------------------------------------------ */
@@ -839,7 +840,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void addServletMapping (ServletMapping mapping)
     {
-        setServletMappings(LazyList.addToArray(getServletMappings(), mapping, ServletMapping.class));
+        setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
     }
 
     public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) {
@@ -909,13 +910,13 @@ public class ServletHandler extends ScopedHandler
 
         try
         {
-            setFilters(LazyList.addToArray(holders, holder, FilterHolder.class));
+            setFilters(ArrayUtil.addToArray(holders, holder, FilterHolder.class));
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
             mapping.setPathSpec(pathSpec);
             mapping.setDispatcherTypes(dispatches);
-            setFilterMappings(LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
+            setFilterMappings(ArrayUtil.addToArray(getFilterMappings(), mapping, FilterMapping.class));
         }
         catch (RuntimeException e)
         {
@@ -977,13 +978,13 @@ public class ServletHandler extends ScopedHandler
 
         try
         {
-            setFilters(LazyList.addToArray(holders, holder, FilterHolder.class));
+            setFilters(ArrayUtil.addToArray(holders, holder, FilterHolder.class));
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
             mapping.setPathSpec(pathSpec);
             mapping.setDispatches(dispatches);
-            setFilterMappings(LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
+            setFilterMappings(ArrayUtil.addToArray(getFilterMappings(), mapping, FilterMapping.class));
         }
         catch (RuntimeException e)
         {
@@ -1020,9 +1021,9 @@ public class ServletHandler extends ScopedHandler
     public void addFilter (FilterHolder filter, FilterMapping filterMapping)
     {
         if (filter != null)
-            setFilters(LazyList.addToArray(getFilters(), filter, FilterHolder.class));
+            setFilters(ArrayUtil.addToArray(getFilters(), filter, FilterHolder.class));
         if (filterMapping != null)
-            setFilterMappings(LazyList.addToArray(getFilterMappings(), filterMapping, FilterMapping.class));
+            setFilterMappings(ArrayUtil.addToArray(getFilterMappings(), filterMapping, FilterMapping.class));
     }
 
     /* ------------------------------------------------------------ */
@@ -1032,7 +1033,7 @@ public class ServletHandler extends ScopedHandler
     public void addFilter (FilterHolder filter)
     {
         if (filter != null)
-            setFilters(LazyList.addToArray(getFilters(), filter, FilterHolder.class));
+            setFilters(ArrayUtil.addToArray(getFilters(), filter, FilterHolder.class));
     }
 
     /* ------------------------------------------------------------ */
@@ -1042,7 +1043,7 @@ public class ServletHandler extends ScopedHandler
     public void addFilterMapping (FilterMapping mapping)
     {
         if (mapping != null)
-            setFilterMappings(LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
+            setFilterMappings(ArrayUtil.addToArray(getFilterMappings(), mapping, FilterMapping.class));
     }
 
     /* ------------------------------------------------------------ */

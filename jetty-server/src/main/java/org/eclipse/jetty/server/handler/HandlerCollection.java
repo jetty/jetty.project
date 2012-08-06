@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import javax.servlet.ServletException;
@@ -23,7 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
 
 /* ------------------------------------------------------------ */
@@ -59,6 +60,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
+    @Override
     public Handler[] getHandlers()
     {
         return _handlers;
@@ -274,7 +276,7 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void addHandler(Handler handler)
     {
-        setHandlers((Handler[])LazyList.addToArray(getHandlers(), handler, Handler.class));
+        setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
     }
     
     /* ------------------------------------------------------------ */
@@ -283,17 +285,16 @@ public class HandlerCollection extends AbstractHandlerContainer
         Handler[] handlers = getHandlers();
         
         if (handlers!=null && handlers.length>0 )
-            setHandlers((Handler[])LazyList.removeFromArray(handlers, handler));
+            setHandlers(ArrayUtil.removeFromArray(handlers, handler));
     }
 
     /* ------------------------------------------------------------ */
     @Override
-    protected Object expandChildren(Object list, Class<?> byClass)
+    protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
-        Handler[] handlers = getHandlers();
-        for (int i=0;handlers!=null && i<handlers.length;i++)
-            list=expandHandler(handlers[i], list, byClass);
-        return list;
+        if (getHandlers()!=null)
+            for (Handler h:getHandlers())
+                expandHandler(h, list, byClass);
     }
 
     /* ------------------------------------------------------------ */

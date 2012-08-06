@@ -15,8 +15,11 @@
 //========================================================================
 package org.eclipse.jetty.websocket.server.blockhead;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.EOFException;

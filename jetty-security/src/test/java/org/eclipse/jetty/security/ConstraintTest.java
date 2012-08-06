@@ -44,11 +44,8 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
-import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**

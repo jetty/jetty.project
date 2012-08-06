@@ -15,16 +15,13 @@
 //========================================================================
 package org.eclipse.jetty.websocket.protocol;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.protocol.OpCode;
-import org.eclipse.jetty.websocket.protocol.Parser;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
 

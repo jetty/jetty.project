@@ -15,7 +15,7 @@
 //========================================================================
 package org.eclipse.jetty.websocket;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
@@ -24,8 +24,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.masks.FixedMasker;
 import org.eclipse.jetty.websocket.masks.RandomMasker;
-import org.eclipse.jetty.websocket.protocol.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.protocol.Generator;
+import org.eclipse.jetty.websocket.protocol.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;

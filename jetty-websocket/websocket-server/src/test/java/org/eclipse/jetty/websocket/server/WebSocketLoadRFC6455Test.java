@@ -15,7 +15,7 @@
 //========================================================================
 package org.eclipse.jetty.websocket.server;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

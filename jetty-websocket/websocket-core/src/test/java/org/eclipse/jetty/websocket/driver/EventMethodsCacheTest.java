@@ -15,7 +15,10 @@
 //========================================================================
 package org.eclipse.jetty.websocket.driver;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import org.eclipse.jetty.websocket.annotations.BadBinarySignatureSocket;
 import org.eclipse.jetty.websocket.annotations.BadDuplicateBinarySocket;

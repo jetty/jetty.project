@@ -26,8 +26,8 @@ import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.FillInterest;

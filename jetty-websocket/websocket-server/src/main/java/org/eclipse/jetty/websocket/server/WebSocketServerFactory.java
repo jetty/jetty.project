@@ -33,8 +33,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;

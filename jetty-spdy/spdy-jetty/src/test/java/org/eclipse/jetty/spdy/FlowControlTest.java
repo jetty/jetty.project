@@ -14,6 +14,9 @@
 
 package org.eclipse.jetty.spdy;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -39,9 +42,6 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class FlowControlTest extends AbstractTest
 {

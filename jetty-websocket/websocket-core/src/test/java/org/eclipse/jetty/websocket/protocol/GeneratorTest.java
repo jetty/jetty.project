@@ -1,6 +1,7 @@
 package org.eclipse.jetty.websocket.protocol;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

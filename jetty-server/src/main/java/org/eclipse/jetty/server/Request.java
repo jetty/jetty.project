@@ -121,6 +121,8 @@ public class Request implements HttpServletRequest
     private HttpFields _fields;
     private final HttpChannelState _state;
 
+    private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
+
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
     private Authentication _authentication;
@@ -146,7 +148,6 @@ public class Request implements HttpServletRequest
     private BufferedReader _reader;
     private String _readerEncoding;
     private InetSocketAddress _remote;
-    private Object _requestAttributeListeners;
     private String _requestedSessionId;
     private boolean _requestedSessionIdFromCookie = false;
     private String _requestURI;
@@ -177,7 +178,7 @@ public class Request implements HttpServletRequest
     public void addEventListener(final EventListener listener)
     {
         if (listener instanceof ServletRequestAttributeListener)
-            _requestAttributeListeners = LazyList.add(_requestAttributeListeners,listener);
+            _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
         if (listener instanceof ContinuationListener)
             throw new IllegalArgumentException(listener.getClass().toString());
         if (listener instanceof AsyncListener)
@@ -624,7 +625,7 @@ public class Request implements HttpServletRequest
             langs.add(new Locale(language,country));
         }
 
-        if (LazyList.size(langs) == 0)
+        if (langs.size() == 0)
             return Collections.enumeration(__defaultLocale);
 
         return Collections.enumeration(langs);
@@ -1458,29 +1459,18 @@ public class Request implements HttpServletRequest
         if (_attributes != null)
             _attributes.removeAttribute(name);
 
-        if (old_value != null)
+        if (old_value != null && !_requestAttributeListeners.isEmpty())
         {
-            if (_requestAttributeListeners != null)
-            {
-                final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context,this,name,old_value);
-                final int size = LazyList.size(_requestAttributeListeners);
-                for (int i = 0; i < size; i++)
-                {
-                    final EventListener listener = (ServletRequestAttributeListener)LazyList.get(_requestAttributeListeners,i);
-                    if (listener instanceof ServletRequestAttributeListener)
-                    {
-                        final ServletRequestAttributeListener l = (ServletRequestAttributeListener)listener;
-                        l.attributeRemoved(event);
-                    }
-                }
-            }
+            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context,this,name,old_value);
+            for (ServletRequestAttributeListener listener : _requestAttributeListeners)
+                listener.attributeRemoved(event);
         }
     }
 
     /* ------------------------------------------------------------ */
     public void removeEventListener(final EventListener listener)
     {
-        _requestAttributeListeners = LazyList.remove(_requestAttributeListeners,listener);
+        _requestAttributeListeners.remove(listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -1546,24 +1536,17 @@ public class Request implements HttpServletRequest
             _attributes = new AttributesMap();
         _attributes.setAttribute(name,value);
 
-        if (_requestAttributeListeners != null)
+        if (!_requestAttributeListeners.isEmpty())
         {
             final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context,this,name,old_value == null?value:old_value);
-            final int size = LazyList.size(_requestAttributeListeners);
-            for (int i = 0; i < size; i++)
+            for (ServletRequestAttributeListener l : _requestAttributeListeners)
             {
-                final EventListener listener = (ServletRequestAttributeListener)LazyList.get(_requestAttributeListeners,i);
-                if (listener instanceof ServletRequestAttributeListener)
-                {
-                    final ServletRequestAttributeListener l = (ServletRequestAttributeListener)listener;
-
-                    if (old_value == null)
-                        l.attributeAdded(event);
-                    else if (value == null)
-                        l.attributeRemoved(event);
-                    else
-                        l.attributeReplaced(event);
-                }
+                if (old_value == null)
+                    l.attributeAdded(event);
+                else if (value == null)
+                    l.attributeRemoved(event);
+                else
+                    l.attributeReplaced(event);
             }
         }
     }

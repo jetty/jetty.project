@@ -22,13 +22,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
-import java.nio.channels.ReadPendingException;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritePendingException;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

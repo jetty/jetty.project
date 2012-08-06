@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -137,9 +138,9 @@ public class HandlerWrapper extends AbstractHandlerContainer
 
     /* ------------------------------------------------------------ */
     @Override
-    protected Object expandChildren(Object list, Class byClass)
+    protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
-        return expandHandler(_handler,list,byClass);
+        expandHandler(_handler,list,byClass);
     }
 
     /* ------------------------------------------------------------ */

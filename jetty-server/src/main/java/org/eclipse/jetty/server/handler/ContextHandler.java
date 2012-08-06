@@ -61,6 +61,7 @@ import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
@@ -605,7 +606,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public void addEventListener(EventListener listener)
     {
-        setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(),listener,EventListener.class));
+        setEventListeners((EventListener[])ArrayUtil.addToArray(getEventListeners(),listener,EventListener.class));
     }
     
    

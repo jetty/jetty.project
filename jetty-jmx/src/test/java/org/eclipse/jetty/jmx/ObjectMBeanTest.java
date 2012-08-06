@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.jmx;
 
-import static org.junit.Assert.assertTrue;
-
 import java.lang.management.ManagementFactory;
 
 import javax.management.Attribute;

@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;

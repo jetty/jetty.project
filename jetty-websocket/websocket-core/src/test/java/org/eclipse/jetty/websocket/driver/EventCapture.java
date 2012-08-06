@@ -15,7 +15,9 @@
 //========================================================================
 package org.eclipse.jetty.websocket.driver;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;

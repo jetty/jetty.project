@@ -13,10 +13,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import junit.framework.Assert;
+
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
