@@ -114,7 +114,7 @@ public class StatusCode
     public final static int SERVER_ERROR = 1011;
 
     /**
-     * 1012 indicates that the service is restarted. a client may reconnect, and if it choses to do, should reconnect using a randomized delay of 5 - 30s.
+     * 1012 indicates that the service is restarted. a client may reconnect, and if it chooses to do, should reconnect using a randomized delay of 5 - 30s.
      * <p>
      * See <a href="https://www.ietf.org/mail-archive/web/hybi/current/msg09649.html">[hybi] Additional WebSocket Close Error Codes</a>
      */

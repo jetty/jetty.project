@@ -13,8 +13,10 @@ import org.junit.runners.Suite;
     TestABCase5.class, 
     TestABCase6.class, 
     TestABCase6_GoodUTF.class,
-    TestABCase6_BadUTF.class, 
-    TestABCase7_9.class 
+    TestABCase6_BadUTF.class,
+    TestABCase7.class,
+    TestABCase7_GoodStatusCodes.class,
+    TestABCase7_BadStatusCodes.class,
 })
 // @formatter:on
 public class AllTests

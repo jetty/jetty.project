@@ -99,6 +99,7 @@ public class TestABCase6_GoodUTF extends AbstractABCase
 
         return data;
     }
+
     private final byte[] msg;
 
     public TestABCase6_GoodUTF(String testId, String hexMsg)

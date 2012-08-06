@@ -74,7 +74,7 @@ public class WebSocketFrameTest
     @Test
     public void testStrictValidClose()
     {
-        CloseInfo close = new CloseInfo(StatusCode.NORMAL,null);
+        CloseInfo close = new CloseInfo(StatusCode.NORMAL);
         ByteBuffer actual = strictGenerator.generate(close.asFrame());
         ByteBuffer expected = ByteBuffer.allocate(4);
         expected.put((byte)0x88);

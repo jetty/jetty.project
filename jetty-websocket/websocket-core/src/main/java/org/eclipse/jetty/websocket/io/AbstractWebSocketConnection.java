@@ -23,12 +23,11 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -62,7 +61,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private WebSocketSession session;
     private List<ExtensionConfig> extensions;
     private boolean flushing;
-    private AtomicLong writes;
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -74,16 +72,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
         this.queue = new FrameQueue();
-        this.writes = new AtomicLong(0);
     }
 
-    @Override
-    public void onOpen()
-    {
-        super.onOpen();
-        fillInterested();
-    }
-    
     @Override
     public void close() throws IOException
     {
@@ -135,6 +125,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             }
 
             frameBytes = queue.pop();
+
+            if (!isOpen())
+            {
+                // No longer have an open connection, drop the frame.
+                queue.clear();
+                return;
+            }
 
             buffer = frameBytes.getByteBuffer();
 
@@ -236,6 +233,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        fillInterested();
+    }
+
     /**
      * Enqueue internal frame from {@link OutgoingFrames} stack for eventual write out on the physical connection.
      */
@@ -261,13 +265,17 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             }
 
             scheduleTimeout(bytes);
-            if (frame.getOpCode() == OpCode.PING)
+
+            if (isOpen())
             {
-                queue.prepend(bytes);
-            }
-            else
-            {
-                queue.append(bytes);
+                if (frame.getOpCode() == OpCode.PING)
+                {
+                    queue.prepend(bytes);
+                }
+                else
+                {
+                    queue.append(bytes);
+                }
             }
         }
         flush();

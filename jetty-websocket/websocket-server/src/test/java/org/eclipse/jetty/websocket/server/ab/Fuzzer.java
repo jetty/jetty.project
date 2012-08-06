@@ -127,6 +127,12 @@ public class Fuzzer
         expect(Collections.singletonList(expect));
     }
 
+    public void expectNoMoreFrames()
+    {
+        // TODO Should test for no more frames. success if connection closed.
+
+    }
+
     public SendMode getSendMode()
     {
         return sendMode;
