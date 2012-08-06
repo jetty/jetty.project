@@ -150,8 +150,8 @@ public class LocalConnector extends AbstractConnector
         Connection connection = getDefaultConnectionFactory().newConnection(null, endp, null);
         endp.setConnection(connection);
         endp.onOpen();
-        connection.onOpen();
         connectionOpened(connection);
+        connection.onOpen();
     }
 
     public class LocalEndPoint extends ByteArrayEndPoint

@@ -39,7 +39,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     protected final Logger logger = Log.getLogger(getClass());
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, ConnectionFactory> factories = new LinkedHashMap<>();
-    private final Statistics _stats = new ConnectionStatistics();
+    private final Statistics _stats = new ConnectorStatistics();
     private final Server _server;
     private final SslContextFactory _sslContextFactory;
     private final Executor _executor;
@@ -83,7 +83,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         addBean(_executor,false);
         addBean(_scheduler,scheduler==null);
         addBean(_byteBufferPool,pool==null);
-        addBean(_sslContextFactory,true);
+        addBean(_sslContextFactory);
+        addBean(_stats,false);
 
         if (acceptors<=0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
