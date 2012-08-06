@@ -291,8 +291,8 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         @Override
         public void connectionOpened(Connection connection)
         {
-            super.connectionOpened(connection);
             SelectChannelConnector.this.connectionOpened(connection);
+            super.connectionOpened(connection);
         }
 
         @Override
@@ -305,8 +305,8 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         @Override
         public void connectionUpgraded(EndPoint endpoint, Connection oldConnection)
         {
-            super.connectionUpgraded(endpoint, oldConnection);
             SelectChannelConnector.this.connectionUpgraded(oldConnection, endpoint.getConnection());
+            super.connectionUpgraded(endpoint, oldConnection);
         }
 
         @Override
