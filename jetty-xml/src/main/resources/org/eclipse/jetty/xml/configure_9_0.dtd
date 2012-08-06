@@ -2,7 +2,7 @@
 
 <!--
 This is the document type descriptor for the
-org.eclipse.XmlConfiguration class.  It allows a java object to be
+org.eclipse.jetty.xml.XmlConfiguration class.  It allows a java object to be
 configured by with a sequence of Set, Put and Call elements.  These tags are
 mapped to methods on the object to be configured as follows:
 
@@ -38,7 +38,7 @@ can be configured:
 
     <Configure class="com.acme.MyClass"> ... </Configure>
 -->
-<!ELEMENT Configure (%CONFIG;)* >
+<!ELEMENT Configure (Arg*,(%CONFIG;)*) >
 <!ATTLIST Configure %IMPLIEDCLASSATTR; %IDATTR; >
 
 
@@ -57,7 +57,7 @@ specified type.
 
 A Set with a class attribute is treated as a static set method invocation.
 -->
-<!ELEMENT Set ( %VALUE; )* >
+<!ELEMENT Set (%VALUE;)* >
 <!ATTLIST Set %NAMEATTR; %TYPEATTR; %IMPLIEDCLASSATTR; >
 
 
@@ -72,7 +72,7 @@ which act on the object returned by the get call.
 
 A Get with a class attribute is treated as a static get method or field.
 -->
-<!ELEMENT Get (%CONFIG;)*>
+<!ELEMENT Get (%CONFIG;)* >
 <!ATTLIST Get %NAMEATTR; %IMPLIEDCLASSATTR; %IDATTR; >
 
 
@@ -89,7 +89,7 @@ space is trimmed out of the value. If it contains multiple value
 elements they are added as strings before being converted to any
 specified type.
 -->
-<!ELEMENT Put ( %VALUE; )* >
+<!ELEMENT Put (%VALUE;)* >
 <!ATTLIST Put %NAMEATTR; %TYPEATTR; >
 
 
@@ -114,8 +114,8 @@ This is equivalent to:
 
 A Call with a class attribute is treated as a static call.
 -->
-<!ELEMENT Call (Arg*,(%CONFIG;)*)>
-<!ATTLIST Call %NAMEATTR; %IMPLIEDCLASSATTR; %IDATTR;>
+<!ELEMENT Call (Arg*,(%CONFIG;)*) >
+<!ATTLIST Call %NAMEATTR; %IMPLIEDCLASSATTR; %IDATTR; >
 
 
 <!--
@@ -129,8 +129,8 @@ space is trimmed out of the value. If it contains multiple value
 elements they are added as strings before being converted to any
 specified type.
 -->
-<!ELEMENT Arg ( %VALUE; )* >
-<!ATTLIST Arg %TYPEATTR; %IMPLIEDNAMEATTR;  >
+<!ELEMENT Arg (%VALUE;)* >
+<!ATTLIST Arg %TYPEATTR; %IMPLIEDNAMEATTR; >
 
 
 <!--
@@ -154,7 +154,7 @@ This is equivalent to:
  Object o = new com.acme.MyClass("value1");
  o.setTest("Value2");
 -->
-<!ELEMENT New (Arg*,(%CONFIG;)*)>
+<!ELEMENT New (Arg*,(%CONFIG;)*) >
 <!ATTLIST New %CLASSATTR; %IDATTR;>
 
 
@@ -168,7 +168,7 @@ which act on the referenced object:
    <Set name="Test">Value2</Set>
  </New>
 -->
-<!ELEMENT Ref ((%CONFIG;)*)>
+<!ELEMENT Ref (%CONFIG;)* >
 <!ATTLIST Ref %REQUIREDIDATTR;>
 
 
@@ -187,7 +187,7 @@ are used for each element of the array:
 This is equivalent to:
  String[] a = new String[] { "value0", new String("value1") };
 -->
-<!ELEMENT Array (Item*)>
+<!ELEMENT Array (Item*) >
 <!ATTLIST Array %TYPEATTR; %IDATTR; >
 
 
@@ -209,9 +209,9 @@ This is equivalent to:
  Map m = new HashMap();
  m.put("keyName", new String("value1"));
 -->
-<!ELEMENT Map (Entry*)>
+<!ELEMENT Map (Entry*) >
 <!ATTLIST Map %IDATTR; >
-<!ELEMENT Entry (Item,Item)>
+<!ELEMENT Entry (Item,Item) >
 
 
 <!--
@@ -225,7 +225,7 @@ is specified, then white space is trimmed out of the value.
 If it contains multiple value elements they are added as strings
 before being converted to any specified type.
 -->
-<!ELEMENT Item ( %VALUE; )* >
+<!ELEMENT Item (%VALUE;)* >
 <!ATTLIST Item %TYPEATTR; %IDATTR; >
 
 
@@ -242,8 +242,8 @@ This is equivalent to:
 
  System.getProperty("Test","value");
 -->
-<!ELEMENT SystemProperty EMPTY>
-<!ATTLIST SystemProperty %NAMEATTR; %DEFAULTATTR; %IDATTR;>
+<!ELEMENT SystemProperty EMPTY >
+<!ATTLIST SystemProperty %NAMEATTR; %DEFAULTATTR; %IDATTR; >
 
 
 <!--
@@ -261,8 +261,8 @@ This is equivalent to:
  if (v==null) v="value";
 
 -->
-<!ELEMENT Env EMPTY>
-<!ATTLIST Env %NAMEATTR; %DEFAULTATTR; %IDATTR;>
+<!ELEMENT Env EMPTY >
+<!ATTLIST Env %NAMEATTR; %DEFAULTATTR; %IDATTR; >
 
 
 <!--
@@ -280,5 +280,5 @@ which act on the retrieved object:
    </Call>
  </Property>
 -->
-<!ELEMENT Property ((%CONFIG;)*)>
-<!ATTLIST Property %NAMEATTR; %DEFAULTATTR; %IDATTR;>
+<!ELEMENT Property (%CONFIG;)* >
+<!ATTLIST Property %NAMEATTR; %DEFAULTATTR; %IDATTR; >

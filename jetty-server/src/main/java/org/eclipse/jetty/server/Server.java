@@ -15,7 +15,11 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,7 +29,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -44,8 +47,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * It aggregates Connectors (HTTP request receivers) and request Handlers.
  * The server is itself a handler and a ThreadPool.  Connectors use the ThreadPool methods
  * to run jobs that will eventually call the handle method.
- *
- *  @org.apache.xbean.XBean  description="Creates an embedded Jetty web server"
  */
 public class Server extends HandlerWrapper implements Attributes
 {
@@ -65,7 +66,7 @@ public class Server extends HandlerWrapper implements Attributes
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
     private final ThreadPool _threadPool;
-    private Connector[] _connectors;
+    private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
     private boolean _sendServerVersion = true; //send Server: header
     private boolean _sendDateHeader = false; //send Date: header
@@ -112,7 +113,7 @@ public class Server extends HandlerWrapper implements Attributes
     public Server(ThreadPool pool)
     {
         _threadPool=pool!=null?pool:new QueuedThreadPool();
-        addBean(_threadPool,pool==null);
+        addBean(_threadPool);
         setServer(this);
     }
 
@@ -164,23 +165,27 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public Connector[] getConnectors()
     {
-        return _connectors;
+        List<Connector> connectors = new ArrayList<>(_connectors);
+        return connectors.toArray(new Connector[connectors.size()]);
     }
 
     /* ------------------------------------------------------------ */
     public void addConnector(Connector connector)
     {
-        setConnectors((Connector[])LazyList.addToArray(getConnectors(), connector, Connector.class));
+        if (_connectors.add(connector))
+            _container.update(this, null, connector, "connector");
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * Conveniance method which calls {@link #getConnectors()} and {@link #setConnectors(Connector[])} to
+     * Convenience method which calls {@link #getConnectors()} and {@link #setConnectors(Connector[])} to
      * remove a connector.
      * @param connector The connector to remove.
      */
-    public void removeConnector(Connector connector) {
-        setConnectors((Connector[])LazyList.removeFromArray (getConnectors(), connector));
+    public void removeConnector(Connector connector)
+    {
+        if (_connectors.remove(connector))
+            _container.update(this, connector, null, "connector");
     }
 
     /* ------------------------------------------------------------ */
@@ -190,17 +195,21 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void setConnectors(Connector[] connectors)
     {
-        if (connectors!=null)
+        if (connectors != null)
         {
-            for (int i=0;i<connectors.length;i++)
+            for (Connector connector : connectors)
             {
-                if (connectors[i].getServer()!=this)
-                    throw new IllegalArgumentException();
+                if (connector.getServer() != this)
+                    throw new IllegalArgumentException("Connector " + connector +
+                            " cannot be shared among server " + connector.getServer() + " and server " + this);
             }
         }
 
-        _container.update(this, _connectors, connectors, "connector");
-        _connectors = connectors;
+        Connector[] oldConnectors = getConnectors();
+        _container.update(this, oldConnectors, connectors, "connector");
+        _connectors.removeAll(Arrays.asList(oldConnectors));
+        if (connectors != null)
+            _connectors.addAll(Arrays.asList(connectors));
     }
 
     /* ------------------------------------------------------------ */
@@ -266,12 +275,15 @@ public class Server extends HandlerWrapper implements Attributes
             mex.add(e);
         }
 
-        if (_connectors!=null && mex.size()==0)
+        if (mex.size()==0)
         {
-            for (int i=0;i<_connectors.length;i++)
+            for (Connector _connector : _connectors)
             {
-                try{_connectors[i].start();}
-                catch(Throwable e)
+                try
+                {
+                    _connector.start();
+                }
+                catch (Throwable e)
                 {
                     mex.add(e);
                 }
@@ -293,38 +305,46 @@ public class Server extends HandlerWrapper implements Attributes
 
         MultiException mex=new MultiException();
 
-        if (_graceful>0)
+        long gracefulTimeout = getGracefulShutdown();
+        if (gracefulTimeout>0)
         {
-            if (_connectors!=null)
+            for (Connector connector : _connectors)
             {
-                for (int i=_connectors.length;i-->0;)
-                {
-                    LOG.info("Graceful shutdown {}",_connectors[i]);
-                    if (_connectors[i] instanceof NetworkConnector)
-                        ((NetworkConnector)_connectors[i]).close();
-                }
+                LOG.info("Graceful shutdown {}", connector);
+                if (connector instanceof NetworkConnector)
+                    ((NetworkConnector)connector).close();
             }
 
             Handler[] contexts = getChildHandlersByClass(Graceful.class);
-            for (int c=0;c<contexts.length;c++)
+            for (Handler context : contexts)
             {
-                Graceful context=(Graceful)contexts[c];
-                LOG.info("Graceful shutdown {}",context);
-                context.setShutdown(true);
+                Graceful graceful = (Graceful)context;
+                LOG.info("Graceful shutdown {}", graceful);
+                graceful.setShutdown(true);
             }
-            Thread.sleep(_graceful);
+            Thread.sleep(gracefulTimeout);
         }
 
-        if (_connectors!=null)
+        for (Connector connector : _connectors)
         {
-            for (int i=_connectors.length;i-->0;)
+            try
             {
-                if (_connectors[i]!=null)
-                    try{_connectors[i].stop();}catch(Throwable e){mex.add(e);}
+                connector.stop();
+            }
+            catch (Throwable e)
+            {
+                mex.add(e);
             }
         }
 
-        try {super.doStop(); } catch(Throwable e) { mex.add(e);}
+        try
+        {
+            super.doStop();
+        }
+        catch (Throwable e)
+        {
+            mex.add(e);
+        }
 
         mex.ifExceptionThrow();
 
@@ -440,9 +460,6 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param sendDateHeader
-     */
     public void setSendDateHeader(boolean sendDateHeader)
     {
         _sendDateHeader = sendDateHeader;
@@ -453,24 +470,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _sendDateHeader;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    @Deprecated
-    public int getMaxCookieVersion()
-    {
-        return 1;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    @Deprecated
-    public void setMaxCookieVersion(int maxCookieVersion)
-    {
-    }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -535,7 +534,7 @@ public class Server extends HandlerWrapper implements Attributes
      * @see org.eclipse.util.AttributesMap#getAttributeNames()
      */
     @Override
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
@@ -600,7 +599,7 @@ public class Server extends HandlerWrapper implements Attributes
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpThis(out);
-        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),TypeUtil.asList(_connectors));
+        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),_connectors);
     }
 
     /* ------------------------------------------------------------ */

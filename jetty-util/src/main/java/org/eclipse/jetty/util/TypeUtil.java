@@ -19,7 +19,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,7 +43,7 @@ public class TypeUtil
     public static int LF = '\012';
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<String, Class<?>> name2Class=new HashMap<String, Class<?>>();
+    private static final HashMap<String, Class<?>> name2Class=new HashMap<>();
     static
     {
         name2Class.put("boolean",java.lang.Boolean.TYPE);
@@ -92,7 +91,7 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<Class<?>, String> class2Name=new HashMap<Class<?>, String>();
+    private static final HashMap<Class<?>, String> class2Name=new HashMap<>();
     static
     {
         class2Name.put(java.lang.Boolean.TYPE,"boolean");
@@ -119,7 +118,7 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<Class<?>, Method> class2Value=new HashMap<Class<?>, Method>();
+    private static final HashMap<Class<?>, Method> class2Value=new HashMap<>();
     static
     {
         try
@@ -168,13 +167,13 @@ public class TypeUtil
      * Works like {@link Arrays#asList(Object...)}, but handles null arrays.
      * @return a list backed by the array.
      */
-    public static <T> List<T> asList(T[] a) 
+    public static <T> List<T> asList(T[] a)
     {
         if (a==null)
             return Collections.emptyList();
         return Arrays.asList(a);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Class from a canonical name for a type.
      * @param name A class or type name.
@@ -214,28 +213,20 @@ public class TypeUtil
 
             if (type.equals(java.lang.Character.TYPE) ||
                 type.equals(java.lang.Character.class))
-                return new Character(value.charAt(0));
+                return value.charAt(0);
 
             Constructor<?> c = type.getConstructor(java.lang.String.class);
             return c.newInstance(value);
         }
-        catch(NoSuchMethodException e)
+        catch (NoSuchMethodException | IllegalAccessException | InstantiationException x)
         {
-            // LogSupport.ignore(log,e);
+            LOG.ignore(x);
         }
-        catch(IllegalAccessException e)
+        catch (InvocationTargetException x)
         {
-            // LogSupport.ignore(log,e);
-        }
-        catch(InstantiationException e)
-        {
-            // LogSupport.ignore(log,e);
-        }
-        catch(InvocationTargetException e)
-        {
-            if (e.getTargetException() instanceof Error)
-                throw (Error)(e.getTargetException());
-            // LogSupport.ignore(log,e);
+            if (x.getTargetException() instanceof Error)
+                throw (Error)x.getTargetException();
+            LOG.ignore(x);
         }
         return null;
     }
@@ -390,7 +381,7 @@ public class TypeUtil
     {
         return toHexString(new byte[]{b}, 0, 1);
     }
-    
+
     /* ------------------------------------------------------------ */
     public static String toHexString(byte[] b)
     {
@@ -499,54 +490,49 @@ public class TypeUtil
         return buf;
     }
 
-    public static URL jarFor(String className)
-    {
-        try
-        {
-            className=className.replace('.','/')+".class";
-            // hack to discover jstl libraries
-            URL url = Loader.getResource(null,className,false);
-            String s=url.toString();
-            if (s.startsWith("jar:file:"))
-                return new URL(s.substring(4,s.indexOf("!/")));
-        }
-        catch(Exception e)
-        {
-            LOG.ignore(e);
-        }
-        return null;
-    }
-    
-    public static Object call(Class<?> oClass, String method, Object obj, Object[] arg) 
+    public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg)
        throws InvocationTargetException, NoSuchMethodException
     {
         // Lets just try all methods for now
-        Method[] methods = oClass.getMethods();
-        for (int c = 0; methods != null && c < methods.length; c++)
+        for (Method method : oClass.getMethods())
         {
-            if (!methods[c].getName().equals(method))
+            if (!method.getName().equals(methodName))
                 continue;
-            if (methods[c].getParameterTypes().length != arg.length)
+            if (method.getParameterTypes().length != arg.length)
                 continue;
-            if (Modifier.isStatic(methods[c].getModifiers()) != (obj == null))
+            if (Modifier.isStatic(method.getModifiers()) != (obj == null))
                 continue;
-            if ((obj == null) && methods[c].getDeclaringClass() != oClass)
+            if ((obj == null) && method.getDeclaringClass() != oClass)
                 continue;
 
             try
             {
-                return methods[c].invoke(obj,arg);
+                return method.invoke(obj, arg);
             }
-            catch (IllegalAccessException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (IllegalArgumentException e)
+            catch (IllegalAccessException | IllegalArgumentException e)
             {
                 LOG.ignore(e);
             }
         }
+        throw new NoSuchMethodException(methodName);
+    }
 
-        throw new NoSuchMethodException(method);
+    public static Object construct(Class<?> klass, Object[] arguments) throws InvocationTargetException, NoSuchMethodException
+    {
+        for (Constructor<?> constructor : klass.getConstructors())
+        {
+            if (constructor.getParameterTypes().length != arguments.length)
+                continue;
+
+            try
+            {
+                return constructor.newInstance(arguments);
+            }
+            catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        throw new NoSuchMethodException("<init>");
     }
 }
