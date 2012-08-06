@@ -29,6 +29,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+/**
+ * Test various invalid frame situations
+ */
 @RunWith(value = Parameterized.class)
 public class TestABCase3
 {
