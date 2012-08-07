@@ -233,7 +233,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param endpoint   the endpoint
      * @param attachment the attachment
      * @return a new connection
-     * @throws IOException 
+     * @throws IOException
      * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
     public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException;
@@ -496,7 +496,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void destroyEndPoint(EndPoint endPoint)
         {
             LOG.debug("Destroyed {}", endPoint);
-            connectionClosed(endPoint.getConnection());
+            Connection connection = endPoint.getConnection();
+            if (connection != null)
+                connectionClosed(connection);
             endPointClosed(endPoint);
         }
 
