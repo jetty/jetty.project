@@ -72,10 +72,10 @@ abstract public class WriteFlusher
     //   IDLE-->WRITING-->PENDING-->COMPLETING--(fail)-->FAILED-->IDLE
     //
     // So a call to fail in the PENDING state will be directly handled and the state changed to IDLE
-    // A call to fail in the WRITING or COMPLETING states will just set the state to FAILED and the failure will be 
+    // A call to fail in the WRITING or COMPLETING states will just set the state to FAILED and the failure will be
     // handled with the write or completeWrite methods try to move the state from what they thought it was.
     //
-    
+
     protected WriteFlusher(EndPoint endPoint)
     {
         _state.set(__IDLE);
@@ -102,10 +102,12 @@ abstract public class WriteFlusher
     {
         if (!isTransitionAllowed(previous,next))
             throw new IllegalStateException();
-        
-        return _state.compareAndSet(previous,next); 
+
+        boolean updated = _state.compareAndSet(previous, next);
+        LOG.debug("State update {} -> {} succeeded: {}", previous, next, updated);
+        return updated;
     }
-    
+
     private void fail(PendingState<?> pending)
     {
         State current = _state.get();
@@ -120,7 +122,7 @@ abstract public class WriteFlusher
         }
         throw new IllegalStateException();
     }
-    
+
     private void ignoreFail()
     {
         State current = _state.get();
@@ -200,7 +202,7 @@ abstract public class WriteFlusher
             super(StateType.FAILED);
             _cause=cause;
         }
-        
+
         public Throwable getCause()
         {
             return _cause;
@@ -231,7 +233,7 @@ abstract public class WriteFlusher
         private final C _context;
         private final Callback<C> _callback;
         private final ByteBuffer[] _buffers;
-        
+
         private PendingState(ByteBuffer[] buffers, C context, Callback<C> callback)
         {
             super(StateType.PENDING);
@@ -244,7 +246,7 @@ abstract public class WriteFlusher
         {
             return _buffers;
         }
-        
+
         protected void fail(Throwable cause)
         {
             _callback.failed(_context, cause);
@@ -255,7 +257,7 @@ abstract public class WriteFlusher
             _callback.completed(_context);
         }
     }
-    
+
     /**
      * Abstract call to be implemented by specific WriteFlushers. It should schedule a call to {@link #completeWrite()}
      * or {@link #onFail(Throwable)} when appropriate.
@@ -281,7 +283,7 @@ abstract public class WriteFlusher
         if (callback == null)
             throw new IllegalArgumentException();
         LOG.debug("write: {}", this);
-        
+
         if (!updateState(__IDLE,__WRITING))
             throw new WritePendingException();
 
@@ -297,12 +299,12 @@ abstract public class WriteFlusher
                     PendingState<?> pending=new PendingState<>(buffers, context, callback);
                     if (updateState(__WRITING,pending))
                         onIncompleteFlushed();
-                    else 
+                    else
                         fail(new PendingState<>(buffers, context, callback));
                     return;
                 }
             }
-            
+
             // If updateState didn't succeed, we don't care as our buffers have been written
             if (!updateState(__WRITING,__IDLE))
                 ignoreFail();
@@ -312,7 +314,7 @@ abstract public class WriteFlusher
         {
             if (updateState(__WRITING,__IDLE))
                 callback.failed(context, e);
-            else 
+            else
                 fail(new PendingState<>(buffers, context, callback));
         }
     }
@@ -336,11 +338,11 @@ abstract public class WriteFlusher
         PendingState<?> pending = (PendingState<?>)previous;
         if (!updateState(pending,__COMPLETING))
             return; // failure already handled.
-       
+
         try
         {
             ByteBuffer[] buffers = pending.getBuffers();
-            
+
             _endPoint.flush(buffers);
 
             // Are we complete?
@@ -350,7 +352,7 @@ abstract public class WriteFlusher
                 {
                     if (updateState(__COMPLETING,pending))
                         onIncompleteFlushed();
-                    else 
+                    else
                         fail(pending);
                     return;
                 }
@@ -373,7 +375,7 @@ abstract public class WriteFlusher
     public void onFail(Throwable cause)
     {
         LOG.debug("failed: " + this, cause);
-        
+
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while(true)
         {
@@ -382,7 +384,7 @@ abstract public class WriteFlusher
             {
                 case IDLE:
                     return;
-                    
+
                 case PENDING:
                     PendingState<?> pending = (PendingState<?>)current;
                     if (updateState(pending,__IDLE))
@@ -391,7 +393,7 @@ abstract public class WriteFlusher
                         return;
                     }
                     break;
-                    
+
                 default:
                     if (updateState(current,new FailedState(cause)))
                         return;
@@ -411,7 +413,7 @@ abstract public class WriteFlusher
     {
         return _state.get().getType() == StateType.IDLE;
     }
-    
+
     public boolean isInProgress()
     {
         switch(_state.get().getType())
