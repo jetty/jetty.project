@@ -13,48 +13,51 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.io;
+package org.eclipse.jetty.websocket.io.message;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
- * Support class for reading binary message data as an InputStream.
+ * Support class for reading text message data as an Reader.
+ * <p>
+ * Due to the spec, this reader is forced to use the UTF8 charset.
  */
-public class MessageInputStream extends InputStream implements StreamAppender
+public class MessageReader extends Reader implements MessageAppender
 {
-    private final ByteBuffer buffer;
+    private ByteBuffer buffer;
 
-    public MessageInputStream(ByteBuffer buf)
+    public MessageReader(ByteBuffer buf)
     {
         BufferUtil.clearToFill(buf);
         this.buffer = buf;
     }
 
     @Override
-    public void appendBuffer(ByteBuffer buf)
-    {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void bufferComplete() throws IOException
+    public void appendMessage(ByteBuffer byteBuffer) throws IOException
     {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    public ByteBuffer getBuffer()
+    public void close() throws IOException
     {
-        return buffer;
+        // TODO Auto-generated method stub
     }
 
     @Override
-    public int read() throws IOException
+    public void messageComplete() throws IOException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public int read(char[] cbuf, int off, int len) throws IOException
     {
         // TODO Auto-generated method stub
         return 0;
