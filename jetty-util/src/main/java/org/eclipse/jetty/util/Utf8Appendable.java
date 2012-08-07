@@ -13,6 +13,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /* ------------------------------------------------------------ */
 /**
@@ -91,6 +92,21 @@ public abstract class Utf8Appendable
         try
         {
             appendByte(b);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    public void append(ByteBuffer buf)
+    {
+        try
+        {
+            while (buf.remaining() > 0)
+            {
+                appendByte(buf.get());
+            }
         }
         catch (IOException e)
         {
