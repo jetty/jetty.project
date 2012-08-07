@@ -53,8 +53,8 @@ public class SPDYServerConnector extends SelectChannelConnector
         super(server, sslContextFactory);
         this.listener = listener;
         setInitialWindowSize(65536);
-        putConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), listener));
-        putConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), listener));
+        putConnectionFactory("spdy/3", new ServerSPDYConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), listener));
+        putConnectionFactory("spdy/2", new ServerSPDYConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), listener));
         setDefaultConnectionFactory(getConnectionFactory("spdy/2"));
     }
 

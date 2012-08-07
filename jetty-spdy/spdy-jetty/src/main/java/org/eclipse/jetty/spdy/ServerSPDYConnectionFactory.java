@@ -25,7 +25,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 
-public class ServerSPDYAsyncConnectionFactory implements ConnectionFactory
+public class ServerSPDYConnectionFactory implements ConnectionFactory
 {
     private final ByteBufferPool bufferPool;
     private final Executor threadPool;
@@ -33,12 +33,12 @@ public class ServerSPDYAsyncConnectionFactory implements ConnectionFactory
     private final short version;
     private final ServerSessionFrameListener listener;
 
-    public ServerSPDYAsyncConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler)
+    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler)
     {
         this(version, bufferPool, threadPool, scheduler, null);
     }
 
-    public ServerSPDYAsyncConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
+    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
     {
         this.version = version;
         this.bufferPool = bufferPool;
@@ -63,7 +63,6 @@ public class ServerSPDYAsyncConnectionFactory implements ConnectionFactory
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(endPoint, attachment);
         SPDYConnection connection = new ServerSPDYConnection(endPoint, bufferPool, parser, listener, connector);
-        endPoint.setConnection(connection);
 
         FlowControlStrategy flowControlStrategy = connector.newFlowControlStrategy(version);
 
