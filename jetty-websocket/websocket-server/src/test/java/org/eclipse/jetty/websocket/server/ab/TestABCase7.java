@@ -384,8 +384,8 @@ public class TestABCase7 extends AbstractABCase
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
-        payload.put((byte)0xE8); // normal close
-        payload.put((byte)0x03);
+        payload.put((byte)0x03); // normal close
+        payload.put((byte)0xE8);
         byte invalidUtf[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
         payload.put(invalidUtf);
         BufferUtil.flipToFlush(payload,0);
@@ -397,7 +397,7 @@ public class TestABCase7 extends AbstractABCase
         send.add(close);
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
+        expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
         Fuzzer fuzzer = new Fuzzer(this);
         try

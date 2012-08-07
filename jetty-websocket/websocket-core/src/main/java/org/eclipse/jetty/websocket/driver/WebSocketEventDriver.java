@@ -181,7 +181,8 @@ public class WebSocketEventDriver implements IncomingFrames
             {
                 case OpCode.CLOSE:
                 {
-                    CloseInfo close = new CloseInfo(frame);
+                    boolean validate = true;
+                    CloseInfo close = new CloseInfo(frame,validate);
                     if (events.onClose != null)
                     {
                         events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());
