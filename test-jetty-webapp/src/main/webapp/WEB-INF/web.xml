@@ -239,6 +239,7 @@
   </servlet-mapping>
   
   
+  <!--  TODO 
   <servlet>
     <servlet-name>TransparentProxy</servlet-name>
     <servlet-class>org.eclipse.jetty.servlets.ProxyServlet$Transparent</servlet-class>
@@ -258,7 +259,7 @@
     <servlet-name>TransparentProxy</servlet-name>
     <url-pattern>/javadoc-proxy/*</url-pattern>
   </servlet-mapping>
-  
+  -->  
 
 
   <servlet>

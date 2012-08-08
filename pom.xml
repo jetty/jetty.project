@@ -369,7 +369,7 @@
     <module>jetty-util-ajax</module>
 
     <!--<module>test-continuation</module>-->
-    <!--<module>test-jetty-webapp</module>-->
+    <module>test-jetty-webapp</module>
     <module>example-jetty-embedded</module>
 
     <!--<module>jetty-client</module>-->

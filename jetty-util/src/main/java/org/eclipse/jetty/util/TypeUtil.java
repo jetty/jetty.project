@@ -497,7 +497,7 @@ public class TypeUtil
         for (Method method : oClass.getMethods())
         {
             if (!method.getName().equals(methodName))
-                continue;
+                continue;            
             if (method.getParameterTypes().length != arg.length)
                 continue;
             if (Modifier.isStatic(method.getModifiers()) != (obj == null))
@@ -514,6 +514,36 @@ public class TypeUtil
                 LOG.ignore(e);
             }
         }
+        
+        // Lets look for a method with optional arguments
+        Object[] args_with_opts=null;
+        
+        for (Method method : oClass.getMethods())
+        {
+            if (!method.getName().equals(methodName))
+                continue;            
+            if (method.getParameterTypes().length != arg.length+1)
+                continue;
+            if (!method.getParameterTypes()[arg.length].isArray())
+                continue;
+            if (Modifier.isStatic(method.getModifiers()) != (obj == null))
+                continue;
+            if ((obj == null) && method.getDeclaringClass() != oClass)
+                continue;
+
+            if (args_with_opts==null)
+                args_with_opts=ArrayUtil.addToArray(arg,new Object[]{},Object.class);
+            try
+            {
+                return method.invoke(obj, args_with_opts);
+            }
+            catch (IllegalAccessException | IllegalArgumentException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        
+        
         throw new NoSuchMethodException(methodName);
     }
 

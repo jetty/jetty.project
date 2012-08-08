@@ -13,56 +13,70 @@ package com.acme;
 //========================================================================
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.server.WebSocketServlet;
 
 public class WebSocketChatServlet extends WebSocketServlet
 {
     private static final Logger LOG = Log.getLogger(WebSocketChatServlet.class);
 
     private final Set<ChatWebSocket> _members = new CopyOnWriteArraySet<ChatWebSocket>();
-    
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
         throws javax.servlet.ServletException ,IOException 
     {
         getServletContext().getNamedDispatcher("default").forward(request,response);
     };
-    
-    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+
+    @Override
+    public void registerWebSockets(WebSocketServerFactory factory)
     {
-        return new ChatWebSocket();
+        factory.register(ChatWebSocket.class);
     }
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    class ChatWebSocket implements WebSocket.OnTextMessage
+    @WebSocket
+    class ChatWebSocket
     {
-        Connection _connection;
+        volatile WebSocketConnection _connection;
 
-        public void onOpen(Connection connection)
+        @OnWebSocketConnect
+        public void onOpen(WebSocketConnection conn)
         {
-            // LOG.info(this+" onConnect");
-            _connection=connection;
+            _connection = conn;
             _members.add(this);
         }
-        
-        public void onMessage(byte frame, byte[] data,int offset, int length)
-        {
-            // LOG.info(this+" onMessage: "+TypeUtil.toHexString(data,offset,length));
-        }
 
+        @OnWebSocketMessage
         public void onMessage(String data)
         {
             if (data.indexOf("disconnect")>=0)
-                _connection.disconnect();
+            {
+                try
+                {
+                    _connection.close();
+                }
+                catch(IOException e)
+                {
+                    LOG.warn(e);
+                }
+            }
             else
             {
                 // LOG.info(this+" onMessage: "+data);
@@ -70,7 +84,7 @@ public class WebSocketChatServlet extends WebSocketServlet
                 {
                     try
                     {
-                        member._connection.sendMessage(data);
+                        member._connection.write(null,new FutureCallback<>(),data);
                     }
                     catch(IOException e)
                     {
@@ -80,9 +94,9 @@ public class WebSocketChatServlet extends WebSocketServlet
             }
         }
         
+        @OnWebSocketClose
         public void onClose(int code, String message)
         {
-            // LOG.info(this+" onDisconnect");
             _members.remove(this);
         }
 
