@@ -82,14 +82,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
         @OnWebSocketMessage
         public void onMessage(String data)
         {
-            if (!connection.isOpen())
-            {
-                // Nothing to do, connection is already closed.
-                // Due to the nature of async communications, this is possible.
-                return;
-            }
-
-            if (data.indexOf("disconnect") >= 0)
+            if (data.contains("disconnect"))
             {
                 try
                 {
@@ -99,30 +92,29 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
                 {
                     LOG.warn(e);
                 }
+                return;
             }
-            else
-            {
-                ListIterator<ChatWebSocket> iter = members.listIterator();
-                while (iter.hasNext())
-                {
-                    ChatWebSocket member = iter.next();
-                    
-                    // Test is member is now disonnected
-                    if (!member.connection.isOpen())
-                    {
-                        iter.remove();
-                        continue;
-                    }
 
-                    try
-                    {
-                        // Async write the message back.
-                        member.connection.write(null,new FutureCallback<>(),data);
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.warn(e);
-                    }
+            ListIterator<ChatWebSocket> iter = members.listIterator();
+            while (iter.hasNext())
+            {
+                ChatWebSocket member = iter.next();
+
+                // Test if member is now disconnected
+                if (!member.connection.isOpen())
+                {
+                    iter.remove();
+                    continue;
+                }
+
+                try
+                {
+                    // Async write the message back.
+                    member.connection.write(null,new FutureCallback<>(),data);
+                }
+                catch (IOException e)
+                {
+                    LOG.warn(e);
                 }
             }
         }
