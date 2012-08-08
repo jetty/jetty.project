@@ -27,6 +27,9 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.server.WebSocketRequest;
+import org.eclipse.jetty.websocket.server.WebSocketResponse;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.server.WebSocketServlet;
 
@@ -44,6 +47,19 @@ public class WebSocketChatServlet extends WebSocketServlet
     };
 
     @Override
+    protected WebSocketServerFactory newWebSocketServerFactory(WebSocketPolicy policy)
+    {
+        return new WebSocketServerFactory(policy)
+        {
+            @Override
+            public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
+            {
+                return new ChatWebSocket();
+            }
+        };
+    }
+
+    @Override
     public void registerWebSockets(WebSocketServerFactory factory)
     {
         factory.register(ChatWebSocket.class);
@@ -52,7 +68,7 @@ public class WebSocketChatServlet extends WebSocketServlet
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     @WebSocket
-    class ChatWebSocket
+    public class ChatWebSocket
     {
         volatile WebSocketConnection _connection;
 
