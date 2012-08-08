@@ -132,7 +132,7 @@ public abstract class WebSocketServlet extends HttpServlet
                 policy.setMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
-            webSocketFactory = newWebSocketServerFactory(policy);
+            webSocketFactory = new WebSocketServerFactory(policy);
 
             registerWebSockets(webSocketFactory);
 
@@ -142,15 +142,6 @@ public abstract class WebSocketServlet extends HttpServlet
         {
             throw new ServletException(x);
         }
-    }
-
-    /**
-     * Create a new WebSocketServerFactory.
-     * This methods allows the factory instance to be overridden by derived Servlets.
-     */
-    protected WebSocketServerFactory newWebSocketServerFactory(WebSocketPolicy policy)
-    {
-        return new WebSocketServerFactory(policy);
     }
 
     public abstract void registerWebSockets(WebSocketServerFactory factory);

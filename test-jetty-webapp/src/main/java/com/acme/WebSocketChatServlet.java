@@ -1,4 +1,5 @@
 package com.acme;
+
 //========================================================================
 //Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
@@ -13,9 +14,11 @@ package com.acme;
 //========================================================================
 
 import java.io.IOException;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -27,94 +30,107 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketRequest;
 import org.eclipse.jetty.websocket.server.WebSocketResponse;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.server.WebSocketServlet;
 
-public class WebSocketChatServlet extends WebSocketServlet
+@SuppressWarnings("serial")
+public class WebSocketChatServlet extends WebSocketServlet implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(WebSocketChatServlet.class);
 
-    private final Set<ChatWebSocket> _members = new CopyOnWriteArraySet<ChatWebSocket>();
+    /** Holds active sockets to other members of the chat */
+    private final List<ChatWebSocket> members = new CopyOnWriteArrayList<ChatWebSocket>();
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
-        throws javax.servlet.ServletException ,IOException 
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         getServletContext().getNamedDispatcher("default").forward(request,response);
-    };
+    }
 
     @Override
-    protected WebSocketServerFactory newWebSocketServerFactory(WebSocketPolicy policy)
+    public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
     {
-        return new WebSocketServerFactory(policy)
-        {
-            @Override
-            public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
-            {
-                return new ChatWebSocket();
-            }
-        };
+        return new ChatWebSocket();
     }
 
     @Override
     public void registerWebSockets(WebSocketServerFactory factory)
     {
         factory.register(ChatWebSocket.class);
+        factory.setCreator(this);
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+    /**
+     * Create a WebSocket that echo's back the message to all other members of the servlet.
+     */
     @WebSocket
     public class ChatWebSocket
     {
-        volatile WebSocketConnection _connection;
+        volatile WebSocketConnection connection;
 
         @OnWebSocketConnect
         public void onOpen(WebSocketConnection conn)
         {
-            _connection = conn;
-            _members.add(this);
+            connection = conn;
+            members.add(this);
         }
 
         @OnWebSocketMessage
         public void onMessage(String data)
         {
-            if (data.indexOf("disconnect")>=0)
+            if (!connection.isOpen())
+            {
+                // Nothing to do, connection is already closed.
+                // Due to the nature of async communications, this is possible.
+                return;
+            }
+
+            if (data.indexOf("disconnect") >= 0)
             {
                 try
                 {
-                    _connection.close();
+                    connection.close();
                 }
-                catch(IOException e)
+                catch (IOException e)
                 {
                     LOG.warn(e);
                 }
             }
             else
             {
-                // LOG.info(this+" onMessage: "+data);
-                for (ChatWebSocket member : _members)
+                ListIterator<ChatWebSocket> iter = members.listIterator();
+                while (iter.hasNext())
                 {
+                    ChatWebSocket member = iter.next();
+                    
+                    // Test is member is now disonnected
+                    if (!member.connection.isOpen())
+                    {
+                        iter.remove();
+                        continue;
+                    }
+
                     try
                     {
-                        member._connection.write(null,new FutureCallback<>(),data);
+                        // Async write the message back.
+                        member.connection.write(null,new FutureCallback<>(),data);
                     }
-                    catch(IOException e)
+                    catch (IOException e)
                     {
                         LOG.warn(e);
                     }
                 }
             }
         }
-        
+
         @OnWebSocketClose
         public void onClose(int code, String message)
         {
-            _members.remove(this);
+            members.remove(this);
         }
-
     }
 }
