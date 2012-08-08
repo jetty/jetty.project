@@ -46,11 +46,35 @@ public class Utf8StringBuilderTest
     }
     
     @Test
-    public void testFastFail() throws Exception
+    public void testFastFail_1() throws Exception
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5");
         byte[] part2 = TypeUtil.fromHexString("f4908080"); // INVALID
         byte[] part3 = TypeUtil.fromHexString("656469746564");
+
+        Utf8StringBuilder buffer = new Utf8StringBuilder();
+        // Part 1 is valid
+        buffer.append(part1,0,part1.length);
+        try
+        {
+            // Part 2 is invalid
+            buffer.append(part2,0,part2.length);
+            Assert.fail("Should have thrown a NotUtf8Exception");
+        }
+        catch (Utf8Appendable.NotUtf8Exception e)
+        {
+            // expected path
+        }
+        // Part 3 is valid
+        buffer.append(part3,0,part3.length);
+    }
+    
+    @Test
+    public void testFastFail_2() throws Exception
+    {
+        byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
+        byte[] part2 = TypeUtil.fromHexString("90"); // INVALID
+        byte[] part3 = TypeUtil.fromHexString("8080656469746564");
 
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         // Part 1 is valid
