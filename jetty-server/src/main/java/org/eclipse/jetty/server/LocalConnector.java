@@ -156,7 +156,7 @@ public class LocalConnector extends AbstractConnector
 
     public class LocalEndPoint extends ByteArrayEndPoint
     {
-        private CountDownLatch _closed = new CountDownLatch(1);
+        private final CountDownLatch _closed = new CountDownLatch(1);
 
         public LocalEndPoint()
         {

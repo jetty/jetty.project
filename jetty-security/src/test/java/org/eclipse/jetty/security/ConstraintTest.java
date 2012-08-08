@@ -146,11 +146,7 @@ public class ConstraintTest
     @After
     public void stopServer() throws Exception
     {
-        if (_server.isRunning())
-        {
-            _server.stop();
-            _server.join();
-        }
+        _server.stop();
     }
 
     @Test
@@ -282,6 +278,7 @@ public class ConstraintTest
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +

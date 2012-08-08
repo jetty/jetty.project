@@ -361,20 +361,23 @@
     <module>jetty-security</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
-    <module>jetty-deploy</module>
 
+    <module>jetty-spdy</module>
     <module>jetty-websocket</module>
+
     <module>jetty-servlets</module>
 
     <module>jetty-util-ajax</module>
 
-    <!--<module>test-continuation</module>-->
+    <module>test-continuation</module>
     <module>test-jetty-webapp</module>
     <module>example-jetty-embedded</module>
 
     <!--<module>jetty-client</module>-->
     <!--<module>jetty-proxy</module>-->
-    <module>jetty-spdy</module>
+    <module>jetty-deploy</module>
+    <module>jetty-start</module>
+
     <!--
     <module>jetty-jaspi</module>
     <module>jetty-ajp</module>
@@ -384,7 +387,6 @@
     <module>jetty-rewrite</module>
     <module>jetty-policy</module>
     <module>jetty-monitor</module>
-    <module>jetty-start</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
     <module>jetty-nosql</module>
