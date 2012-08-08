@@ -80,13 +80,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         terminateConnection(StatusCode.NORMAL,null);
     }
 
     @Override
-    public void close(int statusCode, String reason) throws IOException
+    public void close(int statusCode, String reason)
     {
         terminateConnection(statusCode,reason);
     }

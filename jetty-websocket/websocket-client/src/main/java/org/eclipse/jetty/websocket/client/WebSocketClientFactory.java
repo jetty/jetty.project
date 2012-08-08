@@ -15,7 +15,6 @@
 //========================================================================
 package org.eclipse.jetty.websocket.client;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Queue;
@@ -56,54 +55,53 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketClientFactory(Executor threadPool)
     {
-        this(threadPool, Executors.newSingleThreadScheduledExecutor());
-    }
-
-    public WebSocketClientFactory(SslContextFactory sslContextFactory)
-    {
-        this(new QueuedThreadPool(), Executors.newSingleThreadScheduledExecutor(), sslContextFactory);
+        this(threadPool,Executors.newSingleThreadScheduledExecutor());
     }
 
     public WebSocketClientFactory(Executor threadPool, ScheduledExecutorService scheduler)
     {
-        this(threadPool, scheduler, null);
+        this(threadPool,scheduler,null);
     }
 
     public WebSocketClientFactory(Executor executor, ScheduledExecutorService scheduler, SslContextFactory sslContextFactory)
     {
         if (executor == null)
+        {
             throw new IllegalArgumentException("Executor is required");
+        }
         this.executor = executor;
         addBean(executor);
 
         if (scheduler == null)
+        {
             throw new IllegalArgumentException("Scheduler is required");
+        }
         this.scheduler = scheduler;
 
         if (sslContextFactory != null)
+        {
             addBean(sslContextFactory);
+        }
 
         this.policy = WebSocketPolicy.newClientPolicy();
 
-        selector = new WebSocketClientSelectorManager(bufferPool, executor, scheduler, policy);
+        selector = new WebSocketClientSelectorManager(bufferPool,executor,scheduler,policy);
         selector.setSslContextFactory(sslContextFactory);
         addBean(selector);
 
         this.methodsCache = new EventMethodsCache();
     }
 
+    public WebSocketClientFactory(SslContextFactory sslContextFactory)
+    {
+        this(new QueuedThreadPool(),Executors.newSingleThreadScheduledExecutor(),sslContextFactory);
+    }
+
     private void closeConnections()
     {
         for (WebSocketConnection connection : connections)
         {
-            try
-            {
-                connection.close();
-            }
-            catch (IOException e)
-            {
-                LOG.warn(e);
-            }
+            connection.close();
         }
         connections.clear();
     }
@@ -152,6 +150,6 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketEventDriver newWebSocketDriver(Object websocketPojo)
     {
-        return new WebSocketEventDriver(websocketPojo, methodsCache, policy, getBufferPool());
+        return new WebSocketEventDriver(websocketPojo,methodsCache,policy,getBufferPool());
     }
 }

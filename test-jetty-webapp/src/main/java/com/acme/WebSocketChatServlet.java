@@ -84,14 +84,7 @@ public class WebSocketChatServlet extends WebSocketServlet implements WebSocketC
         {
             if (data.contains("disconnect"))
             {
-                try
-                {
-                    connection.close();
-                }
-                catch (IOException e)
-                {
-                    LOG.warn(e);
-                }
+                connection.close();
                 return;
             }
 

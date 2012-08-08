@@ -145,14 +145,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     {
         for (WebSocketSession session : sessions)
         {
-            try
-            {
-                session.close();
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to close session",e);
-            }
+            session.close();
         }
         sessions.clear();
     }

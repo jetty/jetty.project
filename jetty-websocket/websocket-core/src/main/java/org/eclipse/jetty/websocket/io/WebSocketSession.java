@@ -40,13 +40,13 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         baseConnection.close();
     }
 
     @Override
-    public void close(int statusCode, String reason) throws IOException
+    public void close(int statusCode, String reason)
     {
         baseConnection.close(statusCode,reason);
     }

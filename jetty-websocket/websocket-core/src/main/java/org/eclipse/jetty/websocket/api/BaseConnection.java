@@ -1,8 +1,10 @@
 package org.eclipse.jetty.websocket.api;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
+/**
+ * Base Connection concepts
+ */
 public interface BaseConnection
 {
     /**
@@ -21,12 +23,10 @@ public interface BaseConnection
      * <p>
      * Basic usage: results in an non-blocking async write, then connection close.
      * 
-     * @throws IOException
-     *             if unable to send the close frame, or close the connection successfully.
      * @see StatusCode
      * @see #close(int, String)
      */
-    void close() throws IOException;
+    void close();
 
     /**
      * Terminate connection, with status code.
@@ -37,11 +37,9 @@ public interface BaseConnection
      *            the status code
      * @param reason
      *            the (optional) reason. (can be null for no reason)
-     * @throws IOException
-     *             if unable to send the close frame, or close the connection successfully.
      * @see StatusCode
      */
-    void close(int statusCode, String reason) throws IOException;
+    void close(int statusCode, String reason);
 
     /**
      * Get the remote Address in use for this connection.

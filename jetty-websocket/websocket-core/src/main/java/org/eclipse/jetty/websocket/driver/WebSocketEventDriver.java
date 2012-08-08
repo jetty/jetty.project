@@ -15,7 +15,6 @@
 //========================================================================
 package org.eclipse.jetty.websocket.driver;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -287,24 +286,17 @@ public class WebSocketEventDriver implements IncomingFrames
 
     private void terminateConnection(int statusCode, String rawreason)
     {
-        try
+        String reason = rawreason;
+        if (StringUtil.isNotBlank(reason))
         {
-            String reason = rawreason;
-            if (StringUtil.isNotBlank(reason))
+            // Trim big exception messages here.
+            if (reason.length() > (WebSocketFrame.MAX_CONTROL_PAYLOAD - 2))
             {
-                // Trim big exception messages here.
-                if (reason.length() > (WebSocketFrame.MAX_CONTROL_PAYLOAD - 2))
-                {
-                    reason = reason.substring(0,WebSocketFrame.MAX_CONTROL_PAYLOAD - 2);
-                }
+                reason = reason.substring(0,WebSocketFrame.MAX_CONTROL_PAYLOAD - 2);
             }
-            LOG.debug("terminateConnection({},{})",statusCode,rawreason);
-            session.close(statusCode,reason);
         }
-        catch (IOException e)
-        {
-            LOG.debug(e);
-        }
+        LOG.debug("terminateConnection({},{})",statusCode,rawreason);
+        session.close(statusCode,reason);
     }
 
     @Override
