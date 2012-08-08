@@ -54,7 +54,7 @@ public class SimpleBinaryMessage implements MessageAppender
     }
 
     @Override
-    public void messageComplete() throws IOException
+    public void messageComplete()
     {
         BufferUtil.flipToFlush(this.buf,0);
         finished = true;

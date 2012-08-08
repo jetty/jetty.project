@@ -19,7 +19,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.driver.EventMethod;
+import org.eclipse.jetty.websocket.io.WebSocketSession;
 
 /**
  * Support class for reading text message data as an Reader.
@@ -28,32 +31,66 @@ import org.eclipse.jetty.util.BufferUtil;
  */
 public class MessageReader extends Reader implements MessageAppender
 {
-    private ByteBuffer buffer;
+    private final Object websocket;
+    private final EventMethod onEvent;
+    private final WebSocketSession session;
+    private final WebSocketPolicy policy;
+    private final Utf8StringBuilder utf;
+    private int size;
+    private boolean finished;
+    private boolean needsNotification;
 
-    public MessageReader(ByteBuffer buf)
+    public MessageReader(Object websocket, EventMethod onEvent, WebSocketSession session, WebSocketPolicy policy)
     {
-        BufferUtil.clearToFill(buf);
-        this.buffer = buf;
+        this.websocket = websocket;
+        this.onEvent = onEvent;
+        this.session = session;
+        this.policy = policy;
+        this.utf = new Utf8StringBuilder();
+        size = 0;
+        finished = false;
+        needsNotification = true;
     }
 
     @Override
-    public void appendMessage(ByteBuffer byteBuffer) throws IOException
+    public void appendMessage(ByteBuffer payload) throws IOException
     {
-        // TODO Auto-generated method stub
+        if (finished)
+        {
+            throw new IOException("Cannot append to finished buffer");
+        }
 
+        if (payload == null)
+        {
+            // empty payload is valid
+            return;
+        }
+
+        policy.assertValidTextMessageSize(size + payload.remaining());
+        size += payload.remaining();
+
+        synchronized (utf)
+        {
+            utf.append(payload);
+        }
+
+        if (needsNotification)
+        {
+            needsNotification = true;
+            this.onEvent.call(websocket,session,this);
+        }
     }
 
     @Override
     public void close() throws IOException
     {
-        // TODO Auto-generated method stub
+        finished = true;
     }
 
     @Override
-    public void messageComplete() throws IOException
+    public void messageComplete()
     {
-        // TODO Auto-generated method stub
-
+        finished = true;
     }
 
     @Override

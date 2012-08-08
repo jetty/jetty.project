@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BaseConnection;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
@@ -47,7 +49,7 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 /**
  * Provides the implementation of {@link WebSocketConnection} within the framework of the new {@link Connection} framework of jetty-io
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements RawConnection, OutgoingFrames
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements BaseConnection, BaseConnection.SuspendToken, OutgoingFrames
 {
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
     private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
@@ -58,9 +60,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final Parser parser;
     private final WebSocketPolicy policy;
     private final FrameQueue queue;
+    private final AtomicBoolean suspendToken;
     private WebSocketSession session;
     private List<ExtensionConfig> extensions;
     private boolean flushing;
+    private boolean isFilling;
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -72,6 +76,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
         this.queue = new FrameQueue();
+        this.suspendToken = new AtomicBoolean(false);
     }
 
     @Override
@@ -98,7 +103,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    @Override
     public void disconnect(boolean onlyOutput)
     {
         EndPoint endPoint = getEndPoint();
@@ -146,7 +150,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
             }
         }
-        write(buffer,this,frameBytes);
+        write(buffer,frameBytes);
     }
 
     public ByteBufferPool getBufferPool()
@@ -154,16 +158,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return bufferPool;
     }
 
-    public Executor getExecutor()
-    {
-        return getExecutor();
-    }
-
     /**
      * Get the list of extensions in use.
      * <p>
      * This list is negotiated during the WebSocket Upgrade Request/Response handshake.
-     *
+     * 
      * @return the list of negotiated extensions in use.
      */
     public List<ExtensionConfig> getExtensions()
@@ -214,6 +213,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    public boolean isReading()
+    {
+        return isFilling;
+    }
+
+    @Override
     public void onFillable()
     {
         ByteBuffer buffer = bufferPool.acquire(policy.getBufferSize(),false);
@@ -221,15 +226,21 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         boolean readMore = false;
         try
         {
+            isFilling = true;
             readMore = (read(buffer) != -1);
         }
         finally
         {
             bufferPool.release(buffer);
         }
-        if (readMore)
+
+        if (readMore && (suspendToken.get() == false))
         {
             fillInterested();
+        }
+        else
+        {
+            isFilling = false;
         }
     }
 
@@ -296,7 +307,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 else if (filled < 0)
                 {
                     LOG.debug("read - EOF Reached");
-                    // disconnect(false); // FIXME Simone says this is bad
                     return -1;
                 }
                 else
@@ -323,6 +333,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    @Override
+    public void resume()
+    {
+        if(suspendToken.getAndSet(false)) {
+            fillInterested();
+        }
+    }
+
     private <C> void scheduleTimeout(FrameBytes<C> bytes)
     {
         if (policy.getIdleTimeout() > 0)
@@ -335,7 +353,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Get the list of extensions in use.
      * <p>
      * This list is negotiated during the WebSocket Upgrade Request/Response handshake.
-     *
+     * 
      * @param extensions
      *            the list of negotiated extensions in use.
      */
@@ -349,9 +367,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.session = session;
     }
 
+    @Override
+    public SuspendToken suspend()
+    {
+        suspendToken.set(true);
+        return this;
+    }
+
     /**
      * For terminating connections forcefully.
-     *
+     * 
      * @param statusCode
      *            the WebSocket status code.
      * @param reason
@@ -373,7 +398,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return String.format("%s{g=%s,p=%s}",super.toString(),generator,parser);
     }
 
-    private <C> void write(ByteBuffer buffer, AbstractWebSocketConnection webSocketConnection, FrameBytes<C> frameBytes)
+    private <C> void write(ByteBuffer buffer, FrameBytes<C> frameBytes)
     {
         EndPoint endpoint = getEndPoint();
 

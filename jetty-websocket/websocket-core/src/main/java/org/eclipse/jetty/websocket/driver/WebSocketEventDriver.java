@@ -229,12 +229,7 @@ public class WebSocketEventDriver implements IncomingFrames
                     {
                         if (events.onText.isStreaming())
                         {
-                            // Allocate directly, not via ByteBufferPool, as this buffer
-                            // is ultimately controlled by the end user, and we can't know
-                            // when they are done using the stream in order to release any
-                            // buffer allocated from the ByteBufferPool.
-                            ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
-                            this.activeMessage = new MessageReader(buf);
+                            activeMessage = new MessageReader(websocket,events.onBinary,session,policy);
                         }
                         else
                         {

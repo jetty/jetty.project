@@ -30,6 +30,10 @@ import org.eclipse.jetty.websocket.io.WebSocketSession;
  */
 public class MessageInputStream extends InputStream implements MessageAppender
 {
+    /**
+     * Threshold (of bytes) to perform compaction at
+     */
+    private static final int COMPACT_THRESHOLD = 5;
     private final Object websocket;
     private final EventMethod onEvent;
     private final WebSocketSession session;
@@ -38,7 +42,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
     private final ByteBuffer buf;
     private int size;
     private boolean finished;
-    private boolean needsNotification = true;
+    private boolean needsNotification;
+    private int readPosition;
 
     public MessageInputStream(Object websocket, EventMethod onEvent, WebSocketSession session, ByteBufferPool bufferPool, WebSocketPolicy policy)
     {
@@ -49,7 +54,10 @@ public class MessageInputStream extends InputStream implements MessageAppender
         this.policy = policy;
         this.buf = bufferPool.acquire(policy.getBufferSize(),false);
         BufferUtil.clearToFill(this.buf);
+        size = 0;
+        readPosition = this.buf.position();
         finished = false;
+        needsNotification = true;
     }
 
     @Override
@@ -72,6 +80,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
         synchronized (buf)
         {
             // TODO: grow buffer till max binary message size?
+            // TODO: compact this buffer to fit incoming buffer?
+            // TODO: tell connection to suspend if buffer too full?
             BufferUtil.put(payload,buf);
         }
 
@@ -85,12 +95,13 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public void close() throws IOException
     {
+        finished = true;
         super.close();
         this.bufferPool.release(this.buf);
     }
 
     @Override
-    public void messageComplete() throws IOException
+    public void messageComplete()
     {
         finished = true;
     }
@@ -100,13 +111,14 @@ public class MessageInputStream extends InputStream implements MessageAppender
     {
         synchronized (buf)
         {
-            // FIXME: HACKITY HACK HACK HACK
-            // Should really use its own tracking of position, to avoid flipping the
-            // buffer between read/write
-            byte b = buf.get();
-            if (buf.limit() <= (buf.capacity() - 5))
+            byte b = buf.get(readPosition);
+            readPosition++;
+            if (readPosition <= (buf.limit() - COMPACT_THRESHOLD))
             {
+                int curPos = buf.position();
                 buf.compact();
+                int offsetPos = buf.position() - curPos;
+                readPosition += offsetPos;
             }
             return b;
         }

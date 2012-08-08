@@ -51,7 +51,7 @@ public class SimpleTextMessage implements MessageAppender
     }
 
     @Override
-    public void messageComplete() throws IOException
+    public void messageComplete()
     {
         finished = true;
 
