@@ -39,8 +39,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A Connection that acts as an intercepter between an EndPoint providing SSL encrypted data
- * and another consumer of an  EndPoint (typically an {@link Connection} like HttpConnection) that
+ * A Connection that acts as an interceptor between an EndPoint providing SSL encrypted data
+ * and another consumer of an EndPoint (typically an {@link Connection} like HttpConnection) that
  * wants unencrypted data.
  * <p>
  * The connector uses an {@link EndPoint} (typically {@link SelectChannelEndPoint}) as
@@ -65,7 +65,7 @@ import org.eclipse.jetty.util.log.Logger;
  * to call the encrypted write and for the decrypted flush to call the encrypted fillInterested methods.
  * <p>
  * MOST IMPORTANTLY, the encrypted callbacks from the active methods (#onFillable() and WriteFlusher#completeWrite()) do no filling or flushing
- * themselves.  Instead they simple make the callbacks to the decrypted callbacks, so that the passive encyrpted fill/flush will
+ * themselves.  Instead they simple make the callbacks to the decrypted callbacks, so that the passive encrypted fill/flush will
  * be called again and make another best effort attempt to progress the connection.
  *
  */
@@ -568,12 +568,12 @@ public class SslConnection extends AbstractConnection
                                     return consumed;
                             }
 
-                            // If we we flushing because of a fill needing to wrap, return normally and it will handle the closed state.
+                            // If we were flushing because of a fill needing to wrap, return normally and it will handle the closed state.
                             if (_fillRequiresFlushToProgress)
                                 return consumed;
 
-                            // otherwise it is an exception to write to a closed endpoint
-                            throw new EofException();
+                            // otherwise we have written, and the caller will close the underlying connection
+                            return consumed;
 
                         case BUFFER_UNDERFLOW:
                             throw new IllegalStateException();
