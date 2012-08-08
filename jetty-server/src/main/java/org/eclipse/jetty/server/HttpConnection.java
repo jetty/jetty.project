@@ -191,7 +191,7 @@ public class HttpConnection extends AbstractConnection
         // new Throwable().printStackTrace();
         super.fillInterested();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Parse and handle HTTP messages.
      * <p>
@@ -217,7 +217,7 @@ public class HttpConnection extends AbstractConnection
             {
                 // synchronized (_lock)
                 {
-                    
+
                 // Fill the request buffer with data only if it is totally empty.
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
@@ -381,7 +381,7 @@ public class HttpConnection extends AbstractConnection
         {
             return _connector;
         }
-        
+
         public HttpConfiguration getHttpConfiguration()
         {
             return _httpConfig;
@@ -574,7 +574,7 @@ public class HttpConnection extends AbstractConnection
                                 break;
 
                             case SHUTDOWN_OUT:
-                                getEndPoint().shutdownOutput();
+                                terminate();
                                 break loop;
 
                             case OK:
@@ -676,7 +676,7 @@ public class HttpConnection extends AbstractConnection
                                 break loop;
 
                             case SHUTDOWN_OUT:
-                                getEndPoint().shutdownOutput();
+                                terminate();
                                 break loop;
 
                             case OK:
@@ -694,8 +694,20 @@ public class HttpConnection extends AbstractConnection
                 {
                     LOG.debug(e);
                     FutureCallback.rethrow(e);
-                }  
+                }
             }
+        }
+
+        private void terminate()
+        {
+            // This method is called when the generator determines that the connection should be closed
+            // either for HTTP/1.0 or because of Connection headers.
+            // We need to close gently, first shutting down the output, so that we can send the SSL close
+            // message, and then closing without waiting to read -1, since the semantic of this method
+            // is exactly that the connection should be closed: no further reads must be accepted.
+            EndPoint endPoint = getEndPoint();
+            endPoint.shutdownOutput();
+            endPoint.close();
         }
 
         @Override
