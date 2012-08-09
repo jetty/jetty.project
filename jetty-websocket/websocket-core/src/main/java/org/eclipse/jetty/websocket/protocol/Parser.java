@@ -25,6 +25,11 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.io.payload.BinaryValidator;
+import org.eclipse.jetty.websocket.io.payload.CloseReasonValidator;
+import org.eclipse.jetty.websocket.io.payload.DeMaskProcessor;
+import org.eclipse.jetty.websocket.io.payload.PayloadProcessor;
+import org.eclipse.jetty.websocket.io.payload.UTF8Validator;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -54,6 +59,8 @@ public class Parser
     // payload specific
     private ByteBuffer payload;
     private int payloadLength;
+    private PayloadProcessor maskProcessor = new DeMaskProcessor();
+    private PayloadProcessor strictnessProcessor;
 
     /** Is there an extension using RSV1 */
     private boolean rsv1InUse = false;
@@ -277,6 +284,19 @@ public class Parser
 
                     boolean isContinuation = false;
 
+                    switch (opcode)
+                    {
+                        case OpCode.TEXT:
+                            strictnessProcessor = new UTF8Validator();
+                            break;
+                        case OpCode.CLOSE:
+                            strictnessProcessor = new CloseReasonValidator();
+                            break;
+                        default:
+                            strictnessProcessor = BinaryValidator.INSTANCE;
+                            break;
+                    }
+
                     if (OpCode.isControlFrame(opcode))
                     {
                         // control frame validation
@@ -359,6 +379,7 @@ public class Parser
                             return true;
                         }
 
+                        maskProcessor.reset(frame);
                         state = State.PAYLOAD;
                     }
 
@@ -385,6 +406,7 @@ public class Parser
                                 return true;
                             }
 
+                            maskProcessor.reset(frame);
                             state = State.PAYLOAD;
                         }
                     }
@@ -404,6 +426,7 @@ public class Parser
                             return true;
                         }
 
+                        maskProcessor.reset(frame);
                         state = State.PAYLOAD;
                     }
                     else
@@ -427,6 +450,7 @@ public class Parser
                             return true;
                         }
 
+                        maskProcessor.reset(frame);
                         state = State.PAYLOAD;
                     }
                     break;
@@ -476,27 +500,29 @@ public class Parser
                 BufferUtil.clearToFill(payload);
             }
 
-            BufferUtil.put(buffer,payload);
+            // Create a small window of the incoming buffer to work with.
+            // this should only show the payload itself, and not any more
+            // bytes that could belong to the start of the next frame.
+            ByteBuffer window = buffer.slice();
+            int bytesExpected = payloadLength - payload.position();
+            int bytesAvailable = buffer.remaining();
+            int windowBytes = Math.min(bytesAvailable,bytesExpected);
+            window.limit(window.position() + windowBytes);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Window: {}",BufferUtil.toDetailString(window));
+            }
+
+            maskProcessor.process(window);
+            strictnessProcessor.process(window);
+            int len = BufferUtil.put(window,payload);
+
+            buffer.position(buffer.position() + len); // update incoming buffer position
 
             if (payload.position() >= payloadLength)
             {
                 BufferUtil.flipToFlush(payload,0);
-
-                LOG.debug("PreMask: {}",BufferUtil.toDetailString(payload));
-                // demask (if needed)
-                if (frame.isMasked())
-                {
-                    byte mask[] = frame.getMask();
-                    int offset;
-                    int start = payload.position();
-                    int end = payload.limit();
-                    for (int i = start; i < end; i++)
-                    {
-                        offset = (i - start);
-                        payload.put(i,(byte)(payload.get(i) ^ mask[offset % 4]));
-                    }
-                }
-
                 frame.setPayload(payload);
                 this.payload = null;
                 return true;

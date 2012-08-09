@@ -22,7 +22,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -351,10 +353,15 @@ public class TestABCase6 extends AbstractABCase
     @Slow
     public void testCase6_4_3() throws Exception
     {
-        byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
+        ByteBuffer payload = ByteBuffer.allocate(64);
+        BufferUtil.clearToFill(payload);
+        payload.put(TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5")); // good
+        payload.put(TypeUtil.fromHexString("f4908080")); // INVALID
+        payload.put(TypeUtil.fromHexString("656469746564")); // good
+        BufferUtil.flipToFlush(payload,0);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(invalid));
+        send.add(new WebSocketFrame(OpCode.TEXT).setPayload(payload));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -366,14 +373,27 @@ public class TestABCase6 extends AbstractABCase
             fuzzer.connect();
 
             ByteBuffer net = fuzzer.asNetworkBuffer(send);
-            fuzzer.send(net,6);
-            fuzzer.send(net,11);
+
+            int splits[] =
+            { 17, 21, net.limit() };
+
+            ByteBuffer part1 = net.slice(); // Header + good UTF
+            part1.limit(splits[0]);
+            ByteBuffer part2 = net.slice(); // invalid UTF
+            part2.position(splits[0]);
+            part2.limit(splits[1]);
+            ByteBuffer part3 = net.slice(); // good UTF
+            part3.position(splits[1]);
+            part3.limit(splits[2]);
+
+            fuzzer.send(part1); // the header + good utf
             TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(net,4);
-            TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(net,100); // the rest
+            fuzzer.send(part2); // the bad UTF
 
             fuzzer.expect(expect);
+
+            TimeUnit.SECONDS.sleep(1);
+            fuzzer.send(part3); // the rest (shouldn't work)
         }
         finally
         {

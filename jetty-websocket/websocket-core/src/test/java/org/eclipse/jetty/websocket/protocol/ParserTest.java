@@ -15,13 +15,18 @@
 //========================================================================
 package org.eclipse.jetty.websocket.protocol;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -30,6 +35,8 @@ import org.junit.Test;
 
 public class ParserTest
 {
+    private static final Logger LOG = Log.getLogger(ParserTest.class);
+
     /**
      * Similar to the server side 5.15 testcase. A normal 2 fragment text text message, followed by another continuation.
      */
@@ -161,6 +168,53 @@ public class ParserTest
         capture.assertErrorCount(0);
         capture.assertHasFrame(OpCode.TEXT,len);
         capture.assertHasFrame(OpCode.CLOSE,1);
+    }
+
+    /**
+     * Similar to the server side 6.4.3 testcase.
+     */
+    @Test
+    public void testParseCase6_4_3()
+    {
+        ByteBuffer payload = ByteBuffer.allocate(64);
+        BufferUtil.clearToFill(payload);
+        payload.put(TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5")); // good
+        payload.put(TypeUtil.fromHexString("f4908080")); // INVALID
+        payload.put(TypeUtil.fromHexString("656469746564")); // good
+        BufferUtil.flipToFlush(payload,0);
+
+        WebSocketFrame text = new WebSocketFrame();
+        text.setMask(TypeUtil.fromHexString("11223344"));
+        text.setPayload(payload);
+        text.setOpCode(OpCode.TEXT);
+
+        ByteBuffer buf = new UnitGenerator().generate(text);
+
+        ByteBuffer part1 = ByteBuffer.allocate(17); // header + good
+        ByteBuffer part2 = ByteBuffer.allocate(4); // invalid
+        ByteBuffer part3 = ByteBuffer.allocate(10); // the rest (all good utf)
+
+        BufferUtil.put(buf,part1);
+        BufferUtil.put(buf,part2);
+        BufferUtil.put(buf,part3);
+
+        BufferUtil.flipToFlush(part1,0);
+        BufferUtil.flipToFlush(part2,0);
+        BufferUtil.flipToFlush(part3,0);
+
+        LOG.debug("Part1: {}",BufferUtil.toDetailString(part1));
+        LOG.debug("Part2: {}",BufferUtil.toDetailString(part2));
+        LOG.debug("Part3: {}",BufferUtil.toDetailString(part3));
+
+        UnitParser parser = new UnitParser();
+        IncomingFramesCapture capture = new IncomingFramesCapture();
+        parser.setIncomingFramesHandler(capture);
+
+        parser.parse(part1);
+        capture.assertErrorCount(0);
+        parser.parse(part2);
+        capture.assertErrorCount(1);
+        capture.assertHasErrors(BadPayloadException.class,1);
     }
 
     @Test
