@@ -83,6 +83,16 @@ public class ServerSPDYAsyncConnectionFactory implements ConnectionFactory
         return listener;
     }
 
+    protected ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
+    }
+
+    protected Executor getThreadPool()
+    {
+        return threadPool;
+    }
+
     private static class ServerSPDYConnection extends SPDYConnection
     {
         private final ServerSessionFrameListener listener;

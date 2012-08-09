@@ -28,9 +28,9 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.sun.xml.internal.ws.util.ByteArrayBuffer;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
@@ -44,6 +44,9 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
@@ -79,13 +82,13 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertTrue(replyInfo.isClose());
+                assertThat("replyInfo.isClose is true", replyInfo.isClose(), is(true));
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                assertThat("status is 200", replyHeaders.get("status").value().contains("200"), is(true));
                 replyLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(handlerLatch.await(5000, TimeUnit.SECONDS)); //TODO: thomas
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 

@@ -14,28 +14,21 @@
 
 package org.eclipse.jetty.spdy.proxy;
 
-import java.nio.channels.SocketChannel;
-
-import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.spdy.SPDYServerConnector;
-import org.eclipse.jetty.spdy.http.ServerHTTPAsyncConnectionFactory;
-
-public class ProxyHTTPAsyncConnectionFactory extends ServerHTTPAsyncConnectionFactory
+public class ProxyHTTPAsyncConnectionFactory //extends ServerHTTPAsyncConnectionFactory
 {
-    private final short version;
-    private final ProxyEngineSelector proxyEngineSelector;
-
-    public ProxyHTTPAsyncConnectionFactory(SPDYServerConnector connector, short version, ProxyEngineSelector proxyEngineSelector)
-    {
-        super(connector);
-        this.version = version;
-        this.proxyEngineSelector = proxyEngineSelector;
-    }
-
-    @Override
-    public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
-    {
-        return new ProxyHTTPSPDYAsyncConnection(getConnector(), endPoint, version, proxyEngineSelector);
-    }
+//    private final short version;
+//    private final ProxyEngineSelector proxyEngineSelector;
+//
+//    public ProxyHTTPAsyncConnectionFactory(SPDYServerConnector connector, short version, ProxyEngineSelector proxyEngineSelector)
+//    {
+//        super(connector);
+//        this.version = version;
+//        this.proxyEngineSelector = proxyEngineSelector;
+//    }
+//
+//    @Override
+//    public Connection newAsyncConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+//    {
+//        return new ProxyHTTPSPDYAsyncConnection(getConnector(), endPoint, version, proxyEngineSelector);
+//    }
 }

@@ -97,9 +97,7 @@ public enum HttpMethod
     /* ------------------------------------------------------------ */
     /** 
      * Optimised lookup to find a method name and trailing space in a byte array.
-     * @param bytes Array containing ISO-8859-1 characters
-     * @param position The first valid index
-     * @param limit The first non valid index
+     * @param buffer buffer containing ISO-8859-1 characters
      * @return A HttpMethod if a match or null if no easy match.
      */
     public static HttpMethod lookAheadGet(ByteBuffer buffer)
@@ -150,5 +148,15 @@ public enum HttpMethod
     public String asString()
     {
         return toString();
+    }
+
+    /**
+     * Converts the given String parameter to an HttpMethod
+     * @param method the String to get the equivalent HttpMethod from
+     * @return the HttpMethod or null if the parameter method is unknown
+     */
+    public static HttpMethod fromString(String method)
+    {
+        return CACHE.get(method);
     }
 }

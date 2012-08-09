@@ -218,7 +218,7 @@ public class HttpParser
                 if (_version!=null)
                 {
                     buffer.position(buffer.position()+_version.asString().length()+1);
-                    _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
+                    _persistent=_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion();
                     _state=State.SPACE1;
                     return;
                 }
@@ -309,7 +309,7 @@ public class HttpParser
                             badMessage(buffer, "Unknown Version");
                             return true;
                         }
-                        _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
+                        _persistent=_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion();
                         _state=State.SPACE1;            
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
@@ -410,7 +410,7 @@ public class HttpParser
                                     _string.setLength(0);
                                     buffer.position(buffer.position()+_version.asString().length()-1);
                                     _eol=buffer.get();
-                                    _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
+                                    _persistent=_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion();
                                     _state=State.HEADER;
                                     return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
                                 }
@@ -450,7 +450,7 @@ public class HttpParser
                         }
                         
                         _eol=ch;
-                        _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
+                        _persistent=_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion();
                         _state=State.HEADER;
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
                         continue;

@@ -55,7 +55,7 @@ public class ProtocolNegotiationTest
     {
         server = new Server();
         if (connector == null)
-            connector = new SPDYServerConnector(null, newSslContextFactory());
+//            connector = new SPDYServerConnector(null, newSslContextFactory()); //TODO:
         connector.setPort(0);
         this.connector = connector;
         server.addConnector(connector);
@@ -79,8 +79,8 @@ public class ProtocolNegotiationTest
     public void testServerAdvertisingHTTPSpeaksHTTP() throws Exception
     {
         InetSocketAddress address = startServer(null);
-        connector.removeAsyncConnectionFactory("spdy/2");
-        connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector));
+        connector.removeConnectionFactory("spdy/2");
+//        connector.putConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector)); //TODO:
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
@@ -136,7 +136,7 @@ public class ProtocolNegotiationTest
     public void testServerAdvertisingSPDYAndHTTPSpeaksHTTPWhenNegotiated() throws Exception
     {
         InetSocketAddress address = startServer(null);
-        connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector));
+//        connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector)); //TODO:
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
@@ -194,10 +194,10 @@ public class ProtocolNegotiationTest
     @Test
     public void testServerAdvertisingSPDYAndHTTPSpeaksDefaultProtocolWhenNPNMissing() throws Exception
     {
-        SPDYServerConnector connector = new SPDYServerConnector(null, newSslContextFactory());
-        connector.setDefaultAsyncConnectionFactory(new ServerHTTPAsyncConnectionFactory(connector));
+//        SPDYServerConnector connector = new SPDYServerConnector(null, newSslContextFactory()); //TODO:
+//        connector.setDefaultConnectionFactory(new ServerHTTPConnectionFactory(connector));
         InetSocketAddress address = startServer(connector);
-        connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector));
+//        connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector));
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();

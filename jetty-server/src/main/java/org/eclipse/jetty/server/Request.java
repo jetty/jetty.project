@@ -1700,7 +1700,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public boolean isHead()
     {
-        return HttpMethod.HEAD==_httpMethod;
+        return HttpMethod.HEAD==HttpMethod.fromString(_method);
     }
 
     /* ------------------------------------------------------------ */
