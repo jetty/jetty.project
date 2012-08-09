@@ -377,7 +377,7 @@
     <!--<module>jetty-proxy</module>-->
     <module>jetty-deploy</module>
     <module>jetty-start</module>
-
+    <module>jetty-plugins</module>
     <!--
     <module>jetty-jaspi</module>
     <module>jetty-ajp</module>
