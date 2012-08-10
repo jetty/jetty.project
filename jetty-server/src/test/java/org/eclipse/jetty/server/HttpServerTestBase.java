@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -135,7 +136,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         catch(SocketException e)
         {
             // TODO looks like a close is overtaking the 413 in SSL
-            System.err.println("Investigate this "+e);
+            Log.getLogger(SslConnection.class).warn("Investigate this!!!",e);
         }
         finally
         {

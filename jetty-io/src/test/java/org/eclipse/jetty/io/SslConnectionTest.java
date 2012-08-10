@@ -24,6 +24,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
@@ -214,9 +215,10 @@ public class SslConnectionTest
     @Test
     public void testWriteOnConnect() throws Exception
     {
+        //Log.getRootLogger().setDebugEnabled(true);
         _testFill=false;
         
-        for (int i=0;i<10;i++)
+        for (int i=0;i<1;i++)
         {
             _writeCallback = new FutureCallback<>();
             Socket client = newClient();

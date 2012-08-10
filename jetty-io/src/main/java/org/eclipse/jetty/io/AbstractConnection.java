@@ -36,6 +36,7 @@ public abstract class AbstractConnection implements Connection
     private final AtomicBoolean _readInterested = new AtomicBoolean();
     private final EndPoint _endp;
     private final Callback<Void> _readCallback;
+    private final Executor _executor;
 
     public AbstractConnection(EndPoint endp, Executor executor)
     {
@@ -46,7 +47,7 @@ public abstract class AbstractConnection implements Connection
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
-
+        _executor=executor;
         _endp = endp;
         _readCallback = new ExecutorCallback<Void>(executor)
         {
@@ -77,6 +78,12 @@ public abstract class AbstractConnection implements Connection
         };
     }
 
+    public Executor getExecutor()
+    {
+        return _executor;
+    }
+    
+    
     /**
      * <p>Utility method to be called to register read interest.</p>
      * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}

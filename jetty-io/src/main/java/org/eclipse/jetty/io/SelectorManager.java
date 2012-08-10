@@ -154,6 +154,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected void endPointOpened(EndPoint endpoint)
     {
+        // TODO should this be dispatched
         endpoint.onOpen();
     }
 
@@ -164,6 +165,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected void endPointClosed(EndPoint endpoint)
     {
+        // TODO should this be dispatched
         endpoint.onClose();
     }
 
@@ -172,9 +174,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just opened
      */
-    public void connectionOpened(Connection connection)
+    public void connectionOpened(final Connection connection)
     {
-        connection.onOpen();
+        execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                connection.onOpen();
+            }
+        });
     }
 
     /**
@@ -182,9 +191,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just closed
      */
-    public void connectionClosed(Connection connection)
+    public void connectionClosed(final Connection connection)
     {
-        connection.onClose();
+        execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                connection.onClose();
+            }
+        });
     }
 
     /**
@@ -334,7 +350,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             String name = _thread.getName();
             try
             {
-                _thread.setName(name + " Selector" + _id);
+                _thread.setName(name + "-selector-" + _id);
                 LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
                     select();

@@ -80,7 +80,16 @@ public class SslConnection extends AbstractConnection
     private ByteBuffer _encryptedOutput;
     private final boolean _encryptedDirectBuffers = false;
     private final boolean _decryptedDirectBuffers = false;
-
+    
+    private final Runnable _runCompletWrite = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            _decryptedEndPoint.getWriteFlusher().completeWrite();
+        }
+    };
+    
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
         super(endPoint, executor, true);
@@ -139,9 +148,11 @@ public class SslConnection extends AbstractConnection
 
             // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
             if (_decryptedEndPoint._flushRequiresFillToProgress)
+            {
                 _decryptedEndPoint._flushRequiresFillToProgress = false;
 
-            _decryptedEndPoint.getWriteFlusher().completeWrite();
+                getExecutor().execute(_runCompletWrite);
+            }
         }
         LOG.debug("{} onFilled", this);
     }
@@ -211,7 +222,7 @@ public class SslConnection extends AbstractConnection
                         getFillInterest().fillable();
                     }
 
-                    getWriteFlusher().completeWrite();
+                    getExecutor().execute(_runCompletWrite);
                 }
             }
 
@@ -349,6 +360,10 @@ public class SslConnection extends AbstractConnection
         @Override
         public synchronized int fill(ByteBuffer buffer) throws IOException
         {
+            // TODO remove this when we are certain it is OK 
+            if (Thread.currentThread().getName().indexOf("selector")>=0)
+                new Throwable().printStackTrace();
+            
             LOG.debug("{} fill enter", SslConnection.this);
             try
             {
@@ -524,6 +539,10 @@ public class SslConnection extends AbstractConnection
         @Override
         public synchronized int flush(ByteBuffer... appOuts) throws IOException
         {
+            // TODO remove this when we are certain it is OK 
+            if (Thread.currentThread().getName().indexOf("selector")>=0)
+                new Throwable().printStackTrace();
+            
             // The contract for flush does not require that all appOuts bytes are written
             // or even that any appOut bytes are written!  If the connection is write block
             // or busy handshaking, then zero bytes may be taken from appOuts and this method
