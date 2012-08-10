@@ -36,7 +36,7 @@ public class LDAPLeakPreventer extends AbstractLeakPreventer
     {
         try
         {
-            Class.forName("com.sun.jndi.LdapPoolManager");
+            Class.forName("com.sun.jndi.LdapPoolManager", true, loader);
         }
         catch (ClassNotFoundException e)
         {

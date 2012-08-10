@@ -34,7 +34,7 @@ public class LoginConfigurationLeakPreventer extends AbstractLeakPreventer
     {
         try
         {
-            Class.forName("javax.security.auth.login.Configuration");
+            Class.forName("javax.security.auth.login.Configuration", true, loader);
         }
         catch (ClassNotFoundException e)
         {

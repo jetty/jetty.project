@@ -34,7 +34,7 @@ public class Java2DLeakPreventer extends AbstractLeakPreventer
     {
         try
         {
-            Class.forName("sun.java2d.Disposer");
+            Class.forName("sun.java2d.Disposer", true, loader);
         }
         catch (ClassNotFoundException e)
         {
