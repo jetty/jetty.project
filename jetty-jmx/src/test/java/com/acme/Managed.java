@@ -6,9 +6,9 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject(value="Managed Object", wrapper="com.acme.jmx.ManagedMBean")
 public class Managed
 {
-    @ManagedAttribute("Managed Attribute")
     String managed = "foo";
     
+    @ManagedAttribute("Managed Attribute")
     public String getManaged()
     {
         return managed;
@@ -19,4 +19,10 @@ public class Managed
         this.managed = managed;
     }
        
+    
+    public String bad()
+    {
+        return "bad";
+    }
+    
 }

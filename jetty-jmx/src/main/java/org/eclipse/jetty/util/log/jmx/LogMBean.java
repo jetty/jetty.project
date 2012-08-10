@@ -17,11 +17,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.jmx.ObjectMBean;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /**
  */
+@ManagedObject("Jetty Logging")
 public class LogMBean extends ObjectMBean
 {
 
@@ -30,18 +35,21 @@ public class LogMBean extends ObjectMBean
         super(managedObject);
     }
 
+    @ManagedAttribute(value="list of instantiated loggers")
     public List<String> getLoggers()
     {
         List<String> keySet = new ArrayList<String>(Log.getLoggers().keySet());
         return keySet;
     }
 
-    public boolean isDebugEnabled(String logger)
+    @ManagedOperation(value="true if debug enabled for the given logger")
+    public boolean isDebugEnabled(@Name("logger") String logger)
     {
         return Log.getLogger(logger).isDebugEnabled();
     }
-
-    public void setDebugEnabled(String logger, Boolean enabled)
+    
+    @ManagedOperation(value="Set debug enabled for given logger")
+    public void setDebugEnabled(@Name("logger")String logger, @Name("enabled") Boolean enabled)
     {
         Log.getLogger(logger).setDebugEnabled(enabled);
     }

@@ -20,15 +20,22 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target( { ElementType.METHOD, ElementType.FIELD } )
+@Target( { ElementType.METHOD } )
 public @interface ManagedAttribute
 {
     /**
-     * Description of the Managed Object
+     * Description of the Managed Attribute
      * 
-     * @return
+     * @returngit checkout
      */
     String value() default "Not Specified";
+    
+    /**
+     * name to use for the attribute
+     * 
+     * @return the name of the attribute
+     */
+    String name() default "";
     
     /**
      * Is the managed field read-only?

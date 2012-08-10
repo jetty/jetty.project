@@ -6,6 +6,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
 import com.acme.Derived;
+import com.acme.Managed;
 
 @ManagedObject("Managed MBean Wrapper")
 public class ManagedMBean extends ObjectMBean
@@ -18,7 +19,7 @@ public class ManagedMBean extends ObjectMBean
     @ManagedOperation(value="test of proxy operations", managed=true)
     public String good()
     {
-        return "not " + ((Derived)_managed).bad();
+        return "not managed " + ((Managed)_managed).bad();
     }
  
     @ManagedAttribute(value="test of proxy attributes", getter="goop", proxied=true)

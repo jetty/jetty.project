@@ -228,6 +228,8 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      * Implementation of Container.Listener interface
      *
      * @see org.eclipse.jetty.util.component.Container.Listener#addBean(java.lang.Object)
+     * 
+     * TODO improve the id property to include better information
      */
     public synchronized void addBean(Object obj)
     {
