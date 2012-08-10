@@ -143,6 +143,7 @@ public class SslConnection extends AbstractConnection
 
             _decryptedEndPoint.getWriteFlusher().completeWrite();
         }
+        LOG.debug("{} onFilled", this);
     }
 
     /* ------------------------------------------------------------ */
@@ -383,8 +384,8 @@ public class SslConnection extends AbstractConnection
                     // case we want to fall through to the handshake handling
                     int pos = BufferUtil.flipToFill(app_in);
                     SSLEngineResult unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
-                    LOG.debug("{} unwrap {}", SslConnection.this, unwrapResult);
                     BufferUtil.flipToFlush(app_in, pos);
+                    LOG.debug("{} unwrap {}", SslConnection.this, unwrapResult);
 
                     // and deal with the results
                     switch (unwrapResult.getStatus())
