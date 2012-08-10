@@ -566,15 +566,16 @@ public class ServletHandler extends ScopedHandler
                 return chain;
         }
 
-        // Build list of filters
-        Object filters= null;
+        // Build list of filters (list of FilterHolder objects)
+        List<FilterHolder> filters = new ArrayList<>();
+        
         // Path filters
         if (pathInContext!=null && _filterPathMappings!=null)
         {
             for (FilterMapping filterPathMapping : _filterPathMappings)
             {
                 if (filterPathMapping.appliesTo(pathInContext, dispatch))
-                    filters = LazyList.add(filters, filterPathMapping.getFilterHolder());
+                    filters.add(filterPathMapping.getFilterHolder());
             }
         }
 
@@ -585,11 +586,12 @@ public class ServletHandler extends ScopedHandler
             if (_filterNameMappings.size() > 0)
             {
                 Object o= _filterNameMappings.get(servletHolder.getName());
+                
                 for (int i=0; i<LazyList.size(o);i++)
                 {
                     FilterMapping mapping = (FilterMapping)LazyList.get(o,i);
                     if (mapping.appliesTo(dispatch))
-                        filters=LazyList.add(filters,mapping.getFilterHolder());
+                        filters.add(mapping.getFilterHolder());
                 }
 
                 o= _filterNameMappings.get("*");
@@ -597,19 +599,19 @@ public class ServletHandler extends ScopedHandler
                 {
                     FilterMapping mapping = (FilterMapping)LazyList.get(o,i);
                     if (mapping.appliesTo(dispatch))
-                        filters=LazyList.add(filters,mapping.getFilterHolder());
+                        filters.add(mapping.getFilterHolder());
                 }
             }
         }
 
-        if (filters==null)
+        if (filters.isEmpty())
             return null;
 
 
         FilterChain chain = null;
         if (_filterChainsCached)
         {
-            if (LazyList.size(filters) > 0)
+            if (filters.size() > 0)
                 chain= new CachedChain(filters, servletHolder);
 
             final Map<String,FilterChain> cache=_chainCache[dispatch];
@@ -633,7 +635,7 @@ public class ServletHandler extends ScopedHandler
         	cache.put(key,chain);
         	lru.add(key);
         }
-        else if (LazyList.size(filters) > 0)
+        else if (filters.size() > 0)
             chain = new Chain(baseRequest,filters, servletHolder);
 
         return chain;
@@ -775,7 +777,7 @@ public class ServletHandler extends ScopedHandler
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
         ServletHolder holder = newServletHolder(null);
-        holder.setName(className+"-"+LazyList.size(_servlets));
+        holder.setName(className+"-"+_servlets.length);
         holder.setClassName(className);
         addServletWithMapping(holder,pathSpec);
         return holder;
@@ -1261,12 +1263,16 @@ public class ServletHandler extends ScopedHandler
         ServletHolder _servletHolder;
 
         /* ------------------------------------------------------------ */
-        CachedChain(Object filters, ServletHolder servletHolder)
+        /**
+         * @param filters list of {@link FilterHolder} objects
+         * @param servletHolder
+         */
+        CachedChain(List<FilterHolder> filters, ServletHolder servletHolder)
         {
-            if (LazyList.size(filters)>0)
+            if (filters.size()>0)
             {
-                _filterHolder=(FilterHolder)LazyList.get(filters, 0);
-                filters=LazyList.remove(filters,0);
+                _filterHolder=filters.get(0);
+                filters.remove(0);
                 _next=new CachedChain(filters,servletHolder);
             }
             else
@@ -1340,12 +1346,12 @@ public class ServletHandler extends ScopedHandler
     private class Chain implements FilterChain
     {
         final Request _baseRequest;
-        final Object _chain;
+        final List<FilterHolder> _chain;
         final ServletHolder _servletHolder;
         int _filter= 0;
 
         /* ------------------------------------------------------------ */
-        Chain(Request baseRequest, Object filters, ServletHolder servletHolder)
+        Chain(Request baseRequest, List<FilterHolder> filters, ServletHolder servletHolder)
         {
             _baseRequest=baseRequest;
             _chain= filters;
@@ -1360,9 +1366,9 @@ public class ServletHandler extends ScopedHandler
                 LOG.debug("doFilter " + _filter);
 
             // pass to next filter
-            if (_filter < LazyList.size(_chain))
+            if (_filter < _chain.size())
             {
-                FilterHolder holder= (FilterHolder)LazyList.get(_chain, _filter++);
+                FilterHolder holder= _chain.get(_filter++);
                 if (LOG.isDebugEnabled())
                     LOG.debug("call filter " + holder);
                 Filter filter= holder.getFilter();
@@ -1409,10 +1415,9 @@ public class ServletHandler extends ScopedHandler
         public String toString()
         {
             StringBuilder b = new StringBuilder();
-            for (int i=0; i<LazyList.size(_chain);i++)
+            for(FilterHolder f: _chain)
             {
-                Object o=LazyList.get(_chain, i);
-                b.append(o.toString());
+                b.append(f.toString());
                 b.append("->");
             }
             b.append(_servletHolder);
