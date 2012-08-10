@@ -34,20 +34,21 @@ public abstract class AbstractConnection implements Connection
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
     private final AtomicBoolean _readInterested = new AtomicBoolean();
-    private final EndPoint _endp;
+    private final EndPoint _endPoint;
+    private final Executor _executor;
     private final Callback<Void> _readCallback;
 
     public AbstractConnection(EndPoint endp, Executor executor)
     {
-        this(endp, executor, false);
+        this(endp, executor, true);
     }
 
-    public AbstractConnection(EndPoint endp, Executor executor, final boolean executeOnlyFailure)
+    public AbstractConnection(EndPoint endp, Executor executor, final boolean dispatchCompletion)
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
-
-        _endp = endp;
+        _endPoint = endp;
+        _executor = executor;
         _readCallback = new ExecutorCallback<Void>(executor)
         {
             @Override
@@ -64,9 +65,9 @@ public abstract class AbstractConnection implements Connection
             }
 
             @Override
-            protected boolean execute()
+            protected boolean shouldDispatchCompletion()
             {
-                return !executeOnlyFailure;
+                return dispatchCompletion;
             }
 
             @Override
@@ -77,6 +78,11 @@ public abstract class AbstractConnection implements Connection
         };
     }
 
+    public Executor getExecutor()
+    {
+        return _executor;
+    }
+
     /**
      * <p>Utility method to be called to register read interest.</p>
      * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
@@ -85,6 +91,7 @@ public abstract class AbstractConnection implements Connection
      */
     public void fillInterested()
     {
+        LOG.debug("fillInterested {}",this);
         if (_readInterested.compareAndSet(false, true))
             getEndPoint().fillInterested(null, _readCallback);
     }
@@ -102,17 +109,17 @@ public abstract class AbstractConnection implements Connection
     public void onFillInterestedFailed(Throwable cause)
     {
         LOG.debug("{} onFillInterestedFailed {}", this, cause);
-        if (_endp.isOpen())
+        if (_endPoint.isOpen())
         {
             boolean close = true;
             if (cause instanceof TimeoutException)
                 close = onReadTimeout();
             if (close)
             {
-                if (_endp.isOutputShutdown())
-                    _endp.close();
+                if (_endPoint.isOutputShutdown())
+                    _endPoint.close();
                 else
-                    _endp.shutdownOutput();
+                    _endPoint.shutdownOutput();
             }
         }
     }
@@ -141,7 +148,13 @@ public abstract class AbstractConnection implements Connection
     @Override
     public EndPoint getEndPoint()
     {
-        return _endp;
+        return _endPoint;
+    }
+
+    @Override
+    public void close()
+    {
+        getEndPoint().close();
     }
 
     @Override

@@ -21,6 +21,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -104,7 +105,7 @@ abstract public class WriteFlusher
             throw new IllegalStateException();
 
         boolean updated = _state.compareAndSet(previous, next);
-        LOG.debug("State update {} -> {} succeeded: {}", previous, next, updated);
+        LOG.debug("update {}:{}{}{}", this, previous, updated?"-->":"!->",next);
         return updated;
     }
 
@@ -139,7 +140,7 @@ abstract public class WriteFlusher
         Set<StateType> allowedNewStateTypes = __stateTransitions.get(currentState.getType());
         if (!allowedNewStateTypes.contains(newState.getType()))
         {
-            LOG.debug("StateType update: {} -> {} not allowed", currentState, newState);
+            LOG.warn("{}: {} -> {} not allowed", this, currentState, newState);
             return false;
         }
         return true;
@@ -280,9 +281,11 @@ abstract public class WriteFlusher
      */
     public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws WritePendingException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
+        
         if (callback == null)
             throw new IllegalArgumentException();
-        LOG.debug("write: {}", this);
 
         if (!updateState(__IDLE,__WRITING))
             throw new WritePendingException();
@@ -330,6 +333,8 @@ abstract public class WriteFlusher
      */
     public void completeWrite()
     {
+        LOG.debug("completeWrite: {}", this);
+        
         State previous = _state.get();
 
         if (previous.getType()!=StateType.PENDING)

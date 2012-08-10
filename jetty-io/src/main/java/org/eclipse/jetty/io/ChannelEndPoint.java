@@ -127,12 +127,13 @@ public class ChannelEndPoint extends AbstractEndPoint
         try
         {
             int filled = _channel.read(buffer);
+            LOG.debug("filled {} {}", filled, this);
 
             if (filled>0)
                 notIdle();
             else if (filled==-1)
                 shutdownInput();
-            
+
             return filled;
         }
         catch(IOException e)
@@ -171,6 +172,7 @@ public class ChannelEndPoint extends AbstractEndPoint
                     }
                 }
             }
+            LOG.debug("flushed {} {}", flushed, this);
         }
         catch (ClosedChannelException | EOFException | SocketException e)
         {
