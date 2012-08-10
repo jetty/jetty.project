@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser.Node;
+import org.junit.Assert;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -341,29 +343,50 @@ public class XmlConfiguration
             String id = _config.getAttribute("id");
             Object obj = id == null ? null : _idMap.get(id);
 
+            
+            
             int index = _config.size();
             if (obj == null && oClass != null)
             {
-                List<Object> arguments = new ArrayList<>();
+                Map<String, Object> namedArgMap = new HashMap<String, Object>();
+                
+                List<Object> arguments = new LinkedList<>();
                 for (int i = 0; i < _config.size(); i++)
                 {
                     Object o = _config.get(i);
                     if (o instanceof String)
+                    {
                         continue;
-                    if (!((XmlParser.Node)o).getTag().equals("Arg"))
+                    }
+                    XmlParser.Node node = (XmlParser.Node)o;
+                    
+                    if (!(node.getTag().equals("Arg")))
                     {
                         index = i;
                         break;
                     }
                     else
                     {
+                        String namedAttribute = node.getAttribute("name");
+                        if ( namedAttribute != null )
+                        {
+                            namedArgMap.put(namedAttribute,value(obj,(XmlParser.Node)o));
+                        }
+                        
                         arguments.add(value(obj, (XmlParser.Node)o));
                     }
                 }
 
                 try
                 {
-                    obj = TypeUtil.construct(oClass, arguments.toArray());
+                    if ( namedArgMap.size() > 0 )
+                    {
+                        obj = TypeUtil.construct(oClass, arguments.toArray(), namedArgMap);
+                    }
+                    else
+                    {
+                        obj = TypeUtil.construct(oClass, arguments.toArray());
+                    }
                 }
                 catch (NoSuchMethodException x)
                 {
@@ -780,13 +803,29 @@ public class XmlConfiguration
                 size++;
             }
 
+            Map<String, Object> namedArgMap = new HashMap<String, Object>();
+            List<Object> arguments = new LinkedList<>();
+            
             Object[] arg = new Object[size];
             for (int i = 0, j = 0; j < size; i++)
             {
                 Object o = node.get(i);
+                
+                XmlParser.Node argNode = (XmlParser.Node)o;
                 if (o instanceof String)
+                {
                     continue;
+                }
+                
                 arg[j++] = value(obj,(XmlParser.Node)o);
+                
+                String namedAttribute = argNode.getAttribute("name");
+                if ( namedAttribute != null )
+                {
+                    namedArgMap.put(namedAttribute,value(obj,(XmlParser.Node)o));
+                }
+                
+                arguments.add(value(obj,(XmlParser.Node)o));
             }
 
             if (LOG.isDebugEnabled())
@@ -794,7 +833,18 @@ public class XmlConfiguration
 
             try
             {
-                Object n = TypeUtil.construct(oClass, arg);
+                Object n;
+                if ( namedArgMap.size() > 0 )
+                {
+                   LOG.debug("using named mapping");
+                   n = TypeUtil.construct(oClass, arguments.toArray(), namedArgMap);
+                }
+                else
+                {
+                    LOG.debug("using normal mapping");
+                    n = TypeUtil.construct(oClass, arguments.toArray());
+                }
+                
                 configure(n,node,argi);
                 return n;
             }

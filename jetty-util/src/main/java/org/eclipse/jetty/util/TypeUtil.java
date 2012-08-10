@@ -15,6 +15,7 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -23,7 +24,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -557,6 +560,67 @@ public class TypeUtil
             try
             {
                 return constructor.newInstance(arguments);
+            }
+            catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        throw new NoSuchMethodException("<init>");
+    }
+    
+    public static Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
+    {
+        for (Constructor<?> constructor : klass.getConstructors())
+        {
+            if (constructor.getParameterTypes().length != arguments.length)
+                continue;
+
+            try
+            {
+                Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
+                
+                // target has no annotations
+                if ( parameterAnnotations == null || parameterAnnotations.length == 0 )
+                {                
+                    LOG.debug("Target has no parameter annotations");                   
+                    return constructor.newInstance(arguments);
+                }
+                else
+                {
+                   Object[] swizzled = new Object[arguments.length];
+                   
+                   int count = 0;
+                   for ( Annotation[] annotations : parameterAnnotations )
+                   {
+                       for ( Annotation annotation : annotations)
+                       {
+                           if ( annotation instanceof Name )
+                           {
+                               Name param = (Name)annotation;
+                               
+                               if (namedArgMap.containsKey(param.value()))
+                               {
+                                   LOG.debug("placing named {} in position {}", param.value(), count);
+                                   swizzled[count] = namedArgMap.get(param.value());
+                               }
+                               else
+                               {
+                                   LOG.debug("placing {} in position {}", arguments[count], count);
+                                   swizzled[count] = arguments[count];
+                               }
+                               ++count;
+                           }
+                           else
+                           {
+                               LOG.debug("passing on annotation {}", annotation);
+                           }
+                       }
+                   }
+                   
+                   return constructor.newInstance(swizzled);
+                }
+                
             }
             catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
             {

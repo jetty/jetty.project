@@ -8,6 +8,8 @@ public class AnnotatedTestConfiguration
     private String second;
     private String third;
     
+    AnnotatedTestConfiguration nested;
+    
     public AnnotatedTestConfiguration(@Name("first") String first, @Name("second") String second, @Name("third") String third)
     {
         this.first = first;
@@ -45,6 +47,14 @@ public class AnnotatedTestConfiguration
         this.third = third;
     }
 
-    
+    public AnnotatedTestConfiguration getNested()
+    {
+        return nested;
+    }
+
+    public void setNested(AnnotatedTestConfiguration nested)
+    {
+        this.nested = nested;
+    }
     
 }
