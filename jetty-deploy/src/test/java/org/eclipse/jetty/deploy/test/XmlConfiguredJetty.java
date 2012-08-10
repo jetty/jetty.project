@@ -378,8 +378,7 @@ public class XmlConfiguredJetty
         Assert.assertEquals("Server load count",1,serverCount);
 
         this._server = foundServer;
-        this._server.setGracefulShutdown(10);
-
+        this._server.setStopTimeout(10);
     }
 
     public void removeContext(String name)

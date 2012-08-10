@@ -268,6 +268,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public ManagedSelector(int id)
         {
             _id = id;
+            setStopTimeout(5000);
         }
 
         @Override
@@ -280,9 +281,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         @Override
         protected void doStop() throws Exception
         {
-            Stop task = new Stop();
-            submit(task);
-            task.await(getStopTimeout(), TimeUnit.MILLISECONDS);
+            Stop stop = new Stop();
+            submit(stop);
+            stop.await(getStopTimeout());
         }
 
         /**
@@ -677,11 +678,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
             }
 
-            public boolean await(long timeout, TimeUnit unit)
+            public boolean await(long timeout)
             {
                 try
                 {
-                    return latch.await(timeout, unit);
+                    return latch.await(timeout, TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException x)
                 {

@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.channels.AsynchronousCloseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -172,7 +173,12 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         for (Thread thread : _acceptors)
         {
             if (thread != null)
+            {
                 thread.interrupt();
+                long stopTimeout = getStopTimeout();
+                if (stopTimeout > 0)
+                    thread.join(stopTimeout);
+            }
         }
 
         super.doStop();
@@ -273,9 +279,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
                     {
                         accept(_acceptor);
                     }
-                    catch (IOException | InterruptedException e)
+                    catch (AsynchronousCloseException | InterruptedException e)
                     {
                         logger.ignore(e);
+                        break;
                     }
                     catch (Throwable e)
                     {

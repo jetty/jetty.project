@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractLifeCycle implements LifeCycle
 {
     private static final Logger LOG = Log.getLogger(AbstractLifeCycle.class);
-    
+
     public static final String STOPPED="STOPPED";
     public static final String FAILED="FAILED";
     public static final String STARTING="STARTING";
@@ -41,7 +41,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private final Object _lock = new Object();
     private final int __FAILED = -1, __STOPPED = 0, __STARTING = 1, __STARTED = 2, __STOPPING = 3;
     private volatile int _state = __STOPPED;
-    private long _stopTimeout = 10000;
+    private long _stopTimeout = 0;
 
     protected void doStart() throws Exception
     {
@@ -196,6 +196,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
             listener.lifeCycleFailure(this,th);
     }
 
+    @ManagedAttribute(value="The stop timeout in milliseconds")
     public long getStopTimeout()
     {
         return _stopTimeout;
