@@ -5,16 +5,15 @@ import java.util.concurrent.Executor;
 
 public abstract class ExecutorCallback<C> implements Callback<C>
 {
-    private final static Integer ZERO = new Integer(0);
     private final static ThreadLocal<Integer> __calls = new ThreadLocal<Integer>()
-            {
-                @Override
-                protected Integer initialValue()
-                {
-                    return ZERO;
-                }
-            };
-    
+    {
+        @Override
+        protected Integer initialValue()
+        {
+            return 0;
+        }
+    };
+
     private final int _maxRecursion;
     private final Executor _executor;
     private final Runnable _onNullContextCompleted = new Runnable()
@@ -22,23 +21,23 @@ public abstract class ExecutorCallback<C> implements Callback<C>
         @Override
         public void run() { onCompleted(null); }
     };
-    
+
     public ExecutorCallback(Executor executor)
     {
         this(executor,4);
     }
-    
+
     public ExecutorCallback(Executor executor,int maxRecursion)
     {
         _executor=executor;
         _maxRecursion=maxRecursion;
     }
-    
+
     @Override
-    public void completed(final C context)
-    {    
+    public final void completed(final C context)
+    {
         // Should we execute?
-        if (!execute())
+        if (!shouldDispatchCompletion())
         {
             // Do we have a recursion limit?
             if (_maxRecursion<=0)
@@ -77,18 +76,17 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     }
 
     protected abstract void onCompleted(C context);
-    
-   
+
     @Override
-    public void failed(final C context, final Throwable x)
-    {   
+    public final void failed(final C context, final Throwable x)
+    {
         // Always execute failure
         Runnable runnable=new Runnable()
         {
             @Override
             public void run() { onFailed(context,x);}
         };
-        
+
         if (_executor==null)
             new Thread(runnable).start();
         else
@@ -98,8 +96,8 @@ public abstract class ExecutorCallback<C> implements Callback<C>
     protected void onFailed(C context, Throwable x)
     {
     }
-    
-    protected boolean execute()
+
+    protected boolean shouldDispatchCompletion()
     {
         return _executor!=null;
     }
