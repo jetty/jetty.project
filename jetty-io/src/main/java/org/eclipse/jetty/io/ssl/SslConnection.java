@@ -72,6 +72,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
+    private static final ByteBuffer __FILL_CALLED_FLUSH= BufferUtil.allocate(0);
+    private static final ByteBuffer __FLUSH_CALLED_FILL= BufferUtil.allocate(0);
     private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
     private final DecryptedEndPoint _decryptedEndPoint;
@@ -210,7 +212,7 @@ public class SslConnection extends AbstractConnection
         private boolean _fillRequiresFlushToProgress;
         private boolean _flushRequiresFillToProgress;
         private boolean _cannotAcceptMoreAppDataToFlush;
-        private boolean _needToFillMoreDataToProgress;
+        private boolean _underFlown;
         private boolean _ishut = false;
 
         // TODO: use ExecutorCallback ?
@@ -225,7 +227,7 @@ public class SslConnection extends AbstractConnection
                 // data.  In either case the appropriate callback is passed on.
                 synchronized (DecryptedEndPoint.this)
                 {
-                    LOG.debug("{} write.complete {}", SslConnection.this, _cannotAcceptMoreAppDataToFlush ? (_fillRequiresFlushToProgress ? "FW" : "F") : (_fillRequiresFlushToProgress ? "W" : ""));
+                    LOG.debug("write.complete {}", SslConnection.this.getEndPoint());
 
                     releaseEncryptedOutputBuffer();
 
@@ -339,7 +341,7 @@ public class SslConnection extends AbstractConnection
                     return true;
 
                 // If we have no encrypted data to decrypt OR we have some, but it is not enough
-                if (BufferUtil.isEmpty(_encryptedInput) || _needToFillMoreDataToProgress)
+                if (BufferUtil.isEmpty(_encryptedInput) || _underFlown)
                 {
                     // We are not ready to read data
 
@@ -419,7 +421,7 @@ public class SslConnection extends AbstractConnection
                     int net_filled = getEndPoint().fill(_encryptedInput);
                     LOG.debug("{} filled {} encrypted bytes", SslConnection.this, net_filled);
                     if (net_filled > 0)
-                        _needToFillMoreDataToProgress = false;
+                        _underFlown = false;
 
                     // Let's try the SSL thang even if we have no net data because in that
                     // case we want to fall through to the handshake handling
@@ -449,15 +451,17 @@ public class SslConnection extends AbstractConnection
 
                                 case NEED_WRAP:
                                     // we need to send some handshake data (probably to send a close handshake).
-                                    if (_flushRequiresFillToProgress)
-                                        return -1; // we were called from flush, so it can deal with sending the close handshake
+                                    
+                                    // If we were called from flush,
+                                    if (buffer==__FLUSH_CALLED_FILL)
+                                        return -1; // it can deal with the close handshake
 
                                     // We need to call flush to cause the wrap to happen
                                     _fillRequiresFlushToProgress = true;
                                     try
                                     {
                                         // flushing an empty buffer will invoke the wrap mechanisms
-                                        flush(BufferUtil.EMPTY_BUFFER);
+                                        flush(__FILL_CALLED_FLUSH);
                                         // If encrypted output is all written, we can proceed with close
                                         if (BufferUtil.isEmpty(_encryptedOutput))
                                         {
@@ -481,7 +485,7 @@ public class SslConnection extends AbstractConnection
 
                         default:
                             if (unwrapResult.getStatus()==Status.BUFFER_UNDERFLOW)
-                                _needToFillMoreDataToProgress=true;
+                                _underFlown=true;
 
                             // if we produced bytes, we don't care about the handshake state for now and it can be dealt with on another call to fill or flush
                             if (unwrapResult.bytesProduced() > 0)
@@ -510,10 +514,13 @@ public class SslConnection extends AbstractConnection
 
                                 case NEED_WRAP:
                                     // we need to send some handshake data
-                                    if (_flushRequiresFillToProgress)
-                                        return 0;
+                                    
+                                    // if we are called from flush
+                                    if (buffer==__FLUSH_CALLED_FILL)
+                                        return 0; // let it do the wrapping
+                                    
                                     _fillRequiresFlushToProgress = true;
-                                    flush(BufferUtil.EMPTY_BUFFER);
+                                    flush(__FILL_CALLED_FLUSH);
                                     if (BufferUtil.isEmpty(_encryptedOutput))
                                     {
                                         // the flush completed so continue
@@ -636,7 +643,7 @@ public class SslConnection extends AbstractConnection
                             }
 
                             // If we were flushing because of a fill needing to wrap, return normally and it will handle the closed state.
-                            if (_fillRequiresFlushToProgress)
+                            if (appOuts[0]==__FILL_CALLED_FLUSH)
                                 return consumed;
 
                             // otherwise we have written, and the caller will close the underlying connection
@@ -672,12 +679,11 @@ public class SslConnection extends AbstractConnection
                                 case NEED_UNWRAP:
                                     // Ah we need to fill some data so we can write.
                                     // So if we were not called from fill and the app is not reading anyway
-                                    if (!_fillRequiresFlushToProgress && !getFillInterest().isInterested())
+                                    if (appOuts[0]!=__FILL_CALLED_FLUSH && !getFillInterest().isInterested())
                                     {
                                         // Tell the onFillable method that there might be a write to complete
-                                        // TODO move this to the writeFlusher?
                                         _flushRequiresFillToProgress = true;
-                                        fill(BufferUtil.EMPTY_BUFFER);
+                                        fill(__FLUSH_CALLED_FILL);
                                     }
                                     return consumed;
 
