@@ -89,9 +89,9 @@ public class ObjectMBeanTest
         //}
         
         /*
-         * 1 attribute from lifecycle and 2 from Derived and 1 from MBean
+         * 2 attributes from lifecycle and 2 from Derived and 1 from MBean
          */
-        Assert.assertEquals("attribute count does not match", 4, info.getAttributes().length);
+        Assert.assertEquals("attribute count does not match", 5, info.getAttributes().length);
 
         Assert.assertEquals("attribute values does not match", "Full Name", mbean.getAttribute("fname") );
         
