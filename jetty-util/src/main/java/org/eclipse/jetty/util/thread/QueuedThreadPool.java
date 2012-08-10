@@ -81,6 +81,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setMaxIdleTimeMs(maxIdleTimeMs);
+        setStopTimeout(5000);
     }
 
     @Override
@@ -109,6 +110,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     {
         super.doStop();
         long start=System.currentTimeMillis();
+
+        // TODO: review the stop logic avoiding sleep(1), and eventually using Thread.interrupt() + thread.join()
 
         // let jobs complete naturally for a while
         while (_threadsStarted.get()>0 && (System.currentTimeMillis()-start) < (getStopTimeout()/2))

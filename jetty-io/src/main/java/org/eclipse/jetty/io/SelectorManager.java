@@ -268,6 +268,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public ManagedSelector(int id)
         {
             _id = id;
+            setStopTimeout(5000);
         }
 
         @Override

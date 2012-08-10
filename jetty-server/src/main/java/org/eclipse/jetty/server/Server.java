@@ -304,7 +304,6 @@ public class Server extends HandlerWrapper implements Attributes
 
         MultiException mex=new MultiException();
 
-        // TODO: review this logic ...
         long stopTimeout = getStopTimeout();
         if (stopTimeout>0)
         {
