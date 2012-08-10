@@ -126,7 +126,17 @@ public class SslConnectionTest
             if (_testFill)
                 fillInterested();
             else
-                getEndPoint().write(null,_writeCallback,BufferUtil.toBuffer("Hello Client"));
+            {
+                getExecutor().execute(new Runnable()
+                {
+
+                    @Override
+                    public void run()
+                    {
+                        getEndPoint().write(null,_writeCallback,BufferUtil.toBuffer("Hello Client"));
+                    }
+                });
+            }
         }
 
         @Override
@@ -215,14 +225,13 @@ public class SslConnectionTest
     @Test
     public void testWriteOnConnect() throws Exception
     {
-        //Log.getRootLogger().setDebugEnabled(true);
         _testFill=false;
         
         for (int i=0;i<1;i++)
         {
             _writeCallback = new FutureCallback<>();
             Socket client = newClient();
-            client.setSoTimeout(60000);
+            client.setSoTimeout(600000); // TODO reduce after debugging
 
             SocketChannel server = _connector.accept();
             server.configureBlocking(false);

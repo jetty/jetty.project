@@ -56,8 +56,9 @@ public abstract class AbstractTest
 
     protected InetSocketAddress startServer(short version, ServerSessionFrameListener listener) throws Exception
     {
-        server = new Server();
-        ((QueuedThreadPool)server.getThreadPool()).setName("server");
+        QueuedThreadPool pool = new QueuedThreadPool();
+        pool.setName(pool.getName()+"-server");
+        server = new Server(pool);
         if (connector == null)
             connector = newSPDYServerConnector(listener);
         if (listener == null)

@@ -154,7 +154,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected void endPointOpened(EndPoint endpoint)
     {
-        // TODO should this be dispatched
         endpoint.onOpen();
     }
 
@@ -165,7 +164,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected void endPointClosed(EndPoint endpoint)
     {
-        // TODO should this be dispatched
         endpoint.onClose();
     }
 
@@ -176,14 +174,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void connectionOpened(final Connection connection)
     {
-        execute(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                connection.onOpen();
-            }
-        });
+        connection.onOpen();
     }
 
     /**
@@ -193,14 +184,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void connectionClosed(final Connection connection)
     {
-        execute(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                connection.onClose();
-            }
-        });
+        connection.onClose();
     }
 
     /**

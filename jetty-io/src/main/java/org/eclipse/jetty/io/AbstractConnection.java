@@ -92,6 +92,7 @@ public abstract class AbstractConnection implements Connection
      */
     public void fillInterested()
     {
+        LOG.debug("fillInterested {}",this);
         if (_readInterested.compareAndSet(false, true))
             getEndPoint().fillInterested(null, _readCallback);
     }
