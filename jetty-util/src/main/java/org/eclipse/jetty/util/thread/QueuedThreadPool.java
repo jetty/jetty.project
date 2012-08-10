@@ -256,6 +256,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @see #setMaxIdleTimeMs
      * @return Max idle time in ms.
      */
+    @ManagedAttribute("maximum time a thread may be idle in ms")
     public int getMaxIdleTimeMs()
     {
         return _maxIdleTimeMs;
@@ -267,6 +268,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @return maximum number of threads.
      */
     @Override
+    @ManagedAttribute("maximum number of threads in the pool")
     public int getMaxThreads()
     {
         return _maxThreads;

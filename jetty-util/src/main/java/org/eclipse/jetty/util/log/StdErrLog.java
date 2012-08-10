@@ -18,6 +18,8 @@ import java.security.AccessControlException;
 import java.util.Properties;
 
 import org.eclipse.jetty.util.DateCache;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
  * StdErr Logging. This implementation of the Logging facade sends all logs to StdErr with minimal formatting.
@@ -33,6 +35,7 @@ import org.eclipse.jetty.util.DateCache;
  * used for logging. For named debuggers, the system property name+".LONG" is checked. If it is not not set, then
  * "org.eclipse.jetty.util.log.LONG" is used as the default.
  */
+@ManagedObject("Jetty StdErr Logging Implementation")
 public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
@@ -330,6 +333,7 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    @ManagedAttribute("is debug enabled for root logger Log.LOG")
     public boolean isDebugEnabled()
     {
         return (_level <= LEVEL_DEBUG);
