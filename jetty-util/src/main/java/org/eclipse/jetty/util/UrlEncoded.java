@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
@@ -124,10 +125,10 @@ public class UrlEncoded extends MultiMap implements Cloneable
 
         StringBuilder result = new StringBuilder(128);
 
-        Iterator<Entry<String, Object>> iter = map.entrySet().iterator();
+        Iterator<Map.Entry<String, Object>> iter = map.entrySet().iterator();
         while(iter.hasNext())
         {
-            Entry<String, Object> entry = iter.next();
+            Map.Entry<String, Object> entry = iter.next();
 
             String key = entry.getKey().toString();
             Object list = entry.getValue();

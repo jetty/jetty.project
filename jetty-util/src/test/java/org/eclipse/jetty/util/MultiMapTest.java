@@ -1,4 +1,3 @@
-package org.eclipse.jetty.util;
 //========================================================================
 //Copyright (c) 2006-2012 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
@@ -11,7 +10,9 @@ package org.eclipse.jetty.util;
 //http://www.opensource.org/licenses/apache2.0.php
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
+package org.eclipse.jetty.util;
 
+import static org.hamcrest.Matchers.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,8 +50,7 @@ public class MultiMapTest
 
         mm.put(key,null);
         assertMapSize(mm,1);
-        assertValues(mm,key,new Object[]
-        { null });
+        assertNullValues(mm,key);
     }
 
     /**
@@ -527,13 +527,25 @@ public class MultiMapTest
 
         String prefix = "MultiMap.getValues(" + key + ")";
 
-        Assert.assertNotNull(prefix,values);
         Assert.assertEquals(prefix + ".size",expectedValues.length,values.size());
-        int len = values.size();
+        int len = expectedValues.length;
         for (int i = 0; i < len; i++)
         {
-            Assert.assertEquals(prefix + "[" + i + "]",expectedValues[i],values.get(i));
+            if(expectedValues[i] == null) {
+                Assert.assertThat(prefix + "[" + i + "]",values.get(i),nullValue());
+            } else {
+                Assert.assertEquals(prefix + "[" + i + "]",expectedValues[i],values.get(i));
+            }
         }
+    }
+    
+    private void assertNullValues(MultiMap mm, String key)
+    {
+        List<String> values = mm.getValues(key);
+
+        String prefix = "MultiMap.getValues(" + key + ")";
+
+        Assert.assertThat(prefix + ".size",values,nullValue());
     }
 
     private void assertEmptyValues(MultiMap mm, String key)

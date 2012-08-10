@@ -729,7 +729,7 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted)
             extractParameters();
-        List<Object> vals = _parameters.getValues(name);
+        List<String> vals = _parameters.getValues(name);
         if (vals == null)
             return null;
         return vals.toArray(new String[vals.size()]);
