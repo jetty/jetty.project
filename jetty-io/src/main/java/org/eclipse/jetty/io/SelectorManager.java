@@ -80,9 +80,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     private ManagedSelector chooseSelector()
     {
-        // The ++ increment here is not atomic, but it does not matter.
+        // The ++ increment here is not atomic, but it does not matter,
         // so long as the value changes sometimes, then connections will
-        // be distributed over the available sets.
+        // be distributed over the available selectors.
         long s = _selectorIndex++;
         int index = (int)(s % getSelectorCount());
         return _selectors[index];
@@ -111,8 +111,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void accept(final SocketChannel channel)
     {
-        final ManagedSelector set = chooseSelector();
-        set.submit(set.new Accept(channel));
+        final ManagedSelector selector = chooseSelector();
+        selector.submit(selector.new Accept(channel));
     }
 
     @Override
@@ -121,10 +121,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         super.doStart();
         for (int i = 0; i < _selectors.length; i++)
         {
-            ManagedSelector selectSet = newSelector(i);
-            _selectors[i] = selectSet;
-            selectSet.start();
-            execute(selectSet);
+            ManagedSelector selector = newSelector(i);
+            _selectors[i] = selector;
+            selector.start();
+            execute(selector);
         }
     }
 
@@ -142,8 +142,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     @Override
     protected void doStop() throws Exception
     {
-        for (ManagedSelector set : _selectors)
-            set.stop();
+        for (ManagedSelector selector : _selectors)
+            selector.stop();
         super.doStop();
     }
 
@@ -172,7 +172,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just opened
      */
-    public void connectionOpened(final Connection connection)
+    public void connectionOpened(Connection connection)
     {
         connection.onOpen();
     }
@@ -182,7 +182,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just closed
      */
-    public void connectionClosed(final Connection connection)
+    public void connectionClosed(Connection connection)
     {
         connection.onClose();
     }
@@ -659,8 +659,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         Object attachment = key.attachment();
                         if (attachment instanceof EndPoint)
                         {
-                            EndPoint endpoint = (EndPoint)attachment;
-                            endpoint.close();
+                            EndPointCloser closer = new EndPointCloser((EndPoint)attachment);
+                            execute(closer);
+                            // We are closing the SelectorManager, so we want to block the
+                            // selector thread here until we have closed all EndPoints.
+                            // This is different than calling close() directly, because close()
+                            // can wait forever, while here we are limited by the stop timeout.
+                            closer.await(getStopTimeout());
                         }
                     }
 
@@ -677,6 +682,42 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 try
                 {
                     return latch.await(timeout, unit);
+                }
+                catch (InterruptedException x)
+                {
+                    return false;
+                }
+            }
+        }
+
+        private class EndPointCloser implements Runnable
+        {
+            private final CountDownLatch latch = new CountDownLatch(1);
+            private final EndPoint endPoint;
+
+            private EndPointCloser(EndPoint endPoint)
+            {
+                this.endPoint = endPoint;
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    endPoint.getConnection().close();
+                }
+                finally
+                {
+                    latch.countDown();
+                }
+            }
+
+            private boolean await(long timeout)
+            {
+                try
+                {
+                    return latch.await(timeout, TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException x)
                 {
