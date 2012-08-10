@@ -30,11 +30,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
@@ -68,7 +66,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.StringUtil;
@@ -126,7 +123,7 @@ public class Request implements HttpServletRequest
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
     private Authentication _authentication;
-    private MultiMap _baseParameters;
+    private MultiMap<String> _baseParameters;
     private String _characterEncoding;
     private ContextHandler.Context _context;
     private boolean _newContext;
@@ -138,7 +135,7 @@ public class Request implements HttpServletRequest
     private int _inputState = __NONE;
     private HttpMethod _httpMethod;
     private String _method;
-    private MultiMap _parameters;
+    private MultiMap<String> _parameters;
     private boolean _paramsExtracted;
     private String _pathInfo;
     private int _port;
@@ -192,7 +189,7 @@ public class Request implements HttpServletRequest
     public void extractParameters()
     {
         if (_baseParameters == null)
-            _baseParameters = new MultiMap();
+            _baseParameters = new MultiMap<>();
 
         if (_paramsExtracted)
         {
@@ -283,15 +280,7 @@ public class Request implements HttpServletRequest
             else if (_parameters != _baseParameters)
             {
                 // Merge parameters (needed if parameters extracted after a forward).
-                Iterator<?> iter = _baseParameters.entrySet().iterator();
-                while (iter.hasNext())
-                {
-                    Map.Entry<?, ?> entry = (Map.Entry<?, ?>)iter.next();
-                    String name = (String)entry.getKey();
-                    Object values = entry.getValue();
-                    for (int i = 0; i < LazyList.size(values); i++)
-                        _parameters.add(name,LazyList.get(values,i));
-                }
+                _parameters.addAllValues(_baseParameters);
             }
         }
         finally
@@ -335,10 +324,10 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.ServletRequest#getAttributeNames()
      */
     @Override
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         if (_attributes == null)
-            return Collections.enumeration(Collections.EMPTY_LIST);
+            return Collections.enumeration(Collections.<String>emptyList());
 
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
@@ -499,7 +488,7 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.http.HttpServletRequest#getHeaderNames()
      */
     @Override
-    public Enumeration getHeaderNames()
+    public Enumeration<String> getHeaderNames()
     {
         return _fields.getFieldNames();
     }
@@ -509,11 +498,11 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.http.HttpServletRequest#getHeaders(java.lang.String)
      */
     @Override
-    public Enumeration getHeaders(String name)
+    public Enumeration<String> getHeaders(String name)
     {
-        Enumeration<?> e = _fields.getValues(name);
+        Enumeration<String> e = _fields.getValues(name);
         if (e == null)
-            return Collections.enumeration(Collections.EMPTY_LIST);
+            return Collections.enumeration(Collections.<String>emptyList());
         return e;
     }
 
@@ -691,7 +680,7 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.ServletRequest#getParameterMap()
      */
     @Override
-    public Map getParameterMap()
+    public Map<String, String[]> getParameterMap()
     {
         if (!_paramsExtracted)
             extractParameters();
@@ -715,7 +704,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the parameters.
      */
-    public MultiMap getParameters()
+    public MultiMap<String> getParameters()
     {
         return _parameters;
     }
@@ -1691,7 +1680,7 @@ public class Request implements HttpServletRequest
      * @param parameters
      *            The parameters to set.
      */
-    public void setParameters(MultiMap parameters)
+    public void setParameters(MultiMap<String> parameters)
     {
         _parameters = (parameters == null)?_baseParameters:parameters;
         if (_paramsExtracted && _parameters == null)
@@ -2017,7 +2006,7 @@ public class Request implements HttpServletRequest
     public void mergeQueryString(String query)
     {
         // extract parameters from dispatch query
-        MultiMap parameters = new MultiMap();
+        MultiMap<String> parameters = new MultiMap<>();
         UrlEncoded.decodeTo(query,parameters,getCharacterEncoding());
 
         boolean merge_old_query = false;
@@ -2030,21 +2019,7 @@ public class Request implements HttpServletRequest
         if (_parameters != null && _parameters.size() > 0)
         {
             // Merge parameters; new parameters of the same name take precedence.
-            Iterator<Entry<String, Object>> iter = _parameters.entrySet().iterator();
-            while (iter.hasNext())
-            {
-                Map.Entry<String, Object> entry = iter.next();
-                String name = entry.getKey();
-
-                // If the names match, we will need to remake the query string
-                if (parameters.containsKey(name))
-                    merge_old_query = true;
-
-                // Add the old values to the new parameter map
-                Object values = entry.getValue();
-                for (int i = 0; i < LazyList.size(values); i++)
-                    parameters.add(name,LazyList.get(values,i));
-            }
+            merge_old_query = parameters.addAllValues(_parameters);
         }
 
         if (_queryString != null && _queryString.length() > 0)
@@ -2052,23 +2027,20 @@ public class Request implements HttpServletRequest
             if (merge_old_query)
             {
                 StringBuilder overridden_query_string = new StringBuilder();
-                MultiMap overridden_old_query = new MultiMap();
+                MultiMap<String> overridden_old_query = new MultiMap<>();
                 UrlEncoded.decodeTo(_queryString,overridden_old_query,getCharacterEncoding());
 
-                MultiMap overridden_new_query = new MultiMap();
+                MultiMap<String> overridden_new_query = new MultiMap<>();
                 UrlEncoded.decodeTo(query,overridden_new_query,getCharacterEncoding());
 
-                Iterator<Entry<String, Object>> iter = overridden_old_query.entrySet().iterator();
-                while (iter.hasNext())
+                for(String name: overridden_old_query.keySet())
                 {
-                    Map.Entry<String, Object> entry = iter.next();
-                    String name = entry.getKey();
                     if (!overridden_new_query.containsKey(name))
                     {
-                        Object values = entry.getValue();
-                        for (int i = 0; i < LazyList.size(values); i++)
+                        List<String> values = overridden_old_query.get(name);
+                        for(String v: values)
                         {
-                            overridden_query_string.append("&").append(name).append("=").append(LazyList.get(values,i));
+                            overridden_query_string.append("&").append(name).append("=").append(v);
                         }
                     }
                 }
