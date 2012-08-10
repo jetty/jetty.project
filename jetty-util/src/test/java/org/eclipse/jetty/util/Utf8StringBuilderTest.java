@@ -50,7 +50,8 @@ public class Utf8StringBuilderTest
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5");
         byte[] part2 = TypeUtil.fromHexString("f4908080"); // INVALID
-        byte[] part3 = TypeUtil.fromHexString("656469746564");
+        // Here for test tracking reasons, not needed to satisfy test
+        // byte[] part3 = TypeUtil.fromHexString("656469746564");
 
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         // Part 1 is valid
@@ -65,8 +66,6 @@ public class Utf8StringBuilderTest
         {
             // expected path
         }
-        // Part 3 is valid
-        buffer.append(part3,0,part3.length);
     }
     
     @Test
@@ -74,7 +73,8 @@ public class Utf8StringBuilderTest
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
         byte[] part2 = TypeUtil.fromHexString("90"); // INVALID
-        byte[] part3 = TypeUtil.fromHexString("8080656469746564");
+        // Here for test tracking reasons, not needed to satisfy test
+        // byte[] part3 = TypeUtil.fromHexString("8080656469746564");
 
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         // Part 1 is valid
@@ -89,8 +89,6 @@ public class Utf8StringBuilderTest
         {
             // expected path
         }
-        // Part 3 is valid
-        buffer.append(part3,0,part3.length);
     }
 
     @Test
