@@ -80,7 +80,6 @@ public class SslConnection extends AbstractConnection
     private ByteBuffer _encryptedOutput;
     private final boolean _encryptedDirectBuffers = false;
     private final boolean _decryptedDirectBuffers = false;
-    
     private final Runnable _runCompletWrite = new Runnable()
     {
         @Override
@@ -89,7 +88,6 @@ public class SslConnection extends AbstractConnection
             _decryptedEndPoint.getWriteFlusher().completeWrite();
         }
     };
-    
     private final Runnable _runWriteEmpty = new Runnable()
     {
         @Override
@@ -98,10 +96,11 @@ public class SslConnection extends AbstractConnection
             _decryptedEndPoint.write(null, new Callback.Empty<>(), BufferUtil.EMPTY_BUFFER);
         }
     };
-    
+
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
-        super(endPoint, executor, true);
+        // TODO: here we are not dispatching completion callbacks (last parameter)... is that right ?
+        super(endPoint, executor, false);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = new DecryptedEndPoint();
@@ -137,6 +136,12 @@ public class SslConnection extends AbstractConnection
         }
     }
 
+    @Override
+    public void close()
+    {
+        getDecryptedEndPoint().getConnection().close();
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public void onFillable()
@@ -147,15 +152,14 @@ public class SslConnection extends AbstractConnection
         // to do the fill and/or flush again and these calls will do the actually
         // filling.
 
-        LOG.debug("onFillable {}", getEndPoint());
+        LOG.debug("onFillable enter {}", getEndPoint());
 
         // wake up whoever is doing the fill or the flush so they can
-        // do all the filling, unwrapping ,wrapping and flushing
-        _decryptedEndPoint.getFillInterest().fillable();        
-        
+        // do all the filling, unwrapping, wrapping and flushing
+        _decryptedEndPoint.getFillInterest().fillable();
 
         // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
-        synchronized (_decryptedEndPoint)
+        synchronized(_decryptedEndPoint)
         {
             if (_decryptedEndPoint._flushRequiresFillToProgress)
             {
@@ -163,8 +167,8 @@ public class SslConnection extends AbstractConnection
                 getExecutor().execute(_runCompletWrite);
             }
         }
-        
-        LOG.debug("onFilled {}", getEndPoint());
+
+        LOG.debug("onFillable exit {}", getEndPoint());
     }
 
     /* ------------------------------------------------------------ */
@@ -209,20 +213,21 @@ public class SslConnection extends AbstractConnection
         private boolean _needToFillMoreDataToProgress;
         private boolean _ishut = false;
 
+        // TODO: use ExecutorCallback ?
+//        private final Callback<Void> _writeCallback = new ExecutorCallback<Void>(getExecutor())
         private final Callback<Void> _writeCallback = new Callback<Void>()
         {
-
             @Override
             public void completed(Void context)
             {
-                // This means that a write of data has completed.  Writes are done
-                // only if there is an active writeflusher or a read needed to write
+                // This means that a write of encrypted data has completed.  Writes are done
+                // only if there is a pending writeflusher or a read needed to write
                 // data.  In either case the appropriate callback is passed on.
                 synchronized (DecryptedEndPoint.this)
                 {
                     LOG.debug("{} write.complete {}", SslConnection.this, _cannotAcceptMoreAppDataToFlush ? (_fillRequiresFlushToProgress ? "FW" : "F") : (_fillRequiresFlushToProgress ? "W" : ""));
 
-                    releaseNetOut();
+                    releaseEncryptedOutputBuffer();
 
                     _cannotAcceptMoreAppDataToFlush = false;
 
@@ -247,7 +252,7 @@ public class SslConnection extends AbstractConnection
                     LOG.debug("{} write.failed", SslConnection.this, x);
                     if (_encryptedOutput != null)
                         BufferUtil.clear(_encryptedOutput);
-                    releaseNetOut();
+                    releaseEncryptedOutputBuffer();
 
                     _cannotAcceptMoreAppDataToFlush = false;
 
@@ -286,13 +291,13 @@ public class SslConnection extends AbstractConnection
         @Override
         protected void onIncompleteFlush()
         {
-            // This means that the decripted endpoint write method was called and not
+            // This means that the decrypted endpoint write method was called and not
             // all data could be wrapped. So either we need to write some encrypted data,
             // OR if we are handshaking we need to read some encrypted data OR
-            // if neither than we should just try the flush again.
+            // if neither then we should just try the flush again.
             synchronized (DecryptedEndPoint.this)
             {
-                LOG.debug("onIncompleteFlush {}",getEndPoint());
+                LOG.debug("onIncompleteFlush {}", getEndPoint());
                 // If we have pending output data,
                 if (BufferUtil.hasContent(_encryptedOutput))
                 {
@@ -300,15 +305,22 @@ public class SslConnection extends AbstractConnection
                     _cannotAcceptMoreAppDataToFlush = true;
                     getEndPoint().write(null, _writeCallback, _encryptedOutput);
                 }
+                // TODO: use _fillRequiresFlushToProgress ?
                 else if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_UNWRAP)
                 {
                     // we are actually read blocked in order to write
                     _flushRequiresFillToProgress=true;
                     SslConnection.this.fillInterested();
                 }
+                else if (isOutputShutdown())
+                {
+                    getWriteFlusher().onClose();
+                }
                 else
+                {
                     // try the flush again
                     getWriteFlusher().completeWrite();
+                }
             }
         }
 
@@ -374,10 +386,10 @@ public class SslConnection extends AbstractConnection
         @Override
         public synchronized int fill(ByteBuffer buffer) throws IOException
         {
-            // TODO remove this when we are certain it is OK 
-            if (Thread.currentThread().getName().indexOf("selector")>=0)
+            // TODO remove this when we are certain it is OK
+            if (Thread.currentThread().getName().contains("selector"))
                 new Throwable().printStackTrace();
-            
+
             LOG.debug("{} fill enter", SslConnection.this);
             try
             {
@@ -486,6 +498,9 @@ public class SslConnection extends AbstractConnection
                                     // we just didn't read anything.
                                     if (net_filled < 0)
                                         _sslEngine.closeInbound();
+
+                                    // TODO: do we need to check if there is something pending to write ?
+//                                    getWriteFlusher().completeWrite();
                                     return 0;
 
                                 case NEED_TASK:
@@ -510,10 +525,21 @@ public class SslConnection extends AbstractConnection
                                 case NEED_UNWRAP:
                                     // if we just filled some net data
                                     if (net_filled < 0)
-                                        _sslEngine.closeInbound();
+                                    {
+                                        // If we call closeInbound() before having read the SSL close
+                                        // message an exception will be thrown (truncation attack).
+                                        // The TLS specification says that the sender of the SSL close
+                                        // message may just close and avoid to read the response.
+                                        // If that is the case, we avoid calling closeInbound() because
+                                        // will throw the truncation attack exception for nothing.
+                                        if (isOpen())
+                                            _sslEngine.closeInbound();
+                                    }
                                     else if (net_filled > 0)
+                                    {
                                         // maybe we will fill some more on a retry
                                         continue;
+                                    }
                                     // we need to wait for more net data
                                     return 0;
 
@@ -542,7 +568,7 @@ public class SslConnection extends AbstractConnection
                     _decryptedEndPoint._flushRequiresFillToProgress = false;
                     getExecutor().execute(_runCompletWrite);
                 }
-                
+
                 if (_encryptedInput != null && !_encryptedInput.hasRemaining())
                 {
                     _bufferPool.release(_encryptedInput);
@@ -560,10 +586,10 @@ public class SslConnection extends AbstractConnection
         @Override
         public synchronized int flush(ByteBuffer... appOuts) throws IOException
         {
-            // TODO remove this when we are certain it is OK 
-            if (Thread.currentThread().getName().indexOf("selector")>=0)
+            // TODO remove this when we are certain it is OK
+            if (Thread.currentThread().getName().contains("selector"))
                 new Throwable().printStackTrace();
-            
+
             // The contract for flush does not require that all appOuts bytes are written
             // or even that any appOut bytes are written!  If the connection is write block
             // or busy handshaking, then zero bytes may be taken from appOuts and this method
@@ -669,12 +695,12 @@ public class SslConnection extends AbstractConnection
             }
             finally
             {
-                LOG.debug("{} flush exit {}", SslConnection.this,consumed);
-                releaseNetOut();
+                LOG.debug("{} flush exit, consumed {}", SslConnection.this, consumed);
+                releaseEncryptedOutputBuffer();
             }
         }
 
-        private void releaseNetOut()
+        private void releaseEncryptedOutputBuffer()
         {
             if (_encryptedOutput != null && !_encryptedOutput.hasRemaining())
             {
@@ -703,7 +729,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isOutputShutdown()
         {
-            return _sslEngine.isOutboundDone() || !getEndPoint().isOpen();
+            return _sslEngine.isOutboundDone() || getEndPoint().isOutputShutdown();
         }
 
         @Override
