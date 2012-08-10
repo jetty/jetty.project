@@ -341,7 +341,7 @@ public class XmlConfiguration
             String id = _config.getAttribute("id");
             Object obj = id == null ? null : _idMap.get(id);
 
-            int index = 0;
+            int index = _config.size();
             if (obj == null && oClass != null)
             {
                 List<Object> arguments = new ArrayList<>();
@@ -370,7 +370,7 @@ public class XmlConfiguration
                     throw new IllegalStateException("No suitable constructor on " + oClass, x);
                 }
             }
-            
+
             configure(obj, _config, index);
             return obj;
         }
@@ -436,8 +436,6 @@ public class XmlConfiguration
                             break;
                         case "Property":
                             propertyObj(node);
-                            break;
-                        case "Arg": // Arg should have been processed for Configure already so ignore it here
                             break;
                         default:
                             throw new IllegalStateException("Unknown tag: " + tag + " in " + _url);
@@ -759,9 +757,9 @@ public class XmlConfiguration
         /*
          * Create a new value object.
          *
-         * @param obj 
-         * @param node 
-         * 
+         * @param obj
+         * @param node
+         *
          * @return @exception Exception
          */
         private Object newObj(Object obj, XmlParser.Node node) throws Exception
