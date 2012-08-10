@@ -310,6 +310,20 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         return false;
     }
 
+    @Override
+    public void setStopTimeout(long stopTimeout)
+    {
+        super.setStopTimeout(stopTimeout);
+        for (Bean bean : _beans)
+        {
+            Object component = bean._bean;
+            if (component instanceof AbstractLifeCycle)
+            {
+                ((AbstractLifeCycle)component).setStopTimeout(stopTimeout);
+            }
+        }
+    }
+
     /**
      * Dumps to {@link System#err}.
      * @see #dump()

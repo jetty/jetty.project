@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
@@ -71,7 +70,6 @@ public class Server extends HandlerWrapper implements Attributes
     private SessionIdManager _sessionIdManager;
     private boolean _sendServerVersion = true; //send Server: header
     private boolean _sendDateHeader = false; //send Date: header
-    private int _graceful=0;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
@@ -306,8 +304,9 @@ public class Server extends HandlerWrapper implements Attributes
 
         MultiException mex=new MultiException();
 
-        long gracefulTimeout = getGracefulShutdown();
-        if (gracefulTimeout>0)
+        // TODO: review this logic ...
+        long stopTimeout = getStopTimeout();
+        if (stopTimeout>0)
         {
             for (Connector connector : _connectors)
             {
@@ -321,9 +320,9 @@ public class Server extends HandlerWrapper implements Attributes
             {
                 Graceful graceful = (Graceful)context;
                 LOG.info("Graceful shutdown {}", graceful);
-                graceful.setShutdown(true);
+                graceful.shutdown();
             }
-            Thread.sleep(gracefulTimeout);
+            Thread.sleep(stopTimeout);
         }
 
         for (Connector connector : _connectors)
@@ -566,15 +565,6 @@ public class Server extends HandlerWrapper implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the graceful
-     */
-    public int getGracefulShutdown()
-    {
-        return _graceful;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * Set graceful shutdown timeout.  If set, the internal <code>doStop()</code> method will not immediately stop the
      * server. Instead, all {@link Connector}s will be closed so that new connections will not be accepted
      * and all handlers that implement {@link Graceful} will be put into the shutdown mode so that no new requests
@@ -585,7 +575,7 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void setGracefulShutdown(int timeoutMS)
     {
-        _graceful=timeoutMS;
+        // TODO
     }
 
     /* ------------------------------------------------------------ */
@@ -618,11 +608,13 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     /* A handler that can be gracefully shutdown.
      * Called by doStop if a {@link #setGracefulShutdown} period is set.
-     * TODO move this somewhere better
+     * TODO: this interface should be part of a restructuring of how we manage the lifecycle of components
+     * TODO: it should extend LifeCycle rather than Handler, for example, and should play in concert with
+     * TODO: LifeCycle.stop() so that stop==shutdown+await(stopTimeout) to keep the stop semantic.
      */
     public interface Graceful extends Handler
     {
-        public void setShutdown(boolean shutdown);
+        public void shutdown();
     }
 
     /* ------------------------------------------------------------ */
