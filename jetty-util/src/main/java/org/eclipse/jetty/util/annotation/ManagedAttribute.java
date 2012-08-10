@@ -40,6 +40,8 @@ public @interface ManagedAttribute
     /**
      * Is the managed field read-only?
      * 
+     * Required only when a setter exists but should not be exposed via JMX
+     * 
      * @return true if readonly
      */
     boolean readonly() default false;
