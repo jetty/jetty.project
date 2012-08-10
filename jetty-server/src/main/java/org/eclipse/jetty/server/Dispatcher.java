@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -30,7 +28,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 
@@ -128,7 +125,7 @@ public class Dispatcher implements RequestDispatcher
         
         final DispatcherType old_type = baseRequest.getDispatcherType();
         final Attributes old_attr=baseRequest.getAttributes();
-        MultiMap old_params=baseRequest.getParameters();
+        MultiMap<String> old_params=baseRequest.getParameters();
         try
         {
             baseRequest.setDispatcherType(DispatcherType.INCLUDE);
@@ -148,21 +145,12 @@ public class Dispatcher implements RequestDispatcher
                         old_params=baseRequest.getParameters();
                     }
                     
-                    MultiMap parameters=new MultiMap();
+                    MultiMap<String> parameters=new MultiMap<>();
                     UrlEncoded.decodeTo(query,parameters,baseRequest.getCharacterEncoding());
                     
-                    if (old_params!=null && old_params.size()>0)
-                    {
+                    if(old_params != null) {
                         // Merge parameters.
-                        Iterator iter = old_params.entrySet().iterator();
-                        while (iter.hasNext())
-                        {
-                            Map.Entry entry = (Map.Entry)iter.next();
-                            String name=(String)entry.getKey();
-                            Object values=entry.getValue();
-                            for (int i=0;i<LazyList.size(values);i++)
-                                parameters.add(name, LazyList.get(values, i));
-                        }
+                        parameters.addAllValues(old_params);
                     }
                     baseRequest.setParameters(parameters);
                 }
@@ -215,7 +203,7 @@ public class Dispatcher implements RequestDispatcher
         final String old_query=baseRequest.getQueryString();
         final Attributes old_attr=baseRequest.getAttributes();
         final DispatcherType old_type=baseRequest.getDispatcherType();
-        MultiMap old_params=baseRequest.getParameters();
+        MultiMap<String> old_params=baseRequest.getParameters();
         
         try
         {

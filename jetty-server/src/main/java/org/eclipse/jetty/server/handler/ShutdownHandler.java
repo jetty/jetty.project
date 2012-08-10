@@ -144,7 +144,9 @@ public class ShutdownHandler extends AbstractHandler
 
     private boolean hasCorrectSecurityToken(HttpServletRequest request)
     {
-        return _shutdownToken.equals(request.getParameter("token"));
+        String tok = request.getParameter("token");
+        LOG.debug("Token: {}", tok);
+        return _shutdownToken.equals(tok);
     }
 
     private void shutdownServer() throws Exception

@@ -99,7 +99,7 @@ public class ServletHandler extends ScopedHandler
 
     private final Map<String,FilterHolder> _filterNameMap= new HashMap<>();
     private List<FilterMapping> _filterPathMappings;
-    private MultiMap _filterNameMappings;
+    private MultiMap<FilterMapping> _filterNameMappings;
 
     private final Map<String,ServletHolder> _servletNameMap=new HashMap<>();
     private PathMap _servletPathMap;
@@ -1109,7 +1109,7 @@ public class ServletHandler extends ScopedHandler
         else
         {
             _filterPathMappings=new ArrayList<>();
-            _filterNameMappings=new MultiMap();
+            _filterNameMappings=new MultiMap<FilterMapping>();
             for (FilterMapping filtermapping : _filterMappings)
             {
                 FilterHolder filter_holder = _filterNameMap.get(filtermapping.getFilterName());

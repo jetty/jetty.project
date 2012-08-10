@@ -137,7 +137,6 @@ public class MultiPartFilter implements Filter
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
         MultiPartInputStream mpis = new MultiPartInputStream(in, content_type, config, tempdir);
 
-
         try
         {
             Collection<Part> parts = mpis.getParts();
@@ -222,7 +221,7 @@ public class MultiPartFilter implements Filter
     private static class Wrapper extends HttpServletRequestWrapper
     {
         String _encoding=StringUtil.__UTF8;
-        MultiMap _params;
+        MultiMap<Object> _params;
 
         /* ------------------------------------------------------------------------------- */
         /** Constructor.
