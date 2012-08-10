@@ -75,10 +75,10 @@ public class ObjectMBean implements DynamicMBean
 
     protected Object _managed;
     private MBeanInfo _info;
-    private Map _getters=new HashMap();
-    private Map _setters=new HashMap();
-    private Map _methods=new HashMap();
-    private Set _convert=new HashSet();
+    private Map<String, Method> _getters=new HashMap<String, Method>();
+    private Map<String, Method> _setters=new HashMap<String, Method>();
+    private Map<String, Method> _methods=new HashMap<String, Method>();
+    private Set<String> _convert=new HashSet<String>();
     private ClassLoader _loader;
     private MBeanContainer _mbeanContainer;
 
@@ -261,19 +261,6 @@ public class ObjectMBean implements DynamicMBean
                         continue;
                     }
 
-                    // Process Field Annotations
-                    for (Field field : oClass.getDeclaredFields())
-                    {
-                        LOG.debug("Checking: " + field.getName());
-                        ManagedAttribute fieldAnnotation = field.getAnnotation(ManagedAttribute.class);
-
-                        if (fieldAnnotation != null)
-                        {
-                            LOG.debug("Field Annotation found for: " + field.getName());
-                            attributes.add(defineAttribute(field.getName(),fieldAnnotation));
-                        }
-                    }
-
                     // Process Method Annotations
 
                     for (Method method : oClass.getDeclaredMethods())
@@ -284,7 +271,7 @@ public class ObjectMBean implements DynamicMBean
                         {
                             // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
                             LOG.debug("Attribute Annotation found for: " + method.getName());
-                            attributes.add(defineAttribute(method.getName(),methodAttributeAnnotation));
+                            attributes.add(defineAttribute(method,methodAttributeAnnotation));
                         }
 
                         ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
@@ -572,119 +559,80 @@ public class ObjectMBean implements DynamicMBean
      * </ul>
      * the access is either "RW" or "RO".
      */
-    public MBeanAttributeInfo defineAttribute(String name, ManagedAttribute attributeAnnotation)
+    public MBeanAttributeInfo defineAttribute(Method method, ManagedAttribute attributeAnnotation)
     {
-        //String name = field.getName();
+        // determine the name of the managed attribute
+        String name = attributeAnnotation.name();
+        
+        if ("".equals(name))
+        {
+            name = toVariableName(method.getName());
+        }
+        
         String description = attributeAnnotation.value();
-        boolean writable = !attributeAnnotation.readonly();   
+        boolean readonly = attributeAnnotation.readonly();   
         boolean onMBean = attributeAnnotation.proxied();
         boolean convert = attributeAnnotation.managed();
                 
         String uName = name.substring(0, 1).toUpperCase() + name.substring(1);
-        Class oClass = onMBean ? this.getClass() : _managed.getClass();
+        Class<?> oClass = onMBean ? this.getClass() : _managed.getClass();
 
-        LOG.debug("defineAttribute {} {}:{}:{}:{}",name,onMBean,writable,oClass,description);
+        LOG.debug("defineAttribute {} {}:{}:{}:{}",name,onMBean,readonly,oClass,description);
 
-        Class type = null;
-        Method getter = null;
+        Class<?> type = null;
         Method setter = null;
+         
+        type = method.getReturnType();
         
-        String declaredGetter = attributeAnnotation.getter();
-        String declaredSetter = attributeAnnotation.setter();
-        
-        
-        Method[] methods = oClass.getMethods();
-        for (int m = 0; m < methods.length; m++)
+
+        // dig out a setter if one exists
+        if (!readonly)
         {
-            if ((methods[m].getModifiers() & Modifier.PUBLIC) == 0)
-                continue;
+            String declaredSetter = attributeAnnotation.setter();
             
-            // Check if it is a declared getter
-            if (methods[m].getName().equals(declaredGetter) && methods[m].getParameterTypes().length == 0)
+            LOG.debug("DeclaredSetter:" + declaredSetter);
+            Method[] methods = oClass.getMethods();
+            for (int m = 0; m < methods.length; m++)
             {
-                if (getter != null)
-                {
-                    LOG.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
+                if ((methods[m].getModifiers() & Modifier.PUBLIC) == 0)
                     continue;
-                }
-                getter = methods[m];
-                if (type != null && !type.equals(methods[m].getReturnType()))
+
+                if (!"".equals(declaredSetter))
                 {
-                    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
-                    continue;
+              
+                    // look for a declared setter
+                    if (methods[m].getName().equals(declaredSetter) && methods[m].getParameterTypes().length == 1)
+                    {
+                        if (setter != null)
+                        {
+                            LOG.warn("Multiple setters for mbean attr " + name + " in " + oClass);
+                            continue;
+                        }
+                        setter = methods[m];
+                        if ( !type.equals(methods[m].getParameterTypes()[0]))
+                        {
+                            LOG.warn("Type conflict for mbean attr " + name + " in " + oClass);
+                            continue;
+                        }
+                        LOG.debug("Declared Setter: " + declaredSetter);
+                    }
                 }
-                type = methods[m].getReturnType();
                 
-                LOG.debug("Declared Getter: " + declaredGetter);
-            }
-            
-            // Look for a getter
-            if (methods[m].getName().equals("get" + uName) && methods[m].getParameterTypes().length == 0)
-            {
-                if (getter != null)
+                // look for a setter
+                if ( methods[m].getName().equals("set" + uName) && methods[m].getParameterTypes().length == 1)
                 {
-		    LOG.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
-		    continue;
-		}
-                getter = methods[m];
-                if (type != null && !type.equals(methods[m].getReturnType()))
-                {
-		    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
-		    continue;
-		}
-                type = methods[m].getReturnType();
-            }
-
-            // Look for an is getter
-            if (methods[m].getName().equals("is" + uName) && methods[m].getParameterTypes().length == 0)
-            {
-                if (getter != null)
-                {
-		    LOG.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
-		    continue;
-		}
-                getter = methods[m];
-                if (type != null && !type.equals(methods[m].getReturnType()))
-                {
-		    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
-		    continue;
-		}
-                type = methods[m].getReturnType();
-            }
-
-            // look for a declared setter
-            if (writable && methods[m].getName().equals(declaredSetter) && methods[m].getParameterTypes().length == 1)
-            {
-                if (setter != null)
-                {
-		    LOG.warn("Multiple setters for mbean attr " + name+ " in "+oClass);
-		    continue;
-		}
-                setter = methods[m];
-                if (type != null && !type.equals(methods[m].getParameterTypes()[0]))
-                {
-		    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
-		    continue;
-		}
-                LOG.debug("Declared Setter: " + declaredSetter);
-                type = methods[m].getParameterTypes()[0];
-            }
-            
-            // look for a setter
-            if (writable && methods[m].getName().equals("set" + uName) && methods[m].getParameterTypes().length == 1)
-            {
-                if (setter != null)
-                {
-                    LOG.warn("Multiple setters for mbean attr " + name+ " in "+oClass);
-                    continue;
+                    if (setter != null)
+                    {
+                        LOG.warn("Multiple setters for mbean attr " + name + " in " + oClass);
+                        continue;
+                    }
+                    setter = methods[m];
+                    if ( !type.equals(methods[m].getParameterTypes()[0]))
+                    {
+                        LOG.warn("Type conflict for mbean attr " + name + " in " + oClass);
+                        continue;
+                    }
                 }
-                setter = methods[m];
-                if (type != null && !type.equals(methods[m].getParameterTypes()[0]))
-                {
-                    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
-                    continue;
-                }
-                type = methods[m].getParameterTypes()[0];
             }
         }
         
@@ -704,16 +652,10 @@ public class ObjectMBean implements DynamicMBean
             LOG.debug("passed convert checks {} for type {}", name, type);
         }
 
-        if (getter == null && setter == null)
-        {
-	    LOG.warn("No mbean getter or setters found for {} in {}", name, oClass);
-	    return null;
-	}
-
         try
         {
             // Remember the methods
-            _getters.put(name, getter);
+            _getters.put(name, method);
             _setters.put(name, setter);
 
             MBeanAttributeInfo info=null;
@@ -723,16 +665,16 @@ public class ObjectMBean implements DynamicMBean
                 
                 if (type.isArray())
                 {
-                    info= new MBeanAttributeInfo(name,OBJECT_NAME_ARRAY_CLASS,description,getter!=null,setter!=null,getter!=null&&getter.getName().startsWith("is"));
+                    info= new MBeanAttributeInfo(name,OBJECT_NAME_ARRAY_CLASS,description,true,setter!=null,method.getName().startsWith("is"));
                 }
                 else
                 {
-                    info= new MBeanAttributeInfo(name,OBJECT_NAME_CLASS,description,getter!=null,setter!=null,getter!=null&&getter.getName().startsWith("is"));
+                    info= new MBeanAttributeInfo(name,OBJECT_NAME_CLASS,description,true,setter!=null,method.getName().startsWith("is"));
                 }
             }
             else
             {
-                info= new MBeanAttributeInfo(name,description,getter,setter);
+                info= new MBeanAttributeInfo(name,description,method,setter);
             }
             
             return info;
@@ -834,5 +776,25 @@ public class ObjectMBean implements DynamicMBean
         }
 
     }
+    
+    
+    protected String toVariableName( String methodName )
+    {
+        String variableName = methodName;
+        
+        if ( methodName.startsWith("get") || methodName.startsWith("set") )
+        {
+            variableName = variableName.substring(3);
+        }
+        else if ( methodName.startsWith("is") )
+        {
+            variableName = variableName.substring(2);
+        }
+        
+        variableName = variableName.substring(0,1).toLowerCase() + variableName.substring(1);
+        
+        return variableName;
+    }
+   
 
 }

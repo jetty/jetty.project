@@ -30,17 +30,11 @@ public abstract class AbstractLifeCycle implements LifeCycle
 {
     private static final Logger LOG = Log.getLogger(AbstractLifeCycle.class);
     
-    @ManagedAttribute(value="instance is stopped", readonly=true, getter="isStopped")
     public static final String STOPPED="STOPPED";
-    @ManagedAttribute(value="instance is failed", readonly=true, getter="isFailed")
     public static final String FAILED="FAILED";
-    @ManagedAttribute(value="instance is starting", readonly=true, getter="isStarting")
     public static final String STARTING="STARTING";
-    @ManagedAttribute(value="instance is started", readonly=true, getter="isStarted")
     public static final String STARTED="STARTED";
-    @ManagedAttribute(value="instance is stopping", readonly=true, getter="isStopping")
     public static final String STOPPING="STOPPING";
-    @ManagedAttribute(value="instance is running", readonly=true, getter="isRunning")
     public static final String RUNNING="RUNNING";
 
     private final CopyOnWriteArrayList<LifeCycle.Listener> _listeners=new CopyOnWriteArrayList<LifeCycle.Listener>();
@@ -139,6 +133,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         _listeners.remove(listener);
     }
 
+    @ManagedAttribute(value="Lifecycle State for this instance", readonly=true)
     public String getState()
     {
         switch(_state)

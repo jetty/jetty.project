@@ -28,6 +28,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -36,6 +40,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
+@ManagedObject("A thread pool with no max bound by default")
 public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPool, Dumpable
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
@@ -46,14 +51,20 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private final ConcurrentLinkedQueue<Thread> _threads=new ConcurrentLinkedQueue<Thread>();
     private final Object _joinLock = new Object();
     private BlockingQueue<Runnable> _jobs;
+    
     private String _name;
     private int _maxIdleTimeMs=60000;
+    
     private int _maxThreads;
+    
     private int _minThreads;
     private int _maxQueued=-1;
+    
     private int _priority=Thread.NORM_PRIORITY;
+    
     private boolean _daemon=false;
     private int _maxStopTime=100;
+    
     private boolean _detailedDump=false;
 
     /* ------------------------------------------------------------------- */
@@ -312,6 +323,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @return minimum number of threads.
      */
     @Override
+    @ManagedAttribute("minimum number of threads in the pool")
     public int getMinThreads()
     {
         return _minThreads;
@@ -321,6 +333,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /**
      * @return The name of the BoundedThreadPool.
      */
+    @ManagedAttribute("name of the thread pool")
     public String getName()
     {
         return _name;
@@ -330,6 +343,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /** Get the priority of the pool threads.
      *  @return the priority of the pool threads.
      */
+    @ManagedAttribute("priority of threads in the pool")
     public int getThreadsPriority()
     {
         return _priority;
@@ -339,12 +353,14 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     /**
      * Delegated to the named or anonymous Pool.
      */
+    @ManagedAttribute("thead pool using a daemon thread")
     public boolean isDaemon()
     {
         return _daemon;
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("full stack detail on dump output")
     public boolean isDetailedDump()
     {
         return _detailedDump;
@@ -471,6 +487,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
     /* ------------------------------------------------------------ */
     @Override
+    @ManagedOperation("dump thread state")
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
@@ -658,7 +675,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @param id The thread ID to interrupt.
      * @return true if the thread was found and interrupted.
      */
-    public boolean interruptThread(long id)
+    @ManagedOperation("interrupt a pool thread")
+    public boolean interruptThread(@Name("id") long id)
     {
         for (Thread thread: _threads)
         {
@@ -676,7 +694,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @param id The thread ID to interrupt.
      * @return true if the thread was found and interrupted.
      */
-    public String dumpThread(long id)
+    @ManagedOperation("dump a pool thread stack")
+    public String dumpThread(@Name("id") long id)
     {
         for (Thread thread: _threads)
         {
