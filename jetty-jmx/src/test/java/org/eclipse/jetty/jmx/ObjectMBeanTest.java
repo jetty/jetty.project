@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.acme.Derived;
@@ -180,6 +181,7 @@ public class ObjectMBeanTest
     }
     
     @Test
+    @Ignore("ignore, used in testing jconsole atm")
     public void testThreadPool() throws Exception
     {
         QueuedThreadPool qtp = new QueuedThreadPool();
