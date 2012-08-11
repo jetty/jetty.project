@@ -19,7 +19,8 @@ import java.util.Map;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.annotation.Managed;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 
 public class ContextHandlerMBean extends AbstractHandlerMBean
@@ -29,7 +30,7 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
         super(managedObject);
     }
 
-    @Managed(value="Map of context attributes", readonly=true, attribute=true)
+    @ManagedAttribute("Map of context attributes")
     public Map getContextAttributes()
     {
         Map map = new HashMap();
@@ -44,21 +45,21 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
         return map;
     }
     
-    @Managed(value="Set context attribute", impact="ACTION")
+    @ManagedOperation(value="Set context attribute", impact="ACTION")
     public void setContextAttribute(@Name(value = "name", description="attribute name") String name, @Name(value = "value", description="attribute value") Object value)
     {
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
         attrs.setAttribute(name,value);
     }
     
-    @Managed(value="Set context attribute", impact="ACTION")
+    @ManagedOperation(value="Set context attribute", impact="ACTION")
     public void setContextAttribute(@Name(value = "name", description="attribute name") String name, @Name(value = "value", description="attribute value") String value)
     {
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
         attrs.setAttribute(name,value);
     }
     
-    @Managed(value="Remove context attribute", impact="ACTION")
+    @ManagedOperation(value="Remove context attribute", impact="ACTION")
     public void removeContextAttribute(@Name(value = "name", description="attribute name") String name)
     {
         Attributes attrs = ((ContextHandler)_managed).getAttributes();

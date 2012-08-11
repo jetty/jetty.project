@@ -68,7 +68,8 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.annotation.Managed;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -90,7 +91,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
-@Managed("URI Context")
+@ManagedObject("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
 {
 
@@ -121,41 +122,33 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private final AttributesMap _attributes;
     private final AttributesMap _contextAttributes;
 
-    @Managed("Initial Parameter map for the context")
     private final Map<String, String> _initParams;
 
     private ClassLoader _classLoader;
     private String _contextPath = "/";
 
-    @Managed(value="Display name of the Context", readonly=true)
     private String _displayName;
 
     private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
 
-    @Managed("Partial URIs of directory welcome files")
     private String[] _welcomeFiles;
 
-    @Managed(value="The error handler to use for the context", managed=true)
     private ErrorHandler _errorHandler;
 
-    @Managed("Virtual hosts accepted by the context")
     private String[] _vhosts;
 
     private Set<String> _connectors;
     private EventListener[] _eventListeners;
     private Logger _logger;
 
-    @Managed("Checks if the /context is not redirected to /context/")
     private boolean _allowNullPathInfo;
 
     private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",1000).intValue();
 
-    @Managed("The maximum content size")
     private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",200000).intValue();
 
-    @Managed("True if URLs are compacted to replace the multiple '/'s with a single '/'")
     private boolean _compactPath = false;
 
     private boolean _aliases = false;
@@ -167,7 +160,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
 
-    @Managed("False if this context is accepting new requests. True for graceful shutdown, which allows existing requests to complete")
     private boolean _shutdown = false;
 
     private boolean _available = true;
@@ -244,6 +236,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return the allowNullPathInfo true if /context is not redirected to /context/
      */
+    @ManagedAttribute("Checks if the /context is not redirected to /context/")
     public boolean getAllowNullPathInfo()
     {
         return _allowNullPathInfo;
@@ -389,6 +382,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * @return Array of virtual hosts that this context responds to. A null host name or empty array means any hostname is acceptable. Host names may be String
      *         representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
      */
+    @ManagedAttribute("Virtual hosts accepted by the context")
     public String[] getVirtualHosts()
     {
         return _vhosts;
@@ -398,6 +392,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return an array of connector names that this context will accept a request from.
      */
+    @ManagedAttribute("Names and ports of accepted connectors")
     public String[] getConnectorNames()
     {
         if (_connectors == null || _connectors.size() == 0)
@@ -466,6 +461,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      *
      * @return Returns the classLoader.
      */
+    @ManagedAttribute("The file classpath")
     public String getClassPath()
     {
         if (_classLoader == null || !(_classLoader instanceof URLClassLoader))
@@ -500,6 +496,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return Returns the _contextPath.
      */
+    @ManagedAttribute("True if URLs are compacted to replace the multiple '/'s with a single '/'")
     public String getContextPath()
     {
         return _contextPath;
@@ -536,6 +533,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return Returns the initParams.
      */
+    @ManagedAttribute("Initial Parameter map for the context")
     public Map<String, String> getInitParams()
     {
         return _initParams;
@@ -545,6 +543,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /*
      * @see javax.servlet.ServletContext#getServletContextName()
      */
+    @ManagedAttribute(value="Display name of the Context", readonly=true)
     public String getDisplayName()
     {
         return _displayName;
@@ -625,6 +624,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return true if this context is accepting new requests
      */
+    @ManagedAttribute("False if this context is accepting new requests. True for graceful shutdown, which allows existing requests to complete")
     public boolean isShutdown()
     {
         synchronized (this)
@@ -1319,6 +1319,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return Returns the base resource as a string.
      */
+    @ManagedAttribute("document root for context")
     public String getResourceBase()
     {
         if (_baseResource == null)
@@ -1409,6 +1410,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * @see <a href="http://jcp.org/aboutJava/communityprocess/final/jsr154/index.html">The Servlet Specification</a>
      * @see #setWelcomeFiles
      */
+    @ManagedAttribute("Partial URIs of directory welcome files")
     public String[] getWelcomeFiles()
     {
         return _welcomeFiles;
@@ -1418,6 +1420,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return Returns the errorHandler.
      */
+    @ManagedAttribute(value="The error handler to use for the context", managed=true)
     public ErrorHandler getErrorHandler()
     {
         return _errorHandler;
@@ -1438,6 +1441,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
         return _maxFormContentSize;
