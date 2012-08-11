@@ -32,6 +32,8 @@ import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
@@ -39,6 +41,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class SelectChannelConnector extends AbstractNetworkConnector
 {
+    public static final Logger LOG = Log.getLogger(SelectChannelConnector.class);
+
     private final SelectorManager _manager;
     private volatile ServerSocketChannel _acceptChannel;
     private volatile boolean _inheritChannel = false;
@@ -85,6 +89,13 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         setDefaultConnectionFactory(new HttpServerConnectionFactory(this));
     }
 
+    @Override
+    public boolean isOpen()
+    {
+        ServerSocketChannel channel = _acceptChannel;
+        return channel!=null && channel.isOpen();
+    }
+    
     /**
      * @return whether this connector uses a channel inherited from the JVM.
      * @see System#inheritedChannel()
@@ -122,7 +133,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
                 if (channel instanceof ServerSocketChannel)
                     serverChannel = (ServerSocketChannel)channel;
                 else
-                    logger.warn("Unable to use System.inheritedChannel() [{}]. Trying a new ServerSocketChannel at {}:{}", channel, getHost(), getPort());
+                    LOG.warn("Unable to use System.inheritedChannel() [{}]. Trying a new ServerSocketChannel at {}:{}", channel, getHost(), getPort());
             }
 
             if (serverChannel == null)
@@ -148,16 +159,26 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         ServerSocketChannel serverChannel = _acceptChannel;
+        _acceptChannel = null;
+        super.close();
         if (serverChannel != null)
         {
             removeBean(serverChannel);
             if (serverChannel.isOpen())
-                serverChannel.close();
+            {
+                try
+                {
+                    serverChannel.close();
+                }
+                catch (IOException e)
+                {
+                    LOG.warn(e);
+                }
+            }
         }
-        _acceptChannel = null;
         _localPort = -2;
     }
 
@@ -187,7 +208,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         }
         catch (SocketException e)
         {
-            logger.ignore(e);
+            LOG.ignore(e);
         }
     }
 
@@ -321,4 +342,5 @@ public class SelectChannelConnector extends AbstractNetworkConnector
             return SelectChannelConnector.this.newConnection(channel, endpoint, attachment);
         }
     }
+
 }

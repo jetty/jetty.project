@@ -27,10 +27,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class LocalConnector extends AbstractConnector
 {
+    private static final Logger LOG = Log.getLogger(LocalConnector.class);
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
 
     public LocalConnector(Server server)
@@ -120,7 +123,7 @@ public class LocalConnector extends AbstractConnector
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
-        logger.debug("getResponses");
+        LOG.debug("getResponses");
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(requestsBuffer);
         _connects.add(endp);
@@ -145,7 +148,7 @@ public class LocalConnector extends AbstractConnector
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-        logger.debug("accepting {}", acceptorID);
+        LOG.debug("accepting {}", acceptorID);
         LocalEndPoint endp = _connects.take();
         Connection connection = getDefaultConnectionFactory().newConnection(null, endp, null);
         endp.setConnection(connection);
@@ -215,7 +218,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch(Exception e)
                 {
-                    logger.warn(e);
+                    LOG.warn(e);
                 }
             }
         }
@@ -237,7 +240,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch(Exception e)
                 {
-                    logger.warn(e);
+                    LOG.warn(e);
                 }
             }
         }

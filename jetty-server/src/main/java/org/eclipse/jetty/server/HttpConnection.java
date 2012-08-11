@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpConnection extends AbstractConnection
 {
-    public static final Logger LOG = Log.getLogger(HttpConnection.class);
+    private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
