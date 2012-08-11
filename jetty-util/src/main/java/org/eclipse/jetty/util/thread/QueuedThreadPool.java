@@ -111,37 +111,50 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         super.doStop();
         long start=System.currentTimeMillis();
 
-        // TODO: review the stop logic avoiding sleep(1), and eventually using Thread.interrupt() + thread.join()
-
-        // let jobs complete naturally for a while
-        while (_threadsStarted.get()>0 && (System.currentTimeMillis()-start) < (getStopTimeout()/2))
-            Thread.sleep(1);
-
-        // kill queued jobs and flush out idle jobs
+        long timeout=getStopTimeout();
         BlockingQueue<Runnable> jobs = getQueue();
-        jobs.clear();
+        
+        // If no stop timeout, clear job queue
+        if (timeout<=0)
+            jobs.clear();
+        
+        // Fill job Q with noop jobs to wakeup idle 
         Runnable noop = new Runnable(){@Override public void run(){}};
-        for  (int i=_threadsIdle.get();i-->0;)
+        for (int i=_threadsStarted.get();i-->0;)
             jobs.offer(noop);
-        Thread.yield();
+        
+        // try to jobs complete naturally for half our stop time
+        long stopby=System.currentTimeMillis()+timeout/2;
+        for (Thread thread : _threads)
+        {
+            long canwait =stopby-System.currentTimeMillis();
+            if (canwait>0)
+                thread.join(canwait);
+        }
+        
+        // If we still have threads running, get a bit more aggressive
 
         // interrupt remaining threads
         if (_threadsStarted.get()>0)
             for (Thread thread : _threads)
                 thread.interrupt();
-
-        // wait for remaining threads to die
-        while (_threadsStarted.get()>0 && (System.currentTimeMillis()-start) < getStopTimeout())
+        
+        // wait again for the other half of our stop time
+        stopby=System.currentTimeMillis()+timeout/2;
+        for (Thread thread : _threads)
         {
-            Thread.sleep(1);
+            long canwait =stopby-System.currentTimeMillis();
+            if (canwait>0)
+                thread.join(canwait);
         }
+        
         Thread.yield();
         int size=_threads.size();
         if (size>0)
         {
             LOG.warn("{} threads could not be stopped", size);
 
-            if (size==1 || LOG.isDebugEnabled())
+            if (size<=Runtime.getRuntime().availableProcessors() || LOG.isDebugEnabled())
             {
                 for (Thread unstopped : _threads)
                 {

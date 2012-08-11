@@ -7,7 +7,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class LocalHttpConnectorTest
+public class LocalConnectorTest
 {
     private Server _server;
     private LocalConnector _connector;

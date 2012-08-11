@@ -32,10 +32,21 @@ public interface NetworkConnector extends Connector, AutoCloseable
     /**
      * <p>Performs the activities needed to close the network communication
      * (for example, to stop accepting network connections).</p>
+     * Once a connector has been closed, it cannot be opened again without first
+     * calling {@link #stop()} and it will not be active again until a subsequent call to {@link #start()}
      * @throws IOException if this connector cannot be closed
      */
-    void close() throws IOException;
+    @Override
+    void close();
 
+    /* ------------------------------------------------------------ */
+    /**
+     * A Connector may be opened and not started (to reserve a port)
+     * or closed and running (to allow graceful shutdown of existing connections)
+     * @return True if the connector is Open.
+     */
+    boolean isOpen();
+    
     /**
      * @return The hostname representing the interface to which
      * this connector will bind, or null for all interfaces.

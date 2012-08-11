@@ -321,7 +321,10 @@ public class Server extends HandlerWrapper implements Attributes
                 LOG.info("Graceful shutdown {}", graceful);
                 graceful.shutdown();
             }
-            Thread.sleep(stopTimeout);
+            
+            // TODO, wait for up to stopTimeout for connectors to have no more connections
+            // can currently only do this via statistics, which might not be turned on.
+            // should be able to count connections without stats.
         }
 
         for (Connector connector : _connectors)

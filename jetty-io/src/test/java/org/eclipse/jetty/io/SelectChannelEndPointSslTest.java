@@ -192,7 +192,6 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
     @Test
     @Override
-    @Ignore("Not working")
     public void testWriteBlocked() throws Exception
     {
         super.testWriteBlocked();
