@@ -22,13 +22,13 @@ my be specified if a match is not achieved.
 <!ENTITY % VALUE "#PCDATA|Get|Call|New|Ref|Array|Map|SystemProperty|Env|Property">
 
 <!ENTITY % TYPEATTR "type CDATA #IMPLIED " > <!-- String|Character|Short|Byte|Integer|Long|Boolean|Float|Double|char|short|byte|int|long|boolean|float|double|URL|InetAddress|InetAddrPort| #classname -->
-<!ENTITY % IMPLIEDCLASSATTR "class NMTOKEN #IMPLIED" >
-<!ENTITY % CLASSATTR "class NMTOKEN #REQUIRED" >
-<!ENTITY % NAMEATTR "name NMTOKEN #REQUIRED" >
-<!ENTITY % IMPLIEDNAMEATTR "name NMTOKEN #IMPLIED" >
+<!ENTITY % IMPLIEDCLASSATTR "class CDATA #IMPLIED" >
+<!ENTITY % CLASSATTR "class CDATA #REQUIRED" >
+<!ENTITY % NAMEATTR "name CDATA #REQUIRED" >
+<!ENTITY % IMPLIEDNAMEATTR "name CDATA #IMPLIED" >
 <!ENTITY % DEFAULTATTR "default CDATA #IMPLIED" >
-<!ENTITY % IDATTR "id NMTOKEN #IMPLIED" >
-<!ENTITY % REQUIREDIDATTR "id NMTOKEN #REQUIRED" >
+<!ENTITY % IDATTR "id ID #IMPLIED" >
+<!ENTITY % REQUIREDIDATTR "id ID #REQUIRED" >
 
 
 <!--

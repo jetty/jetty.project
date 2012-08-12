@@ -21,7 +21,7 @@
   <filter>
     <filter-name>TestFilter</filter-name>
     <filter-class>com.acme.TestFilter</filter-class>
-    <async-support>true</async-support>
+    <async-supported>true</async-supported>
     <init-param>
       <param-name>remote</param-name>
       <param-value>false</param-value>
@@ -36,7 +36,7 @@
   <filter>
     <filter-name>QoSFilter</filter-name>
     <filter-class>org.eclipse.jetty.servlets.QoSFilter</filter-class>
-    <async-support>true</async-support>
+    <async-supported>true</async-supported>
     <init-param>
       <param-name>maxRequests</param-name>
       <param-value>10000</param-value>
@@ -55,7 +55,7 @@
   <filter>
     <filter-name>MultiPart</filter-name>
     <filter-class>org.eclipse.jetty.servlets.MultiPartFilter</filter-class>
-    <async-support>true</async-support>
+    <async-supported>true</async-supported>
     <init-param>
       <param-name>deleteFiles</param-name>
       <param-value>true</param-value>
@@ -70,7 +70,7 @@
   <filter>
     <filter-name>GzipFilter</filter-name>
     <filter-class>org.eclipse.jetty.servlets.IncludableGzipFilter</filter-class>
-    <async-support>true</async-support>
+    <async-supported>true</async-supported>
     <init-param>
       <param-name>bufferSize</param-name>
       <param-value>8192</param-value>
@@ -135,8 +135,8 @@
   <servlet>
     <servlet-name>Dump</servlet-name>
     <servlet-class>com.acme.Dump</servlet-class>
-    <async-support>true</async-support>
     <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
     <run-as><role-name>admin</role-name></run-as>
   </servlet>
 
@@ -171,8 +171,8 @@
   <servlet>
     <servlet-name>Dispatch</servlet-name>
     <servlet-class>com.acme.DispatchServlet</servlet-class>
-    <async-support>true</async-support>
     <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
   </servlet>
   
   <servlet-mapping>
@@ -194,8 +194,8 @@
   <servlet>
     <servlet-name>Chat</servlet-name>
     <servlet-class>com.acme.ChatServlet</servlet-class>
-    <async-support>true</async-support>
     <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
   </servlet>
 
   <servlet-mapping>
