@@ -163,10 +163,13 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     {
         ServerSocketChannel serverChannel = _acceptChannel;
         _acceptChannel = null;
-        super.close();
+        
+        
         if (serverChannel != null)
         {
             removeBean(serverChannel);
+            
+            // If the interrupt did not close it, we should close it
             if (serverChannel.isOpen())
             {
                 try
@@ -179,6 +182,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
                 }
             }
         }
+        // super.close();
         _localPort = -2;
     }
 

@@ -49,8 +49,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
     @Test
     public void testCloseBetweenRequests() throws Exception
     {
-        int maxLength = 32;
-        int requestCount = iterations(maxLength);
+        final int requestCount = 32;
         final CountDownLatch latch = new CountDownLatch(requestCount);
         
         configureServer(new HelloWorldHandler());
@@ -85,29 +84,30 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             Thread runner = new Thread(reader);
             runner.start();
 
-            for (int pipeline = 1; pipeline < maxLength; pipeline++)
+            for (int pipeline = 1; pipeline <= requestCount; pipeline++)
             {
-                if (pipeline == maxLength / 2)
-                    _connector.close();
-
-                String request = "";
-                for (int i = 0; i < pipeline; i++)
+                if (pipeline == requestCount / 2)
                 {
-                    request +=
-                        "GET /data?writes=1&block=16&id="+i+" HTTP/1.1\r\n"+
+                    // wait for at least 1 request to have been received
+                    if (latch.getCount()==requestCount)
+                        Thread.sleep(1);
+                    _connector.close();
+                }
+
+                String request = 
+                        "GET /data?writes=1&block=16&id="+pipeline+" HTTP/1.1\r\n"+
                         "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
                         "user-agent: testharness/1.0 (blah foo/bar)\r\n"+
                         "accept-encoding: nothing\r\n"+
                         "cookie: aaa=1234567890\r\n"+
                         "\r\n";
-                }
                 os.write(request.getBytes());
                 os.flush();
 
                 Thread.sleep(25);
             }
             
-            latch.await(30, TimeUnit.SECONDS);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             reader.setDone();
             runner.join();
@@ -115,8 +115,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         finally
         {
             client.close();
-
-            assertEquals(requestCount, requestCount - latch.getCount());
         }
     }
 

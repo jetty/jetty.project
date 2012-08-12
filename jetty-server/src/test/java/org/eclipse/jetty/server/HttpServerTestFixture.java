@@ -30,7 +30,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 
@@ -40,8 +42,8 @@ public class HttpServerTestFixture
     protected static final int LOOPS=Stress.isEnabled()?250:50;
     protected static final String HOST="localhost";
 
-    protected static Server _server;
-    protected static NetworkConnector _connector;
+    protected Server _server;
+    protected NetworkConnector _connector;
     protected String _scheme="http";
 
     protected Socket newSocket(String host,int port) throws Exception
@@ -53,13 +55,13 @@ public class HttpServerTestFixture
         return socket;
     }
 
-    @BeforeClass
-    public static void before()
+    @Before
+    public void before()
     {
         _server = new Server();
     }
 
-    protected static void startServer(NetworkConnector connector) throws Exception
+    protected void startServer(NetworkConnector connector) throws Exception
     {
         _connector = connector;
         _server.addConnector(_connector);
@@ -67,11 +69,12 @@ public class HttpServerTestFixture
         _server.start();
     }
 
-    @AfterClass
-    public static void stopServer() throws Exception
+    @After
+    public void stopServer() throws Exception
     {
         _server.stop();
         _server.join();
+        _server.setConnectors(new Connector[]{});
     }
 
     protected void configureServer(Handler handler) throws Exception

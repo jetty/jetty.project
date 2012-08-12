@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -304,29 +306,48 @@ public class Server extends HandlerWrapper implements Attributes
 
         MultiException mex=new MultiException();
 
-        long stopTimeout = getStopTimeout();
-        if (stopTimeout>0)
+        
+        // First close the network connectors to stop accepting new connections
+        for (Connector connector : _connectors)
         {
-            for (Connector connector : _connectors)
-            {
-                LOG.info("Graceful shutdown {}", connector);
-                if (connector instanceof NetworkConnector)
-                    ((NetworkConnector)connector).close();
-            }
-
-            Handler[] contexts = getChildHandlersByClass(Graceful.class);
-            for (Handler context : contexts)
-            {
-                Graceful graceful = (Graceful)context;
-                LOG.info("Graceful shutdown {}", graceful);
-                graceful.shutdown();
-            }
-            
-            // TODO, wait for up to stopTimeout for connectors to have no more connections
-            // can currently only do this via statistics, which might not be turned on.
-            // should be able to count connections without stats.
+            if (connector instanceof NetworkConnector)
+                ((NetworkConnector)connector).close();
         }
 
+        // Then tell the contexts that we are shutting down
+        Handler[] contexts = getChildHandlersByClass(Graceful.class);
+        for (Handler context : contexts)
+        {
+            Graceful graceful = (Graceful)context;
+            graceful.shutdown();
+        }
+            
+        // Shall we gracefully wait for zero connections?
+        long stopTimeout = getStopTimeout();
+        if (stopTimeout>0 && LOG.isDebugEnabled()) // TODO disabled unless debg for now
+        {
+            long stop_by=System.currentTimeMillis()+stopTimeout;
+            LOG.info("Graceful shutdown {} by ",this,new Date(stop_by));
+
+            // TODO Need to be able to set the maxIdleTime on each individual connection
+            for (Connector connector : _connectors)
+            {
+                // TODO this is not good enough
+                if (connector instanceof AbstractConnector)
+                    ((AbstractConnector)connector).setIdleTimeout(1);
+            }
+            
+            for (Connector connector : _connectors)
+            {
+                while (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
+                {
+                    System.err.println(((Dumpable)connector).dump());
+                    Thread.sleep(100);
+                }
+            }
+        }
+    
+        // Now stop the connectors (this will close existing connections)
         for (Connector connector : _connectors)
         {
             try
@@ -339,6 +360,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
         }
 
+        // And finall stop everything else
         try
         {
             super.doStop();

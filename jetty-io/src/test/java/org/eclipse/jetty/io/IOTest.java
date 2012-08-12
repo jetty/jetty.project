@@ -29,6 +29,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -300,6 +301,85 @@ public class IOTest
             e.printStackTrace();
         }
     }
+    
+    @Test
+    public void testServerChannelInterrupt() throws Exception
+    {
+        final ServerSocketChannel connector = ServerSocketChannel.open();
+        connector.configureBlocking(true);
+        connector.socket().bind(null);
+
+        Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket();
+        client.setSoTimeout(2000);
+        client.setSoLinger(false, -1);
+        Socket server = connector.accept().socket();
+        server.setSoTimeout(2000);
+        server.setSoLinger(false, -1);
+
+        // Write from client to server
+        client.getOutputStream().write(1);
+        // Server reads
+        assertEquals(1, server.getInputStream().read());
+
+        // Write from server to client 
+        server.getOutputStream().write(1);
+        // Client reads
+        assertEquals(1, client.getInputStream().read());
+
+        
+        // block a thread in accept
+        final CountDownLatch alatch=new CountDownLatch(2);
+        Thread acceptor = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    alatch.countDown();
+                    connector.accept();
+                }
+                catch (Throwable e)
+                {
+                }
+                finally
+                {
+                    alatch.countDown();
+                }
+            }
+        };
+        acceptor.start();
+        while (alatch.getCount()==2)
+            Thread.sleep(10);
+        
+        // interrupt the acceptor
+        acceptor.interrupt();
+        
+        // wait for acceptor to exit
+        assertTrue(alatch.await(10,TimeUnit.SECONDS));
+        
+        // connector is closed
+        assertFalse(connector.isOpen());
+        
+        // but connection is still open
+        assertFalse(client.isClosed());
+        assertFalse(server.isClosed());
+
+        // Write from client to server
+        client.getOutputStream().write(42);
+        // Server reads
+        assertEquals(42, server.getInputStream().read());
+
+        // Write from server to client
+        server.getOutputStream().write(43);
+        // Client reads
+        assertEquals(43, client.getInputStream().read());
+        
+        client.close();
+        
+    }
+    
+    
 
     @Test
     public void testReset() throws Exception

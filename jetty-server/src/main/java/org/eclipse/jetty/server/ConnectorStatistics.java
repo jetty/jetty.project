@@ -13,14 +13,21 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.server.Connector.Statistics;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-class ConnectorStatistics extends AbstractLifeCycle implements Statistics
+class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpable
 {
     private final AtomicLong _startMillis = new AtomicLong(-1L);
     private final CounterStatistic _connectionStats = new CounterStatistic();
@@ -171,5 +178,20 @@ class ConnectorStatistics extends AbstractLifeCycle implements Statistics
             _connectionStats.decrement();
             _connectionDurationStats.set(duration);
         }
+    }
+    
+
+    @Override
+    @ManagedOperation("dump thread state")
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        AggregateLifeCycle.dumpObject(out,this);
+        AggregateLifeCycle.dump(out,indent,Arrays.asList(new String[]{"connections="+_connectionStats,"duration="+_connectionDurationStats,"in="+_messagesIn,"out="+_messagesOut}));
     }
 }

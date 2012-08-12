@@ -86,11 +86,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _sslContextFactory = sslContextFactory;
 
         addBean(_server,false);
-        addBean(_executor,false);
+        addBean(_executor);
+        if (executor==null)
+            unmanage(_executor);
         addBean(_scheduler,scheduler==null);
         addBean(_byteBufferPool,pool==null);
         addBean(_sslContextFactory);
-        addBean(_stats,false);
+        addBean(_stats,true);
 
         if (acceptors<=0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);

@@ -109,4 +109,11 @@ public class CounterStatistic
     {
         return _total.get();
     }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{c=%d,m=%d,t=%d}",this.getClass().getSimpleName(),hashCode(),_curr.get(),_max.get(),_total.get());
+    }
 }

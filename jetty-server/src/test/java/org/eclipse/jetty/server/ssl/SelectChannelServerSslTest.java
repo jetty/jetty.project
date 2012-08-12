@@ -27,6 +27,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,8 +48,8 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         return __sslContext.getSocketFactory().createSocket(host,port);
     }
 
-    @BeforeClass
-    public static void init() throws Exception
+    @Before
+    public void init() throws Exception
     {
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         SslContextFactory sslContextFactory = new SslContextFactory();

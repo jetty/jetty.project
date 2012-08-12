@@ -22,14 +22,14 @@ import java.net.Socket;
 
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.IO;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 {
-
-    @BeforeClass
-    public static void init() throws Exception
+    @Before
+    public void init() throws Exception
     {
         SelectChannelConnector connector = new SelectChannelConnector(_server);
         connector.setIdleTimeout(MAX_IDLE_TIME); // 250 msec max idle
