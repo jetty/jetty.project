@@ -726,7 +726,22 @@ public class ObjectMBean implements DynamicMBean
     {
         String description = methodAnnotation.value();
         boolean onMBean = methodAnnotation.proxied();
-        boolean convert = methodAnnotation.managed();
+        
+        boolean convert = false;
+        
+        // determine if we should convert
+        Class<?> returnType = method.getReturnType();
+        
+        if ( returnType.isArray() )
+        {
+            returnType = returnType.getComponentType();
+        }
+        
+        if ( returnType.isAnnotationPresent(ManagedObject.class))
+        {
+            convert = true;
+        }
+        
         String impactName = methodAnnotation.impact();
         
         
