@@ -53,7 +53,7 @@ public class Derived extends Base implements Signature
         return "bad";
     }
 
-    @ManagedAttribute( value="sample managed object")
+    @ManagedAttribute("sample managed object")
     public Managed getManagedInstance()
     {
         return managedInstance;

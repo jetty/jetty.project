@@ -28,8 +28,7 @@ public @interface ManagedOperation
      * 
      * @return
      */
-    String value() default "Not Specified";
-    
+    String value() default "Not Specified"; 
     
     /**
      * The impact of an operation. 
@@ -41,13 +40,6 @@ public @interface ManagedOperation
      * @return String representing the impact of the operation
      */
     String impact() default "UNKNOWN";
-    
-    /**
-     * Is the managed field itself a Managed Object?
-     *
-     * @return true if the target is a Managed Object
-     */
-    boolean managed() default false;
     
     /**
      * Does the managed field exist on a proxy object?

@@ -31,14 +31,14 @@ public interface HandlerContainer extends LifeCycle
     /**
      * @return array of handlers directly contained by this handler.
      */
-    @ManagedAttribute(value="handlers in this container", managed=true)
+    @ManagedAttribute("handlers in this container")
     public Handler[] getHandlers();
     
     /* ------------------------------------------------------------ */
     /**
      * @return array of all handlers contained by this handler and it's children
      */
-    @ManagedAttribute(value="all contained handlers", managed=true)
+    @ManagedAttribute("all contained handlers")
     public Handler[] getChildHandlers();
     
     /* ------------------------------------------------------------ */

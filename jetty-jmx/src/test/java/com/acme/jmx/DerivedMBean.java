@@ -19,13 +19,13 @@ public class DerivedMBean extends ObjectMBean
         super(managedObject);
     }
     
-    @ManagedOperation(value="test of proxy operations", managed=true)
+    @ManagedOperation("test of proxy operations")
     public String good()
     {
         return "not " + ((Derived)_managed).bad();
     }
  
-    @ManagedAttribute(value="test of proxy attributes", getter="goop", proxied=true)
+    @ManagedAttribute(value="test of proxy attributes", proxied=true)
     public String goop()
     {
         return "goop";

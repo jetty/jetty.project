@@ -168,7 +168,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return Returns the connectors.
      */
-    @ManagedAttribute(value="connectors for this server", managed=true)
+    @ManagedAttribute("connectors for this server")
     public Connector[] getConnectors()
     {
         List<Connector> connectors = new ArrayList<>(_connectors);
@@ -222,7 +222,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return Returns the threadPool.
      */
-    @ManagedAttribute(value="the server thread pool", managed=true)
+    @ManagedAttribute("the server thread pool")
     public ThreadPool getThreadPool()
     {
         return _threadPool;

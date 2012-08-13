@@ -290,7 +290,7 @@ public class Log
      *
      * @return a map of all configured {@link Logger} instances
      */
-    @ManagedAttribute(value="list of all instantiated loggers", managed=true)
+    @ManagedAttribute("list of all instantiated loggers")
     public static Map<String, Logger> getLoggers()
     {
         return Collections.unmodifiableMap(__loggers);

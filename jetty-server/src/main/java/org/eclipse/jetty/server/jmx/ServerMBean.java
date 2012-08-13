@@ -36,7 +36,7 @@ public class ServerMBean extends ObjectMBean
         server = (Server)managedObject;
     }
 
-    @ManagedAttribute(value="contexts on this server", managed=true)
+    @ManagedAttribute("contexts on this server")
     public Handler[] getContexts()
     {
         return server.getChildHandlersByClass(ContextHandler.class);

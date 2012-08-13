@@ -1421,7 +1421,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return Returns the errorHandler.
      */
-    @ManagedAttribute(value="The error handler to use for the context", managed=true)
+    @ManagedAttribute("The error handler to use for the context")
     public ErrorHandler getErrorHandler()
     {
         return _errorHandler;
