@@ -624,7 +624,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return true if this context is accepting new requests
      */
-    @ManagedAttribute("False if this context is accepting new requests. True for graceful shutdown, which allows existing requests to complete")
+    @ManagedAttribute("false if this context is accepting new requests. true for graceful shutdown, which allows existing requests to complete")
     public boolean isShutdown()
     {
         synchronized (this)
@@ -1360,6 +1360,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return True if aliases are allowed
      */
+    @ManagedAttribute("true if alias checking is performed on resource")
     public boolean isAliases()
     {
         return _aliases;

@@ -26,6 +26,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /* ------------------------------------------------------------ */
 /** A collection of handlers.  
@@ -36,8 +38,8 @@ import org.eclipse.jetty.util.MultiException;
  * handlers.
  * <p>
  * 
- * @org.apache.xbean.XBean
  */
+@ManagedObject("Handler of multiple handlers")
 public class HandlerCollection extends AbstractHandlerContainer
 {
     private final boolean _mutableWhenRunning;
@@ -61,6 +63,7 @@ public class HandlerCollection extends AbstractHandlerContainer
      * @return Returns the handlers.
      */
     @Override
+    @ManagedAttribute(value="Wrapped handlers", managed=true)
     public Handler[] getHandlers()
     {
         return _handlers;
