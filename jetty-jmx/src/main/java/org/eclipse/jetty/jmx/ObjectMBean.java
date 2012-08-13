@@ -16,7 +16,6 @@ package org.eclipse.jetty.jmx;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -44,6 +43,7 @@ import javax.management.MBeanParameterInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
+import javax.xml.crypto.dsig.keyinfo.RetrievalMethod;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
@@ -71,7 +71,7 @@ public class ObjectMBean implements DynamicMBean
 {
     private static final Logger LOG = Log.getLogger(ObjectMBean.class);
 
-    private static Class[] OBJ_ARG = new Class[]{Object.class};
+    private static Class<?>[] OBJ_ARG = new Class[]{Object.class};
 
     protected Object _managed;
     private MBeanInfo _info;
@@ -122,13 +122,13 @@ public class ObjectMBean implements DynamicMBean
 
                 try
                 {
-                    Class mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName,true);
+                    Class<?> mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName,true);
                     
                     LOG.debug("ObjectMbean: mbeanFor {} mClass={}", o, mClass);
 
                     try
                     {
-                        Constructor constructor = mClass.getConstructor(OBJ_ARG);
+                        Constructor<?> constructor = mClass.getConstructor(OBJ_ARG);
                         mbean=constructor.newInstance(new Object[]{o});
                     }
                     catch(Exception e)
@@ -279,7 +279,12 @@ public class ObjectMBean implements DynamicMBean
                         if (methodOperationAnnotation != null)
                         {
                             LOG.debug("Method Annotation found for: " + method.getName());
-                            operations.add(defineOperation(method,methodOperationAnnotation));
+                            MBeanOperationInfo oi = defineOperation(method,methodOperationAnnotation);
+                            
+                            if (oi != null)
+                            {
+                                operations.add(oi);
+                            }
                         }
                     }
 
@@ -332,6 +337,7 @@ public class ObjectMBean implements DynamicMBean
                 }
                 else if (r instanceof Collection<?>)
                 {
+                    @SuppressWarnings("unchecked")
                     Collection<Object> c = (Collection<Object>)r;
                     ObjectName[] on = new ObjectName[c.size()];
                     int i=0;
@@ -406,7 +412,7 @@ public class ObjectMBean implements DynamicMBean
             {
                 if (value.getClass().isArray())
                 {
-                    Class t=setter.getParameterTypes()[0].getComponentType();
+                    Class<?> t=setter.getParameterTypes()[0].getComponentType();
                     Object na = Array.newInstance(t,Array.getLength(value));
                     for (int i=Array.getLength(value);i-->0;)
                         Array.set(na, i, _mbeanContainer.findBean((ObjectName)Array.get(value, i)));
@@ -437,7 +443,7 @@ public class ObjectMBean implements DynamicMBean
         LOG.debug("setAttributes");
 
         AttributeList results = new AttributeList(attrs.size());
-        Iterator iter = attrs.iterator();
+        Iterator<Object> iter = attrs.iterator();
         while (iter.hasNext())
         {
             try
@@ -572,8 +578,22 @@ public class ObjectMBean implements DynamicMBean
         String description = attributeAnnotation.value();
         boolean readonly = attributeAnnotation.readonly();   
         boolean onMBean = attributeAnnotation.proxied();
-        boolean convert = attributeAnnotation.managed();
-                
+        
+        boolean convert = false;
+       
+        // determine if we should convert
+        Class<?> returnType = method.getReturnType();
+        
+        if ( returnType.isArray() )
+        {
+            returnType = returnType.getComponentType();
+        }
+        
+        if ( returnType.isAnnotationPresent(ManagedObject.class))
+        {
+            convert = true;
+        }
+            
         String uName = name.substring(0, 1).toUpperCase() + name.substring(1);
         Class<?> oClass = onMBean ? this.getClass() : _managed.getClass();
 
@@ -761,8 +781,14 @@ public class ObjectMBean implements DynamicMBean
             }
             signature += ")";                    
             
-            Class returnClass = method.getReturnType();
+            Class<?> returnClass = method.getReturnType();
             LOG.debug("Method Cache: " + signature );
+            
+            if ( _methods.containsKey(signature) )
+            {
+                return null; // we have an operation for this already
+            }
+            
             _methods.put(signature, method);
             if (convert)
                 _convert.add(signature);

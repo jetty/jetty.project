@@ -49,7 +49,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
-    @ManagedAttribute(value="Wrapped Handler", managed=true)
+    @ManagedAttribute(value="Wrapped Handler", readonly=true)
     public Handler getHandler()
     {
         return _handler;

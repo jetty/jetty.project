@@ -14,6 +14,7 @@
 package org.eclipse.jetty.jmx;
 
 import java.lang.management.ManagementFactory;
+import java.rmi.server.ServerCloneException;
 
 import javax.management.Attribute;
 import javax.management.MBeanAttributeInfo;
@@ -172,11 +173,13 @@ public class ObjectMBeanTest
         Assert.assertNotNull(mbean.getMBeanInfo());
         
         container.addBean(derived);
-        container.addBean(derived.getManagedInstance());
+        //container.addBean(derived.getManagedInstance());
         
         Managed managedInstance = (Managed)mbean.getAttribute("managedInstance");
         Assert.assertNotNull(managedInstance);
         Assert.assertEquals("managed instance returning nonsense", "foo", managedInstance.getManaged());
+        
+        
         
     }
     
@@ -184,14 +187,24 @@ public class ObjectMBeanTest
     @Ignore("ignore, used in testing jconsole atm")
     public void testThreadPool() throws Exception
     {
+        
+        Derived derived = new Derived();
+        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
+        
+        ObjectMBean managed = (ObjectMBean)ObjectMBean.mbeanFor(derived.getManagedInstance());
+        mbean.setMBeanContainer(container);
+        managed.setMBeanContainer(container);
+        
         QueuedThreadPool qtp = new QueuedThreadPool();
         
         ObjectMBean bqtp = (ObjectMBean)ObjectMBean.mbeanFor(qtp);
         
         bqtp.getMBeanInfo();
         
-        
-        
+        container.addBean(derived);
+        container.addBean(derived.getManagedInstance());
+        container.addBean(mbean);
+        container.addBean(managed);
         container.addBean(qtp);
         
         
