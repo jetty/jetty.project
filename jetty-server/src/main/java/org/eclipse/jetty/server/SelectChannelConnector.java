@@ -32,8 +32,6 @@ import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
@@ -41,8 +39,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class SelectChannelConnector extends AbstractNetworkConnector
 {
-    public static final Logger LOG = Log.getLogger(SelectChannelConnector.class);
-
     private final SelectorManager _manager;
     private volatile ServerSocketChannel _acceptChannel;
     private volatile boolean _inheritChannel = false;
@@ -95,7 +91,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         ServerSocketChannel channel = _acceptChannel;
         return channel!=null && channel.isOpen();
     }
-    
+
     /**
      * @return whether this connector uses a channel inherited from the JVM.
      * @see System#inheritedChannel()
@@ -163,12 +159,12 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     {
         ServerSocketChannel serverChannel = _acceptChannel;
         _acceptChannel = null;
-        
-        
+
+
         if (serverChannel != null)
         {
             removeBean(serverChannel);
-            
+
             // If the interrupt did not close it, we should close it
             if (serverChannel.isOpen())
             {

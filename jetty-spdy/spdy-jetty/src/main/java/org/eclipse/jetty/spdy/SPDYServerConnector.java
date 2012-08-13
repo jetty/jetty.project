@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.Connection;
@@ -29,21 +28,16 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SPDYServerConnector extends SelectChannelConnector
-{   
-    private static final Logger LOG = Log.getLogger(SPDYServerConnector.class);
-
+{
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final ServerSessionFrameListener listener;
     private volatile int initialWindowSize;
