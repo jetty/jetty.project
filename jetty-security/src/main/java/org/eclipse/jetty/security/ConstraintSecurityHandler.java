@@ -15,7 +15,6 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -37,16 +36,16 @@ import org.eclipse.jetty.util.security.Constraint;
 /* ------------------------------------------------------------ */
 /**
  * Handler to enforce SecurityConstraints. This implementation is servlet spec
- * 2.4 compliant and precomputes the constraint combinations for runtime
+ * 2.4 compliant and pre-computes the constraint combinations for runtime
  * efficiency.
  *
  */
 public class ConstraintSecurityHandler extends SecurityHandler implements ConstraintAware
 {
     private static final String ALL_METHODS = "*";
-    private final List<ConstraintMapping> _constraintMappings= new CopyOnWriteArrayList<ConstraintMapping>();
-    private final Set<String> _roles = new CopyOnWriteArraySet<String>();
-    private final PathMap _constraintMap = new PathMap();
+    private final List<ConstraintMapping> _constraintMappings= new CopyOnWriteArrayList<>();
+    private final Set<String> _roles = new CopyOnWriteArraySet<>();
+    private final PathMap<Map<String, RoleInfo>> _constraintMap = new PathMap<>();
     private boolean _strict = true;
 
     /* ------------------------------------------------------------ */
@@ -139,7 +138,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         if (roles==null)
         {
-            roles = new HashSet<String>();
+            roles = new HashSet<>();
             for (ConstraintMapping cm : constraintMappings)
             {
                 String[] cmr = cm.getConstraint().getRoles();
@@ -197,10 +196,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     public void addRole(String role)
     {
         boolean modified = _roles.add(role);
-        if (isStarted() && modified && _strict)
+        if (isStarted() && modified && isStrict())
         {
             // Add the new role to currently defined any role role infos
-            for (Map<String,RoleInfo> map : (Collection<Map<String,RoleInfo>>)_constraintMap.values())
+            for (Map<String,RoleInfo> map : _constraintMap.values())
             {
                 for (RoleInfo info : map.values())
                 {
@@ -240,10 +239,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
-        Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.get(mapping.getPathSpec());
+        Map<String, RoleInfo> mappings = _constraintMap.get(mapping.getPathSpec());
         if (mappings == null)
         {
-            mappings = new StringMap();
+            mappings = new StringMap<>();
             _constraintMap.put(mapping.getPathSpec(),mappings);
         }
         RoleInfo allMethodsRoleInfo = mappings.get(ALL_METHODS);
@@ -323,9 +322,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    protected Object prepareConstraintInfo(String pathInContext, Request request)
+    protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
     {
-        Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.match(pathInContext);
+        Map<String, RoleInfo> mappings = _constraintMap.match(pathInContext);
 
         if (mappings != null)
         {
@@ -339,31 +338,28 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return null;
     }
 
-    protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, Object constraintInfo) throws IOException
+    @Override
+    protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo roleInfo) throws IOException
     {
-        if (constraintInfo == null)
+        if (roleInfo == null)
             return true;
 
-        RoleInfo roleInfo = (RoleInfo)constraintInfo;
         if (roleInfo.isForbidden())
             return false;
 
-
         UserDataConstraint dataConstraint = roleInfo.getUserDataConstraint();
         if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
-        {
             return true;
-        }
-        
-        HttpConfiguration connector = HttpChannel.getCurrentHttpChannel().getHttpConfiguration();
+
+        HttpConfiguration httpConfiguration = HttpChannel.getCurrentHttpChannel().getHttpConfiguration();
 
         if (dataConstraint == UserDataConstraint.Integral)
         {
-            if (connector.isIntegral(request))
+            if (httpConfiguration.isIntegral(request))
                 return true;
-            if (connector.getIntegralPort() > 0)
+            if (httpConfiguration.getIntegralPort() > 0)
             {
-                String url = connector.getIntegralScheme() + "://" + request.getServerName() + ":" + connector.getIntegralPort() + request.getRequestURI();
+                String url = httpConfiguration.getIntegralScheme() + "://" + request.getServerName() + ":" + httpConfiguration.getIntegralPort() + request.getRequestURI();
                 if (request.getQueryString() != null)
                     url += "?" + request.getQueryString();
                 response.setContentLength(0);
@@ -377,12 +373,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
         else if (dataConstraint == UserDataConstraint.Confidential)
         {
-            if (connector.isConfidential(request))
+            if (httpConfiguration.isConfidential(request))
                 return true;
 
-            if (connector.getConfidentialPort() > 0)
+            if (httpConfiguration.getConfidentialPort() > 0)
             {
-                String url = connector.getConfidentialScheme() + "://" + request.getServerName() + ":" + connector.getConfidentialPort()
+                String url = httpConfiguration.getConfidentialScheme() + "://" + request.getServerName() + ":" + httpConfiguration.getConfidentialPort()
                         + request.getRequestURI();
                 if (request.getQueryString() != null)
                     url += "?" + request.getQueryString();
@@ -405,11 +401,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
     protected boolean isAuthMandatory(Request baseRequest, Response base_response, Object constraintInfo)
     {
-        if (constraintInfo == null)
-        {
-            return false;
-        }
-        return ((RoleInfo)constraintInfo).isChecked();
+        return constraintInfo != null && ((RoleInfo)constraintInfo).isChecked();
     }
 
     @Override

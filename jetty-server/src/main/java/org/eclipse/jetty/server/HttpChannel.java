@@ -19,7 +19,6 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -53,23 +52,18 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public abstract class HttpChannel
 {
-    static final Logger LOG = Log.getLogger(HttpChannel.class);
-
+    protected static final Logger LOG = Log.getLogger(HttpChannel.class);
     private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
 
-    /* ------------------------------------------------------------ */
     public static HttpChannel getCurrentHttpChannel()
     {
         return __currentChannel.get();
     }
 
-    /* ------------------------------------------------------------ */
     protected static void setCurrentHttpChannel(HttpChannel channel)
     {
         __currentChannel.set(channel);
     }
-
-
 
     private final Server _server;
     private final Connection _connection;
@@ -312,7 +306,7 @@ public abstract class HttpChannel
             Thread.currentThread().setName(threadName+" - "+_uri);
         }
 
-        __currentChannel.set(this);
+        setCurrentHttpChannel(this);
         try
         {
             // Loop here to handle async request redispatches.
@@ -373,7 +367,7 @@ public abstract class HttpChannel
         }
         finally
         {
-            __currentChannel.set(null);
+            setCurrentHttpChannel(null);
             if (threadName!=null)
                 Thread.currentThread().setName(threadName);
 
@@ -792,7 +786,7 @@ public abstract class HttpChannel
     }
 
     public abstract Connector getConnector();
-    
+
     public abstract HttpConfiguration getHttpConfiguration();
 
     protected abstract int write(ByteBuffer content) throws IOException;

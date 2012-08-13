@@ -84,37 +84,35 @@ public class PathMap<O> extends HashMap<String,O>
     boolean _nodefault=false;
 
     /* --------------------------------------------------------------- */
-    /** Construct empty PathMap.
-     */
     public PathMap()
     {
-        super(11);
-        _entrySet=entrySet();
+        this(11);
     }
 
     /* --------------------------------------------------------------- */
-    /** Construct empty PathMap.
-     */
-    public PathMap(boolean nodefault)
+    public PathMap(boolean noDefault)
     {
-        super(11);
-        _entrySet=entrySet();
-        _nodefault=nodefault;
+        this(11, noDefault);
     }
 
     /* --------------------------------------------------------------- */
-    /** Construct empty PathMap.
-     */
     public PathMap(int capacity)
     {
-        super (capacity);
+        this(capacity, false);
+    }
+
+    /* --------------------------------------------------------------- */
+    private PathMap(int capacity, boolean noDefault)
+    {
+        super(capacity);
+        _nodefault=noDefault;
         _entrySet=entrySet();
     }
 
     /* --------------------------------------------------------------- */
     /** Construct from dictionary PathMap.
      */
-    public PathMap(Map m)
+    public PathMap(Map<String, ? extends O> m)
     {
         putAll(m);
         _entrySet=entrySet();
@@ -129,16 +127,15 @@ public class PathMap<O> extends HashMap<String,O>
     @Override
     public O put(String pathSpec, O object)
     {
-        String str = pathSpec.toString();
-        if ("".equals(str.trim()))
+        if ("".equals(pathSpec.trim()))
         {
-            MappedEntry entry = new MappedEntry("",object);
+            MappedEntry<O> entry = new MappedEntry<>("",object);
             entry.setMapped("");
             _exactMap.put("", entry);
             return super.put("", object);
         }
 
-        StringTokenizer tok = new StringTokenizer(str,__pathSpecSeparators);
+        StringTokenizer tok = new StringTokenizer(pathSpec,__pathSpecSeparators);
         O old =null;
 
         while (tok.hasMoreTokens())
@@ -151,7 +148,7 @@ public class PathMap<O> extends HashMap<String,O>
             old = super.put(spec,object);
 
             // Make entry that was just created.
-            MappedEntry entry = new MappedEntry(spec,object);
+            MappedEntry<O> entry = new MappedEntry<>(spec,object);
 
             if (entry.getKey().equals(spec))
             {
@@ -194,9 +191,9 @@ public class PathMap<O> extends HashMap<String,O>
      * @param path the path.
      * @return Best matched object or null.
      */
-    public Object match(String path)
+    public O match(String path)
     {
-        Map.Entry entry = getMatch(path);
+        MappedEntry<O> entry = getMatch(path);
         if (entry!=null)
             return entry.getValue();
         return null;
@@ -210,12 +207,12 @@ public class PathMap<O> extends HashMap<String,O>
      */
     public MappedEntry<O> getMatch(String path)
     {
-        MappedEntry<O> entry=null;
-
         if (path==null)
             return null;
 
         int l=path.length();
+
+        MappedEntry<O> entry=null;
 
         //special case
         if (l == 1 && path.charAt(0)=='/')

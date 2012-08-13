@@ -27,13 +27,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class LocalConnector extends AbstractConnector
 {
-    private static final Logger LOG = Log.getLogger(LocalConnector.class);
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
 
     public LocalConnector(Server server)
@@ -123,12 +120,14 @@ public class LocalConnector extends AbstractConnector
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
-        LOG.debug("getResponses");
+        LOG.debug("requests {}", BufferUtil.toUTF8String(requestsBuffer));
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(requestsBuffer);
         _connects.add(endp);
         endp.waitUntilClosedOrIdleFor(idleFor,units);
-        return endp.takeOutput();
+        ByteBuffer responses = endp.takeOutput();
+        LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
+        return responses;
     }
 
     /**

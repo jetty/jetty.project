@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public abstract class AbstractConnector extends AggregateLifeCycle implements Connector, Dumpable
 {
-    private final Logger LOG = Log.getLogger(getClass());
+    protected final Logger LOG = Log.getLogger(getClass());
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, ConnectionFactory> factories = new LinkedHashMap<>();
     private final Statistics _stats = new ConnectorStatistics();
@@ -216,16 +216,16 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
     protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
 
-    
+
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @return Is the connector accepting new connections
      */
     protected boolean isAccepting()
     {
         return isRunning();
     }
-    
+
     public ConnectionFactory getConnectionFactory(String protocol)
     {
         synchronized (factories)
