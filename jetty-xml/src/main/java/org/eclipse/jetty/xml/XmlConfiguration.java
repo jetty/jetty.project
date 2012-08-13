@@ -50,7 +50,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser.Node;
-import org.junit.Assert;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 

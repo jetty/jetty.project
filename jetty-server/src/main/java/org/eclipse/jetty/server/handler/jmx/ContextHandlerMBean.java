@@ -31,11 +31,11 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
     }
 
     @ManagedAttribute("Map of context attributes")
-    public Map getContextAttributes()
+    public Map<String,Object> getContextAttributes()
     {
-        Map map = new HashMap();
+        Map<String,Object> map = new HashMap<String,Object>();
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
-        Enumeration en = attrs.getAttributeNames();
+        Enumeration<String> en = attrs.getAttributeNames();
         while (en.hasMoreElements())
         {
             String name = (String)en.nextElement();
