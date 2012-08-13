@@ -23,6 +23,8 @@ import java.nio.channels.SocketChannel;
 import java.util.Map;
 
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
@@ -31,6 +33,7 @@ public class WebSocketClient
 {
     public static class ConnectFuture extends FutureCallback<WebSocketConnection>
     {
+        private static final Logger LOG = Log.getLogger(ConnectFuture.class);
         private final WebSocketClient client;
         private final URI websocketUri;
         private final WebSocketEventDriver websocket;
@@ -45,6 +48,7 @@ public class WebSocketClient
         @Override
         public void completed(WebSocketConnection context)
         {
+            LOG.debug("completed() - {}",context);
             // TODO Auto-generated method stub
             super.completed(context);
         }
@@ -52,6 +56,8 @@ public class WebSocketClient
         @Override
         public void failed(WebSocketConnection context, Throwable cause)
         {
+            LOG.debug("failed() - {}, {}",context,cause);
+            LOG.info(cause);
             // TODO Auto-generated method stub
             super.failed(context,cause);
         }
@@ -89,15 +95,15 @@ public class WebSocketClient
         }
     }
 
+    private static final Logger LOG = Log.getLogger(WebSocketClient.class);
+
     public static InetSocketAddress toSocketAddress(URI uri)
     {
-        // TODO Auto-generated method stub
-        return null;
+        return new InetSocketAddress(uri.getHost(),uri.getPort());
     }
 
     private final WebSocketClientFactory factory;
     private SocketAddress bindAddress;
-
     private WebSocketPolicy policy;
 
     public WebSocketClient(WebSocketClientFactory factory)
@@ -118,10 +124,12 @@ public class WebSocketClient
         {
             channel.bind(bindAddress);
         }
-        channel.socket().setTcpNoDelay(true);
-        channel.configureBlocking(false);
 
-        InetSocketAddress address = new InetSocketAddress(websocketUri.getHost(),websocketUri.getPort());
+        channel.socket().setTcpNoDelay(true); // disable nagle
+        channel.configureBlocking(false); // async all the way
+
+        InetSocketAddress address = toSocketAddress(websocketUri);
+        LOG.debug("Connect to {}",address);
 
         WebSocketEventDriver websocket = this.factory.newWebSocketDriver(websocketPojo);
         ConnectFuture result = new ConnectFuture(this,websocketUri,websocket);
@@ -159,6 +167,5 @@ public class WebSocketClient
     public void setProtocol(String protocol)
     {
         // TODO Auto-generated method stub
-
     }
 }

@@ -58,7 +58,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     protected void execute(Runnable task)
     {
-        // TODO Auto-generated method stub
+        this.executor.execute(task);
     }
 
     public SslContextFactory getSslContextFactory()
@@ -66,29 +66,10 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return sslContextFactory;
     }
 
-    public AbstractWebSocketConnection newWebSocketConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
-    {
-        WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
-        WebSocketClientFactory factory = confut.getFactory();
-        WebSocketEventDriver websocket = confut.getWebSocket();
-
-        Executor executor = factory.getExecutor();
-        WebSocketPolicy policy = factory.getPolicy();
-        ByteBufferPool bufferPool = factory.getBufferPool();
-        ScheduledExecutorService scheduler = factory.getScheduler();
-
-        AbstractWebSocketConnection connection = new WebSocketClientConnection(endPoint,executor,scheduler,policy,bufferPool,factory);
-        endPoint.setConnection(connection);
-        connection.getParser().setIncomingFramesHandler(websocket);
-
-        // TODO: track open websockets? bind open websocket to connection?
-
-        return connection;
-    }
-
     @Override
-    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+    public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment)
     {
+        LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
         WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
 
         try
@@ -136,7 +117,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     }
 
     @Override
-    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+    protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
     {
         return new SelectChannelEndPoint(channel,selectSet,selectionKey,scheduler,policy.getIdleTimeout());
     }
@@ -145,9 +126,29 @@ public class WebSocketClientSelectorManager extends SelectorManager
     {
         String peerHost = channel.socket().getInetAddress().getHostAddress();
         int peerPort = channel.socket().getPort();
-        SSLEngine engine = sslContextFactory.newSSLEngine(peerHost, peerPort);
+        SSLEngine engine = sslContextFactory.newSSLEngine(peerHost,peerPort);
         engine.setUseClientMode(true);
         return engine;
+    }
+
+    public AbstractWebSocketConnection newWebSocketConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+    {
+        WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
+        WebSocketClientFactory factory = confut.getFactory();
+        WebSocketEventDriver websocket = confut.getWebSocket();
+
+        Executor executor = factory.getExecutor();
+        WebSocketPolicy policy = factory.getPolicy();
+        ByteBufferPool bufferPool = factory.getBufferPool();
+        ScheduledExecutorService scheduler = factory.getScheduler();
+
+        AbstractWebSocketConnection connection = new WebSocketClientConnection(endPoint,executor,scheduler,policy,bufferPool,factory);
+        endPoint.setConnection(connection);
+        connection.getParser().setIncomingFramesHandler(websocket);
+
+        // TODO: track open websockets? bind open websocket to connection?
+
+        return connection;
     }
 
     public void setSslContextFactory(SslContextFactory sslContextFactory)
