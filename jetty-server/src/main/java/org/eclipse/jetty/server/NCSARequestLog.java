@@ -27,6 +27,8 @@ import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -39,12 +41,12 @@ import org.eclipse.jetty.util.log.Logger;
  * servers, and almost all web log analysis software can understand these
  * formats.
  *
- * @org.apache.xbean.XBean element="ncsaLog"
  */
 
 /* ------------------------------------------------------------ */
 /**
  */
+@ManagedObject("NCSA standard format request log")
 public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 {
     private static final Logger LOG = Log.getLogger(NCSARequestLog.class);
@@ -124,6 +126,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * 
      * @return file name of the request log
      */
+    @ManagedAttribute("file of log")
     public String getFilename()
     {
         return _filename;
@@ -206,6 +209,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * 
      * @return timezone string
      */
+    @ManagedAttribute("the timezone")
     public String getLogTimeZone()
     {
         return _logTimeZone;
@@ -228,6 +232,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * 
      * @return number of days to keep a log file
      */
+    @ManagedAttribute("number of days that log files are kept")
     public int getRetainDays()
     {
         return _retainDays;
@@ -251,6 +256,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * 
      * @return value of the flag
      */
+    @ManagedAttribute("use extended NCSA format")
     public boolean isExtended()
     {
         return _extended;
@@ -274,6 +280,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * 
      * @return value of the flag
      */
+    @ManagedAttribute("existing log files are appends to the new one")
     public boolean isAppend()
     {
         return _append;

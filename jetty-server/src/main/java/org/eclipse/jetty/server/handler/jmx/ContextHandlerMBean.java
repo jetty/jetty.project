@@ -20,9 +20,11 @@ import java.util.Map;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 
+@ManagedObject("ContextHandler mbean wrapper")
 public class ContextHandlerMBean extends AbstractHandlerMBean
 {
     public ContextHandlerMBean(Object managedObject)

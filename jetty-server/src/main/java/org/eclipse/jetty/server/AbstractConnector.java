@@ -30,6 +30,8 @@ import javax.print.attribute.standard.MediaSize.ISO;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 /**
  * <p>Partial implementation of {@link Connector}</p>
  */
+@ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends AggregateLifeCycle implements Connector, Dumpable
 {
     protected final Logger LOG = Log.getLogger(getClass());
@@ -157,6 +160,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /**
      * @return Returns the number of acceptor threads.
      */
+    @ManagedAttribute("number of acceptor threads")
     public int getAcceptors()
     {
         return _acceptors.length;
@@ -328,6 +332,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     }
 
     @Override
+    @ManagedAttribute("name of the connector")
     public String getName()
     {
         return _name;

@@ -23,6 +23,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -30,6 +32,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * {@link LifeCycle life cycle} events to a delegate. This is primarily used to implement the <i>Decorator</i> pattern.
  *
  */
+@ManagedObject("Handler wrapping another Handler")
 public class HandlerWrapper extends AbstractHandlerContainer
 {
     protected Handler _handler;
@@ -46,6 +49,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
+    @ManagedAttribute(value="Wrapped Handler", managed=true)
     public Handler getHandler()
     {
         return _handler;
