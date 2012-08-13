@@ -31,12 +31,14 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * <p>Implementation of {@link NetworkConnector} based on NIO classes.</p>
  */
+@ManagedObject("HTTP connector using NIO ByteChannels and Selectors")
 public class SelectChannelConnector extends AbstractNetworkConnector
 {
     private final SelectorManager _manager;

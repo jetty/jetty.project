@@ -21,6 +21,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 
@@ -40,6 +43,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * before passing it to the next stage of handling.
  * 
  */
+@ManagedObject("Jetty Handler")
 public interface Handler extends LifeCycle, Destroyable
 {
     /* ------------------------------------------------------------ */
@@ -59,8 +63,11 @@ public interface Handler extends LifeCycle, Destroyable
         throws IOException, ServletException;
     
     public void setServer(Server server);
+    
+    @ManagedAttribute(value="the jetty server for this handler", readonly=true)
     public Server getServer();
     
+    @ManagedOperation(value="destroy associated resources", impact="ACTION")
     public void destroy();
     
 }

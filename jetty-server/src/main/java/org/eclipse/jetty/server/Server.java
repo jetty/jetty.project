@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -50,6 +52,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * The server is itself a handler and a ThreadPool.  Connectors use the ThreadPool methods
  * to run jobs that will eventually call the handle method.
  */
+@ManagedObject(value="Jetty HTTP Servlet server", wrapper="org.eclipse.jetty.server.ServerMBean")
 public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = Log.getLogger(Server.class);
@@ -120,6 +123,7 @@ public class Server extends HandlerWrapper implements Attributes
 
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("version of this server")
     public static String getVersion()
     {
         return __version;
@@ -164,6 +168,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return Returns the connectors.
      */
+    @ManagedAttribute(value="connectors for this server", managed=true)
     public Connector[] getConnectors()
     {
         List<Connector> connectors = new ArrayList<>(_connectors);
@@ -217,6 +222,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return Returns the threadPool.
      */
+    @ManagedAttribute(value="the server thread pool", managed=true)
     public ThreadPool getThreadPool()
     {
         return _threadPool;
@@ -225,6 +231,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called after starting
      */
+    @ManagedAttribute("dump state to stderr after start")
     public boolean isDumpAfterStart()
     {
         return _dumpAfterStart;
@@ -241,6 +248,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called before stopping
      */
+    @ManagedAttribute("dump state to stderr before stop")
     public boolean isDumpBeforeStop()
     {
         return _dumpBeforeStop;
@@ -478,6 +486,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("if true, include the server version in HTTP headers")
     public boolean getSendServerVersion()
     {
         return _sendServerVersion;
@@ -490,6 +499,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("if true, include the date in HTTP headers")
     public boolean getSendDateHeader()
     {
         return _sendDateHeader;

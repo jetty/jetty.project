@@ -17,6 +17,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -25,6 +27,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * and allows applications to send data to remote peers, by setting up
  * the machinery needed to handle such tasks.</p>
  */
+@ManagedObject("Connector Interface")
 public interface Connector extends LifeCycle
 {
     /**
@@ -60,6 +63,7 @@ public interface Connector extends LifeCycle
     /**
      * @return the dle timeout for connections in milliseconds
      */
+    @ManagedAttribute("maximum time a connection can be idle before being closed (in ms)")
     public long getIdleTimeout();
 
     /**
