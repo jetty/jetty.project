@@ -148,7 +148,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         return new WebSocketClient(this);
     }
 
-    public WebSocketEventDriver newWebSocketDriver(Object websocketPojo)
+    protected WebSocketEventDriver newWebSocketDriver(Object websocketPojo)
     {
         return new WebSocketEventDriver(websocketPojo,methodsCache,policy,getBufferPool());
     }
