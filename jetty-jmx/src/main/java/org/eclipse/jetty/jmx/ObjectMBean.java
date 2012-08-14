@@ -634,7 +634,7 @@ public class ObjectMBean implements DynamicMBean
         {
             String declaredSetter = attributeAnnotation.setter();
             
-            LOG.debug("DeclaredSetter:" + declaredSetter);
+            LOG.debug("DeclaredSetter: {}", declaredSetter);
             Method[] methods = oClass.getMethods();
             for (int m = 0; m < methods.length; m++)
             {
@@ -649,13 +649,13 @@ public class ObjectMBean implements DynamicMBean
                     {
                         if (setter != null)
                         {
-                            LOG.warn("Multiple setters for mbean attr " + name + " in " + oClass);
+                            LOG.warn("Multiple setters for mbean attr {} in {}", name, oClass);
                             continue;
                         }
                         setter = methods[m];
                         if ( !type.equals(methods[m].getParameterTypes()[0]))
                         {
-                            LOG.warn("Type conflict for mbean attr " + name + " in " + oClass);
+                            LOG.warn("Type conflict for mbean attr {} in {}", name, oClass);
                             continue;
                         }
                         LOG.debug("Declared Setter: " + declaredSetter);
@@ -667,13 +667,13 @@ public class ObjectMBean implements DynamicMBean
                 {
                     if (setter != null)
                     {
-                        LOG.warn("Multiple setters for mbean attr " + name + " in " + oClass);
+                        LOG.warn("Multiple setters for mbean attr {} in {}", name, oClass);
                         continue;
                     }
                     setter = methods[m];
                     if ( !type.equals(methods[m].getParameterTypes()[0]))
                     {
-                        LOG.warn("Type conflict for mbean attr " + name + " in " + oClass);
+                        LOG.warn("Type conflict for mbean attr {} in {}", name, oClass);
                         continue;
                     }
                 }
@@ -772,7 +772,7 @@ public class ObjectMBean implements DynamicMBean
         String impactName = methodAnnotation.impact();
         
         
-        LOG.debug("defineOperation "+method.getName()+" "+onMBean+":"+impactName+":"+description);
+        LOG.debug("defineOperation {} {}:{}:{}", method.getName(), onMBean, impactName, description);
 
         String signature = method.getName();
 
