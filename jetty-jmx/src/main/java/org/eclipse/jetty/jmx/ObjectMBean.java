@@ -235,7 +235,7 @@ public class ObjectMBean implements DynamicMBean
                 Class<?> o_class=_managed.getClass();
                 List<Class<?>> influences = findInfluences(new ArrayList<Class<?>>(), _managed.getClass());
 
-                LOG.debug("Influence Count: " + influences.size() );
+                LOG.debug("Influence Count: {}", influences.size() );
 
                 // Process Type Annotations
                 ManagedObject primary = o_class.getAnnotation( ManagedObject.class);
@@ -260,7 +260,7 @@ public class ObjectMBean implements DynamicMBean
                     LOG.debug("Influenced by: " + oClass.getCanonicalName() );
                     if ( typeAnnotation == null )
                     {
-                        LOG.debug("Annotations not found for: " + oClass.getCanonicalName() );
+                        LOG.debug("Annotations not found for: {}", oClass.getCanonicalName() );
                         continue;
                     }
 
@@ -273,7 +273,7 @@ public class ObjectMBean implements DynamicMBean
                         if (methodAttributeAnnotation != null)
                         {
                             // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
-                            LOG.debug("Attribute Annotation found for: " + method.getName());
+                            LOG.debug("Attribute Annotation found for: {}", method.getName());
                             MBeanAttributeInfo mai = defineAttribute(method,methodAttributeAnnotation);
                             if ( mai != null )
                             {
@@ -285,7 +285,7 @@ public class ObjectMBean implements DynamicMBean
 
                         if (methodOperationAnnotation != null)
                         {
-                            LOG.debug("Method Annotation found for: " + method.getName());
+                            LOG.debug("Method Annotation found for: {}", method.getName());
                             MBeanOperationInfo oi = defineOperation(method,methodOperationAnnotation);
                             
                             if (oi != null)
