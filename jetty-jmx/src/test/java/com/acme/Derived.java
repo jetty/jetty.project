@@ -18,7 +18,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 
-@ManagedObject(value="Test the mbean stuff", wrapper="com.acme.jmx.DerivedMBean")
+@ManagedObject(value="Test the mbean stuff")
 public class Derived extends Base implements Signature
 {
     String fname="Full Name";

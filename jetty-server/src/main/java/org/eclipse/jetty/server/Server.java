@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * The server is itself a handler and a ThreadPool.  Connectors use the ThreadPool methods
  * to run jobs that will eventually call the handle method.
  */
-@ManagedObject(value="Jetty HTTP Servlet server", wrapper="org.eclipse.jetty.server.ServerMBean")
+@ManagedObject(value="Jetty HTTP Servlet server")
 public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = Log.getLogger(Server.class);

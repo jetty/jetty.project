@@ -43,7 +43,6 @@ import javax.management.MBeanParameterInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
-import javax.xml.crypto.dsig.keyinfo.RetrievalMethod;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
@@ -117,15 +116,12 @@ public class ObjectMBean implements DynamicMBean
             Class<?> oClass = o.getClass();
             Object mbean = null;
 
-            while (mbean == null && oClass != null)
+            while ( mbean == null && oClass != null )
             {
-                ManagedObject mo = oClass.getAnnotation(ManagedObject.class);
-                String mName = "";
-                if ( mo != null )
-                {
-                    mName = mo.wrapper();
-                } 
-
+                String pName = oClass.getPackage().getName();
+                String cName = oClass.getName().substring(pName.length() + 1);
+                String mName = pName + ".jmx." + cName + "MBean";
+                
                 try
                 {
                     Class<?> mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName,true);
@@ -180,6 +176,7 @@ public class ObjectMBean implements DynamicMBean
         {
             LOG.ignore(e);
         }
+        
         return null;
     }
 
@@ -258,7 +255,7 @@ public class ObjectMBean implements DynamicMBean
                 {
                     Class<?> oClass = influences.get(i);
 
-                    ManagedObject typeAnnotation = oClass.getAnnotation( ManagedObject.class);
+                    ManagedObject typeAnnotation = oClass.getAnnotation( ManagedObject.class );
 
                     LOG.debug("Influenced by: " + oClass.getCanonicalName() );
                     if ( typeAnnotation == null )
@@ -335,34 +332,51 @@ public class ObjectMBean implements DynamicMBean
             // get the attribute
             Object r=getter.invoke(o, (java.lang.Object[]) null);
             
-            // convert to ObjectName if need be.
-            if (r!=null && _convert.contains(name))
-            {
+            // convert to ObjectName if the type has the @ManagedObject annotation
+            if (r!=null )
+            {               
                 if (r.getClass().isArray())
                 {
-                    ObjectName[] on = new ObjectName[Array.getLength(r)];
-                    for (int i=0;i<on.length;i++)
-                        on[i]=_mbeanContainer.findMBean(Array.get(r, i));
-                    r=on;
+                    if (r.getClass().getComponentType().isAnnotationPresent(ManagedObject.class))
+                    {
+                        ObjectName[] on = new ObjectName[Array.getLength(r)];
+                        for (int i = 0; i < on.length; i++)
+                        {
+                            on[i] = _mbeanContainer.findMBean(Array.get(r,i));
+                        }
+                        r = on;
+                    }
                 }
                 else if (r instanceof Collection<?>)
                 {
                     @SuppressWarnings("unchecked")
                     Collection<Object> c = (Collection<Object>)r;
-                    ObjectName[] on = new ObjectName[c.size()];
-                    int i=0;
-                    for (Object obj :c)
-                        on[i++]=_mbeanContainer.findMBean(obj);
-                    r=on;
+
+                    if (!c.isEmpty() && c.iterator().next().getClass().isAnnotationPresent(ManagedObject.class))
+                    {
+                        // check the first thing out
+
+                        ObjectName[] on = new ObjectName[c.size()];
+                        int i = 0;
+                        for (Object obj : c)
+                        {
+                            on[i++] = _mbeanContainer.findMBean(obj);
+                        }
+                        r = on;
+                    }
                 }
                 else
                 {
-                    ObjectName mbean = _mbeanContainer.findMBean(r);
-                    
-                    if (mbean==null)
-                        return null;
-                    r=mbean;
+                    if ( r.getClass().isAnnotationPresent(ManagedObject.class))
+                    {
+                        ObjectName mbean = _mbeanContainer.findMBean(r);
+
+                        if (mbean == null)
+                            return null;
+                        r = mbean;
+                    }
                 }
+                
             }
             
             return r;
@@ -525,24 +539,19 @@ public class ObjectMBean implements DynamicMBean
             // This class is an influence
             influences.add(aClass);
 
-            // check for mbean influence
-            ManagedObject mo = aClass.getAnnotation(ManagedObject.class);
+            String pName = aClass.getPackage().getName();
+            String cName = aClass.getName().substring(pName.length() + 1);
+            String mName = pName + ".jmx." + cName + "MBean";
             
-            if ( mo != null && !"".equals(mo.wrapper()))
+            try
             {
-                String clazz = mo.wrapper();
-                
-                try
-                {
-                    Class<?> mbean = Class.forName(clazz);
-                    
-                    LOG.debug("MBean Influence found for " + aClass.getSimpleName() );
-                    influences.add(mbean);
-                }
-                catch ( ClassNotFoundException cnfe )
-                {
-                    LOG.debug("No MBean Influence for " + aClass.getSimpleName() );
-                }
+                Class<?> mbeanClazz = Class.forName(mName);
+                LOG.debug("MBean Influence found for " + aClass.getSimpleName());
+                influences.add(mbeanClazz);
+            }
+            catch (ClassNotFoundException cnfe)
+            {
+                LOG.debug("No MBean Influence for " + aClass.getSimpleName());
             }
             
             // So are the super classes
@@ -751,6 +760,7 @@ public class ObjectMBean implements DynamicMBean
         
         if ( returnType.isArray() )
         {
+            LOG.debug("returnType is array, get component type");
             returnType = returnType.getComponentType();
         }
         
@@ -758,7 +768,7 @@ public class ObjectMBean implements DynamicMBean
         {
             convert = true;
         }
-        
+                
         String impactName = methodAnnotation.impact();
         
         
@@ -833,8 +843,7 @@ public class ObjectMBean implements DynamicMBean
             throw new IllegalArgumentException(e.toString());
         }
 
-    }
-    
+    } 
     
     protected String toVariableName( String methodName )
     {
