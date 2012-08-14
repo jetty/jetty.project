@@ -585,7 +585,6 @@ public class DeploymentManager extends AggregateLifeCycle
         this._useStandardBindings = useStandardBindings;
     }
 
-    @ManagedAttribute("App LifeCycle Nodes")
     public Collection<Node> getNodes()
     {
         return _lifecycle.getNodes();
