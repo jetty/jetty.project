@@ -78,6 +78,12 @@ public class ObjectMBean implements DynamicMBean
     private Map<String, Method> _getters=new HashMap<String, Method>();
     private Map<String, Method> _setters=new HashMap<String, Method>();
     private Map<String, Method> _methods=new HashMap<String, Method>();
+    
+    // set of attributes mined from influence hierarchy
+    private Set<String> _attributes = new HashSet<String>();
+    
+    // set of attributes that are automatically converted to ObjectName 
+    // as they represent other managed beans which can be linked to
     private Set<String> _convert=new HashSet<String>();
     private ClassLoader _loader;
     private MBeanContainer _mbeanContainer;
@@ -271,7 +277,11 @@ public class ObjectMBean implements DynamicMBean
                         {
                             // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
                             LOG.debug("Attribute Annotation found for: " + method.getName());
-                            attributes.add(defineAttribute(method,methodAttributeAnnotation));
+                            MBeanAttributeInfo mai = defineAttribute(method,methodAttributeAnnotation);
+                            if ( mai != null )
+                            {
+                                attributes.add(mai);
+                            }
                         }
 
                         ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
@@ -575,6 +585,11 @@ public class ObjectMBean implements DynamicMBean
             name = toVariableName(method.getName());
         }
         
+        if ( _attributes.contains(name))
+        {
+            return null; // we have an attribute named this already
+        }
+        
         String description = attributeAnnotation.value();
         boolean readonly = attributeAnnotation.readonly();   
         boolean onMBean = attributeAnnotation.proxied();
@@ -696,6 +711,8 @@ public class ObjectMBean implements DynamicMBean
             {
                 info= new MBeanAttributeInfo(name,description,method,setter);
             }
+            
+            _attributes.add(name);
             
             return info;
         }
