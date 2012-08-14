@@ -21,6 +21,7 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -112,7 +113,7 @@ public class WebSocketClient
         this.policy = WebSocketPolicy.newClientPolicy();
     }
 
-    public FutureCallback<WebSocketConnection> connect(URI websocketUri, Object websocketPojo) throws IOException
+    public Future<WebSocketConnection> connect(URI websocketUri, Object websocketPojo) throws IOException
     {
         if (!factory.isStarted())
         {
