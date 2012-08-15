@@ -27,6 +27,8 @@ import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -38,6 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
 /** 
  * 
  */
+@ManagedObject("Holder - a container for servlets and the like")
 public class Holder<T> extends AbstractLifeCycle implements Dumpable
 {
     public enum Source { EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION };
@@ -111,6 +114,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     }
     
     /* ------------------------------------------------------------ */
+    @ManagedAttribute(value="Class Name", readonly=true)
     public String getClassName()
     {
         return _className;
@@ -123,6 +127,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     }
     
     /* ------------------------------------------------------------ */
+    @ManagedAttribute(value="Display Name", readonly=true)
     public String getDisplayName()
     {
         return _displayName;
@@ -145,12 +150,14 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     }
 
     /* ---------------------------------------------------------------- */
+    @ManagedAttribute(value="Initial Parameters", readonly=true)
     public Map<String,String> getInitParameters()
     {
         return _initParams;
     }
     
     /* ------------------------------------------------------------ */
+    @ManagedAttribute(value="Name", readonly=true)
     public String getName()
     {
         return _name;

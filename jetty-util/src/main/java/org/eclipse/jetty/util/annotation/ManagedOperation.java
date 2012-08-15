@@ -28,7 +28,7 @@ public @interface ManagedOperation
      * 
      * @return
      */
-    String value() default "Not Specified"; 
+    String value() default "Not Specified";
     
     /**
      * The impact of an operation. 

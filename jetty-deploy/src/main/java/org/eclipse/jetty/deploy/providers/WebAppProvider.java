@@ -21,6 +21,8 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -34,6 +36,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * If the name is in the format root-hostname, then the webapp is deployed
  * at / in the virtual host hostname.
  */
+@ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
 {
     private boolean _extractWars = false;
@@ -110,6 +113,7 @@ public class WebAppProvider extends ScanningAppProvider
     /** Get the extractWars.
      * @return the extractWars
      */
+    @ManagedAttribute("extract war files")
     public boolean isExtractWars()
     {
         return _extractWars;
@@ -128,6 +132,7 @@ public class WebAppProvider extends ScanningAppProvider
     /** Get the parentLoaderPriority.
      * @return the parentLoaderPriority
      */
+    @ManagedAttribute("parent classloader has priority")
     public boolean isParentLoaderPriority()
     {
         return _parentLoaderPriority;
@@ -146,6 +151,7 @@ public class WebAppProvider extends ScanningAppProvider
     /** Get the defaultsDescriptor.
      * @return the defaultsDescriptor
      */
+    @ManagedAttribute("default descriptor for webapps")
     public String getDefaultsDescriptor()
     {
         return _defaultsDescriptor;
@@ -161,6 +167,7 @@ public class WebAppProvider extends ScanningAppProvider
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("directory to scan for context.xml files")
     public String getContextXmlDir()
     {
         return _filter._contexts==null?null:_filter._contexts.toString();
@@ -207,6 +214,7 @@ public class WebAppProvider extends ScanningAppProvider
     /**
      * 
      */
+    @ManagedAttribute("configuration classes for webapps to be processed through")
     public String[] getConfigurationClasses()
     {
         return _configurationClasses;
@@ -229,6 +237,7 @@ public class WebAppProvider extends ScanningAppProvider
      * 
      * @return the user supplied work directory (null if user has not set Temp Directory yet)
      */
+    @ManagedAttribute("temp directory for use, null if no user set temp directory")
     public File getTempDir()
     {
         return _tempDirectory;

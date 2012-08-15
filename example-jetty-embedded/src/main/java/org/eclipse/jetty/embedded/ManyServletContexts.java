@@ -17,6 +17,9 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
+import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.providers.ContextProvider;
+import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -48,6 +51,16 @@ public class ManyServletContexts
         other.addServlet(DefaultServlet.class.getCanonicalName(),"/");
         other.addServlet(new ServletHolder(new HelloServlet("YO!")),"*.yo");
 
+        DeploymentManager dm = new DeploymentManager();
+        WebAppProvider wp = new WebAppProvider();
+        dm.addAppProvider(wp);
+        ContextProvider cp = new ContextProvider();
+        dm.addAppProvider(cp);
+        
+        server.addBean(dm);
+        server.addBean(wp);
+        server.addBean(cp);
+        
         server.start();
         System.err.println(server.dump());
         server.join();

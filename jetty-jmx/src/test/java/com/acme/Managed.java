@@ -3,7 +3,7 @@ package com.acme;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
-@ManagedObject(value="Managed Object", wrapper="com.acme.jmx.ManagedMBean")
+@ManagedObject(value="Managed Object")
 public class Managed
 {
     String managed = "foo";

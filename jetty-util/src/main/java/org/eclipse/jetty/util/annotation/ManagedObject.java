@@ -29,6 +29,4 @@ public @interface ManagedObject
      * @return
      */
     String value() default "Not Specified";
-    
-    String wrapper() default "";
 }

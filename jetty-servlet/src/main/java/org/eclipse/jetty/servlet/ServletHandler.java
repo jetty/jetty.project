@@ -62,6 +62,8 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -77,6 +79,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().
  */
+@ManagedObject("Servlet Handler")
 public class ServletHandler extends ScopedHandler
 {
     private static final Logger LOG = Log.getLogger(ServletHandler.class);
@@ -230,6 +233,7 @@ public class ServletHandler extends ScopedHandler
     /**
      * @return Returns the filterMappings.
      */
+    @ManagedAttribute(value="filters", readonly=true)
     public FilterMapping[] getFilterMappings()
     {
         return _filterMappings;
@@ -239,6 +243,7 @@ public class ServletHandler extends ScopedHandler
     /** Get Filters.
      * @return Array of defined servlets
      */
+    @ManagedAttribute(value="filters", readonly=true)
     public FilterHolder[] getFilters()
     {
         return _filters;
@@ -266,6 +271,7 @@ public class ServletHandler extends ScopedHandler
     /**
      * @return Returns the servletMappings.
      */
+    @ManagedAttribute(value="mappings of servlets", readonly=true)
     public ServletMapping[] getServletMappings()
     {
         return _servletMappings;
@@ -300,6 +306,7 @@ public class ServletHandler extends ScopedHandler
     /** Get Servlets.
      * @return Array of defined servlets
      */
+    @ManagedAttribute(value="servlets", readonly=true)
     public ServletHolder[] getServlets()
     {
         return _servlets;
