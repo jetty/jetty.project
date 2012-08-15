@@ -617,7 +617,11 @@ public class HttpConnection extends AbstractConnection
                     if (_generator.isCommitted())
                         throw new IllegalStateException("committed");
                     if (BufferUtil.hasContent(_responseBuffer))
-                        throw new IllegalStateException("!empty");
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("discarding uncommitted response {}",BufferUtil.toDetailString(_responseBuffer));
+                        BufferUtil.clear(_responseBuffer);
+                    }
                     if (_generator.isComplete())
                         throw new EofException();
 
