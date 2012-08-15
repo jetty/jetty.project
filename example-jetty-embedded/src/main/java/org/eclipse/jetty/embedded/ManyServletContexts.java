@@ -31,7 +31,7 @@ public class ManyServletContexts
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(8090);
+        Server server = new Server(8080);
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -51,16 +51,6 @@ public class ManyServletContexts
         other.addServlet(DefaultServlet.class.getCanonicalName(),"/");
         other.addServlet(new ServletHolder(new HelloServlet("YO!")),"*.yo");
 
-        DeploymentManager dm = new DeploymentManager();
-        WebAppProvider wp = new WebAppProvider();
-        dm.addAppProvider(wp);
-        ContextProvider cp = new ContextProvider();
-        dm.addAppProvider(cp);
-        
-        server.addBean(dm);
-        server.addBean(wp);
-        server.addBean(cp);
-        
         server.start();
         System.err.println(server.dump());
         server.join();
