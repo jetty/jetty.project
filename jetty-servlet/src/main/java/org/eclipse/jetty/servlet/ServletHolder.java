@@ -43,6 +43,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -58,6 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * 
  */
+@ManagedObject("Servlet Holder")
 public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable
 {
     private static final Logger LOG = Log.getLogger(ServletHolder.class);
@@ -157,6 +160,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
     
     /* ------------------------------------------------------------ */
+    @ManagedAttribute(value="initialization order", readonly=true)
     public int getInitOrder()
     {
         return _initOrder;
@@ -254,6 +258,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * @return Returns the forcedPath.
      */
+    @ManagedAttribute(value="forced servlet path", readonly=true)
     public String getForcedPath()
     {
         return _forcedPath;
@@ -585,6 +590,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute(value="role to run servlet as", readonly=true)
     public String getRunAsRole() 
     {
         return _runAsRole;

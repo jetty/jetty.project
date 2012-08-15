@@ -53,6 +53,8 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 
 /* ------------------------------------------------------------ */
@@ -66,6 +68,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
  * This class should have been called ServletContext, but this would have
  * cause confusion with {@link ServletContext}.
  */
+@ManagedObject("Servlet Context Handler")
 public class ServletContextHandler extends ContextHandler
 {   
     public final static int SESSIONS=1;
@@ -262,6 +265,7 @@ public class ServletContextHandler extends ContextHandler
     /**
      * @return Returns the securityHandler.
      */
+    @ManagedAttribute(value="context security handler", readonly=true)
     public SecurityHandler getSecurityHandler()
     {
         if (_securityHandler==null && (_options&SECURITY)!=0 && !isStarted()) 
@@ -274,6 +278,7 @@ public class ServletContextHandler extends ContextHandler
     /**
      * @return Returns the servletHandler.
      */
+    @ManagedAttribute(value="context servlet handler", readonly=true)
     public ServletHandler getServletHandler()
     {
         if (_servletHandler==null && !isStarted()) 
@@ -285,6 +290,7 @@ public class ServletContextHandler extends ContextHandler
     /**
      * @return Returns the sessionHandler.
      */
+    @ManagedAttribute(value="context session handler", readonly=true)
     public SessionHandler getSessionHandler()
     {
         if (_sessionHandler==null && (_options&SESSIONS)!=0 && !isStarted()) 

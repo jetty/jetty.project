@@ -21,10 +21,12 @@ import javax.servlet.DispatcherType;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 
-
+@ManagedObject("Filter Mappings")
 public class FilterMapping implements Dumpable
 {
     /** Dispatch types */
@@ -126,6 +128,7 @@ public class FilterMapping implements Dumpable
     /**
      * @return Returns the filterName.
      */
+    @ManagedAttribute(value="filter name", readonly=true)
     public String getFilterName()
     {
         return _filterName;
@@ -144,6 +147,7 @@ public class FilterMapping implements Dumpable
     /**
      * @return Returns the pathSpec.
      */
+    @ManagedAttribute(value="url patterns", readonly=true)
     public String[] getPathSpecs()
     {
         return _pathSpecs;
@@ -223,6 +227,7 @@ public class FilterMapping implements Dumpable
     /**
      * @return Returns the servletName.
      */
+    @ManagedAttribute(value="servlet names", readonly=true)
     public String[] getServletNames()
     {
         return _servletNames;
