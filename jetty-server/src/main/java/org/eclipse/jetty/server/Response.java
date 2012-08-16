@@ -790,11 +790,16 @@ public class Response implements HttpServletResponse
         // if the getHandling committed the response!
         if (isCommitted() || _channel.isIncluding())
             return;
+        
+        long written=_channel.getOutputStream().getWritten();
+        if (written>len)
+            throw new IllegalArgumentException("setContent("+len+") when already written "+written);
+        
         _contentLength=len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
 
         if (_contentLength>0)
-            checkAllContentWritten(_channel.getOutputStream().getWritten());
+            checkAllContentWritten(written);
     }
 
     /* ------------------------------------------------------------ */

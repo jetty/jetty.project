@@ -34,6 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -72,12 +74,14 @@ public class HttpManyWaysToCommitTest
         server = new Server();
         connector = new SelectChannelConnector(server);
         server.setConnectors(new Connector[]{connector});
+        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
     }
 
     /* ------------------------------------------------------------ */
     @After
     public void tearDown() throws Exception
     {
+        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         server.stop();
     }
 
@@ -519,7 +523,7 @@ public class HttpManyWaysToCommitTest
 
         Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat(response.getCode(), is("500"));
     }
 
     private class WriteAndSetContentLengthTooSmallHandler extends ThrowExceptionOnDemandHandler
@@ -552,7 +556,6 @@ public class HttpManyWaysToCommitTest
         writer.flush();
 
         Response response = readResponse(reader);
-        System.out.println(response);//TODO: remove
         return response;
     }
 
@@ -737,8 +740,15 @@ public class HttpManyWaysToCommitTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (throwException)
-                throw new IllegalStateException("explicit thrown on demand");
+                throw new TestCommitException();
         }
     }
 
+    private static class TestCommitException extends IllegalStateException
+    {
+        public TestCommitException()
+        {
+            super("Thrown by test");
+        }
+    }
 }
