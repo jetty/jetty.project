@@ -222,7 +222,7 @@ public class HttpConnection extends AbstractConnection
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
                     if (_requestBuffer==null)
-                        _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestHeaderSize(),false);
+                        _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestHeaderSize(),false);  // TODO may acquire on speculative read. probably released to early
 
                     int filled=getEndPoint().fill(_requestBuffer);
 
@@ -405,17 +405,18 @@ public class HttpConnection extends AbstractConnection
         {
             if (!super.commitError(status,reason,content))
             {
-                // We could not send the error, so a sudden close of the connection will at least tell
+                // TODO - should this just be a close and we don't worry about a RST overtaking a flushed response?
+                
+                // We could not send the error, so a shutdown of the connection will at least tell
                 // the client something is wrong
 
-                getEndPoint().close();
-
                 if (BufferUtil.hasContent(_responseBuffer))
-                {
                     BufferUtil.clear(_responseBuffer);
-                    releaseRequestBuffer();
-                }
+                getEndPoint().shutdownOutput();
                 _generator.abort();
+                
+                // set fill interested so we seek the real close
+                fillInterested();
                 return false;
             }
             return true;

@@ -1038,6 +1038,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             client.close();
             Thread.sleep(100);
+            System.err.println(handler._endp);
             assertTrue(!handler._endp.isOpen());
         }
         finally
