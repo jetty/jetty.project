@@ -69,8 +69,6 @@ public abstract class HttpChannel
         __currentChannel.set(channel);
     }
 
-
-
     private final Server _server;
     private final Connection _connection;
     private final HttpURI _uri;

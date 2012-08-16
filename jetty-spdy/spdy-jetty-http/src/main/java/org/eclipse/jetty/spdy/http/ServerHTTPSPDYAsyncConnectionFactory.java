@@ -96,7 +96,6 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             HTTPChannelOverSPDY channel = new HTTPChannelOverSPDY(connector.getServer(), endPoint.getConnection(),
                     stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
-
             Headers headers = synInfo.getHeaders();
 
             if (headers.isEmpty())
@@ -104,14 +103,11 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
                 // If the SYN has no headers, they may come later in a HEADERS frame
                 return this;
             }
-
-            channel.beginRequest(headers);
+            //TODO: beginRequest does two things, startRequest and close...should be doing one only?!
+            channel.beginRequest(headers, synInfo.isClose());
 
             if (synInfo.isClose())
-            {
-                channel.endRequest();
                 return null;
-            }
             else
                 return this;
         }
@@ -127,43 +123,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         {
             logger.debug("Received {} on {}", headersInfo, stream);
             HTTPChannelOverSPDY channel = (HTTPChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
-            HttpChannel.EventHandler eventHandler = channel.getEventHandler();
-
-            for (Headers.Header header : headersInfo.getHeaders())
-            {
-                String name = header.name();
-
-                // Skip special SPDY headers, unless it's the "host" header
-                HTTPSPDYHeader specialHeader = HTTPSPDYHeader.from(getVersion(), name);
-                if (specialHeader != null)
-                {
-                    if (specialHeader == HTTPSPDYHeader.HOST)
-                        name = "host";
-                    else
-                        continue;
-                }
-
-                switch (name)
-                {
-                    case "connection":
-                    case "keep-alive":
-                    case "proxy-connection":
-                    case "transfer-encoding":
-                    {
-                        // Spec says to ignore these headers
-                        continue;
-                    }
-                    default:
-                    {
-                        HttpHeader httpHeader = HttpHeader.valueOf(header.name());
-                        // Spec says headers must be single valued
-                        String value = header.value();
-                        logger.debug("HTTP > {}: {}", name, value);
-                        //TODO: move stuff to HttpOverSPDYChannel?
-                        eventHandler.parsedHeader(httpHeader, header.name(), value);
-                    }
-                }
-            }
+            channel.parseHeaders(headersInfo.getHeaders());
 
             if (headersInfo.isClose())
                 channel.endRequest();
@@ -230,6 +190,61 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             this.stream = stream;
         }
 
+        @Override
+        public void handle()
+        {
+            switch (state)
+            {
+                case INITIAL:
+                {
+                    break;
+                }
+                case REQUEST:
+                {
+                    logger.debug("handle: REQUEST");
+                    startRequest(headers);
+
+                    updateState(State.HEADERS);
+                    handle();
+                    break;
+                }
+                case HEADERS:
+                {
+                    parseHeaders(headers);
+                    break;
+                }
+                case HEADERS_COMPLETE:
+                {
+                    getEventHandler().headerComplete(false, false);
+                }
+                case CONTENT:
+                {
+                    //TODO:
+                    //                        final Buffer buffer = this.buffer;
+                    //                        if (buffer != null && buffer.length() > 0)
+                    //                            content(buffer);
+                    break;
+                }
+                case FINAL:
+                {
+                    getEventHandler().messageComplete(0);
+                    super.handle();
+                    break;
+                }
+                case ASYNC:
+                {
+                    //TODO:
+                    //                        handleRequest();
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+
+
         private void post(Runnable task)
         {
             synchronized (tasks)
@@ -268,17 +283,71 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             }
         }
 
-        private void endRequest()
+        private void updateState(State newState)
         {
-            // TODO: hasBody is unused, persistent is false in spdy
-            getEventHandler().headerComplete(false, false);
-            // TODO: contentLength is unused
-            getEventHandler().messageComplete(-1);
-            //TODO: is this the way to go?
+            logger.debug("State update {} -> {}", state, newState);
+            state = newState;
+        }
+
+        private void close(Stream stream)
+        {
+            stream.getSession().goAway();
+        }
+
+        public void beginRequest(final Headers headers, final boolean endRequest)
+        {
+            this.headers = headers.isEmpty() ? null : headers;
+            post(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    if (!headers.isEmpty())
+                        updateState(State.REQUEST);
+                    handle();
+                    if (endRequest)
+                        performEndRequest();
+                }
+            });
+        }
+
+        public void headers(Headers headers)
+        {
+            this.headers = headers;
+            post(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    updateState(state == State.INITIAL ? State.REQUEST : State.HEADERS);
+                    handle();
+                }
+            });
+        }
+
+        public void endRequest()
+        {
+            post(new Runnable()
+            {
+                public void run()
+                {
+                    performEndRequest();
+                }
+            });
+        }
+
+        private void performEndRequest()
+        {
+            if (state == State.HEADERS)
+            {
+                updateState(State.HEADERS_COMPLETE);
+                handle();
+            }
+            updateState(State.FINAL);
             handle();
         }
 
-        private void beginRequest(Headers headers)
+        private void startRequest(Headers headers)
         {
             this.headers = headers;
             Headers.Header method = headers.get(HTTPSPDYHeader.METHOD.name(getVersion()));
@@ -300,7 +369,10 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             Headers.Header schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(getVersion()));
             //            if (schemeHeader != null)  //TODO: thomas
             //                _request.setScheme(schemeHeader.value());
+        }
 
+        private void parseHeaders(Headers headers)
+        {
             for (Headers.Header header : headers)
             {
                 String name = header.name();
@@ -400,7 +472,6 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             logger.debug("completeResponse");
             getEventHandler().commit();
             Response response = getResponse();
-            logger.debug("completed");
             Headers headers = new Headers();
             headers.put(HTTPSPDYHeader.VERSION.name(getVersion()), HttpVersion.HTTP_1_1.asString());
             StringBuilder status = new StringBuilder().append(response.getStatus());
@@ -456,7 +527,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
                     //                        {
                     //                            ServerHTTPSPDYAsyncConnection pushConnection =
                     //                                    new ServerHTTPSPDYAsyncConnection(getConnector(), getEndPoint(), getServer(), getVersion(), connection, pushStrategy, pushStream);
-                    //                            pushConnection.beginRequest(requestHeaders, true);
+                    //                            pushConnection.startRequest(requestHeaders, true);
                     //                        }
                     //                    });
                 }
@@ -512,13 +583,5 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         {
             return null;
         }
-    }
-
-    /**
-     * Needed in order to override generator methods that would generate HTTP, since we must generate SPDY instead.
-     */
-    private class HTTPSPDYGenerator
-    {
-
     }
 }
