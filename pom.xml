@@ -729,5 +729,47 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>license-check</id>
+      <build>
+        <plugins>
+          <plugin>
+          <inherited>false</inherited>
+          <groupId>com.mycila.maven-license-plugin</groupId>
+          <artifactId>maven-license-plugin</artifactId>
+          <version>1.10.b1</version>
+          <configuration>
+            <header>header-template.txt</header>
+            <failIfMissing>true</failIfMissing>
+            <aggregate>true</aggregate>
+            <strictCheck>true</strictCheck>
+            <properties>
+               <copyright-range>${project.inceptionYear}-2012</copyright-range>
+            </properties>
+            <mapping>
+              <java>DOUBLESLASH_STYLE</java>
+            </mapping>
+            <includes>
+              <include>**/*.java</include>
+            </includes>
+            <excludes>
+              <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
+              <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
+              <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
+            </excludes>
+          </configuration>
+          <executions>
+            <execution>
+              <id>check-headers</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
