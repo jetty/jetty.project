@@ -15,15 +15,25 @@
 //========================================================================
 package org.eclipse.jetty.websocket.client.blockhead;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.URI;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.protocol.AcceptHash;
+import org.junit.Assert;
 
 /**
  * A overly simplistic websocket server used during testing.
@@ -34,35 +44,72 @@ public class BlockheadServer
 {
     public static class ServerConnection
     {
+        private final Socket socket;
+        private OutputStream out;
+        private InputStream in;
 
-        public void close()
+        public ServerConnection(Socket socket)
         {
-            // TODO Auto-generated method stub
-
+            this.socket = socket;
         }
 
-        public void flush()
+        public void close() throws IOException
         {
-            // TODO Auto-generated method stub
-
+            this.socket.close();
         }
 
-        public InputStream getInputStream()
+        public void flush() throws IOException
         {
-            // TODO Auto-generated method stub
-            return null;
+            getOutputStream().flush();
         }
 
-        public void respond(String rawstr)
+        public InputStream getInputStream() throws IOException
         {
-            // TODO Auto-generated method stub
-
+            if (in == null)
+            {
+                in = socket.getInputStream();
+            }
+            return in;
         }
 
-        public void setSoTimeout(int ms)
+        private OutputStream getOutputStream() throws IOException
         {
-            // TODO Auto-generated method stub
+            if (out == null)
+            {
+                out = socket.getOutputStream();
+            }
+            return out;
+        }
 
+        public String readRequest() throws IOException
+        {
+            LOG.debug("Reading client request");
+            StringBuilder request = new StringBuilder();
+            BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
+            for (String line = in.readLine(); line != null; line = in.readLine())
+            {
+                if (line.length() == 0)
+                {
+                    break;
+                }
+                request.append(line).append("\r\n");
+                LOG.debug("read line: {}",line);
+            }
+
+            LOG.debug("Client Request:{}{}","\n",request);
+            return request.toString();
+        }
+
+        public void respond(String rawstr) throws IOException
+        {
+            LOG.debug("respond(){}{}","\n",rawstr);
+            getOutputStream().write(rawstr.getBytes());
+            flush();
+        }
+
+        public void setSoTimeout(int ms) throws SocketException
+        {
+            socket.setSoTimeout(ms);
         }
 
         public void upgrade() throws IOException
@@ -91,67 +138,46 @@ public class BlockheadServer
             write(resp.toString().getBytes());
         }
 
-        private void write(byte[] bytes)
+        private void write(byte[] bytes) throws IOException
         {
-            // TODO Auto-generated method stub
-
+            getOutputStream().write(bytes);
         }
 
-        public void write(byte[] buf, int offset, int length)
+        public void write(byte[] buf, int offset, int length) throws IOException
         {
-            // TODO Auto-generated method stub
-
+            getOutputStream().write(buf,offset,length);
         }
 
-        public void write(int b)
+        public void write(int b) throws IOException
         {
-            // TODO Auto-generated method stub
-
+            getOutputStream().write(b);
         }
     }
 
-    public ServerConnection accept()
+    private static final Logger LOG = Log.getLogger(BlockheadServer.class);
+    private ServerSocket serverSocket;
+    private URI wsUri;
+
+    public ServerConnection accept() throws IOException
     {
-        // TODO Auto-generated method stub
-        return null;
+        LOG.debug(".accept()");
+        assertIsStarted();
+        Socket socket = serverSocket.accept();
+        return new ServerConnection(socket);
     }
 
-    public void accept(Socket connection) throws IOException
+    private void assertIsStarted()
     {
-        String key = "not sent";
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        for (String line = in.readLine(); line != null; line = in.readLine())
-        {
-            if (line.length() == 0)
-            {
-                break;
-            }
-            if (line.startsWith("Sec-WebSocket-Key:"))
-            {
-                key = line.substring(18).trim();
-            }
-        }
+        Assert.assertThat("ServerSocket",serverSocket,notNullValue());
+        Assert.assertThat("ServerSocket.isBound",serverSocket.isBound(),is(true));
+        Assert.assertThat("ServerSocket.isClosed",serverSocket.isClosed(),is(false));
 
-        StringBuilder resp = new StringBuilder();
-        resp.append("HTTP/1.1 101 Upgrade\r\n");
-        resp.append("Sec-WebSocket-Accept: ");
-        resp.append(AcceptHash.hashKey(key));
-        resp.append("\r\n");
-        resp.append("\r\n");
-
-        connection.getOutputStream().write(resp.toString().getBytes());
+        Assert.assertThat("WsUri",wsUri,notNullValue());
     }
 
-    public void close()
+    public URI getWsUri()
     {
-        // TODO Auto-generated method stub
-
-    }
-
-    public int getPort()
-    {
-        // TODO Auto-generated method stub
-        return -1;
+        return wsUri;
     }
 
     public void respondToClient(Socket connection, String serverResponse) throws IOException
@@ -190,9 +216,28 @@ public class BlockheadServer
         }
     }
 
-    public void start()
+    public void start() throws IOException
     {
-        // TODO Auto-generated method stub
+        serverSocket = new ServerSocket();
+        InetAddress addr = InetAddress.getByName("localhost");
+        InetSocketAddress endpoint = new InetSocketAddress(addr,0);
+        serverSocket.bind(endpoint);
+        int port = serverSocket.getLocalPort();
+        String uri = String.format("ws://%s:%d/",addr.getHostAddress(),port);
+        wsUri = URI.create(uri);
+        LOG.debug("Server Started on {} -> {}",endpoint,wsUri);
+    }
 
+    public void stop()
+    {
+        LOG.debug("Stopping Server");
+        try
+        {
+            serverSocket.close();
+        }
+        catch (IOException ignore)
+        {
+            /* ignore */
+        }
     }
 }

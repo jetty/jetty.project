@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SelectChannelConnector;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -75,19 +75,19 @@ public class TestServer
         SelectChannelConnector connector0 = new SelectChannelConnector(server);
         connector0.setPort(8080);
         connector0.setIdleTimeout(30000);
-        connector0.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
+        ((HttpServerConnectionFactory)connector0.getDefaultConnectionFactory()).getHttpConfiguration().setConfidentialPort(8443);
         server.addConnector(connector0);
         
         // Setup Connectors
         SelectChannelConnector connector1 = new SelectChannelConnector(server);
         connector1.setPort(8081);
         connector0.setIdleTimeout(30000);
-        connector1.getConnectionFactory().getHttpConfig().setConfidentialPort(8443);
+        ((HttpServerConnectionFactory)connector0.getDefaultConnectionFactory()).getHttpConfiguration().setConfidentialPort(8443);
         server.addConnector(connector1);
         
-        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,true);
+        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,new SslContextFactory());
         ssl_connector.setPort(8443);
-        SslContextFactory cf = ssl_connector.getConnectionFactory().getSslContextFactory();
+        SslContextFactory cf = ssl_connector.getSslContextFactory();
         cf.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");

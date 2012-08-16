@@ -15,8 +15,6 @@
 //========================================================================
 package org.eclipse.jetty.websocket.server;
 
-import static org.junit.Assert.*;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -31,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
@@ -50,6 +47,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.assertTrue;
+
 public class WebSocketLoadRFC6455Test
 {
     private class WebSocketClient implements Runnable
@@ -66,7 +65,7 @@ public class WebSocketLoadRFC6455Test
         {
             /*
              * public void close(int code,String message) { }
-             * 
+             *
              * public void onFrame(byte flags, byte opcode, ByteBuffer buffer) { _response=buffer; }
              */
 
@@ -159,7 +158,7 @@ public class WebSocketLoadRFC6455Test
     public static void startServer() throws Exception
     {
         QueuedThreadPool threadPool = new QueuedThreadPool(200);
-        threadPool.setMaxStopTimeMs(1000);
+        threadPool.setStopTimeout(1000);
         _server = new Server(threadPool);
         _server.manage(threadPool);
 

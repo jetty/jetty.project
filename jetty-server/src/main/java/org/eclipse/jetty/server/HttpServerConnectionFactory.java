@@ -15,6 +15,7 @@
 package org.eclipse.jetty.server;
 
 import java.nio.channels.SocketChannel;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.Connection;

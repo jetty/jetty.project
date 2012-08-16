@@ -13,15 +13,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import junit.framework.Assert;
+
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
@@ -36,6 +39,8 @@ public class SslConnectionTest
     private static ByteBufferPool __byteBufferPool = new StandardByteBufferPool();
 
     protected volatile EndPoint _lastEndp;
+    private volatile boolean _testFill=true;
+    private volatile FutureCallback<Void> _writeCallback;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     protected ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -86,6 +91,8 @@ public class SslConnectionTest
     @Before
     public void startManager() throws Exception
     {
+        _testFill=true;
+        _writeCallback=null;
         _lastEndp=null;
         _connector = ServerSocketChannel.open();
         _connector.socket().bind(null);
@@ -116,7 +123,20 @@ public class SslConnectionTest
         public void onOpen()
         {
             super.onOpen();
-            fillInterested();
+            if (_testFill)
+                fillInterested();
+            else
+            {
+                getExecutor().execute(new Runnable()
+                {
+
+                    @Override
+                    public void run()
+                    {
+                        getEndPoint().write(null,_writeCallback,BufferUtil.toBuffer("Hello Client"));
+                    }
+                });
+            }
         }
 
         @Override
@@ -201,6 +221,29 @@ public class SslConnectionTest
         client.close();
     }
 
+
+    @Test
+    public void testWriteOnConnect() throws Exception
+    {
+        _testFill=false;
+        
+        for (int i=0;i<1;i++)
+        {
+            _writeCallback = new FutureCallback<>();
+            Socket client = newClient();
+            client.setSoTimeout(600000); // TODO reduce after debugging
+
+            SocketChannel server = _connector.accept();
+            server.configureBlocking(false);
+            _manager.accept(server);
+
+            byte[] buffer = new byte[1024];
+            int len=client.getInputStream().read(buffer);
+            Assert.assertEquals("Hello Client",new String(buffer,0,len,StringUtil.__UTF8_CHARSET));
+            Assert.assertEquals(null,_writeCallback.get(100,TimeUnit.MILLISECONDS));
+            client.close();
+        }
+    }
 
     @Test
     public void testManyLines() throws Exception

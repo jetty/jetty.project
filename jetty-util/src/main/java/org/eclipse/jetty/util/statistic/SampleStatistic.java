@@ -101,4 +101,11 @@ public class SampleStatistic
     {
         return Math.sqrt(getVariance());
     }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{c=%d,m=%d,t=%d,v100=%d}",this.getClass().getSimpleName(),hashCode(),_count.get(),_max.get(),_total.get(),_totalVariance100.get());
+    }
 }

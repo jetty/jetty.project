@@ -342,4 +342,225 @@ public class XmlConfigurationTest
         xmlConfiguration.configure(tc);
         Assert.assertEquals("tc.map is has two entries as specified in the XML", 2, tc.map.size());
     }
+    
+    @Test
+    public void testConstructorNamedInjection() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg>arg1</Arg>  " +
+                "  <Arg>arg2</Arg>  " +
+                "  <Arg>arg3</Arg>  " +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+    }
+    
+    @Test
+    public void testConstructorNamedInjectionOrdered() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg name=\"first\">arg1</Arg>  " +
+                "  <Arg name=\"second\">arg2</Arg>  " +
+                "  <Arg name=\"third\">arg3</Arg>  " +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+    }
+    
+    @Test
+    public void testConstructorNamedInjectionUnOrdered() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg name=\"first\">arg1</Arg>  " +
+                "  <Arg name=\"third\">arg3</Arg>  " +
+                "  <Arg name=\"second\">arg2</Arg>  " +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+    }
+    
+    @Test
+    public void testConstructorNamedInjectionOrderedMixed() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg name=\"first\">arg1</Arg>  " +
+                "  <Arg>arg2</Arg>  " +
+                "  <Arg name=\"third\">arg3</Arg>  " +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+    }
+    
+    @Test
+    public void testConstructorNamedInjectionUnorderedMixed() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg name=\"third\">arg3</Arg>  " +
+                "  <Arg>arg2</Arg>  " +
+                "  <Arg name=\"first\">arg1</Arg>  " +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+    }
+    
+    @Test
+    public void testNestedConstructorNamedInjection() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg>arg1</Arg>  " +
+                "  <Arg>arg2</Arg>  " +
+                "  <Arg>arg3</Arg>  " +
+                "  <Set name=\"nested\">  " +
+                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "      <Arg>arg1</Arg>  " +
+                "      <Arg>arg2</Arg>  " +
+                "      <Arg>arg3</Arg>  " +
+                "    </New>" +
+                "  </Set>" +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
+        
+    }
+    
+    @Test
+    public void testNestedConstructorNamedInjectionOrdered() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg name=\"first\">arg1</Arg>  " +
+                "  <Arg name=\"second\">arg2</Arg>  " +
+                "  <Arg name=\"third\">arg3</Arg>  " +
+                "  <Set name=\"nested\">  " +
+                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "      <Arg name=\"first\">arg1</Arg>  " +
+                "      <Arg name=\"second\">arg2</Arg>  " +
+                "      <Arg name=\"third\">arg3</Arg>  " +
+                "    </New>" +
+                "  </Set>" +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
+    }
+    
+    @Test
+    public void testNestedConstructorNamedInjectionUnOrdered() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg name=\"first\">arg1</Arg>  " +
+                "  <Arg name=\"third\">arg3</Arg>  " +
+                "  <Arg name=\"second\">arg2</Arg>  " +
+                "  <Set name=\"nested\">  " +
+                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "      <Arg name=\"first\">arg1</Arg>  " +
+                "      <Arg name=\"third\">arg3</Arg>  " +
+                "      <Arg name=\"second\">arg2</Arg>  " +
+                "    </New>" +
+                "  </Set>" +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
+    }
+    
+    @Test
+    public void testNestedConstructorNamedInjectionOrderedMixed() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg name=\"first\">arg1</Arg>  " +
+                "  <Arg>arg2</Arg>  " +
+                "  <Arg name=\"third\">arg3</Arg>  " +
+                "  <Set name=\"nested\">  " +
+                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "      <Arg name=\"first\">arg1</Arg>  " +
+                "      <Arg>arg2</Arg>  " +
+                "      <Arg name=\"third\">arg3</Arg>  " +
+                "    </New>" +
+                "  </Set>" +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
+    }
+    
+    @Test
+    public void testNestedConstructorNamedInjectionUnorderedMixed() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Arg name=\"third\">arg3</Arg>  " +
+                "  <Arg>arg2</Arg>  " +
+                "  <Arg name=\"first\">arg1</Arg>  " +
+                "  <Set name=\"nested\">  " +
+                "    <New class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "      <Arg name=\"third\">arg3</Arg>  " +
+                "      <Arg>arg2</Arg>  " +
+                "      <Arg name=\"first\">arg1</Arg>  " +
+                "    </New>" +
+                "  </Set>" +
+                "</Configure>");
+        
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+        
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
+    }
 }

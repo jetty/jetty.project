@@ -25,7 +25,6 @@ public class SelectChannelConnectorCloseTest extends ConnectorCloseTestBase
     @Before
     public void init() throws Exception
     {
-        System.setProperty("org.eclipse.jetty.util.log.DEBUG","true");        
         startServer(new SelectChannelConnector(_server));
     }
     

@@ -15,11 +15,12 @@
 //========================================================================
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
@@ -30,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -41,93 +41,19 @@ import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnec
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-
-@Ignore("Client not yet functional")
 public class WebSocketClientTest
 {
-    public static class TrackingSocket extends WebSocketAdapter
-    {
-        public AtomicBoolean open = new AtomicBoolean(false);
-        public AtomicInteger close = new AtomicInteger(-1);
-        public StringBuilder closeMessage = new StringBuilder();
-        public CountDownLatch openLatch = new CountDownLatch(1);
-        public CountDownLatch closeLatch = new CountDownLatch(1);
-        public CountDownLatch dataLatch = new CountDownLatch(1);
-        public BlockingQueue<String> messageQueue = new BlockingArrayQueue<String>();
-
-        public void assertClose(int expectedStatusCode, String expectedReason)
-        {
-            assertCloseCode(expectedStatusCode);
-            assertCloseReason(expectedReason);
-        }
-
-        public void assertCloseCode(int expectedCode)
-        {
-            Assert.assertThat("Close Code",close.get(),is(expectedCode));
-        }
-
-        private void assertCloseReason(String expectedReason)
-        {
-            Assert.assertThat("Close Reaosn",closeMessage.toString(),is(expectedReason));
-        }
-
-        public void assertIsOpen()
-        {
-            assertWasOpened();
-            assertNotClosed();
-        }
-
-        public void assertNotClosed()
-        {
-            Assert.assertThat("Close Code",close.get(),is(-1));
-        }
-
-        public void assertNotOpened()
-        {
-            Assert.assertThat("Opened State",open.get(),is(false));
-        }
-
-        public void assertWasOpened()
-        {
-            Assert.assertThat("Opened State",open.get(),is(true));
-        }
-
-        @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
-        {
-            dataLatch.countDown();
-        }
-
-        @Override
-        public void onWebSocketClose(int statusCode, String reason)
-        {
-            close.set(statusCode);
-            closeMessage.append(reason);
-            closeLatch.countDown();
-        }
-
-        @Override
-        public void onWebSocketConnect(WebSocketConnection connection)
-        {
-            open.set(true);
-            openLatch.countDown();
-        }
-
-        @Override
-        public void onWebSocketText(String message)
-        {
-            dataLatch.countDown();
-            messageQueue.add(message);
-        }
-    }
-
     private BlockheadServer server;
+    private WebSocketClientFactory factory;
+
+    @Before
+    public void startFactory() throws Exception
+    {
+        factory = new WebSocketClientFactory();
+        factory.start();
+    }
 
     @Before
     public void startServer() throws Exception
@@ -137,58 +63,37 @@ public class WebSocketClientTest
     }
 
     @After
-    public void stopServer() throws Exception
+    public void stopFactory() throws Exception
     {
-        server.close();
+        factory.stop();
     }
 
-    @Test
-    public void testConnectionRefused() throws Exception
+    @After
+    public void stopServer() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        WebSocketClient client = factory.newWebSocketClient();
-
-        TrackingSocket wsocket = new TrackingSocket();
-
-        // Intentionally bad port
-        URI wsUri = new URI("ws://127.0.0.1:1");
-        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
-
-        Throwable error = null;
-        try
-        {
-            future.get(1,TimeUnit.SECONDS);
-            Assert.fail("Expected ExecutionException");
-        }
-        catch (ExecutionException e)
-        {
-            error = e.getCause();
-        }
-
-        wsocket.assertNotOpened();
-        wsocket.assertCloseCode(StatusCode.NO_CLOSE);
-        Assert.assertTrue(error instanceof ConnectException);
+        server.stop();
     }
 
     @Test
     public void testBadHandshake() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         ServerConnection connection = server.accept();
+        String req = connection.readRequest();
+        // no upgrade, just fail with a 404 error
         connection.respond("HTTP/1.1 404 NOT FOUND\r\n\r\n");
 
         Throwable error = null;
         try
         {
             future.get(250,TimeUnit.MILLISECONDS);
-            Assert.fail();
+            Assert.fail("Should have resulted in an ExecutionException -> IOException");
         }
         catch (ExecutionException e)
         {
@@ -205,12 +110,11 @@ public class WebSocketClientTest
     @Test
     public void testBadUpgrade() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         ServerConnection connection = server.accept();
@@ -236,7 +140,6 @@ public class WebSocketClientTest
     @Test
     public void testBadURL() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
 
         TrackingSocket wsocket = new TrackingSocket();
@@ -259,7 +162,6 @@ public class WebSocketClientTest
     @Test
     public void testBlockReceiving() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
         client.getPolicy().setIdleTimeout(60000);
 
@@ -299,7 +201,7 @@ public class WebSocketClientTest
             }
         };
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,socket);
 
         ServerConnection sconnection = server.accept();
@@ -388,13 +290,12 @@ public class WebSocketClientTest
     @Test
     public void testBlockSending() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
         client.getPolicy().setIdleTimeout(10000);
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         final ServerConnection ssocket = server.accept();
@@ -465,12 +366,11 @@ public class WebSocketClientTest
     @Test
     public void testConnectionNotAccepted() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         // Intentionally not accept incoming socket.
@@ -490,14 +390,40 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testConnectionTimeout() throws Exception
+    public void testConnectionRefused() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        // Intentionally bad port
+        URI wsUri = new URI("ws://127.0.0.1:1");
+        Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
+
+        Throwable error = null;
+        try
+        {
+            future.get(1,TimeUnit.SECONDS);
+            Assert.fail("Expected ExecutionException");
+        }
+        catch (ExecutionException e)
+        {
+            error = e.getCause();
+        }
+
+        wsocket.assertNotOpened();
+        wsocket.assertCloseCode(StatusCode.NO_CLOSE);
+        Assert.assertTrue(error instanceof ConnectException);
+    }
+
+    @Test
+    public void testConnectionTimeout() throws Exception
+    {
+        WebSocketClient client = factory.newWebSocketClient();
+
+        TrackingSocket wsocket = new TrackingSocket();
+
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         ServerConnection ssocket = server.accept();
@@ -521,13 +447,12 @@ public class WebSocketClientTest
     @Test
     public void testIdle() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
         client.getPolicy().setIdleTimeout(500);
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         ServerConnection ssocket = server.accept();
@@ -547,14 +472,13 @@ public class WebSocketClientTest
     @Test
     public void testMessageBiggerThanBufferSize() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         int bufferSize = 512;
         factory.getPolicy().setBufferSize(512);
         WebSocketClient client = factory.newWebSocketClient();
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         ServerConnection ssocket = server.accept();
@@ -579,13 +503,12 @@ public class WebSocketClientTest
     @Test
     public void testNotIdle() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
         client.getPolicy().setIdleTimeout(500);
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         ServerConnection ssocket = server.accept();
@@ -633,12 +556,11 @@ public class WebSocketClientTest
     @Test
     public void testUpgradeThenTCPClose() throws Exception
     {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocketClient client = factory.newWebSocketClient();
 
         TrackingSocket wsocket = new TrackingSocket();
 
-        URI wsUri = new URI("ws://127.0.0.1:" + server.getPort() + "/");
+        URI wsUri = server.getWsUri();
         Future<WebSocketConnection> future = client.connect(wsUri,wsocket);
 
         ServerConnection ssocket = server.accept();

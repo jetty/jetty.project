@@ -15,16 +15,23 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.channels.AsynchronousCloseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+
+import javax.print.attribute.standard.MediaSize.ISO;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -34,18 +41,20 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 /**
  * <p>Partial implementation of {@link Connector}</p>
  */
+@ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends AggregateLifeCycle implements Connector, Dumpable
 {
-    protected final Logger logger = Log.getLogger(getClass());
+    protected final Logger LOG = Log.getLogger(getClass());
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, ConnectionFactory> factories = new LinkedHashMap<>();
-    private final Statistics _stats = new ConnectionStatistics();
+    private final Statistics _stats = new ConnectorStatistics();
     private final Server _server;
     private final SslContextFactory _sslContextFactory;
     private final Executor _executor;
     private final ScheduledExecutorService _scheduler;
     private final ByteBufferPool _byteBufferPool;
     private final Thread[] _acceptors;
+    private volatile CountDownLatch _stopping;
     private volatile String _name;
     private volatile long _idleTimeout = 200000;
     private volatile ConnectionFactory defaultConnectionFactory;
@@ -80,15 +89,18 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _sslContextFactory = sslContextFactory;
 
         addBean(_server,false);
-        addBean(_executor,false);
+        addBean(_executor);
+        if (executor==null)
+            unmanage(_executor);
         addBean(_scheduler,scheduler==null);
         addBean(_byteBufferPool,pool==null);
-        addBean(_sslContextFactory,true);
+        addBean(_sslContextFactory);
+        addBean(_stats,true);
 
         if (acceptors<=0)
             acceptors=Math.max(1,(Runtime.getRuntime().availableProcessors()) / 4);
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
-            logger.warn("Acceptors should be <= 2*availableProcessors: " + this);
+            LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
     }
 
@@ -148,6 +160,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     /**
      * @return Returns the number of acceptor threads.
      */
+    @ManagedAttribute("number of acceptor threads")
     public int getAcceptors()
     {
         return _acceptors.length;
@@ -159,24 +172,38 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     {
         super.doStart();
 
+        _stopping=new CountDownLatch(_acceptors.length);
         for (int i = 0; i < _acceptors.length; i++)
             getExecutor().execute(new Acceptor(i));
 
-        logger.info("Started {}", this);
+        LOG.info("Started {}", this);
     }
 
-    @Override
-    protected void doStop() throws Exception
+
+    protected void interruptAcceptors()
     {
         for (Thread thread : _acceptors)
         {
             if (thread != null)
                 thread.interrupt();
         }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        // Tell the acceptors we are stopping
+        interruptAcceptors();
+
+        // If we have a stop timeout
+        long stopTimeout = getStopTimeout();
+        if (stopTimeout > 0 && _stopping!=null)
+            _stopping.await(stopTimeout,TimeUnit.MILLISECONDS);
+        _stopping=null;
 
         super.doStop();
 
-        logger.info("Stopped {}", this);
+        LOG.info("Stopped {}", this);
     }
 
     public void join() throws InterruptedException
@@ -192,6 +219,16 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     }
 
     protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Is the connector accepting new connections
+     */
+    protected boolean isAccepting()
+    {
+        return isRunning();
+    }
 
     public ConnectionFactory getConnectionFactory(String protocol)
     {
@@ -257,7 +294,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         {
             Thread current = Thread.currentThread();
             String name = current.getName();
-            current.setName(name + " Acceptor" + _acceptor + " " + AbstractConnector.this);
+            current.setName(name + "-acceptor-" + _acceptor + "-" + AbstractConnector.this);
 
             synchronized (AbstractConnector.this)
             {
@@ -266,19 +303,18 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
             try
             {
-                while (isRunning())
+                while (isAccepting())
                 {
                     try
                     {
                         accept(_acceptor);
                     }
-                    catch (IOException | InterruptedException e)
-                    {
-                        logger.ignore(e);
-                    }
                     catch (Throwable e)
                     {
-                        logger.warn(e);
+                        if (isAccepting())
+                            LOG.warn(e);
+                        else
+                            LOG.debug(e);
                     }
                 }
             }
@@ -290,11 +326,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
                 {
                     _acceptors[_acceptor] = null;
                 }
+                _stopping.countDown();
             }
         }
     }
 
     @Override
+    @ManagedAttribute("name of the connector")
     public String getName()
     {
         return _name;

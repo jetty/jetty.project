@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target( { ElementType.TYPE, ElementType.METHOD, ElementType.FIELD } )
+@Target( { ElementType.TYPE } )
 public @interface ManagedObject
 {
     /**
@@ -29,6 +29,5 @@ public @interface ManagedObject
      * @return
      */
     String value() default "Not Specified";
-    
-    String wrapper() default "";
+  
 }

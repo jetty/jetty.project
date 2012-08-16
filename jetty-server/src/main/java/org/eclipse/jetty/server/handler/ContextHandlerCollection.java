@@ -27,6 +27,8 @@ import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -40,8 +42,8 @@ import org.eclipse.jetty.util.log.Logger;
  * Multiple contexts may have the same context path and they are called in order until one
  * handles the request.  
  * 
- * @org.apache.xbean.XBean element="contexts"
  */
+@ManagedObject("Context Handler Collection")
 public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
@@ -60,6 +62,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /**
      * Remap the context paths.
      */
+    @ManagedOperation("update the mapping of context path to context")
     public void mapContexts()
     {
         PathMap<Object> contextMap = new PathMap<Object>();

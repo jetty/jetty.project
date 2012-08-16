@@ -16,27 +16,37 @@ package org.eclipse.jetty.io;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * <p>An {@link Connection} is associated to an {@link EndPoint} so that I/O events
+ * <p>A {@link Connection} is associated to an {@link EndPoint} so that I/O events
  * happening on the {@link EndPoint} can be processed by the {@link Connection}.</p>
  * <p>A typical implementation of {@link Connection} overrides {@link #onOpen()} to
  * {@link EndPoint#fillInterested(Object, Callback) set read interest} on the {@link EndPoint},
  * and when the {@link EndPoint} signals read readyness, this {@link Connection} can
  * read bytes from the network and interpret them.</p>
  */
-public interface Connection
+public interface Connection extends AutoCloseable
 {
     /**
      * <p>Callback method invoked when this {@link Connection} is opened.</p>
+     * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
-    void onOpen();
+    public void onOpen();
 
     /**
      * <p>Callback method invoked when this {@link Connection} is closed.</p>
+     * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
-    void onClose();
+    public void onClose();
 
     /**
      * @return the {@link EndPoint} associated with this {@link Connection}
      */
-    EndPoint getEndPoint();
+    public EndPoint getEndPoint();
+
+    /**
+     * <p>Performs a logical close of this connection.</p>
+     * <p>For simple connections, this may just mean to delegate the close to the associated
+     * {@link EndPoint} but, for example, SSL connections should write the SSL close message
+     * before closing the associated {@link EndPoint}.</p>
+     */
+    public void close();
 }

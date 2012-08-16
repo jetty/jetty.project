@@ -15,7 +15,7 @@
 //========================================================================
 package org.eclipse.jetty.websocket.server.helper;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.BufferedReader;
 import java.io.IOException;

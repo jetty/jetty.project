@@ -44,7 +44,7 @@ public class ByteBufferAssert
     public static void assertEquals(String message, String expectedString, ByteBuffer actualBuffer)
     {
         String actualString = BufferUtil.toString(actualBuffer);
-        Assert.assertThat(message,expectedString,is(actualString));
+        Assert.assertThat(message,actualString,is(expectedString));
     }
 
     public static void assertSize(String message, int expectedSize, ByteBuffer buffer)

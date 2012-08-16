@@ -52,7 +52,6 @@ public class StatisticsHandlerTest
 
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        _connector.getStatistics().start();
 
         _latchHandler = new LatchHandler();
         _statsHandler = new StatisticsHandler();

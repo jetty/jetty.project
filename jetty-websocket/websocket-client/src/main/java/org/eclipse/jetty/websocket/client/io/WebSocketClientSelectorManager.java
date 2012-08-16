@@ -20,9 +20,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
+
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -30,15 +29,19 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.WebSocketClient.ConnectFuture;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
 
 public class WebSocketClientSelectorManager extends SelectorManager
 {
+    private static final Logger LOG = Log.getLogger(WebSocketClientSelectorManager.class);
     private final Executor executor;
     private final ScheduledExecutorService scheduler;
     private final WebSocketPolicy policy;
@@ -57,7 +60,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     protected void execute(Runnable task)
     {
-        // TODO Auto-generated method stub
+        this.executor.execute(task);
     }
 
     public SslContextFactory getSslContextFactory()
@@ -65,9 +68,69 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return sslContextFactory;
     }
 
-    public AbstractWebSocketConnection newWebSocketConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+    @Override
+    public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment) throws IOException
     {
+        LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
         WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
+
+        try
+        {
+            String scheme = confut.getWebSocketUri().getScheme();
+
+            if ("wss".equalsIgnoreCase(scheme))
+            {
+                // Encrypted "wss://"
+                if (sslContextFactory != null)
+                {
+                    SSLEngine engine = newSSLEngine(sslContextFactory,channel);
+                    SslConnection sslConnection = new SslConnection(bufferPool,executor,endPoint,engine);
+                    EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
+
+                    Connection connection = newWebSocketConnection(channel,sslEndPoint,confut);
+                    sslEndPoint.setConnection(connection);
+                    connectionOpened(connection);
+                    return sslConnection;
+                }
+                else
+                {
+                    // FIXME: throw error
+                    throw new IOException("Cannot init SSL");
+                }
+            }
+            else
+            {
+                // Standard "ws://"
+                return newWebSocketConnection(channel,endPoint,confut);
+            }
+        }
+        catch (IOException e)
+        {
+            LOG.debug(e);
+            confut.failed(null,e);
+            // rethrow
+            throw e;
+        }
+    }
+
+    @Override
+    protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+    {
+        LOG.debug("newEndPoint({}, {}, {})",channel,selectSet,selectionKey);
+        return new SelectChannelEndPoint(channel,selectSet,selectionKey,scheduler,policy.getIdleTimeout());
+    }
+
+    public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
+    {
+        String peerHost = channel.socket().getInetAddress().getHostAddress();
+        int peerPort = channel.socket().getPort();
+        SSLEngine engine = sslContextFactory.newSSLEngine(peerHost,peerPort);
+        engine.setUseClientMode(true);
+        return engine;
+    }
+
+    public AbstractWebSocketConnection newWebSocketConnection(SocketChannel channel, EndPoint endPoint, ConnectFuture confut)
+    {
         WebSocketClientFactory factory = confut.getFactory();
         WebSocketEventDriver websocket = confut.getWebSocket();
 
@@ -76,93 +139,15 @@ public class WebSocketClientSelectorManager extends SelectorManager
         ByteBufferPool bufferPool = factory.getBufferPool();
         ScheduledExecutorService scheduler = factory.getScheduler();
 
-        AbstractWebSocketConnection connection = new WebSocketClientConnection(endPoint,executor,scheduler,policy,bufferPool,factory);
-        endPoint.setConnection(connection);
+        AbstractWebSocketConnection connection = new WebSocketClientConnection(endPoint,executor,scheduler,policy,bufferPool,factory,confut);
         connection.getParser().setIncomingFramesHandler(websocket);
 
         // TODO: track open websockets? bind open websocket to connection?
-
         return connection;
-    }
-
-    @Override
-    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
-    {
-        WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
-
-        try
-        {
-            String scheme = confut.getWebSocketUri().getScheme();
-
-            if ((sslContextFactory != null) && ("wss".equalsIgnoreCase(scheme)))
-            {
-                final AtomicReference<EndPoint> sslEndPointRef = new AtomicReference<>();
-                final AtomicReference<Object> attachmentRef = new AtomicReference<>(attachment);
-                SSLEngine engine = newSSLEngine(sslContextFactory,channel);
-                SslConnection sslConnection = new SslConnection(bufferPool,executor,endPoint,engine)
-                {
-                    @Override
-                    public void onClose()
-                    {
-                        sslEndPointRef.set(null);
-                        attachmentRef.set(null);
-                        super.onClose();
-                    }
-                };
-                endPoint.setConnection(sslConnection);
-                EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
-                sslEndPointRef.set(sslEndPoint);
-
-                startHandshake(engine);
-
-                Connection connection = newWebSocketConnection(channel,sslEndPoint,attachment);
-                endPoint.setConnection(connection);
-                return connection;
-            }
-            else
-            {
-                Connection connection = newWebSocketConnection(channel,endPoint,attachment);
-                endPoint.setConnection(connection);
-                return connection;
-            }
-        }
-        catch (Throwable t)
-        {
-            LOG.debug(t);
-            confut.failed(null,t);
-            throw t;
-        }
-    }
-
-    @Override
-    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
-    {
-        return new SelectChannelEndPoint(channel,selectSet,selectionKey,scheduler,policy.getIdleTimeout());
-    }
-
-    public SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
-    {
-        String peerHost = channel.socket().getInetAddress().getHostAddress();
-        int peerPort = channel.socket().getPort();
-        SSLEngine engine = sslContextFactory.newSSLEngine(peerHost, peerPort);
-        engine.setUseClientMode(true);
-        return engine;
     }
 
     public void setSslContextFactory(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
-    }
-
-    private void startHandshake(SSLEngine engine)
-    {
-        try
-        {
-            engine.beginHandshake();
-        }
-        catch (SSLException x)
-        {
-            throw new RuntimeException(x);
-        }
     }
 }

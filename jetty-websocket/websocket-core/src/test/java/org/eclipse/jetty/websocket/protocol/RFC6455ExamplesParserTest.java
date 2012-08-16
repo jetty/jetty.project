@@ -15,7 +15,7 @@
 //========================================================================
 package org.eclipse.jetty.websocket.protocol;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 

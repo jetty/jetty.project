@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.spdy.frames;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.StandardByteBufferPool;
@@ -24,10 +28,6 @@ import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 public class HeadersGenerateParseTest
 {

@@ -25,9 +25,9 @@ import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpConnection extends AbstractConnection
 {
-    public static final Logger LOG = Log.getLogger(HttpConnection.class);
+    private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
@@ -185,13 +185,6 @@ public class HttpConnection extends AbstractConnection
         }
     }
 
-    @Override
-    public void fillInterested()
-    {
-        // new Throwable().printStackTrace();
-        super.fillInterested();
-    }
-    
     /* ------------------------------------------------------------ */
     /** Parse and handle HTTP messages.
      * <p>
@@ -215,14 +208,11 @@ public class HttpConnection extends AbstractConnection
             // TODO try to generalize this loop into AbstractConnection
             while (true)
             {
-                // synchronized (_lock)
-                {
-                    
                 // Fill the request buffer with data only if it is totally empty.
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
                     if (_requestBuffer==null)
-                        _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestHeaderSize(),false);
+                        _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestHeaderSize(),false);  // TODO may acquire on speculative read. probably released to early
 
                     int filled=getEndPoint().fill(_requestBuffer);
 
@@ -288,7 +278,6 @@ public class HttpConnection extends AbstractConnection
                     _parser.close();
                     _channel.getEventHandler().badMessage(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
                 }
-            }
             }
         }
         catch(IOException e)
@@ -381,7 +370,7 @@ public class HttpConnection extends AbstractConnection
         {
             return _connector;
         }
-        
+
         public HttpConfiguration getHttpConfiguration()
         {
             return _httpConfig;
@@ -405,16 +394,14 @@ public class HttpConnection extends AbstractConnection
         {
             if (!super.commitError(status,reason,content))
             {
-                // We could not send the error, so a sudden close of the connection will at least tell
+                // TODO - should this just be a close and we don't worry about a RST overtaking a flushed response?
+                
+                // We could not send the error, so a shutdown of the connection will at least tell
                 // the client something is wrong
 
-                getEndPoint().close();
-
                 if (BufferUtil.hasContent(_responseBuffer))
-                {
                     BufferUtil.clear(_responseBuffer);
-                    releaseRequestBuffer();
-                }
+                getEndPoint().shutdownOutput();
                 _generator.abort();
                 return false;
             }
@@ -432,8 +419,7 @@ public class HttpConnection extends AbstractConnection
             // be asynchronously flushed TBD), but it may not have consumed the entire
 
             LOG.debug("{} completed");
-
-
+            
             // Handle connection upgrades
             if (getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
             {
@@ -489,6 +475,12 @@ public class HttpConnection extends AbstractConnection
                     getEndPoint().shutdownOutput();
                 }
             }
+            
+            
+            // make sure that an oshut connection is driven towards close
+            // TODO this is a little ugly
+            if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
+                fillInterested();
         }
 
         /* ------------------------------------------------------------ */
@@ -574,7 +566,7 @@ public class HttpConnection extends AbstractConnection
                                 break;
 
                             case SHUTDOWN_OUT:
-                                getEndPoint().shutdownOutput();
+                                terminate();
                                 break loop;
 
                             case OK:
@@ -617,7 +609,11 @@ public class HttpConnection extends AbstractConnection
                     if (_generator.isCommitted())
                         throw new IllegalStateException("committed");
                     if (BufferUtil.hasContent(_responseBuffer))
-                        throw new IllegalStateException("!empty");
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("discarding uncommitted response {}",BufferUtil.toDetailString(_responseBuffer));
+                        BufferUtil.clear(_responseBuffer);
+                    }
                     if (_generator.isComplete())
                         throw new EofException();
 
@@ -676,7 +672,7 @@ public class HttpConnection extends AbstractConnection
                                 break loop;
 
                             case SHUTDOWN_OUT:
-                                getEndPoint().shutdownOutput();
+                                terminate();
                                 break loop;
 
                             case OK:
@@ -694,8 +690,20 @@ public class HttpConnection extends AbstractConnection
                 {
                     LOG.debug(e);
                     FutureCallback.rethrow(e);
-                }  
+                }
             }
+        }
+
+        private void terminate()
+        {
+            // This method is called when the generator determines that the connection should be closed
+            // either for HTTP/1.0 or because of Connection headers.
+            // We need to close gently, first shutting down the output, so that we can send the SSL close
+            // message, and then closing without waiting to read -1, since the semantic of this method
+            // is exactly that the connection should be closed: no further reads must be accepted.
+            EndPoint endPoint = getEndPoint();
+            endPoint.shutdownOutput();
+            endPoint.close();
         }
 
         @Override

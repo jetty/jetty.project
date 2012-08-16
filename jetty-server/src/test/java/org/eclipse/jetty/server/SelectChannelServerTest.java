@@ -13,15 +13,15 @@
 
 package org.eclipse.jetty.server;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 
 /**
  * HttpServer Tester.
  */
 public class SelectChannelServerTest extends HttpServerTestBase
 {
-    @BeforeClass
-    public static void init() throws Exception
+    @Before
+    public void init() throws Exception
     {
         startServer(new SelectChannelConnector(_server));
     }

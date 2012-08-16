@@ -15,7 +15,6 @@
 //========================================================================
 package org.eclipse.jetty.websocket.io;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.concurrent.ScheduledFuture;
@@ -87,14 +86,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     public void run()
     {
         // If this occurs we had a timeout!
-        try
-        {
-            connection.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-        }
+        connection.close();
         failed(context, new InterruptedByTimeoutException());
     }
 

@@ -24,6 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -31,12 +32,18 @@ import org.junit.Test;
  */
 public class StdErrLogTest
 {
+    @Before
+    public void before()
+    {
+        Thread.currentThread().setName("tname");
+    }
+    
     @Test
     public void testStdErrLogFormat() throws UnsupportedEncodingException
     {
         StdErrLog log = new StdErrLog(LogTest.class.getName(),new Properties());
         StdErrCapture output = new StdErrCapture(log);
-
+        
         log.info("testing:{},{}","test","format1");
         log.info("testing:{}","test","format2");
         log.info("testing","test","format3");
@@ -45,14 +52,15 @@ public class StdErrLogTest
         log.info("testing:{}",null,null);
         log.info("testing",null,null);
 
-        output.assertContains("INFO:oejul.LogTest:1: testing:test,format1");
-        output.assertContains("INFO:oejul.LogTest:1: testing:test,format1");
-        output.assertContains("INFO:oejul.LogTest:1: testing:test format2");
-        output.assertContains("INFO:oejul.LogTest:1: testing test format3");
-        output.assertContains("INFO:oejul.LogTest:1: testing:test,null");
-        output.assertContains("INFO:oejul.LogTest:1: testing null null");
-        output.assertContains("INFO:oejul.LogTest:1: testing:null");
-        output.assertContains("INFO:oejul.LogTest:1: testing");
+        System.err.println(output);
+        output.assertContains("INFO:oejul.LogTest:tname: testing:test,format1");
+        output.assertContains("INFO:oejul.LogTest:tname: testing:test,format1");
+        output.assertContains("INFO:oejul.LogTest:tname: testing:test format2");
+        output.assertContains("INFO:oejul.LogTest:tname: testing test format3");
+        output.assertContains("INFO:oejul.LogTest:tname: testing:test,null");
+        output.assertContains("INFO:oejul.LogTest:tname: testing null null");
+        output.assertContains("INFO:oejul.LogTest:tname: testing:null");
+        output.assertContains("INFO:oejul.LogTest:tname: testing");
     }
 
     @Test
@@ -75,12 +83,12 @@ public class StdErrLogTest
         log.setDebugEnabled(false);
         log.debug("testing {} {}","test","debug-deprecated-false");
 
-        output.assertContains("DBUG:xxx:1: testing test debug");
-        output.assertContains("INFO:xxx:1: testing test info");
-        output.assertContains("WARN:xxx:1: testing test warn");
+        output.assertContains("DBUG:xxx:tname: testing test debug");
+        output.assertContains("INFO:xxx:tname: testing test info");
+        output.assertContains("WARN:xxx:tname: testing test warn");
         output.assertNotContains("YOU SHOULD NOT SEE THIS!");
-        output.assertContains("DBUG:xxx:1: testing test debug-deprecated");
-        output.assertNotContains("DBUG:xxx:1: testing test debug-depdeprecated-false");
+        output.assertContains("DBUG:xxx:tname: testing test debug-deprecated");
+        output.assertNotContains("DBUG:xxx:tname: testing test debug-depdeprecated-false");
     }
     
     @Test
@@ -95,7 +103,7 @@ public class StdErrLogTest
         Assert.assertThat("Log.name(child)", next.getName(), is("test.next"));
         next.info("testing {} {}","next","info");
         
-        output.assertContains(":test.next:1: testing next info");
+        output.assertContains(":test.next:tname: testing next info");
     }
     
     @Test
@@ -307,7 +315,7 @@ public class StdErrLogTest
         output.assertContains("Cheer Me");
 
         // Validate Stack Traces
-        output.assertContains(".StdErrLogTest:1: <zoom>");
+        output.assertContains(".StdErrLogTest:tname: <zoom>");
         output.assertContains("java.lang.Throwable: out of focus");
         output.assertContains("java.lang.Throwable: scene lost");
     }
@@ -354,7 +362,7 @@ public class StdErrLogTest
         output.assertNotContains("<spoken line>");
         output.assertNotContains("on editing room floor");
 
-        output.assertContains(".StdErrLogTest:1: <zoom>");
+        output.assertContains(".StdErrLogTest:tname: <zoom>");
         output.assertContains("java.lang.Throwable: out of focus");
         output.assertContains("java.lang.Throwable: scene lost");
     }
@@ -427,7 +435,7 @@ public class StdErrLogTest
         output.assertNotContains("<spoken line>");
         output.assertNotContains("on editing room floor");
         
-        output.assertContains(".StdErrLogTest:1: <zoom>");
+        output.assertContains(".StdErrLogTest:tname: <zoom>");
         output.assertContains("java.lang.Throwable: out of focus");
         output.assertContains("java.lang.Throwable: scene lost");
     }

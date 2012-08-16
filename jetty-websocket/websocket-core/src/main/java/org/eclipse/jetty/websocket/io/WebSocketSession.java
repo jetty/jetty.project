@@ -8,6 +8,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BaseConnection;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -18,31 +19,36 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public class WebSocketSession implements WebSocketConnection, IncomingFrames, OutgoingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
-    private final RawConnection connection;
+    /**
+     * The reference to the base connection.
+     * <p>
+     * This will be the {@link AbstractWebSocketConnection} on normal websocket use, and be a MuxConnection when MUX is in the picture.
+     */
+    private final BaseConnection baseConnection;
     private final WebSocketPolicy policy;
     private final String subprotocol;
     private final WebSocketEventDriver websocket;
     private OutgoingFrames outgoing;
 
-    public WebSocketSession(WebSocketEventDriver websocket, RawConnection connection, WebSocketPolicy policy, String subprotocol)
+    public WebSocketSession(WebSocketEventDriver websocket, BaseConnection connection, WebSocketPolicy policy, String subprotocol)
     {
         super();
         this.websocket = websocket;
-        this.connection = connection;
+        this.baseConnection = connection;
         this.policy = policy;
         this.subprotocol = subprotocol;
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
-        connection.close();
+        baseConnection.close();
     }
 
     @Override
-    public void close(int statusCode, String reason) throws IOException
+    public void close(int statusCode, String reason)
     {
-        connection.close(statusCode,reason);
+        baseConnection.close(statusCode,reason);
     }
 
     public IncomingFrames getIncoming()
@@ -64,7 +70,7 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return connection.getRemoteAddress();
+        return baseConnection.getRemoteAddress();
     }
 
     @Override
@@ -90,7 +96,13 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public boolean isOpen()
     {
-        return connection.isOpen();
+        return baseConnection.isOpen();
+    }
+
+    @Override
+    public boolean isReading()
+    {
+        return baseConnection.isReading();
     }
 
     public void onConnect()
@@ -117,6 +129,8 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     @Override
     public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
     {
+        // Delegate the application called ping to the OutgoingFrames interface to allow
+        // extensions to process the frame appropriately.
         WebSocketFrame frame = new WebSocketFrame(OpCode.PING).setPayload(payload);
         frame.setFin(true);
         output(context,callback,frame);
@@ -128,13 +142,19 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     }
 
     @Override
+    public SuspendToken suspend()
+    {
+        return baseConnection.suspend();
+    }
+
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
         builder.append("WebSocketSession[websocket=");
         builder.append(websocket);
-        builder.append(",connection=");
-        builder.append(connection);
+        builder.append(",baseConnection=");
+        builder.append(baseConnection);
         builder.append(",subprotocol=");
         builder.append(subprotocol);
         builder.append(",outgoing=");
@@ -153,6 +173,8 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
         {
             LOG.debug("write(context,{},byte[],{},{})",callback,offset,len);
         }
+        // Delegate the application called write to the OutgoingFrames interface to allow
+        // extensions to process the frame appropriately.
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(buf,offset,len);
         frame.setFin(true);
         output(context,callback,frame);
@@ -168,6 +190,8 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
         {
             LOG.debug("write(context,{},ByteBuffer->{})",callback,BufferUtil.toDetailString(buffer));
         }
+        // Delegate the application called write to the OutgoingFrames interface to allow
+        // extensions to process the frame appropriately.
         WebSocketFrame frame = WebSocketFrame.binary().setPayload(buffer);
         frame.setFin(true);
         output(context,callback,frame);
@@ -183,6 +207,8 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
         {
             LOG.debug("write(context,{},message.length:{})",callback,message.length());
         }
+        // Delegate the application called ping to the OutgoingFrames interface to allow
+        // extensions to process the frame appropriately.
         WebSocketFrame frame = WebSocketFrame.text(message);
         frame.setFin(true);
         output(context,callback,frame);

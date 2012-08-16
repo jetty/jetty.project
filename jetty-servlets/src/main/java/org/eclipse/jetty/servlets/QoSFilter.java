@@ -34,6 +34,8 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
  * Quality of Service Filter.
@@ -70,6 +72,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
  * 
  *
  */
+@ManagedObject("Quality of Service Filter")
 public class QoSFilter implements Filter
 {
     final static int __DEFAULT_MAX_PRIORITY=10;
@@ -273,6 +276,7 @@ public class QoSFilter implements Filter
      * 
      * @return wait time (in milliseconds)
      */
+    @ManagedAttribute("(short) amount of time filter will wait before suspending request (in ms)")
     public long getWaitMs()
     {
         return _waitMs;
@@ -297,6 +301,7 @@ public class QoSFilter implements Filter
      * 
      * @return suspend time (in milliseconds)
      */
+    @ManagedAttribute("amount of time filter will suspend a request for while waiting for the semaphore to become available (in ms)")
     public long getSuspendMs()
     {
         return _suspendMs;
@@ -321,6 +326,7 @@ public class QoSFilter implements Filter
      * 
      * @return maximum number of requests
      */
+    @ManagedAttribute("maximum number of requests to allow processing of at the same time")
     public int getMaxRequests()
     {
         return _maxRequests;

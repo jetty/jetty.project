@@ -18,15 +18,14 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 
-@ManagedObject(value="Test the mbean stuff", wrapper="com.acme.jmx.DerivedMBean")
+@ManagedObject(value="Test the mbean stuff")
 public class Derived extends Base implements Signature
 {
-    @ManagedAttribute(value="The full name of something", getter="getFullName", setter="setFullName")
     String fname="Full Name";
 
-    @ManagedAttribute( value="sample managed object")
     Managed managedInstance = new Managed();
     
+    @ManagedAttribute(value="The full name of something", name="fname", setter="setFullName")
     public String getFullName()
     {
         return fname;
@@ -54,6 +53,7 @@ public class Derived extends Base implements Signature
         return "bad";
     }
 
+    @ManagedAttribute("sample managed object")
     public Managed getManagedInstance()
     {
         return managedInstance;

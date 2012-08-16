@@ -19,6 +19,7 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -27,6 +28,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * replacement for the old (and deprecated) <code>org.eclipse.jetty.deploy.ContextDeployer</code> and it will scan a directory
  * only for context.xml files.
  */
+@ManagedObject("Provider for starting webapps originating from context.xml files")
 public class ContextProvider extends ScanningAppProvider
 {
     private ConfigurationManager _configurationManager;

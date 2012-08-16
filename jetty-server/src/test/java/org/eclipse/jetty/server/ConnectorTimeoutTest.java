@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,7 +20,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -36,6 +31,10 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
@@ -114,8 +113,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     @Test
     public void testMaxIdleWithRequest10NoClientClose() throws Exception
-    {        
-        final Exchanger<EndPoint> endpoint = new Exchanger<EndPoint>();
+    {
+        final Exchanger<EndPoint> exchanger = new Exchanger<>();
         configureServer(new HelloWorldHandler()
         {
             @Override
@@ -124,11 +123,13 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    endpoint.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
+                    exchanger.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
                 }
-                catch(Exception e)
-                {}
-                super.handle(target,baseRequest,request,response);
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+                super.handle(target, baseRequest, request, response);
             }
 
         });
@@ -148,10 +149,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         os.flush();
 
         // Get the server side endpoint
-        EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
-        if (endp instanceof SslConnection.DecryptedEndPoint)
-            endp=((SslConnection.DecryptedEndPoint)endp).getConnection().getEndPoint();
-        
+        EndPoint endPoint = exchanger.exchange(null,10,TimeUnit.SECONDS);
+        if (endPoint instanceof SslConnection.DecryptedEndPoint)
+            endPoint=endPoint.getConnection().getEndPoint();
+
         // read the response
         String result=IO.toString(is);
         Assert.assertThat("OK",result,containsString("200 OK"));
@@ -160,7 +161,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         assertEquals(-1, is.read());
 
         // wait for idle timeout
-        TimeUnit.MILLISECONDS.sleep(3*MAX_IDLE_TIME);
+        TimeUnit.MILLISECONDS.sleep(3 * MAX_IDLE_TIME);
 
 
         // further writes will get broken pipe or similar
@@ -182,13 +183,13 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             // expected
         }
         // check the server side is closed
-        Assert.assertFalse(endp.isOpen());
+        Assert.assertFalse(endPoint.isOpen());
     }
 
     @Test
     public void testMaxIdleWithRequest10ClientIgnoresClose() throws Exception
-    {        
-        final Exchanger<EndPoint> endpoint = new Exchanger<EndPoint>();
+    {
+        final Exchanger<EndPoint> exchanger = new Exchanger<>();
         configureServer(new HelloWorldHandler()
         {
             @Override
@@ -197,11 +198,13 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    endpoint.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
+                    exchanger.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
                 }
-                catch(Exception e)
-                {}
-                super.handle(target,baseRequest,request,response);
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+                super.handle(target, baseRequest, request, response);
             }
 
         });
@@ -221,10 +224,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         os.flush();
 
         // Get the server side endpoint
-        EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
-        if (endp instanceof SslConnection.DecryptedEndPoint)
-            endp=((SslConnection.DecryptedEndPoint)endp).getConnection().getEndPoint();
-        
+        EndPoint endPoint = exchanger.exchange(null,10,TimeUnit.SECONDS);
+        if (endPoint instanceof SslConnection.DecryptedEndPoint)
+            endPoint=endPoint.getConnection().getEndPoint();
+
         // read the response
         String result=IO.toString(is);
         Assert.assertThat("OK",result,containsString("200 OK"));
@@ -251,13 +254,13 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             // expected
         }
         // check the server side is closed
-        Assert.assertFalse(endp.isOpen());
+        Assert.assertFalse(endPoint.isOpen());
     }
 
     @Test
     public void testMaxIdleWithRequest11NoClientClose() throws Exception
     {
-        final Exchanger<EndPoint> endpoint = new Exchanger<EndPoint>();
+        final Exchanger<EndPoint> exchanger = new Exchanger<>();
         configureServer(new EchoHandler()
         {
             @Override
@@ -266,11 +269,13 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    endpoint.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
+                    exchanger.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
                 }
-                catch(Exception e)
-                {}
-                super.handle(target,baseRequest,request,response);
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+                super.handle(target, baseRequest, request, response);
             }
 
         });
@@ -285,17 +290,17 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         String content="Wibble";
         byte[] contentB=content.getBytes("utf-8");
         os.write((
-                "POST /echo HTTP/1.1\r\n"+
-                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
-                "content-type: text/plain; charset=utf-8\r\n"+
-                "content-length: "+contentB.length+"\r\n"+
-                "connection: close\r\n"+
-        "\r\n").getBytes("utf-8"));
+                "POST /echo HTTP/1.1\r\n" +
+                        "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
+                        "content-type: text/plain; charset=utf-8\r\n" +
+                        "content-length: " + contentB.length + "\r\n" +
+                        "connection: close\r\n" +
+                        "\r\n").getBytes("utf-8"));
         os.write(contentB);
         os.flush();
 
         // Get the server side endpoint
-        EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
+        EndPoint endPoint = exchanger.exchange(null,10,TimeUnit.SECONDS);
 
         // read the response
         IO.toString(is);
@@ -326,7 +331,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
 
         // check the server side is closed
-        Assert.assertFalse(endp.isOpen());
+        Assert.assertFalse(endPoint.isOpen());
     }
 
 

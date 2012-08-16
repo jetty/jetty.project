@@ -15,7 +15,12 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,12 +30,14 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -44,9 +51,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * It aggregates Connectors (HTTP request receivers) and request Handlers.
  * The server is itself a handler and a ThreadPool.  Connectors use the ThreadPool methods
  * to run jobs that will eventually call the handle method.
- *
- *  @org.apache.xbean.XBean  description="Creates an embedded Jetty web server"
  */
+@ManagedObject(value="Jetty HTTP Servlet server")
 public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = Log.getLogger(Server.class);
@@ -65,11 +71,10 @@ public class Server extends HandlerWrapper implements Attributes
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
     private final ThreadPool _threadPool;
-    private Connector[] _connectors;
+    private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
     private boolean _sendServerVersion = true; //send Server: header
     private boolean _sendDateHeader = false; //send Date: header
-    private int _graceful=0;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
@@ -112,12 +117,13 @@ public class Server extends HandlerWrapper implements Attributes
     public Server(ThreadPool pool)
     {
         _threadPool=pool!=null?pool:new QueuedThreadPool();
-        addBean(_threadPool,pool==null);
+        addBean(_threadPool);
         setServer(this);
     }
 
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("version of this server")
     public static String getVersion()
     {
         return __version;
@@ -162,25 +168,30 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return Returns the connectors.
      */
+    @ManagedAttribute("connectors for this server")
     public Connector[] getConnectors()
     {
-        return _connectors;
+        List<Connector> connectors = new ArrayList<>(_connectors);
+        return connectors.toArray(new Connector[connectors.size()]);
     }
 
     /* ------------------------------------------------------------ */
     public void addConnector(Connector connector)
     {
-        setConnectors((Connector[])LazyList.addToArray(getConnectors(), connector, Connector.class));
+        if (_connectors.add(connector))
+            _container.update(this, null, connector, "connector");
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * Conveniance method which calls {@link #getConnectors()} and {@link #setConnectors(Connector[])} to
+     * Convenience method which calls {@link #getConnectors()} and {@link #setConnectors(Connector[])} to
      * remove a connector.
      * @param connector The connector to remove.
      */
-    public void removeConnector(Connector connector) {
-        setConnectors((Connector[])LazyList.removeFromArray (getConnectors(), connector));
+    public void removeConnector(Connector connector)
+    {
+        if (_connectors.remove(connector))
+            _container.update(this, connector, null, "connector");
     }
 
     /* ------------------------------------------------------------ */
@@ -190,23 +201,28 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void setConnectors(Connector[] connectors)
     {
-        if (connectors!=null)
+        if (connectors != null)
         {
-            for (int i=0;i<connectors.length;i++)
+            for (Connector connector : connectors)
             {
-                if (connectors[i].getServer()!=this)
-                    throw new IllegalArgumentException();
+                if (connector.getServer() != this)
+                    throw new IllegalArgumentException("Connector " + connector +
+                            " cannot be shared among server " + connector.getServer() + " and server " + this);
             }
         }
 
-        _container.update(this, _connectors, connectors, "connector");
-        _connectors = connectors;
+        Connector[] oldConnectors = getConnectors();
+        _container.update(this, oldConnectors, connectors, "connector");
+        _connectors.removeAll(Arrays.asList(oldConnectors));
+        if (connectors != null)
+            _connectors.addAll(Arrays.asList(connectors));
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the threadPool.
      */
+    @ManagedAttribute("the server thread pool")
     public ThreadPool getThreadPool()
     {
         return _threadPool;
@@ -215,6 +231,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called after starting
      */
+    @ManagedAttribute("dump state to stderr after start")
     public boolean isDumpAfterStart()
     {
         return _dumpAfterStart;
@@ -231,6 +248,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called before stopping
      */
+    @ManagedAttribute("dump state to stderr before stop")
     public boolean isDumpBeforeStop()
     {
         return _dumpBeforeStop;
@@ -266,12 +284,15 @@ public class Server extends HandlerWrapper implements Attributes
             mex.add(e);
         }
 
-        if (_connectors!=null && mex.size()==0)
+        if (mex.size()==0)
         {
-            for (int i=0;i<_connectors.length;i++)
+            for (Connector _connector : _connectors)
             {
-                try{_connectors[i].start();}
-                catch(Throwable e)
+                try
+                {
+                    _connector.start();
+                }
+                catch (Throwable e)
                 {
                     mex.add(e);
                 }
@@ -293,38 +314,69 @@ public class Server extends HandlerWrapper implements Attributes
 
         MultiException mex=new MultiException();
 
-        if (_graceful>0)
+        
+        // First close the network connectors to stop accepting new connections
+        for (Connector connector : _connectors)
         {
-            if (_connectors!=null)
+            if (connector instanceof NetworkConnector)
+                ((NetworkConnector)connector).close();
+        }
+
+        // Then tell the contexts that we are shutting down
+        Handler[] contexts = getChildHandlersByClass(Graceful.class);
+        for (Handler context : contexts)
+        {
+            Graceful graceful = (Graceful)context;
+            graceful.shutdown();
+        }
+            
+        // Shall we gracefully wait for zero connections?
+        long stopTimeout = getStopTimeout();
+        if (stopTimeout>0 && LOG.isDebugEnabled()) // TODO disabled unless debg for now
+        {
+            long stop_by=System.currentTimeMillis()+stopTimeout;
+            LOG.info("Graceful shutdown {} by ",this,new Date(stop_by));
+
+            // TODO Need to be able to set the maxIdleTime on each individual connection
+            for (Connector connector : _connectors)
             {
-                for (int i=_connectors.length;i-->0;)
+                // TODO this is not good enough
+                if (connector instanceof AbstractConnector)
+                    ((AbstractConnector)connector).setIdleTimeout(1);
+            }
+            
+            for (Connector connector : _connectors)
+            {
+                while (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
                 {
-                    LOG.info("Graceful shutdown {}",_connectors[i]);
-                    if (_connectors[i] instanceof NetworkConnector)
-                        ((NetworkConnector)_connectors[i]).close();
+                    System.err.println(((Dumpable)connector).dump());
+                    Thread.sleep(100);
                 }
             }
-
-            Handler[] contexts = getChildHandlersByClass(Graceful.class);
-            for (int c=0;c<contexts.length;c++)
-            {
-                Graceful context=(Graceful)contexts[c];
-                LOG.info("Graceful shutdown {}",context);
-                context.setShutdown(true);
-            }
-            Thread.sleep(_graceful);
         }
-
-        if (_connectors!=null)
+    
+        // Now stop the connectors (this will close existing connections)
+        for (Connector connector : _connectors)
         {
-            for (int i=_connectors.length;i-->0;)
+            try
             {
-                if (_connectors[i]!=null)
-                    try{_connectors[i].stop();}catch(Throwable e){mex.add(e);}
+                connector.stop();
+            }
+            catch (Throwable e)
+            {
+                mex.add(e);
             }
         }
 
-        try {super.doStop(); } catch(Throwable e) { mex.add(e);}
+        // And finall stop everything else
+        try
+        {
+            super.doStop();
+        }
+        catch (Throwable e)
+        {
+            mex.add(e);
+        }
 
         mex.ifExceptionThrow();
 
@@ -434,43 +486,24 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("if true, include the server version in HTTP headers")
     public boolean getSendServerVersion()
     {
         return _sendServerVersion;
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param sendDateHeader
-     */
     public void setSendDateHeader(boolean sendDateHeader)
     {
         _sendDateHeader = sendDateHeader;
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("if true, include the date in HTTP headers")
     public boolean getSendDateHeader()
     {
         return _sendDateHeader;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    @Deprecated
-    public int getMaxCookieVersion()
-    {
-        return 1;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    @Deprecated
-    public void setMaxCookieVersion(int maxCookieVersion)
-    {
-    }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -535,7 +568,7 @@ public class Server extends HandlerWrapper implements Attributes
      * @see org.eclipse.util.AttributesMap#getAttributeNames()
      */
     @Override
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
@@ -566,15 +599,6 @@ public class Server extends HandlerWrapper implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the graceful
-     */
-    public int getGracefulShutdown()
-    {
-        return _graceful;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * Set graceful shutdown timeout.  If set, the internal <code>doStop()</code> method will not immediately stop the
      * server. Instead, all {@link Connector}s will be closed so that new connections will not be accepted
      * and all handlers that implement {@link Graceful} will be put into the shutdown mode so that no new requests
@@ -585,7 +609,7 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void setGracefulShutdown(int timeoutMS)
     {
-        _graceful=timeoutMS;
+        // TODO
     }
 
     /* ------------------------------------------------------------ */
@@ -600,7 +624,7 @@ public class Server extends HandlerWrapper implements Attributes
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpThis(out);
-        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),TypeUtil.asList(_connectors));
+        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),_connectors);
     }
 
     /* ------------------------------------------------------------ */
@@ -618,11 +642,13 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     /* A handler that can be gracefully shutdown.
      * Called by doStop if a {@link #setGracefulShutdown} period is set.
-     * TODO move this somewhere better
+     * TODO: this interface should be part of a restructuring of how we manage the lifecycle of components
+     * TODO: it should extend LifeCycle rather than Handler, for example, and should play in concert with
+     * TODO: LifeCycle.stop() so that stop==shutdown+await(stopTimeout) to keep the stop semantic.
      */
     public interface Graceful extends Handler
     {
-        public void setShutdown(boolean shutdown);
+        public void shutdown();
     }
 
     /* ------------------------------------------------------------ */

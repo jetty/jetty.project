@@ -40,6 +40,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -56,6 +59,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  * <p>
  */
 @SuppressWarnings("deprecation")
+@ManagedObject("Abstract Session Manager")
 public abstract class AbstractSessionManager extends AbstractLifeCycle implements SessionManager
 {
     final static Logger __log = SessionHandler.LOG;
@@ -135,11 +139,13 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         return _context.getContextHandler();
     }
     
+    @ManagedAttribute("path of the session cookie, or null for default")
     public String getSessionPath()
     {
         return _sessionPath;
     }
 
+    @ManagedAttribute("if greater the zero, the time in seconds a session cookie will last for")
     public int getMaxCookieAge()
     {
         return _maxCookieAge;
@@ -266,6 +272,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return Returns the httpOnly.
      */
+    @ManagedAttribute("true if cookies use the http only flag")
     public boolean getHttpOnly()
     {
         return _httpOnly;
@@ -296,6 +303,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return Returns the SessionIdManager used for cross context session management
      */
+    @ManagedAttribute("Session ID Manager")
     public SessionIdManager getSessionIdManager()
     {
         return _sessionIdManager;
@@ -307,6 +315,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * @return seconds
      */
     @Override
+    @ManagedAttribute("defailt maximum time a session may be idle for (in s)")
     public int getMaxInactiveInterval()
     {
         return _dftMaxIdleSecs;
@@ -326,6 +335,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return maximum number of sessions
      */
+    @ManagedAttribute("maximum number of simultaneous sessions")
     public int getSessionsMax()
     {
         return (int)_sessionsStats.getMax();
@@ -335,6 +345,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return total number of sessions
      */
+    @ManagedAttribute("total number of sessions")
     public int getSessionsTotal()
     {
         return (int)_sessionsStats.getTotal();
@@ -361,6 +372,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("time before a session cookie is re-set (in s)")
     public int getRefreshCookieAge()
     {
         return _refreshCookieAge;
@@ -373,6 +385,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * cookies are ALWAYS marked as secure. If false, a session cookie is
      * ONLY marked as secure if _secureRequestOnly == true and it is a HTTPS request.
      */
+    @ManagedAttribute("if true, secure cookie flag is set on session cookies")
     public boolean getSecureCookies()
     {
         return _secureCookies;
@@ -402,6 +415,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     
     
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("the set session cookie")
     public String getSessionCookie()
     {
         return _sessionCookie;
@@ -471,6 +485,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         return null;
     }
 
+    @ManagedAttribute("domain of the session cookie, or null for the default")
     public String getSessionDomain()
     {
         return _sessionDomain;
@@ -498,12 +513,14 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
    
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("number of currently active sessions")
     public int getSessions()
     {
         return (int)_sessionsStats.getCurrent();
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("name of use for URL session tracking")
     public String getSessionIdPathParameterName()
     {
         return _sessionIdPathParameterName;
@@ -580,6 +597,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * Reset statistics values
      */
+    @ManagedOperation(value="reset statistics", impact="ACTION")
     public void statsReset()
     {
         _sessionsStats.reset(getSessions());
@@ -784,6 +802,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return maximum amount of time session remained valid
      */
+    @ManagedAttribute("maximum amount of time sessions have remained active (in s)")
     public long getSessionTimeMax()
     {
         return _sessionTimeStats.getMax();
@@ -919,6 +938,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return total amount of time all sessions remained valid
      */
+    @ManagedAttribute("total time sessions have remained valid")
     public long getSessionTimeTotal()
     {
         return _sessionTimeStats.getTotal();
@@ -928,6 +948,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return mean amount of time session remained valid
      */
+    @ManagedAttribute("mean time sessions remain valid (in s)")
     public double getSessionTimeMean()
     {
         return _sessionTimeStats.getMean();
@@ -937,6 +958,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @return standard deviation of amount of time session remained valid
      */
+    @ManagedAttribute("standard deviation a session remained valid (in s)")
     public double getSessionTimeStdDev()
     {
         return _sessionTimeStats.getStdDev();
@@ -946,6 +968,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @see org.eclipse.jetty.server.SessionManager#isCheckingRemoteSessionIdEncoding()
      */
+    @ManagedAttribute("check remote session id encoding")
     public boolean isCheckingRemoteSessionIdEncoding()
     {
         return _checkingRemoteSessionIdEncoding;

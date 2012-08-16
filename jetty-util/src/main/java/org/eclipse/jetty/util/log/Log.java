@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 /**
  * Logging.
@@ -289,6 +290,7 @@ public class Log
      *
      * @return a map of all configured {@link Logger} instances
      */
+    @ManagedAttribute("list of all instantiated loggers")
     public static Map<String, Logger> getLoggers()
     {
         return Collections.unmodifiableMap(__loggers);

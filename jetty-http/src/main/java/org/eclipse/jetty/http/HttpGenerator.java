@@ -33,21 +33,21 @@ public class HttpGenerator
 
     public static final ResponseInfo CONTINUE_100_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,100,null,false);
     public static final ResponseInfo PROGRESS_102_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,102,null,false);
-    public final static ResponseInfo RESPONSE_500_INFO = 
+    public final static ResponseInfo RESPONSE_500_INFO =
         new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(){{put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);}},0,HttpStatus.INTERNAL_SERVER_ERROR_500,null,false);
-    
+
     // states
-    public enum Action { FLUSH, COMPLETE, PREPARE };
-    public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, COMPLETING_1XX, END };
-    public enum Result { NEED_CHUNK,NEED_INFO,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
-    
+    public enum Action { FLUSH, COMPLETE, PREPARE }
+    public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, COMPLETING_1XX, END }
+    public enum Result { NEED_CHUNK,NEED_INFO,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT}
+
     // other statics
     public static final int CHUNK_SIZE = 12;
-    
-    
+
+
     private State _state = State.START;
     private EndOfContent _content = EndOfContent.UNKNOWN_CONTENT;
-    
+
     private int _largeContent=4096;
     private long _contentPrepared = 0;
     private boolean _noContent = false;
@@ -60,7 +60,7 @@ public class HttpGenerator
     {
         SERVER=StringUtil.getBytes("Server: Jetty("+version+")\015\012");
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     // data
     private boolean _needCRLF = false;
@@ -69,7 +69,7 @@ public class HttpGenerator
     public HttpGenerator()
     {
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
@@ -105,13 +105,13 @@ public class HttpGenerator
     {
         return _state == state;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return _state == State.START;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isComplete()
     {
@@ -162,7 +162,7 @@ public class HttpGenerator
     {
         return _contentPrepared>0;
     }
-    
+
     /* ------------------------------------------------------------ */
     public long getContentPrepared()
     {
@@ -282,7 +282,7 @@ public class HttpGenerator
                 {
                     if (info==null)
                         return Result.NEED_INFO;
-                    
+
                     if (info instanceof RequestInfo)
                     {
                         if (header==null || header.capacity()<=CHUNK_SIZE)
@@ -424,11 +424,9 @@ public class HttpGenerator
                 case COMPLETING_1XX:
                     reset();
                     return Result.OK;
-                    
+
                 case END:
-                    if (!Boolean.TRUE.equals(_persistent))
-                        result=Result.SHUTDOWN_OUT;
-                    return Result.OK;
+                    return Boolean.TRUE.equals(_persistent) ? Result.OK : Result.SHUTDOWN_OUT;
 
                 default:
                     throw new IllegalStateException();
@@ -561,7 +559,7 @@ public class HttpGenerator
     {
         final RequestInfo _request=(_info instanceof RequestInfo)?(RequestInfo)_info:null;
         final ResponseInfo _response=(_info instanceof ResponseInfo)?(ResponseInfo)_info:null;
-        
+
         // default field values
         boolean has_server = false;
         HttpFields.Field transfer_encoding=null;
@@ -739,7 +737,7 @@ public class HttpGenerator
                     // we have seen all the _content there is, so we can be content-length limited.
                     _content=EndOfContent.CONTENT_LENGTH;
                     long content_length = _contentPrepared+BufferUtil.length(content);
-                    
+
                     // Do we need to tell the headers about it
                     if ((_response!=null || content_length>0 || content_type ) && !_noContent)
                     {
@@ -770,7 +768,7 @@ public class HttpGenerator
                     header.put(HttpTokens.CRLF);
                 }
                 break;
-                
+
             case NO_CONTENT:
                 if (_response!=null && status >= 200 && status != 204 && status != 304)
                     header.put(CONTENT_LENGTH_0);
@@ -870,7 +868,7 @@ public class HttpGenerator
                 getClass().getSimpleName(),
                 _state);
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
@@ -884,8 +882,7 @@ public class HttpGenerator
     private static final byte[] CRLF = StringUtil.getBytes("\015\012");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
     private static byte[] SERVER = StringUtil.getBytes("Server: Jetty(7.0.x)\015\012");
-    private static final byte[] NO_BYTES = {};
-    
+
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
@@ -933,14 +930,14 @@ public class HttpGenerator
         final HttpVersion _httpVersion;
         final HttpFields _httpFields;
         final long _contentLength;
-        
+
         private Info(HttpVersion httpVersion, HttpFields httpFields, long contentLength)
         {
             _httpVersion = httpVersion;
             _httpFields = httpFields;
             _contentLength = contentLength;
         }
-        
+
         public HttpVersion getHttpVersion()
         {
             return _httpVersion;
@@ -954,42 +951,42 @@ public class HttpGenerator
             return _contentLength;
         }
     }
-    
+
     public static class RequestInfo extends Info
     {
         private final String _method;
         private final String _uri;
-        
+
         public RequestInfo(HttpVersion httpVersion, HttpFields httpFields, long contentLength, String method, String uri)
         {
             super(httpVersion,httpFields,contentLength);
             _method = method;
             _uri = uri;
         }
-        
+
         public String getMethod()
         {
             return _method;
         }
-        
+
         public String getUri()
         {
             return _uri;
         }
-        
-        @Override 
+
+        @Override
         public String toString()
         {
             return String.format("RequestInfo{%s %s %s,%d}",_method,_uri,_httpVersion,_contentLength);
         }
     }
-    
+
     public static class ResponseInfo extends Info
     {
         private final int _status;
         private final String _reason;
         private final boolean _head;
-                
+
         public ResponseInfo(HttpVersion httpVersion, HttpFields httpFields, long contentLength, int status, String reason, boolean head)
         {
             super(httpVersion,httpFields,contentLength);
@@ -997,28 +994,28 @@ public class HttpGenerator
             _reason = reason;
             _head = head;
         }
-        
+
         public boolean isInformational()
         {
             return _status>=100 && _status<200;
         }
-        
+
         public int getStatus()
         {
             return _status;
         }
-        
+
         public String getReason()
         {
             return _reason;
         }
-        
+
         public boolean isHead()
         {
             return _head;
         }
-        
-        @Override 
+
+        @Override
         public String toString()
         {
             return String.format("ResponseInfo{%s %s %s,%d,%b}",_httpVersion,_status,_reason,_contentLength,_head);

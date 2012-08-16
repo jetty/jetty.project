@@ -57,7 +57,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             }
         }
     };
-    
+
     /**
      * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
@@ -158,22 +158,30 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override
     public void close()
     {
-        super.close();
         if (_open.compareAndSet(true, false))
+        {
+            super.close();
             _selector.destroyEndPoint(this);
+        }
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        // We cannot rely on super.isOpen(), because there is a race between calls to close() and isOpen():
+        // a thread may call close(), which flips the boolean but has not yet called super.close(), and
+        // another thread calls isOpen() which would return true - wrong - if based on super.isOpen().
+        return _open.get();
     }
 
     @Override
     public void onOpen()
     {
-        super.onOpen();
-        _open.compareAndSet(false, true);
-    }
-
-    @Override
-    public void onClose()
-    {
-        super.onClose();
+        if (_open.compareAndSet(false, true))
+        {
+            super.onOpen();
+            scheduleIdleTimeout(getIdleTimeout());
+        }
     }
 
     @Override

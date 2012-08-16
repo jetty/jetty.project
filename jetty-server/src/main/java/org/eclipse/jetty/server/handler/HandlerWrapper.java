@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -22,6 +23,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -29,6 +32,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * {@link LifeCycle life cycle} events to a delegate. This is primarily used to implement the <i>Decorator</i> pattern.
  *
  */
+@ManagedObject("Handler wrapping another Handler")
 public class HandlerWrapper extends AbstractHandlerContainer
 {
     protected Handler _handler;
@@ -45,6 +49,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
+    @ManagedAttribute(value="Wrapped Handler", readonly=true)
     public Handler getHandler()
     {
         return _handler;
@@ -137,9 +142,9 @@ public class HandlerWrapper extends AbstractHandlerContainer
 
     /* ------------------------------------------------------------ */
     @Override
-    protected Object expandChildren(Object list, Class byClass)
+    protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
-        return expandHandler(_handler,list,byClass);
+        expandHandler(_handler,list,byClass);
     }
 
     /* ------------------------------------------------------------ */

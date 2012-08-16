@@ -25,6 +25,8 @@ import java.util.Map;
 
 import org.eclipse.jetty.monitor.thread.ThreadMonitorException;
 import org.eclipse.jetty.monitor.thread.ThreadMonitorInfo;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
+@ManagedObject("detect and report spinning and deadlocked threads")
 public class ThreadMonitor extends AbstractLifeCycle implements Runnable
 {
     private static final Logger LOG = Log.getLogger(ThreadMonitor.class);
@@ -132,6 +135,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      *
      * @return the scan interval
      */
+    @ManagedAttribute("scan interval")
     public int getScanInterval()
     {
         return _scanInterval;
@@ -154,6 +158,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      *
      * @return the log interval
      */
+    @ManagedAttribute("log interval")
     public int getLogInterval()
     {
         return _logInterval;
@@ -176,6 +181,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      *
      * @return the busy threshold
      */
+    @ManagedAttribute("busy threshold")
     public int getBusyThreshold()
     {
         return _busyThreshold;
@@ -198,6 +204,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      *
      * @return the log threshold
      */
+    @ManagedAttribute("log threshold")
     public int getLogThreshold()
     {
         return _logThreshold;
@@ -220,6 +227,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      *
      * @return the stack depth
      */
+    @ManagedAttribute("stack depth")
     public int getStackDepth()
     {
         return _stackDepth;
@@ -242,6 +250,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      *
      * @param trailLength the new trail length
      */
+    @ManagedAttribute("trail length")
     public void setTrailLength(int trailLength)
     {
         _trailLength = trailLength;

@@ -32,7 +32,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -145,7 +145,7 @@ public class Invoker extends HttpServlet
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet);
             mapping.setPathSpec(URIUtil.addPaths(servlet_path,servlet)+"/*");
-            _servletHandler.setServletMappings((ServletMapping[])LazyList.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
+            _servletHandler.setServletMappings((ServletMapping[])ArrayUtil.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
         }
         else
         {

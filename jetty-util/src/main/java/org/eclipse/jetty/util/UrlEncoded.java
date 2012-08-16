@@ -18,7 +18,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
@@ -43,7 +44,8 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * @see java.net.URLEncoder
  */
-public class UrlEncoded extends MultiMap implements Cloneable
+@SuppressWarnings("serial")
+public class UrlEncoded extends MultiMap<String> implements Cloneable
 {
     static final Logger LOG = Log.getLogger(UrlEncoded.class);
 
@@ -117,21 +119,24 @@ public class UrlEncoded extends MultiMap implements Cloneable
      * @param equalsForNullValue if True, then an '=' is always used, even
      * for parameters without a value. e.g. "blah?a=&b=&c=".
      */
-    public static String encode(MultiMap map, String charset, boolean equalsForNullValue)
+    public static String encode(MultiMap<String> map, String charset, boolean equalsForNullValue)
     {
         if (charset==null)
             charset=ENCODING;
 
         StringBuilder result = new StringBuilder(128);
 
-        Iterator<Entry<String, Object>> iter = map.entrySet().iterator();
-        while(iter.hasNext())
+        boolean delim = false;
+        for(Map.Entry<String, List<String>> entry: map.entrySet())
         {
-            Entry<String, Object> entry = iter.next();
-
             String key = entry.getKey().toString();
-            Object list = entry.getValue();
-            int s=LazyList.size(list);
+            List<String> list = entry.getValue();
+            int s=list.size();
+            
+            if (delim)
+            {
+                result.append('&');
+            }
 
             if (s==0)
             {
@@ -145,7 +150,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                 {
                     if (i>0)
                         result.append('&');
-                    Object val=LazyList.get(list,i);
+                    String val=list.get(i);
                     result.append(encodeString(key,charset));
 
                     if (val!=null)
@@ -163,8 +168,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                         result.append('=');
                 }
             }
-            if (iter.hasNext())
-                result.append('&');
+            delim = true;
         }
         return result.toString();
     }
@@ -175,7 +179,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param content the string containing the encoded parameters
      */
-    public static void decodeTo(String content, MultiMap map, String charset)
+    public static void decodeTo(String content, MultiMap<String> map, String charset)
     {
         decodeTo(content,map,charset,-1);
     }
@@ -184,7 +188,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param content the string containing the encoded parameters
      */
-    public static void decodeTo(String content, MultiMap map, String charset, int maxKeys)
+    public static void decodeTo(String content, MultiMap<String> map, String charset, int maxKeys)
     {
         if (charset==null)
             charset=ENCODING;
@@ -265,7 +269,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
      * @param map the {@link MultiMap} to populate
      * @param buffer the buffer to decode into
      */
-    public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap map)
+    public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap<String> map)
     {
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         synchronized(map)
@@ -346,7 +350,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
      * @param map MultiMap to add parameters to
      * @param maxLength maximum number of keys to read or -1 for no limit
      */
-    public static void decode88591To(InputStream in, MultiMap map, int maxLength, int maxKeys)
+    public static void decode88591To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
     throws IOException
     {
         synchronized(map)
@@ -430,7 +434,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
      * @param map MultiMap to add parameters to
      * @param maxLength maximum number of keys to read or -1 for no limit
      */
-    public static void decodeUtf8To(InputStream in, MultiMap map, int maxLength, int maxKeys)
+    public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
     throws IOException
     {
         synchronized(map)
@@ -517,7 +521,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
     }
     
     /* -------------------------------------------------------------- */
-    public static void decodeUtf16To(InputStream in, MultiMap map, int maxLength, int maxKeys) throws IOException
+    public static void decodeUtf16To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys) throws IOException
     {
         InputStreamReader input = new InputStreamReader(in,StringUtil.__UTF16);
         StringWriter buf = new StringWriter(8192);
@@ -530,7 +534,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param in the stream containing the encoded parameters
      */
-    public static void decodeTo(InputStream in, MultiMap map, String charset, int maxLength, int maxKeys)
+    public static void decodeTo(InputStream in, MultiMap<String> map, String charset, int maxLength, int maxKeys)
     throws IOException
     {
         //no charset present, use the configured default

@@ -22,13 +22,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
-import java.nio.channels.ReadPendingException;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritePendingException;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -130,12 +127,13 @@ public class ChannelEndPoint extends AbstractEndPoint
         try
         {
             int filled = _channel.read(buffer);
+            LOG.debug("filled {} {}", filled, this);
 
             if (filled>0)
                 notIdle();
             else if (filled==-1)
                 shutdownInput();
-            
+
             return filled;
         }
         catch(IOException e)
@@ -174,6 +172,7 @@ public class ChannelEndPoint extends AbstractEndPoint
                     }
                 }
             }
+            LOG.debug("flushed {} {}", flushed, this);
         }
         catch (ClosedChannelException | EOFException | SocketException e)
         {

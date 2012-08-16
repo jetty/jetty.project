@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
@@ -14,9 +14,8 @@
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
-    <Set name="ThreadPool">
-      <!-- Default queued blocking threadpool
-      -->
+    <Arg name="threadPool">
+      <!-- Default queued blocking threadpool -->
       <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
         <Set name="maxThreads">200</Set>
         <Set name="minThreads">10</Set>
@@ -28,7 +27,7 @@
         <Set name="maximumPoolSize">50</Set>
       </New>
       -->
-    </Set>
+    </Arg>
 
     <!-- =========================================================== -->
     <!-- Set connectors                                              -->
@@ -37,10 +36,10 @@
     <Call name="addConnector">
       <Arg>
           <New class="org.eclipse.jetty.server.SelectChannelConnector">
+            <Arg><Ref id="Server" /></Arg>
             <Set name="host"></Set>
             <Set name="port">0</Set>
             <Set name="idleTimeout">300000</Set>
-            <Set name="confidentialPort">8443</Set>
           </New>
       </Arg>
     </Call>
@@ -124,6 +123,6 @@
     <Set name="stopAtShutdown">true</Set>
     <Set name="sendServerVersion">true</Set>
     <Set name="sendDateHeader">true</Set>
-    <Set name="gracefulShutdown">1000</Set>
+    <Set name="stopTimeout">1000</Set>
 
 </Configure>

@@ -17,6 +17,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -25,6 +27,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * and allows applications to send data to remote peers, by setting up
  * the machinery needed to handle such tasks.</p>
  */
+@ManagedObject("Connector Interface")
 public interface Connector extends LifeCycle
 {
     /**
@@ -60,6 +63,7 @@ public interface Connector extends LifeCycle
     /**
      * @return the dle timeout for connections in milliseconds
      */
+    @ManagedAttribute("maximum time a connection can be idle before being closed (in ms)")
     public long getIdleTimeout();
 
     /**
@@ -78,103 +82,98 @@ public interface Connector extends LifeCycle
     public interface Statistics extends LifeCycle
     {
         /**
-         * @return true if gathering of statistics is enabled
-         */
-        public boolean getStatsOn();
-
-        /**
          * <p>Resets the statistics.</p>
          */
-        public void statsReset();
+        public void reset();
 
         /**
          * @return the number of messages received by this connector
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public int getMessagesIn();
 
         /**
          * @return the number of messages sent by this connector
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public int getMessagesOut();
 
         /**
          * @return the number of bytes received by this connector
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public int getBytesIn();
 
         /**
          * @return the number of bytes sent by this connector
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public int getBytesOut();
 
         /**
          * @return the total time connections have been open, in milliseconds,
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public long getConnectionsDurationTotal();
 
         /**
          * @return the number of connections accepted by the server
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public int getConnections() ;
 
         /**
          * @return the number of connections currently open that were opened
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public int getConnectionsOpen() ;
 
         /**
          * @return the max number of connections opened simultaneously
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public int getConnectionsOpenMax() ;
 
         /**
          * @return the max time a connection has been open, in milliseconds,
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public long getConnectionsDurationMax();
 
         /**
          * @return the mean time connections have been open, in milliseconds,
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public double getConnectionsDurationMean() ;
 
         /**
          * @return the standard deviation of the time connections have been open, in milliseconds,
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public double getConnectionsDurationStdDev() ;
 
         /**
          * @return the mean number of messages received per connection
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public double getConnectionsMessagesInMean() ;
 
         /**
          * @return the standard deviation of the number of messages received per connection
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public double getConnectionsMessagesInStdDev() ;
 
         /**
          * @return the max number of messages received by a connection
-         * since last call to {@link #statsReset()}.
+         * since last call to {@link #reset}.
          */
         public int getConnectionsMessagesInMax();
 
         /**
          * @return the number of milliseconds the statistics have been started or reset
          */
-        public long getStatsOnMs();
+        public long getStartedMillis();
 
         /**
          * <p>Callback method invoked when a new connection is opened.</p>

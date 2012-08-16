@@ -18,7 +18,10 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.server.session.jmx.AbstractSessionManagerMBean;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
+@ManagedObject("Mongo Session Manager MBean")
 public class MongoSessionManagerMBean extends AbstractSessionManagerMBean
 {
 

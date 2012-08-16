@@ -106,6 +106,12 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
     }
 
     @Override
+    public void close()
+    {
+        goAway(session);
+    }
+
+    @Override
     public void close(boolean onlyOutput)
     {
         EndPoint endPoint = getEndPoint();

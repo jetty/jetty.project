@@ -120,12 +120,14 @@ public class LocalConnector extends AbstractConnector
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
-        logger.debug("getResponses");
+        LOG.debug("requests {}", BufferUtil.toUTF8String(requestsBuffer));
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(requestsBuffer);
         _connects.add(endp);
         endp.waitUntilClosedOrIdleFor(idleFor,units);
-        return endp.takeOutput();
+        ByteBuffer responses = endp.takeOutput();
+        LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
+        return responses;
     }
 
     /**
@@ -145,18 +147,18 @@ public class LocalConnector extends AbstractConnector
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-        logger.debug("accepting {}", acceptorID);
+        LOG.debug("accepting {}", acceptorID);
         LocalEndPoint endp = _connects.take();
         Connection connection = getDefaultConnectionFactory().newConnection(null, endp, null);
         endp.setConnection(connection);
         endp.onOpen();
-        connection.onOpen();
         connectionOpened(connection);
+        connection.onOpen();
     }
 
     public class LocalEndPoint extends ByteArrayEndPoint
     {
-        private CountDownLatch _closed = new CountDownLatch(1);
+        private final CountDownLatch _closed = new CountDownLatch(1);
 
         public LocalEndPoint()
         {
@@ -215,7 +217,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch(Exception e)
                 {
-                    logger.warn(e);
+                    LOG.warn(e);
                 }
             }
         }
@@ -237,7 +239,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch(Exception e)
                 {
-                    logger.warn(e);
+                    LOG.warn(e);
                 }
             }
         }

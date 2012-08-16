@@ -15,7 +15,8 @@
 //========================================================================
 package org.eclipse.jetty.websocket.server.helper;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 
 import java.util.LinkedList;
 

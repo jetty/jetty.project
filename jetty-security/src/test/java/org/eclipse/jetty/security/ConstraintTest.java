@@ -13,19 +13,14 @@
 
 package org.eclipse.jetty.security;
 
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,12 +39,15 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
-import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -59,7 +57,6 @@ public class ConstraintTest
     private static final String TEST_REALM = "TestRealm";
     private Server _server;
     private LocalConnector _connector;
-    private SessionHandler _session;
     private ConstraintSecurityHandler _security;
 
     @Before
@@ -70,7 +67,7 @@ public class ConstraintTest
         _server.setConnectors(new Connector[]{_connector});
 
         ContextHandler _context = new ContextHandler();
-        _session = new SessionHandler();
+        SessionHandler _session = new SessionHandler();
 
         HashLoginService _loginService = new HashLoginService(TEST_REALM);
         _loginService.putUser("user",new Password("password"));
@@ -82,7 +79,7 @@ public class ConstraintTest
         _context.setHandler(_session);
 
         _server.addBean(_loginService);
-        
+
         _security = new ConstraintSecurityHandler();
         _session.setHandler(_security);
         RequestHandler _handler = new RequestHandler();
@@ -134,52 +131,45 @@ public class ConstraintTest
         mapping5.setPathSpec("/forbid/post");
         mapping5.setConstraint(constraint5);
         mapping5.setMethod("POST");
-        
-        
-        Set<String> knownRoles=new HashSet<String>();
+
+
+        Set<String> knownRoles=new HashSet<>();
         knownRoles.add("user");
         knownRoles.add("administrator");
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
-                {
-                        mapping0, mapping1, mapping2, mapping3, mapping4, mapping5
-                }), knownRoles);
+        _security.setConstraintMappings(Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5), knownRoles);
     }
 
     @After
     public void stopServer() throws Exception
     {
-        if (_server.isRunning())
-        {
-            _server.stop();
-            _server.join();
-        }
+        _server.stop();
     }
 
     @Test
     public void testConstraints() throws Exception
     {
-        ConstraintMapping[] mappings =_security.getConstraintMappings().toArray(new ConstraintMapping[0]);
+        List<ConstraintMapping> mappings = new ArrayList<>(_security.getConstraintMappings());
 
-        assertTrue (mappings[0].getConstraint().isForbidden());
-        assertFalse(mappings[1].getConstraint().isForbidden());
-        assertFalse(mappings[2].getConstraint().isForbidden());
-        assertFalse(mappings[3].getConstraint().isForbidden());
+        assertTrue (mappings.get(0).getConstraint().isForbidden());
+        assertFalse(mappings.get(1).getConstraint().isForbidden());
+        assertFalse(mappings.get(2).getConstraint().isForbidden());
+        assertFalse(mappings.get(3).getConstraint().isForbidden());
 
-        assertFalse(mappings[0].getConstraint().isAnyRole());
-        assertTrue (mappings[1].getConstraint().isAnyRole());
-        assertFalse(mappings[2].getConstraint().isAnyRole());
-        assertFalse(mappings[3].getConstraint().isAnyRole());
+        assertFalse(mappings.get(0).getConstraint().isAnyRole());
+        assertTrue (mappings.get(1).getConstraint().isAnyRole());
+        assertFalse(mappings.get(2).getConstraint().isAnyRole());
+        assertFalse(mappings.get(3).getConstraint().isAnyRole());
 
-        assertFalse(mappings[0].getConstraint().hasRole("administrator"));
-        assertTrue (mappings[1].getConstraint().hasRole("administrator"));
-        assertTrue (mappings[2].getConstraint().hasRole("administrator"));
-        assertFalse(mappings[3].getConstraint().hasRole("administrator"));
+        assertFalse(mappings.get(0).getConstraint().hasRole("administrator"));
+        assertTrue (mappings.get(1).getConstraint().hasRole("administrator"));
+        assertTrue (mappings.get(2).getConstraint().hasRole("administrator"));
+        assertFalse(mappings.get(3).getConstraint().hasRole("administrator"));
 
-        assertTrue (mappings[0].getConstraint().getAuthenticate());
-        assertTrue (mappings[1].getConstraint().getAuthenticate());
-        assertTrue (mappings[2].getConstraint().getAuthenticate());
-        assertFalse(mappings[3].getConstraint().getAuthenticate());
+        assertTrue (mappings.get(0).getConstraint().getAuthenticate());
+        assertTrue (mappings.get(1).getConstraint().getAuthenticate());
+        assertTrue (mappings.get(2).getConstraint().getAuthenticate());
+        assertFalse(mappings.get(3).getConstraint().getAuthenticate());
     }
 
     @Test
@@ -286,6 +276,7 @@ public class ConstraintTest
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
+
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
@@ -322,9 +313,9 @@ public class ConstraintTest
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: 31\r\n" +
+                "Content-Length: 32\r\n" +
                 "\r\n" +
-        "j_username=user&j_password=wrong\r\n");
+                "j_username=user&j_password=wrong");
         assertThat(response,containsString("Location"));
 
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
@@ -332,7 +323,7 @@ public class ConstraintTest
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
                 "Content-Length: 35\r\n" +
                 "\r\n" +
-                "j_username=user&j_password=password\r\n");
+                "j_username=user&j_password=password");
         assertThat(response,startsWith("HTTP/1.1 302 "));
         assertThat(response,containsString("Location"));
         assertThat(response,containsString("/ctx/auth/info"));
@@ -419,7 +410,7 @@ public class ConstraintTest
         assertThat(response,startsWith("HTTP/1.1 403"));
         assertThat(response,containsString("!role"));
     }
-    
+
     @Test
     public void testFormNoCookies() throws Exception
     {
@@ -832,10 +823,10 @@ public class ConstraintTest
         String response;
         response = _connector.getResponses("GET /ctx/forbid/somethig HTTP/1.0\r\n\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 "));
-        
+
         response = _connector.getResponses("POST /ctx/forbid/post HTTP/1.0\r\n\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));
-        
+
         response = _connector.getResponses("GET /ctx/forbid/post HTTP/1.0\r\n\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 "));  // This is so stupid, but it is the S P E C
     }
@@ -884,7 +875,7 @@ public class ConstraintTest
 
                 public Map<String, String> getRoleRefMap()
                 {
-                    Map<String, String> map = new HashMap<String, String>();
+                    Map<String, String> map = new HashMap<>();
                     map.put("untranslated", "user");
                     return map;
                 }

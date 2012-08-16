@@ -38,7 +38,7 @@ public interface LifeCycle
      * @see #stop()
      * @see #isFailed()
      */
-    @ManagedOperation("Starts the instance")
+    @ManagedOperation(value="Starts the instance", impact="ACTION")
     public void start()
         throws Exception;
 
@@ -52,7 +52,7 @@ public interface LifeCycle
      * @see #start()
      * @see #isFailed()
      */
-    @ManagedOperation("Stops the instance")
+    @ManagedOperation(value="Stops the instance", impact="ACTION")
     public void stop()
         throws Exception;
 

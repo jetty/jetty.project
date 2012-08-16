@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -67,13 +68,13 @@ public class XmlConfiguration
     private static final Logger LOG = Log.getLogger(XmlConfiguration.class);
 
     private static final Class<?>[] __primitives =
-    { Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE };
+            {Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE};
 
-    private static final Class<?>[] __primitiveHolders =
-    { Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class };
+    private static final Class<?>[] __boxedPrimitives =
+            {Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class};
 
     private static final Class<?>[] __supportedCollections =
-    { ArrayList.class,ArrayQueue.class,HashSet.class,Queue.class,List.class,Set.class,Collection.class,};
+            {ArrayList.class, ArrayQueue.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class,};
 
     private static final Iterable<?> __factoryLoader;
 
@@ -81,14 +82,14 @@ public class XmlConfiguration
 
     static
     {
-        Iterable<?> loader=null;
+        Iterable<?> loader = null;
         try
         {
             // Use reflection to look up 1.6 service loader
             // loader=ServiceLoader.load(ConfigurationProcessorFactory.class);
             Class<?> slc = ClassLoader.getSystemClassLoader().loadClass("java.util.ServiceLoader");
             Method load = slc.getMethod("load",Class.class);
-            loader=(Iterable<?>)load.invoke(null,ConfigurationProcessorFactory.class);
+            loader = (Iterable<?>)load.invoke(null, ConfigurationProcessorFactory.class);
         }
         catch(Exception e)
         {
@@ -96,16 +97,16 @@ public class XmlConfiguration
         }
         finally
         {
-            __factoryLoader=loader;
+            __factoryLoader = loader;
         }
     }
 
     /* ------------------------------------------------------------ */
-    private URL _url;
-    private String _dtd;
+    private final Map<String, Object> _idMap = new HashMap<>();
+    private final Map<String, String> _propertyMap = new HashMap<>();
+    private final URL _url;
+    private final String _dtd;
     private ConfigurationProcessor _processor;
-    private final Map<String, Object> _idMap = new HashMap<String, Object>();
-    private final Map<String, String> _propertyMap = new HashMap<String, String>();
 
     /* ------------------------------------------------------------ */
     private synchronized static XmlParser initParser()
@@ -115,20 +116,22 @@ public class XmlConfiguration
         {
             URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd",true);
             URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd",true);
-            parser.redirectEntity("configure.dtd",config76);
+            URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd",true);
+            parser.redirectEntity("configure.dtd",config90);
             parser.redirectEntity("configure_1_0.dtd",config60);
             parser.redirectEntity("configure_1_1.dtd",config60);
             parser.redirectEntity("configure_1_2.dtd",config60);
             parser.redirectEntity("configure_1_3.dtd",config60);
             parser.redirectEntity("configure_6_0.dtd",config60);
             parser.redirectEntity("configure_7_6.dtd",config76);
+            parser.redirectEntity("configure_9_0.dtd",config90);
 
-            parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config76);
-            parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config76);
-            parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config76);
+            parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config90);
+            parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config90);
+            parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config90);
 
-            parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config76);
-            parser.redirectEntity("-//Jetty//Configure//EN",config76);
+            parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config90);
+            parser.redirectEntity("-//Jetty//Configure//EN",config90);
         }
         catch (ClassNotFoundException e)
         {
@@ -167,11 +170,12 @@ public class XmlConfiguration
      */
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
-        configuration = "<?xml version=\"1.0\"  encoding=\"ISO-8859-1\"?>\n<!DOCTYPE Configure PUBLIC \"-//Mort Bay Consulting//DTD Configure 1.2//EN\" \"http://jetty.eclipse.org/configure_1_2.dtd\">"
+        configuration = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
                 + configuration;
         InputSource source = new InputSource(new StringReader(configuration));
         synchronized (__parser)
         {
+            _url=null;
             setConfig( __parser.parse(source));
             _dtd=__parser.getDTD();
         }
@@ -190,6 +194,7 @@ public class XmlConfiguration
         InputSource source = new InputSource(configuration);
         synchronized (__parser)
         {
+            _url=null;
             setConfig(__parser.parse(source));
             _dtd=__parser.getDTD();
         }
@@ -335,15 +340,60 @@ public class XmlConfiguration
             Class<?> oClass = nodeClass(_config);
 
             String id = _config.getAttribute("id");
-            Object obj = id == null?null:_idMap.get(id);
+            Object obj = id == null ? null : _idMap.get(id);
 
+            
+            
+            int index = _config.size();
             if (obj == null && oClass != null)
-                obj = oClass.newInstance();
+            {
+                Map<String, Object> namedArgMap = new HashMap<String, Object>();
+                
+                List<Object> arguments = new LinkedList<>();
+                for (int i = 0; i < _config.size(); i++)
+                {
+                    Object o = _config.get(i);
+                    if (o instanceof String)
+                    {
+                        continue;
+                    }
+                    XmlParser.Node node = (XmlParser.Node)o;
+                    
+                    if (!(node.getTag().equals("Arg")))
+                    {
+                        index = i;
+                        break;
+                    }
+                    else
+                    {
+                        String namedAttribute = node.getAttribute("name");
+                        if ( namedAttribute != null )
+                        {
+                            namedArgMap.put(namedAttribute,value(obj,(XmlParser.Node)o));
+                        }
+                        
+                        arguments.add(value(obj, (XmlParser.Node)o));
+                    }
+                }
 
-            if (oClass != null && !oClass.isInstance(obj))
-                throw new ClassCastException(oClass.toString()+" in "+_url);
+                try
+                {
+                    if ( namedArgMap.size() > 0 )
+                    {
+                        obj = TypeUtil.construct(oClass, arguments.toArray(), namedArgMap);
+                    }
+                    else
+                    {
+                        obj = TypeUtil.construct(oClass, arguments.toArray());
+                    }
+                }
+                catch (NoSuchMethodException x)
+                {
+                    throw new IllegalStateException("No suitable constructor on " + oClass, x);
+                }
+            }
 
-            configure(obj,_config,0);
+            configure(obj, _config, index);
             return obj;
         }
 
@@ -383,24 +433,35 @@ public class XmlConfiguration
                 try
                 {
                     String tag = node.getTag();
-                    if ("Set".equals(tag))
-                        set(obj,node);
-                    else if ("Put".equals(tag))
-                        put(obj,node);
-                    else if ("Call".equals(tag))
-                        call(obj,node);
-                    else if ("Get".equals(tag))
-                        get(obj,node);
-                    else if ("New".equals(tag))
-                        newObj(obj,node);
-                    else if ("Array".equals(tag))
-                        newArray(obj,node);
-                    else if ("Ref".equals(tag))
-                        refObj(obj,node);
-                    else if ("Property".equals(tag))
-                        propertyObj(node);
-                    else
-                        throw new IllegalStateException("Unknown tag: " + tag+" in "+_url);
+                    switch (tag)
+                    {
+                        case "Set":
+                            set(obj, node);
+                            break;
+                        case "Put":
+                            put(obj, node);
+                            break;
+                        case "Call":
+                            call(obj, node);
+                            break;
+                        case "Get":
+                            get(obj, node);
+                            break;
+                        case "New":
+                            newObj(obj, node);
+                            break;
+                        case "Array":
+                            newArray(obj, node);
+                            break;
+                        case "Ref":
+                            refObj(obj, node);
+                            break;
+                        case "Property":
+                            propertyObj(node);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unknown tag: " + tag + " in " + _url);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -447,15 +508,7 @@ public class XmlConfiguration
                 set.invoke(obj,arg);
                 return;
             }
-            catch (IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (IllegalAccessException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (NoSuchMethodException e)
+            catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
             {
                 LOG.ignore(e);
             }
@@ -469,19 +522,7 @@ public class XmlConfiguration
                 set.invoke(obj,arg);
                 return;
             }
-            catch (NoSuchFieldException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (IllegalArgumentException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (IllegalAccessException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (NoSuchMethodException e)
+            catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
             {
                 LOG.ignore(e);
             }
@@ -517,11 +558,7 @@ public class XmlConfiguration
                         sets[s].invoke(obj,arg);
                         return;
                     }
-                    catch (IllegalArgumentException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    catch (IllegalAccessException e)
+                    catch (IllegalArgumentException | IllegalAccessException e)
                     {
                         LOG.ignore(e);
                     }
@@ -554,7 +591,7 @@ public class XmlConfiguration
                         {
                             if (sClass.equals(__primitives[t]))
                             {
-                                sClass = __primitiveHolders[t];
+                                sClass = __boxedPrimitives[t];
                                 break;
                             }
                         }
@@ -564,15 +601,7 @@ public class XmlConfiguration
                     set.invoke(obj,arg);
                     return;
                 }
-                catch (NoSuchMethodException e)
-                {
-                    LOG.ignore(e);
-                }
-                catch (IllegalAccessException e)
-                {
-                    LOG.ignore(e);
-                }
-                catch (InstantiationException e)
+                catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
                 {
                     LOG.ignore(e);
                 }
@@ -595,10 +624,10 @@ public class XmlConfiguration
                 if (collectionType.isAssignableFrom(ArrayList.class))
                     collection = convertArrayToArrayList(array);
                 else if (collectionType.isAssignableFrom(HashSet.class))
-                    collection = new HashSet<Object>(convertArrayToArrayList(array));
+                    collection = new HashSet<>(convertArrayToArrayList(array));
                 else if (collectionType.isAssignableFrom(ArrayQueue.class))
                 {
-                    ArrayQueue<Object> q= new ArrayQueue<Object>();
+                    ArrayQueue<Object> q= new ArrayQueue<>();
                     q.addAll(convertArrayToArrayList(array));
                     collection=q;
                 }
@@ -612,7 +641,7 @@ public class XmlConfiguration
         private static ArrayList<Object> convertArrayToArrayList(Object array)
         {
             int length = Array.getLength(array);
-            ArrayList<Object> list = new ArrayList<Object>(length);
+            ArrayList<Object> list = new ArrayList<>(length);
             for (int i = 0; i < length; i++)
                 list.add(Array.get(array,i));
             return list;
@@ -750,12 +779,14 @@ public class XmlConfiguration
         /*
          * Create a new value object.
          *
-         * @param obj @param node @return @exception Exception
+         * @param obj
+         * @param node
+         *
+         * @return @exception Exception
          */
         private Object newObj(Object obj, XmlParser.Node node) throws Exception
         {
             Class<?> oClass = nodeClass(node);
-            String id = node.getAttribute("id");
             int size = 0;
             int argi = node.size();
             for (int i = 0; i < node.size(); i++)
@@ -771,54 +802,55 @@ public class XmlConfiguration
                 size++;
             }
 
+            Map<String, Object> namedArgMap = new HashMap<String, Object>();
+            List<Object> arguments = new LinkedList<>();
+            
             Object[] arg = new Object[size];
             for (int i = 0, j = 0; j < size; i++)
             {
                 Object o = node.get(i);
+                
+                XmlParser.Node argNode = (XmlParser.Node)o;
                 if (o instanceof String)
+                {
                     continue;
+                }
+                
                 arg[j++] = value(obj,(XmlParser.Node)o);
+                
+                String namedAttribute = argNode.getAttribute("name");
+                if ( namedAttribute != null )
+                {
+                    namedArgMap.put(namedAttribute,value(obj,(XmlParser.Node)o));
+                }
+                
+                arguments.add(value(obj,(XmlParser.Node)o));
             }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("XML new " + oClass);
 
-            // Lets just try all constructors for now
-            Constructor<?>[] constructors = oClass.getConstructors();
-            for (int c = 0; constructors != null && c < constructors.length; c++)
+            try
             {
-                if (constructors[c].getParameterTypes().length != size)
-                    continue;
-
-                Object n = null;
-                boolean called = false;
-                try
+                Object n;
+                if ( namedArgMap.size() > 0 )
                 {
-                    n = constructors[c].newInstance(arg);
-                    called = true;
+                   LOG.debug("using named mapping");
+                   n = TypeUtil.construct(oClass, arguments.toArray(), namedArgMap);
                 }
-                catch (IllegalAccessException e)
+                else
                 {
-                    LOG.ignore(e);
+                    LOG.debug("using normal mapping");
+                    n = TypeUtil.construct(oClass, arguments.toArray());
                 }
-                catch (InstantiationException e)
-                {
-                    LOG.ignore(e);
-                }
-                catch (IllegalArgumentException e)
-                {
-                    LOG.ignore(e);
-                }
-                if (called)
-                {
-                    if (id != null)
-                        _idMap.put(id,n);
-                    configure(n,node,argi);
-                    return n;
-                }
+                
+                configure(n,node,argi);
+                return n;
             }
-
-            throw new IllegalStateException("No Constructor: " + node + " on " + obj);
+            catch (NoSuchMethodException e)
+            {
+                throw new IllegalStateException("No suitable constructor: " + node + " on " + obj);
+            }
         }
 
         /* ------------------------------------------------------------ */
@@ -853,14 +885,21 @@ public class XmlConfiguration
                 aClass = TypeUtil.fromName(type);
                 if (aClass == null)
                 {
-                    if ("String".equals(type))
-                        aClass = java.lang.String.class;
-                    else if ("URL".equals(type))
-                        aClass = java.net.URL.class;
-                    else if ("InetAddress".equals(type))
-                        aClass = java.net.InetAddress.class;
-                    else
-                        aClass = Loader.loadClass(XmlConfiguration.class,type,true);
+                    switch (type)
+                    {
+                        case "String":
+                            aClass = String.class;
+                            break;
+                        case "URL":
+                            aClass = URL.class;
+                            break;
+                        case "InetAddress":
+                            aClass = InetAddress.class;
+                            break;
+                        default:
+                            aClass = Loader.loadClass(XmlConfiguration.class, type, true);
+                            break;
+                    }
                 }
             }
 
@@ -890,7 +929,7 @@ public class XmlConfiguration
         {
             String id = node.getAttribute("id");
 
-            Map<Object, Object> map = new HashMap<Object, Object>();
+            Map<Object, Object> map = new HashMap<>();
             if (id != null)
                 _idMap.put(id,map);
 
@@ -1180,7 +1219,7 @@ public class XmlConfiguration
     public static void main(final String[] args) throws Exception
     {
 
-        final AtomicReference<Throwable> exception = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> exception = new AtomicReference<>();
 
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
@@ -1198,11 +1237,7 @@ public class XmlConfiguration
                         properties = (Properties)config.getMethod("getProperties").invoke(null);
                         LOG.debug("org.eclipse.jetty.start.Config properties = {}",properties);
                     }
-                    catch (NoClassDefFoundError e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    catch (ClassNotFoundException e)
+                    catch (NoClassDefFoundError | ClassNotFoundException e)
                     {
                         LOG.ignore(e);
                     }
@@ -1240,7 +1275,7 @@ public class XmlConfiguration
                                 configuration.getIdMap().putAll(last.getIdMap());
                             if (properties.size() > 0)
                             {
-                                Map<String, String> props = new HashMap<String, String>();
+                                Map<String, String> props = new HashMap<>();
                                 for (Object key : properties.keySet())
                                 {
                                     props.put(key.toString(),String.valueOf(properties.get(key)));

@@ -75,7 +75,6 @@ public class GzipTester
 
     public void assertIsResponseGzipCompressed(String requestedFilename, String serverFilename) throws Exception
     {
-
         System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -92,7 +91,7 @@ public class GzipTester
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
 
         // Assert the response headers
-//        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
+        // Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
         Assert.assertThat("Response.header[Content-Length]",response.get("Content-Length"),notNullValue());
         Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType));
 

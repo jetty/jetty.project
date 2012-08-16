@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import javax.servlet.ServletException;
@@ -23,8 +24,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /* ------------------------------------------------------------ */
 /** A collection of handlers.  
@@ -35,8 +38,8 @@ import org.eclipse.jetty.util.MultiException;
  * handlers.
  * <p>
  * 
- * @org.apache.xbean.XBean
  */
+@ManagedObject("Handler of multiple handlers")
 public class HandlerCollection extends AbstractHandlerContainer
 {
     private final boolean _mutableWhenRunning;
@@ -59,6 +62,8 @@ public class HandlerCollection extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
+    @Override
+    @ManagedAttribute("Wrapped handlers")
     public Handler[] getHandlers()
     {
         return _handlers;
@@ -274,7 +279,7 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void addHandler(Handler handler)
     {
-        setHandlers((Handler[])LazyList.addToArray(getHandlers(), handler, Handler.class));
+        setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
     }
     
     /* ------------------------------------------------------------ */
@@ -283,17 +288,16 @@ public class HandlerCollection extends AbstractHandlerContainer
         Handler[] handlers = getHandlers();
         
         if (handlers!=null && handlers.length>0 )
-            setHandlers((Handler[])LazyList.removeFromArray(handlers, handler));
+            setHandlers(ArrayUtil.removeFromArray(handlers, handler));
     }
 
     /* ------------------------------------------------------------ */
     @Override
-    protected Object expandChildren(Object list, Class<?> byClass)
+    protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
-        Handler[] handlers = getHandlers();
-        for (int i=0;handlers!=null && i<handlers.length;i++)
-            list=expandHandler(handlers[i], list, byClass);
-        return list;
+        if (getHandlers()!=null)
+            for (Handler h:getHandlers())
+                expandHandler(h, list, byClass);
     }
 
     /* ------------------------------------------------------------ */

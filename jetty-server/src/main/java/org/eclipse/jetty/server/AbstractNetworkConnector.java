@@ -92,8 +92,16 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
+        // Interrupting is often sufficient to close the channel
+        interruptAcceptors();
+    }
+
+    @Override
+    protected boolean isAccepting()
+    {
+        return super.isAccepting() && isOpen();
     }
 
     @Override

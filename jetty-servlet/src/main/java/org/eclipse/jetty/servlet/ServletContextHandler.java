@@ -53,7 +53,8 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 
 /* ------------------------------------------------------------ */
@@ -67,6 +68,7 @@ import org.eclipse.jetty.util.LazyList;
  * This class should have been called ServletContext, but this would have
  * cause confusion with {@link ServletContext}.
  */
+@ManagedObject("Servlet Context Handler")
 public class ServletContextHandler extends ContextHandler
 {   
     public final static int SESSIONS=1;
@@ -74,7 +76,7 @@ public class ServletContextHandler extends ContextHandler
     public final static int NO_SESSIONS=0;
     public final static int NO_SECURITY=0;
 
-    protected final List<Decorator> _decorators= new ArrayList<Decorator>();
+    protected final List<Decorator> _decorators= new ArrayList<>();
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
@@ -82,7 +84,7 @@ public class ServletContextHandler extends ContextHandler
     protected HandlerWrapper _wrapper;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
-    protected Object _restrictedContextListeners;
+    protected List<ServletContextListener> _restrictedContextListeners = new ArrayList<>();
     private boolean _restrictListeners = true;
     
     /* ------------------------------------------------------------ */
@@ -263,6 +265,7 @@ public class ServletContextHandler extends ContextHandler
     /**
      * @return Returns the securityHandler.
      */
+    @ManagedAttribute(value="context security handler", readonly=true)
     public SecurityHandler getSecurityHandler()
     {
         if (_securityHandler==null && (_options&SECURITY)!=0 && !isStarted()) 
@@ -275,6 +278,7 @@ public class ServletContextHandler extends ContextHandler
     /**
      * @return Returns the servletHandler.
      */
+    @ManagedAttribute(value="context servlet handler", readonly=true)
     public ServletHandler getServletHandler()
     {
         if (_servletHandler==null && !isStarted()) 
@@ -286,6 +290,7 @@ public class ServletContextHandler extends ContextHandler
     /**
      * @return Returns the sessionHandler.
      */
+    @ManagedAttribute(value="context session handler", readonly=true)
     public SessionHandler getSessionHandler()
     {
         if (_sessionHandler==null && (_options&SESSIONS)!=0 && !isStarted()) 
@@ -384,7 +389,9 @@ public class ServletContextHandler extends ContextHandler
     public void restrictEventListener (EventListener e)
     {
         if (_restrictListeners && e instanceof ServletContextListener)
-            _restrictedContextListeners = LazyList.add(_restrictedContextListeners, e);
+        {
+            _restrictedContextListeners.add((ServletContextListener)e);
+        }
     }
 
     public boolean isRestrictListeners() {
@@ -400,7 +407,7 @@ public class ServletContextHandler extends ContextHandler
         try
         {
             //toggle state of the dynamic API so that the listener cannot use it
-            if (LazyList.contains(_restrictedContextListeners, l))
+            if(_restrictedContextListeners.contains(l))
                 this.getServletContext().setEnabled(false);
             
             super.callContextInitialized(l, e);

@@ -14,8 +14,14 @@ package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+
+@ManagedObject("Dumpable Object")
 public interface Dumpable
 {
+    @ManagedOperation(value="Dump the nested Object state as a String", impact="INFO")
     String dump();
+    
     void dump(Appendable out,String indent) throws IOException;
 }

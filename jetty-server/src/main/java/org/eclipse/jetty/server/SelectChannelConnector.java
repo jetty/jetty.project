@@ -31,12 +31,14 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * <p>Implementation of {@link NetworkConnector} based on NIO classes.</p>
  */
+@ManagedObject("HTTP connector using NIO ByteChannels and Selectors")
 public class SelectChannelConnector extends AbstractNetworkConnector
 {
     private final SelectorManager _manager;
@@ -85,6 +87,13 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         setDefaultConnectionFactory(new HttpServerConnectionFactory(this));
     }
 
+    @Override
+    public boolean isOpen()
+    {
+        ServerSocketChannel channel = _acceptChannel;
+        return channel!=null && channel.isOpen();
+    }
+
     /**
      * @return whether this connector uses a channel inherited from the JVM.
      * @see System#inheritedChannel()
@@ -122,7 +131,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
                 if (channel instanceof ServerSocketChannel)
                     serverChannel = (ServerSocketChannel)channel;
                 else
-                    logger.warn("Unable to use System.inheritedChannel() [{}]. Trying a new ServerSocketChannel at {}:{}", channel, getHost(), getPort());
+                    LOG.warn("Unable to use System.inheritedChannel() [{}]. Trying a new ServerSocketChannel at {}:{}", channel, getHost(), getPort());
             }
 
             if (serverChannel == null)
@@ -148,16 +157,30 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         ServerSocketChannel serverChannel = _acceptChannel;
+        _acceptChannel = null;
+
+
         if (serverChannel != null)
         {
             removeBean(serverChannel);
+
+            // If the interrupt did not close it, we should close it
             if (serverChannel.isOpen())
-                serverChannel.close();
+            {
+                try
+                {
+                    serverChannel.close();
+                }
+                catch (IOException e)
+                {
+                    LOG.warn(e);
+                }
+            }
         }
-        _acceptChannel = null;
+        // super.close();
         _localPort = -2;
     }
 
@@ -187,7 +210,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         }
         catch (SocketException e)
         {
-            logger.ignore(e);
+            LOG.ignore(e);
         }
     }
 
@@ -291,8 +314,8 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         @Override
         public void connectionOpened(Connection connection)
         {
-            super.connectionOpened(connection);
             SelectChannelConnector.this.connectionOpened(connection);
+            super.connectionOpened(connection);
         }
 
         @Override
@@ -305,8 +328,8 @@ public class SelectChannelConnector extends AbstractNetworkConnector
         @Override
         public void connectionUpgraded(EndPoint endpoint, Connection oldConnection)
         {
-            super.connectionUpgraded(endpoint, oldConnection);
             SelectChannelConnector.this.connectionUpgraded(oldConnection, endpoint.getConnection());
+            super.connectionUpgraded(endpoint, oldConnection);
         }
 
         @Override
@@ -321,4 +344,5 @@ public class SelectChannelConnector extends AbstractNetworkConnector
             return SelectChannelConnector.this.newConnection(channel, endpoint, attachment);
         }
     }
+
 }

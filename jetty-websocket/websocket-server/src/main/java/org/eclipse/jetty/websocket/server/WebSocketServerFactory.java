@@ -33,8 +33,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -145,14 +145,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     {
         for (WebSocketSession session : sessions)
         {
-            try
-            {
-                session.close();
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to close session",e);
-            }
+            session.close();
         }
         sessions.clear();
     }

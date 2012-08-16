@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -51,7 +52,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public class SPDYClient
 {
     private final Map<String, ConnectionFactory> factories = new ConcurrentHashMap<>();
-    private final ConnectionFactory defaultAsyncConnectionFactory = new ClientSPDYAsyncConnectionFactory();
+    private final ConnectionFactory defaultConnectionFactory = new ClientSPDYConnectionFactory();
     private final short version;
     private final Factory factory;
     private volatile SocketAddress bindAddress;
@@ -141,7 +142,7 @@ public class SPDYClient
         return null;
     }
 
-    public ConnectionFactory getAsyncConnectionFactory(String protocol)
+    public ConnectionFactory getConnectionFactory(String protocol)
     {
         for (Map.Entry<String, ConnectionFactory> entry : factories.entrySet())
         {
@@ -156,19 +157,19 @@ public class SPDYClient
         return null;
     }
 
-    public void putAsyncConnectionFactory(String protocol, ConnectionFactory factory)
+    public void putConnectionFactory(String protocol, ConnectionFactory factory)
     {
         factories.put(protocol, factory);
     }
 
-    public ConnectionFactory removeAsyncConnectionFactory(String protocol)
+    public ConnectionFactory removeConnectionFactory(String protocol)
     {
         return factories.remove(protocol);
     }
 
-    public ConnectionFactory getDefaultAsyncConnectionFactory()
+    public ConnectionFactory getDefaultConnectionFactory()
     {
-        return defaultAsyncConnectionFactory;
+        return defaultConnectionFactory;
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
@@ -185,7 +186,7 @@ public class SPDYClient
         return FlowControlStrategyFactory.newFlowControlStrategy(version);
     }
 
-    public void replaceAsyncConnection(EndPoint endPoint, Connection connection)
+    public void replaceConnection(EndPoint endPoint, Connection connection)
     {
         Connection oldConnection = endPoint.getConnection();
         endPoint.setConnection(connection);
@@ -201,33 +202,21 @@ public class SPDYClient
         private final Executor threadPool;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
-        private final long defaultTimeout = 30000;
         private final long idleTimeout;
 
-        //TODO: Replace with Builder?!
         public Factory()
         {
-            this(null, null, 30000);
+            this(null, null);
         }
 
         public Factory(SslContextFactory sslContextFactory)
         {
-            this(null, sslContextFactory, 30000);
-        }
-
-        public Factory(SslContextFactory sslContextFactory, long idleTimeout)
-        {
-            this(null, sslContextFactory, idleTimeout);
+            this(null, sslContextFactory);
         }
 
         public Factory(Executor threadPool)
         {
-            this(threadPool, null, 30000);
-        }
-
-        public Factory(Executor threadPool, long idleTimeout)
-        {
-            this(threadPool, null, idleTimeout);
+            this(threadPool, null);
         }
 
         public Factory(Executor threadPool, SslContextFactory sslContextFactory)
@@ -250,7 +239,7 @@ public class SPDYClient
             selector = new ClientSelectorManager();
             addBean(selector);
 
-            factories.put("spdy/2", new ClientSPDYAsyncConnectionFactory());
+            factories.put("spdy/2", new ClientSPDYConnectionFactory());
         }
 
         public SPDYClient newSPDYClient(short version)
@@ -314,9 +303,8 @@ public class SPDYClient
                 long clientIdleTimeout = attachment.client.getIdleTimeout();
                 if (clientIdleTimeout < 0)
                     clientIdleTimeout = idleTimeout;
-                EndPoint result = new SelectChannelEndPoint(channel, selectSet, key, scheduler, clientIdleTimeout);
 
-                return result;
+                return new SelectChannelEndPoint(channel, selectSet, key, scheduler, clientIdleTimeout);
             }
 
             @Override
@@ -357,7 +345,7 @@ public class SPDYClient
                     }
                     else
                     {
-                        ConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
+                        ConnectionFactory connectionFactory = new ClientSPDYConnectionFactory();
                         Connection connection = connectionFactory.newConnection(channel, endPoint, attachment);
                         endPoint.setConnection(connection);
                         return connection;
@@ -401,7 +389,7 @@ public class SPDYClient
         }
     }
 
-    private static class ClientSPDYAsyncConnectionFactory implements ConnectionFactory
+    private static class ClientSPDYConnectionFactory implements ConnectionFactory
     {
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
@@ -415,7 +403,6 @@ public class SPDYClient
             Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
 
             SPDYConnection connection = new ClientSPDYConnection(endPoint, factory.bufferPool, parser, factory);
-            endPoint.setConnection(connection);
 
             FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 

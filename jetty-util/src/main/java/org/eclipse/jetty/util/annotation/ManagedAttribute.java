@@ -20,30 +20,32 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target( { ElementType.METHOD, ElementType.FIELD } )
+@Target( { ElementType.METHOD } )
 public @interface ManagedAttribute
 {
     /**
-     * Description of the Managed Object
+     * Description of the Managed Attribute
      * 
-     * @return
+     * @returngit checkout
      */
     String value() default "Not Specified";
     
     /**
+     * name to use for the attribute
+     * 
+     * @return the name of the attribute
+     */
+    String name() default "";
+    
+    /**
      * Is the managed field read-only?
+     * 
+     * Required only when a setter exists but should not be exposed via JMX
      * 
      * @return true if readonly
      */
     boolean readonly() default false;
-    
-    /**
-     * Is the managed field itself a Managed Object?
-     *
-     * @return true if the target is a Managed Object
-     */
-    boolean managed() default false;
-    
+  
     /**
      * Does the managed field exist on a proxy object?
      * 
@@ -52,13 +54,6 @@ public @interface ManagedAttribute
      */
     boolean proxied() default false;
     
-    /**
-     * If is a field references a getter that doesn't conform to standards for discovery
-     * it can be set here.
-     * 
-     * @return the full name of the getter in question
-     */
-    String getter() default "";
     
     /**
      * If is a field references a setter that doesn't conform to standards for discovery

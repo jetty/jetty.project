@@ -1797,42 +1797,42 @@ public class LazyListTest
     
     
     /**
-     * Tests for {@link LazyList#array2List(Object[])}
+     * Tests for {@link ArrayUtil#asMutableList(Object[])}
      */
     @Test
     public void testArray2List_NullInput()
     {
         Object input[] = null;
         
-        Object list = LazyList.array2List(input);
+        Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
         assertTrue("Should be a List object", list instanceof List);
         assertEquals(0, LazyList.size(list));
     }
 
     /**
-     * Tests for {@link LazyList#array2List(Object[])}
+     * Tests for {@link ArrayUtil#asMutableList(Object[])}
      */
     @Test
     public void testArray2List_EmptyInput()
     {
         String input[] = new String[0];
         
-        Object list = LazyList.array2List(input);
+        Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
         assertTrue("Should be a List object", list instanceof List);
         assertEquals(0, LazyList.size(list));
     }
 
     /**
-     * Tests for {@link LazyList#array2List(Object[])}
+     * Tests for {@link ArrayUtil#asMutableList(Object[])}
      */
     @Test
     public void testArray2List_SingleInput()
     {
         String input[] = new String[] { "a" };
         
-        Object list = LazyList.array2List(input);
+        Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
         assertTrue("Should be a List object", list instanceof List);
         assertEquals(1, LazyList.size(list));
@@ -1840,14 +1840,14 @@ public class LazyListTest
     }
 
     /**
-     * Tests for {@link LazyList#array2List(Object[])}
+     * Tests for {@link ArrayUtil#asMutableList(Object[])}
      */
     @Test
     public void testArray2List_MultiInput()
     {
         String input[] = new String[] { "a", "b", "c" };
         
-        Object list = LazyList.array2List(input);
+        Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
         assertTrue("Should be a List object", list instanceof List);
         assertEquals(3, LazyList.size(list));
@@ -1857,7 +1857,7 @@ public class LazyListTest
     }
     
     /**
-     * Tests for {@link LazyList#array2List(Object[])}
+     * Tests for {@link ArrayUtil#asMutableList(Object[])}
      */
     @Test
     public void testArray2List_GenericsInput()
@@ -1865,7 +1865,7 @@ public class LazyListTest
         String input[] = new String[] { "a", "b", "c" };
         
         // Test the Generics definitions for array2List
-        List<String> list = LazyList.array2List(input);
+        List<String> list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
         assertTrue("Should be a List object", list instanceof List);
         assertEquals(3, LazyList.size(list));
@@ -1875,14 +1875,14 @@ public class LazyListTest
     }
 
     /**
-     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     * Tests for {@link ArrayUtil#addToArray(Object[], Object, Class)}
      */
     @Test
     public void testAddToArray_NullInput_NullItem()
     {
         Object input[] = null;
         
-        Object arr[] = LazyList.addToArray(input,null,Object.class);
+        Object arr[] = ArrayUtil.addToArray(input,null,Object.class);
         assertNotNull(arr);
         if(STRICT) {
             // Adding null item to array should result in nothing added?
@@ -1893,7 +1893,7 @@ public class LazyListTest
     }
 
     /**
-     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     * Tests for {@link ArrayUtil#addToArray(Object[], Object, Class)}
      */
     @Test
     public void testAddToArray_NullNullNull()
@@ -1904,7 +1904,7 @@ public class LazyListTest
         // Harsh test case.
         Object input[] = null;
         
-        Object arr[] = LazyList.addToArray(input,null,null);
+        Object arr[] = ArrayUtil.addToArray(input,null,null);
         assertNotNull(arr);
         if(STRICT) {
             // Adding null item to array should result in nothing added?
@@ -1915,34 +1915,34 @@ public class LazyListTest
     }
 
     /**
-     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     * Tests for {@link ArrayUtil#addToArray(Object[], Object, Class)}
      */
     @Test
     public void testAddToArray_NullInput_SimpleItem()
     {
         Object input[] = null;
         
-        Object arr[] = LazyList.addToArray(input,"a",String.class);
+        Object arr[] = ArrayUtil.addToArray(input,"a",String.class);
         assertNotNull(arr);
         assertEquals(1, arr.length);
         assertEquals("a", arr[0]);
         
         // Same test, but with an undefined type
-        arr = LazyList.addToArray(input,"b",null);
+        arr = ArrayUtil.addToArray(input,"b",null);
         assertNotNull(arr);
         assertEquals(1, arr.length);
         assertEquals("b", arr[0]);
     }
 
     /**
-     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     * Tests for {@link ArrayUtil#addToArray(Object[], Object, Class)}
      */
     @Test
     public void testAddToArray_EmptyInput_NullItem()
     {
         String input[] = new String[0];
         
-        String arr[] = LazyList.addToArray(input,null,Object.class);
+        String arr[] = ArrayUtil.addToArray(input,null,Object.class);
         assertNotNull(arr);
         if(STRICT) {
             // Adding null item to array should result in nothing added?
@@ -1953,28 +1953,28 @@ public class LazyListTest
     }
 
     /**
-     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     * Tests for {@link ArrayUtil#addToArray(Object[], Object, Class)}
      */
     @Test
     public void testAddToArray_EmptyInput_SimpleItem()
     {
         String input[] = new String[0];
         
-        String arr[] = LazyList.addToArray(input,"a",String.class);
+        String arr[] = ArrayUtil.addToArray(input,"a",String.class);
         assertNotNull(arr);
         assertEquals(1, arr.length);
         assertEquals("a", arr[0]);
     }
 
     /**
-     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     * Tests for {@link ArrayUtil#addToArray(Object[], Object, Class)}
      */
     @Test
     public void testAddToArray_SingleInput_NullItem()
     {
         String input[] = new String[] { "z" };
         
-        String arr[] = LazyList.addToArray(input,null,Object.class);
+        String arr[] = ArrayUtil.addToArray(input,null,Object.class);
         assertNotNull(arr);
         if(STRICT) {
             // Should a null item be added to an array?
@@ -1987,14 +1987,14 @@ public class LazyListTest
     }
 
     /**
-     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     * Tests for {@link ArrayUtil#addToArray(Object[], Object, Class)}
      */
     @Test
     public void testAddToArray_SingleInput_SimpleItem()
     {
         String input[] = new String[] { "z" };
         
-        String arr[] = LazyList.addToArray(input,"a",String.class);
+        String arr[] = ArrayUtil.addToArray(input,"a",String.class);
         assertNotNull(arr);
         assertEquals(2, arr.length);
         assertEquals("z", arr[0]);
@@ -2002,77 +2002,77 @@ public class LazyListTest
     }
 
     /**
-     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     * Tests for {@link ArrayUtil#removeFromArray(Object[], Object)}
      */
     @Test
     public void testRemoveFromArray_NullInput_NullItem() {
         Object input[] = null;
         
-        Object arr[] = LazyList.removeFromArray(input,null);
+        Object arr[] = ArrayUtil.removeFromArray(input,null);
         assertNull(arr);
     }
     
     /**
-     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     * Tests for {@link ArrayUtil#removeFromArray(Object[], Object)}
      */
     @Test
     public void testRemoveFromArray_NullInput_SimpleItem() {
         Object input[] = null;
         
-        Object arr[] = LazyList.removeFromArray(input,"a");
+        Object arr[] = ArrayUtil.removeFromArray(input,"a");
         assertNull(arr);
     }
 
     /**
-     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     * Tests for {@link ArrayUtil#removeFromArray(Object[], Object)}
      */
     @Test
     public void testRemoveFromArray_EmptyInput_NullItem() {
         String input[] = new String[0];
         
-        String arr[] = LazyList.removeFromArray(input,null);
+        String arr[] = ArrayUtil.removeFromArray(input,null);
         assertNotNull("Should not be null", arr);
         assertEquals(0, arr.length);
     }
 
     /**
-     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     * Tests for {@link ArrayUtil#removeFromArray(Object[], Object)}
      */
     @Test
     public void testRemoveFromArray_EmptyInput_SimpleItem() {
         String input[] = new String[0];
         
-        String arr[] = LazyList.removeFromArray(input,"a");
+        String arr[] = ArrayUtil.removeFromArray(input,"a");
         assertNotNull("Should not be null", arr);
         assertEquals(0, arr.length);
     }
 
     /**
-     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     * Tests for {@link ArrayUtil#removeFromArray(Object[], Object)}
      */
     @Test
     public void testRemoveFromArray_SingleInput() {
         String input[] = new String[] { "a" };
         
-        String arr[] = LazyList.removeFromArray(input,null);
+        String arr[] = ArrayUtil.removeFromArray(input,null);
         assertNotNull("Should not be null", arr);
         assertEquals(1, arr.length);
         assertEquals("a", arr[0]);
         
         // Remove actual item
-        arr = LazyList.removeFromArray(input,"a");
+        arr = ArrayUtil.removeFromArray(input,"a");
         assertNotNull("Should not be null", arr);
         assertEquals(0, arr.length);
     }
 
     /**
-     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     * Tests for {@link ArrayUtil#removeFromArray(Object[], Object)}
      */
     @Test
     public void testRemoveFromArray_MultiInput() {
         String input[] = new String[] { "a", "b", "c" };
         
-        String arr[] = LazyList.removeFromArray(input,null);
+        String arr[] = ArrayUtil.removeFromArray(input,null);
         assertNotNull("Should not be null", arr);
         assertEquals(3, arr.length);
         assertEquals("a", arr[0]);
@@ -2080,7 +2080,7 @@ public class LazyListTest
         assertEquals("c", arr[2]);
         
         // Remove an actual item
-        arr = LazyList.removeFromArray(input,"b");
+        arr = ArrayUtil.removeFromArray(input,"b");
         assertNotNull("Should not be null", arr);
         assertEquals(2, arr.length);
         assertEquals("a", arr[0]);

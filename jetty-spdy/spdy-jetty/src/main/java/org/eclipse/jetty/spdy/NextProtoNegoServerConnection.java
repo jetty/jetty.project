@@ -93,9 +93,9 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     @Override
     public void protocolSelected(String protocol)
     {
-        ConnectionFactory ConnectionFactory = connector.getConnectionFactory(protocol);
+        ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
         EndPoint endPoint = getEndPoint();
-        Connection connection = ConnectionFactory.newConnection(channel, endPoint, connector);
+        Connection connection = connectionFactory.newConnection(channel, endPoint, connector);
         connector.replaceConnection(endPoint, connection);
         completed = true;
     }
