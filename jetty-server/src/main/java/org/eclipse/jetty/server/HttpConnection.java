@@ -185,13 +185,6 @@ public class HttpConnection extends AbstractConnection
         }
     }
 
-    @Override
-    public void fillInterested()
-    {
-        // new Throwable().printStackTrace();
-        super.fillInterested();
-    }
-
     /* ------------------------------------------------------------ */
     /** Parse and handle HTTP messages.
      * <p>
@@ -215,9 +208,6 @@ public class HttpConnection extends AbstractConnection
             // TODO try to generalize this loop into AbstractConnection
             while (true)
             {
-                // synchronized (_lock)
-                {
-
                 // Fill the request buffer with data only if it is totally empty.
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
@@ -288,7 +278,6 @@ public class HttpConnection extends AbstractConnection
                     _parser.close();
                     _channel.getEventHandler().badMessage(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
                 }
-            }
             }
         }
         catch(IOException e)
@@ -414,9 +403,6 @@ public class HttpConnection extends AbstractConnection
                     BufferUtil.clear(_responseBuffer);
                 getEndPoint().shutdownOutput();
                 _generator.abort();
-                
-                // set fill interested so we seek the real close
-                fillInterested();
                 return false;
             }
             return true;
@@ -433,8 +419,7 @@ public class HttpConnection extends AbstractConnection
             // be asynchronously flushed TBD), but it may not have consumed the entire
 
             LOG.debug("{} completed");
-
-
+            
             // Handle connection upgrades
             if (getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
             {
@@ -490,6 +475,12 @@ public class HttpConnection extends AbstractConnection
                     getEndPoint().shutdownOutput();
                 }
             }
+            
+            
+            // make sure that an oshut connection is driven towards close
+            // TODO this is a little ugly
+            if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
+                fillInterested();
         }
 
         /* ------------------------------------------------------------ */

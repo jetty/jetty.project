@@ -1037,8 +1037,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertTrue(in.indexOf("\r\n0\r\n")==-1); // chunking is interrupted by error close
 
             client.close();
-            Thread.sleep(100);
-            System.err.println(handler._endp);
+            Thread.sleep(200);
+            
+            // TODO this sometimes fails for SSL ???
             assertTrue(!handler._endp.isOpen());
         }
         finally
