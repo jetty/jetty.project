@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 /*
  * Created on 9/01/2004
@@ -121,6 +126,19 @@ public class HttpConnectionTest
                 System.err.println(response);
         }
     }
+    
+    @Test
+    public void testNoPath() throws Exception
+    {
+        String response=connector.getResponses("GET http://localhost:80 HTTP/1.1\n"+
+                "Host: localhost:80\n"+
+                "\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"pathInfo=/");
+    }
+    
 
     @Test
     public void testEmpty() throws Exception
@@ -183,9 +201,15 @@ public class HttpConnectionTest
 
         response=connector.getResponses("GET % HTTP/1.1\n"+
             "Host: localhost\n"+
-            "Connection: close\n"+
+            "Connection: close\n"+           
             "\015\012");
-        checkContains(response,0,"HTTP/1.1 400");
+            checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
+            
+            response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
+                    "Host: localhost\n"+    
+                    "Connection: close\n"+
+            "\015\012");
+            checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
     }
 
     @Test

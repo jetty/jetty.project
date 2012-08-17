@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -47,7 +52,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
+import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -585,6 +592,7 @@ public class ResponseTest
         {
             server.setHandler(new AbstractHandler()
             {
+                @Override
                 public void handle(String string, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
                     response.setStatus(200);
@@ -607,14 +615,14 @@ public class ResponseTest
 
             LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
             String line = reader.readLine();
-            assertTrue(line!=null && line.startsWith("HTTP/1.1 200 OK"));
+            Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
             // look for blank line
             while (line!=null && line.length()>0)
                 line = reader.readLine();
 
             // Read the first line of the GET
             line = reader.readLine();
-            assertTrue(line!=null && line.startsWith("HTTP/1.1 200 OK"));
+            Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
 
             String last=null;
             while (line!=null)
@@ -651,7 +659,8 @@ public class ResponseTest
 
     private Response newResponse()
     {
-        Response response = new Response(_channel);
+        _channel.getResponse().getHttpOutput().reset();
+        Response response = new Response(_channel,_channel.getResponse().getHttpOutput());
         return response;
     }
 

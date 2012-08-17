@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.embedded;
 
@@ -31,7 +36,7 @@ public class ManyServletContexts
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(8090);
+        Server server = new Server(8080);
 
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -51,16 +56,6 @@ public class ManyServletContexts
         other.addServlet(DefaultServlet.class.getCanonicalName(),"/");
         other.addServlet(new ServletHolder(new HelloServlet("YO!")),"*.yo");
 
-        DeploymentManager dm = new DeploymentManager();
-        WebAppProvider wp = new WebAppProvider();
-        dm.addAppProvider(wp);
-        ContextProvider cp = new ContextProvider();
-        dm.addAppProvider(cp);
-        
-        server.addBean(dm);
-        server.addBean(wp);
-        server.addBean(cp);
-        
         server.start();
         System.err.println(server.dump());
         server.join();

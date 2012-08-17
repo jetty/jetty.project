@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlets;
 
@@ -34,6 +39,8 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
  * Quality of Service Filter.
@@ -70,6 +77,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
  * 
  *
  */
+@ManagedObject("Quality of Service Filter")
 public class QoSFilter implements Filter
 {
     final static int __DEFAULT_MAX_PRIORITY=10;
@@ -273,6 +281,7 @@ public class QoSFilter implements Filter
      * 
      * @return wait time (in milliseconds)
      */
+    @ManagedAttribute("(short) amount of time filter will wait before suspending request (in ms)")
     public long getWaitMs()
     {
         return _waitMs;
@@ -297,6 +306,7 @@ public class QoSFilter implements Filter
      * 
      * @return suspend time (in milliseconds)
      */
+    @ManagedAttribute("amount of time filter will suspend a request for while waiting for the semaphore to become available (in ms)")
     public long getSuspendMs()
     {
         return _suspendMs;
@@ -321,6 +331,7 @@ public class QoSFilter implements Filter
      * 
      * @return maximum number of requests
      */
+    @ManagedAttribute("maximum number of requests to allow processing of at the same time")
     public int getMaxRequests()
     {
         return _maxRequests;

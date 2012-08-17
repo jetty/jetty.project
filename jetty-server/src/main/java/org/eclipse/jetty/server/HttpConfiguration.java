@@ -139,7 +139,7 @@ public class HttpConfiguration extends AggregateLifeCycle
     /* ------------------------------------------------------------ */
     protected void checkForwardedHeaders(Request request) throws IOException
     {
-        HttpFields httpFields = request.getHttpChannel().getRequestFields();
+        HttpFields httpFields = request.getHttpFields();
 
         // Do SSL first
         if (getForwardedCipherSuiteHeader()!=null)

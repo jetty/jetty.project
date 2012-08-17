@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.security;
 
@@ -21,6 +26,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -83,8 +90,28 @@ public class ConstraintTest
         _security = new ConstraintSecurityHandler();
         _session.setHandler(_security);
         RequestHandler _handler = new RequestHandler();
-        _security.setHandler(_handler);
+        _security.setHandler(_handler);     
 
+        _security.setConstraintMappings(getConstraintMappings(), getKnownRoles());
+    }
+
+    @After
+    public void stopServer() throws Exception
+    {
+        _server.stop();
+    }
+    
+    public Set<String> getKnownRoles()
+    {
+        Set<String> knownRoles=new HashSet<>();
+        knownRoles.add("user");
+        knownRoles.add("administrator");
+        
+        return knownRoles;
+    }
+
+    private List<ConstraintMapping> getConstraintMappings()
+    {
         Constraint constraint0 = new Constraint();
         constraint0.setAuthenticate(true);
         constraint0.setName("forbid");
@@ -132,20 +159,9 @@ public class ConstraintTest
         mapping5.setConstraint(constraint5);
         mapping5.setMethod("POST");
 
-
-        Set<String> knownRoles=new HashSet<>();
-        knownRoles.add("user");
-        knownRoles.add("administrator");
-
-        _security.setConstraintMappings(Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5), knownRoles);
+        return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5);
     }
-
-    @After
-    public void stopServer() throws Exception
-    {
-        _server.stop();
-    }
-
+    
     @Test
     public void testConstraints() throws Exception
     {
@@ -762,27 +778,58 @@ public class ConstraintTest
         _security.setAuthenticator(new BasicAuthenticator());
         _security.setStrict(false);
         _server.start();
+        
+        System.out.println(_server.dump());
 
         String response;
-        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
+        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n", 100000, TimeUnit.MILLISECONDS);
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
-                "\r\n");
+                "\r\n", 100000, TimeUnit.MILLISECONDS);
         assertThat(response,startsWith("HTTP/1.1 500 "));
 
         _server.stop();
+        
+        /*
+         * FIXME: this seems to indicate there is an issue with the way the server is stopping and starting now
+         * 
+         * Note that ConstraintSecurityHandler loses all of its brains when the server starts and stops, but that
+         * change was made in 2/2011 and this wasn't exposed til now, which seems to indicate that previously
+         * when the server stopped that doStop() didn't make it down to the constraint handler...and now it does.
+         * 
+         * also, seems to be an issue in local connector, I had to add a new one for it to be able to work here as well
+         * so issues in stop/start there as well
+         */
+        
+        _connector = new LocalConnector(_server);
+        _server.setConnectors(new Connector[]{_connector});
+        ContextHandler _context = new ContextHandler();
+        SessionHandler _session = new SessionHandler();
 
+        _context.setContextPath("/ctx");
+        _server.setHandler(_context);
+        _context.setHandler(_session);
+
+        _security = new ConstraintSecurityHandler();
+        _session.setHandler(_security);
+        RequestHandler _handler = new RequestHandler();
+        _security.setHandler(_handler);             
+                
         RoleRefHandler roleref = new RoleRefHandler();
         _security.setHandler(roleref);
         roleref.setHandler(check);
-
+       
+        _security.setConstraintMappings(getConstraintMappings(),getKnownRoles());
+        
         _server.start();
 
+        System.out.println(_server.dump());
+        
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
-                "\r\n");
+                "\r\n", 100000, TimeUnit.MILLISECONDS);
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
     }
 

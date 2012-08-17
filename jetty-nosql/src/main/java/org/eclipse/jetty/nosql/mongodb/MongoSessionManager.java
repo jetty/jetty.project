@@ -1,16 +1,22 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.nosql.mongodb;
-//========================================================================
-//Copyright (c) 2011 Intalio, Inc.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,6 +32,9 @@ import java.util.Set;
 import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.nosql.NoSqlSessionManager;
 import org.eclipse.jetty.server.SessionIdManager;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -34,6 +43,8 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 
+
+@ManagedObject("Mongo Session Manager")
 public class MongoSessionManager extends NoSqlSessionManager
 {
     private static final Logger LOG = Log.getLogger(MongoSessionManager.class);
@@ -491,21 +502,26 @@ public class MongoSessionManager extends NoSqlSessionManager
     	return __CONTEXT + "." + _contextId + "." + keybit;
     }
     
+    @ManagedOperation(value="purge invalid sessions in the session store based on normal criteria", impact="ACTION")
     public void purge()
     {   
         ((MongoSessionIdManager)_sessionIdManager).purge();
     }
     
+    
+    @ManagedOperation(value="full purge of invalid sessions in the session store", impact="ACTION")
     public void purgeFully()
     {   
         ((MongoSessionIdManager)_sessionIdManager).purgeFully();
     }
     
+    @ManagedOperation(value="scavenge sessions known to this manager", impact="ACTION")
     public void scavenge()
     {
         ((MongoSessionIdManager)_sessionIdManager).scavenge();
     }
     
+    @ManagedOperation(value="scanvenge all sessions", impact="ACTION")
     public void scavengeFully()
     {
         ((MongoSessionIdManager)_sessionIdManager).scavengeFully();
@@ -518,6 +534,7 @@ public class MongoSessionManager extends NoSqlSessionManager
      * the count() operation itself is optimized to perform on the server side
      * and avoid loading to client side.
      */
+    @ManagedAttribute("total number of known sessions in the store")
     public long getSessionStoreCount()
     {
         return _sessions.find().count();      

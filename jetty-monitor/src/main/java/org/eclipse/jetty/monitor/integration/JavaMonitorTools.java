@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) Webtide LLC
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.monitor.integration;
 
@@ -22,6 +27,9 @@ import java.security.Security;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+
 /* ------------------------------------------------------------ */
 /**
  * Derived from the JMX bean classes created by Kees Jan Koster for the java-monitor
@@ -29,6 +37,7 @@ import java.util.Map;
  * 
  * @author kjkoster <kjkoster@gmail.com>
  */
+@ManagedObject("retrieves information required by java-monitor")
 public class JavaMonitorTools
 {
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -74,6 +83,7 @@ public class JavaMonitorTools
         return threads;
     }
 
+    @ManagedAttribute("detailed report of deadlocked threads")
     public String getDeadlockStacktraces()
     {
         try
@@ -136,6 +146,7 @@ public class JavaMonitorTools
         return states.get(Thread.State.BLOCKED);
     }
 
+    @ManagedAttribute("number of new threads")
     public int getThreadsNew()
     {
         sampleThreads();
@@ -143,6 +154,7 @@ public class JavaMonitorTools
         return states.get(Thread.State.NEW);
     }
 
+    @ManagedAttribute("number of terminated threads")
     public int getThreadsTerminated()
     {
         sampleThreads();
@@ -150,6 +162,7 @@ public class JavaMonitorTools
         return states.get(Thread.State.TERMINATED);
     }
 
+    @ManagedAttribute("number of sleeping and waiting threads")
     public int getThreadsTimedWaiting()
     {
         sampleThreads();
@@ -157,6 +170,7 @@ public class JavaMonitorTools
         return states.get(Thread.State.TIMED_WAITING);
     }
 
+    @ManagedAttribute("number of waiting threads")
     public int getThreadsWaiting()
     {
         sampleThreads();
@@ -198,6 +212,7 @@ public class JavaMonitorTools
 
     private static final String POLICY = "sun.net.InetAddressCachePolicy";
 
+    @ManagedAttribute("amount of time successful dns queries are cached for")
     public int getCacheSeconds() throws ClassNotFoundException,
             IllegalAccessException, InvocationTargetException,
             NoSuchMethodException {
@@ -209,6 +224,7 @@ public class JavaMonitorTools
         return seconds.intValue();
     }
 
+    @ManagedAttribute("Amount of time failed DNS queries are cached for")
     public int getCacheNegativeSeconds() throws ClassNotFoundException,
             IllegalAccessException, InvocationTargetException,
             NoSuchMethodException {
@@ -236,6 +252,7 @@ public class JavaMonitorTools
 
     private static final String SYSTEM_NEGATIVE_TTL = "sun.net.inetaddr.negative.ttl";
 
+    @ManagedAttribute("Cache policy for successful DNS lookups was changed from the hard-coded default")
     public String getCacheTweakedFrom() {
         if (Security.getProperty(SECURITY_TTL) != null) {
             if (System.getProperty(SYSTEM_TTL) != null) {
@@ -252,6 +269,7 @@ public class JavaMonitorTools
         return DEFAULT;
     }
 
+    @ManagedAttribute("Cache policy for failed DNS lookups was changed from the hard-coded default")
     public String getCacheNegativeTweakedFrom() {
         if (Security.getProperty(SECURITY_NEGATIVE_TTL) != null) {
             if (System.getProperty(SYSTEM_NEGATIVE_TTL) != null) {

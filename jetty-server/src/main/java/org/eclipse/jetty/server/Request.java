@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -115,11 +120,13 @@ public class Request implements HttpServletRequest
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
     private final HttpChannel _channel;
-    private HttpFields _fields;
+    private final HttpFields _fields=new HttpFields();
     private final HttpChannelState _state;
 
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
 
+    private final HttpInput _in;
+    
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
     private Authentication _authentication;
@@ -157,6 +164,7 @@ public class Request implements HttpServletRequest
     private SessionManager _sessionManager;
     private long _timeStamp;
     private long _dispatchTime;
+    private boolean _persistent;
 
     private HttpURI _uri;
 
@@ -164,11 +172,35 @@ public class Request implements HttpServletRequest
 
 
     /* ------------------------------------------------------------ */
-    public Request(HttpChannel channel)
+    public Request(HttpChannel channel, HttpInput in)
     {
         _channel = channel;
         _state=channel.getState();
-        _fields=_channel.getRequestFields();
+        _in=in;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpFields getHttpFields()
+    {
+        return _fields;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpInput getHttpInput()
+    {
+        return _in;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isPersistent()
+    {
+        return _persistent;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setPersistent(boolean persistent)
+    {
+        _persistent = persistent;
     }
 
     /* ------------------------------------------------------------ */
@@ -525,7 +557,11 @@ public class Request implements HttpServletRequest
         if (_inputState != __NONE && _inputState != _STREAM)
             throw new IllegalStateException("READER");
         _inputState = _STREAM;
-        return _channel.getInputStream();
+        
+        if (_channel.isExpecting100Continues())
+            _channel.continue100(_in.available());
+        
+        return _in;
     }
 
     /* ------------------------------------------------------------ */
@@ -1434,6 +1470,8 @@ public class Request implements HttpServletRequest
         _savedNewSessions=null;
         _multiPartInputStream = null;
         _remote=null;
+        _fields.clear();
+        _in.recycle(); // TODO done here or in connection?
     }
 
     /* ------------------------------------------------------------ */

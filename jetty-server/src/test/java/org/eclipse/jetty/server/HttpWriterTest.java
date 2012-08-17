@@ -1,16 +1,22 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import static org.junit.Assert.assertEquals;
 
@@ -28,7 +34,7 @@ import org.junit.Test;
 
 public class HttpWriterTest
 {
-    private HttpWriter _writer;
+    private HttpOutput _httpOut;
     private ByteBuffer _bytes;
 
     @Before
@@ -107,14 +113,13 @@ public class HttpWriterTest
 
         };
 
-        HttpOutput httpOut = new HttpOutput(channel);
-        _writer = new HttpWriter(httpOut);
+        _httpOut = new HttpOutput(channel);
     }
 
     @Test
     public void testSimpleUTF8() throws Exception
     {
-        _writer.setCharacterEncoding(StringUtil.__UTF8);
+        HttpWriter _writer = new HttpWriter(_httpOut,StringUtil.__UTF8);
         _writer.write("Now is the time");
         assertArrayEquals("Now is the time".getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
     }
@@ -122,7 +127,7 @@ public class HttpWriterTest
     @Test
     public void testUTF8() throws Exception
     {
-        _writer.setCharacterEncoding(StringUtil.__UTF8);
+        HttpWriter _writer = new HttpWriter(_httpOut,StringUtil.__UTF8);
         _writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
     }
@@ -130,7 +135,7 @@ public class HttpWriterTest
     @Test
     public void testNotCESU8() throws Exception
     {
-        _writer.setCharacterEncoding(StringUtil.__UTF8);
+        HttpWriter _writer = new HttpWriter(_httpOut,StringUtil.__UTF8);
         String data="xxx\uD801\uDC00xxx";
         _writer.write(data);
         assertEquals("787878F0909080787878",TypeUtil.toHexString(BufferUtil.toArray(_bytes)));
@@ -146,7 +151,7 @@ public class HttpWriterTest
     @Test
     public void testMultiByteOverflowUTF8() throws Exception
     {
-        _writer.setCharacterEncoding(StringUtil.__UTF8);
+        HttpWriter _writer = new HttpWriter(_httpOut,StringUtil.__UTF8);
         final String singleByteStr = "a";
         final String multiByteDuplicateStr = "\uFF22";
         int remainSize = 1;
@@ -173,7 +178,7 @@ public class HttpWriterTest
     @Test
     public void testISO8859() throws Exception
     {
-        _writer.setCharacterEncoding(StringUtil.__ISO_8859_1);
+        HttpWriter _writer = new HttpWriter(_httpOut,StringUtil.__ISO_8859_1);
         _writer.write("How now \uFF22rown cow");
         assertEquals("How now ?rown cow",new String(BufferUtil.toArray(_bytes),StringUtil.__ISO_8859_1));
     }
@@ -182,7 +187,7 @@ public class HttpWriterTest
     @Test
     public void testUTF16x2() throws Exception
     {
-        _writer.setCharacterEncoding(StringUtil.__UTF8);
+        HttpWriter _writer = new HttpWriter(_httpOut,StringUtil.__UTF8);
 
         String source = "\uD842\uDF9F";
 
@@ -205,7 +210,7 @@ public class HttpWriterTest
     @Test
     public void testMultiByteOverflowUTF16x2() throws Exception
     {
-        _writer.setCharacterEncoding(StringUtil.__UTF8);
+        HttpWriter _writer = new HttpWriter(_httpOut,StringUtil.__UTF8);
 
         final String singleByteStr = "a";
         int remainSize = 1;
@@ -243,7 +248,7 @@ public class HttpWriterTest
     @Test
     public void testMultiByteOverflowUTF16x2_2() throws Exception
     {
-        _writer.setCharacterEncoding(StringUtil.__UTF8);
+        HttpWriter _writer = new HttpWriter(_httpOut,StringUtil.__UTF8);
 
         final String singleByteStr = "a";
         int remainSize = 1;

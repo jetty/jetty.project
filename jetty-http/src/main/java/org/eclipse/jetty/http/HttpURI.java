@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.http;
 
@@ -587,6 +592,55 @@ public class HttpURI
             return new String(_raw,_path,length,_charset);
         return new String(bytes,0,n,_charset);
     }
+    
+    
+    public String getDecodedPath(String encoding)
+    {
+        if (_path==_param)
+            return null;
+
+        int length = _param-_path;
+        byte[] bytes=null;
+        int n=0;
+
+        for (int i=_path;i<_param;i++)
+        {
+            byte b = _raw[i];
+
+            if (b=='%')
+            {
+                if ((i+2)>=_param)
+                    throw new IllegalArgumentException("Bad % encoding: "+this);
+                b=(byte)(0xff&TypeUtil.parseInt(_raw,i+1,2,16));
+                i+=2;
+            }
+            else if (bytes==null)
+            {
+                n++;
+                continue;
+            }
+
+            if (bytes==null)
+            {
+                bytes=new byte[length];
+                System.arraycopy(_raw,_path,bytes,0,n);
+            }
+
+            bytes[n++]=b;
+        }
+
+
+        if (bytes==null)
+            return StringUtil.toString(_raw,_path,_param-_path,encoding);
+
+        return StringUtil.toString(bytes,0,n,encoding);
+    }
+    
+    
+    
+    
+    
+
 
     public String getPathAndParam()
     {

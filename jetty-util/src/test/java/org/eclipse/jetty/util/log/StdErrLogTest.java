@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2010-2010 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util.log;
 
@@ -77,18 +82,28 @@ public class StdErrLogTest
         log.debug("YOU SHOULD NOT SEE THIS!",null,null);
         
         // Test for backward compat with old (now deprecated) method
+        Logger before = log.getLogger("before");
         log.setDebugEnabled(true);
+        Logger after = log.getLogger("after");
+        before.debug("testing {} {}","test","debug-before");
         log.debug("testing {} {}","test","debug-deprecated");
+        after.debug("testing {} {}","test","debug-after");
 
         log.setDebugEnabled(false);
+        before.debug("testing {} {}","test","debug-before-false");
         log.debug("testing {} {}","test","debug-deprecated-false");
-
+        after.debug("testing {} {}","test","debug-after-false");
+        
         output.assertContains("DBUG:xxx:tname: testing test debug");
         output.assertContains("INFO:xxx:tname: testing test info");
         output.assertContains("WARN:xxx:tname: testing test warn");
         output.assertNotContains("YOU SHOULD NOT SEE THIS!");
-        output.assertContains("DBUG:xxx:tname: testing test debug-deprecated");
+        output.assertContains("DBUG:x.before:tname:testing test debug-before");
         output.assertNotContains("DBUG:xxx:tname: testing test debug-depdeprecated-false");
+        output.assertContains("DBUG:x.after:testing test debug-after");
+        output.assertNotContains("DBUG:x.before:tname:testing test debug-before-false");
+        output.assertNotContains("DBUG:xxx:tname:testing test debug-deprecated-false");
+        output.assertNotContains("DBUG:x.after:tname:testing test debug-after-false");
     }
     
     @Test

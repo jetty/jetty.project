@@ -277,6 +277,11 @@ public class SslConnection extends AbstractConnection
             super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
         }
 
+        public EndPoint getEncryptedEndPoint()
+        {
+            return getEndPoint();
+        }
+        
         @Override
         protected FillInterest getFillInterest()
         {
@@ -760,6 +765,12 @@ public class SslConnection extends AbstractConnection
         public boolean isInputShutdown()
         {
             return _ishut;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return super.toString()+"->"+getEndPoint().toString();
         }
     }
 }

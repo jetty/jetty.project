@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -1037,7 +1042,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertTrue(in.indexOf("\r\n0\r\n")==-1); // chunking is interrupted by error close
 
             client.close();
-            Thread.sleep(100);
+            Thread.sleep(200);
+            
+            // TODO this sometimes fails for SSL ???
+            if (handler._endp.isOpen())
+            {
+                System.err.println(handler._endp);
+                System.err.println(((SslConnection.DecryptedEndPoint)handler._endp).getEncryptedEndPoint());
+                System.err.println(handler._endp.getConnection());
+            }
             assertTrue(!handler._endp.isOpen());
         }
         finally
@@ -1049,7 +1062,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    protected static class CommittedErrorHandler extends AbstractHandler
+    public static class CommittedErrorHandler extends AbstractHandler
     {
         public EndPoint _endp;
 

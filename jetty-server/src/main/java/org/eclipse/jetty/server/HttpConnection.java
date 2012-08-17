@@ -185,13 +185,6 @@ public class HttpConnection extends AbstractConnection
         }
     }
 
-    @Override
-    public void fillInterested()
-    {
-        // new Throwable().printStackTrace();
-        super.fillInterested();
-    }
-
     /* ------------------------------------------------------------ */
     /** Parse and handle HTTP messages.
      * <p>
@@ -208,6 +201,8 @@ public class HttpConnection extends AbstractConnection
     {
         LOG.debug("{} onReadable {}",this,_channel.isIdle());
 
+        int filled=-2;
+        
         try
         {
             setCurrentConnection(this);
@@ -215,16 +210,13 @@ public class HttpConnection extends AbstractConnection
             // TODO try to generalize this loop into AbstractConnection
             while (true)
             {
-                // synchronized (_lock)
-                {
-
                 // Fill the request buffer with data only if it is totally empty.
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
                     if (_requestBuffer==null)
-                        _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestHeaderSize(),false);
+                        _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestHeaderSize(),false);  // TODO may acquire on speculative read. probably released to early
 
-                    int filled=getEndPoint().fill(_requestBuffer);
+                    filled=getEndPoint().fill(_requestBuffer);
 
                     LOG.debug("{} filled {}",this,filled);
 
@@ -243,7 +235,10 @@ public class HttpConnection extends AbstractConnection
                         // read -1 then we have nothing to parse and thus nothing that
                         // will generate a response.  If we had a suspended request pending
                         // a response or a request waiting in the buffer, we would not be here.
-                        getEndPoint().shutdownOutput();
+                        if (getEndPoint().isOutputShutdown())
+                            getEndPoint().close();
+                        else
+                            getEndPoint().shutdownOutput();
                         // buffer must be empty and the channel must be idle, so we can release.
                         releaseRequestBuffer();
                         return;
@@ -257,16 +252,19 @@ public class HttpConnection extends AbstractConnection
                 // Parse the buffer
                 if (_parser.parseNext(_requestBuffer))
                 {
+                    // reset header count
+                    _headerBytes=0;
+                    
                     // For most requests, there will not be a body, so we can try to recycle the buffer now
                     releaseRequestBuffer();
 
-                    _headerBytes=0;
+                    if (!_channel.getRequest().isPersistent())
+                        _generator.setPersistent(false);
+                    
                     // The parser returned true, which indicates the channel is ready
                     // to handle a request. Call the channel and this will either handle the
                     // request/response to completion OR if the request suspends, the channel
                     // will be left in !idle state so our outer loop will exit.
-                    if (!_parser.isPersistent())
-                        _generator.setPersistent(false);
                     _channel.handle();
 
                     // Return if the channel is still processing the request
@@ -288,7 +286,6 @@ public class HttpConnection extends AbstractConnection
                     _parser.close();
                     _channel.getEventHandler().badMessage(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
                 }
-            }
             }
         }
         catch(IOException e)
@@ -405,16 +402,14 @@ public class HttpConnection extends AbstractConnection
         {
             if (!super.commitError(status,reason,content))
             {
-                // We could not send the error, so a sudden close of the connection will at least tell
+                // TODO - should this just be a close and we don't worry about a RST overtaking a flushed response?
+                
+                // We could not send the error, so a shutdown of the connection will at least tell
                 // the client something is wrong
 
-                getEndPoint().close();
-
                 if (BufferUtil.hasContent(_responseBuffer))
-                {
                     BufferUtil.clear(_responseBuffer);
-                    releaseRequestBuffer();
-                }
+                getEndPoint().shutdownOutput();
                 _generator.abort();
                 return false;
             }
@@ -432,8 +427,7 @@ public class HttpConnection extends AbstractConnection
             // be asynchronously flushed TBD), but it may not have consumed the entire
 
             LOG.debug("{} completed");
-
-
+            
             // Handle connection upgrades
             if (getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
             {
@@ -488,6 +482,14 @@ public class HttpConnection extends AbstractConnection
                     LOG.warn("Endpoint output not shutdown when seeking EOF");
                     getEndPoint().shutdownOutput();
                 }
+            }
+            
+            
+            // make sure that an oshut connection is driven towards close
+            // TODO this is a little ugly
+            if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
+            {
+                fillInterested();
             }
         }
 
@@ -617,7 +619,11 @@ public class HttpConnection extends AbstractConnection
                     if (_generator.isCommitted())
                         throw new IllegalStateException("committed");
                     if (BufferUtil.hasContent(_responseBuffer))
-                        throw new IllegalStateException("!empty");
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("discarding uncommitted response {}",BufferUtil.toDetailString(_responseBuffer));
+                        BufferUtil.clear(_responseBuffer);
+                    }
                     if (_generator.isComplete())
                         throw new EofException();
 

@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
 
@@ -358,36 +363,6 @@ public class ContextHandlerTest
         assertTrue(new File(webInf,"web.xml").createNewFile());
 
         return root;
-    }
-
-    @Test
-    public void testUncheckedPrintWriter() throws Exception
-    {
-        Server server = new Server();
-        server.setUncheckedPrintWriter(true);
-        LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
-        ContextHandler context = new ContextHandler("/");
-        WriterHandler handler = new WriterHandler();
-        context.setHandler(handler);
-        server.setHandler(context);
-
-        try
-        {
-            server.start();
-
-            String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\nConnection:close\n\n");
-
-            Assert.assertTrue(response.indexOf("Goodbye")>0);
-            Assert.assertTrue(response.indexOf("dead")<0);
-            Thread.sleep(100);
-            Assert.assertTrue(handler.error);
-            Assert.assertTrue(handler.throwable!=null);
-        }
-        finally
-        {
-            server.stop();
-        }
     }
 
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception

@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlets;
 
@@ -41,6 +46,8 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -113,7 +120,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </dl>
  * </p>
  */
-
+@ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
 public class DoSFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(DoSFilter.class);
@@ -668,6 +675,7 @@ public class DoSFilter implements Filter
      * 
      * @return maximum number of requests
      */
+    @ManagedAttribute("maximum number of requests allowed from a connection per second")
     public int getMaxRequestsPerSec()
     {
         return _maxRequestsPerSec;
@@ -691,6 +699,7 @@ public class DoSFilter implements Filter
      * Get delay (in milliseconds) that is applied to all requests 
      * over the rate limit, before they are considered at all. 
      */
+    @ManagedAttribute("delay applied to all requests over the rate limit (in ms)")
     public long getDelayMs()
     {
         return _delayMs;
@@ -715,6 +724,7 @@ public class DoSFilter implements Filter
      * 
      * @return maximum wait time
      */
+    @ManagedAttribute("maximum time the filter will block waiting throttled connections, (0 for no delay, -1 to reject requests)")
     public long getMaxWaitMs()
     {
         return _maxWaitMs;
@@ -739,6 +749,7 @@ public class DoSFilter implements Filter
      * 
      * @return number of requests
      */
+    @ManagedAttribute("number of requests over rate limit")
     public int getThrottledRequests()
     {
         return _throttledRequests;
@@ -763,6 +774,7 @@ public class DoSFilter implements Filter
      * 
      * @return wait time
      */
+    @ManagedAttribute("amount of time to async wait for semaphore")
     public long getThrottleMs()
     {
         return _throttleMs;
@@ -786,6 +798,7 @@ public class DoSFilter implements Filter
      * 
      * @return maximum processing time
      */
+    @ManagedAttribute("maximum time to allow requests to process (in ms)")
     public long getMaxRequestMs()
     {
         return _maxRequestMs;
@@ -811,6 +824,7 @@ public class DoSFilter implements Filter
      * 
      * @return maximum tracking time
      */
+    @ManagedAttribute("maximum time to track of request rates for connection before discarding")
     public long getMaxIdleTrackerMs()
     {
         return _maxIdleTrackerMs;
@@ -835,6 +849,7 @@ public class DoSFilter implements Filter
      * 
      * @return value of the flag
      */
+    @ManagedAttribute("inser DoSFilter headers in response")
     public boolean isInsertHeaders()
     {
         return _insertHeaders;
@@ -857,6 +872,7 @@ public class DoSFilter implements Filter
      * 
      * @return value of the flag
      */
+    @ManagedAttribute("usage rate is tracked by session if one exists")
     public boolean isTrackSessions()
     {
         return _trackSessions;
@@ -879,6 +895,7 @@ public class DoSFilter implements Filter
      * 
      * @return value of the flag
      */
+    @ManagedAttribute("usage rate is tracked by IP+port is session tracking not used")
     public boolean isRemotePort()
     {
         return _remotePort;
@@ -903,6 +920,7 @@ public class DoSFilter implements Filter
      * 
      * @return comma-separated whitelist
      */
+    @ManagedAttribute("list of IPs that will not be rate limited")
     public String getWhitelist()
     {
         return _whitelistStr;

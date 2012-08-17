@@ -112,10 +112,9 @@ public class HttpTester
         }
         
         @Override
-        public boolean headerComplete(boolean hasBody, boolean persistent)
+        public boolean headerComplete()
         {
-            if (hasBody)
-                _content=new ByteArrayOutputStream();
+            _content=new ByteArrayOutputStream();
             return false;
         }
         
