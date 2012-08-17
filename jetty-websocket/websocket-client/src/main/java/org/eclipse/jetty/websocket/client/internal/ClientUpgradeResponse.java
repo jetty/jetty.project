@@ -13,81 +13,85 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.client.internal;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
-public class ServletWebSocketResponse extends HttpServletResponseWrapper implements UpgradeResponse
+public class ClientUpgradeResponse implements UpgradeResponse
 {
-    private String acceptedProtocol;
-    private List<ExtensionConfig> extensions = new ArrayList<>();
-    private boolean success = true;
+    public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
+    private int statusCode;
+    private String statusReason;
+    private MultiMap<String> headers;
+    private List<ExtensionConfig> extensions;
+    private boolean success = false;
 
-    public ServletWebSocketResponse(HttpServletResponse resp)
+    public ClientUpgradeResponse()
     {
-        super(resp);
+        headers = new MultiMap<>();
     }
 
     @Override
     public void addHeader(String name, String value)
     {
-        super.addHeader(name,value);
+        headers.add(name.toLowerCase(),value);
     }
 
     @Override
     public String getAcceptedSubProtocol()
     {
-        return acceptedProtocol;
+        return headers.getValue(SEC_WEBSOCKET_PROTOCOL,0);
     }
 
     @Override
     public List<ExtensionConfig> getExtensions()
     {
-        return this.extensions;
+        return extensions;
     }
 
     @Override
     public Set<String> getHeaderNamesSet()
     {
-        Collection<String> names = getHeaderNames();
-        return new HashSet<String>(names);
+        return headers.keySet();
     }
 
     @Override
     public String getHeaderValue(String name)
     {
-        return super.getHeader(name);
+        return headers.getValue(name.toLowerCase(),0);
     }
 
     @Override
     public Iterator<String> getHeaderValues(String name)
     {
-        return super.getHeaders(name).iterator();
+        List<String> values = headers.getValues(name);
+        if (values == null)
+        {
+            return Collections.emptyIterator();
+        }
+        return values.iterator();
     }
 
     @Override
     public int getStatusCode()
     {
-        throw new UnsupportedOperationException("Server cannot get Status Code");
+        return statusCode;
     }
 
     @Override
     public String getStatusReason()
     {
-        throw new UnsupportedOperationException("Server cannot get Status Reason");
+        return statusReason;
     }
 
     @Override
@@ -99,25 +103,55 @@ public class ServletWebSocketResponse extends HttpServletResponseWrapper impleme
     @Override
     public void sendForbidden(String message) throws IOException
     {
-        success = false;
-        sendError(HttpServletResponse.SC_FORBIDDEN,message);
+        throw new UnsupportedOperationException("Not supported on client implementation");
     }
 
     @Override
     public void setAcceptedSubProtocol(String protocol)
     {
-        this.acceptedProtocol = protocol;
+        headers.put(SEC_WEBSOCKET_PROTOCOL,protocol);
     }
 
     @Override
     public void setExtensions(List<ExtensionConfig> extensions)
     {
-        this.extensions = extensions;
+        if (this.extensions == null)
+        {
+            this.extensions = new ArrayList<>();
+        }
+        else
+        {
+            this.extensions.clear();
+        }
+        this.extensions.addAll(extensions);
+    }
+
+    @Override
+    public void setHeader(String name, String value)
+    {
+        headers.putValues(name,value);
+    }
+
+    public void setStatusCode(int statusCode)
+    {
+        this.statusCode = statusCode;
+    }
+
+    public void setStatusReason(String statusReason)
+    {
+        this.statusReason = statusReason;
     }
 
     @Override
     public void validateWebSocketHash(String expectedHash) throws UpgradeException
     {
-        throw new UnsupportedOperationException("Server cannot validate its own hash");
+        String respHash = getHeaderValue("Sec-WebSocket-Accept");
+
+        success = true;
+        if (expectedHash.equals(respHash) == false)
+        {
+            success = false;
+            throw new UpgradeException("Invalid Sec-WebSocket-Accept hash");
+        }
     }
 }

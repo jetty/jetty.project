@@ -15,9 +15,9 @@
 //========================================================================
 package org.eclipse.jetty.websocket.server.examples.echo;
 
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.server.WebSocketRequest;
-import org.eclipse.jetty.websocket.server.WebSocketResponse;
 
 /**
  * Example of setting up a creator to create appropriately via the proposed and negotiated protocols.
@@ -29,7 +29,7 @@ public class EchoCreator implements WebSocketCreator
     private LogSocket logSocket = new LogSocket();
 
     @Override
-    public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
+    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
     {
         for (String protocol : req.getSubProtocols())
         {

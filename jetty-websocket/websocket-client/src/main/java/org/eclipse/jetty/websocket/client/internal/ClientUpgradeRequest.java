@@ -13,55 +13,36 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.client.io;
+package org.eclipse.jetty.websocket.client.internal;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClient.ConnectFuture;
-import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
 /**
- * Default Handshake Connection.
- * <p>
- * Results in a {@link AbstractWebSocketConnection} on successful handshake.
+ * Allowing a generate from a UpgradeRequest
  */
-public class HandshakeConnection extends AbstractConnection implements Connection
+public class ClientUpgradeRequest implements UpgradeRequest
 {
     public static final String COOKIE_DELIM = "\"\\\n\r\t\f\b%+ ;=";
-    private final WebSocketClient.ConnectFuture future;
-    private final ByteBufferPool bufferPool;
+    private final String key;
 
-    private String key;
-
-    public HandshakeConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, WebSocketClient.ConnectFuture future)
+    public ClientUpgradeRequest()
     {
-        super(endp,executor);
-        this.future = future;
-        this.bufferPool = bufferPool;
-
         byte[] bytes = new byte[16];
         new Random().nextBytes(bytes);
         this.key = new String(B64Code.encode(bytes));
     }
 
-    public void handshake() throws InterruptedException, ExecutionException
+    public String generate(URI uri)
     {
-        URI uri = future.getWebSocketUri();
-
         StringBuilder request = new StringBuilder(512);
         request.append("GET ");
         if (StringUtil.isBlank(uri.getPath()))
@@ -88,14 +69,14 @@ public class HandshakeConnection extends AbstractConnection implements Connectio
         request.append("Connection: Upgrade\r\n");
         request.append("Sec-WebSocket-Key: ").append(key).append("\r\n");
 
-        if (StringUtil.isNotBlank(future.getOrigin()))
+        if (StringUtil.isNotBlank(getOrigin()))
         {
-            request.append("Origin: ").append(future.getOrigin()).append("\r\n");
+            request.append("Origin: ").append(getOrigin()).append("\r\n");
         }
 
         request.append("Sec-WebSocket-Version: 13\r\n"); // RFC-6455 specified version
 
-        Map<String, String> cookies = future.getCookies();
+        Map<String, String> cookies = getCookieMap();
         if ((cookies != null) && (cookies.size() > 0))
         {
             for (String cookie : cookies.keySet())
@@ -109,28 +90,82 @@ public class HandshakeConnection extends AbstractConnection implements Connectio
         }
 
         request.append("\r\n");
-
-        // TODO: extensions
-        // TODO: write to connection
-        byte rawreq[] = StringUtil.getUtf8Bytes(request.toString());
-        ByteBuffer buf = bufferPool.acquire(rawreq.length,false);
-        try
-        {
-            FutureCallback<ConnectFuture> callback = new FutureCallback<>();
-            getEndPoint().write(future,callback,buf);
-            // TODO: read response & upgrade via async callback
-            callback.get(); // TODO: block on read?
-        }
-        finally
-        {
-            bufferPool.release(buf);
-        }
+        return request.toString();
     }
 
     @Override
-    public void onFillable()
+    public Map<String, String> getCookieMap()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<ExtensionConfig> getExtensions()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getHeader(String name)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getHost()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getHttpEndPointName()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public String getKey()
+    {
+        return key;
+    }
+
+    @Override
+    public String getOrigin()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<String> getSubProtocols()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean hasSubProtocol(String test)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean isOrigin(String test)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public void setSubProtocols(String string)
     {
         // TODO Auto-generated method stub
 
     }
+
 }

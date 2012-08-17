@@ -13,15 +13,19 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
-public interface WebSocketResponse
+public interface UpgradeResponse
 {
+    public void addHeader(String name, String value);
+
     /**
      * Get the accepted WebSocket protocol.
      * 
@@ -35,6 +39,18 @@ public interface WebSocketResponse
      * @return the list of negotiated extensions to use.
      */
     public List<ExtensionConfig> getExtensions();
+
+    public Set<String> getHeaderNamesSet();
+
+    public String getHeaderValue(String name);
+
+    public Iterator<String> getHeaderValues(String name);
+
+    public int getStatusCode();
+
+    public String getStatusReason();
+
+    public boolean isSuccess();
 
     /**
      * Issue a forbidden upgrade response.
@@ -64,7 +80,7 @@ public interface WebSocketResponse
      * <p>
      * Notes:
      * <ul>
-     * <li>Per the spec you cannot add extensions that have not been seen in the {@link WebSocketRequest}, just remove entries you don't want to use</li>
+     * <li>Per the spec you cannot add extensions that have not been seen in the {@link UpgradeRequest}, just remove entries you don't want to use</li>
      * <li>If this is unused, or a null is passed, then the list negotiation will follow default behavior and use the complete list of extensions that are
      * available in this WebSocket server implementation.</li>
      * </ul>
@@ -73,4 +89,8 @@ public interface WebSocketResponse
      *            the list of extensions to use.
      */
     public void setExtensions(List<ExtensionConfig> extensions);
+
+    public void setHeader(String name, String value);
+
+    public void validateWebSocketHash(String expectedHash) throws UpgradeException;
 }

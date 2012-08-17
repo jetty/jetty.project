@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.protocol.AcceptHash;
+import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
 /**
@@ -56,6 +57,12 @@ public class BlockheadServer
         public void close() throws IOException
         {
             this.socket.close();
+        }
+
+        public void echoMessage()
+        {
+            // TODO Auto-generated method stub
+
         }
 
         public void flush() throws IOException
@@ -151,6 +158,12 @@ public class BlockheadServer
         public void write(int b) throws IOException
         {
             getOutputStream().write(b);
+        }
+
+        public void write(WebSocketFrame frame)
+        {
+            // TODO Auto-generated method stub
+
         }
     }
 

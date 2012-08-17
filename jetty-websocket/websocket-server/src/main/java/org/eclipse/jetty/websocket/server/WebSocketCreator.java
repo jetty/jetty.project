@@ -16,6 +16,8 @@
 package org.eclipse.jetty.websocket.server;
 
 import org.eclipse.jetty.websocket.api.Extension;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 /**
  * Abstract WebSocket creator interface.
@@ -35,5 +37,5 @@ public interface WebSocketCreator
      *            the request details
      * @return a websocket object to use, or null if no websocket should be created from this request.
      */
-    Object createWebSocket(WebSocketRequest req, WebSocketResponse resp);
+    Object createWebSocket(UpgradeRequest req, UpgradeResponse resp);
 }

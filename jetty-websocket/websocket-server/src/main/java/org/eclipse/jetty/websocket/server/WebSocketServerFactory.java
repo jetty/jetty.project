@@ -45,6 +45,8 @@ import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.driver.EventMethodsCache;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
@@ -151,7 +153,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     }
 
     @Override
-    public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
+    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
     {
         if (methodsCache.count() < 1)
         {

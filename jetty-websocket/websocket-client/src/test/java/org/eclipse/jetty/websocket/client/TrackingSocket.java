@@ -44,6 +44,12 @@ public class TrackingSocket extends WebSocketAdapter
         assertNotClosed();
     }
 
+    public void assertMessage(String string)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
     public void assertNotClosed()
     {
         Assert.assertThat("Close Code",close.get(),is(-1));
@@ -68,6 +74,7 @@ public class TrackingSocket extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
+        super.onWebSocketClose(statusCode,reason);
         close.set(statusCode);
         closeMessage.append(reason);
         closeLatch.countDown();
@@ -76,6 +83,7 @@ public class TrackingSocket extends WebSocketAdapter
     @Override
     public void onWebSocketConnect(WebSocketConnection connection)
     {
+        super.onWebSocketConnect(connection);
         open.set(true);
         openLatch.countDown();
     }
@@ -85,5 +93,11 @@ public class TrackingSocket extends WebSocketAdapter
     {
         dataLatch.countDown();
         messageQueue.add(message);
+    }
+
+    public void waitForResponseMessage()
+    {
+        // TODO Auto-generated method stub
+
     }
 }

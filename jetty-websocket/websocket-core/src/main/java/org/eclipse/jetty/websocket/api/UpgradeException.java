@@ -13,31 +13,31 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 //========================================================================
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.api;
 
-import java.util.List;
-
-import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
-
-public interface WebSocketRequest
+/**
+ * Exception during WebSocket Upgrade Handshake.
+ */
+@SuppressWarnings("serial")
+public class UpgradeException extends WebSocketException
 {
-    // TODO: getSession
-    // TODO: getCookies
-    // TODO: getRequestAttributes ?
+    public UpgradeException()
+    {
+        super();
+    }
 
-    public List<ExtensionConfig> getExtensions();
+    public UpgradeException(String message)
+    {
+        super(message);
+    }
 
-    public String getHeader(String name);
+    public UpgradeException(String message, Throwable cause)
+    {
+        super(message,cause);
+    }
 
-    public String getHost();
-
-    public String getHttpEndPointName();
-
-    public String getOrigin();
-
-    public List<String> getSubProtocols();
-
-    public boolean hasSubProtocol(String test);
-
-    public boolean isOrigin(String test);
+    public UpgradeException(Throwable cause)
+    {
+        super(cause);
+    }
 }

@@ -320,12 +320,12 @@ public class TestClient
 
     private void open() throws Exception
     {
-        WebSocketClient client = factory.newWebSocketClient();
+        WebSocketClient client = factory.newWebSocketClient(socket);
         client.getPolicy().setIdleTimeout(_timeout);
-        client.setProtocol(_protocol);
+        client.getUpgradeRequest().setSubProtocols(_protocol);
         socket = new TestSocket();
         URI wsUri = new URI("ws://" + _host + ":" + _port + "/");
-        client.connect(wsUri,socket).get(10,TimeUnit.SECONDS);
+        client.connect(wsUri).get(10,TimeUnit.SECONDS);
     }
 
     private void send(byte op, byte[] data, int fragment)
