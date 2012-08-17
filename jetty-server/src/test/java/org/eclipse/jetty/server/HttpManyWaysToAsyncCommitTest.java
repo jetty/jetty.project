@@ -27,7 +27,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -49,22 +51,26 @@ import static org.junit.Assert.assertTrue;
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
 @RunWith(value = Parameterized.class)
-public class HttpManyWaysToCommitTest
+public class HttpManyWaysToAsyncCommitTest
 {
     private static Server server;
     private static SelectChannelConnector connector;
+    private final String CONTEXT_ATTRIBUTE = getClass().getName() + ".asyncContext";
     private String httpVersion;
+    private boolean dispatch; // if true we dispatch, otherwise we complete
 
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
-        Object[][] data = new Object[][]{{HttpVersion.HTTP_1_0.asString()}, {HttpVersion.HTTP_1_1.asString()}};
+        Object[][] data = new Object[][]{{HttpVersion.HTTP_1_0.asString(), true}, {HttpVersion.HTTP_1_0.asString(),
+                false}, {HttpVersion.HTTP_1_1.asString(), true}, {HttpVersion.HTTP_1_1.asString(), false}};
         return Arrays.asList(data);
     }
 
-    public HttpManyWaysToCommitTest(String httpVersion)
+    public HttpManyWaysToAsyncCommitTest(String httpVersion, boolean dispatch)
     {
         this.httpVersion = httpVersion;
+        this.dispatch = dispatch;
     }
 
     @Before
@@ -113,9 +119,26 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(false); // not needed, but lets be explicit about what the test does
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -152,8 +175,26 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
         }
@@ -190,10 +231,35 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            asyncContext.getResponse().getWriter().write("foobar");
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.getWriter().write("foobar");
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -233,11 +299,37 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            ServletResponse asyncContextResponse = asyncContext.getResponse();
+                            asyncContextResponse.getWriter().write("foobar");
+                            asyncContextResponse.flushBuffer();
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.getWriter().write("foobar");
-            response.flushBuffer();
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -276,10 +368,35 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            asyncContext.getResponse().flushBuffer();
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.flushBuffer();
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -318,12 +435,38 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            ServletResponse asyncContextResponse = asyncContext.getResponse();
+                            asyncContextResponse.getWriter().write("foo");
+                            asyncContextResponse.flushBuffer();
+                            asyncContextResponse.getWriter().write("bar");
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.getWriter().write("foo");
-            response.flushBuffer();
-            response.getWriter().write("bar");
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -361,11 +504,37 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            ServletResponse asyncContextResponse = asyncContext.getResponse();
+                            asyncContextResponse.setBufferSize(3);
+                            asyncContextResponse.getWriter().write("foobar");
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.setBufferSize(3);
-            response.getWriter().write("foobar");
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -381,7 +550,6 @@ public class HttpManyWaysToCommitTest
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response body is foo", response.getBody(), is("foo"));
         assertHeader(response, "content-length", "3");
-
     }
 
     @Test
@@ -406,11 +574,37 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            ServletResponse asyncContextResponse = asyncContext.getResponse();
+                            asyncContextResponse.setContentLength(3);
+                            asyncContextResponse.getWriter().write("foo");
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.setContentLength(3);
-            response.getWriter().write("foo");
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -451,11 +645,37 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            ServletResponse asyncContextResponse = asyncContext.getResponse();
+                            asyncContextResponse.setContentLength(3);
+                            asyncContextResponse.getWriter().write("foobar");
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.setContentLength(3);
-            response.getWriter().write("foobar"); // Only "foo" will get written and "bar" will be discarded
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -491,11 +711,37 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            ServletResponse asyncContextResponse = asyncContext.getResponse();
+                            asyncContextResponse.getWriter().write("foo");
+                            asyncContextResponse.setContentLength(3); // This should commit the response
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.getWriter().write("foo");
-            response.setContentLength(3); // This should commit the response
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -535,11 +781,37 @@ public class HttpManyWaysToCommitTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            {
+                final AsyncContext asyncContext = baseRequest.startAsync();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            ServletResponse asyncContextResponse = asyncContext.getResponse();
+                            asyncContextResponse.getWriter().write("foobar");
+                            asyncContextResponse.setContentLength(3);
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        if (dispatch)
+                        {
+                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                            asyncContext.dispatch();
+                        }
+                        else
+                            asyncContext.complete();
+                    }
+                }).run();
+            }
             baseRequest.setHandled(true);
-            response.getWriter().write("foobar");
-            response.setContentLength(3);
             super.handle(target, baseRequest, request, response);
         }
     }
