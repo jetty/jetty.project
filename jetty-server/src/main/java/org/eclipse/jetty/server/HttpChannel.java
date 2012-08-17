@@ -73,7 +73,6 @@ public abstract class HttpChannel
     private final HttpChannelState _state;
 
     private final Request _request;
-    private final HttpInput _in;
 
     private final Response _response;
 
@@ -94,9 +93,8 @@ public abstract class HttpChannel
         _connection = connection;
         _uri = new HttpURI(URIUtil.__CHARSET);
         _state = new HttpChannelState(this);
-        _request = new Request(this);
+        _request = new Request(this,input);
         _response = new Response(this,new Output());
-        _in=input;
     }
 
     /* ------------------------------------------------------------ */
@@ -176,8 +174,6 @@ public abstract class HttpChannel
 
     /* ------------------------------------------------------------ */
     /**
-     * Get the inputStream from the connection.
-     * <p>
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
      * is ready for the request body and thus a 100 Continue response is sent.
@@ -186,13 +182,13 @@ public abstract class HttpChannel
      * The stream will be created if it does not already exist.
      * @throws IOException if the InputStream cannot be created
      */
-    public ServletInputStream getInputStream() throws IOException
+    public void continue100(int available) throws IOException
     {
         // If the client is expecting 100 CONTINUE, then send it now.
         if (_expect100Continue)
         {
             // is content missing?
-            if (_in.available()==0)
+            if (available==0)
             {
                 if (_response.isCommitted())
                     throw new IllegalStateException("Committed before 100 Continues");
@@ -200,11 +196,7 @@ public abstract class HttpChannel
             }
             _expect100Continue=false;
         }
-
-        return _in;
     }
-
-
 
     /* ------------------------------------------------------------ */
     public void reset()
@@ -215,7 +207,6 @@ public abstract class HttpChannel
         _request.recycle();
         _response.recycle();
         _uri.clear();
-        _in.recycle(); // TODO done here or in connection?
     }
 
     /* ------------------------------------------------------------ */
@@ -321,7 +312,7 @@ public abstract class HttpChannel
                     _response.complete();
 
                     // Complete reading the request
-                    _in.consumeAll();
+                    _request.getHttpInput().consumeAll();
                 }
                 catch(EofException e)
                 {
@@ -375,7 +366,7 @@ public abstract class HttpChannel
         {
             if (_state.isIdle())
                 _state.complete();
-            _in.shutdownInput();
+            _request.getHttpInput().shutdownInput();
         }
         return false;
     }
@@ -562,21 +553,21 @@ public abstract class HttpChannel
             {
                 LOG.debug("{} content {}",this,BufferUtil.toDetailString(ref));
             }
-            _in.content(ref);
+            _request.getHttpInput().content(ref);
             return true;
         }
 
         @Override
         public boolean messageComplete(long contentLength)
         {
-            _in.shutdownInput();
+            _request.getHttpInput().shutdownInput();
             return true;
         }
 
         @Override
         public boolean earlyEOF()
         {
-            _in.shutdownInput();
+            _request.getHttpInput().shutdownInput();
             return false;
         }
 

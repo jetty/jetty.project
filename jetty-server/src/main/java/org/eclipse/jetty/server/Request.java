@@ -120,6 +120,8 @@ public class Request implements HttpServletRequest
 
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
 
+    private final HttpInput _in;
+    
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
     private Authentication _authentication;
@@ -164,16 +166,23 @@ public class Request implements HttpServletRequest
 
 
     /* ------------------------------------------------------------ */
-    public Request(HttpChannel channel)
+    public Request(HttpChannel channel, HttpInput in)
     {
         _channel = channel;
         _state=channel.getState();
+        _in=in;
     }
 
     /* ------------------------------------------------------------ */
     public HttpFields getHttpFields()
     {
         return _fields;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpInput getHttpInput()
+    {
+        return _in;
     }
     
     /* ------------------------------------------------------------ */
@@ -530,7 +539,11 @@ public class Request implements HttpServletRequest
         if (_inputState != __NONE && _inputState != _STREAM)
             throw new IllegalStateException("READER");
         _inputState = _STREAM;
-        return _channel.getInputStream();
+        
+        if (_channel.isExpecting100Continues())
+            _channel.continue100(_in.available());
+        
+        return _in;
     }
 
     /* ------------------------------------------------------------ */
@@ -1440,6 +1453,7 @@ public class Request implements HttpServletRequest
         _multiPartInputStream = null;
         _remote=null;
         _fields.clear();
+        _in.recycle(); // TODO done here or in connection?
     }
 
     /* ------------------------------------------------------------ */
