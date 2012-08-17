@@ -27,9 +27,9 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
@@ -300,12 +300,13 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 }
                 
                 public void sessionCreated(HttpSessionEvent se)
-                {
+                {                    
                     //if current request is authenticated, then as we have just created the session, mark it as secure, as it has not yet been returned to a user
-                    AbstractHttpConnection connection = AbstractHttpConnection.getCurrentConnection();
-                    if (connection == null)
+                    HttpChannel channel = HttpChannel.getCurrentHttpChannel();              
+                    
+                    if (channel == null)
                         return;
-                    Request request = connection.getRequest();
+                    Request request = channel.getRequest();
                     if (request == null)
                         return;
                     
