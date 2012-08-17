@@ -60,7 +60,7 @@ public class HttpGeneratorServerTest
         }
 
         @Override
-        public boolean headerComplete(boolean hasBody,boolean persistent)
+        public boolean headerComplete()
         {
             _content= null;
             return false;

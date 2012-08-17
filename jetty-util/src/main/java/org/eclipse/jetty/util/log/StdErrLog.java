@@ -350,7 +350,7 @@ public class StdErrLog extends AbstractLogger
             this._level = LEVEL_DEBUG;
 
             for (Logger log : Log.getLoggers().values())
-            {
+            {                
                 if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
                     ((StdErrLog)log).setLevel(LEVEL_DEBUG);
             }

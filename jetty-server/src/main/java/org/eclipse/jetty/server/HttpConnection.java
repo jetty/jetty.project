@@ -252,16 +252,19 @@ public class HttpConnection extends AbstractConnection
                 // Parse the buffer
                 if (_parser.parseNext(_requestBuffer))
                 {
+                    // reset header count
+                    _headerBytes=0;
+                    
                     // For most requests, there will not be a body, so we can try to recycle the buffer now
                     releaseRequestBuffer();
 
-                    _headerBytes=0;
+                    if (!_channel.getRequest().isPersistent())
+                        _generator.setPersistent(false);
+                    
                     // The parser returned true, which indicates the channel is ready
                     // to handle a request. Call the channel and this will either handle the
                     // request/response to completion OR if the request suspends, the channel
                     // will be left in !idle state so our outer loop will exit.
-                    if (!_parser.isPersistent())
-                        _generator.setPersistent(false);
                     _channel.handle();
 
                     // Return if the channel is still processing the request

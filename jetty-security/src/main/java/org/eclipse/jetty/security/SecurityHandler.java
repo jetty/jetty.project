@@ -23,16 +23,20 @@ import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -285,6 +289,33 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                         getInitParameter(name)==null)
                     setInitParameter(name,context.getInitParameter(name));
             }
+            
+            //register a session listener to handle securing sessions when authentication is performed
+            context.getContextHandler().addEventListener(new HttpSessionListener()
+            {
+                
+                public void sessionDestroyed(HttpSessionEvent se)
+                {
+                   
+                }
+                
+                public void sessionCreated(HttpSessionEvent se)
+                {                    
+                    //if current request is authenticated, then as we have just created the session, mark it as secure, as it has not yet been returned to a user
+                    HttpChannel channel = HttpChannel.getCurrentHttpChannel();              
+                    
+                    if (channel == null)
+                        return;
+                    Request request = channel.getRequest();
+                    if (request == null)
+                        return;
+                    
+                    if (request.isSecure())
+                    {
+                        se.getSession().setAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
+                    }
+                }
+            });
         }
 
         // complicated resolution of login and identity service to handle

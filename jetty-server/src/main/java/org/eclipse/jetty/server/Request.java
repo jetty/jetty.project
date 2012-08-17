@@ -159,6 +159,7 @@ public class Request implements HttpServletRequest
     private SessionManager _sessionManager;
     private long _timeStamp;
     private long _dispatchTime;
+    private boolean _persistent;
 
     private HttpURI _uri;
 
@@ -184,7 +185,19 @@ public class Request implements HttpServletRequest
     {
         return _in;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    public boolean isPersistent()
+    {
+        return _persistent;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setPersistent(boolean persistent)
+    {
+        _persistent = persistent;
+    }
+
     /* ------------------------------------------------------------ */
     public void addEventListener(final EventListener listener)
     {

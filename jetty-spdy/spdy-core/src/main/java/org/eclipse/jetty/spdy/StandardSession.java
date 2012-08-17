@@ -1305,7 +1305,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         @Override
         public String toString()
         {
-            return String.format("DATA bytes @%x available=%d consumed=%d on %s",dataInfo.hashCode(),dataInfo.available(),dataInfo.consumed(),getStream());
+            return String.format("DATA bytes @%x available=%d consumed=%d on %s", dataInfo.hashCode(), dataInfo.available(), dataInfo.consumed(), getStream());
         }
     }
 

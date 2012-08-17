@@ -500,14 +500,17 @@ public abstract class HttpChannel
         }
 
         @Override
-        public boolean headerComplete(boolean hasBody,boolean persistent)
+        public boolean headerComplete()
         {
             _requests++;
+            boolean persistent;
             switch (_version)
             {
                 case HTTP_0_9:
+                    persistent=false;
                     break;
                 case HTTP_1_0:
+                    persistent=_request.getHttpFields().contains(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE.asString());
                     if (persistent)
                         _response.getHttpFields().add(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
 
@@ -516,7 +519,8 @@ public abstract class HttpChannel
                     break;
 
                 case HTTP_1_1:
-
+                    persistent=!_request.getHttpFields().contains(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.asString());
+                    
                     if (!persistent)
                         _response.getHttpFields().add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
 
@@ -537,7 +541,10 @@ public abstract class HttpChannel
 
                     break;
                 default:
+                    throw new IllegalStateException();
             }
+             
+            _request.setPersistent(persistent);
 
             // Either handle now or wait for first content/message complete
             if (_expect100Continue)
