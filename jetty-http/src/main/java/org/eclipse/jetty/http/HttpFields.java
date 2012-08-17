@@ -450,7 +450,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
 
         return new Enumeration<String>()
-                {
+        {
             Field f = field;
 
             @Override
@@ -467,7 +467,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
                 f = f._next;
                 return n.getValue();
             }
-                };
+        };
     }
 
     /* -------------------------------------------------------------- */
@@ -1262,5 +1262,36 @@ public class HttpFields implements Iterable<HttpFields.Field>
         {
             return ("[" + getName() + "=" + _value + (_next == null ? "" : "->") + "]");
         }
+
+        /* ------------------------------------------------------------ */
+        public boolean contains(String value)
+        {
+            if (_value==null)
+                return false;
+            
+            if (value.equalsIgnoreCase(_value))
+                return true;
+            
+            String[] split = _value.split("\\s*,\\s*");
+            for (String s : split)
+            {
+                if (value.equalsIgnoreCase(s))
+                    return true;
+            }
+            
+            if (_next!=null)
+                return _next.contains(value);
+            
+            return false;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean contains(HttpHeader header, String value)
+    {
+        Field field = getField(header);
+        if (field==null)
+            return false;
+        return field.contains(value);
     }
 }

@@ -62,7 +62,6 @@ public class HttpParser
     private HttpHeaderValue _value;
     private String _valueString;
     private int _responseStatus;
-    private boolean _persistent;
 
     /* ------------------------------------------------------------------------------- */
     private State _state=State.START;
@@ -187,12 +186,6 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public boolean isPersistent()
-    {
-        return _persistent;
-    }
-
-    /* ------------------------------------------------------------------------------- */
     /* Quick lookahead for the start state looking for a request method or a HTTP version,
      * otherwise skip white space until something else to parse.
      */
@@ -218,7 +211,6 @@ public class HttpParser
                 if (_version!=null)
                 {
                     buffer.position(buffer.position()+_version.asString().length()+1);
-                    _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
                     _state=State.SPACE1;
                     return;
                 }
@@ -309,7 +301,6 @@ public class HttpParser
                             badMessage(buffer, "Unknown Version");
                             return true;
                         }
-                        _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
                         _state=State.SPACE1;            
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
@@ -377,10 +368,9 @@ public class HttpParser
                         _uri=_utf8.toString();
                         _utf8.reset();
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri,null);
-                        _persistent=false;
                         _state=State.END;
                         BufferUtil.clear(buffer);
-                        return_from_parse|=_handler.headerComplete(false,_persistent);
+                        return_from_parse|=_handler.headerComplete();
                         return_from_parse|=_handler.messageComplete(_contentPosition);
                     }
                     else
@@ -410,7 +400,6 @@ public class HttpParser
                                     _string.setLength(0);
                                     buffer.position(buffer.position()+_version.asString().length()-1);
                                     _eol=buffer.get();
-                                    _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
                                     _state=State.HEADER;
                                     return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
                                 }
@@ -429,10 +418,9 @@ public class HttpParser
                         {
                             // HTTP/0.9
                             return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, null);
-                            _persistent=false;
                             _state=State.END;
                             BufferUtil.clear(buffer);
-                            return_from_parse|=_handler.headerComplete(false,_persistent);
+                            return_from_parse|=_handler.headerComplete();
                             return_from_parse|=_handler.messageComplete(_contentPosition);
                         }
                     }
@@ -450,7 +438,6 @@ public class HttpParser
                         }
                         
                         _eol=ch;
-                        _persistent=_version.getVerion()>=HttpVersion.HTTP_1_1.getVerion();
                         _state=State.HEADER;
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
                         continue;
@@ -568,37 +555,6 @@ public class HttpParser
                                                 }
                                             }
                                             break;
-
-                                        case CONNECTION:
-                                            switch(_value==null?HttpHeaderValue.UNKNOWN:_value)
-                                            {
-                                                case CLOSE:
-                                                    _persistent=false;
-                                                    break;
-
-                                                case KEEP_ALIVE:
-                                                    _persistent=true;
-                                                    break;
-
-                                                default: // No match, may be multi valued
-                                                {
-                                                    for (String v : _valueString.toString().split(","))
-                                                    {
-                                                        HttpHeaderValue val=HttpHeaderValue.CACHE.get(v.trim());
-                                                        switch(val==null?HttpHeaderValue.UNKNOWN:val)
-                                                        {
-                                                            case CLOSE:
-                                                                _persistent=false;
-                                                                break;
-
-                                                            case KEEP_ALIVE:
-                                                                _persistent=true;
-                                                                break;
-                                                        }
-                                                    }
-                                                    break;
-                                                }
-                                            }
                                     }
                                 }
 
@@ -634,24 +590,23 @@ public class HttpParser
                                 {
                                     case EOF_CONTENT:
                                         _state=State.EOF_CONTENT;
-                                        _persistent=false;
-                                        return_from_parse|=_handler.headerComplete(true,_persistent); 
+                                        return_from_parse|=_handler.headerComplete(); 
                                         break;
 
                                     case CHUNKED_CONTENT:
                                         _state=State.CHUNKED_CONTENT;
-                                        return_from_parse|=_handler.headerComplete(true,_persistent); 
+                                        return_from_parse|=_handler.headerComplete(); 
                                         break;
 
                                     case NO_CONTENT:
-                                        return_from_parse|=_handler.headerComplete(false,_persistent);
+                                        return_from_parse|=_handler.headerComplete();
                                         _state=State.END;
                                         return_from_parse|=_handler.messageComplete(_contentPosition);
                                         break;
 
                                     default:
                                         _state=State.CONTENT;
-                                        return_from_parse|=_handler.headerComplete(true,_persistent); 
+                                        return_from_parse|=_handler.headerComplete(); 
                                         break;
                                 }
                             }
@@ -1103,7 +1058,6 @@ public class HttpParser
     private void badMessage(ByteBuffer buffer, String reason)
     {
         BufferUtil.clear(buffer);
-        _persistent=false;
         _state=State.END;
         _handler.badMessage(400, reason);
     }
@@ -1111,8 +1065,6 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public void inputShutdown()
     {
-        _persistent=false;
-
         // was this unexpected?
         switch(_state)
         {
@@ -1139,15 +1091,18 @@ public class HttpParser
     {
         if (_state!=State.END && _state!=State.CLOSED)
             LOG.warn("Closing {}",this);
-        _persistent=false;
-        reset();
+        _state=State.CLOSED;
+        _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+        _contentPosition=0;
+        _responseStatus=0;
+        _contentChunk=null;
     }
     
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
         // reset state
-        _state=_persistent?State.START:State.CLOSED;
+        _state=State.START;
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentPosition=0;
         _responseStatus=0;
@@ -1159,19 +1114,16 @@ public class HttpParser
     {
         this._state=state;
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
-        if (state==State.CLOSED)
-            _persistent=false;
     }
 
     /* ------------------------------------------------------------------------------- */
     @Override
     public String toString()
     {
-        return String.format("%s{s=%s,c=%d,p=%b}",
+        return String.format("%s{s=%s,c=%d}",
                 getClass().getSimpleName(),
                 _state,
-                _contentLength,
-                _persistent);
+                _contentLength);
     }
 
     /* ------------------------------------------------------------ */
@@ -1185,7 +1137,7 @@ public class HttpParser
     {
         public boolean content(ByteBuffer ref);
 
-        public boolean headerComplete(boolean hasBody,boolean persistent);
+        public boolean headerComplete();
 
         public boolean messageComplete(long contentLength);
 

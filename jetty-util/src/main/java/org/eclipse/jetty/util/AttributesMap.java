@@ -16,10 +16,10 @@ package org.eclipse.jetty.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /* ------------------------------------------------------------ */
 /** AttributesMap.
@@ -33,7 +33,7 @@ public class AttributesMap implements Attributes
     /* ------------------------------------------------------------ */
     public AttributesMap()
     {
-        _map=new HashMap<String,Object>();
+        _map=new ConcurrentHashMap<String,Object>();
     }
     
     /* ------------------------------------------------------------ */
@@ -45,13 +45,14 @@ public class AttributesMap implements Attributes
     /* ------------------------------------------------------------ */
     public AttributesMap(AttributesMap map)
     {
-        _map=new HashMap<String,Object>(map._map);
+        _map=new ConcurrentHashMap<String,Object>(map._map);
     }
     
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.jetty.util.Attributes#removeAttribute(java.lang.String)
      */
+    @Override
     public void removeAttribute(String name)
     {
         _map.remove(name);
@@ -61,6 +62,7 @@ public class AttributesMap implements Attributes
     /* 
      * @see org.eclipse.jetty.util.Attributes#setAttribute(java.lang.String, java.lang.Object)
      */
+    @Override
     public void setAttribute(String name, Object attribute)
     {
         if (attribute==null)
@@ -73,6 +75,7 @@ public class AttributesMap implements Attributes
     /* 
      * @see org.eclipse.jetty.util.Attributes#getAttribute(java.lang.String)
      */
+    @Override
     public Object getAttribute(String name)
     {
         return _map.get(name);
@@ -82,6 +85,7 @@ public class AttributesMap implements Attributes
     /* 
      * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
      */
+    @Override
     public Enumeration<String> getAttributeNames()
     {
         return Collections.enumeration(_map.keySet());
@@ -120,6 +124,7 @@ public class AttributesMap implements Attributes
     /* 
      * @see org.eclipse.jetty.util.Attributes#clear()
      */
+    @Override
     public void clearAttributes()
     {
         _map.clear();

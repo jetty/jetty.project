@@ -436,4 +436,25 @@ public class HttpFieldsTest
 
     }
 
+    @Test
+    public void testContains() throws Exception
+    {
+        HttpFields header = new HttpFields();
+
+        header.add("0", "");
+        header.add("1", ",");
+        header.add("2", ",,");
+        header.add("3", "abc");
+        header.add("4", "def");
+        header.add("5", "abc,def,hig");
+        header.add("6", "abc");
+        header.add("6", "def");
+        header.add("6", "hig");
+
+        for (int i=0;i<7;i++)
+        {
+            assertFalse(""+i,header.getField(""+i).contains("xyz"));
+            assertEquals(""+i,i>=4,header.getField(""+i).contains("def"));
+        }
+    }
 }
