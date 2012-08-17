@@ -587,6 +587,55 @@ public class HttpURI
             return new String(_raw,_path,length,_charset);
         return new String(bytes,0,n,_charset);
     }
+    
+    
+    public String getDecodedPath(String encoding)
+    {
+        if (_path==_param)
+            return null;
+
+        int length = _param-_path;
+        byte[] bytes=null;
+        int n=0;
+
+        for (int i=_path;i<_param;i++)
+        {
+            byte b = _raw[i];
+
+            if (b=='%')
+            {
+                if ((i+2)>=_param)
+                    throw new IllegalArgumentException("Bad % encoding: "+this);
+                b=(byte)(0xff&TypeUtil.parseInt(_raw,i+1,2,16));
+                i+=2;
+            }
+            else if (bytes==null)
+            {
+                n++;
+                continue;
+            }
+
+            if (bytes==null)
+            {
+                bytes=new byte[length];
+                System.arraycopy(_raw,_path,bytes,0,n);
+            }
+
+            bytes[n++]=b;
+        }
+
+
+        if (bytes==null)
+            return StringUtil.toString(_raw,_path,_param-_path,encoding);
+
+        return StringUtil.toString(bytes,0,n,encoding);
+    }
+    
+    
+    
+    
+    
+
 
     public String getPathAndParam()
     {

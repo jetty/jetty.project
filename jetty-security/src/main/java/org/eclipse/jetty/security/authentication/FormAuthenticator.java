@@ -189,8 +189,8 @@ public class FormAuthenticator extends LoginAuthenticator
         if (!mandatory)
             return _deferred;
 
-        if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())))
-            return Authentication.NOT_CHECKED;
+        if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())) &&!DeferredAuthentication.isDeferred(response))
+            return _deferred;
 
         HttpSession session = request.getSession(true);
 
@@ -205,7 +205,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 UserIdentity user = _loginService.login(username,password);
                 if (user!=null)
                 {
-                    session=renewSessionOnAuthentication(request,response);
+                    session=renewSession(request,response);
 
                     // Redirect to original request
                     String nuri;
