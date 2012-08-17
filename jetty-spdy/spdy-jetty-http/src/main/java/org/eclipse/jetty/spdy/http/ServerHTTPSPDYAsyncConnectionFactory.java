@@ -296,6 +296,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
         public void beginRequest(final Headers headers, final boolean endRequest)
         {
+            //TODO: probably not necessary to dispatch beginRequest
             this.headers = headers.isEmpty() ? null : headers;
             post(new Runnable()
             {
