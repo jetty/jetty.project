@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.server.ssl;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.security.KeyStore;
@@ -24,8 +26,14 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.server.SelectChannelConnector;
+import org.eclipse.jetty.server.HttpServerTestBase.CommittedErrorHandler;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -135,5 +143,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     public void testAvailable() throws Exception
     {
     }
+    
 
 }

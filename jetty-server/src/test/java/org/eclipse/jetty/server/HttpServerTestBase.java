@@ -1040,6 +1040,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             Thread.sleep(200);
             
             // TODO this sometimes fails for SSL ???
+            if (handler._endp.isOpen())
+            {
+                System.err.println(handler._endp);
+                System.err.println(((SslConnection.DecryptedEndPoint)handler._endp).getEncryptedEndPoint());
+                System.err.println(handler._endp.getConnection());
+            }
             assertTrue(!handler._endp.isOpen());
         }
         finally
@@ -1051,7 +1057,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    protected static class CommittedErrorHandler extends AbstractHandler
+    public static class CommittedErrorHandler extends AbstractHandler
     {
         public EndPoint _endp;
 

@@ -201,6 +201,8 @@ public class HttpConnection extends AbstractConnection
     {
         LOG.debug("{} onReadable {}",this,_channel.isIdle());
 
+        int filled=-2;
+        
         try
         {
             setCurrentConnection(this);
@@ -214,7 +216,7 @@ public class HttpConnection extends AbstractConnection
                     if (_requestBuffer==null)
                         _requestBuffer=_bufferPool.acquire(_httpConfig.getRequestHeaderSize(),false);  // TODO may acquire on speculative read. probably released to early
 
-                    int filled=getEndPoint().fill(_requestBuffer);
+                    filled=getEndPoint().fill(_requestBuffer);
 
                     LOG.debug("{} filled {}",this,filled);
 
@@ -233,7 +235,10 @@ public class HttpConnection extends AbstractConnection
                         // read -1 then we have nothing to parse and thus nothing that
                         // will generate a response.  If we had a suspended request pending
                         // a response or a request waiting in the buffer, we would not be here.
-                        getEndPoint().shutdownOutput();
+                        if (getEndPoint().isOutputShutdown())
+                            getEndPoint().close();
+                        else
+                            getEndPoint().shutdownOutput();
                         // buffer must be empty and the channel must be idle, so we can release.
                         releaseRequestBuffer();
                         return;
@@ -480,7 +485,9 @@ public class HttpConnection extends AbstractConnection
             // make sure that an oshut connection is driven towards close
             // TODO this is a little ugly
             if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
+            {
                 fillInterested();
+            }
         }
 
         /* ------------------------------------------------------------ */
