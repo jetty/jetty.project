@@ -72,18 +72,12 @@ public abstract class HttpChannel
     private final ChannelEventHandler _handler = new ChannelEventHandler();
     private final HttpChannelState _state;
 
-    private final HttpFields _requestFields;
     private final Request _request;
     private final HttpInput _in;
 
-    private final HttpFields _responseFields;
     private final Response _response;
-    private final Output _out;
-    private HttpWriter _writer;
-    private PrintWriter _printWriter;
 
     private int _requests;
-    private int _include;
 
     private HttpVersion _version = HttpVersion.HTTP_1_1;
 
@@ -99,13 +93,10 @@ public abstract class HttpChannel
         _server = server;
         _connection = connection;
         _uri = new HttpURI(URIUtil.__CHARSET);
-        _requestFields = new HttpFields();
-        _responseFields = new HttpFields();
         _state = new HttpChannelState(this);
         _request = new Request(this);
-        _response = new Response(this);
+        _response = new Response(this,new Output());
         _in=input;
-        _out=new Output();
     }
 
     /* ------------------------------------------------------------ */
@@ -146,25 +137,7 @@ public abstract class HttpChannel
     {
         return _server;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the requestFields.
-     */
-    public HttpFields getRequestFields()
-    {
-        return _requestFields;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the responseFields.
-     */
-    public HttpFields getResponseFields()
-    {
-        return _responseFields;
-    }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the request.
@@ -232,52 +205,6 @@ public abstract class HttpChannel
     }
 
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The output stream for this connection. The stream will be created if it does not already exist.
-     */
-    public HttpOutput getOutputStream()
-    {
-        return _out;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param charset the character set for the PrintWriter
-     * @return A {@link PrintWriter} wrapping the {@link #getOutputStream output stream}. The writer is created if it
-     *    does not already exist.
-     */
-    public PrintWriter getPrintWriter(String charset)
-    {
-        getOutputStream();
-        if (_writer==null)
-        {
-            _writer=new HttpWriter(_out);
-            if (_server.isUncheckedPrintWriter())
-                _printWriter=new UncheckedPrintWriter(_writer);
-            else
-                _printWriter = new PrintWriter(_writer)
-                {
-                    public void close()
-                    {
-                        synchronized (lock)
-                        {
-                            try
-                            {
-                                out.close();
-                            }
-                            catch (IOException e)
-                            {
-                                setError();
-                            }
-                        }
-                    }
-                };
-
-        }
-        _writer.setCharacterEncoding(charset);
-        return _printWriter;
-    }
 
     /* ------------------------------------------------------------ */
     public void reset()
@@ -285,12 +212,9 @@ public abstract class HttpChannel
         _expect=false;
         _expect100Continue=false;
         _expect102Processing=false;
-        _requestFields.clear();
         _request.recycle();
-        _responseFields.clear();
         _response.recycle();
         _uri.clear();
-        _out.reset();
         _in.recycle(); // TODO done here or in connection?
     }
 
@@ -320,7 +244,7 @@ public abstract class HttpChannel
                 try
                 {
                     _request.setHandled(false);
-                    _out.reopen();
+                    _response.getHttpOutput().reopen();
 
                     if (_state.isInitial())
                     {
@@ -429,7 +353,7 @@ public abstract class HttpChannel
         try
         {
             _response.setStatus(status,reason);
-            _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
+            _response.getHttpFields().add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
 
             ByteBuffer buffer=null;
             if (content!=null)
@@ -454,25 +378,6 @@ public abstract class HttpChannel
             _in.shutdownInput();
         }
         return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isIncluding()
-    {
-        return _include>0;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void include()
-    {
-        _include++;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void included()
-    {
-        _include--;
-        _out.reopen();
     }
 
     /* ------------------------------------------------------------ */
@@ -599,7 +504,7 @@ public abstract class HttpChannel
                 }
             }
             if (name!=null)
-                _requestFields.add(name, value);
+                _request.getHttpFields().add(name, value);
             return false;
         }
 
@@ -613,19 +518,19 @@ public abstract class HttpChannel
                     break;
                 case HTTP_1_0:
                     if (persistent)
-                        _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
+                        _response.getHttpFields().add(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
 
                     if (_server.getSendDateHeader())
-                        _responseFields.putDateField(HttpHeader.DATE.toString(),_request.getTimeStamp());
+                        _response.getHttpFields().putDateField(HttpHeader.DATE.toString(),_request.getTimeStamp());
                     break;
 
                 case HTTP_1_1:
 
                     if (!persistent)
-                        _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
+                        _response.getHttpFields().add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
 
                     if (_server.getSendDateHeader())
-                        _responseFields.putDateField(HttpHeader.DATE.toString(),_request.getTimeStamp());
+                        _response.getHttpFields().putDateField(HttpHeader.DATE.toString(),_request.getTimeStamp());
 
                     if (!_host)
                     {
@@ -690,7 +595,7 @@ public abstract class HttpChannel
             if (_expect100Continue)
             {
                 _expect100Continue=false;
-                getResponseFields().put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
+                _response.getHttpFields().put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
             }
             return _response.commit();
         }
@@ -723,8 +628,7 @@ public abstract class HttpChannel
         {
             if (isClosed())
                 throw new IOException("Closed");
-            PrintWriter writer=getPrintWriter(null);
-            writer.print(s);
+            write(s.getBytes(_response.getCharacterEncoding()));
         }
 
 
@@ -743,19 +647,19 @@ public abstract class HttpChannel
                 HttpContent httpContent = (HttpContent) content;
                 String contentType = httpContent.getContentType();
                 if (contentType != null)
-                    _responseFields.put(HttpHeader.CONTENT_TYPE, contentType);
+                    _response.getHttpFields().put(HttpHeader.CONTENT_TYPE, contentType);
 
                 if (httpContent.getContentLength() > 0)
-                    _responseFields.putLongField(HttpHeader.CONTENT_LENGTH, httpContent.getContentLength());
+                    _response.getHttpFields().putLongField(HttpHeader.CONTENT_LENGTH, httpContent.getContentLength());
 
                 String lm = httpContent.getLastModified();
                 if (lm != null)
-                    _responseFields.put(HttpHeader.LAST_MODIFIED, lm);
+                    _response.getHttpFields().put(HttpHeader.LAST_MODIFIED, lm);
                 else if (httpContent.getResource()!=null)
                 {
                     long lml=httpContent.getResource().lastModified();
                     if (lml!=-1)
-                        _responseFields.putDateField(HttpHeader.LAST_MODIFIED, lml);
+                        _response.getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, lml);
                 }
 
                 content = httpContent.getDirectBuffer();
@@ -767,7 +671,7 @@ public abstract class HttpChannel
             else if (content instanceof Resource)
             {
                 resource=(Resource)content;
-                _responseFields.putDateField(HttpHeader.LAST_MODIFIED, resource.lastModified());
+                _response.getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, resource.lastModified());
                 content=resource.getInputStream();
             }
 

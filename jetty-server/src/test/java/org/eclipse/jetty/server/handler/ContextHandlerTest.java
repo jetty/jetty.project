@@ -360,36 +360,6 @@ public class ContextHandlerTest
         return root;
     }
 
-    @Test
-    public void testUncheckedPrintWriter() throws Exception
-    {
-        Server server = new Server();
-        server.setUncheckedPrintWriter(true);
-        LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
-        ContextHandler context = new ContextHandler("/");
-        WriterHandler handler = new WriterHandler();
-        context.setHandler(handler);
-        server.setHandler(context);
-
-        try
-        {
-            server.start();
-
-            String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\nConnection:close\n\n");
-
-            Assert.assertTrue(response.indexOf("Goodbye")>0);
-            Assert.assertTrue(response.indexOf("dead")<0);
-            Thread.sleep(100);
-            Assert.assertTrue(handler.error);
-            Assert.assertTrue(handler.throwable!=null);
-        }
-        finally
-        {
-            server.stop();
-        }
-    }
-
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
     {
         LocalConnector connector = (LocalConnector)server.getConnectors()[0];

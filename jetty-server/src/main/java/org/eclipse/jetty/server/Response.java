@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -71,8 +72,10 @@ public class Response implements HttpServletResponse
     public final static String HTTP_ONLY_COMMENT="__HTTP_ONLY__";
 
     private final HttpChannel _channel;
-    private final HttpFields _fields;
+    private final HttpOutput _out;
+    private final HttpFields _fields=new HttpFields();
     private final AtomicBoolean _committed = new AtomicBoolean(false);
+    private final AtomicInteger _include = new AtomicInteger();
     private int _status=HttpStatus.NOT_SET_000;
     private String _reason;
     private Locale _locale;
@@ -87,10 +90,10 @@ public class Response implements HttpServletResponse
     /**
      *
      */
-    public Response(HttpChannel channel)
+    public Response(HttpChannel channel, HttpOutput out)
     {
         _channel=channel;
-        _fields=channel.getResponseFields();
+        _out=out;
     }
 
     /* ------------------------------------------------------------ */
@@ -115,8 +118,35 @@ public class Response implements HttpServletResponse
         _outputState=OutputState.NONE;
         _contentLength=-1;
         _committed.set(false);
+        _out.reset();
+        _fields.clear();
     }
 
+    /* ------------------------------------------------------------ */
+    public HttpOutput getHttpOutput()
+    {
+        return _out;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isIncluding()
+    {
+        return _include.get()>0;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void include()
+    {
+        _include.incrementAndGet();
+    }
+
+    /* ------------------------------------------------------------ */
+    public void included()
+    {
+        _include.decrementAndGet();
+        _out.reopen();
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.http.HttpServletResponse#addCookie(javax.servlet.http.Cookie)
@@ -300,8 +330,8 @@ public class Response implements HttpServletResponse
     @Override
     public void sendError(int code, String message) throws IOException
     {
-    	if (_channel.isIncluding())
-    		return;
+    	if (isIncluding())
+    	    return;
 
         if (isCommitted())
             LOG.warn("Committed before "+code+" "+message);
@@ -386,8 +416,8 @@ public class Response implements HttpServletResponse
         }
         else if (code!=SC_PARTIAL_CONTENT)
         {
-            _channel.getRequestFields().remove(HttpHeader.CONTENT_TYPE);
-            _channel.getRequestFields().remove(HttpHeader.CONTENT_LENGTH);
+            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_TYPE);
+            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_LENGTH);
             _characterEncoding=null;
             _mimeType=null;
         }
@@ -429,7 +459,7 @@ public class Response implements HttpServletResponse
     @Override
     public void sendRedirect(String location) throws IOException
     {
-    	if (_channel.isIncluding())
+    	if (isIncluding())
     		return;
 
         if (location==null)
@@ -490,7 +520,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setDateHeader(String name, long date)
     {
-        if (!_channel.isIncluding())
+        if (!isIncluding())
             _fields.putDateField(name, date);
     }
 
@@ -501,7 +531,7 @@ public class Response implements HttpServletResponse
     @Override
     public void addDateHeader(String name, long date)
     {
-        if (!_channel.isIncluding())
+        if (!isIncluding())
             _fields.addDateField(name, date);
     }
 
@@ -515,7 +545,7 @@ public class Response implements HttpServletResponse
             setContentType(value);
         else
         {
-            if (_channel.isIncluding())
+            if (isIncluding())
                     return;
 
             _fields.put(name, value);
@@ -540,7 +570,7 @@ public class Response implements HttpServletResponse
             setContentType(value);
         else
         {
-            if (_channel.isIncluding())
+            if (isIncluding())
             {
                 if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                     name=name.substring(SET_INCLUDE_HEADER_PREFIX.length());
@@ -595,7 +625,7 @@ public class Response implements HttpServletResponse
      */
     public void addHeader(HttpHeader name, String value)
     {
-        if (_channel.isIncluding())
+        if (isIncluding())
             return;
 
         _fields.add(name, value);
@@ -615,7 +645,7 @@ public class Response implements HttpServletResponse
     @Override
     public void addHeader(String name, String value)
     {
-        if (_channel.isIncluding())
+        if (isIncluding())
         {
             if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name=name.substring(SET_INCLUDE_HEADER_PREFIX.length());
@@ -640,7 +670,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setIntHeader(String name, int value)
     {
-        if (!_channel.isIncluding())
+        if (!isIncluding())
         {
             _fields.putLongField(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -655,7 +685,7 @@ public class Response implements HttpServletResponse
     @Override
     public void addIntHeader(String name, int value)
     {
-        if (!_channel.isIncluding())
+        if (!isIncluding())
         {
             _fields.add(name, Integer.toString(value));
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -682,7 +712,7 @@ public class Response implements HttpServletResponse
     {
         if (sc<=0)
             throw new IllegalArgumentException();
-        if (!_channel.isIncluding())
+        if (!isIncluding())
         {
             _status=sc;
             _reason=sm;
@@ -726,10 +756,8 @@ public class Response implements HttpServletResponse
     {
         if (_outputState==OutputState.WRITER)
             throw new IllegalStateException("WRITER");
-
-        ServletOutputStream out = _channel.getOutputStream();
         _outputState=OutputState.STREAM;
-        return out;
+        return _out;
     }
 
     /* ------------------------------------------------------------ */
@@ -770,7 +798,24 @@ public class Response implements HttpServletResponse
             }
 
             /* construct Writer using correct encoding */
-            _writer = _channel.getPrintWriter(encoding);
+            // TODO switch on encoding here
+            _writer = new PrintWriter(new HttpWriter(_out,encoding))
+            {
+                public void close()
+                {
+                    synchronized (lock)
+                    {
+                        try
+                        {
+                            out.close();
+                        }
+                        catch (IOException e)
+                        {
+                            setError();
+                        }
+                    }
+                }
+            };
         }
         _outputState=OutputState.WRITER;
         return _writer;
@@ -788,10 +833,10 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || _channel.isIncluding())
+        if (isCommitted() || isIncluding())
             return;
         
-        long written=_channel.getOutputStream().getWritten();
+        long written=_out.getWritten();
         if (written>len)
             throw new IllegalArgumentException("setContent("+len+") when already written "+written);
         
@@ -841,7 +886,7 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || _channel.isIncluding())
+        if (isCommitted() || isIncluding())
         	return;
         _contentLength=len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
@@ -854,7 +899,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setCharacterEncoding(String encoding)
     {
-        if (_channel.isIncluding())
+        if (isIncluding())
                 return;
 
         if (_outputState==OutputState.NONE && !isCommitted())
@@ -905,7 +950,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setContentType(String contentType)
     {
-        if (isCommitted() || _channel.isIncluding())
+        if (isCommitted() || isIncluding())
             return;
 
         if (contentType==null)
@@ -1002,7 +1047,7 @@ public class Response implements HttpServletResponse
         HttpFields response_fields=_fields;
 
         response_fields.clear();
-        String connection=_channel.getRequestFields().getStringField(HttpHeader.CONNECTION);
+        String connection=_channel.getRequest().getHttpFields().getStringField(HttpHeader.CONNECTION);
         if (connection!=null)
         {
             String[] values = connection.split(",");
@@ -1057,7 +1102,7 @@ public class Response implements HttpServletResponse
         {
             case STREAM:
             case WRITER:
-                _channel.getOutputStream().reset();
+                _out.reset();
         }
 
         _channel.resetBuffer();
@@ -1092,7 +1137,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setLocale(Locale locale)
     {
-        if (locale == null || isCommitted() ||_channel.isIncluding())
+        if (locale == null || isCommitted() ||isIncluding())
             return;
 
         _locale = locale;
@@ -1161,7 +1206,7 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     public long getContentCount()
     {
-        return _channel.getOutputStream().getWritten();
+        return _out.getWritten();
     }
     
     /* ------------------------------------------------------------ */
@@ -1170,32 +1215,5 @@ public class Response implements HttpServletResponse
     {
         return "HTTP/1.1 "+_status+" "+ (_reason==null?"":_reason) +System.getProperty("line.separator")+
         _fields.toString();
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private static class NullOutput extends ServletOutputStream
-    {
-        @Override
-        public void write(int b) throws IOException
-        {
-        }
-
-        @Override
-        public void print(String s) throws IOException
-        {
-        }
-
-        @Override
-        public void println(String s) throws IOException
-        {
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException
-        {
-        }
-
     }
 }

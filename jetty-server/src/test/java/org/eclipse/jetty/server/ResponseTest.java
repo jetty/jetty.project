@@ -651,8 +651,8 @@ public class ResponseTest
 
     private Response newResponse()
     {
-        _channel.getOutputStream().reset();
-        Response response = new Response(_channel);
+        _channel.getResponse().getHttpOutput().reset();
+        Response response = new Response(_channel,_channel.getResponse().getHttpOutput());
         return response;
     }
 

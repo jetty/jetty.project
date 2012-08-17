@@ -41,10 +41,11 @@ public class HttpWriter extends Writer
     int _surrogate;
 
     /* ------------------------------------------------------------ */
-    public HttpWriter(HttpOutput out)
+    public HttpWriter(HttpOutput out, String encoding)
     {
         _out=out;
         _surrogate=0; // AS lastUTF16CodePoint
+        setCharacterEncoding(encoding);
     }
 
     /* ------------------------------------------------------------ */

@@ -78,7 +78,6 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
-    private boolean _uncheckedPrintWriter=false;
 
 
     /* ------------------------------------------------------------ */
@@ -625,18 +624,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         dumpThis(out);
         dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),_connectors);
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isUncheckedPrintWriter()
-    {
-        return _uncheckedPrintWriter;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setUncheckedPrintWriter(boolean unchecked)
-    {
-        _uncheckedPrintWriter=unchecked;
     }
 
     /* ------------------------------------------------------------ */

@@ -115,7 +115,7 @@ public class Request implements HttpServletRequest
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
     private final HttpChannel _channel;
-    private HttpFields _fields;
+    private final HttpFields _fields=new HttpFields();
     private final HttpChannelState _state;
 
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
@@ -168,9 +168,14 @@ public class Request implements HttpServletRequest
     {
         _channel = channel;
         _state=channel.getState();
-        _fields=_channel.getRequestFields();
     }
 
+    /* ------------------------------------------------------------ */
+    public HttpFields getHttpFields()
+    {
+        return _fields;
+    }
+    
     /* ------------------------------------------------------------ */
     public void addEventListener(final EventListener listener)
     {
@@ -1434,6 +1439,7 @@ public class Request implements HttpServletRequest
         _savedNewSessions=null;
         _multiPartInputStream = null;
         _remote=null;
+        _fields.clear();
     }
 
     /* ------------------------------------------------------------ */
