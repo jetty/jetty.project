@@ -12,21 +12,9 @@
 //========================================================================
 package org.eclipse.jetty.server;
 
-import java.io.BufferedReader;
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletResponse;
@@ -34,11 +22,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,17 +29,13 @@ import org.junit.runners.Parameterized;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
 @RunWith(value = Parameterized.class)
-public class HttpManyWaysToAsyncCommitTest
+public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
 {
-    private static Server server;
-    private static SelectChannelConnector connector;
     private final String CONTEXT_ATTRIBUTE = getClass().getName() + ".asyncContext";
-    private String httpVersion;
     private boolean dispatch; // if true we dispatch, otherwise we complete
 
     @Parameterized.Parameters
@@ -69,24 +48,9 @@ public class HttpManyWaysToAsyncCommitTest
 
     public HttpManyWaysToAsyncCommitTest(String httpVersion, boolean dispatch)
     {
+        super(httpVersion);
         this.httpVersion = httpVersion;
         this.dispatch = dispatch;
-    }
-
-    @Before
-    public void setUp() throws Exception
-    {
-        server = new Server();
-        connector = new SelectChannelConnector(server);
-        server.setConnectors(new Connector[]{connector});
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
-        server.stop();
     }
 
     @Test
@@ -95,7 +59,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new DoesNotSetHandledHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 404", response.getCode(), is("404"));
     }
@@ -106,7 +70,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new DoesNotSetHandledHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 500", response.getCode(), is("500"));
     }
@@ -149,7 +113,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new OnlySetHandledHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertHeader(response, "content-length", "0");
@@ -161,7 +125,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new OnlySetHandledHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 500", response.getCode(), is("500"));
     }
@@ -206,7 +170,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new SetHandledWriteSomeDataHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertHeader(response, "content-length", "6");
@@ -218,7 +182,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new SetHandledWriteSomeDataHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 500", response.getCode(), is("500"));
     }
@@ -270,7 +234,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new ExplicitFlushHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
 
         assertThat("response code is 200", response.getCode(), is("200"));
@@ -284,7 +248,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new ExplicitFlushHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         if ("HTTP/1.1".equals(httpVersion))
@@ -340,7 +304,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new SetHandledAndFlushWithoutContentHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         if ("HTTP/1.1".equals(httpVersion))
@@ -353,7 +317,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new SetHandledAndFlushWithoutContentHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         if ("HTTP/1.1".equals(httpVersion))
@@ -407,7 +371,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new WriteFlushWriteMoreHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         if ("HTTP/1.1".equals(httpVersion))
@@ -420,7 +384,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new WriteFlushWriteMoreHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         if ("HTTP/1.1".equals(httpVersion))
@@ -477,7 +441,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new OverflowHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
@@ -490,7 +454,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new OverflowHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         // response not committed when we throw, so 500 expected
         assertThat("response code is 500", response.getCode(), is("500"));
@@ -545,7 +509,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response body is foo", response.getBody(), is("foo"));
@@ -558,7 +522,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         //TODO: should we expect 500 here?
         assertThat("response code is 200", response.getCode(), is("200"));
@@ -615,7 +579,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new SetContentLengthAndWriteMoreBytesHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         // jetty truncates the body when content-length is reached.! This is correct and desired behaviour?
@@ -629,7 +593,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new SetContentLengthAndWriteMoreBytesHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         // TODO: we throw before response is committed. should we expect 500?
         assertThat("response code is 200", response.getCode(), is("200"));
@@ -686,7 +650,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new WriteAndSetContentLengthHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         //TODO: jetty ignores setContentLength and sends transfer-encoding header. Correct?
@@ -698,7 +662,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new WriteAndSetContentLengthHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
     }
@@ -753,7 +717,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new WriteAndSetContentLengthTooSmallHandler(false));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
@@ -768,7 +732,7 @@ public class HttpManyWaysToAsyncCommitTest
         server.setHandler(new WriteAndSetContentLengthTooSmallHandler(true));
         server.start();
 
-        Response response = executeRequest();
+        TestHttpResponse response = executeRequest();
 
         assertThat(response.getCode(), is("500"));
     }
@@ -813,215 +777,6 @@ public class HttpManyWaysToAsyncCommitTest
             }
             baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
-        }
-    }
-
-    private Response executeRequest() throws URISyntaxException, IOException
-    {
-        Socket socket = new Socket("localhost", connector.getLocalPort());
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-        String request = "GET / " + httpVersion + "\r\n";
-
-        writer.write(request);
-        writer.write("Host: localhost");
-        writer.println("\r\n");
-        writer.flush();
-
-        return readResponse(reader);
-    }
-
-    private Response readResponse(BufferedReader reader) throws IOException
-    {
-        // Simplified parser for HTTP responses
-        String line = reader.readLine();
-        if (line == null)
-            throw new EOFException();
-        Matcher responseLine = Pattern.compile("HTTP/1.1" + "\\s+(\\d+)").matcher(line);
-        assertThat("http version is 1.1", responseLine.lookingAt(), is(true));
-        String code = responseLine.group(1);
-
-        Map<String, String> headers = new LinkedHashMap<>();
-        while ((line = reader.readLine()) != null)
-        {
-            if (line.trim().length() == 0)
-                break;
-
-            parseHeader(line, headers);
-        }
-
-        StringBuilder body;
-        if (headers.containsKey("content-length"))
-        {
-            body = parseContentLengthDelimitedBody(reader, headers);
-        }
-        else if ("chunked".equals(headers.get("transfer-encoding")))
-        {
-            body = parseChunkedBody(reader);
-        }
-        else
-        {
-            body = parseEOFDelimitedBody(reader, headers);
-        }
-
-        return new Response(code, headers, body.toString().trim());
-    }
-
-    private void parseHeader(String line, Map<String, String> headers)
-    {
-        Matcher header = Pattern.compile("([^:]+):\\s*(.*)").matcher(line);
-        assertTrue(header.lookingAt());
-        String headerName = header.group(1);
-        String headerValue = header.group(2);
-        headers.put(headerName.toLowerCase(), headerValue.toLowerCase());
-    }
-
-    private StringBuilder parseContentLengthDelimitedBody(BufferedReader reader, Map<String, String> headers) throws IOException
-    {
-        StringBuilder body;
-        int readLen = 0;
-        int length = Integer.parseInt(headers.get("content-length"));
-        body = new StringBuilder(length);
-        try
-        {
-            //TODO: UTF-8 reader from joakim
-            for (int i = 0; i < length; ++i)
-            {
-                char c = (char)reader.read();
-                body.append(c);
-                readLen++;
-            }
-
-        }
-        catch (SocketTimeoutException e)
-        {
-            System.err.printf("Read %,d bytes (out of an expected %,d bytes)%n", readLen, length);
-            throw e;
-        }
-        return body;
-    }
-
-    private StringBuilder parseChunkedBody(BufferedReader reader) throws IOException
-    {
-        StringBuilder body;
-        String line;
-        body = new StringBuilder(64 * 1024);
-        while ((line = reader.readLine()) != null)
-        {
-            if ("0".equals(line))
-            {
-                line = reader.readLine();
-                assertThat("There's no more content after as 0 indicated the final chunk", line, is(""));
-                break;
-            }
-
-            int length = Integer.parseInt(line, 16);
-            //TODO: UTF-8 reader from joakim
-            for (int i = 0; i < length; ++i)
-            {
-                char c = (char)reader.read();
-                body.append(c);
-            }
-            reader.readLine();
-            // assertThat("chunk is followed by an empty line", line, is("")); //TODO: is this right? - NO.  Don't
-            // think you can really do chunks with read line generally, but maybe for this test is OK.
-        }
-        return body;
-    }
-
-    private StringBuilder parseEOFDelimitedBody(BufferedReader reader, Map<String, String> headers) throws IOException
-    {
-        StringBuilder body;
-        if ("HTTP/1.1".equals(httpVersion))
-            assertThat("if no content-length or transfer-encoding header is set, " +
-                    "connection: close header must be set", headers.get("connection"),
-                    is("close"));
-
-        // read until EOF
-        body = new StringBuilder();
-        while (true)
-        {
-            //TODO: UTF-8 reader from joakim
-            int read = reader.read();
-            if (read == -1)
-                break;
-            char c = (char)read;
-            body.append(c);
-        }
-        return body;
-    }
-
-    private void assertResponseBody(Response response, String expectedResponseBody)
-    {
-        assertThat("response body is" + expectedResponseBody, response.getBody(), is(expectedResponseBody));
-    }
-
-    private void assertHeader(Response response, String headerName, String expectedValue)
-    {
-        assertThat(headerName + "=" + expectedValue, response.getHeaders().get(headerName), is(expectedValue));
-    }
-
-    private class Response
-    {
-        private final String code;
-        private final Map<String, String> headers;
-        private final String body;
-
-        private Response(String code, Map<String, String> headers, String body)
-        {
-            this.code = code;
-            this.headers = headers;
-            this.body = body;
-        }
-
-        public String getCode()
-        {
-            return code;
-        }
-
-        public Map<String, String> getHeaders()
-        {
-            return headers;
-        }
-
-        public String getBody()
-        {
-            return body;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Response{" +
-                    "code='" + code + '\'' +
-                    ", headers=" + headers +
-                    ", body='" + body + '\'' +
-                    '}';
-        }
-    }
-
-    private class ThrowExceptionOnDemandHandler extends AbstractHandler
-    {
-        private final boolean throwException;
-
-        private ThrowExceptionOnDemandHandler(boolean throwException)
-        {
-            this.throwException = throwException;
-        }
-
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            if (throwException)
-                throw new TestCommitException();
-        }
-    }
-
-    private static class TestCommitException extends IllegalStateException
-    {
-        public TestCommitException()
-        {
-            super("Thrown by test");
         }
     }
 }
