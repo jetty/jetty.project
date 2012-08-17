@@ -31,7 +31,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.log.Log;
@@ -77,7 +76,6 @@ public class HttpManyWaysToCommitTest
         ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
     }
 
-    /* ------------------------------------------------------------ */
     @After
     public void tearDown() throws Exception
     {
@@ -181,9 +179,6 @@ public class HttpManyWaysToCommitTest
 
         Response response = executeRequest();
 
-        // This assertion is currently red. However I think it should be green. Nothing has been flushed to the
-        // client yet, when we throw an exception in the handler. So I expect HttpChannel to send a 500.
-        // Fails in HttpConnection line 619/620
         assertThat("response code is 500", response.getCode(), is("500"));
     }
 
@@ -213,7 +208,8 @@ public class HttpManyWaysToCommitTest
 
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        // assertHeader(response, "transfer-encoding", "chunked");
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     @Test
@@ -225,7 +221,8 @@ public class HttpManyWaysToCommitTest
         Response response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        // assertHeader(response, "transfer-encoding", "chunked");
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     private class ExplicitFlushHandler extends ThrowExceptionOnDemandHandler
@@ -254,7 +251,8 @@ public class HttpManyWaysToCommitTest
         Response response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        // assertHeader(response, "transfer-encoding", "chunked");
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     @Test
@@ -266,7 +264,8 @@ public class HttpManyWaysToCommitTest
         Response response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        // assertHeader(response, "transfer-encoding", "chunked");
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     private class SetHandledAndFlushWithoutContentHandler extends ThrowExceptionOnDemandHandler
@@ -294,7 +293,8 @@ public class HttpManyWaysToCommitTest
         Response response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        // assertHeader(response, "transfer-encoding", "chunked"); // HTTP/1.0 does not do chunked.  it will just send content and close
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked"); // HTTP/1.0 does not do chunked.  it will just send content and close
     }
 
     @Test
@@ -306,7 +306,8 @@ public class HttpManyWaysToCommitTest
         Response response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        // assertHeader(response, "transfer-encoding", "chunked");  // TODO HTTP/1.0 does not do chunked
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");  // TODO HTTP/1.0 does not do chunked
     }
 
     private class WriteFlushWriteMoreHandler extends ThrowExceptionOnDemandHandler
@@ -469,7 +470,6 @@ public class HttpManyWaysToCommitTest
 
         assertThat("response code is 200", response.getCode(), is("200"));
         //TODO: jetty ignores setContentLength and sends transfer-encoding header. Correct?
-        // assertHeader(response,"transfer-encoding","chunked");
     }
 
     @Test
@@ -512,7 +512,8 @@ public class HttpManyWaysToCommitTest
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
         // TODO: once flushed setting contentLength is ignored and chunked is used. Correct?
-        // assertHeader(response,"transfer-encoding","chunked");
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     @Test
@@ -538,7 +539,7 @@ public class HttpManyWaysToCommitTest
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foobar");
-            response.setContentLength(3); 
+            response.setContentLength(3);
             super.handle(target, baseRequest, request, response);
         }
     }
