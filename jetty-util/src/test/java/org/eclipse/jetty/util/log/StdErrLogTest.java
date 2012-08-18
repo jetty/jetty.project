@@ -93,17 +93,17 @@ public class StdErrLogTest
         before.debug("testing {} {}","test","debug-before-false");
         log.debug("testing {} {}","test","debug-deprecated-false");
         after.debug("testing {} {}","test","debug-after-false");
-        
+                
         output.assertContains("DBUG:xxx:tname: testing test debug");
         output.assertContains("INFO:xxx:tname: testing test info");
         output.assertContains("WARN:xxx:tname: testing test warn");
         output.assertNotContains("YOU SHOULD NOT SEE THIS!");
-        output.assertContains("DBUG:x.before:tname:testing test debug-before");
-        output.assertNotContains("DBUG:xxx:tname: testing test debug-depdeprecated-false");
-        output.assertContains("DBUG:x.after:testing test debug-after");
-        output.assertNotContains("DBUG:x.before:tname:testing test debug-before-false");
-        output.assertNotContains("DBUG:xxx:tname:testing test debug-deprecated-false");
-        output.assertNotContains("DBUG:x.after:tname:testing test debug-after-false");
+        output.assertContains("DBUG:x.before:tname: testing test debug-before");
+        output.assertContains("DBUG:xxx:tname: testing test debug-deprecated");
+        output.assertContains("DBUG:x.after:tname: testing test debug-after");
+        output.assertNotContains("DBUG:x.before:tname: testing test debug-before-false");
+        output.assertNotContains("DBUG:xxx:tname: testing test debug-deprecated-false");
+        output.assertNotContains("DBUG:x.after:tname: testing test debug-after-false");
     }
     
     @Test
