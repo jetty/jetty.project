@@ -114,23 +114,27 @@ public class SessionAuthentication implements Authentication.User, Serializable,
     @Override
     public String toString()
     {
-        return "Session"+super.toString();
+        return String.format("%s@%x{%s,%s}",this.getClass().getSimpleName(),hashCode(),_session==null?"-":_session.getId(),_userIdentity);
     }
 
+    @Override
     public void sessionWillPassivate(HttpSessionEvent se)
     {
     }
 
+    @Override
     public void sessionDidActivate(HttpSessionEvent se)
     {
         if (_session==null)
             _session=se.getSession();
     }
 
+    @Override
     public void valueBound(HttpSessionBindingEvent event)
     {
     }
 
+    @Override
     public void valueUnbound(HttpSessionBindingEvent event)
     {
         doLogout();

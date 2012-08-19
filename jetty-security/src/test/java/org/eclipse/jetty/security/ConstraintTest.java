@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.After;
@@ -303,6 +305,10 @@ public class ConstraintTest
     @Test
     public void testFormRedirect() throws Exception
     {
+        Log.getLogger(SecurityHandler.class).setDebugEnabled(true);
+        Log.getLogger(LoginAuthenticator.class).setDebugEnabled(true);
+        Log.getLogger(FormAuthenticator.class).setDebugEnabled(true);
+        
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
         _security.setStrict(false);
         _server.start();
@@ -326,6 +332,7 @@ public class ConstraintTest
         assertThat(response,containsString(" 200 OK"));
         assertThat(response,containsString("URI=/ctx/testLoginPage"));
 
+        System.err.println("-- wrong password");
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -334,6 +341,7 @@ public class ConstraintTest
                 "j_username=user&j_password=wrong");
         assertThat(response,containsString("Location"));
 
+        System.err.println("-- right password");
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -345,9 +353,11 @@ public class ConstraintTest
         assertThat(response,containsString("/ctx/auth/info"));
         session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
+        System.err.println("--");
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
+        System.err.println("==");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +

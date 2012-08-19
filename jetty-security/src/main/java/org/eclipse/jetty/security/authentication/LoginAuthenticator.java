@@ -26,9 +26,15 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
+import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public abstract class LoginAuthenticator implements Authenticator
-{
+{            
+    private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
+
     protected final DeferredAuthentication _deferred=new DeferredAuthentication(this);
     protected LoginService _loginService;
     protected IdentityService _identityService;
@@ -67,16 +73,20 @@ public abstract class LoginAuthenticator implements Authenticator
     protected HttpSession renewSession(HttpServletRequest request, HttpServletResponse response)
     {
         HttpSession httpSession = request.getSession(false);
-       
-        //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
-        //(indicated by SESSION_SECURED not being set on the session) then we should change id
-        if (_renewSession && httpSession!=null && httpSession.getAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
+
+        synchronized (httpSession)
         {
-            synchronized (this)
+            //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
+            //(indicated by SESSION_SECURED not being set on the session) then we should change id
+            if (_renewSession && httpSession!=null && httpSession.getAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
             {
-                httpSession = AbstractSessionManager.renewSession(request, httpSession,true);
+                System.err.println(((HashedSession)httpSession).getAttributeMap());
+                HttpSession newSession = AbstractSessionManager.renewSession(request, httpSession,true);
+                LOG.debug("renew {}->{}",httpSession.getId(),newSession.getId());
+                System.err.println(((HashedSession)newSession).getAttributeMap());
+                httpSession=newSession;
             }
+            return httpSession;
         }
-        return httpSession;
     }
 }
