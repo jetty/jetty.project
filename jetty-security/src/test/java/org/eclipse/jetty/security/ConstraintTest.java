@@ -332,7 +332,6 @@ public class ConstraintTest
         assertThat(response,containsString(" 200 OK"));
         assertThat(response,containsString("URI=/ctx/testLoginPage"));
 
-        System.err.println("-- wrong password");
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -341,7 +340,6 @@ public class ConstraintTest
                 "j_username=user&j_password=wrong");
         assertThat(response,containsString("Location"));
 
-        System.err.println("-- right password");
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -353,11 +351,9 @@ public class ConstraintTest
         assertThat(response,containsString("/ctx/auth/info"));
         session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
-        System.err.println("--");
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
-        System.err.println("==");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +

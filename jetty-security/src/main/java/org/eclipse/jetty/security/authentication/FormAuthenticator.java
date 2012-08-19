@@ -201,7 +201,6 @@ public class FormAuthenticator extends LoginAuthenticator
             return _deferred;
 
         HttpSession session = request.getSession(true);
-        System.err.println(session.getId()+((HashedSession)session).getAttributeMap());
 
         try
         {

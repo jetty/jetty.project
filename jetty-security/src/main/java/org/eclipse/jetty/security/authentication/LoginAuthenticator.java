@@ -80,10 +80,8 @@ public abstract class LoginAuthenticator implements Authenticator
             //(indicated by SESSION_SECURED not being set on the session) then we should change id
             if (_renewSession && httpSession!=null && httpSession.getAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
             {
-                System.err.println(((HashedSession)httpSession).getAttributeMap());
                 HttpSession newSession = AbstractSessionManager.renewSession(request, httpSession,true);
                 LOG.debug("renew {}->{}",httpSession.getId(),newSession.getId());
-                System.err.println(((HashedSession)newSession).getAttributeMap());
                 httpSession=newSession;
             }
             return httpSession;
