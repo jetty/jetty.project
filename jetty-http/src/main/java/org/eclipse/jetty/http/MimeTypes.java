@@ -364,12 +364,12 @@ public class MimeTypes
                 case 10:
                     if (!quote && (';'==b || ' '==b )||
                         (quote && '"'==b ))
-                        return CACHE.lookup(value.peek(start,i-start)).toString();
+                        return CACHE.lookup(value.peek(start,i-start)).toString(StringUtil.__UTF8);
             }
         }    
         
         if (state==10)
-            return CACHE.lookup(value.peek(start,i-start)).toString();
+            return CACHE.lookup(value.peek(start,i-start)).toString(StringUtil.__UTF8);
         
         return (String)__encodings.get(value);
     }
