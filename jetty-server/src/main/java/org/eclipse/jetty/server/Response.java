@@ -802,25 +802,19 @@ public class Response implements HttpServletResponse
                 setCharacterEncoding(encoding);
             }
 
-            /* construct Writer using correct encoding */
-            // TODO switch on encoding here
-            _writer = new PrintWriter(new HttpWriter(_out,encoding))
+            if (encoding == null || StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
             {
-                public void close()
-                {
-                    synchronized (lock)
-                    {
-                        try
-                        {
-                            out.close();
-                        }
-                        catch (IOException e)
-                        {
-                            setError();
-                        }
-                    }
-                }
-            };
+                _writer = new PrintWriter(new Iso88591HttpWriter(_out));
+            }
+            else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
+            {
+                _writer = new PrintWriter(new Utf8HttpWriter(_out));
+            }
+            else
+            {
+                _writer = new PrintWriter(new EncodingHttpWriter(_out,encoding));
+            }
+            
         }
         _outputState=OutputState.WRITER;
         return _writer;
