@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -34,7 +29,6 @@ import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -59,6 +53,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -104,15 +103,15 @@ public class ResponseTest
             }
         };
 
-        _channel = new HttpChannel(_server,connection,input)
+        _channel = new HttpChannel(_connector,null,endp,null)
         {
-            @Override
-            protected void write(ByteBuffer content, boolean last) throws IOException
-            {              
+//            @Override
+            protected void flush(ByteBuffer content, boolean last) throws IOException
+            {
                 content.clear();
             }
 
-            @Override
+//            @Override
             protected FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException
             {
                 content.clear();

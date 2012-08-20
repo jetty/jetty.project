@@ -51,10 +51,10 @@ public class HttpConnection extends AbstractConnection
     {
         __completed.completed(null);
     }
-    
+
     public static final String UPGRADE_CONNECTION_ATTR = "org.eclispe.jetty.server.HttpConnection.UPGRADE";
 
-    
+
     private final Server _server;
     private final HttpConfiguration _httpConfig;
     private final Connector _connector;
@@ -62,12 +62,10 @@ public class HttpConnection extends AbstractConnection
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
     private final ByteBufferPool _bufferPool;
-    private final HttpHttpInput _httpInput;
 
-    
     private ResponseInfo _info;
-    ByteBuffer _requestBuffer=null;
-    ByteBuffer _chunk=null;
+    private ByteBuffer _requestBuffer=null;
+    private ByteBuffer _chunk=null;
     private int _headerBytes;
 
 
@@ -84,19 +82,15 @@ public class HttpConnection extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endpoint)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
     {
-        super(endpoint,connector.getExecutor());
+        super(endPoint,connector.getExecutor());
 
         _httpConfig=config;
         _connector = connector;
         _bufferPool=_connector.getByteBufferPool();
-
         _server = connector.getServer();
-
-        _httpInput = new HttpHttpInput();
-        _channel = new HttpChannelOverHttp(connector.getServer());
-
+        _channel = new HttpChannel(connector, config, endPoint, new HttpTransportOverHttp(_bufferPool, _httpConfig, endPoint));
         _parser = new HttpParser(_channel.getEventHandler());
         _generator = new HttpGenerator();
         _generator.setSendServerVersion(_server.getSendServerVersion());
@@ -148,7 +142,6 @@ public class HttpConnection extends AbstractConnection
 
         _generator.reset();
         _channel.reset();
-        _httpInput.recycle();
         releaseRequestBuffer();
         if (_chunk!=null)
             _bufferPool.release(_chunk);
@@ -201,7 +194,7 @@ public class HttpConnection extends AbstractConnection
         LOG.debug("{} onReadable {}",this,_channel.isIdle());
 
         int filled=-2;
-        
+
         try
         {
             setCurrentConnection(this);
@@ -253,13 +246,13 @@ public class HttpConnection extends AbstractConnection
                 {
                     // reset header count
                     _headerBytes=0;
-                    
+
                     // For most requests, there will not be a body, so we can try to recycle the buffer now
                     releaseRequestBuffer();
 
                     if (!_channel.getRequest().isPersistent())
                         _generator.setPersistent(false);
-                    
+
                     // The parser returned true, which indicates the channel is ready
                     // to handle a request. Call the channel and this will either handle the
                     // request/response to completion OR if the request suspends, the channel
@@ -270,8 +263,9 @@ public class HttpConnection extends AbstractConnection
                     if (_channel.isSuspended())
                     {
                         // release buffer if no input being held
-                        if (_httpInput.available()==0)
-                            releaseRequestBuffer();
+                        // TODO: not sure what this optimization is meant for ?
+//                        if (_httpInput.available()==0)
+//                            releaseRequestBuffer();
                         return;
                     }
 
@@ -330,7 +324,7 @@ public class HttpConnection extends AbstractConnection
     {
         private HttpChannelOverHttp(Server server)
         {
-            super(server,HttpConnection.this,_httpInput);
+            super(_connector, _httpConfig, HttpConnection.this.getEndPoint(), new HttpTransportOverHttp(_bufferPool, _httpConfig, HttpConnection.this.getEndPoint()));
         }
 
         public Connector getConnector()
@@ -349,7 +343,7 @@ public class HttpConnection extends AbstractConnection
             if (!super.commitError(status,reason,content))
             {
                 // TODO - should this just be a close and we don't worry about a RST overtaking a flushed response?
-                
+
                 // We could not send the error, so a shutdown of the connection will at least tell
                 // the client something is wrong
                 getEndPoint().shutdownOutput();
@@ -370,7 +364,7 @@ public class HttpConnection extends AbstractConnection
             // be asynchronously flushed TBD), but it may not have consumed the entire
 
             LOG.debug("{} completed");
-            
+
             // Handle connection upgrades
             if (getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
             {
@@ -426,7 +420,7 @@ public class HttpConnection extends AbstractConnection
                     getEndPoint().shutdownOutput();
                 }
             }
-                     
+
             // make sure that an oshut connection is driven towards close
             // TODO this is a little ugly
             if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
@@ -443,8 +437,8 @@ public class HttpConnection extends AbstractConnection
         }
 
         /* ------------------------------------------------------------ */
-        @Override
-        public void write(ByteBuffer content, boolean last) throws IOException
+//        @Override
+        public void flush(ByteBuffer content, boolean last) throws IOException
         {
             // Only one response writer at a time.
             synchronized(this)
@@ -505,7 +499,7 @@ public class HttpConnection extends AbstractConnection
                             case SHUTDOWN_OUT:
                                 getEndPoint().shutdownOutput();
                                 continue;
-                                
+
                             case DONE:
                                 break loop;
                         }
@@ -530,7 +524,7 @@ public class HttpConnection extends AbstractConnection
             }
         }
 
-        @Override
+//        @Override
         protected FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException
         {
             // Only one response writer at a time.
@@ -543,7 +537,7 @@ public class HttpConnection extends AbstractConnection
                         throw new EofException();
 
                     FutureCallback<Void> fcb=null;
-                    
+
                     loop: while (true)
                     {
                         HttpGenerator.Result result=_generator.generateResponse(info,header,content,true);
@@ -585,7 +579,7 @@ public class HttpConnection extends AbstractConnection
                             case SHUTDOWN_OUT:
                                 getEndPoint().shutdownOutput();
                                 continue;
-                                
+
                             case DONE:
                                 if (fcb==null)
                                     fcb=__completed;

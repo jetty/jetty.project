@@ -19,16 +19,13 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -108,7 +105,7 @@ public class Response implements HttpServletResponse
     {
         return _channel;
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#reset()
@@ -153,7 +150,7 @@ public class Response implements HttpServletResponse
         _include.decrementAndGet();
         _out.reopen();
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.http.HttpServletResponse#addCookie(javax.servlet.http.Cookie)
@@ -457,18 +454,7 @@ public class Response implements HttpServletResponse
     {
         if (_channel.isExpecting102Processing() && !isCommitted())
         {
-            try
-            {
-                _channel.write(HttpGenerator.PROGRESS_102_INFO,null).get(); 
-            }
-            catch (final InterruptedException e)
-            {
-                throw new InterruptedIOException(){{this.initCause(e);}};
-            }
-            catch (final ExecutionException e)
-            {
-                throw new IOException(){{this.initCause(e);}};
-            }
+            _channel.commit(HttpGenerator.PROGRESS_102_INFO,null,true);
         }
     }
 
@@ -829,7 +815,7 @@ public class Response implements HttpServletResponse
             {
                 _writer = new PrintWriter(new EncodingHttpWriter(_out,encoding));
             }
-            
+
         }
         _outputState=OutputState.WRITER;
         return _writer;
@@ -849,11 +835,11 @@ public class Response implements HttpServletResponse
         // if the getHandling committed the response!
         if (isCommitted() || isIncluding())
             return;
-        
+
         long written=_out.getWritten();
         if (written>len)
             throw new IllegalArgumentException("setContent("+len+") when already written "+written);
-        
+
         _contentLength=len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
 
@@ -876,7 +862,7 @@ public class Response implements HttpServletResponse
                     case STREAM:
                         getOutputStream().close();
 
-                } 
+                }
             }
             catch(IOException e)
             {
@@ -944,8 +930,8 @@ public class Response implements HttpServletResponse
                 }
             }
         }
-        
-        
+
+
         /* TODO merged code not used???
                     else if (_mimeType!=null)
                         _contentType=_mimeType;
@@ -973,7 +959,7 @@ public class Response implements HttpServletResponse
         {
             if (isWriting() && _characterEncoding!=null)
                 throw new IllegalSelectorException();
-            
+
             if (_locale==null)
                 _characterEncoding=null;
             _mimeType=null;
@@ -989,7 +975,7 @@ public class Response implements HttpServletResponse
                 charset=_mimeType.getCharset().toString();
             else
                 charset=MimeTypes.getCharsetFromContentType(contentType);
-            
+
             if (charset==null)
             {
                 if (_characterEncoding!=null)
@@ -1010,7 +996,7 @@ public class Response implements HttpServletResponse
             {
                 _characterEncoding=charset;
             }
-            
+
             _fields.put(HttpHeader.CONTENT_TYPE,_contentType);
         }
     }
@@ -1123,19 +1109,19 @@ public class Response implements HttpServletResponse
 
         _out.resetBuffer();
     }
-    
+
     /* ------------------------------------------------------------ */
     public ResponseInfo commit()
     {
         if (!_committed.compareAndSet(false,true))
             throw new IllegalStateException();
-        
+
         if (_status==HttpStatus.NOT_SET_000)
             _status=HttpStatus.OK_200;
-        
+
         return new ResponseInfo(_channel.getRequest().getHttpVersion(),_fields,getLongContentLength(),getStatus(),getReason(),_channel.getRequest().isHead());
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#isCommitted()
@@ -1218,13 +1204,13 @@ public class Response implements HttpServletResponse
     {
         return _fields;
     }
-    
+
     /* ------------------------------------------------------------ */
     public long getContentCount()
     {
         return _out.getWritten();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

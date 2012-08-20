@@ -181,7 +181,7 @@ public class HttpGenerator
                 if (headerOrChunk==null || headerOrChunk.capacity()<=CHUNK_SIZE)
                     return Result.NEED_HEADER;
 
-                // If we have not been told our persistence, set the default 
+                // If we have not been told our persistence, set the default
                 if (_persistent==null)
                     _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
@@ -220,12 +220,12 @@ public class HttpGenerator
                 }
 
                 return Result.FLUSH;
-            }    
-            
-            case COMMITTED:    
+            }
+
+            case COMMITTED:
             {
                 int len = BufferUtil.length(content);
-                
+
                 if (len>0)
                 {
                     // Do we need a chunk buffer?
@@ -250,12 +250,12 @@ public class HttpGenerator
 
                 return len>0?Result.FLUSH:Result.DONE;
             }
-            
+
             case COMPLETING:
-            {          
+            {
                 if (BufferUtil.hasContent(content))
                     throw new IllegalStateException(); // Can't pass new content in COMPLETING state
-                      
+
                 if (isChunking())
                 {
                     // Do we need a chunk buffer?
@@ -268,7 +268,7 @@ public class HttpGenerator
                     _endOfContent=EndOfContent.UNKNOWN_CONTENT;
                     return Result.FLUSH;
                 }
-                
+
                 _state=State.END;
                return Boolean.TRUE.equals(_persistent)?Result.DONE:Result.SHUTDOWN_OUT;
             }
@@ -277,7 +277,7 @@ public class HttpGenerator
                 if (BufferUtil.hasContent(content))
                     throw new IllegalStateException(); // Can't pass new content in END state
                 return Result.DONE;
-                
+
             default:
                 throw new IllegalStateException();
         }
@@ -290,7 +290,7 @@ public class HttpGenerator
         {
             case START:
             {
-               
+
                 if (info==null)
                     return Result.NEED_INFO;
 
@@ -309,7 +309,7 @@ public class HttpGenerator
                 if (headerOrChunk==null || headerOrChunk.capacity()<=CHUNK_SIZE)
                     return Result.NEED_HEADER;
 
-                // If we have not been told our persistence, set the default 
+                // If we have not been told our persistence, set the default
                 if (_persistent==null)
                     _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
@@ -360,7 +360,7 @@ public class HttpGenerator
                     }
                     else
                         LOG.warn(e);
-                    
+
                     // We were probably trying to generate a header, so let's make it a 500 instead
                     _persistent=false;
                     BufferUtil.clearToFill(header);
@@ -374,12 +374,12 @@ public class HttpGenerator
                 }
 
                 return Result.FLUSH;
-            }    
-            
-            case COMMITTED:    
+            }
+
+            case COMMITTED:
             {
                 int len = BufferUtil.length(content);
-                
+
                 // handle the content.
                 if (len>0)
                 {
@@ -388,7 +388,7 @@ public class HttpGenerator
                         return Result.NEED_CHUNK;
 
                     ByteBuffer chunk = headerOrChunk;
-                    
+
                     _contentPrepared+=len;
                     if (isChunking())
                     {
@@ -406,25 +406,25 @@ public class HttpGenerator
                 return len>0?Result.FLUSH:Result.DONE;
 
             }
-            
+
             case COMPLETING_1XX:
             {
                 reset();
                 return Result.DONE;
             }
-            
+
             case COMPLETING:
-            {         
+            {
                 if (BufferUtil.hasContent(content))
                     throw new IllegalStateException(); // Can't pass new content in COMPLETING state
-       
+
                 if (isChunking())
                 {
                     // Do we need a chunk buffer?
                     if (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE)
                         return Result.NEED_CHUNK;
                     ByteBuffer chunk=headerOrChunk;
-                    
+
                     // Write the last chunk
                     BufferUtil.clearToFill(chunk);
                     prepareChunk(chunk,0);
@@ -432,7 +432,7 @@ public class HttpGenerator
                     _endOfContent=EndOfContent.UNKNOWN_CONTENT;
                     return Result.FLUSH;
                 }
-                
+
                 _state=State.END;
 
                return Boolean.TRUE.equals(_persistent)?Result.DONE:Result.SHUTDOWN_OUT;
@@ -442,13 +442,13 @@ public class HttpGenerator
                 if (BufferUtil.hasContent(content))
                     throw new IllegalStateException(); // Can't pass new content in END state
                 return Result.DONE;
-                
+
             default:
                 throw new IllegalStateException();
         }
     }
-    
-    
+
+
 
     /* ------------------------------------------------------------ */
     private void prepareChunk(ByteBuffer chunk, int remaining)

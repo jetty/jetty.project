@@ -38,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -126,7 +125,7 @@ public class Request implements HttpServletRequest
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
 
     private final HttpInput _in;
-    
+
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
     private Authentication _authentication;
@@ -557,10 +556,10 @@ public class Request implements HttpServletRequest
         if (_inputState != __NONE && _inputState != _STREAM)
             throw new IllegalStateException("READER");
         _inputState = _STREAM;
-        
-        if (_channel.isExpecting100Continues())
+
+        if (_channel.isExpecting100Continue())
             _channel.continue100(_in.available());
-        
+
         return _in;
     }
 
@@ -1471,7 +1470,7 @@ public class Request implements HttpServletRequest
         _multiPartInputStream = null;
         _remote=null;
         _fields.clear();
-        _in.recycle(); // TODO done here or in connection?
+        _in.recycle();
     }
 
     /* ------------------------------------------------------------ */
@@ -1536,7 +1535,7 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    ((HttpChannel.Output)getServletResponse().getOutputStream()).sendContent(value);
+                    ((HttpOutput)getServletResponse().getOutputStream()).sendContent(value);
                 }
                 catch (IOException e)
                 {

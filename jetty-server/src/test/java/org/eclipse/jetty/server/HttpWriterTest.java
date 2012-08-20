@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,6 +31,8 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class HttpWriterTest
 {
     private HttpOutput _httpOut;
@@ -43,7 +43,7 @@ public class HttpWriterTest
     {
         _bytes = BufferUtil.allocate(2048);
 
-        HttpChannel channel = new HttpChannel(null,null,null)
+        HttpChannel channel = new HttpChannel(null,null,null,null)
         {
             @Override
             public HttpConfiguration getHttpConfiguration()
@@ -67,20 +67,20 @@ public class HttpWriterTest
             {
                 return null;
             }
-            
+
             @Override
             public Connector getConnector()
             {
                 return null;
             }
 
-            @Override
-            protected void write(ByteBuffer content, boolean last) throws IOException
+//            @Override
+            protected void flush(ByteBuffer content, boolean last) throws IOException
             {
                 BufferUtil.flipPutFlip(content,_bytes);
             }
 
-            @Override
+//            @Override
             protected FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException
             {
                 BufferUtil.flipPutFlip(content,_bytes);
@@ -109,7 +109,7 @@ public class HttpWriterTest
         _writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
     }
-    
+
     @Test
     public void testUTF16() throws Exception
     {

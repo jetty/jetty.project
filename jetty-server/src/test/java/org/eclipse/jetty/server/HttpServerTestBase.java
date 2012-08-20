@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,7 +31,6 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.Exchanger;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -54,6 +47,12 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -129,7 +128,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             byte[] buffer = new byte[64*1024];
             Arrays.fill(buffer,(byte)'A');
-            
+
             os.write(buffer);
             os.flush();
 
@@ -148,7 +147,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             client.close();
         }
     }
-    
+
 
 
     /*
@@ -892,9 +891,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 ).getBytes("iso-8859-1"));
 
-            
+
             String in = IO.toString(is);
-            
+
             int index=in.indexOf("123456789");
             assertTrue(index>0);
             index=in.indexOf("123456789",index+1);
@@ -1043,7 +1042,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             client.close();
             Thread.sleep(200);
-            
+
             // TODO this sometimes fails for SSL ???
             if (handler._endp.isOpen())
             {
@@ -1069,7 +1068,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            _endp=baseRequest.getHttpChannel().getConnection().getEndPoint();
+            _endp=baseRequest.getHttpChannel().getEndPoint();
             response.setHeader("test","value");
             response.setStatus(200);
             response.setContentType("text/plain");
@@ -1140,10 +1139,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 buf+=(char)in.read();
                 avail=in.available();
             }
-            
-            
+
+
             out.println(avail);
-            
+
             // read remaining no matter what
             int b=in.read();
             while (b>=0)
@@ -1352,9 +1351,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             }
         }.start();
-            
+
         String resps = readResponse(client);
-               
+
         int offset=0;
         for (int i=0;i<(REQS+1);i++)
         {
@@ -1375,7 +1374,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.setStatus(200);
         }
     }
-    
+
 
     @Test
     public void testSuspendedPipeline() throws Exception
@@ -1400,9 +1399,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\r\n"
             ).getBytes());
             os.flush();
-            
+
             Thread.sleep(200);
-            
+
             // write an pipelined request
             os.write((
                     "GET / HTTP/1.1\r\n"+
@@ -1411,11 +1410,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\r\n"
             ).getBytes());
             os.flush();
-            
+
             String response=readResponse(client);
             assertThat(response,JUnitMatchers.containsString("RESUMEDHTTP/1.1 200 OK"));
             assertThat((System.currentTimeMillis()-start),greaterThanOrEqualTo(1999L));
-            
+
             // TODO This test should also check that that the CPU did not spin during the suspend.
         }
         finally
