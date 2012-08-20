@@ -236,10 +236,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected void doStop() throws Exception
     {
-        _constraintMap.clear();
-        _constraintMappings.clear();
-        _roles.clear();
         super.doStop();
+        _constraintMap.clear();
     }
 
     protected void processConstraintMapping(ConstraintMapping mapping)

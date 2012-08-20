@@ -74,17 +74,20 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         HttpSession httpSession = request.getSession(false);
 
-        synchronized (httpSession)
+        if (_renewSession && httpSession!=null)
         {
-            //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
-            //(indicated by SESSION_SECURED not being set on the session) then we should change id
-            if (_renewSession && httpSession!=null && httpSession.getAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
+            synchronized (httpSession)
             {
-                HttpSession newSession = AbstractSessionManager.renewSession(request, httpSession,true);
-                LOG.debug("renew {}->{}",httpSession.getId(),newSession.getId());
-                httpSession=newSession;
+                //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
+                //(indicated by SESSION_SECURED not being set on the session) then we should change id
+                if (httpSession.getAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
+                {
+                    HttpSession newSession = AbstractSessionManager.renewSession(request, httpSession,true);
+                    LOG.debug("renew {}->{}",httpSession.getId(),newSession.getId());
+                    httpSession=newSession;
+                }
             }
-            return httpSession;
         }
+        return httpSession;
     }
 }

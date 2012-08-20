@@ -164,13 +164,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private Object _requestAttributeListeners;
     private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
-
-    private boolean _shutdown = false;
-
-    private boolean _available = true;
-    private volatile int _availability; // 0=STOPPED, 1=AVAILABLE, 2=SHUTDOWN, 3=UNAVAILABLE
-
-    private final static int __STOPPED = 0, __AVAILABLE = 1, __SHUTDOWN = 2, __UNAVAILABLE = 3;
+   
+    public enum Availability { AVAILABLE,SHUTDOWN,UNAVAILABLE};
+    private volatile Availability _availability; 
 
     /* ------------------------------------------------------------ */
     /**
@@ -629,12 +625,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @return true if this context is accepting new requests
      */
-    @ManagedAttribute("false if this context is accepting new requests. true for graceful shutdown, which allows existing requests to complete")
+    @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
     public boolean isShutdown()
     {
-        synchronized (this)
+        switch(_availability)
         {
-            return !_shutdown;
+            case SHUTDOWN:
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -644,13 +643,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * requests can complete, but no new requests are accepted.
      *
      */
+    @Override
     public void shutdown()
     {
-        synchronized (this)
-        {
-            _shutdown = true;
-            _availability = isRunning() ? __SHUTDOWN : __STOPPED;
-        }
+        _availability = isRunning() ? Availability.SHUTDOWN : Availability.UNAVAILABLE;
     }
 
     /* ------------------------------------------------------------ */
@@ -659,10 +655,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isAvailable()
     {
-        synchronized (this)
-        {
-            return _available;
-        }
+        return _availability==Availability.AVAILABLE;
     }
 
     /* ------------------------------------------------------------ */
@@ -673,8 +666,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         synchronized (this)
         {
-            _available = available;
-            _availability = isRunning()?(_shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE):__STOPPED;
+            if (available && isRunning())
+                _availability = Availability.AVAILABLE;
+            else if (!available || !isRunning())
+                _availability = Availability.UNAVAILABLE;
         }
     }
 
@@ -697,7 +692,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     protected void doStart() throws Exception
     {
-        _availability = __STOPPED;
+        _availability = Availability.UNAVAILABLE;
 
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
@@ -726,10 +721,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             // defers the calling of super.doStart()
             startContext();
 
-            synchronized(this)
-            {
-                _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
-            }
+            _availability = Availability.AVAILABLE;
         }
         finally
         {
@@ -806,7 +798,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     protected void doStop() throws Exception
     {
-        _availability = __STOPPED;
+        _availability = Availability.UNAVAILABLE;
 
         ClassLoader old_classloader = null;
         Thread current_thread = null;
@@ -867,10 +859,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
         switch (_availability)
         {
-            case __STOPPED:
-            case __SHUTDOWN:
-                return false;
-            case __UNAVAILABLE:
+            case UNAVAILABLE:
+            case SHUTDOWN:
                 baseRequest.setHandled(true);
                 response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return false;
@@ -1517,8 +1507,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     b.append(s.charAt(0)).append('.');
             }
         }
-        b.append(getClass().getSimpleName());
-        b.append('{').append(getContextPath()).append(',').append(getBaseResource());
+        b.append(getClass().getSimpleName()).append('@').append(Integer.toString(hashCode(),16));
+        b.append('{').append(getContextPath()).append(',').append(getBaseResource()).append(',').append(_availability);
 
         if (vhosts != null && vhosts.length > 0)
             b.append(',').append(vhosts[0]);
