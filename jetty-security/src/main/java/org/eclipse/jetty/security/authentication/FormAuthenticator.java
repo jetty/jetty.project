@@ -216,19 +216,20 @@ public class FormAuthenticator extends LoginAuthenticator
                     synchronized(session)
                     {
                         nuri = (String) session.getAttribute(__J_URI);
-                    }
-                    
-                    if (nuri == null || nuri.length() == 0)
-                    {
-                        nuri = request.getContextPath();
-                        if (nuri.length() == 0) 
-                            nuri = URIUtil.SLASH;
+
+                        if (nuri == null || nuri.length() == 0)
+                        {
+                            nuri = request.getContextPath();
+                            if (nuri.length() == 0) 
+                                nuri = URIUtil.SLASH;
+                        }
+
+                        Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
+                        session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
                     }
                     response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
-
-                    Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
-                    session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
+                    
                     return new FormAuthentication(getAuthMethod(),user);
                 }
                 
