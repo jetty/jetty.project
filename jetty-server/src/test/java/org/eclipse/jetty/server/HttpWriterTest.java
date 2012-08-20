@@ -26,6 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -51,44 +52,6 @@ public class HttpWriterTest
             }
 
             @Override
-            protected int write(ByteBuffer content) throws IOException
-            {
-                return BufferUtil.append(content,_bytes);
-            }
-
-            @Override
-            protected void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException
-            {
-            }
-
-            @Override
-            protected int getContentBufferSize()
-            {
-                return 0;
-            }
-
-            @Override
-            protected void increaseContentBufferSize(int size)
-            {
-            }
-
-            @Override
-            protected void resetBuffer()
-            {
-                BufferUtil.clear(_bytes);
-            }
-
-            @Override
-            protected void flushResponse() throws IOException
-            {
-            }
-
-            @Override
-            protected void completeResponse() throws IOException
-            {
-            }
-
-            @Override
             protected void completed()
             {
             }
@@ -109,6 +72,21 @@ public class HttpWriterTest
             public Connector getConnector()
             {
                 return null;
+            }
+
+            @Override
+            protected void write(ByteBuffer content, boolean last) throws IOException
+            {
+                BufferUtil.flipPutFlip(content,_bytes);
+            }
+
+            @Override
+            protected FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException
+            {
+                BufferUtil.flipPutFlip(content,_bytes);
+                FutureCallback<Void> fcb = new FutureCallback<>();
+                fcb.completed(null);
+                return fcb;
             }
 
         };

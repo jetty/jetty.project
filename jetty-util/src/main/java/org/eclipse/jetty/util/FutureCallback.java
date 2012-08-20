@@ -31,24 +31,12 @@ import java.util.concurrent.atomic.AtomicReference;
 //TODO: Simplify, get rid of DOING. Probably replace states with AtomicBoolean
 public class FutureCallback<C> implements Future<C>,Callback<C>
 {
-    // TODO investigate use of a phasor
     private enum State {NOT_DONE,DOING,DONE};
     private final AtomicReference<State> _state=new AtomicReference<>(State.NOT_DONE);
     private CountDownLatch _done= new CountDownLatch(1);
     private Throwable _cause;
     private C _context;
     private boolean _completed;
-    
-    private void recycle()
-    {
-        // TODO make this public?
-        if (!isDone())
-            throw new IllegalStateException();
-        _cause=null;
-        _context=null;
-        _completed=false;
-        _done=new CountDownLatch(1);
-    }
     
     @Override
     public void completed(C context)

@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.util.SimpleHttpParser;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -356,6 +357,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     @Test
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytesAndThrow() throws Exception
     {
+        Log.getRootLogger().setDebugEnabled(true);
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(true));
         server.start();
 

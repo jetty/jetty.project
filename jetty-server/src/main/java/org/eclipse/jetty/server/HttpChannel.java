@@ -20,9 +20,11 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -46,6 +48,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -197,7 +200,18 @@ public abstract class HttpChannel
             {
                 if (_response.isCommitted())
                     throw new IllegalStateException("Committed before 100 Continues");
-                commitResponse(HttpGenerator.CONTINUE_100_INFO,null);
+                try
+                {
+                    write(HttpGenerator.CONTINUE_100_INFO,null).get();
+                }
+                catch (final InterruptedException e)
+                {
+                    throw new InterruptedIOException(){{this.initCause(e);}};
+                }
+                catch (final ExecutionException e)
+                {
+                    throw new IOException(){{this.initCause(e);}};
+                }
             }
             _expect100Continue=false;
         }
@@ -359,12 +373,24 @@ public abstract class HttpChannel
             }
 
             HttpGenerator.ResponseInfo info = _handler.commit();
-            commitResponse(info,buffer);
+            try
+            {
+                write(info,buffer).get(); 
+            }
+            catch (final InterruptedException e)
+            {
+                throw new InterruptedIOException(){{this.initCause(e);}};
+            }
+            catch (final ExecutionException e)
+            {
+                throw new IOException(){{this.initCause(e);}};
+            }
 
             return true;
         }
         catch(Exception e)
         {
+            e.printStackTrace();
             LOG.debug("failed to sendError {} {}",status, reason, e);
         }
         finally
@@ -697,7 +723,7 @@ public abstract class HttpChannel
             // Process content.
             if (content instanceof ByteBuffer)
             {
-                commitResponse(_handler.commit(),(ByteBuffer)content);
+                HttpChannel.this.write(_handler.commit(),(ByteBuffer)content);
             }
             else if (content instanceof InputStream)
             {
@@ -712,20 +738,9 @@ public abstract class HttpChannel
 
     public abstract HttpConfiguration getHttpConfiguration();
 
-    protected abstract int write(ByteBuffer content) throws IOException;
+    protected abstract void write(ByteBuffer content,boolean last) throws IOException;
 
-    /* Called by the channel or application to commit a specific response info */
-    protected abstract void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException;
-
-    protected abstract int getContentBufferSize();
-
-    protected abstract void increaseContentBufferSize(int size);
-
-    protected abstract void resetBuffer();
-
-    protected abstract void flushResponse() throws IOException;
-
-    protected abstract void completeResponse() throws IOException;
+    protected abstract FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException;
 
     protected abstract void completed();
 

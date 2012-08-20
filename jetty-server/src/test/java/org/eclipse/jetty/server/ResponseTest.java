@@ -52,6 +52,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.util.FutureCallback;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -106,21 +107,18 @@ public class ResponseTest
         _channel = new HttpChannel(_server,connection,input)
         {
             @Override
-            protected int write(ByteBuffer content) throws IOException
-            {
-                int length=content.remaining();
+            protected void write(ByteBuffer content, boolean last) throws IOException
+            {              
                 content.clear();
-                return length;
             }
 
             @Override
-            protected void resetBuffer()
+            protected FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException
             {
-            }
-
-            @Override
-            protected void increaseContentBufferSize(int size)
-            {
+                content.clear();
+                FutureCallback<Void> fcb = new FutureCallback<>();
+                fcb.completed(null);
+                return fcb;
             }
 
             @Override
@@ -136,35 +134,12 @@ public class ResponseTest
             }
 
             @Override
-            protected int getContentBufferSize()
-            {
-                return 0;
-            }
-
-            @Override
-            protected void flushResponse() throws IOException
-            {
-                if (!_channel.getResponse().isCommitted())
-                    _channel.getResponse().commit();
-            }
-
-            @Override
             protected void execute(Runnable task)
             {
             }
 
             @Override
             protected void completed()
-            {
-            }
-
-            @Override
-            protected void completeResponse() throws IOException
-            {
-            }
-
-            @Override
-            protected void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException
             {
             }
 

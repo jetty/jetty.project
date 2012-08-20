@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import javax.servlet.ServletOutputStream;
 
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
 /** Output.
@@ -41,6 +42,7 @@ public class HttpOutput extends ServletOutputStream
     private final HttpChannel _channel;
     private boolean _closed;
     private long _written;
+    private ByteBuffer _aggregate;
 
     /* ------------------------------------------------------------ */
     public HttpOutput(HttpChannel channel)
@@ -81,8 +83,18 @@ public class HttpOutput extends ServletOutputStream
     public void close() throws IOException
     {
         if (!_closed)
-            _channel.completeResponse();
+        {
+            if (BufferUtil.hasContent(_aggregate))
+                _channel.write(_aggregate,!_channel.getResponse().isIncluding());
+            else 
+                _channel.write(BufferUtil.EMPTY_BUFFER,!_channel.getResponse().isIncluding());
+        }
         _closed=true;
+        if (_aggregate!=null)
+        {
+            _channel.getConnector().getByteBufferPool().release(_aggregate);
+            _aggregate=null;
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -95,13 +107,19 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void flush() throws IOException
     {
-        _channel.flushResponse();
+        if (_closed)
+            throw new EofException();
+        
+        if (BufferUtil.hasContent(_aggregate))
+            _channel.write(_aggregate,false);
+        else 
+            _channel.write(BufferUtil.EMPTY_BUFFER,false);
     }
 
     /* ------------------------------------------------------------ */
-    public void checkAllWritten()
+    public boolean checkAllWritten()
     {
-        _channel.getResponse().checkAllContentWritten(_written);
+        return _channel.getResponse().checkAllContentWritten(_written);
     }
     
     /* ------------------------------------------------------------ */
@@ -110,23 +128,52 @@ public class HttpOutput extends ServletOutputStream
     {
         if (_closed)
             throw new EofException();
+        
+        // Do we have an aggregate buffer already
+        if (_aggregate==null)
+        {
+            // what size should the aggregate be?
+            int size=_channel.getHttpConfiguration().getResponseBufferSize();
+            
+            // if this write would fill more than half the aggregate, just write it directory
+            if (len>size/2)
+            {
+                _channel.write(ByteBuffer.wrap(b,off,len),false);
+                _written+=len;
+                return;
+            }
+            
+            // allocate an aggregate buffer
+            _aggregate=_channel.getConnector().getByteBufferPool().acquire(size,false);
+        }
+        
+        // Do we have space to aggregate?
+        int space = BufferUtil.space(_aggregate);
+        if (len>space)
+        {
+            // No space so write the aggregate out if it is not empty
+            if (BufferUtil.hasContent(_aggregate))
+            {
+                _channel.write(_aggregate,false);
+                space=BufferUtil.space(_aggregate);
+            }
+        }
 
-        _written+=_channel.write(ByteBuffer.wrap(b,off,len));
-        checkAllWritten();
-    }
+        // Do we now have space to aggregate?
+        if (len>space)
+        {
+            // No space so write the content directly
+            _channel.write(ByteBuffer.wrap(b,off,len),false);
+            _written+=len;
+            return;
+        }
+        
+        // aggregate the content
+        BufferUtil.append(_aggregate,b,off,len);
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see java.io.OutputStream#write(byte[])
-     */
-    @Override
-    public void write(byte[] b) throws IOException
-    {
-        if (_closed)
-            throw new IOException("Closed");
-
-        _written+=_channel.write(ByteBuffer.wrap(b));
-        checkAllWritten();
+        // Check if all written or full
+        if (!checkAllWritten() && BufferUtil.isFull(_aggregate))
+            _channel.write(_aggregate,false);
     }
 
     /* ------------------------------------------------------------ */
@@ -139,8 +186,15 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _written+=_channel.write(ByteBuffer.wrap(new byte[]{(byte)b}));
-        checkAllWritten();
+        if (_aggregate==null)
+            _aggregate=_channel.getConnector().getByteBufferPool().acquire(_channel.getHttpConfiguration().getResponseBufferSize(),false);
+        
+        BufferUtil.append(_aggregate,(byte)b);
+        _written++;
+
+        // Check if all written or full
+        if (!checkAllWritten() && BufferUtil.isFull(_aggregate))
+            _channel.write(_aggregate,false);
     }
 
     /* ------------------------------------------------------------ */
@@ -158,5 +212,35 @@ public class HttpOutput extends ServletOutputStream
     {
         throw new IllegalStateException("Not implemented");
     }
+    
+    /* ------------------------------------------------------------ */
+    public int getContentBufferSize()
+    {
+        if (_aggregate!=null)
+            return _aggregate.capacity();
+        return _channel.getHttpConfiguration().getResponseBufferSize();
+    }
+
+    /* ------------------------------------------------------------ */
+    public void increaseContentBufferSize(int size)
+    {
+        if (_aggregate==null || size<=getContentBufferSize())
+            return;
+
+        ByteBuffer r=_channel.getConnector().getByteBufferPool().acquire(size,false);
+        if (BufferUtil.hasContent(_aggregate))
+            BufferUtil.flipPutFlip(_aggregate,r);
+        if (_aggregate!=null)
+            _channel.getConnector().getByteBufferPool().release(_aggregate);
+        _aggregate=r;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void resetBuffer()
+    {
+        if (BufferUtil.hasContent(_aggregate))
+            BufferUtil.clear(_aggregate);
+    }
+
 
 }

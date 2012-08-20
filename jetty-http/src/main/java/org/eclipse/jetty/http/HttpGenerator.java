@@ -42,18 +42,15 @@ public class HttpGenerator
         new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(){{put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);}},0,HttpStatus.INTERNAL_SERVER_ERROR_500,null,false);
 
     // states
-    public enum Action { FLUSH, COMPLETE, PREPARE }
-    public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, COMPLETING_1XX, END }
-    public enum Result { NEED_CHUNK,NEED_INFO,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT}
+    public enum State { START, COMMITTED, COMPLETING, COMPLETING_1XX, END }
+    public enum Result { NEED_CHUNK,NEED_INFO,NEED_HEADER,FLUSH,CONTINUE,SHUTDOWN_OUT,DONE}
 
     // other statics
     public static final int CHUNK_SIZE = 12;
 
-
     private State _state = State.START;
-    private EndOfContent _content = EndOfContent.UNKNOWN_CONTENT;
+    private EndOfContent _endOfContent = EndOfContent.UNKNOWN_CONTENT;
 
-    private int _largeContent=4096;
     private long _contentPrepared = 0;
     private boolean _noContent = false;
     private Boolean _persistent = null;
@@ -79,7 +76,7 @@ public class HttpGenerator
     public void reset()
     {
         _state = State.START;
-        _content = EndOfContent.UNKNOWN_CONTENT;
+        _endOfContent = EndOfContent.UNKNOWN_CONTENT;
         _noContent=false;
         _persistent = null;
         _contentPrepared = 0;
@@ -118,7 +115,7 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isComplete()
+    public boolean isEnd()
     {
         return _state == State.END;
     }
@@ -132,19 +129,7 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     public boolean isChunking()
     {
-        return _content==EndOfContent.CHUNKED_CONTENT;
-    }
-
-    /* ------------------------------------------------------------ */
-    public int getLargeContent()
-    {
-        return _largeContent;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setLargeContent(int largeContent)
-    {
-        _largeContent = largeContent;
+        return _endOfContent==EndOfContent.CHUNKED_CONTENT;
     }
 
     /* ------------------------------------------------------------ */
@@ -179,297 +164,291 @@ public class HttpGenerator
     {
         _persistent=false;
         _state=State.END;
-        _content=null;
+        _endOfContent=null;
     }
 
     /* ------------------------------------------------------------ */
-    public Result generate(Info info, ByteBuffer header, ByteBuffer chunk, ByteBuffer buffer, ByteBuffer content, Action action)
+    public Result generateRequest(RequestInfo info, ByteBuffer headerOrChunk, ByteBuffer content, boolean last)
     {
-        Result result = Result.OK;
-        if (_state==State.END)
-            return result;
-        if (action==null)
-            action=Action.PREPARE;
-
-        // Do we have content to handle
-        if (BufferUtil.hasContent(content))
+        switch(_state)
         {
-            // Do we have too much content?
-            if (_content==EndOfContent.CONTENT_LENGTH && info!=null && info.getContentLength()>=0 && content.remaining()>(info.getContentLength()-_contentPrepared))
+            case START:
             {
-                LOG.warn("Content truncated. Info.getContentLength()=="+info.getContentLength()+" prepared="+_contentPrepared+" content="+content.remaining(),new Throwable());
-                content.limit(content.position()+(int)(info.getContentLength()-_contentPrepared));
-            }
+                if (info==null)
+                    return Result.NEED_INFO;
 
-            // Can we do a direct flush
-            if (BufferUtil.isEmpty(buffer) && content.remaining()>_largeContent)
-            {
-                if (isCommitted())
+                // Do we need a request header
+                if (headerOrChunk==null || headerOrChunk.capacity()<=CHUNK_SIZE)
+                    return Result.NEED_HEADER;
+
+                // If we have not been told our persistence, set the default 
+                if (_persistent==null)
+                    _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
+
+                // prepare the header
+                ByteBuffer header = headerOrChunk;
+                int pos=BufferUtil.flipToFill(header);
+                try
                 {
-                    if (isChunking())
-                    {
-                        if (chunk==null)
-                            return Result.NEED_CHUNK;
-                        BufferUtil.clearToFill(chunk);
-                        prepareChunk(chunk,content.remaining());
-                        BufferUtil.flipToFlush(chunk,0);
-                    }
-                    _contentPrepared+=content.remaining();
-                    return Result.FLUSH_CONTENT;
-                }
+                    // generate ResponseLine
+                    generateRequestLine(info,header);
 
-                _state=action==Action.COMPLETE?State.COMMITTING_COMPLETING:State.COMMITTING;
-                result=Result.FLUSH_CONTENT;
-            }
-            else
-            {
-                // we copy content to buffer
-                // if we don't have one, we need one
-                if (buffer==null)
-                    return Result.NEED_BUFFER;
-
-                // Copy the content
-                _contentPrepared+=BufferUtil.append(content,buffer);
-
-                // are we full?
-                if (BufferUtil.isFull(buffer))
-                {
-                    if (isCommitted())
-                    {
-                        if (isChunking())
-                        {
-                            if (chunk==null)
-                                return Result.NEED_CHUNK;
-                            BufferUtil.clearToFill(chunk);
-                            prepareChunk(chunk,buffer.remaining());
-                            BufferUtil.flipToFlush(chunk,0);
-                        }
-                        return Result.FLUSH;
-                    }
-                    _state=action==Action.COMPLETE?State.COMMITTING_COMPLETING:State.COMMITTING;
-                    result=Result.FLUSH;
-                }
-            }
-        }
-
-        // Handle the actions
-        if (result==Result.OK)
-        {
-            switch(action)
-            {
-                case COMPLETE:
-                    if (!isCommitted())
-                        _state=State.COMMITTING_COMPLETING;
-                    else if (_state==State.COMMITTED)
-                        _state=State.COMPLETING;
-                    result=BufferUtil.hasContent(buffer)?Result.FLUSH:Result.OK;
-                    break;
-                case FLUSH:
-                    if (!isCommitted())
-                        _state=State.COMMITTING;
-                    result=BufferUtil.hasContent(buffer)?Result.FLUSH:Result.OK;
-                    break;
-            }
-        }
-
-        // flip header if we have one
-        final int pos=header==null?-1:BufferUtil.flipToFill(header);
-        try
-        {
-            // handle by state
-            switch (_state)
-            {
-                case START:
-                    return Result.OK;
-
-                case COMMITTING:
-                case COMMITTING_COMPLETING:
-                {
-                    if (info==null)
-                        return Result.NEED_INFO;
-
-                    if (info instanceof RequestInfo)
-                    {
-                        if (header==null || header.capacity()<=CHUNK_SIZE)
-                            return Result.NEED_HEADER;
-
-                        if(info.getHttpVersion()==HttpVersion.HTTP_0_9)
-                        {
-                            _noContent=true;
-                            generateRequestLine((RequestInfo)info,header);
-                            _state = State.END;
-                            return Result.OK;
-                        }
-                        _persistent=true;
-                        generateRequestLine((RequestInfo)info,header);
-                    }
+                    if (info.getHttpVersion()==HttpVersion.HTTP_0_9)
+                        _noContent=true;
                     else
+                        generateHeaders(info,header,content,last);
+
+                    // handle the content.
+                    int len = BufferUtil.length(content);
+                    if (len>0)
                     {
-                        // Responses
-
-                        // Do we need a response header?
-                        if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
-                        {
-                            _persistent = false;
-                            _content=EndOfContent.EOF_CONTENT;
-                            _state = State.COMMITTED;
-                            if (result==Result.FLUSH_CONTENT)
-                                _contentPrepared+=content.remaining();
-                            return result;
-                        }
-
-                        // yes we need a response header
-                        if (header==null || header.capacity()<=CHUNK_SIZE)
-                            return Result.NEED_HEADER;
-
-                        // Are we persistent by default?
-                        if (_persistent==null)
-                            _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
-
-                        generateResponseLine(((ResponseInfo)info),header);
-
-                        // Handle 1xx
-                        int status=((ResponseInfo)info).getStatus();
-                        if (status>=100 && status<200 )
-                        {
-                            _noContent=true;
-
-                            if (status!=HttpStatus.SWITCHING_PROTOCOLS_101 )
-                            {
-                                header.put(HttpTokens.CRLF);
-                                _state=State.COMPLETING_1XX;
-                                return Result.FLUSH;
-                            }
-                        }
-                        else if (status==HttpStatus.NO_CONTENT_204 || status==HttpStatus.NOT_MODIFIED_304)
-                        {
-                            _noContent=true;
-                        }
+                        _contentPrepared+=len;
+                        if (isChunking())
+                            prepareChunk(header,len);
                     }
-
-                    boolean completing=action==Action.COMPLETE||_state==State.COMMITTING_COMPLETING;
-                    generateHeaders(info,header,content,completing);
-                    _state = completing?State.COMPLETING:State.COMMITTED;
-
-                    // handle result
-                    switch(result)
-                    {
-                        case FLUSH:
-                            if (isChunking())
-                                prepareChunk(header,buffer.remaining());
-                            break;
-                        case FLUSH_CONTENT:
-                            if (isChunking())
-                                prepareChunk(header,content.remaining());
-                            _contentPrepared+=content.remaining();
-                            break;
-                        case OK:
-                            if (BufferUtil.hasContent(buffer))
-                            {
-                                if (isChunking())
-                                    prepareChunk(header,buffer.remaining());
-                            }
-                            result=Result.FLUSH;
-                    }
-
-                    return result;
+                    _state = last?State.COMPLETING:State.COMMITTED;
+                }
+                catch(Exception e)
+                {
+                    if (e instanceof BufferOverflowException)
+                        LOG.warn("Response header too large");
+                    throw e;
+                }
+                finally
+                {
+                    BufferUtil.flipToFlush(header,pos);
                 }
 
-
-                case COMMITTED:
-                    return Result.OK;
-
-
-                case COMPLETING:
-                    // handle content with commit
-
+                return Result.FLUSH;
+            }    
+            
+            case COMMITTED:    
+            {
+                int len = BufferUtil.length(content);
+                
+                if (len>0)
+                {
+                    // Do we need a chunk buffer?
                     if (isChunking())
                     {
-                        if (chunk==null)
+                        // Do we need a chunk buffer?
+                        if (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE)
                             return Result.NEED_CHUNK;
+                        ByteBuffer chunk = headerOrChunk;
                         BufferUtil.clearToFill(chunk);
-
-                        switch(result)
-                        {
-                            case FLUSH:
-                                prepareChunk(chunk,buffer.remaining());
-                                break;
-                            case FLUSH_CONTENT:
-                                prepareChunk(chunk,content.remaining());
-                                break;
-                            case OK:
-                                if (BufferUtil.hasContent(buffer))
-                                {
-                                    result=Result.FLUSH;
-                                    prepareChunk(chunk,buffer.remaining());
-                                }
-                                else
-                                {
-                                    result=Result.FLUSH;
-                                    _state=State.END;
-                                    prepareChunk(chunk,0);
-                                }
-                        }
+                        prepareChunk(chunk,len);
                         BufferUtil.flipToFlush(chunk,0);
                     }
-                    else if (result==Result.OK)
-                    {
-                        if (BufferUtil.hasContent(buffer))
-                            result=Result.FLUSH;
-                        else
-                        {
-                            if (!Boolean.TRUE.equals(_persistent))
-                                result=Result.SHUTDOWN_OUT;
-                            _state=State.END;
-                        }
-                    }
-
-                    return result;
-
-                case COMPLETING_1XX:
-                    reset();
-                    return Result.OK;
-
-                case END:
-                    return Boolean.TRUE.equals(_persistent) ? Result.OK : Result.SHUTDOWN_OUT;
-
-                default:
-                    throw new IllegalStateException();
-            }
-        }
-        catch(Exception e)
-        {
-            if (header!=null && info instanceof ResponseInfo)
-            {
-                if (e instanceof BufferOverflowException)
-                {
-                    LOG.warn("Response header too large");
-                    LOG.debug(e);
+                    _contentPrepared+=len;
                 }
-                else
-                    LOG.warn(e);
-                _state=State.COMPLETING;
-                // We were probably trying to generate a header, so let's make it a 500 instead
-                header.clear();
-                _persistent=false;
-                generateResponseLine(RESPONSE_500_INFO,header);
-                generateHeaders(RESPONSE_500_INFO,header,null,true);
-                if (buffer!=null)
-                    BufferUtil.clear(buffer);
-                if (chunk!=null)
-                    BufferUtil.clear(chunk);
-                if (content!=null)
-                    BufferUtil.clear(content);
-                return Result.FLUSH;
+
+                if (last)
+                {
+                    _state=State.COMPLETING;
+                    return len>0?Result.FLUSH:Result.CONTINUE;
+                }
+
+                return len>0?Result.FLUSH:Result.DONE;
             }
-            throw e;
-        }
-        finally
-        {
-            if (pos>=0)
-                BufferUtil.flipToFlush(header,pos);
+            
+            case COMPLETING:
+            {          
+                if (BufferUtil.hasContent(content))
+                    throw new IllegalStateException(); // Can't pass new content in COMPLETING state
+                      
+                if (isChunking())
+                {
+                    // Do we need a chunk buffer?
+                    if (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE)
+                        return Result.NEED_CHUNK;
+                    ByteBuffer chunk=headerOrChunk;
+                    BufferUtil.clearToFill(chunk);
+                    prepareChunk(chunk,0);
+                    BufferUtil.flipToFlush(chunk,0);
+                    _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+                    return Result.FLUSH;
+                }
+                
+                _state=State.END;
+               return Boolean.TRUE.equals(_persistent)?Result.DONE:Result.SHUTDOWN_OUT;
+            }
+
+            case END:
+                if (BufferUtil.hasContent(content))
+                    throw new IllegalStateException(); // Can't pass new content in END state
+                return Result.DONE;
+                
+            default:
+                throw new IllegalStateException();
         }
     }
+
+    /* ------------------------------------------------------------ */
+    public Result generateResponse(ResponseInfo info, ByteBuffer headerOrChunk, ByteBuffer content, boolean last)
+    {
+        switch(_state)
+        {
+            case START:
+            {
+               
+                if (info==null)
+                    return Result.NEED_INFO;
+
+                // Handle 0.9
+                if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
+                {
+                    _persistent = false;
+                    _endOfContent=EndOfContent.EOF_CONTENT;
+                    if (BufferUtil.hasContent(content))
+                        _contentPrepared+=content.remaining();
+                    _state = last?State.COMPLETING:State.COMMITTED;
+                    return Result.FLUSH;
+                }
+
+                // Do we need a response header
+                if (headerOrChunk==null || headerOrChunk.capacity()<=CHUNK_SIZE)
+                    return Result.NEED_HEADER;
+
+                // If we have not been told our persistence, set the default 
+                if (_persistent==null)
+                    _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
+
+                // prepare the header
+                ByteBuffer header = headerOrChunk;
+                int pos=BufferUtil.flipToFill(header);
+                try
+                {
+                    // generate ResponseLine
+                    generateResponseLine(info,header);
+
+                    // Handle 1xx and no content responses
+                    int status=info.getStatus();
+                    if (status>=100 && status<200 )
+                    {
+                        _noContent=true;
+
+                        if (status!=HttpStatus.SWITCHING_PROTOCOLS_101 )
+                        {
+                            header.put(HttpTokens.CRLF);
+                            _state=State.COMPLETING_1XX;
+                            return Result.FLUSH;
+                        }
+                    }
+                    else if (status==HttpStatus.NO_CONTENT_204 || status==HttpStatus.NOT_MODIFIED_304)
+                    {
+                        _noContent=true;
+                    }
+
+                    generateHeaders(info,header,content,last);
+
+                    // handle the content.
+                    int len = BufferUtil.length(content);
+                    if (len>0)
+                    {
+                        _contentPrepared+=len;
+                        if (isChunking() && !info.isHead())
+                            prepareChunk(header,len);
+                    }
+                    _state = last?State.COMPLETING:State.COMMITTED;
+                }
+                catch(Exception e)
+                {
+                    if (e instanceof BufferOverflowException)
+                    {
+                        LOG.warn("Response header too large");
+                        LOG.debug(e);
+                    }
+                    else
+                        LOG.warn(e);
+                    
+                    // We were probably trying to generate a header, so let's make it a 500 instead
+                    _persistent=false;
+                    BufferUtil.clearToFill(header);
+                    generateResponseLine(RESPONSE_500_INFO,header);
+                    generateHeaders(RESPONSE_500_INFO,header,null,true);
+                    _state=State.COMPLETING;
+                }
+                finally
+                {
+                    BufferUtil.flipToFlush(header,pos);
+                }
+
+                return Result.FLUSH;
+            }    
+            
+            case COMMITTED:    
+            {
+                int len = BufferUtil.length(content);
+                
+                // handle the content.
+                if (len>0)
+                {
+                    // Do we need a chunk buffer?
+                    if (isChunking() && (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE))
+                        return Result.NEED_CHUNK;
+
+                    ByteBuffer chunk = headerOrChunk;
+                    
+                    _contentPrepared+=len;
+                    if (isChunking())
+                    {
+                        BufferUtil.clearToFill(chunk);
+                        prepareChunk(chunk,len);
+                        BufferUtil.flipToFlush(chunk,0);
+                    }
+                }
+
+                if (last)
+                {
+                    _state=State.COMPLETING;
+                    return len>0?Result.FLUSH:Result.CONTINUE;
+                }
+                return len>0?Result.FLUSH:Result.DONE;
+
+            }
+            
+            case COMPLETING_1XX:
+            {
+                reset();
+                return Result.DONE;
+            }
+            
+            case COMPLETING:
+            {         
+                if (BufferUtil.hasContent(content))
+                    throw new IllegalStateException(); // Can't pass new content in COMPLETING state
+       
+                if (isChunking())
+                {
+                    // Do we need a chunk buffer?
+                    if (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE)
+                        return Result.NEED_CHUNK;
+                    ByteBuffer chunk=headerOrChunk;
+                    
+                    // Write the last chunk
+                    BufferUtil.clearToFill(chunk);
+                    prepareChunk(chunk,0);
+                    BufferUtil.flipToFlush(chunk,0);
+                    _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+                    return Result.FLUSH;
+                }
+                
+                _state=State.END;
+
+               return Boolean.TRUE.equals(_persistent)?Result.DONE:Result.SHUTDOWN_OUT;
+            }
+
+            case END:
+                if (BufferUtil.hasContent(content))
+                    throw new IllegalStateException(); // Can't pass new content in END state
+                return Result.DONE;
+                
+            default:
+                throw new IllegalStateException();
+        }
+    }
+    
+    
 
     /* ------------------------------------------------------------ */
     private void prepareChunk(ByteBuffer chunk, int remaining)
@@ -585,13 +564,13 @@ public class HttpGenerator
                     case CONTENT_LENGTH:
                         // handle specially below
                         if (_info.getContentLength()>=0)
-                            _content=EndOfContent.CONTENT_LENGTH;
+                            _endOfContent=EndOfContent.CONTENT_LENGTH;
                         break;
 
                     case CONTENT_TYPE:
                     {
                         if (field.getValue().startsWith(MimeTypes.Type.MULTIPART_BYTERANGES.toString()))
-                            _content=EndOfContent.SELF_DEFINING_CONTENT;
+                            _endOfContent=EndOfContent.SELF_DEFINING_CONTENT;
 
                         // write the field to the header
                         content_type=true;
@@ -647,8 +626,8 @@ public class HttpGenerator
                                     if (_response!=null)
                                     {
                                         _persistent=false;
-                                        if (_content == EndOfContent.UNKNOWN_CONTENT)
-                                            _content=EndOfContent.EOF_CONTENT;
+                                        if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
+                                            _endOfContent=EndOfContent.EOF_CONTENT;
                                     }
                                     break;
                                 }
@@ -715,7 +694,7 @@ public class HttpGenerator
         // 5. multipart/byteranges
         // 6. close
         int status=_response!=null?_response.getStatus():-1;
-        switch (_content)
+        switch (_endOfContent)
         {
             case UNKNOWN_CONTENT:
                 // It may be that we have no _content, or perhaps _content just has not been
@@ -723,11 +702,11 @@ public class HttpGenerator
 
                 // Response known not to have a body
                 if (_contentPrepared == 0 && _response!=null && (status < 200 || status == 204 || status == 304))
-                    _content=EndOfContent.NO_CONTENT;
+                    _endOfContent=EndOfContent.NO_CONTENT;
                 else if (_info.getContentLength()>0)
                 {
                     // we have been given a content length
-                    _content=EndOfContent.CONTENT_LENGTH;
+                    _endOfContent=EndOfContent.CONTENT_LENGTH;
                     long content_length = _info.getContentLength();
                     if ((_response!=null || content_length>0 || content_type ) && !_noContent)
                     {
@@ -740,7 +719,7 @@ public class HttpGenerator
                 else if (last)
                 {
                     // we have seen all the _content there is, so we can be content-length limited.
-                    _content=EndOfContent.CONTENT_LENGTH;
+                    _endOfContent=EndOfContent.CONTENT_LENGTH;
                     long content_length = _contentPrepared+BufferUtil.length(content);
 
                     // Do we need to tell the headers about it
@@ -754,10 +733,10 @@ public class HttpGenerator
                 else
                 {
                     // No idea, so we must assume that a body is coming
-                    _content = (!isPersistent() || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? EndOfContent.EOF_CONTENT : EndOfContent.CHUNKED_CONTENT;
-                    if (_response!=null && _content==EndOfContent.EOF_CONTENT)
+                    _endOfContent = (!isPersistent() || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? EndOfContent.EOF_CONTENT : EndOfContent.CHUNKED_CONTENT;
+                    if (_response!=null && _endOfContent==EndOfContent.EOF_CONTENT)
                     {
-                        _content=EndOfContent.NO_CONTENT;
+                        _endOfContent=EndOfContent.NO_CONTENT;
                         _noContent=true;
                     }
                 }
@@ -808,7 +787,7 @@ public class HttpGenerator
         }
 
         // Handle connection if need be
-        if (_content==EndOfContent.EOF_CONTENT)
+        if (_endOfContent==EndOfContent.EOF_CONTENT)
         {
             keep_alive=false;
             _persistent=false;

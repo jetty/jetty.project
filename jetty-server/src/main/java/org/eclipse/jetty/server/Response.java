@@ -19,11 +19,13 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -454,7 +456,20 @@ public class Response implements HttpServletResponse
     public void sendProcessing() throws IOException
     {
         if (_channel.isExpecting102Processing() && !isCommitted())
-            _channel.commitResponse(HttpGenerator.PROGRESS_102_INFO,null);
+        {
+            try
+            {
+                _channel.write(HttpGenerator.PROGRESS_102_INFO,null).get(); 
+            }
+            catch (final InterruptedException e)
+            {
+                throw new InterruptedIOException(){{this.initCause(e);}};
+            }
+            catch (final ExecutionException e)
+            {
+                throw new IOException(){{this.initCause(e);}};
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -847,7 +862,7 @@ public class Response implements HttpServletResponse
     }
 
     /* ------------------------------------------------------------ */
-    public void checkAllContentWritten(long written)
+    public boolean checkAllContentWritten(long written)
     {
         if (_contentLength>=0 && written>=_contentLength)
         {
@@ -867,7 +882,9 @@ public class Response implements HttpServletResponse
             {
                 throw new RuntimeException(e);
             }
+            return true;
         }
+        return false;
     }
 
     /* ------------------------------------------------------------ */
@@ -1007,7 +1024,7 @@ public class Response implements HttpServletResponse
     {
         if (isCommitted() || getContentCount()>0 )
             throw new IllegalStateException("Committed or content written");
-        _channel.increaseContentBufferSize(size);
+        _out.increaseContentBufferSize(size);
     }
 
     /* ------------------------------------------------------------ */
@@ -1017,7 +1034,7 @@ public class Response implements HttpServletResponse
     @Override
     public int getBufferSize()
     {
-        return _channel.getContentBufferSize();
+        return _out.getContentBufferSize();
     }
 
     /* ------------------------------------------------------------ */
@@ -1027,7 +1044,7 @@ public class Response implements HttpServletResponse
     @Override
     public void flushBuffer() throws IOException
     {
-        _channel.flushResponse();
+        _out.flush();
     }
 
     /* ------------------------------------------------------------ */
@@ -1104,7 +1121,7 @@ public class Response implements HttpServletResponse
                 _out.reset();
         }
 
-        _channel.resetBuffer();
+        _out.resetBuffer();
     }
     
     /* ------------------------------------------------------------ */
@@ -1193,7 +1210,7 @@ public class Response implements HttpServletResponse
     public void complete()
         throws IOException
     {
-        _channel.completeResponse();
+        _out.close();
     }
 
     /* ------------------------------------------------------------ */

@@ -217,17 +217,15 @@ public class RequestTest
         _server.start();
 
         // Request with illegal Host header
-        String request="GET / HTTP/1.1\r\n"+
-        "Host: whatever.com:\r\n"+
+        String request="GET / HTTP/1.1\n"+
+        "Host: whatever.com:\n"+
         "Content-Type: text/html;charset=utf8\n"+
         "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
-        assertTrue("400 Bad Request response expected",responses.startsWith("HTTP/1.1 400"));
+        assertThat(responses,Matchers.startsWith("HTTP/1.1 400"));
     }
-
-
 
     @Test
     public void testContentTypeEncoding() throws Exception

@@ -306,7 +306,7 @@ public class BufferUtil
      * @param to Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
      * @return number of bytes moved
      */
-    public static int append(ByteBuffer from, ByteBuffer to)
+    public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
     {
         int pos= flipToFill(to);
         try
@@ -317,6 +317,32 @@ public class BufferUtil
         {
             flipToFlush(to,pos);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public static void append(ByteBuffer to, byte[] b,int off,int len)
+    {
+        int pos= flipToFill(to);
+        try
+        {
+            to.put(b,off,len);
+        }
+        finally
+        {
+            flipToFlush(to,pos);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public static void append(ByteBuffer to, byte b)
+    {
+        int limit=to.limit();
+        to.put(limit,b);
+        to.limit(limit+1);
     }
     
     /* ------------------------------------------------------------ */

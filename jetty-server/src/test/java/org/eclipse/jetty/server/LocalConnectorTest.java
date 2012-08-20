@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,6 +36,7 @@ public class LocalConnectorTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
+        _connector.setIdleTimeout(60000);
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
         _server.start();
@@ -51,9 +53,8 @@ public class LocalConnectorTest
     
     @Test
     public void testOneGET() throws Exception
-    {        
+    {
         String response=_connector.getResponses("GET /R1 HTTP/1.0\r\n\r\n");
-
         assertThat(response,containsString("HTTP/1.1 200 OK"));
         assertThat(response,containsString("pathInfo=/R1"));
     }

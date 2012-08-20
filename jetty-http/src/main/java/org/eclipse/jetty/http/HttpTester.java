@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import org.eclipse.jetty.http.HttpGenerator.RequestInfo;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -172,20 +174,25 @@ public class HttpTester
                 System.err.println(info);
 
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteBuffer header=BufferUtil.allocate(8192);
-                ByteBuffer buffer=BufferUtil.allocate(8192);
-                ByteBuffer chunk=BufferUtil.allocate(16);
+                ByteBuffer header=null;
                 ByteBuffer content=_content==null?null:ByteBuffer.wrap(_content.toByteArray());
 
 
-                loop: while(true)
+                loop: while(!generator.isEnd())
                 {
-                    HttpGenerator.Result result = generator.generate(info,header,chunk,buffer,content,HttpGenerator.Action.COMPLETE);
+                    HttpGenerator.Result result =  info instanceof RequestInfo 
+                        ?generator.generateRequest((RequestInfo)info,header,content,true)
+                        :generator.generateResponse((ResponseInfo)info,header,content,true);
                     switch(result)
                     {
-                        case NEED_BUFFER:
                         case NEED_HEADER:
+                            header=BufferUtil.allocate(8192);
+                            continue;
+                            
                         case NEED_CHUNK:
+                            header=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+                            continue;
+                            
                         case NEED_INFO:
                             throw new IllegalStateException();
 
@@ -195,36 +202,13 @@ public class HttpTester
                                 out.write(BufferUtil.toArray(header));
                                 BufferUtil.clear(header);
                             }
-                            if (BufferUtil.hasContent(chunk))
-                            {
-                                out.write(BufferUtil.toArray(chunk));
-                                BufferUtil.clear(chunk);
-                            }
-                            if (BufferUtil.hasContent(buffer))
-                            {
-                                out.write(BufferUtil.toArray(buffer));
-                                BufferUtil.clear(buffer);
-                            }
-                            break;
-
-                        case FLUSH_CONTENT:
-                            if (BufferUtil.hasContent(header))
-                            {
-                                out.write(BufferUtil.toArray(header));
-                                BufferUtil.clear(header);
-                            }
-                            if (BufferUtil.hasContent(chunk))
-                            {
-                                out.write(BufferUtil.toArray(chunk));
-                                BufferUtil.clear(chunk);
-                            }
                             if (BufferUtil.hasContent(content))
                             {
                                 out.write(BufferUtil.toArray(content));
                                 BufferUtil.clear(content);
                             }
                             break;
-                        case OK:
+                            
                         case SHUTDOWN_OUT:
                             break loop;
                     }
