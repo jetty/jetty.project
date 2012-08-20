@@ -859,8 +859,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
         switch (_availability)
         {
-            case UNAVAILABLE:
             case SHUTDOWN:
+            case UNAVAILABLE:
                 baseRequest.setHandled(true);
                 response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return false;
