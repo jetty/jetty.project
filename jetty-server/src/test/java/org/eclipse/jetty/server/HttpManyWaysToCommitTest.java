@@ -357,7 +357,6 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     @Test
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytesAndThrow() throws Exception
     {
-        Log.getRootLogger().setDebugEnabled(true);
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(true));
         server.start();
 
