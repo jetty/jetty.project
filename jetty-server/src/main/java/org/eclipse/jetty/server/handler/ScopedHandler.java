@@ -114,7 +114,7 @@ public abstract class ScopedHandler extends HandlerWrapper
             
             super.doStart();
             
-            _nextScope= (ScopedHandler)getChildHandlerByClass(ScopedHandler.class);
+            _nextScope= getChildHandlerByClass(ScopedHandler.class);
             
         }
         finally
