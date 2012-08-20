@@ -69,7 +69,7 @@ public abstract class AbstractHttpTest
         server.stop();
     }
 
-    protected TestHttpResponse executeRequest() throws URISyntaxException, IOException
+    protected SimpleHttpParser.TestHttpResponse executeRequest() throws URISyntaxException, IOException
     {
         Socket socket = new Socket("localhost", connector.getLocalPort());
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
@@ -84,12 +84,12 @@ public abstract class AbstractHttpTest
         return httpParser.readResponse(reader);
     }
 
-    protected void assertResponseBody(TestHttpResponse response, String expectedResponseBody)
+    protected void assertResponseBody(SimpleHttpParser.TestHttpResponse response, String expectedResponseBody)
     {
         assertThat("response body is" + expectedResponseBody, response.getBody(), is(expectedResponseBody));
     }
 
-    protected void assertHeader(TestHttpResponse response, String headerName, String expectedValue)
+    protected void assertHeader(SimpleHttpParser.TestHttpResponse response, String headerName, String expectedValue)
     {
         assertThat(headerName + "=" + expectedValue, response.getHeaders().get(headerName), is(expectedValue));
     }

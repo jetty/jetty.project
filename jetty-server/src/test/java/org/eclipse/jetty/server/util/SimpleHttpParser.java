@@ -27,8 +27,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.server.TestHttpResponse;
-
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -160,5 +158,44 @@ public class SimpleHttpParser
             body.append(c);
         }
         return body;
+    }
+
+    public static class TestHttpResponse
+    {
+        private final String code;
+        private final Map<String, String> headers;
+        private final String body;
+
+        public TestHttpResponse(String code, Map<String, String> headers, String body)
+        {
+            this.code = code;
+            this.headers = headers;
+            this.body = body;
+        }
+
+        public String getCode()
+        {
+            return code;
+        }
+
+        public Map<String, String> getHeaders()
+        {
+            return headers;
+        }
+
+        public String getBody()
+        {
+            return body;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Response{" +
+                    "code='" + code + '\'' +
+                    ", headers=" + headers +
+                    ", body='" + body + '\'' +
+                    '}';
+        }
     }
 }
