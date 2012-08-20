@@ -49,7 +49,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("work in progress")
+@Ignore("Work in Progress")
 public class WebSocketClientTest
 {
     private BlockheadServer server;
@@ -149,9 +149,9 @@ public class WebSocketClientTest
         final ServerConnection srvSock = server.accept();
         srvSock.upgrade();
 
-        UpgradeResponse resp = future.get(250,TimeUnit.MILLISECONDS);
+        UpgradeResponse resp = future.get(500,TimeUnit.MILLISECONDS);
         Assert.assertThat("Response",resp,notNullValue());
-        Assert.assertEquals("Response.success",resp.isSuccess(),is(true));
+        Assert.assertThat("Response.success",resp.isSuccess(),is(true));
 
         cliSock.assertWasOpened();
         cliSock.assertNotClosed();
@@ -159,9 +159,9 @@ public class WebSocketClientTest
         Assert.assertThat("Factory.sockets.size",factory.getConnectionManager().getClients().size(),is(1));
 
         cliSock.getConnection().write(null,new FutureCallback<Void>(),"Hello World!");
-        srvSock.echoMessage();
+        srvSock.echoMessage(1,TimeUnit.MILLISECONDS,500);
         // wait for response from server
-        cliSock.waitForResponseMessage();
+        cliSock.waitForMessage(TimeUnit.MILLISECONDS,500);
 
         cliSock.assertMessage("Hello World!");
     }
@@ -176,6 +176,11 @@ public class WebSocketClientTest
         // Server
         final ServerConnection srvSock = server.accept();
         srvSock.upgrade();
+
+        // Validate connect
+        UpgradeResponse resp = future.get(500,TimeUnit.MILLISECONDS);
+        Assert.assertThat("Response",resp,notNullValue());
+        Assert.assertThat("Response.success",resp.isSuccess(),is(true));
 
         // Have server send initial message
         srvSock.write(WebSocketFrame.text("Hello World"));

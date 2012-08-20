@@ -21,17 +21,25 @@ package org.eclipse.jetty.websocket.client.internal.io;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
 import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
 
+/**
+ * Client side WebSocket physical connection.
+ */
 public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
+    private final WebSocketClientFactory factory;
     private final IWebSocketClient client;
+    private boolean connected;
 
     public WebSocketClientConnection(EndPoint endp, Executor executor, IWebSocketClient client)
     {
         super(endp,executor,client.getFactory().getScheduler(),client.getPolicy(),client.getFactory().getBufferPool());
         this.client = client;
+        this.factory = client.getFactory();
+        this.connected = false;
     }
 
     public IWebSocketClient getClient()
@@ -40,8 +48,20 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     }
 
     @Override
+    public void onClose()
+    {
+        super.onClose();
+        factory.sessionClosed(getSession());
+    }
+
+    @Override
     public void onOpen()
     {
+        if (!connected)
+        {
+            factory.sessionOpened(getSession());
+            connected = true;
+        }
         super.onOpen();
     }
 }
