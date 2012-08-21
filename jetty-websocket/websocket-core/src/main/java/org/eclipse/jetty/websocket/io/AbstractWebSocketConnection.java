@@ -224,6 +224,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void onFillable()
     {
+        LOG.debug("{} onFillable()",policy.getBehavior());
         ByteBuffer buffer = bufferPool.acquire(policy.getBufferSize(),false);
         BufferUtil.clear(buffer);
         boolean readMore = false;
@@ -251,6 +252,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onOpen()
     {
         super.onOpen();
+        LOG.debug("fillInterested");
         fillInterested();
     }
 

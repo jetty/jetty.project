@@ -22,33 +22,39 @@ import static org.hamcrest.Matchers.*;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.Assert;
 
+/**
+ * Testing Socket used on client side WebSocket testing.
+ */
 public class TrackingSocket extends WebSocketAdapter
 {
-    public AtomicBoolean open = new AtomicBoolean(false);
-    public AtomicInteger close = new AtomicInteger(-1);
+    private static final Logger LOG = Log.getLogger(TrackingSocket.class);
+
+    public int closeCode = -1;
     public StringBuilder closeMessage = new StringBuilder();
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
     public BlockingQueue<String> messageQueue = new BlockingArrayQueue<String>();
 
-    public void assertClose(int expectedStatusCode, String expectedReason)
+    public void assertClose(int expectedStatusCode, String expectedReason) throws InterruptedException
     {
         assertCloseCode(expectedStatusCode);
         assertCloseReason(expectedReason);
     }
 
-    public void assertCloseCode(int expectedCode)
+    public void assertCloseCode(int expectedCode) throws InterruptedException
     {
-        Assert.assertThat("Close Code",close.get(),is(expectedCode));
+        Assert.assertThat("Was Closed",closeLatch.await(500,TimeUnit.MILLISECONDS),is(true));
+        Assert.assertThat("Close Code",closeCode,is(expectedCode));
     }
 
     private void assertCloseReason(String expectedReason)
@@ -56,36 +62,37 @@ public class TrackingSocket extends WebSocketAdapter
         Assert.assertThat("Close Reaosn",closeMessage.toString(),is(expectedReason));
     }
 
-    public void assertIsOpen()
+    public void assertIsOpen() throws InterruptedException
     {
         assertWasOpened();
         assertNotClosed();
     }
 
-    public void assertMessage(String string)
+    public void assertMessage(String expected)
     {
-        // TODO Auto-generated method stub
-
+        String actual = messageQueue.poll();
+        Assert.assertEquals("Message",expected,actual);
     }
 
     public void assertNotClosed()
     {
-        Assert.assertThat("Close Code",close.get(),is(-1));
+        Assert.assertThat("Closed Latch",closeLatch.getCount(),greaterThanOrEqualTo(1L));
     }
 
     public void assertNotOpened()
     {
-        Assert.assertThat("Opened State",open.get(),is(false));
+        Assert.assertThat("Open Latch",openLatch.getCount(),greaterThanOrEqualTo(1L));
     }
 
-    public void assertWasOpened()
+    public void assertWasOpened() throws InterruptedException
     {
-        Assert.assertThat("Opened State",open.get(),is(true));
+        Assert.assertThat("Was Opened",openLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
 
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
+        LOG.debug("onWebSocketBinary()");
         dataLatch.countDown();
     }
 
@@ -93,7 +100,7 @@ public class TrackingSocket extends WebSocketAdapter
     public void onWebSocketClose(int statusCode, String reason)
     {
         super.onWebSocketClose(statusCode,reason);
-        close.set(statusCode);
+        closeCode = statusCode;
         closeMessage.append(reason);
         closeLatch.countDown();
     }
@@ -102,20 +109,19 @@ public class TrackingSocket extends WebSocketAdapter
     public void onWebSocketConnect(WebSocketConnection connection)
     {
         super.onWebSocketConnect(connection);
-        open.set(true);
         openLatch.countDown();
     }
 
     @Override
     public void onWebSocketText(String message)
     {
-        dataLatch.countDown();
+        LOG.debug("onWebSocketText({})",message);
         messageQueue.add(message);
+        dataLatch.countDown();
     }
 
-    public void waitForResponseMessage()
+    public void waitForMessage(TimeUnit timeoutUnit, int timeoutDuration) throws InterruptedException
     {
-        // TODO Auto-generated method stub
-
+        Assert.assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
     }
 }

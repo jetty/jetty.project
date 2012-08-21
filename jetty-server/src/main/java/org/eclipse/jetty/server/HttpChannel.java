@@ -433,7 +433,23 @@ public abstract class HttpChannel
             else
                 _uri.parse(uri);
             _request.setUri(_uri);
-            _request.setPathInfo(_uri.getDecodedPath());
+
+            String path = null;
+            try
+            {
+                path = _uri.getDecodedPath();
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
+                LOG.ignore(e);
+                path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
+            }                   
+            String info=URIUtil.canonicalPath(path);
+            
+            if (info==null)
+                info="/";
+            _request.setPathInfo(info);
             _version=version==null?HttpVersion.HTTP_0_9:version;
             _request.setHttpVersion(_version);
 

@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.After;
@@ -777,9 +779,8 @@ public class ConstraintTest
         _security.setHandler(check);
         _security.setAuthenticator(new BasicAuthenticator());
         _security.setStrict(false);
-        _server.start();
         
-        System.out.println(_server.dump());
+        _server.start();
 
         String response;
         response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n", 100000, TimeUnit.MILLISECONDS);
@@ -792,40 +793,12 @@ public class ConstraintTest
 
         _server.stop();
         
-        /*
-         * FIXME: this seems to indicate there is an issue with the way the server is stopping and starting now
-         * 
-         * Note that ConstraintSecurityHandler loses all of its brains when the server starts and stops, but that
-         * change was made in 2/2011 and this wasn't exposed til now, which seems to indicate that previously
-         * when the server stopped that doStop() didn't make it down to the constraint handler...and now it does.
-         * 
-         * also, seems to be an issue in local connector, I had to add a new one for it to be able to work here as well
-         * so issues in stop/start there as well
-         */
-        
-        _connector = new LocalConnector(_server);
-        _server.setConnectors(new Connector[]{_connector});
-        ContextHandler _context = new ContextHandler();
-        SessionHandler _session = new SessionHandler();
-
-        _context.setContextPath("/ctx");
-        _server.setHandler(_context);
-        _context.setHandler(_session);
-
-        _security = new ConstraintSecurityHandler();
-        _session.setHandler(_security);
-        RequestHandler _handler = new RequestHandler();
-        _security.setHandler(_handler);             
-                
         RoleRefHandler roleref = new RoleRefHandler();
+        roleref.setHandler(_security.getHandler());
         _security.setHandler(roleref);
         roleref.setHandler(check);
-       
-        _security.setConstraintMappings(getConstraintMappings(),getKnownRoles());
-        
-        _server.start();
 
-        System.out.println(_server.dump());
+        _server.start();
         
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
@@ -879,6 +852,7 @@ public class ConstraintTest
     }
     private class RequestHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -910,16 +884,19 @@ public class ConstraintTest
 
             UserIdentity.Scope scope = new UserIdentity.Scope()
             {
+                @Override
                 public String getContextPath()
                 {
                     return "/";
                 }
 
+                @Override
                 public String getName()
                 {
                     return "someServlet";
                 }
 
+                @Override
                 public Map<String, String> getRoleRefMap()
                 {
                     Map<String, String> map = new HashMap<>();
@@ -943,6 +920,7 @@ public class ConstraintTest
 
     private class RoleCheckHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
             ((Request) request).setHandled(true);

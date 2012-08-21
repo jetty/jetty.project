@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
@@ -26,55 +28,41 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
 /**
  * 
  */
-public abstract class HttpWriter extends Writer
+public class EncodingHttpWriter extends HttpWriter
 {
-    public static final int MAX_OUTPUT_CHARS = 512; 
-    
-    final HttpOutput _out;
-    final ByteArrayOutputStream2 _bytes;
-    final char[] _chars;
+    final Writer _converter;
 
     /* ------------------------------------------------------------ */
-    public HttpWriter(HttpOutput out)
+    public EncodingHttpWriter(HttpOutput out, String encoding)
     {
-        _out=out;
-        _chars=new char[MAX_OUTPUT_CHARS];
-        _bytes = new ByteArrayOutputStream2(MAX_OUTPUT_CHARS);   
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void close() throws IOException
-    {
-        _out.close();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void flush() throws IOException
-    {
-        _out.flush();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void write (String s,int offset, int length) throws IOException
-    {   
-        while (length > MAX_OUTPUT_CHARS)
-        {
-            write(s, offset, MAX_OUTPUT_CHARS);
-            offset += MAX_OUTPUT_CHARS;
-            length -= MAX_OUTPUT_CHARS;
+        super(out);
+        try
+        {    
+            _converter = new OutputStreamWriter(_bytes, encoding);  
         }
-
-        s.getChars(offset, offset + length, _chars, 0);
-        write(_chars, 0, length);
+        catch (UnsupportedEncodingException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void write (char[] s,int offset, int length) throws IOException
-    {         
-        throw new AbstractMethodError();
+    {              
+        if (length==0)
+            _out.checkAllWritten();
+        
+        while (length > 0)
+        {  
+            _bytes.reset();
+            int chars = length>MAX_OUTPUT_CHARS?MAX_OUTPUT_CHARS:length;
+
+            _converter.write(s, offset, chars);
+            _converter.flush();
+            _bytes.writeTo(_out);
+            length-=chars;
+            offset+=chars;
+        }
     }
 }

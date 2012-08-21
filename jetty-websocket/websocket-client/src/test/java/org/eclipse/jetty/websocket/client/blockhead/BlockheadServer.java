@@ -31,11 +31,26 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.protocol.AcceptHash;
+import org.eclipse.jetty.websocket.protocol.Generator;
+import org.eclipse.jetty.websocket.protocol.OpCode;
+import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 
@@ -46,15 +61,33 @@ import org.junit.Assert;
  */
 public class BlockheadServer
 {
-    public static class ServerConnection
+    public static class ServerConnection implements IncomingFrames, OutgoingFrames
     {
         private final Socket socket;
+        private final ByteBufferPool bufferPool;
+        private final WebSocketPolicy policy;
+        private final IncomingFramesCapture incomingFrames;
+        private final Parser parser;
+        private final Generator generator;
+        private final AtomicInteger parseCount;
+
+        /** Set to true to disable timeouts (for debugging reasons) */
+        private boolean debug = false;
         private OutputStream out;
         private InputStream in;
+
+        private IncomingFrames incoming = this;
+        private OutgoingFrames outgoing = this;
 
         public ServerConnection(Socket socket)
         {
             this.socket = socket;
+            this.incomingFrames = new IncomingFramesCapture();
+            this.policy = WebSocketPolicy.newServerPolicy();
+            this.bufferPool = new StandardByteBufferPool(policy.getBufferSize());
+            this.parser = new Parser(policy);
+            this.parseCount = new AtomicInteger(0);
+            this.generator = new Generator(policy,bufferPool);
         }
 
         public void close() throws IOException
@@ -62,10 +95,33 @@ public class BlockheadServer
             this.socket.close();
         }
 
-        public void echoMessage()
+        public void disconnect()
         {
-            // TODO Auto-generated method stub
+            LOG.debug("disconnect");
+            IO.close(in);
+            IO.close(out);
+            if (socket != null)
+            {
+                try
+                {
+                    socket.close();
+                }
+                catch (IOException ignore)
+                {
+                    /* ignore */
+                }
+            }
+        }
 
+        public void echoMessage(int expectedFrames, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
+        {
+            LOG.debug("Echo Frames [expecting {}]",expectedFrames);
+            IncomingFramesCapture cap = readFrames(expectedFrames,timeoutUnit,timeoutDuration);
+            // now echo them back.
+            for (WebSocketFrame frame : cap.getFrames())
+            {
+                write(frame);
+            }
         }
 
         public void flush() throws IOException
@@ -89,6 +145,95 @@ public class BlockheadServer
                 out = socket.getOutputStream();
             }
             return out;
+        }
+
+        @Override
+        public void incoming(WebSocketException e)
+        {
+            // TODO Auto-generated method stub
+        }
+
+        @Override
+        public void incoming(WebSocketFrame frame)
+        {
+            // TODO Auto-generated method stub
+        }
+
+        @Override
+        public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+        {
+            ByteBuffer buf = generator.generate(frame);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
+            }
+            BufferUtil.writeTo(buf,out);
+            out.flush();
+
+            if (frame.getOpCode() == OpCode.CLOSE)
+            {
+                disconnect();
+            }
+        }
+
+        public int read(ByteBuffer buf) throws IOException
+        {
+            int len = 0;
+            while ((in.available() > 0) && (buf.remaining() > 0))
+            {
+                buf.put((byte)in.read());
+                len++;
+            }
+            return len;
+        }
+
+        public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
+        {
+            LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
+            int startCount = incomingFrames.size();
+
+            ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
+            BufferUtil.clearToFill(buf);
+            try
+            {
+                long msDur = TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
+                long now = System.currentTimeMillis();
+                long expireOn = now + msDur;
+                LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
+
+                int len = 0;
+                while (incomingFrames.size() < (startCount + expectedCount))
+                {
+                    BufferUtil.clearToFill(buf);
+                    len = read(buf);
+                    if (len > 0)
+                    {
+                        LOG.debug("Read {} bytes",len);
+                        BufferUtil.flipToFlush(buf,0);
+                        parser.parse(buf);
+                    }
+                    try
+                    {
+                        TimeUnit.MILLISECONDS.sleep(20);
+                    }
+                    catch (InterruptedException gnore)
+                    {
+                        /* ignore */
+                    }
+                    if (!debug && (System.currentTimeMillis() > expireOn))
+                    {
+                        incomingFrames.dump();
+                        throw new TimeoutException(String.format("Timeout reading all %d expected frames. (managed to only read %d frame(s))",expectedCount,
+                                incomingFrames.size()));
+                    }
+                }
+            }
+            finally
+            {
+                bufferPool.release(buf);
+            }
+
+            return incomingFrames;
         }
 
         public String readRequest() throws IOException
@@ -138,14 +283,21 @@ public class BlockheadServer
                 }
             }
 
+            // TODO: parse extensions
+
+            // TODO: setup extensions
+
             StringBuilder resp = new StringBuilder();
             resp.append("HTTP/1.1 101 Upgrade\r\n");
             resp.append("Sec-WebSocket-Accept: ");
-            resp.append(AcceptHash.hashKey(key));
-            resp.append("\r\n");
+            resp.append(AcceptHash.hashKey(key)).append("\r\n");
+            // TODO: respond to used extensions
             resp.append("\r\n");
 
             write(resp.toString().getBytes());
+
+            // Configure Parser
+            parser.setIncomingFramesHandler(incomingFrames);
         }
 
         private void write(byte[] bytes) throws IOException
@@ -163,10 +315,10 @@ public class BlockheadServer
             getOutputStream().write(b);
         }
 
-        public void write(WebSocketFrame frame)
+        public void write(WebSocketFrame frame) throws IOException
         {
-            // TODO Auto-generated method stub
-
+            LOG.debug("write(Frame->{}) to {}",frame,outgoing);
+            outgoing.output(null,null,frame);
         }
     }
 

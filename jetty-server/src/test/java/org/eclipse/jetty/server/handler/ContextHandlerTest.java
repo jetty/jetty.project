@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +34,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
@@ -150,6 +152,60 @@ public class ContextHandlerTest
         Assert.assertEquals(fooA._scontext,foobarA._scontext.getContext("/foo/other"));
     }
 
+    @Test
+    public void testLifeCycle() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.setConnectors(new Connector[] { connector });
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ContextHandler root = new ContextHandler(contexts,"/");
+        root.setHandler(new ContextPathHandler());
+        ContextHandler foo = new ContextHandler(contexts,"/foo");
+        foo.setHandler(new ContextPathHandler());
+        ContextHandler foobar = new ContextHandler(contexts,"/foo/bar");
+        foobar.setHandler(new ContextPathHandler());
+
+        // check that all contexts start normally
+        server.start();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo/bar'"));
+        
+        // If we stop foobar, then requests will be handled by foo
+        foobar.stop();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        
+        // If we shutdown foo then requests will be 503'd
+        foo.shutdown();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("503"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("503"));
+
+        // If we stop foo then requests will be handled by root
+        foo.stop();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        
+        // If we start foo then foobar requests will be handled by foo
+        foo.start();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        
+        // If we start foobar then foobar requests will be handled by foobar
+        foobar.start();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo/bar'"));      
+    }
+    
+    
     @Test
     public void testContextVirtualGetContext() throws Exception
     {
@@ -393,6 +449,7 @@ public class ContextHandlerTest
             return handled;
         }
 
+        @Override
         public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -404,38 +461,19 @@ public class ContextHandlerTest
             handled = false;
         }
     }
-
-    private static final class WriterHandler extends AbstractHandler
+    
+    private static final class ContextPathHandler extends AbstractHandler
     {
-        volatile boolean error;
-        volatile Throwable throwable;
-
-
+        @Override
         public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            error = false;
-            throwable=null;
 
             response.setStatus(200);
             response.setContentType("text/plain; charset=utf-8");
             response.setHeader("Connection","close");
             PrintWriter writer = response.getWriter();
-            try
-            {
-                writer.write("Goodbye cruel world\n");
-                writer.close();
-                response.flushBuffer();
-                //writer.write("speaking from the dead");
-                writer.write("give the printwriter a chance"); //should create an error
-                if (writer.checkError())
-                    writer.write("didn't take the chance, will throw now"); //write after an error
-            }
-            catch(Throwable th)
-            {
-                throwable=th;
-            }
-            error=writer.checkError();
+            writer.println("ctx='"+request.getContextPath()+"'");
         }
     }
 }

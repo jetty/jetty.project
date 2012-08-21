@@ -64,6 +64,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
+    @Override
     public Handler[] getHandlers()
     {
         if (_handler==null)
@@ -114,6 +115,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (_handler!=null && isStarted())

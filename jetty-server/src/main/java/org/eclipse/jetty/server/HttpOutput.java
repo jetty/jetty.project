@@ -40,13 +40,7 @@ public class HttpOutput extends ServletOutputStream
 {
     private final HttpChannel _channel;
     private boolean _closed;
-    
-    // These are held here for reuse by Writer
-    String _characterEncoding;
-    Writer _converter;
-    char[] _chars;
-    ByteArrayOutputStream2 _bytes;
-    long _written;
+    private long _written;
 
     /* ------------------------------------------------------------ */
     public HttpOutput(HttpChannel channel)
