@@ -52,7 +52,7 @@ public class HttpConnection extends AbstractConnection
         __completed.completed(null);
     }
 
-    public static final String UPGRADE_CONNECTION_ATTR = "org.eclispe.jetty.server.HttpConnection.UPGRADE";
+    public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclispe.jetty.server.HttpConnection.UPGRADE";
 
 
     private final Server _server;
@@ -253,20 +253,80 @@ public class HttpConnection extends AbstractConnection
                     if (!_channel.getRequest().isPersistent())
                         _generator.setPersistent(false);
 
-                    // The parser returned true, which indicates the channel is ready
-                    // to handle a request. Call the channel and this will either handle the
-                    // request/response to completion OR if the request suspends, the channel
-                    // will be left in !idle state so our outer loop will exit.
-                    _channel.handle();
+                    // The parser returned true, which indicates the channel is ready to handle a request.
+                    // Call the channel and this will either handle the request/response to completion OR,
+                    // if the request suspends, the request/response will be incomplete so the outer loop will exit.
+                    boolean complete = _channel.handle();
 
-                    // Return if the channel is still processing the request
-                    if (_channel.isSuspended())
+                    // Handle connection upgrades
+                    if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
                     {
-                        // release buffer if no input being held
-                        // TODO: not sure what this optimization is meant for ?
-//                        if (_httpInput.available()==0)
-//                            releaseRequestBuffer();
-                        return;
+                        Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+                        if (connection != null)
+                        {
+                            LOG.debug("Upgrade from {} to {}", this, connection);
+                            getEndPoint().setConnection(connection);
+                        }
+                    }
+
+                    HttpConnection.this.reset();
+
+                    // Is this thread dispatched from a resume ?
+                    if (getCurrentConnection() != HttpConnection.this)
+                    {
+                        if (_parser.isStart())
+                        {
+                            // it wants to eat more
+                            if (_requestBuffer == null)
+                            {
+                                fillInterested();
+                            }
+                            else if (getConnector().isStarted())
+                            {
+                                LOG.debug("{} pipelined", this);
+
+                                try
+                                {
+                                    // TODO: avoid object creation
+                                    getExecutor().execute(new Runnable()
+                                    {
+                                        @Override
+                                        public void run()
+                                        {
+                                            onFillable();
+                                        }
+                                    });
+                                }
+                                catch (RejectedExecutionException e)
+                                {
+                                    if (getConnector().isStarted())
+                                        LOG.warn(e);
+                                    else
+                                        LOG.ignore(e);
+                                    getEndPoint().close();
+                                }
+                            }
+                            else
+                            {
+                                getEndPoint().close();
+                            }
+                        }
+
+                        if (_parser.isClosed() && !getEndPoint().isOutputShutdown())
+                        {
+                            // TODO This is a catch all indicating some protocol handling failure
+                            // Currently needed for requests saying they are HTTP/2.0.
+                            // This should be removed once better error handling is in place
+                            LOG.warn("Endpoint output not shutdown when seeking EOF");
+                            getEndPoint().shutdownOutput();
+                        }
+                    }
+
+                    // make sure that an oshut connection is driven towards close
+                    // TODO this is a little ugly
+                    if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
+                    {
+                        fillInterested();
                     }
 
                     // return if the connection has been changed
@@ -368,7 +428,7 @@ public class HttpConnection extends AbstractConnection
             // Handle connection upgrades
             if (getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
             {
-                Connection connection=(Connection)getRequest().getAttribute(UPGRADE_CONNECTION_ATTR);
+                Connection connection=(Connection)getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
                 if (connection!=null)
                 {
                     LOG.debug("Upgrade from {} to {}",this,connection);

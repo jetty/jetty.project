@@ -1116,7 +1116,12 @@ public class Response implements HttpServletResponse
         if (!_committed.compareAndSet(false,true))
             throw new IllegalStateException();
 
-        if (_status==HttpStatus.NOT_SET_000)
+        return newResponseInfo();
+    }
+
+    protected ResponseInfo newResponseInfo()
+    {
+        if (_status== HttpStatus.NOT_SET_000)
             _status=HttpStatus.OK_200;
 
         return new ResponseInfo(_channel.getRequest().getHttpVersion(),_fields,getLongContentLength(),getStatus(),getReason(),_channel.getRequest().isHead());

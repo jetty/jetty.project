@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.DispatcherType;
-import javax.servlet.ServletException;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -188,9 +187,11 @@ public class HttpChannel
         _uri.clear();
     }
 
-    protected void handle()
+    protected boolean handle()
     {
-        LOG.debug("{} process", this);
+        LOG.debug("{} handle enter", this);
+
+        setCurrentHttpChannel(this);
 
         String threadName = null;
         if (LOG.isDebugEnabled())
@@ -199,7 +200,6 @@ public class HttpChannel
             Thread.currentThread().setName(threadName + " - " + _uri);
         }
 
-        setCurrentHttpChannel(this);
         try
         {
             // Loop here to handle async request redispatches.
@@ -212,7 +212,7 @@ public class HttpChannel
             {
                 try
                 {
-                    _request.setHandled(false);
+                    _request.setHandled(false); // TODO: is this right here ?
                     _response.getHttpOutput().reopen();
 
                     if (_state.isInitial())
@@ -224,9 +224,9 @@ public class HttpChannel
                     else
                     {
                         _request.setDispatcherType(DispatcherType.ASYNC);
+                        // TODO: should be call customize() as above ?
                         getServer().handleAsync(this);
                     }
-
                 }
                 catch (ContinuationThrowable e)
                 {
@@ -238,14 +238,7 @@ public class HttpChannel
                     _state.error(e);
                     _request.setHandled(true);
                 }
-                catch (ServletException e)
-                {
-                    LOG.warn(String.valueOf(_uri), e);
-                    _state.error(e);
-                    _request.setHandled(true);
-                    commitError(500, null, e.toString());
-                }
-                catch (Throwable e)
+                catch (Throwable e) // TODO: consider catching only Exception
                 {
                     LOG.warn(String.valueOf(_uri), e);
                     _state.error(e);
@@ -257,87 +250,87 @@ public class HttpChannel
                     handling = !_state.unhandle();
                 }
             }
+
+            return complete1();
         }
         finally
         {
-            setCurrentHttpChannel(null);
-            if (threadName != null)
+            if (threadName != null && LOG.isDebugEnabled())
                 Thread.currentThread().setName(threadName);
 
-            if (_state.isCompleting())
-            {
-                try
-                {
-                    _state.completed();
-                    if (_expect100Continue)
-                    {
-                        LOG.debug("100 continues not sent");
-                        // We didn't send 100 continues, but the latest interpretation
-                        // of the spec (see httpbis) is that the client will either
-                        // send the body anyway, or close.  So we no longer need to
-                        // do anything special here other than make the connection not persistent
-                        _expect100Continue = false;
-                        if (!_response.isCommitted())
-                            _response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
-                        else
-                            LOG.warn("Can't close non-100 response");
-                    }
+            setCurrentHttpChannel(null);
 
-                    if (!_response.isCommitted() && !_request.isHandled())
-                        _response.sendError(404);
-
-                    // Complete generating the response
-                    _response.complete();
-
-                    // Complete reading the request
-                    _request.getHttpInput().consumeAll();
-                }
-                catch (EofException e)
-                {
-                    LOG.debug(e);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
-                finally
-                {
-                    _request.setHandled(true);
-                    completed();
-                }
-            }
-
-            LOG.debug("{} !process", this);
+            LOG.debug("{} handle exit", this);
         }
     }
 
+    protected boolean complete1()
+    {
+        LOG.debug("{} complete", this);
+
+        if (!_state.isCompleting())
+            return false;
+
+        _state.completed();
+        if (isExpecting100Continue())
+        {
+            LOG.debug("100-Continue response not sent");
+            // We didn't send 100 continues, but the latest interpretation
+            // of the spec (see httpbis) is that the client will either
+            // send the body anyway, or close.  So we no longer need to
+            // do anything special here other than make the connection not persistent
+            _expect100Continue = false;
+            if (!isCommitted())
+                _response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
+            else
+                LOG.warn("Cannot send 'Connection: close' for 100-Continue, response is already committed");
+        }
+
+        if (!_response.isCommitted() && !_request.isHandled())
+            commitError(404, null, null); // TODO: this should call the ErrorHandler
+
+        _request.setHandled(true);
+        _request.getHttpInput().consumeAll();
+        try
+        {
+            _response.getHttpOutput().close();
+        }
+        catch (IOException x)
+        {
+            x.printStackTrace(); // TODO
+        }
+
+        return true;
+    }
+
+    // TODO: remove this method
     protected void completed()
     {
-        // This is called by HttpChannel#handle when it knows that it's handling of the request/response cycle
-        // is complete.  This may be in the original thread dispatched to the connection that has called process from
-        // the connection#onFillable method, or it may be from a thread dispatched to call process as the result
-        // of a resumed suspended request.
-        // At this point the HttpChannel will have completed the generation of any response (although it might remain to
-        // be asynchronously flushed TBD), but it may not have consumed the entire
 /*
-        LOG.debug("{} completed");
+        // This method is called by handle() when it knows that its handling of the request/response cycle
+        // is complete.
+        // This may happen in the original thread dispatched to the connection that has called handle(),
+        // or it may be from a thread dispatched to call handle() as the result of a resumed suspended request.
+
+        LOG.debug("{} complete", this);
+
 
         // Handle connection upgrades
-        if (getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+        if (_response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
-            Connection connection=(Connection)getRequest().getAttribute(UPGRADE_CONNECTION_ATTR);
-            if (connection!=null)
+            Connection connection = (Connection)getRequest().getAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE);
+            if (connection != null)
             {
-                LOG.debug("Upgrade from {} to {}",this,connection);
+                LOG.debug("Upgrade from {} to {}", this, connection);
                 getEndPoint().setConnection(connection);
-                HttpConnection.this.reset();
+//                HttpConnection.this.reset(); // TODO: this should be done by the connection privately when handle returns
                 return;
             }
         }
 
 
         // Reset everything for the next cycle.
-        HttpConnection.this.reset();
+//        HttpConnection.this.reset(); // TODO: this should be done by the connection privately when handle returns
 
         // are called from non connection thread (ie dispatched from a resume)
         if (getCurrentConnection()!=HttpConnection.this)
@@ -716,8 +709,7 @@ public class HttpChannel
         }
         else
         {
-            // TODO: improve this responseInfo creation
-            ResponseInfo info = new ResponseInfo(null, _response.getHttpFields(), _response.getLongContentLength(), _response.getStatus(), _response.getReason(), false);
+            ResponseInfo info = _response.newResponseInfo();
             boolean committed = commit(info, content, complete);
             if (!committed)
                 throw new IOException("Concurrent commit"); // TODO: better message
