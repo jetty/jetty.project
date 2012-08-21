@@ -656,6 +656,7 @@
               <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
               <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
               <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
+              <exlcude>jetty-ant/**</exlcude> <!-- short term, need to add support to accept additional copyrights -->
             </excludes>
           </configuration>
           <executions>
