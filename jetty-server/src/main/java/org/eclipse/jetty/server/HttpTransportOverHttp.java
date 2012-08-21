@@ -38,6 +38,7 @@ public class HttpTransportOverHttp implements HttpTransport
     private final ByteBufferPool _bufferPool;
     private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
+    private HttpGenerator.ResponseInfo _info;
 
     public HttpTransportOverHttp(ByteBufferPool _bufferPool, HttpConfiguration _configuration, EndPoint _endPoint)
     {
@@ -48,6 +49,23 @@ public class HttpTransportOverHttp implements HttpTransport
 
     @Override
     public void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    {
+        generate(info, content, complete);
+        // TODO: Trick only needed by the current HttpGenerator, that always require a ResponseInfo object
+        if (!complete)
+            _info = info;
+    }
+
+    @Override
+    public void write(ByteBuffer content, boolean complete) throws IOException
+    {
+        generate(_info, content, complete);
+        // TODO: Trick only needed by the current HttpGenerator, that always require a ResponseInfo object
+        if (complete)
+            _info = null;
+    }
+
+    private void generate(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
         ByteBuffer header = null;
         out: while (true)
@@ -87,7 +105,7 @@ public class HttpTransportOverHttp implements HttpTransport
                     }
                     else
                     {
-                        write(header, content);
+                        write(header == null ? BufferUtil.EMPTY_BUFFER : header, content);
                     }
                     continue;
                 }
@@ -99,6 +117,10 @@ public class HttpTransportOverHttp implements HttpTransport
                 case DONE:
                 {
                     break out;
+                }
+                case CONTINUE:
+                {
+                    break;
                 }
                 default:
                 {
@@ -130,11 +152,5 @@ public class HttpTransportOverHttp implements HttpTransport
             else
                 throw (Error)cause;
         }
-    }
-
-    @Override
-    public int write(ByteBuffer content, boolean complete) throws IOException
-    {
-        throw new UnsupportedOperationException();
     }
 }

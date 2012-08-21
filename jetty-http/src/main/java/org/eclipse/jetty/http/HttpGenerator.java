@@ -384,11 +384,10 @@ public class HttpGenerator
                 if (len>0)
                 {
                     // Do we need a chunk buffer?
-                    if (isChunking() && (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE))
+                    if (isChunking() && BufferUtil.space(headerOrChunk) < CHUNK_SIZE)
                         return Result.NEED_CHUNK;
 
                     ByteBuffer chunk = headerOrChunk;
-
                     _contentPrepared+=len;
                     if (isChunking())
                     {
@@ -421,11 +420,11 @@ public class HttpGenerator
                 if (isChunking())
                 {
                     // Do we need a chunk buffer?
-                    if (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE)
+                    if (BufferUtil.space(headerOrChunk) < CHUNK_SIZE)
                         return Result.NEED_CHUNK;
-                    ByteBuffer chunk=headerOrChunk;
 
                     // Write the last chunk
+                    ByteBuffer chunk=headerOrChunk;
                     BufferUtil.clearToFill(chunk);
                     prepareChunk(chunk,0);
                     BufferUtil.flipToFlush(chunk,0);
@@ -448,8 +447,6 @@ public class HttpGenerator
         }
     }
 
-
-
     /* ------------------------------------------------------------ */
     private void prepareChunk(ByteBuffer chunk, int remaining)
     {
@@ -470,7 +467,6 @@ public class HttpGenerator
             _needCRLF=false;
         }
     }
-
 
     /* ------------------------------------------------------------ */
     private void generateRequestLine(RequestInfo request,ByteBuffer header)

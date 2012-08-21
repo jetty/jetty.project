@@ -24,8 +24,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
@@ -38,6 +40,8 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -170,7 +174,7 @@ public class HttpChannel
                     throw new IOException("Committed before 100 Continues");
 
                 // TODO: break this dependency with HttpGenerator
-                boolean committed = commit(HttpGenerator.CONTINUE_100_INFO, null, false);
+                boolean committed = commitResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
                 if (!committed)
                     throw new IOException("Concurrent commit while trying to send 100-Continue"); // TODO: better message
             }
@@ -243,7 +247,7 @@ public class HttpChannel
                     LOG.warn(String.valueOf(_uri), e);
                     _state.error(e);
                     _request.setHandled(true);
-                    commitError(500, null, e.toString());
+                    handleError(e);
                 }
                 finally
                 {
@@ -251,7 +255,7 @@ public class HttpChannel
                 }
             }
 
-            return complete1();
+            return complete();
         }
         finally
         {
@@ -264,7 +268,7 @@ public class HttpChannel
         }
     }
 
-    protected boolean complete1()
+    protected boolean complete()
     {
         LOG.debug("{} complete", this);
 
@@ -287,7 +291,7 @@ public class HttpChannel
         }
 
         if (!_response.isCommitted() && !_request.isHandled())
-            commitError(404, null, null); // TODO: this should call the ErrorHandler
+            _response.sendError(Response.SC_NOT_FOUND, null, null);
 
         _request.setHandled(true);
         _request.getHttpInput().consumeAll();
@@ -380,62 +384,130 @@ public class HttpChannel
 */
     }
 
-    protected boolean commitError(final int status, final String reason, String content)
+    /**
+     * <p>Sends an error 500, performing a special logic to detect whether the request is suspended,
+     * to avoid concurrent writes from the application.</p>
+     * <p>It may happen that the application suspends, and then throws an exception, while an application
+     * spawned thread writes the response content; in such case, we attempt to commit the error directly
+     * bypassing the {@link ErrorHandler} mechanisms and the response OutputStream.</p>
+     * @param x the Throwable that caused the problem
+     */
+    private void handleError(Throwable x)
     {
-        return true; // TODO
-/*
-        LOG.debug("{} sendError {} {}", this, status, reason);
-
-        if (_response.isCommitted())
-            return false;
-
-        try
+        if (_state.isSuspended())
         {
-            _response.setStatus(status, reason);
-            _response.getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-
-            ByteBuffer buffer = null;
-            if (content != null)
-            {
-                buffer = BufferUtil.toBuffer(content, StringUtil.__UTF8_CHARSET);
-                _response.setContentLength(buffer.remaining());
-            }
-
-            HttpGenerator.ResponseInfo info = _handler.commit();
             try
             {
-                write(info, buffer).get();
+                HttpFields fields = new HttpFields();
+                ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, Response.SC_INTERNAL_SERVER_ERROR, null, _request.isHead());
+                boolean committed = commitResponse(info, null, true);
+                if (!committed)
+                    LOG.warn("Could not send response error 500, response is already committed");
             }
-            catch (final InterruptedException e)
+            catch (IOException e)
             {
-                throw new InterruptedIOException()
-                {{
-                        this.initCause(e);
-                    }};
+                // We tried our best, just log
+                LOG.debug("Could not commit response error 500", e);
             }
-            catch (final ExecutionException e)
+        }
+        else
+        {
+            _response.sendError(500, null, x.getMessage());
+        }
+    }
+
+    protected void sendError(ResponseInfo info, String extraContent)
+    {
+        int status = info.getStatus();
+        try
+        {
+            String reason = info.getReason();
+            if (reason == null)
+                reason = HttpStatus.getMessage(status);
+
+            // If we are allowed to have a body
+            if (status != Response.SC_NO_CONTENT &&
+                    status != Response.SC_NOT_MODIFIED &&
+                    status != Response.SC_PARTIAL_CONTENT &&
+                    status >= Response.SC_OK)
             {
-                throw new IOException()
-                {{
-                        this.initCause(e);
-                    }};
+                ErrorHandler errorHandler = null;
+                ContextHandler.Context context = _request.getContext();
+                if (context != null)
+                    errorHandler = context.getContextHandler().getErrorHandler();
+                if (errorHandler == null)
+                    errorHandler = getServer().getBean(ErrorHandler.class);
+                if (errorHandler != null)
+                {
+                    _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, new Integer(status));
+                    _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, reason);
+                    _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, _request.getRequestURI());
+                    _request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, _request.getServletName());
+                    errorHandler.handle(null, _request, _request, _response);
+                }
+                else
+                {
+                    HttpFields fields = info.getHttpFields();
+                    fields.put(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
+                    fields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.toString());
+
+                    reason = escape(reason);
+                    String uri = escape(_request.getRequestURI());
+                    extraContent = escape(extraContent);
+
+                    StringBuilder writer = new StringBuilder(2048);
+                    writer.append("<html>\n");
+                    writer.append("<head>\n");
+                    writer.append("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=ISO-8859-1\"/>\n");
+                    writer.append("<title>Error ").append(Integer.toString(status)).append(' ').append(reason).append("</title>\n");
+                    writer.append("</head>\n");
+                    writer.append("<body>\n");
+                    writer.append("<h2>HTTP ERROR: ").append(Integer.toString(status)).append("</h2>\n");
+                    writer.append("<p>Problem accessing ").append(uri).append(". Reason:\n");
+                    writer.append("<pre>").append(reason).append("</pre></p>");
+                    if (extraContent != null)
+                        writer.append("<p>").append(extraContent).append("</p>");
+                    writer.append("<hr /><i><small>Powered by Jetty://</small></i>\n");
+                    writer.append("</body>\n");
+                    writer.append("</html>");
+                    byte[] bytes = writer.toString().getBytes(StringUtil.__ISO_8859_1);
+                    fields.put(HttpHeader.CONTENT_LENGTH, String.valueOf(bytes.length));
+                    _response.getOutputStream().write(bytes);
+                }
+            }
+            else if (status != Response.SC_PARTIAL_CONTENT)
+            {
+                // TODO: not sure why we need to modify the request when writing an error ?
+                // TODO: or modify the response if the error code cannot have a body ?
+    //            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_TYPE);
+    //            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_LENGTH);
+    //            _characterEncoding = null;
+    //            _mimeType = null;
             }
 
-            return true;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            LOG.debug("failed to sendError {} {}", status, reason, e);
-        }
-        finally
-        {
+            complete();
+
+            // TODO: is this needed ?
             if (_state.isIdle())
                 _state.complete();
             _request.getHttpInput().shutdownInput();
         }
-        return false;
-*/
+        catch (IOException x)
+        {
+            // We failed to write the error, bail out
+            LOG.debug("Could not write error response " + status, x);
+        }
+    }
+
+    private String escape(String reason)
+    {
+        if (reason != null)
+        {
+            reason = reason.replaceAll("&", "&amp;");
+            reason = reason.replaceAll("<", "&lt;");
+            reason = reason.replaceAll(">", "&gt;");
+        }
+        return reason;
     }
 
     public boolean isSuspended()
@@ -604,13 +676,13 @@ public class HttpChannel
 
                     if (!_host)
                     {
-                        commitError(HttpStatus.BAD_REQUEST_400, "No Host Header", null);
+                        _response.sendError(Response.SC_BAD_REQUEST, "No Host Header", null);
                         return true;
                     }
 
                     if (_expect)
                     {
-                        commitError(HttpStatus.EXPECTATION_FAILED_417, null, null);
+                        _response.sendError(Response.SC_EXPECTATION_FAILED, null, null);
                         return true;
                     }
 
@@ -658,7 +730,7 @@ public class HttpChannel
         {
             if (status < 400 || status > 599)
                 status = HttpStatus.BAD_REQUEST_400;
-            commitError(status, null, null);
+            _response.sendError(status, null, null);
         }
 
         @Override
@@ -680,7 +752,7 @@ public class HttpChannel
         }
     }
 
-    protected boolean commit(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    protected boolean commitResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
         boolean committed = _committed.compareAndSet(false, true);
         if (committed)
@@ -710,7 +782,7 @@ public class HttpChannel
         else
         {
             ResponseInfo info = _response.newResponseInfo();
-            boolean committed = commit(info, content, complete);
+            boolean committed = commitResponse(info, content, complete);
             if (!committed)
                 throw new IOException("Concurrent commit"); // TODO: better message
         }

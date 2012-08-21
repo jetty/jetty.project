@@ -27,13 +27,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.util.SimpleHttpParser;
-import org.eclipse.jetty.util.log.Log;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 //TODO: reset buffer tests
@@ -113,7 +112,6 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code is 500", response.getCode(), is("500"));
     }
 
-
     private class OnlySetHandledHandler extends ThrowExceptionOnDemandHandler
     {
         private OnlySetHandledHandler(boolean throwException)
@@ -138,6 +136,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
+        assertResponseBody(response, "foobar");
         assertHeader(response, "content-length", "6");
     }
 
@@ -150,6 +149,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response body is not foobar", response.getBody(), not(is("foobar")));
     }
 
     private class SetHandledWriteSomeDataHandler extends ThrowExceptionOnDemandHandler
@@ -176,8 +176,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-
         assertThat("response code is 200", response.getCode(), is("200"));
+        assertResponseBody(response, "foobar");
         if ("HTTP/1.1".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
@@ -190,7 +190,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
+        // Since the 200 was committed, the 500 did not get the chance to be written
         assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response body is foobar", response.getBody(), is("foobar"));
         if ("HTTP/1.1".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
@@ -255,7 +257,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     }
 
     @Test
-    public void testWriteFlushWriteMore() throws Exception
+    public void testHandledWriteFlushWriteMore() throws Exception
     {
         server.setHandler(new WriteFlushWriteMoreHandler(false));
         server.start();
@@ -263,21 +265,24 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
+        assertResponseBody(response, "foobar");
         if ("HTTP/1.1".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked"); // HTTP/1.0 does not do chunked.  it will just send content and close
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     @Test
-    public void testWriteFlushWriteMoreAndThrow() throws Exception
+    public void testHandledWriteFlushWriteMoreAndThrow() throws Exception
     {
         server.setHandler(new WriteFlushWriteMoreHandler(true));
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
+        // Since the 200 was committed, the 500 did not get the chance to be written
+        assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response code is 200", response.getCode(), is("200"));
         if ("HTTP/1.1".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");  // TODO HTTP/1.0 does not do chunked
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     private class WriteFlushWriteMoreHandler extends ThrowExceptionOnDemandHandler
@@ -299,7 +304,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     }
 
     @Test
-    public void testBufferOverflow() throws Exception
+    public void testHandledBufferOverflow() throws Exception
     {
         server.setHandler(new OverflowHandler(false));
         server.start();
@@ -308,19 +313,23 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
-        assertHeader(response, "content-length", "6");
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     @Test
-    public void testBufferOverflowAndThrow() throws Exception
+    public void testHandledBufferOverflowAndThrow() throws Exception
     {
         server.setHandler(new OverflowHandler(true));
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        // response not committed when we throw, so 500 expected
-        assertThat("response code is 500", response.getCode(), is("500"));
+        // Response was committed when we throw, so 200 expected
+        assertThat("response code is 200", response.getCode(), is("200"));
+        assertResponseBody(response, "foobar");
+        if ("HTTP/1.1".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
     }
 
     private class OverflowHandler extends ThrowExceptionOnDemandHandler
@@ -351,7 +360,6 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response body is foo", response.getBody(), is("foo"));
         assertHeader(response, "content-length", "3");
-
     }
 
     @Test
@@ -362,10 +370,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        //TODO: should we expect 500 here?
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
-        assertHeader(response, "content-length", "3");
+        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response body is not foo", response.getBody(), not(is("foo")));
     }
 
     private class SetContentLengthAndWriteThatAmountOfBytesHandler extends ThrowExceptionOnDemandHandler
@@ -394,7 +400,6 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        // jetty truncates the body when content-length is reached.! This is correct and desired behaviour?
         assertThat("response body is foo", response.getBody(), is("foo"));
         assertHeader(response, "content-length", "3");
     }
@@ -407,10 +412,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        // TODO: we throw before response is committed. should we expect 500?
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
-        assertHeader(response, "content-length", "3");
+        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response body is not foo", response.getBody(), not(is("foo")));
     }
 
     private class SetContentLengthAndWriteMoreBytesHandler extends ThrowExceptionOnDemandHandler
@@ -425,7 +428,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         {
             baseRequest.setHandled(true);
             response.setContentLength(3);
-            response.getWriter().write("foobar"); // Only "foo" will get written and "bar" will be discarded
+            // Only "foo" will get written and "bar" will be discarded
+            response.getWriter().write("foobar");
             super.handle(target, baseRequest, request, response);
         }
     }
@@ -439,7 +443,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        //TODO: jetty ignores setContentLength and sends transfer-encoding header. Correct?
+        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertHeader(response, "content-length", "3");
     }
 
     @Test
@@ -450,7 +455,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response body is not foo", response.getBody(), not(is("foo")));
     }
 
     private class WriteAndSetContentLengthHandler extends ThrowExceptionOnDemandHandler
@@ -465,13 +471,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foo");
-            response.setContentLength(3); // This should commit the response
+            response.setContentLength(3);
             super.handle(target, baseRequest, request, response);
         }
     }
 
     @Test
-    @Ignore
     public void testWriteAndSetContentLengthTooSmall() throws Exception
     {
         server.setHandler(new WriteAndSetContentLengthTooSmallHandler(false));
@@ -480,10 +485,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        assertResponseBody(response, "foobar");
-        // TODO: once flushed setting contentLength is ignored and chunked is used. Correct?
-        if ("HTTP/1.1".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertHeader(response, "content-length", "3");
     }
 
     @Test
@@ -494,7 +497,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        assertThat(response.getCode(), is("500"));
+        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response body is not foo", response.getBody(), not(is("foo")));
     }
 
     private class WriteAndSetContentLengthTooSmallHandler extends ThrowExceptionOnDemandHandler

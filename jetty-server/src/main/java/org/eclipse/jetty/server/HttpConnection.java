@@ -337,7 +337,8 @@ public class HttpConnection extends AbstractConnection
                 {
                     _parser.reset();
                     _parser.close();
-                    _channel.getEventHandler().badMessage(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
+                    _channel.getResponse().sendError(Response.SC_REQUEST_ENTITY_TOO_LARGE, null, null);
+                    // TODO: close the connection !
                 }
             }
         }
@@ -397,10 +398,10 @@ public class HttpConnection extends AbstractConnection
             return _httpConfig;
         }
 
-        @Override
+//        @Override
         protected boolean commitError(int status, String reason, String content)
         {
-            if (!super.commitError(status,reason,content))
+//            if (!super.commitError(status,reason,content))
             {
                 // TODO - should this just be a close and we don't worry about a RST overtaking a flushed response?
 
@@ -408,7 +409,7 @@ public class HttpConnection extends AbstractConnection
                 // the client something is wrong
                 getEndPoint().shutdownOutput();
                 _generator.abort();
-                return false;
+//                return false;
             }
             return true;
         }

@@ -49,10 +49,12 @@ public class HttpOutput extends ServletOutputStream
     private boolean _closed;
     private long _written;
     private ByteBuffer _aggregate;
+    private int _bufferSize;
 
     public HttpOutput(HttpChannel channel)
     {
         _channel = channel;
+        _bufferSize = _channel.getHttpConfiguration().getResponseBufferSize();
     }
 
     public boolean isWritten()
@@ -126,7 +128,7 @@ public class HttpOutput extends ServletOutputStream
         if (_aggregate == null)
         {
             // What size should the aggregate be ?
-            int size = _channel.getHttpConfiguration().getResponseBufferSize();
+            int size = getBufferSize();
 
             // If this write would fill more than half the aggregate, just write it directly
             if (len > size / 2)
@@ -176,7 +178,7 @@ public class HttpOutput extends ServletOutputStream
             throw new EOFException();
 
         if (_aggregate == null)
-            _aggregate = _channel.getConnector().getByteBufferPool().acquire(_channel.getHttpConfiguration().getResponseBufferSize(), false);
+            _aggregate = _channel.getConnector().getByteBufferPool().acquire(getBufferSize(), false);
 
         BufferUtil.append(_aggregate, (byte)b);
         _written++;
@@ -199,7 +201,6 @@ public class HttpOutput extends ServletOutputStream
         if (isClosed())
             throw new IOException("Closed");
 
-        // Convert HTTP content to contentl
         if (content instanceof HttpContent)
         {
             HttpContent httpContent = (HttpContent)content;
@@ -247,24 +248,14 @@ public class HttpOutput extends ServletOutputStream
             throw new IllegalArgumentException("unknown content type?");
     }
 
-    public int getContentBufferSize()
+    public int getBufferSize()
     {
-        if (_aggregate != null)
-            return _aggregate.capacity();
-        return _channel.getHttpConfiguration().getResponseBufferSize();
+        return _bufferSize;
     }
 
-    public void increaseContentBufferSize(int size)
+    public void setBufferSize(int size)
     {
-        if (_aggregate == null || size <= getContentBufferSize())
-            return;
-
-        ByteBuffer r = _channel.getConnector().getByteBufferPool().acquire(size, false);
-        if (BufferUtil.hasContent(_aggregate))
-            BufferUtil.flipPutFlip(_aggregate, r);
-        if (_aggregate != null)
-            _channel.getConnector().getByteBufferPool().release(_aggregate);
-        _aggregate = r;
+        this._bufferSize = size;
     }
 
     public void resetBuffer()
