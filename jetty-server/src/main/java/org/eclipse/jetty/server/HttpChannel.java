@@ -80,7 +80,7 @@ public class HttpChannel implements HttpParser.RequestHandler
     private boolean _expect102Processing = false;
     private boolean _host = false;
 
-    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
         _connector = connector;
         _configuration = configuration;
@@ -89,7 +89,7 @@ public class HttpChannel implements HttpParser.RequestHandler
 
         _uri = new HttpURI(URIUtil.__CHARSET);
         _state = new HttpChannelState(this);
-        _request = new Request(this, new HttpInput());
+        _request = new Request(this, input);
         _response = new Response(this, new HttpOutput(this));
     }
 
@@ -177,6 +177,7 @@ public class HttpChannel implements HttpParser.RequestHandler
 
     public void reset()
     {
+        _committed.set(false);
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
@@ -265,42 +266,40 @@ public class HttpChannel implements HttpParser.RequestHandler
     protected boolean complete()
     {
         LOG.debug("{} complete", this);
-
-        if (!_state.isCompleting())
-            return false;
-
-        _state.completed();
-        if (isExpecting100Continue())
+        if (_state.isCompleting())
         {
-            LOG.debug("100-Continue response not sent");
-            // We didn't send 100 continues, but the latest interpretation
-            // of the spec (see httpbis) is that the client will either
-            // send the body anyway, or close.  So we no longer need to
-            // do anything special here other than make the connection not persistent
-            _expect100Continue = false;
-            if (!isCommitted())
-                _response.addHeader(HttpHeader.CONNECTION.toString(), HttpHeaderValue.CLOSE.toString());
-            else
-                LOG.warn("Cannot send 'Connection: close' for 100-Continue, response is already committed");
-        }
+            _state.completed();
+            if (isExpecting100Continue())
+            {
+                LOG.debug("100-Continue response not sent");
+                // We didn't send 100 continues, but the latest interpretation
+                // of the spec (see httpbis) is that the client will either
+                // send the body anyway, or close.  So we no longer need to
+                // do anything special here other than make the connection not persistent
+                _expect100Continue = false;
+                if (!isCommitted())
+                    _response.addHeader(HttpHeader.CONNECTION.toString(), HttpHeaderValue.CLOSE.toString());
+                else
+                    LOG.warn("Cannot send 'Connection: close' for 100-Continue, response is already committed");
+            }
 
-        if (!_response.isCommitted() && !_request.isHandled())
-            _response.sendError(Response.SC_NOT_FOUND, null, null);
+            if (!_response.isCommitted() && !_request.isHandled())
+                _response.sendError(Response.SC_NOT_FOUND, null, null);
 
-        _request.setHandled(true);
-        _request.getHttpInput().consumeAll();
-        try
-        {
-            _response.getHttpOutput().close();
-        }
-        catch (IOException x)
-        {
-            // We cannot write the response, so there is no point in calling
-            // response.sendError() since that writes, and we already know we cannot write.
-            LOG.debug("Could not write response", x);
-        }
+            _request.setHandled(true);
 
-        return true;
+            try
+            {
+                _response.getHttpOutput().close();
+            }
+            catch (IOException x)
+            {
+                // We cannot write the response, so there is no point in calling
+                // response.sendError() since that writes, and we already know we cannot write.
+                LOG.debug("Could not write response", x);
+            }
+        }
+        return _request.getHttpInput().isShutdown();
     }
 
     /**

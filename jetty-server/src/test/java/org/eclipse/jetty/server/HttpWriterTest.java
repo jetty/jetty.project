@@ -43,7 +43,7 @@ public class HttpWriterTest
     {
         _bytes = BufferUtil.allocate(2048);
 
-        HttpChannel channel = new HttpChannel(null,null,null,null)
+        HttpChannel channel = new HttpChannel(null,null,null,null,null)
         {
             @Override
             public HttpConfiguration getHttpConfiguration()

@@ -103,7 +103,7 @@ public class ResponseTest
             }
         };
 
-        _channel = new HttpChannel(_connector,null,endp,null)
+        _channel = new HttpChannel(_connector,null,endp,null,null)
         {
 //            @Override
             protected void flush(ByteBuffer content, boolean last) throws IOException

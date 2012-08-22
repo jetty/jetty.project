@@ -34,17 +34,18 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpTransportOverHttp implements HttpTransport
 {
     private static final Logger logger = Log.getLogger(HttpTransportOverHttp.class);
-    private final HttpGenerator _generator = new HttpGenerator();
     private final ByteBufferPool _bufferPool;
     private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
+    private final HttpGenerator _generator;
     private HttpGenerator.ResponseInfo _info;
 
-    public HttpTransportOverHttp(ByteBufferPool _bufferPool, HttpConfiguration _configuration, EndPoint _endPoint)
+    public HttpTransportOverHttp(ByteBufferPool _bufferPool, HttpConfiguration _configuration, EndPoint _endPoint, HttpGenerator generator)
     {
         this._bufferPool = _bufferPool;
         this._configuration = _configuration;
         this._endPoint = _endPoint;
+        this._generator = generator;
     }
 
     @Override

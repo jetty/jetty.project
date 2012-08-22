@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -326,8 +325,9 @@ public class HttpChannelState implements AsyncContext, Continuation
                     _state=State.COMPLETING;
                     return false;
 
-                case COMPLETING:
                 case ASYNCWAIT:
+                case COMPLETING:
+                case COMPLETED:
                     return false;
 
                 case REDISPATCH:

@@ -24,8 +24,6 @@ import java.nio.ByteBuffer;
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.util.ArrayQueue;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -42,10 +40,9 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpInput extends ServletInputStream
 {
-    private static final Logger LOG = Log.getLogger(HttpInput.class);
-
-    protected final byte[] _oneByte=new byte[1];
-    protected final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
+    private final byte[] _oneByte=new byte[1];
+    private final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
+    // TODO: what is this field for ?
     private ByteBuffer _content;
     private boolean _inputEOF;
 
@@ -144,7 +141,7 @@ public class HttpInput extends ServletInputStream
     {
         synchronized (lock())
         {
-            while(_inputQ.isEmpty())
+            while (_inputQ.isEmpty())
             {
                 try
                 {
@@ -179,6 +176,7 @@ public class HttpInput extends ServletInputStream
     {
         synchronized (lock())
         {
+            // TODO: no copy of the buffer; is this safe ?
             _inputQ.add(ref);
             onContentQueued(ref);
         }
@@ -201,6 +199,7 @@ public class HttpInput extends ServletInputStream
         }
     }
 
+    // TODO: is this method needed at all ?
     public void consumeAll()
     {
 /*
