@@ -22,13 +22,11 @@ import static org.hamcrest.Matchers.*;
 
 import java.net.ConnectException;
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,19 +35,14 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
 import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("Work in Progress")
 public class WebSocketClientTest
 {
     private BlockheadServer server;
@@ -187,50 +180,19 @@ public class WebSocketClientTest
 
         // Verify connect
         future.get(500,TimeUnit.MILLISECONDS);
+        wsocket.assertWasOpened();
+        wsocket.awaitMessage(1,TimeUnit.MILLISECONDS,500);
 
-        wsocket.assertMessage("Hello world");
+        wsocket.assertMessage("Hello World");
     }
 
     @Test
     public void testBlockReceiving() throws Exception
     {
-        final AtomicBoolean open = new AtomicBoolean(false);
-        final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch _latch = new CountDownLatch(1);
-        final StringBuilder closeMessage = new StringBuilder();
         final Exchanger<String> exchanger = new Exchanger<String>();
-
-        WebSocketListener socket = new WebSocketAdapter()
-        {
-            @Override
-            public void onWebSocketClose(int statusCode, String reason)
-            {
-                close.set(statusCode);
-                closeMessage.append(reason);
-                _latch.countDown();
-            }
-
-            @Override
-            public void onWebSocketConnect(WebSocketConnection connection)
-            {
-                open.set(true);
-            }
-
-            @Override
-            public void onWebSocketText(String message)
-            {
-                try
-                {
-                    exchanger.exchange(message);
-                }
-                catch (InterruptedException e)
-                {
-                    // e.printStackTrace();
-                }
-            }
-        };
-
-        WebSocketClient client = factory.newWebSocketClient(socket);
+        TrackingSocket tsocket = new TrackingSocket();
+        tsocket.messageExchanger = exchanger;
+        WebSocketClient client = factory.newWebSocketClient(tsocket);
         client.getPolicy().setIdleTimeout(60000);
 
         URI wsUri = server.getWsUri();
@@ -238,8 +200,9 @@ public class WebSocketClientTest
 
         ServerConnection sconnection = server.accept();
         sconnection.setSoTimeout(60000);
+        sconnection.upgrade();
 
-        UpgradeResponse resp = future.get(250,TimeUnit.MILLISECONDS);
+        future.get(500,TimeUnit.MILLISECONDS);
 
         // define some messages to send server to client
         byte[] send = new byte[]
@@ -305,15 +268,10 @@ public class WebSocketClientTest
         Assert.assertEquals(m.get(),messages);
 
         // Close with code
-        start = System.currentTimeMillis();
-        sconnection.write(new byte[]
-        { (byte)0x88, (byte)0x02, (byte)4, (byte)87 },0,4);
-        sconnection.flush();
+        sconnection.close(StatusCode.NORMAL);
 
-        _latch.await(10,TimeUnit.SECONDS);
-        Assert.assertTrue((System.currentTimeMillis() - start) < 5000);
-        Assert.assertEquals(1002,close.get());
-        Assert.assertEquals("Invalid close code 1111",closeMessage.toString());
+        Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(10,TimeUnit.SECONDS));
+        tsocket.assertCloseCode(StatusCode.NORMAL);
     }
 
     @Test
@@ -329,7 +287,7 @@ public class WebSocketClientTest
         final ServerConnection ssocket = server.accept();
         ssocket.upgrade();
 
-        UpgradeResponse resp = future.get(250,TimeUnit.MILLISECONDS);
+        future.get(250,TimeUnit.MILLISECONDS);
 
         final int messages = 200000;
         final AtomicLong totalB = new AtomicLong();
@@ -592,9 +550,8 @@ public class WebSocketClientTest
 
         wsocket.assertIsOpen();
 
-        ssocket.close();
-        wsocket.openLatch.await(10,TimeUnit.SECONDS);
+        ssocket.disconnect();
 
-        wsocket.assertCloseCode(StatusCode.NO_CLOSE);
+        Assert.assertThat("Close should have been detected",wsocket.closeLatch.await(10,TimeUnit.SECONDS),is(true));
     }
 }
