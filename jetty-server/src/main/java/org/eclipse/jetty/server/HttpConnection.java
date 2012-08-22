@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractConnection
+public class HttpConnection extends AbstractConnection implements Runnable
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclispe.jetty.server.HttpConnection.UPGRADE";
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
@@ -228,15 +228,7 @@ public class HttpConnection extends AbstractConnection
 
                                 try
                                 {
-                                    // TODO: avoid object creation
-                                    getExecutor().execute(new Runnable()
-                                    {
-                                        @Override
-                                        public void run()
-                                        {
-                                            onFillable();
-                                        }
-                                    });
+                                    getExecutor().execute(this);
                                 }
                                 catch (RejectedExecutionException e)
                                 {
@@ -307,5 +299,11 @@ public class HttpConnection extends AbstractConnection
     {
         super.onOpen();
         fillInterested();
+    }
+
+    @Override
+    public void run()
+    {
+        onFillable();
     }
 }

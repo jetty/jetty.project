@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
-
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.util.ArrayQueue;
@@ -34,22 +33,22 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * This class provides an HttpInput stream for the {@link HttpChannel}.
  * The input stream holds a queue of {@link ByteBuffer}s passed to it by
- * calls to {@link #content(ByteBuffer)}.  This class does not copy the buffers, 
- * but simply holds references to them, thus the caller must organise for those 
+ * calls to {@link #content(ByteBuffer)}.  This class does not copy the buffers,
+ * but simply holds references to them, thus the caller must organise for those
  * buffers to valid while held by this class.  To assist the caller, there are
  * extensible methods {@link #onContentQueued(ByteBuffer)}, {@link #onContentConsumed(ByteBuffer)}
- * and {@link #onAllContentConsumed()} that can be implemented so that the 
+ * and {@link #onAllContentConsumed()} that can be implemented so that the
  * creator of HttpInput will know when buffers are queued and dequeued.
  */
 public class HttpInput extends ServletInputStream
 {
     private static final Logger LOG = Log.getLogger(HttpInput.class);
-    
+
     protected final byte[] _oneByte=new byte[1];
     protected final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
     private ByteBuffer _content;
     private boolean _inputEOF;
-    
+
     /* ------------------------------------------------------------ */
     public HttpInput()
     {
@@ -60,14 +59,14 @@ public class HttpInput extends ServletInputStream
     {
         return _inputQ.lock();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void recycle()
     {
         synchronized (lock())
         {
             _inputEOF=false;
-            
+
             if (_content!=null)
                 onContentConsumed(_content);
             while ((_content=_inputQ.poll())!=null)
@@ -77,7 +76,7 @@ public class HttpInput extends ServletInputStream
             _content=null;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see java.io.InputStream#read()
@@ -104,7 +103,7 @@ public class HttpInput extends ServletInputStream
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see java.io.InputStream#read(byte[], int, int)
      */
     @Override
@@ -112,7 +111,7 @@ public class HttpInput extends ServletInputStream
     {
         synchronized (lock())
         {
-            ByteBuffer content=null;            
+            ByteBuffer content=null;
             while(content==null)
             {
                 content=_inputQ.peekUnsafe();
@@ -130,17 +129,17 @@ public class HttpInput extends ServletInputStream
                         onEof();
                         return -1;
                     }
-                    
+
                     blockForContent();
                 }
             }
-            
+
             int l=Math.min(len,content.remaining());
             content.get(b,off,l);
             return l;
         }
     }
-    
+
     protected void blockForContent() throws IOException
     {
         synchronized (lock())
@@ -158,44 +157,53 @@ public class HttpInput extends ServletInputStream
             }
         }
     }
-    
+
     protected void onContentQueued(ByteBuffer ref)
     {
         lock().notify();
     }
-    
+
     protected void onContentConsumed(ByteBuffer ref)
-    {    
+    {
     }
-    
+
     protected void onAllContentConsumed()
-    {   
+    {
     }
-    
+
     protected void onEof()
-    {   
+    {
     }
-    
+
     public boolean content(ByteBuffer ref)
     {
         synchronized (lock())
         {
             _inputQ.add(ref);
             onContentQueued(ref);
-        }              
+        }
         return true;
     }
 
-    public void shutdownInput()
+    public void shutdown()
     {
         synchronized (lock())
-        {             
+        {
             _inputEOF=true;
         }
     }
-    
+
+    public boolean isShutdown()
+    {
+        synchronized (lock())
+        {
+            return _inputEOF;
+        }
+    }
+
     public void consumeAll()
     {
+/*
         while (true)
         {
             synchronized (lock())
@@ -213,5 +221,6 @@ public class HttpInput extends ServletInputStream
                 LOG.warn(e);
             }
         }
+*/
     }
 }

@@ -295,87 +295,12 @@ public class HttpChannel implements HttpParser.RequestHandler
         }
         catch (IOException x)
         {
-            x.printStackTrace(); // TODO
+            // We cannot write the response, so there is no point in calling
+            // response.sendError() since that writes, and we already know we cannot write.
+            LOG.debug("Could not write response", x);
         }
 
         return true;
-    }
-
-    // TODO: remove this method
-    protected void completed()
-    {
-        /*
-                // This method is called by handle() when it knows that its handling of the request/response cycle
-                // is complete.
-                // This may happen in the original thread dispatched to the connection that has called handle(),
-                // or it may be from a thread dispatched to call handle() as the result of a resumed suspended request.
-
-                LOG.debug("{} complete", this);
-
-
-                // Handle connection upgrades
-                if (_response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-                {
-                    Connection connection = (Connection)getRequest().getAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE);
-                    if (connection != null)
-                    {
-                        LOG.debug("Upgrade from {} to {}", this, connection);
-                        getEndPoint().setConnection(connection);
-        //                HttpConnection.this.reset(); // TODO: this should be done by the connection privately when handle returns
-                        return;
-                    }
-                }
-
-
-                // Reset everything for the next cycle.
-        //        HttpConnection.this.reset(); // TODO: this should be done by the connection privately when handle returns
-
-                // are called from non connection thread (ie dispatched from a resume)
-                if (getCurrentConnection()!=HttpConnection.this)
-                {
-                    if (_parser.isStart())
-                    {
-                        // it wants to eat more
-                        if (_requestBuffer==null)
-                            fillInterested();
-                        else if (getConnector().isStarted())
-                        {
-                            LOG.debug("{} pipelined",this);
-
-                            try
-                            {
-                                execute(this);
-                            }
-                            catch(RejectedExecutionException e)
-                            {
-                                if (getConnector().isStarted())
-                                    LOG.warn(e);
-                                else
-                                    LOG.ignore(e);
-                                getEndPoint().close();
-                            }
-                        }
-                        else
-                            getEndPoint().close();
-                    }
-
-                    if (_parser.isClosed()&&!getEndPoint().isOutputShutdown())
-                    {
-                        // TODO This is a catch all indicating some protocol handling failure
-                        // Currently needed for requests saying they are HTTP/2.0.
-                        // This should be removed once better error handling is in place
-                        LOG.warn("Endpoint output not shutdown when seeking EOF");
-                        getEndPoint().shutdownOutput();
-                    }
-                }
-
-                // make sure that an oshut connection is driven towards close
-                // TODO this is a little ugly
-                if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
-                {
-                    fillInterested();
-                }
-        */
     }
 
     /**
@@ -485,7 +410,7 @@ public class HttpChannel implements HttpParser.RequestHandler
             // TODO: is this needed ?
             if (_state.isIdle())
                 _state.complete();
-            _request.getHttpInput().shutdownInput();
+            _request.getHttpInput().shutdown();
         }
         catch (IOException x)
         {
@@ -694,14 +619,14 @@ public class HttpChannel implements HttpParser.RequestHandler
     @Override
     public boolean messageComplete(long contentLength)
     {
-        _request.getHttpInput().shutdownInput();
+        _request.getHttpInput().shutdown();
         return true;
     }
 
     @Override
     public boolean earlyEOF()
     {
-        _request.getHttpInput().shutdownInput();
+        _request.getHttpInput().shutdown();
         return false;
     }
 

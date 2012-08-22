@@ -138,11 +138,6 @@ public class ResponseTest
             }
 
             @Override
-            protected void completed()
-            {
-            }
-
-            @Override
             public Connector getConnector()
             {
                 return null;

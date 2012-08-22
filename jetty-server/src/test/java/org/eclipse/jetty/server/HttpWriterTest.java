@@ -52,11 +52,6 @@ public class HttpWriterTest
             }
 
             @Override
-            protected void completed()
-            {
-            }
-
-            @Override
             protected void execute(Runnable task)
             {
                 task.run();
