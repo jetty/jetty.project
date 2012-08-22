@@ -24,16 +24,9 @@
  */
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -49,6 +42,12 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -126,7 +125,7 @@ public class HttpConnectionTest
                 System.err.println(response);
         }
     }
-    
+
     @Test
     public void testNoPath() throws Exception
     {
@@ -139,7 +138,7 @@ public class HttpConnectionTest
         offset = checkContains(response,offset,"HTTP/1.1 200");
         checkContains(response,offset,"pathInfo=/");
     }
-    
+
 
     @Test
     public void testEmpty() throws Exception
@@ -199,15 +198,15 @@ public class HttpConnectionTest
             "Connection: close\n"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
-        
+
         response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
             "Host: localhost\n"+
-            "Connection: close\n"+           
+            "Connection: close\n"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
 
         response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
-            "Host: localhost\n"+    
+            "Host: localhost\n"+
             "Connection: close\n"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
@@ -360,10 +359,11 @@ public class HttpConnectionTest
         "\n"+
         "abcdefghij\n";
 
+        Logger logger = Log.getLogger(HttpChannel.class);
         try
         {
-            HttpChannel.LOG.info("EXPECTING:           java.lang.IllegalStateException...");
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            logger.info("EXPECTING:           java.lang.IllegalStateException...");
+            ((StdErrLog)logger).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");
             offset = checkContains(response,offset,"Connection: close");
@@ -371,7 +371,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+            ((StdErrLog)logger).setHideStacks(false);
         }
     }
 

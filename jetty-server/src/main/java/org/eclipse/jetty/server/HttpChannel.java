@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
@@ -48,9 +49,9 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannel
+public class HttpChannel implements HttpParser.RequestHandler
 {
-    protected static final Logger LOG = Log.getLogger(HttpChannel.class);
+    private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
 
     public static HttpChannel getCurrentHttpChannel()
@@ -64,7 +65,7 @@ public class HttpChannel
     }
 
     private final AtomicBoolean _committed = new AtomicBoolean();
-    private final ChannelEventHandler _handler = new ChannelEventHandler();
+    private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
     private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
@@ -73,7 +74,6 @@ public class HttpChannel
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
-    private int _requests;
     private HttpVersion _version = HttpVersion.HTTP_1_1;
     private boolean _expect = false;
     private boolean _expect100Continue = false;
@@ -98,22 +98,22 @@ public class HttpChannel
         return _state;
     }
 
-    public EventHandler getEventHandler()
-    {
-        return _handler;
-    }
-
-    public boolean isIdle()
-    {
-        return _state.isIdle();
-    }
-
     /**
      * @return the number of requests handled by this connection
      */
     public int getRequests()
     {
-        return _requests;
+        return _requests.get();
+    }
+
+    public Connector getConnector()
+    {
+        return _connector;
+    }
+
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return _configuration;
     }
 
     public Server getServer()
@@ -121,17 +121,11 @@ public class HttpChannel
         return _connector.getServer();
     }
 
-    /**
-     * @return Returns the request.
-     */
     public Request getRequest()
     {
         return _request;
     }
 
-    /**
-     * @return Returns the response.
-     */
     public Response getResponse()
     {
         return _response;
@@ -285,7 +279,7 @@ public class HttpChannel
             // do anything special here other than make the connection not persistent
             _expect100Continue = false;
             if (!isCommitted())
-                _response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
+                _response.addHeader(HttpHeader.CONNECTION.toString(), HttpHeaderValue.CLOSE.toString());
             else
                 LOG.warn("Cannot send 'Connection: close' for 100-Continue, response is already committed");
         }
@@ -310,78 +304,78 @@ public class HttpChannel
     // TODO: remove this method
     protected void completed()
     {
-/*
-        // This method is called by handle() when it knows that its handling of the request/response cycle
-        // is complete.
-        // This may happen in the original thread dispatched to the connection that has called handle(),
-        // or it may be from a thread dispatched to call handle() as the result of a resumed suspended request.
+        /*
+                // This method is called by handle() when it knows that its handling of the request/response cycle
+                // is complete.
+                // This may happen in the original thread dispatched to the connection that has called handle(),
+                // or it may be from a thread dispatched to call handle() as the result of a resumed suspended request.
 
-        LOG.debug("{} complete", this);
-
-
-        // Handle connection upgrades
-        if (_response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-        {
-            Connection connection = (Connection)getRequest().getAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE);
-            if (connection != null)
-            {
-                LOG.debug("Upgrade from {} to {}", this, connection);
-                getEndPoint().setConnection(connection);
-//                HttpConnection.this.reset(); // TODO: this should be done by the connection privately when handle returns
-                return;
-            }
-        }
+                LOG.debug("{} complete", this);
 
 
-        // Reset everything for the next cycle.
-//        HttpConnection.this.reset(); // TODO: this should be done by the connection privately when handle returns
-
-        // are called from non connection thread (ie dispatched from a resume)
-        if (getCurrentConnection()!=HttpConnection.this)
-        {
-            if (_parser.isStart())
-            {
-                // it wants to eat more
-                if (_requestBuffer==null)
-                    fillInterested();
-                else if (getConnector().isStarted())
+                // Handle connection upgrades
+                if (_response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
                 {
-                    LOG.debug("{} pipelined",this);
-
-                    try
+                    Connection connection = (Connection)getRequest().getAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE);
+                    if (connection != null)
                     {
-                        execute(this);
-                    }
-                    catch(RejectedExecutionException e)
-                    {
-                        if (getConnector().isStarted())
-                            LOG.warn(e);
-                        else
-                            LOG.ignore(e);
-                        getEndPoint().close();
+                        LOG.debug("Upgrade from {} to {}", this, connection);
+                        getEndPoint().setConnection(connection);
+        //                HttpConnection.this.reset(); // TODO: this should be done by the connection privately when handle returns
+                        return;
                     }
                 }
-                else
-                    getEndPoint().close();
-            }
 
-            if (_parser.isClosed()&&!getEndPoint().isOutputShutdown())
-            {
-                // TODO This is a catch all indicating some protocol handling failure
-                // Currently needed for requests saying they are HTTP/2.0.
-                // This should be removed once better error handling is in place
-                LOG.warn("Endpoint output not shutdown when seeking EOF");
-                getEndPoint().shutdownOutput();
-            }
-        }
 
-        // make sure that an oshut connection is driven towards close
-        // TODO this is a little ugly
-        if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
-        {
-            fillInterested();
-        }
-*/
+                // Reset everything for the next cycle.
+        //        HttpConnection.this.reset(); // TODO: this should be done by the connection privately when handle returns
+
+                // are called from non connection thread (ie dispatched from a resume)
+                if (getCurrentConnection()!=HttpConnection.this)
+                {
+                    if (_parser.isStart())
+                    {
+                        // it wants to eat more
+                        if (_requestBuffer==null)
+                            fillInterested();
+                        else if (getConnector().isStarted())
+                        {
+                            LOG.debug("{} pipelined",this);
+
+                            try
+                            {
+                                execute(this);
+                            }
+                            catch(RejectedExecutionException e)
+                            {
+                                if (getConnector().isStarted())
+                                    LOG.warn(e);
+                                else
+                                    LOG.ignore(e);
+                                getEndPoint().close();
+                            }
+                        }
+                        else
+                            getEndPoint().close();
+                    }
+
+                    if (_parser.isClosed()&&!getEndPoint().isOutputShutdown())
+                    {
+                        // TODO This is a catch all indicating some protocol handling failure
+                        // Currently needed for requests saying they are HTTP/2.0.
+                        // This should be removed once better error handling is in place
+                        LOG.warn("Endpoint output not shutdown when seeking EOF");
+                        getEndPoint().shutdownOutput();
+                    }
+                }
+
+                // make sure that an oshut connection is driven towards close
+                // TODO this is a little ugly
+                if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
+                {
+                    fillInterested();
+                }
+        */
     }
 
     /**
@@ -390,6 +384,7 @@ public class HttpChannel
      * <p>It may happen that the application suspends, and then throws an exception, while an application
      * spawned thread writes the response content; in such case, we attempt to commit the error directly
      * bypassing the {@link ErrorHandler} mechanisms and the response OutputStream.</p>
+     *
      * @param x the Throwable that caused the problem
      */
     private void handleError(Throwable x)
@@ -479,10 +474,10 @@ public class HttpChannel
             {
                 // TODO: not sure why we need to modify the request when writing an error ?
                 // TODO: or modify the response if the error code cannot have a body ?
-    //            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_TYPE);
-    //            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_LENGTH);
-    //            _characterEncoding = null;
-    //            _mimeType = null;
+                //            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_TYPE);
+                //            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_LENGTH);
+                //            _characterEncoding = null;
+                //            _mimeType = null;
             }
 
             complete();
@@ -510,16 +505,6 @@ public class HttpChannel
         return reason;
     }
 
-    public boolean isSuspended()
-    {
-        return _request.getAsyncContinuation().isSuspended();
-    }
-
-    public void onClose()
-    {
-        LOG.debug("closed {}", this);
-    }
-
     public boolean isExpecting100Continue()
     {
         return _expect100Continue;
@@ -533,206 +518,203 @@ public class HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%d,a=%s}",
+        return String.format("%s@%x{r=%s,a=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 _requests,
                 _state.getState());
     }
 
-    private class ChannelEventHandler implements EventHandler
+    @Override
+    public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
     {
-        @Override
-        public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
+        _host = false;
+        _expect = false;
+        _expect100Continue = false;
+        _expect102Processing = false;
+
+        if (_request.getTimeStamp() == 0)
+            _request.setTimeStamp(System.currentTimeMillis());
+        _request.setMethod(httpMethod, method);
+
+        if (httpMethod == HttpMethod.CONNECT)
+            _uri.parseConnect(uri);
+        else
+            _uri.parse(uri);
+        _request.setUri(_uri);
+
+        String path;
+        try
         {
-            _host = false;
-            _expect = false;
-            _expect100Continue = false;
-            _expect102Processing = false;
-
-            if (_request.getTimeStamp() == 0)
-                _request.setTimeStamp(System.currentTimeMillis());
-            _request.setMethod(httpMethod, method);
-
-            if (httpMethod == HttpMethod.CONNECT)
-                _uri.parseConnect(uri);
-            else
-                _uri.parse(uri);
-            _request.setUri(_uri);
-
-            String path;
-            try
-            {
-                path = _uri.getDecodedPath();
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
-                LOG.ignore(e);
-                path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
-            }
-            String info = URIUtil.canonicalPath(path);
-
-            if (info == null)
-                info = "/";
-            _request.setPathInfo(info);
-            _version = version == null ? HttpVersion.HTTP_0_9 : version;
-            _request.setHttpVersion(_version);
-
-            return false;
+            path = _uri.getDecodedPath();
         }
-
-        @Override
-        public boolean parsedHeader(HttpHeader header, String name, String value)
+        catch (Exception e)
         {
-            if (value == null)
-                value = "";
-            if (header != null)
+            LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
+            LOG.ignore(e);
+            path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
+        }
+        String info = URIUtil.canonicalPath(path);
+
+        if (info == null)
+            info = "/";
+        _request.setPathInfo(info);
+        _version = version == null ? HttpVersion.HTTP_0_9 : version;
+        _request.setHttpVersion(_version);
+
+        return false;
+    }
+
+    @Override
+    public boolean parsedHeader(HttpHeader header, String name, String value)
+    {
+        if (value == null)
+            value = "";
+        if (header != null)
+        {
+            switch (header)
             {
-                switch (header)
-                {
-                    case HOST:
-                        // TODO check if host matched a host in the URI.
-                        _host = true;
-                        break;
+                case HOST:
+                    // TODO check if host matched a host in the URI.
+                    _host = true;
+                    break;
 
-                    case EXPECT:
-                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                        switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
-                        {
-                            case CONTINUE:
-                                _expect100Continue = true;
-                                break;
+                case EXPECT:
+                    HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
+                    switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
+                    {
+                        case CONTINUE:
+                            _expect100Continue = true;
+                            break;
 
-                            case PROCESSING:
-                                _expect102Processing = true;
-                                break;
+                        case PROCESSING:
+                            _expect102Processing = true;
+                            break;
 
-                            default:
-                                String[] values = value.split(",");
-                                for (int i = 0; values != null && i < values.length; i++)
+                        default:
+                            String[] values = value.split(",");
+                            for (int i = 0; values != null && i < values.length; i++)
+                            {
+                                expect = HttpHeaderValue.CACHE.get(values[i].trim());
+                                if (expect == null)
+                                    _expect = true;
+                                else
                                 {
-                                    expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                                    if (expect == null)
-                                        _expect = true;
-                                    else
+                                    switch (expect)
                                     {
-                                        switch (expect)
-                                        {
-                                            case CONTINUE:
-                                                _expect100Continue = true;
-                                                break;
-                                            case PROCESSING:
-                                                _expect102Processing = true;
-                                                break;
-                                            default:
-                                                _expect = true;
-                                        }
+                                        case CONTINUE:
+                                            _expect100Continue = true;
+                                            break;
+                                        case PROCESSING:
+                                            _expect102Processing = true;
+                                            break;
+                                        default:
+                                            _expect = true;
                                     }
                                 }
-                        }
-                        break;
+                            }
+                    }
+                    break;
 
-                    case CONTENT_TYPE:
-                        MimeTypes.Type mime = MimeTypes.CACHE.get(value);
-                        String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(value) : mime.getCharset().toString();
-                        if (charset != null)
-                            _request.setCharacterEncodingUnchecked(charset);
-                        break;
+                case CONTENT_TYPE:
+                    MimeTypes.Type mime = MimeTypes.CACHE.get(value);
+                    String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(value) : mime.getCharset().toString();
+                    if (charset != null)
+                        _request.setCharacterEncodingUnchecked(charset);
+                    break;
+            }
+        }
+        if (name != null)
+            _request.getHttpFields().add(name, value);
+        return false;
+    }
+
+    @Override
+    public boolean headerComplete()
+    {
+        _requests.incrementAndGet();
+        boolean persistent;
+        switch (_version)
+        {
+            case HTTP_0_9:
+                persistent = false;
+                break;
+            case HTTP_1_0:
+                persistent = _request.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                if (persistent)
+                    _response.getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
+
+                if (getServer().getSendDateHeader())
+                    _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
+                break;
+
+            case HTTP_1_1:
+                persistent = !_request.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+
+                if (!persistent)
+                    _response.getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+
+                if (getServer().getSendDateHeader())
+                    _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
+
+                if (!_host)
+                {
+                    _response.sendError(Response.SC_BAD_REQUEST, "No Host Header", null);
+                    return true;
                 }
-            }
-            if (name != null)
-                _request.getHttpFields().add(name, value);
-            return false;
+
+                if (_expect)
+                {
+                    _response.sendError(Response.SC_EXPECTATION_FAILED, null, null);
+                    return true;
+                }
+
+                break;
+            default:
+                throw new IllegalStateException();
         }
 
-        @Override
-        public boolean headerComplete()
+        _request.setPersistent(persistent);
+
+        // Either handle now or wait for first content/message complete
+        return _expect100Continue;
+    }
+
+    @Override
+    public boolean content(ByteBuffer ref)
+    {
+        if (LOG.isDebugEnabled())
         {
-            _requests++;
-            boolean persistent;
-            switch (_version)
-            {
-                case HTTP_0_9:
-                    persistent = false;
-                    break;
-                case HTTP_1_0:
-                    persistent = _request.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-                    if (persistent)
-                        _response.getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
-
-                    if (getServer().getSendDateHeader())
-                        _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
-                    break;
-
-                case HTTP_1_1:
-                    persistent = !_request.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-
-                    if (!persistent)
-                        _response.getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-
-                    if (getServer().getSendDateHeader())
-                        _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
-
-                    if (!_host)
-                    {
-                        _response.sendError(Response.SC_BAD_REQUEST, "No Host Header", null);
-                        return true;
-                    }
-
-                    if (_expect)
-                    {
-                        _response.sendError(Response.SC_EXPECTATION_FAILED, null, null);
-                        return true;
-                    }
-
-                    break;
-                default:
-                    throw new IllegalStateException();
-            }
-
-            _request.setPersistent(persistent);
-
-            // Either handle now or wait for first content/message complete
-            if (_expect100Continue)
-                return true;
-
-            return false;
+            LOG.debug("{} content {}", this, BufferUtil.toDetailString(ref));
         }
+        _request.getHttpInput().content(ref);
+        return true;
+    }
 
-        @Override
-        public boolean content(ByteBuffer ref)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("{} content {}", this, BufferUtil.toDetailString(ref));
-            }
-            _request.getHttpInput().content(ref);
-            return true;
-        }
+    @Override
+    public boolean messageComplete(long contentLength)
+    {
+        _request.getHttpInput().shutdownInput();
+        return true;
+    }
 
-        @Override
-        public boolean messageComplete(long contentLength)
-        {
-            _request.getHttpInput().shutdownInput();
-            return true;
-        }
+    @Override
+    public boolean earlyEOF()
+    {
+        _request.getHttpInput().shutdownInput();
+        return false;
+    }
 
-        @Override
-        public boolean earlyEOF()
-        {
-            _request.getHttpInput().shutdownInput();
-            return false;
-        }
+    @Override
+    public void badMessage(int status, String reason)
+    {
+        if (status < 400 || status > 599)
+            status = HttpStatus.BAD_REQUEST_400;
+        _response.sendError(status, null, null);
+    }
 
-        @Override
-        public void badMessage(int status, String reason)
-        {
-            if (status < 400 || status > 599)
-                status = HttpStatus.BAD_REQUEST_400;
-            _response.sendError(status, null, null);
-        }
-
+    // TODO: port the logic present in this method
+    /*
         @Override
         public ResponseInfo commit()
         {
@@ -744,13 +726,7 @@ public class HttpChannel
             }
             return _response.commit();
         }
-
-        @Override
-        public String toString()
-        {
-            return "CEH:" + HttpChannel.this.getEndPoint().toString();
-        }
-    }
+    */
 
     protected boolean commitResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
@@ -788,23 +764,6 @@ public class HttpChannel
         }
     }
 
-    public Connector getConnector()
-    {
-        return _connector;
-    }
-
-    public HttpConfiguration getHttpConfiguration()
-    {
-        return _configuration;
-    }
-
-//    protected abstract void flush(ByteBuffer content, boolean last) throws IOException;
-
-//    protected abstract FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException;
-
-//    protected abstract void completed();
-
-    // TODO: remove
     protected void execute(Runnable task)
     {
         _connector.getExecutor().execute(task);
@@ -814,10 +773,5 @@ public class HttpChannel
     public ScheduledExecutorService getScheduler()
     {
         return _connector.getScheduler();
-    }
-
-    public interface EventHandler extends HttpParser.RequestHandler
-    {
-        ResponseInfo commit();
     }
 }
