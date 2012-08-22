@@ -51,6 +51,7 @@ public class HttpTransportOverHttp implements HttpTransport
     @Override
     public void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {
+        // TODO This is blocking!  One of the important use-cases is to be able to write large static content without a thread
         generate(info, content, complete);
         // TODO: Trick only needed by the current HttpGenerator, that always require a ResponseInfo object
         if (!complete)
@@ -101,12 +102,17 @@ public class HttpTransportOverHttp implements HttpTransport
                 {
                     if (info.isHead())
                     {
-                        write(header);
                         BufferUtil.clear(content);
+                        if (BufferUtil.hasContent(header))
+                            blockingWrite(header);
+                    }
+                    else if (BufferUtil.hasContent(header))
+                    {
+                        blockingWrite(header, content);
                     }
                     else
                     {
-                        write(header == null ? BufferUtil.EMPTY_BUFFER : header, content);
+                        blockingWrite(content);
                     }
                     continue;
                 }
@@ -131,7 +137,7 @@ public class HttpTransportOverHttp implements HttpTransport
         }
     }
 
-    private void write(ByteBuffer... bytes) throws IOException
+    private void blockingWrite(ByteBuffer... bytes) throws IOException
     {
         try
         {

@@ -1053,8 +1053,7 @@ public class HttpParser
 
             LOG.warn("badMessage: "+e.toString()+" for "+_handler);
             LOG.debug(e);
-            _handler.badMessage(400, e.toString());
-            BufferUtil.clear(buffer);
+            badMessage(buffer,e.toString());
             return true;
         }
     }

@@ -274,8 +274,8 @@ public class HttpConnection extends AbstractConnection implements Runnable
                 {
                     _parser.reset();
                     _parser.close();
+                    _generator.setPersistent(false);
                     _channel.getResponse().sendError(Response.SC_REQUEST_ENTITY_TOO_LARGE, null, null);
-                    // TODO: close the connection !
                     break;
                 }
                 else

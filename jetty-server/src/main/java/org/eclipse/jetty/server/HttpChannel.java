@@ -634,7 +634,15 @@ public class HttpChannel implements HttpParser.RequestHandler
     {
         if (status < 400 || status > 599)
             status = HttpStatus.BAD_REQUEST_400;
-        _response.sendError(status, null, null);
+        
+        try
+        {
+            commitResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
+        }
+        catch (IOException e)
+        {
+            LOG.warn(e);
+        }
     }
 
     // TODO: port the logic present in this method

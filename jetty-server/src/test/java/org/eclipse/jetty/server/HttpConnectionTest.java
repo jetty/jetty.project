@@ -184,7 +184,7 @@ public class HttpConnectionTest
     @Test
     public void testBad() throws Exception
     {
-        HttpParser.LOG.info("badMessage: 3 bad messages expected ...");
+        Log.getLogger(HttpParser.class).info("badMessage: 3 bad messages expected ...");
         String response;
 
         response=connector.getResponses("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\n"+
