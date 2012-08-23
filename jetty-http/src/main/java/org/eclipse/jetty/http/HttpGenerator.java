@@ -168,7 +168,7 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public Result generateRequest(RequestInfo info, ByteBuffer headerOrChunk, ByteBuffer content, boolean last)
+    public Result generateRequest(RequestInfo info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last)
     {
         switch(_state)
         {
@@ -178,7 +178,7 @@ public class HttpGenerator
                     return Result.NEED_INFO;
 
                 // Do we need a request header
-                if (headerOrChunk==null || headerOrChunk.capacity()<=CHUNK_SIZE)
+                if (header==null)
                     return Result.NEED_HEADER;
 
                 // If we have not been told our persistence, set the default
@@ -186,7 +186,6 @@ public class HttpGenerator
                     _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
                 // prepare the header
-                ByteBuffer header = headerOrChunk;
                 int pos=BufferUtil.flipToFill(header);
                 try
                 {
@@ -232,9 +231,8 @@ public class HttpGenerator
                     if (isChunking())
                     {
                         // Do we need a chunk buffer?
-                        if (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE)
+                        if (chunk==null)
                             return Result.NEED_CHUNK;
-                        ByteBuffer chunk = headerOrChunk;
                         BufferUtil.clearToFill(chunk);
                         prepareChunk(chunk,len);
                         BufferUtil.flipToFlush(chunk,0);
@@ -259,9 +257,8 @@ public class HttpGenerator
                 if (isChunking())
                 {
                     // Do we need a chunk buffer?
-                    if (headerOrChunk==null || headerOrChunk.capacity()>CHUNK_SIZE)
+                    if (chunk==null)
                         return Result.NEED_CHUNK;
-                    ByteBuffer chunk=headerOrChunk;
                     BufferUtil.clearToFill(chunk);
                     prepareChunk(chunk,0);
                     BufferUtil.flipToFlush(chunk,0);
@@ -284,7 +281,7 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public Result generateResponse(ResponseInfo info, ByteBuffer headerOrChunk, ByteBuffer content, boolean last)
+    public Result generateResponse(ResponseInfo info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last)
     {
         switch(_state)
         {
@@ -306,7 +303,7 @@ public class HttpGenerator
                 }
 
                 // Do we need a response header
-                if (headerOrChunk==null || headerOrChunk.capacity()<=CHUNK_SIZE)
+                if (header==null)
                     return Result.NEED_HEADER;
 
                 // If we have not been told our persistence, set the default
@@ -314,7 +311,6 @@ public class HttpGenerator
                     _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
                 // prepare the header
-                ByteBuffer header = headerOrChunk;
                 int pos=BufferUtil.flipToFill(header);
                 try
                 {
@@ -383,18 +379,15 @@ public class HttpGenerator
                 // handle the content.
                 if (len>0)
                 {
-                    // Do we need a chunk buffer?
-                    if (isChunking() && BufferUtil.space(headerOrChunk) < CHUNK_SIZE)
-                        return Result.NEED_CHUNK;
-
-                    ByteBuffer chunk = headerOrChunk;
-                    _contentPrepared+=len;
                     if (isChunking())
                     {
+                        if (chunk==null)
+                            return Result.NEED_CHUNK;
                         BufferUtil.clearToFill(chunk);
                         prepareChunk(chunk,len);
                         BufferUtil.flipToFlush(chunk,0);
                     }
+                    _contentPrepared+=len;
                 }
 
                 if (last)
@@ -420,11 +413,10 @@ public class HttpGenerator
                 if (isChunking())
                 {
                     // Do we need a chunk buffer?
-                    if (BufferUtil.space(headerOrChunk) < CHUNK_SIZE)
+                    if (chunk==null)
                         return Result.NEED_CHUNK;
 
                     // Write the last chunk
-                    ByteBuffer chunk=headerOrChunk;
                     BufferUtil.clearToFill(chunk);
                     prepareChunk(chunk,0);
                     BufferUtil.flipToFlush(chunk,0);

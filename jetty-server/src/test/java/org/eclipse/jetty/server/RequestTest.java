@@ -379,6 +379,7 @@ public class RequestTest
             }
         };
 
+
         String content="";
 
         for (int l=0;l<1025;l++)
@@ -390,7 +391,9 @@ public class RequestTest
             "Connection: close\r\n"+
             "\r\n"+
             content;
+            Log.getRootLogger().debug("test l={}",l);
             String response = _connector.getResponses(request);
+            Log.getRootLogger().debug(response);
             assertEquals(l,length[0]);
             if (l>0)
                 assertEquals(l,_handler._content.length());

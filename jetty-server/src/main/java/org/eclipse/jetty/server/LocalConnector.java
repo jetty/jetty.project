@@ -238,7 +238,10 @@ public class LocalConnector extends AbstractConnector
                     if (!_closed.await(idleFor,units))
                     {
                         if (size==getOutput().remaining())
+                        {
+                            LOG.debug("idle for {} {}",idleFor,units);
                             return;
+                        }
                         size=getOutput().remaining();
                     }
                 }

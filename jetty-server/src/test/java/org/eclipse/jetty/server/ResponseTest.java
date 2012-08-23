@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -103,31 +104,10 @@ public class ResponseTest
             }
         };
 
-        _channel = new HttpChannel(_connector,null,endp,null,null)
+        _channel = new HttpChannel(_connector,new HttpConfiguration(null,false),endp,null,null)
         {
-//            @Override
-            protected void flush(ByteBuffer content, boolean last) throws IOException
-            {
-                content.clear();
-            }
-
-//            @Override
-            protected FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException
-            {
-                content.clear();
-                FutureCallback<Void> fcb = new FutureCallback<>();
-                fcb.completed(null);
-                return fcb;
-            }
-
             @Override
             public ScheduledExecutorService getScheduler()
-            {
-                return null;
-            }
-
-            @Override
-            public HttpConfiguration getHttpConfiguration()
             {
                 return null;
             }

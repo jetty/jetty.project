@@ -321,7 +321,8 @@ public class HttpConnectionTest
         int offset=0;
 
         offset=0;
-        requests="GET /R1?read=1&error=500 HTTP/1.1\n"+
+        requests=
+        "GET /R1?read=1&error=500 HTTP/1.1\n"+
         "Host: localhost\n"+
         "Transfer-Encoding: chunked\n"+
         "Content-Type: text/plain; charset=utf-8\n"+
@@ -340,12 +341,12 @@ public class HttpConnectionTest
         "abcdefghij\n";
 
         response=connector.getResponses(requests);
+        
         offset = checkContains(response,offset,"HTTP/1.1 500");
         offset = checkContains(response,offset,"HTTP/1.1 200");
         offset = checkContains(response,offset,"/R2");
         offset = checkContains(response,offset,"encoding=UTF-8");
         offset = checkContains(response,offset,"abcdefghij");
-
     }
 
     @Test
@@ -376,7 +377,7 @@ public class HttpConnectionTest
         Logger logger = Log.getLogger(HttpChannel.class);
         try
         {
-            logger.info("EXPECTING:           java.lang.IllegalStateException...");
+            logger.info("EXPECTING: java.lang.IllegalStateException...");
             ((StdErrLog)logger).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");

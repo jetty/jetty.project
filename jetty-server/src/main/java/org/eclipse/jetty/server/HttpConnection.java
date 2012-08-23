@@ -125,46 +125,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    protected boolean readAndParse() throws IOException
-    {
-        // If there is a request buffer, we are re-entering here
-        if (_requestBuffer == null)
-        {
-            _requestBuffer = _bufferPool.acquire(_configuration.getRequestHeaderSize(), false);
-
-            int filled = getEndPoint().fill(_requestBuffer);
-
-            LOG.debug("{} filled {}", this, filled);
-
-            // If we failed to fill
-            if (filled == 0)
-            {
-                // Somebody wanted to read, we didn't so schedule another attempt
-                releaseRequestBuffer();
-                fillInterested();
-                return false;
-            }
-            else if (filled < 0)
-            {
-                _parser.inputShutdown();
-                // We were only filling if fully consumed, so if we have
-                // read -1 then we have nothing to parse and thus nothing that
-                // will generate a response.  If we had a suspended request pending
-                // a response or a request waiting in the buffer, we would not be here.
-                if (getEndPoint().isOutputShutdown())
-                    getEndPoint().close();
-                else
-                    getEndPoint().shutdownOutput();
-                // buffer must be empty and the channel must be idle, so we can release.
-                releaseRequestBuffer();
-                return false;
-            }
-        }
-
-        // Parse the buffer
-        return _parser.parseNext(_requestBuffer);
-    }
-
     /**
      * <p>Parses and handles HTTP messages.</p>
      * <p>This method is called when this {@link Connection} is ready to read bytes from the {@link EndPoint}.
@@ -183,7 +143,43 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             while (true)
             {
-                if (readAndParse())
+                // If there is a request buffer, we are re-entering here
+                if (BufferUtil.isEmpty(_requestBuffer))
+                {
+                    if (_requestBuffer == null)
+                        _requestBuffer = _bufferPool.acquire(_configuration.getRequestHeaderSize(), false);
+
+                    int filled = getEndPoint().fill(_requestBuffer);
+
+                    LOG.debug("{} filled {}", this, filled);
+
+                    // If we failed to fill
+                    if (filled == 0)
+                    {
+                        // Somebody wanted to read, we didn't so schedule another attempt
+                        releaseRequestBuffer();
+                        fillInterested();
+                        return;
+                    }
+                    else if (filled < 0)
+                    {
+                        _parser.inputShutdown();
+                        // We were only filling if fully consumed, so if we have
+                        // read -1 then we have nothing to parse and thus nothing that
+                        // will generate a response.  If we had a suspended request pending
+                        // a response or a request waiting in the buffer, we would not be here.
+                        if (getEndPoint().isOutputShutdown())
+                            getEndPoint().close();
+                        else
+                            getEndPoint().shutdownOutput();
+                        // buffer must be empty and the channel must be idle, so we can release.
+                        releaseRequestBuffer();
+                        return;
+                    }
+                }
+
+                // Parse the buffer
+                if (_parser.parseNext(_requestBuffer))
                 {
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
@@ -250,9 +246,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         // TODO This is always blocking!  One of the important use-cases is to be able to write large static content without a thread
 
         ByteBuffer header = null;
+        ByteBuffer chunk = null;
         out: while (true)
         {
-            HttpGenerator.Result result = _generator.generateResponse(info, header, content, lastContent);
+            HttpGenerator.Result result = _generator.generateResponse(info, header, chunk, content, lastContent);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} generate: {} ({},{},{})@{}",
                         this,
@@ -266,34 +263,40 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 case NEED_HEADER:
                 {
-                    if (header != null)
-                        _bufferPool.release(header);
                     header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), false);
                     continue;
                 }
                 case NEED_CHUNK:
                 {
-                    if (header != null)
-                        _bufferPool.release(header);
-                    header = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
+                    chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
                     continue;
                 }
                 case FLUSH:
                 {
+                    // Don't write the chunk or the content if this is a HEAD response
                     if (_channel.getRequest().isHead())
                     {
+                        BufferUtil.clear(chunk);
                         BufferUtil.clear(content);
-                        if (BufferUtil.hasContent(header))
-                            blockingWrite(header);
                     }
-                    else if (BufferUtil.hasContent(header))
+                    
+                    // If we have a header
+                    if (BufferUtil.hasContent(header))
                     {
+                        // we know there will not be a chunk, so write either header+content or just the header
                         if (BufferUtil.hasContent(content))
                             blockingWrite(header, content);
                         else
                             blockingWrite(header);
                     }
-                    else  if (BufferUtil.hasContent(content))
+                    else if (BufferUtil.hasContent(chunk))
+                    {
+                        if (BufferUtil.hasContent(content))
+                            blockingWrite(chunk,content);
+                        else
+                            blockingWrite(chunk);
+                    }
+                    else if (BufferUtil.hasContent(content))
                     {
                         blockingWrite(content);
                     }
@@ -306,6 +309,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 }
                 case DONE:
                 {
+                    if (header!=null)
+                        _bufferPool.release(header);
+                    if (chunk!=null)
+                        _bufferPool.release(chunk);
                     break out;
                 }
                 case CONTINUE:
@@ -433,17 +440,49 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         protected void blockForContent() throws IOException
         {
+            /* We extend the blockForContent method to replace the
+            default implementation of a blocking queue with an implementation
+            that uses the calling thread to block on a readable callback and
+            then to do the parsing before before attempting the read.
+            */
             try
             {
                 while (true)
                 {
-                    FutureCallback<Void> callback = new FutureCallback<>();
-                    getEndPoint().fillInterested(null, callback);
-                    callback.get();
-                    if (readAndParse())
-                        break;
-                    else
-                        releaseRequestBuffer();
+                    // Can the parser progress (even with an empty buffer)
+                    boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
+
+                    // If there is more content to parse, leep so we can queue all content from this buffer now without the
+                    // need to call blockForContent again
+                    while (BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
+                        event|=_parser.parseNext(_requestBuffer);
+                    
+                    // If we have an event, return
+                    if (event)
+                        return;
+                    
+                    // Do we have content ready to parse?
+                    if (BufferUtil.isEmpty(_requestBuffer))
+                    {
+                        // Wait until we can read
+                        FutureCallback<Void> block=new FutureCallback<>();
+                        getEndPoint().fillInterested(null,block);
+                        LOG.debug("{} block readable on {}",this,block);
+                        block.get();
+
+                        // We will need a buffer to read into
+                        if (_requestBuffer==null)
+                            _requestBuffer=_bufferPool.acquire(_configuration.getRequestBufferSize(),false);
+
+                        // read some data
+                        int filled=getEndPoint().fill(_requestBuffer);
+                        LOG.debug("{} block filled {}",this,filled);
+                        if (filled<0)
+                        {
+                            _parser.inputShutdown();
+                            return;
+                        }
+                    }  
                 }
             }
             catch (InterruptedException x)
@@ -509,6 +548,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (!getRequest().isPersistent())
                 _generator.setPersistent(false);
             return result;
+        }
+
+        @Override
+        protected void handleException(Throwable x)
+        {
+            _generator.setPersistent(false);
+            super.handleException(x);
         }
         
     }

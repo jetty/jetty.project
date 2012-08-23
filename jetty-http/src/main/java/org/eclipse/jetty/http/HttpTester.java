@@ -175,14 +175,15 @@ public class HttpTester
 
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ByteBuffer header=null;
+                ByteBuffer chunk=null;
                 ByteBuffer content=_content==null?null:ByteBuffer.wrap(_content.toByteArray());
 
 
                 loop: while(!generator.isEnd())
                 {
                     HttpGenerator.Result result =  info instanceof RequestInfo 
-                        ?generator.generateRequest((RequestInfo)info,header,content,true)
-                        :generator.generateResponse((ResponseInfo)info,header,content,true);
+                        ?generator.generateRequest((RequestInfo)info,header,chunk,content,true)
+                        :generator.generateResponse((ResponseInfo)info,header,chunk,content,true);
                     switch(result)
                     {
                         case NEED_HEADER:
@@ -190,7 +191,7 @@ public class HttpTester
                             continue;
                             
                         case NEED_CHUNK:
-                            header=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+                            chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
                             continue;
                             
                         case NEED_INFO:
@@ -201,6 +202,11 @@ public class HttpTester
                             {
                                 out.write(BufferUtil.toArray(header));
                                 BufferUtil.clear(header);
+                            }
+                            if (BufferUtil.hasContent(chunk))
+                            {
+                                out.write(BufferUtil.toArray(chunk));
+                                BufferUtil.clear(chunk);
                             }
                             if (BufferUtil.hasContent(content))
                             {

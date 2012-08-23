@@ -104,8 +104,11 @@ public class BufferUtil
      */
     public static void clear(ByteBuffer buffer)
     {
-        buffer.position(0);
-        buffer.limit(0);
+        if (buffer!=null)
+        {
+            buffer.position(0);
+            buffer.limit(0);
+        }
     }
 
     /* ------------------------------------------------------------ */

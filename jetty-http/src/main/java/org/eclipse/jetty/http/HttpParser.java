@@ -1114,7 +1114,7 @@ public class HttpParser
 
             LOG.warn("badMessage: "+e.toString()+" for "+_handler);
             LOG.debug(e);
-            badMessage(buffer,HttpStatus.BAD_REQUEST_400,e.toString());
+            badMessage(buffer,HttpStatus.BAD_REQUEST_400,null);
             return true;
         }
     }

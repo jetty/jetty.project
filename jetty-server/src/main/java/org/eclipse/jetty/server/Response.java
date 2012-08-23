@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -41,6 +43,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -298,35 +303,101 @@ public class Response implements HttpServletResponse
     @Override
     public void sendError(int code, String message) throws IOException
     {
-        sendError(code, message, null);
-    }
-
-    protected void sendError(int code, String message, String content)
-    {
         if (isIncluding())
             return;
 
         if (isCommitted())
-        {
-            LOG.warn("Could not commit error {} {}, response already committed", code, message);
-            return;
-        }
+            LOG.warn("Committed before "+code+" "+message);
 
         resetBuffer();
-        _characterEncoding = null;
-        setHeader(HttpHeader.EXPIRES, null);
-        setHeader(HttpHeader.LAST_MODIFIED, null);
-        setHeader(HttpHeader.CACHE_CONTROL, null);
-        setHeader(HttpHeader.CONTENT_TYPE, null);
-        setHeader(HttpHeader.CONTENT_LENGTH, null);
-
-        if (message == null)
-            message = HttpStatus.getMessage(code);
-        setStatus(code, message);
+        _characterEncoding=null;
+        setHeader(HttpHeader.EXPIRES,null);
+        setHeader(HttpHeader.LAST_MODIFIED,null);
+        setHeader(HttpHeader.CACHE_CONTROL,null);
+        setHeader(HttpHeader.CONTENT_TYPE,null);
+        setHeader(HttpHeader.CONTENT_LENGTH,null);
 
         _outputType = OutputType.NONE;
+        setStatus(code);
+        _reason=message;
 
-        _channel.sendError(newResponseInfo(), content);
+        if (message==null)
+            message=HttpStatus.getMessage(code);
+
+        // If we are allowed to have a body
+        if (code!=SC_NO_CONTENT &&
+            code!=SC_NOT_MODIFIED &&
+            code!=SC_PARTIAL_CONTENT &&
+            code>=SC_OK)
+        {
+            Request request = _channel.getRequest();
+
+            ErrorHandler error_handler = null;
+            ContextHandler.Context context = request.getContext();
+            if (context!=null)
+                error_handler=context.getContextHandler().getErrorHandler();
+            if (error_handler==null)
+                error_handler = _channel.getServer().getBean(ErrorHandler.class);
+            if (error_handler!=null)
+            {
+                request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(code));
+                request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
+                request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
+                request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME,request.getServletName());
+                error_handler.handle(null,_channel.getRequest(),_channel.getRequest(),this );
+            }
+            else
+            {
+                setHeader(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
+                setContentType(MimeTypes.Type.TEXT_HTML_8859_1.toString());
+                ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(2048);
+                if (message != null)
+                {
+                    message= StringUtil.replace(message, "&", "&amp;");
+                    message= StringUtil.replace(message, "<", "&lt;");
+                    message= StringUtil.replace(message, ">", "&gt;");
+                }
+                String uri= request.getRequestURI();
+                if (uri!=null)
+                {
+                    uri= StringUtil.replace(uri, "&", "&amp;");
+                    uri= StringUtil.replace(uri, "<", "&lt;");
+                    uri= StringUtil.replace(uri, ">", "&gt;");
+                }
+
+                writer.write("<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=ISO-8859-1\"/>\n");
+                writer.write("<title>Error ");
+                writer.write(Integer.toString(code));
+                writer.write(' ');
+                if (message==null)
+                    message=HttpStatus.getMessage(code);
+                writer.write(message);
+                writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
+                writer.write(Integer.toString(code));
+                writer.write("</h2>\n<p>Problem accessing ");
+                writer.write(uri);
+                writer.write(". Reason:\n<pre>    ");
+                writer.write(message);
+                writer.write("</pre>");
+                writer.write("</p>\n<hr /><i><small>Powered by Jetty://</small></i>");
+                writer.write("\n</body>\n</html>\n");
+
+                writer.flush();
+                setContentLength(writer.size());
+                writer.writeTo(getOutputStream());
+                writer.destroy();
+            }
+        }
+        else if (code!=SC_PARTIAL_CONTENT)
+        {
+            // TODO work out why this is required?
+            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_TYPE);
+            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_LENGTH);
+            _characterEncoding=null;
+            _mimeType=null;
+        }
+
+        complete();
     }
 
     /**
@@ -530,7 +601,10 @@ public class Response implements HttpServletResponse
     @Override
     public void setStatus(int sc)
     {
-        setStatus(sc, null);
+        if (sc <= 0)
+            throw new IllegalArgumentException();
+        if (!isIncluding())
+            _status = sc;
     }
 
     @Override

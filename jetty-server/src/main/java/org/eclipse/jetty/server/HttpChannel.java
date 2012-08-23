@@ -253,7 +253,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                     LOG.warn(String.valueOf(_uri), e);
                     _state.error(e);
                     _request.setHandled(true);
-                    handleError(e);
+                    handleException(e);
                 }
                 finally
                 {
@@ -312,45 +312,6 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
         }
     }
 
-    protected boolean complete()
-    {
-        LOG.debug("{} complete", this);
-        if (_state.isCompleting())
-        {
-            _state.completed();
-            if (isExpecting100Continue())
-            {
-                LOG.debug("100-Continue response not sent");
-                // We didn't send 100 continues, but the latest interpretation
-                // of the spec (see httpbis) is that the client will either
-                // send the body anyway, or close.  So we no longer need to
-                // do anything special here other than make the connection not persistent
-                _expect100Continue = false;
-                if (!isCommitted())
-                    _response.addHeader(HttpHeader.CONNECTION.toString(), HttpHeaderValue.CLOSE.toString());
-                else
-                    LOG.warn("Cannot send 'Connection: close' for 100-Continue, response is already committed");
-            }
-
-            if (!_response.isCommitted() && !_request.isHandled())
-                _response.sendError(Response.SC_NOT_FOUND, null, null);
-
-            _request.setHandled(true);
-
-            try
-            {
-                _response.getHttpOutput().close();
-            }
-            catch (IOException x)
-            {
-                // We cannot write the response, so there is no point in calling
-                // response.sendError() since that writes, and we already know we cannot write.
-                LOG.debug("Could not write response", x);
-            }
-        }
-        return _request.getHttpInput().isShutdown();
-    }
-
     /**
      * <p>Sends an error 500, performing a special logic to detect whether the request is suspended,
      * to avoid concurrent writes from the application.</p>
@@ -360,11 +321,11 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
      *
      * @param x the Throwable that caused the problem
      */
-    private void handleError(Throwable x)
+    protected void handleException(Throwable x)
     {
-        if (_state.isSuspended())
+        try
         {
-            try
+            if (_state.isSuspended())
             {
                 HttpFields fields = new HttpFields();
                 ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, Response.SC_INTERNAL_SERVER_ERROR, null, _request.isHead());
@@ -372,110 +333,18 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 if (!committed)
                     LOG.warn("Could not send response error 500, response is already committed");
             }
-            catch (IOException e)
+            else
             {
-                // We tried our best, just log
-                LOG.debug("Could not commit response error 500", e);
-            }
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
+                _response.sendError(500, x.getMessage());
+            } 
         }
-        else
+        catch (IOException e)
         {
-            _response.sendError(500, null, x.getMessage());
+            // We tried our best, just log
+            LOG.debug("Could not commit response error 500", e);
         }
-    }
-
-    protected void sendError(ResponseInfo info, String extraContent)
-    {
-        int status = info.getStatus();
-        try
-        {
-            String reason = info.getReason();
-            if (reason == null)
-                reason = HttpStatus.getMessage(status);
-
-            // If we are allowed to have a body
-            if (status != Response.SC_NO_CONTENT &&
-                    status != Response.SC_NOT_MODIFIED &&
-                    status != Response.SC_PARTIAL_CONTENT &&
-                    status >= Response.SC_OK)
-            {
-                ErrorHandler errorHandler = null;
-                ContextHandler.Context context = _request.getContext();
-                if (context != null)
-                    errorHandler = context.getContextHandler().getErrorHandler();
-                if (errorHandler == null)
-                    errorHandler = getServer().getBean(ErrorHandler.class);
-                if (errorHandler != null)
-                {
-                    _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, new Integer(status));
-                    _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, reason);
-                    _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, _request.getRequestURI());
-                    _request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, _request.getServletName());
-                    errorHandler.handle(null, _request, _request, _response);
-                }
-                else
-                {
-                    HttpFields fields = info.getHttpFields();
-                    fields.put(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
-                    fields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.toString());
-
-                    reason = escape(reason);
-                    String uri = escape(_request.getRequestURI());
-                    extraContent = escape(extraContent);
-
-                    StringBuilder writer = new StringBuilder(2048);
-                    writer.append("<html>\n");
-                    writer.append("<head>\n");
-                    writer.append("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=ISO-8859-1\"/>\n");
-                    writer.append("<title>Error ").append(Integer.toString(status)).append(' ').append(reason).append("</title>\n");
-                    writer.append("</head>\n");
-                    writer.append("<body>\n");
-                    writer.append("<h2>HTTP ERROR: ").append(Integer.toString(status)).append("</h2>\n");
-                    writer.append("<p>Problem accessing ").append(uri).append(". Reason:\n");
-                    writer.append("<pre>").append(reason).append("</pre></p>");
-                    if (extraContent != null)
-                        writer.append("<p>").append(extraContent).append("</p>");
-                    writer.append("<hr /><i><small>Powered by Jetty://</small></i>\n");
-                    writer.append("</body>\n");
-                    writer.append("</html>");
-                    byte[] bytes = writer.toString().getBytes(StringUtil.__ISO_8859_1);
-                    fields.put(HttpHeader.CONTENT_LENGTH, String.valueOf(bytes.length));
-                    _response.getOutputStream().write(bytes);
-                }
-            }
-            else if (status != Response.SC_PARTIAL_CONTENT)
-            {
-                // TODO: not sure why we need to modify the request when writing an error ?
-                // TODO: or modify the response if the error code cannot have a body ?
-                //            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_TYPE);
-                //            _channel.getRequest().getHttpFields().remove(HttpHeader.CONTENT_LENGTH);
-                //            _characterEncoding = null;
-                //            _mimeType = null;
-            }
-
-            complete();
-
-            // TODO: is this needed ?
-            if (_state.isIdle())
-                _state.complete();
-            _request.getHttpInput().shutdown();
-        }
-        catch (IOException x)
-        {
-            // We failed to write the error, bail out
-            LOG.debug("Could not write error response " + status, x);
-        }
-    }
-
-    private String escape(String reason)
-    {
-        if (reason != null)
-        {
-            reason = reason.replaceAll("&", "&amp;");
-            reason = reason.replaceAll("<", "&lt;");
-            reason = reason.replaceAll(">", "&gt;");
-        }
-        return reason;
     }
 
     public boolean isExpecting100Continue()
@@ -634,7 +503,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
 
                 if (_expect)
                 {
-                    _response.sendError(Response.SC_EXPECTATION_FAILED, null, null);
+                    badMessage(HttpStatus.EXPECTATION_FAILED_417,null);
                     return true;
                 }
 
@@ -653,9 +522,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     public boolean content(ByteBuffer ref)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("{} content {}", this, BufferUtil.toDetailString(ref));
-        }
         _request.getHttpInput().content(ref);
         return true;
     }

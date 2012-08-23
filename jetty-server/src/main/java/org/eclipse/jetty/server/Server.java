@@ -351,10 +351,13 @@ public class Server extends HandlerWrapper implements Attributes
             
             for (Connector connector : _connectors)
             {
-                while (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
-                {
-                    System.err.println(((Dumpable)connector).dump());
-                    Thread.sleep(100);
+                if (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
+                {                    
+                    if (LOG.isDebugEnabled())
+                        System.err.println(((Dumpable)connector).dump());
+                    LOG.info("Waiting for connections to close on {}...",connector);
+                    while (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
+                        Thread.sleep(100);
                 }
             }
         }
