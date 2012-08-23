@@ -159,7 +159,6 @@ public class Request implements HttpServletRequest
     private SessionManager _sessionManager;
     private long _timeStamp;
     private long _dispatchTime;
-    private boolean _persistent;
     private HttpURI _uri;
     private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
 
@@ -180,18 +179,6 @@ public class Request implements HttpServletRequest
     public HttpInput getHttpInput()
     {
         return _input;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isPersistent()
-    {
-        return _persistent;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setPersistent(boolean persistent)
-    {
-        _persistent = persistent;
     }
 
     /* ------------------------------------------------------------ */

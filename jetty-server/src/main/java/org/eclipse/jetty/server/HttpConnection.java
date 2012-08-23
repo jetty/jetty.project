@@ -25,8 +25,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -143,6 +146,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             while (true)
             {
+                // TODO maybe try the HttpParser first, even with an empty buffer just to see if there is a pending event that does not need IO.
+                
                 // If there is a request buffer, we are re-entering here
                 if (BufferUtil.isEmpty(_requestBuffer))
                 {
@@ -358,7 +363,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public void httpChannelCompleted()
+    public void completed()
     {
         // Finish consuming the request
         if (_parser.isInContent() && _generator.isPersistent())
@@ -452,10 +457,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // Can the parser progress (even with an empty buffer)
                     boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
 
-                    // If there is more content to parse, leep so we can queue all content from this buffer now without the
+                    // If there is more content to parse, loop so we can queue all content from this buffer now without the
                     // need to call blockForContent again
-                    while (BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
-                        event|=_parser.parseNext(_requestBuffer);
+                    while (event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
+                        _parser.parseNext(_requestBuffer);
                     
                     // If we have an event, return
                     if (event)
@@ -544,10 +549,36 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public boolean headerComplete()
         {
-            boolean result= super.headerComplete();
-            if (!getRequest().isPersistent())
+            boolean persistent;
+            HttpVersion version = getHttpVersion();
+            
+            switch (version)
+            {
+                case HTTP_0_9:
+                    persistent = false;
+                    break;
+                    
+                case HTTP_1_0:
+                    persistent = getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                    if (persistent)
+                        getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
+                    break;
+
+                case HTTP_1_1:
+                    persistent = !getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+
+                    if (!persistent)
+                        getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+
+                    break;
+                default:
+                    throw new IllegalStateException();
+            }
+
+            if (!persistent)
                 _generator.setPersistent(false);
-            return result;
+      
+            return super.headerComplete();
         }
 
         @Override

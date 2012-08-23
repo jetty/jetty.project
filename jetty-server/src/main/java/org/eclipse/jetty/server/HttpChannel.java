@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.log.Logger;
  * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
  * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the 
  * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to 
- * HttpTransport.httpChannelCompleted().
+ * HttpTransport.completed().
  * 
  */
 public class HttpChannel implements HttpParser.RequestHandler, Runnable
@@ -109,6 +109,11 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
         return _state;
     }
 
+    public HttpVersion getHttpVersion()
+    {
+        return _version;
+    }
+    
     /**
      * @return the number of requests handled by this connection
      */
@@ -272,6 +277,8 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 try
                 {
                     _state.completed();
+                    
+                    // TODO move to HttpChannelOverHttp?
                     if (_expect100Continue)
                     {
                         LOG.debug("100 continues not sent");
@@ -283,6 +290,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                         if (!_response.isCommitted())
                             _response.getHttpFields().add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
                         else
+                            // TODO mark generator as persistent(false)
                             LOG.warn("Can't close non-100 response");
                     }
 
@@ -304,7 +312,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 finally
                 {
                     _request.setHandled(true);
-                    _transport.httpChannelCompleted();
+                    _transport.completed();
                 }
             }
 
@@ -477,27 +485,17 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     public boolean headerComplete()
     {
         _requests.incrementAndGet();
-        boolean persistent;
         switch (_version)
         {
             case HTTP_0_9:
-                persistent = false;
                 break;
+                
             case HTTP_1_0:
-                persistent = _request.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-                if (persistent)
-                    _response.getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
-
                 if (getServer().getSendDateHeader())
                     _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
                 break;
 
             case HTTP_1_1:
-                persistent = !_request.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-
-                if (!persistent)
-                    _response.getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-
                 if (getServer().getSendDateHeader())
                     _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
 
@@ -508,11 +506,10 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 }
 
                 break;
+                
             default:
                 throw new IllegalStateException();
         }
-
-        _request.setPersistent(persistent);
 
         // Either handle now or wait for first content/message complete
         return _expect100Continue;
@@ -537,7 +534,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     @Override
     public boolean earlyEOF()
     {
-        _request.getHttpInput().shutdown();
+        _request.getHttpInput().earlyEOF();
         return false;
     }
 
@@ -572,11 +569,13 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
         {
             try
             {
+                // Try to commit with the passed info
                 _transport.commit(info, content, complete);
             }
             catch (Exception e)
             {
                 LOG.warn(e);
+                // "application" info failed to commit, commit with a failsafe 500 info
                 _transport.commit(HttpGenerator.RESPONSE_500_INFO,null,true);
                 throw e;
             }

@@ -11,5 +11,5 @@ public interface HttpTransport
 
     void write(ByteBuffer content, boolean lastContent) throws IOException;
     
-    void httpChannelCompleted();
+    void completed();
 }

@@ -23,6 +23,7 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import javax.servlet.ServletInputStream;
 
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayQueue;
 
@@ -43,6 +44,7 @@ public class HttpInput extends ServletInputStream
 {
     private final byte[] _oneByte=new byte[1];
     private final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
+    private boolean _earlyEOF;
     private boolean _inputEOF;
 
     /* ------------------------------------------------------------ */
@@ -74,6 +76,7 @@ public class HttpInput extends ServletInputStream
             }
             
             _inputEOF=false;
+            _earlyEOF=false;
 
         }
     }
@@ -126,6 +129,9 @@ public class HttpInput extends ServletInputStream
                 if (content==null)
                 {
                     onAllContentConsumed();
+                    
+                    if (_earlyEOF)
+                        throw new EofException();
                     
                     // check for EOF
                     if (_inputEOF)
@@ -190,6 +196,14 @@ public class HttpInput extends ServletInputStream
             onContentQueued(ref);
         }
         return true;
+    }
+
+    public void earlyEOF()
+    {
+        synchronized (lock())
+        {
+            _earlyEOF=true;
+        }
     }
 
     public void shutdown()
