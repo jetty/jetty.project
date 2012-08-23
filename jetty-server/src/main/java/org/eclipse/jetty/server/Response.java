@@ -695,7 +695,7 @@ public class Response implements HttpServletResponse
 
         long written = _out.getWritten();
         if (written > len)
-            throw new IllegalArgumentException("setContent(" + len + ") when already written " + written);
+            throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
 
         _contentLength = len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
