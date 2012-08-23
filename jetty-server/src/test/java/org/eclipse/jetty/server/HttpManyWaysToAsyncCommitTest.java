@@ -29,12 +29,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.util.SimpleHttpParser;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 //TODO: reset buffer tests
@@ -63,23 +63,27 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testHandlerDoesNotSetHandled() throws Exception
     {
-        server.setHandler(new DoesNotSetHandledHandler(false));
+        DoesNotSetHandledHandler handler = new DoesNotSetHandledHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 404", response.getCode(), is("404"));
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     @Test
     public void testHandlerDoesNotSetHandledAndThrow() throws Exception
     {
-        server.setHandler(new DoesNotSetHandledHandler(true));
+        DoesNotSetHandledHandler handler = new DoesNotSetHandledHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     private class DoesNotSetHandledHandler extends ThrowExceptionOnDemandHandler
@@ -95,16 +99,14 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
                     public void run()
                     {
                         if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                             asyncContext.dispatch();
-                        }
                         else
                             asyncContext.complete();
                     }
@@ -117,26 +119,29 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testHandlerSetsHandledTrueOnly() throws Exception
     {
-        server.setHandler(new OnlySetHandledHandler(false));
+        OnlySetHandledHandler handler = new OnlySetHandledHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertHeader(response, "content-length", "0");
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     @Test
     public void testHandlerSetsHandledTrueOnlyAndThrow() throws Exception
     {
-        server.setHandler(new OnlySetHandledHandler(true));
+        OnlySetHandledHandler handler = new OnlySetHandledHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
-
 
     private class OnlySetHandledHandler extends ThrowExceptionOnDemandHandler
     {
@@ -151,16 +156,14 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
                     public void run()
                     {
                         if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                             asyncContext.dispatch();
-                        }
                         else
                             asyncContext.complete();
                     }
@@ -174,24 +177,28 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testHandlerSetsHandledAndWritesSomeContent() throws Exception
     {
-        server.setHandler(new SetHandledWriteSomeDataHandler(false));
+        SetHandledWriteSomeDataHandler handler = new SetHandledWriteSomeDataHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertHeader(response, "content-length", "6");
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     @Test
     public void testHandlerSetsHandledAndWritesSomeContentAndThrow() throws Exception
     {
-        server.setHandler(new SetHandledWriteSomeDataHandler(true));
+        SetHandledWriteSomeDataHandler handler = new SetHandledWriteSomeDataHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     private class SetHandledWriteSomeDataHandler extends ThrowExceptionOnDemandHandler
@@ -207,6 +214,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -215,18 +223,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                         try
                         {
                             asyncContext.getResponse().getWriter().write("foobar");
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }
@@ -238,27 +243,31 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testHandlerExplicitFlush() throws Exception
     {
-        server.setHandler(new ExplicitFlushHandler(false));
+        ExplicitFlushHandler handler = new ExplicitFlushHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
     @Test
     public void testHandlerExplicitFlushAndThrow() throws Exception
     {
-        server.setHandler(new ExplicitFlushHandler(true));
+        ExplicitFlushHandler handler = new ExplicitFlushHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -275,6 +284,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -285,18 +295,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                             ServletResponse asyncContextResponse = asyncContext.getResponse();
                             asyncContextResponse.getWriter().write("foobar");
                             asyncContextResponse.flushBuffer();
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }
@@ -308,26 +315,30 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testHandledAndFlushWithoutContent() throws Exception
     {
-        server.setHandler(new SetHandledAndFlushWithoutContentHandler(false));
+        SetHandledAndFlushWithoutContentHandler handler = new SetHandledAndFlushWithoutContentHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
     @Test
     public void testHandledAndFlushWithoutContentAndThrow() throws Exception
     {
-        server.setHandler(new SetHandledAndFlushWithoutContentHandler(true));
+        SetHandledAndFlushWithoutContentHandler handler = new SetHandledAndFlushWithoutContentHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -344,6 +355,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -352,18 +364,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                         try
                         {
                             asyncContext.getResponse().flushBuffer();
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }
@@ -375,26 +384,30 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testWriteFlushWriteMore() throws Exception
     {
-        server.setHandler(new WriteFlushWriteMoreHandler(false));
+        WriteFlushWriteMoreHandler handler = new WriteFlushWriteMoreHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked"); // HTTP/1.0 does not do chunked.  it will just send content and close
     }
 
     @Test
     public void testWriteFlushWriteMoreAndThrow() throws Exception
     {
-        server.setHandler(new WriteFlushWriteMoreHandler(true));
+        WriteFlushWriteMoreHandler handler = new WriteFlushWriteMoreHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");  // TODO HTTP/1.0 does not do chunked
     }
 
@@ -411,6 +424,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -422,18 +436,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                             asyncContextResponse.getWriter().write("foo");
                             asyncContextResponse.flushBuffer();
                             asyncContextResponse.getWriter().write("bar");
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }
@@ -445,26 +456,34 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testBufferOverflow() throws Exception
     {
-        server.setHandler(new OverflowHandler(false));
+        OverflowHandler handler = new OverflowHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
-        assertHeader(response, "content-length", "6");
+        if (!"HTTP/1.0".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     @Test
     public void testBufferOverflowAndThrow() throws Exception
     {
-        server.setHandler(new OverflowHandler(true));
+        OverflowHandler handler = new OverflowHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        // response not committed when we throw, so 500 expected
-        assertThat("response code is 500", response.getCode(), is("500"));
+        // Buffer size is too small, so the content is written directly producing a 200 response
+        assertThat("response code is 200", response.getCode(), is("200"));
+        assertResponseBody(response, "foobar");
+        if (!"HTTP/1.0".equals(httpVersion))
+            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     private class OverflowHandler extends ThrowExceptionOnDemandHandler
@@ -480,6 +499,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -490,18 +510,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                             ServletResponse asyncContextResponse = asyncContext.getResponse();
                             asyncContextResponse.setBufferSize(3);
                             asyncContextResponse.getWriter().write("foobar");
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }
@@ -513,7 +530,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytes() throws Exception
     {
-        server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(false));
+        SetContentLengthAndWriteThatAmountOfBytesHandler handler = new SetContentLengthAndWriteThatAmountOfBytesHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
@@ -521,12 +539,14 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response body is foo", response.getBody(), is("foo"));
         assertHeader(response, "content-length", "3");
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     @Test
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytesAndThrow() throws Exception
     {
-        server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(true));
+        SetContentLengthAndWriteThatAmountOfBytesHandler handler = new SetContentLengthAndWriteThatAmountOfBytesHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
@@ -535,6 +555,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response body is foo", response.getBody(), is("foo"));
         assertHeader(response, "content-length", "3");
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     private class SetContentLengthAndWriteThatAmountOfBytesHandler extends ThrowExceptionOnDemandHandler
@@ -550,6 +571,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -560,18 +582,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                             ServletResponse asyncContextResponse = asyncContext.getResponse();
                             asyncContextResponse.setContentLength(3);
                             asyncContextResponse.getWriter().write("foo");
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }
@@ -583,7 +602,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testSetContentLengthAndWriteMoreBytes() throws Exception
     {
-        server.setHandler(new SetContentLengthAndWriteMoreBytesHandler(false));
+        SetContentLengthAndWriteMoreBytesHandler handler = new SetContentLengthAndWriteMoreBytesHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
@@ -592,12 +612,14 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         // jetty truncates the body when content-length is reached.! This is correct and desired behaviour?
         assertThat("response body is foo", response.getBody(), is("foo"));
         assertHeader(response, "content-length", "3");
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     @Test
     public void testSetContentLengthAndWriteMoreAndThrow() throws Exception
     {
-        server.setHandler(new SetContentLengthAndWriteMoreBytesHandler(true));
+        SetContentLengthAndWriteMoreBytesHandler handler = new SetContentLengthAndWriteMoreBytesHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
@@ -606,6 +628,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response body is foo", response.getBody(), is("foo"));
         assertHeader(response, "content-length", "3");
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     private class SetContentLengthAndWriteMoreBytesHandler extends ThrowExceptionOnDemandHandler
@@ -621,6 +644,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -631,18 +655,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                             ServletResponse asyncContextResponse = asyncContext.getResponse();
                             asyncContextResponse.setContentLength(3);
                             asyncContextResponse.getWriter().write("foobar");
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }
@@ -654,24 +675,28 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     @Test
     public void testWriteAndSetContentLength() throws Exception
     {
-        server.setHandler(new WriteAndSetContentLengthHandler(false));
+        WriteAndSetContentLengthHandler handler = new WriteAndSetContentLengthHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
         //TODO: jetty ignores setContentLength and sends transfer-encoding header. Correct?
     }
 
     @Test
     public void testWriteAndSetContentLengthAndThrow() throws Exception
     {
-        server.setHandler(new WriteAndSetContentLengthHandler(true));
+        WriteAndSetContentLengthHandler handler = new WriteAndSetContentLengthHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     private class WriteAndSetContentLengthHandler extends ThrowExceptionOnDemandHandler
@@ -687,6 +712,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -697,18 +723,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                             ServletResponse asyncContextResponse = asyncContext.getResponse();
                             asyncContextResponse.getWriter().write("foo");
                             asyncContextResponse.setContentLength(3); // This should commit the response
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }
@@ -718,30 +741,31 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     }
 
     @Test
-    @Ignore
     public void testWriteAndSetContentLengthTooSmall() throws Exception
     {
-        server.setHandler(new WriteAndSetContentLengthTooSmallHandler(false));
+        WriteAndSetContentLengthTooSmallHandler handler = new WriteAndSetContentLengthTooSmallHandler(false);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertResponseBody(response, "foobar");
-        // TODO: once flushed setting contentLength is ignored and chunked is used. Correct?
-        if ("HTTP/1.1".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        // Setting a content-length too small throws an IllegalStateException
+        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     @Test
     public void testWriteAndSetContentLengthTooSmallAndThrow() throws Exception
     {
-        server.setHandler(new WriteAndSetContentLengthTooSmallHandler(true));
+        WriteAndSetContentLengthTooSmallHandler handler = new WriteAndSetContentLengthTooSmallHandler(true);
+        server.setHandler(handler);
         server.start();
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
+        // Setting a content-length too small throws an IllegalStateException
         assertThat(response.getCode(), is("500"));
+        assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
     private class WriteAndSetContentLengthTooSmallHandler extends ThrowExceptionOnDemandHandler
@@ -757,6 +781,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
+                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -767,18 +792,15 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                             ServletResponse asyncContextResponse = asyncContext.getResponse();
                             asyncContextResponse.getWriter().write("foobar");
                             asyncContextResponse.setContentLength(3);
+                            if (dispatch)
+                                asyncContext.dispatch();
+                            else
+                                asyncContext.complete();
                         }
                         catch (IOException e)
                         {
-                            e.printStackTrace();
+                            markFailed(e);
                         }
-                        if (dispatch)
-                        {
-                            request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
-                            asyncContext.dispatch();
-                        }
-                        else
-                            asyncContext.complete();
                     }
                 }).run();
             }

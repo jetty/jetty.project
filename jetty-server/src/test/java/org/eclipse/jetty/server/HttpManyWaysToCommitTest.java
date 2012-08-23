@@ -178,7 +178,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
-        if ("HTTP/1.1".equals(httpVersion))
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -193,7 +193,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         // Since the 200 was committed, the 500 did not get the chance to be written
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response body is foobar", response.getBody(), is("foobar"));
-        if ("HTTP/1.1".equals(httpVersion))
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -223,7 +223,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -236,7 +236,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -266,7 +266,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
-        if ("HTTP/1.1".equals(httpVersion))
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -281,7 +281,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         // Since the 200 was committed, the 500 did not get the chance to be written
         assertThat("response code is 200", response.getCode(), is("200"));
         assertThat("response code is 200", response.getCode(), is("200"));
-        if ("HTTP/1.1".equals(httpVersion))
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -313,7 +313,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
-        if ("HTTP/1.1".equals(httpVersion))
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -328,7 +328,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         // Response was committed when we throw, so 200 expected
         assertThat("response code is 200", response.getCode(), is("200"));
         assertResponseBody(response, "foobar");
-        if ("HTTP/1.1".equals(httpVersion))
+        if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
 
@@ -487,7 +487,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        // Setting a content-length too small causes throws an IllegalStateException
+        // Setting a content-length too small throws an IllegalStateException
         assertThat("response code is 500", response.getCode(), is("500"));
         assertThat("response body is not foo", response.getBody(), not(is("foo")));
     }
@@ -500,6 +500,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
+        // Setting a content-length too small throws an IllegalStateException
         assertThat("response code is 500", response.getCode(), is("500"));
         assertThat("response body is not foo", response.getBody(), not(is("foo")));
     }
