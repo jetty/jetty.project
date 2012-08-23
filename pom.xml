@@ -351,6 +351,7 @@
     </repository>
   </repositories>
   <modules>
+    <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
@@ -375,15 +376,19 @@
 
     <!--<module>jetty-client</module>-->
     <!--<module>jetty-proxy</module>-->
+    <!-- Not ready to bring in yet module>jetty-maven-plugin</module>
+    <module>jetty-jspc-maven-plugin</module-->
     <module>jetty-deploy</module>
     <module>jetty-start</module>
     <module>jetty-plugins</module>
+    <module>jetty-plus</module>
+    <module>jetty-annotations</module>
+    <module>jetty-jndi</module>
     <!--
     <module>jetty-jaspi</module>
-    <module>jetty-ajp</module>
-    <module>jetty-jndi</module>
-    <module>jetty-annotations</module>
-    <module>jetty-plus</module>
+    
+    
+    
     <module>jetty-rewrite</module>
     <module>jetty-policy</module>
     <module>jetty-monitor</module>
@@ -650,6 +655,7 @@
               <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
               <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
               <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
+              <exlcude>jetty-ant/**</exlcude> <!-- short term, need to add support to accept additional copyrights -->
             </excludes>
           </configuration>
           <executions>

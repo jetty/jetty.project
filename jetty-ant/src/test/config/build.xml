@@ -1,0 +1,43 @@
+<!-- =======================================================================================-->
+<!-- Build file for running the test-jetty-webapp from the jetty distro.                    -->
+<!--                                                                                        -->
+<!-- You will need to have a full jetty-distribution available unpacked on your local file  -->
+<!-- system. We will refer to the top level directory of this distribution as $JETTY_HOME.  -->
+<!--                                                                                        -->
+<!-- To use:                                                                                -->
+<!-- * mkdir test-jetty-ant                                                                 -->
+<!-- * cp this file to test-jetty-ant                                                       -->
+<!-- * cd test-jetty-ant; mkdir jetty-lib; mkdir war; mkdir jetty-temp                      -->
+<!-- * copy all jars from $JETTY_HOME/lib and all subdirs flatly into ./jetty-lib           -->
+<!-- * unjar the test.war from $JETTY_HOME/webapps dir into ./war                           -->
+<!-- * cp $JETTY_HOME/etc/webdefaults.xml to .                                              -->
+<!-- * cp $JETTY_HOME/etc/realm.properties to .                                             -->
+<!--                                                                                        -->
+<!-- To run:                                                                                -->
+<!--     ant jetty.run                                                                      -->
+<!-- =======================================================================================-->
+<project name="Jetty-Ant integration test" basedir=".">
+  <path id="jetty.plugin.classpath">
+    <fileset dir="jetty-lib" includes="*.jar"/>
+  </path>
+  <taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
+
+  <typedef name="hashLoginService" classname="org.eclipse.jetty.security.HashLoginService"
+           classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
+ 
+  <target name="jetty.run">
+    <jetty tempDirectory="jetty-temp">
+      <loginServices>
+        <hashLoginService name="Test Realm" config="realm.properties"/>
+      </loginServices>
+      <webApp name="test" 
+              warfile="war" 
+              webDefaultXmlFile="webdefault.xml" 
+              contextpath="/test" >
+        <attributes>
+          <attribute name="org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" value=".*/.*jsp-api-[^/]*\.jar$|.*/.*jsp-[^/]*\.jar$|.*/.*taglibs[^/]*\.jar$"/>
+        </attributes>
+      </webApp>
+    </jetty>
+  </target>
+</project>

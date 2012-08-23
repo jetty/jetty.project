@@ -40,7 +40,7 @@ import org.eclipse.jetty.plus.jaas.callback.RequestParameterCallback;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
@@ -210,8 +210,11 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             }
                             else if (callback instanceof RequestParameterCallback)
                             {
-                                AbstractHttpConnection connection = AbstractHttpConnection.getCurrentConnection();
-                                Request request = (connection == null? null : connection.getRequest());
+                            	HttpChannel channel = HttpChannel.getCurrentHttpChannel();              
+                                
+                                if (channel == null)
+                                    return;
+                                Request request = channel.getRequest();
                                 
                                 if (request != null)
                                 {
