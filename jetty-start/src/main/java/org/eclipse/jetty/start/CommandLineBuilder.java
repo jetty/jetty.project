@@ -41,7 +41,8 @@ public class CommandLineBuilder
      */
     public void addArg(String arg)
     {
-        args.add(quote(arg));
+        if (arg != null)
+            args.add(quote(arg));
     }
 
     /**
@@ -84,7 +85,8 @@ public class CommandLineBuilder
      */
     public void addRawArg(String arg)
     {
-        args.add(arg);
+        if (arg != null)
+            args.add(arg);
     }
 
     public List<String> getArgs()
@@ -106,7 +108,7 @@ public class CommandLineBuilder
             return arg;
         }
         StringBuilder buf = new StringBuilder();
-//        buf.append('"');
+        // buf.append('"');
         boolean escaped = false;
         for (char c : arg.toCharArray())
         {
@@ -117,7 +119,7 @@ public class CommandLineBuilder
             escaped = (c == '\\');
             buf.append(c);
         }
-//        buf.append('"');
+        // buf.append('"');
         return buf.toString();
     }
 
@@ -133,7 +135,7 @@ public class CommandLineBuilder
             {
                 buf.append(' ');
             }
-            buf.append(arg);
+            buf.append(quote(arg));
             delim = true;
         }
 
