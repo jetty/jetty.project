@@ -41,7 +41,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -53,13 +52,13 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /** HttpChannel.
  * Represents a single endpoint for HTTP semantic processing.
- * The HttpChannel is both a HttpParser.RequestHandler, where it passively receives events from 
+ * The HttpChannel is both a HttpParser.RequestHandler, where it passively receives events from
  * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
  * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
- * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the 
- * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to 
+ * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the
+ * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to
  * HttpTransport.completed().
- * 
+ *
  */
 public class HttpChannel implements HttpParser.RequestHandler, Runnable
 {
@@ -113,7 +112,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     {
         return _version;
     }
-    
+
     /**
      * @return the number of requests handled by this connection
      */
@@ -271,13 +270,13 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
             if (threadName != null && LOG.isDebugEnabled())
                 Thread.currentThread().setName(threadName);
             setCurrentHttpChannel(null);
-            
+
             if (_state.isCompleting())
             {
                 try
                 {
                     _state.completed();
-                    
+
                     // TODO move to HttpChannelOverHttp?
                     if (_expect100Continue)
                     {
@@ -343,10 +342,19 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
             }
             else
             {
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
-                _response.sendError(500, x.getMessage());
-            } 
+                // TODO: this error handling here must be atomic as above.
+                // TODO: response.sendError() should call back the HttpChannel in order to perform the atomic commit
+                if (!isCommitted())
+                {
+                    _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
+                    _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
+                    _response.sendError(500, x.getMessage());
+                }
+                else
+                {
+                    LOG.warn("Could not send response error 500, response is already committed");
+                }
+            }
         }
         catch (IOException e)
         {
@@ -472,7 +480,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
             _request.getHttpFields().add(name, value);
         return false;
     }
-    
+
     @Override
     public boolean parsedHostHeader(String host, int port)
     {
@@ -489,7 +497,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
         {
             case HTTP_0_9:
                 break;
-                
+
             case HTTP_1_0:
                 if (getServer().getSendDateHeader())
                     _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
@@ -506,7 +514,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 }
 
                 break;
-                
+
             default:
                 throw new IllegalStateException();
         }
@@ -543,7 +551,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     {
         if (status < 400 || status > 599)
             status = HttpStatus.BAD_REQUEST_400;
-        
+
         try
         {
             if (_state.handling())
