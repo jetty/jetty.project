@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -168,7 +170,7 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public Result generateRequest(RequestInfo info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last)
+    public Result generateRequest(RequestInfo info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {
         switch(_state)
         {
@@ -209,9 +211,8 @@ public class HttpGenerator
                 }
                 catch(Exception e)
                 {
-                    if (e instanceof BufferOverflowException)
-                        LOG.warn("Response header too large");
-                    throw e;
+                    String message= (e instanceof BufferOverflowException)?"Response header too large":e.getMessage();
+                    throw new IOException(message,e);
                 }
                 finally
                 {
@@ -252,8 +253,11 @@ public class HttpGenerator
             case COMPLETING:
             {
                 if (BufferUtil.hasContent(content))
-                    throw new IllegalStateException(); // Can't pass new content in COMPLETING state
-
+                {
+                    LOG.debug("discarding content in COMPLETING");
+                    BufferUtil.clear(content);
+                }
+                
                 if (isChunking())
                 {
                     // Do we need a chunk buffer?
@@ -272,7 +276,10 @@ public class HttpGenerator
 
             case END:
                 if (BufferUtil.hasContent(content))
-                    throw new IllegalStateException(); // Can't pass new content in END state
+                {
+                    LOG.debug("discarding content in COMPLETING");
+                    BufferUtil.clear(content);
+                }
                 return Result.DONE;
 
             default:
@@ -281,13 +288,12 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public Result generateResponse(ResponseInfo info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last)
+    public Result generateResponse(ResponseInfo info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {
         switch(_state)
         {
             case START:
             {
-
                 if (info==null)
                     return Result.NEED_INFO;
 
@@ -349,20 +355,8 @@ public class HttpGenerator
                 }
                 catch(Exception e)
                 {
-                    if (e instanceof BufferOverflowException)
-                    {
-                        LOG.warn("Response header too large");
-                        LOG.debug(e);
-                    }
-                    else
-                        LOG.warn(e);
-
-                    // We were probably trying to generate a header, so let's make it a 500 instead
-                    _persistent=false;
-                    BufferUtil.clearToFill(header);
-                    generateResponseLine(RESPONSE_500_INFO,header);
-                    generateHeaders(RESPONSE_500_INFO,header,null,true);
-                    _state=State.COMPLETING;
+                    String message= (e instanceof BufferOverflowException)?"Response header too large":e.getMessage();
+                    throw new IOException(message,e);
                 }
                 finally
                 {
@@ -408,7 +402,10 @@ public class HttpGenerator
             case COMPLETING:
             {
                 if (BufferUtil.hasContent(content))
-                    throw new IllegalStateException(); // Can't pass new content in COMPLETING state
+                {
+                    LOG.debug("discarding content in COMPLETING");
+                    BufferUtil.clear(content);
+                }
 
                 if (isChunking())
                 {
@@ -431,7 +428,10 @@ public class HttpGenerator
 
             case END:
                 if (BufferUtil.hasContent(content))
-                    throw new IllegalStateException(); // Can't pass new content in END state
+                {
+                    LOG.debug("discarding content in COMPLETING");
+                    BufferUtil.clear(content);
+                }
                 return Result.DONE;
 
             default:

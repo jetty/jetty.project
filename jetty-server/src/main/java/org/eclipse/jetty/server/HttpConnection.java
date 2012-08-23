@@ -321,7 +321,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 }
                 default:
                 {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("generateResponse="+result);
                 }
             }
         }

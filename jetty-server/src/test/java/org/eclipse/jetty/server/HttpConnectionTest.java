@@ -26,6 +26,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -476,65 +477,12 @@ public class HttpConnectionTest
         for (int i=0;i<500;i++)
             str+="xxxxxxxxxxxx";
         final String longstr = str;
-
+        final CountDownLatch checkError = new CountDownLatch(1);
         String response = null;
         server.stop();
         server.setHandler(new DumpHandler()
         {
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    response.setHeader(HttpHeader.CONTENT_TYPE.toString(),MimeTypes.Type.TEXT_HTML.toString());
-                    response.setHeader("LongStr", longstr);
-                    PrintWriter writer = response.getWriter();
-                    writer.write("<html><h1>FOO</h1></html>");
-                    writer.flush();
-                    if (!writer.checkError())
-                        throw new RuntimeException("SHOULD NOT GET HERE");
-                }
-                catch(Exception e)
-                {
-                    LOG.debug(e);
-                    LOG.info("correctly ignored "+e);
-                }
-            }
-        });
-        server.start();
-
-        try
-        {
-            int offset = 0;
-
-            response = connector.getResponses("GET / HTTP/1.1\n"+
-                "Host: localhost\n" +
-                "\015\012"
-             );
-
-            checkContains(response, offset, "HTTP/1.1 500");
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-            if(response != null)
-                System.err.println(response);
-            fail("Exception");
-        }
-    }
-
-    @Test
-    public void testOversizedResponse2() throws Exception
-    {
-        String str = "thisisastringthatshouldreachover1kbytes-";
-        for (int i=0;i<500;i++)
-            str+="xxxxxxxxxxxx";
-        final String longstr = str;
-
-        String response = null;
-        server.stop();
-        server.setHandler(new DumpHandler()
-        {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
@@ -543,8 +491,8 @@ public class HttpConnectionTest
                 PrintWriter writer = response.getWriter();
                 writer.write("<html><h1>FOO</h1></html>");
                 writer.flush();
-                if (!writer.checkError())
-                    throw new RuntimeException("SHOULD NOT GET HERE");
+                if (writer.checkError())
+                    checkError.countDown();
                 response.flushBuffer();
             }
         });
@@ -552,6 +500,8 @@ public class HttpConnectionTest
 
         try
         {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).info("Excpect IOException: Response header too large...");
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             int offset = 0;
 
             response = connector.getResponses("GET / HTTP/1.1\n"+
@@ -560,13 +510,18 @@ public class HttpConnectionTest
              );
 
             checkContains(response, offset, "HTTP/1.1 500");
+            assertTrue(checkError.await(1,TimeUnit.SECONDS));
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             if(response != null)
                 System.err.println(response);
-            fail("Exception");
+            throw e;
+        }
+        finally
+        {
+
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
 

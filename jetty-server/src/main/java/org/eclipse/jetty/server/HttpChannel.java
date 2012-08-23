@@ -569,7 +569,18 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     {
         boolean committed = _committed.compareAndSet(false, true);
         if (committed)
-            _transport.commit(info, content, complete);
+        {
+            try
+            {
+                _transport.commit(info, content, complete);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+                _transport.commit(HttpGenerator.RESPONSE_500_INFO,null,true);
+                throw e;
+            }
+        }
         return committed;
     }
 
