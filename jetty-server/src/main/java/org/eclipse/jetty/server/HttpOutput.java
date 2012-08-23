@@ -139,7 +139,7 @@ public class HttpOutput extends ServletOutputStream
             }
 
             // Allocate an aggregate buffer
-            _aggregate = _channel.getConnector().getByteBufferPool().acquire(size, false);
+            _aggregate = _channel.getByteBufferPool().acquire(size, false);
         }
 
         // Do we have space to aggregate ?
@@ -179,7 +179,7 @@ public class HttpOutput extends ServletOutputStream
             throw new EOFException();
 
         if (_aggregate == null)
-            _aggregate = _channel.getConnector().getByteBufferPool().acquire(getBufferSize(), false);
+            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
 
         BufferUtil.append(_aggregate, (byte)b);
         _written++;

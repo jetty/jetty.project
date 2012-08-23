@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -124,6 +125,11 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     public Connector getConnector()
     {
         return _connector;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _connector.getByteBufferPool();
     }
 
     public HttpConfiguration getHttpConfiguration()
