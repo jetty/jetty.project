@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -653,7 +652,6 @@ public class Response implements HttpServletResponse
     {
         if (_outputType == OutputType.STREAM)
             throw new IllegalStateException("STREAM");
-        _outputType = OutputType.WRITER;
 
         if (_writer == null)
         {
@@ -679,6 +677,9 @@ public class Response implements HttpServletResponse
             {
                 _writer = new PrintWriter(new EncodingHttpWriter(_out, encoding));
             }
+
+            // Set the output type at the end, because setCharacterEncoding() checks for it
+            _outputType = OutputType.WRITER;
         }
         return _writer;
     }
