@@ -386,7 +386,6 @@
     <module>jetty-jndi</module>
     <!--
     <module>jetty-jaspi</module>
-    <module>jetty-ajp</module>
     
     
     
