@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -62,11 +63,14 @@ public class HttpParser
     private final HttpHandler _handler;
     private final RequestHandler _requestHandler;
     private final ResponseHandler _responseHandler;
+    private final int _maxHeaderBytes;
     private HttpHeader _header;
     private String _headerString;
     private HttpHeaderValue _value;
     private String _valueString;
     private int _responseStatus;
+    private int _headerBytes;
+    private boolean _host;
 
     /* ------------------------------------------------------------------------------- */
     private State _state=State.START;
@@ -88,25 +92,33 @@ public class HttpParser
     private final Utf8StringBuilder _utf8=new Utf8StringBuilder();
 
     /* ------------------------------------------------------------------------------- */
-    /**
-     * Constructor.
-     */
     public HttpParser(RequestHandler handler)
+    {
+        this(handler,-1);
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public HttpParser(ResponseHandler handler)
+    {
+        this(handler,-1);
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    public HttpParser(RequestHandler handler,int maxHeaderBytes)
     {
         _handler=handler;
         _requestHandler=handler;
         _responseHandler=null;
+        _maxHeaderBytes=maxHeaderBytes;
     }
 
     /* ------------------------------------------------------------------------------- */
-    /**
-     * Constructor.
-     */
-    public HttpParser(ResponseHandler handler)
+    public HttpParser(ResponseHandler handler,int maxHeaderBytes)
     {
         _handler=handler;
         _requestHandler=null;
         _responseHandler=handler;
+        _maxHeaderBytes=maxHeaderBytes;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -151,7 +163,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public boolean isInContent()
     {
-        return _endOfContent!=EndOfContent.NO_CONTENT && _endOfContent!=EndOfContent.UNKNOWN_CONTENT;
+        return _state.ordinal()>State.END.ordinal() && _state.ordinal()<State.CLOSED.ordinal();
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -268,6 +280,12 @@ public class HttpParser
         {
             // process each character
             byte ch=buffer.get();
+            
+            if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
+            {
+                badMessage(buffer,HttpStatus.REQUEST_URI_TOO_LONG_414,null);
+                return true;
+            }
 
             if (_eol == HttpTokens.CARRIAGE_RETURN && ch == HttpTokens.LINE_FEED)
             {
@@ -289,7 +307,7 @@ public class HttpParser
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
-                        badMessage(buffer, "No URI");
+                        badMessage(buffer,HttpStatus.BAD_REQUEST_400,"No URI");
                         return true;
                     }
                     else
@@ -303,14 +321,14 @@ public class HttpParser
                         _version=HttpVersion.CACHE.get(version);
                         if (_version==null)
                         {
-                            badMessage(buffer, "Unknown Version");
+                            badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Unknown Version");
                             return true;
                         }
                         _state=State.SPACE1;            
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
-                        badMessage(buffer, "No Status");
+                        badMessage(buffer,HttpStatus.BAD_REQUEST_400,"No Status");
                         return true;
                     }
                     else
@@ -334,7 +352,7 @@ public class HttpParser
                     }
                     else if (ch < HttpTokens.SPACE)
                     {
-                        badMessage(buffer, _requestHandler!=null?"No URI":"No Status");
+                        badMessage(buffer,HttpStatus.BAD_REQUEST_400,_requestHandler!=null?"No URI":"No Status");
                         return true;
                     }
                     break;
@@ -438,7 +456,7 @@ public class HttpParser
                         _version=HttpVersion.CACHE.get(version);
                         if (_version==null)
                         {
-                            badMessage(buffer, "Unknown Version");
+                            badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Unknown Version");
                             return true;
                         }
                         
@@ -492,6 +510,11 @@ public class HttpParser
         {
             // process each character
             byte ch=buffer.get();
+            if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
+            {
+                badMessage(buffer,HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
+                return true;
+            }
 
             if (_eol == HttpTokens.CARRIAGE_RETURN && ch == HttpTokens.LINE_FEED)
             {
@@ -536,7 +559,7 @@ public class HttpParser
                                                 catch(NumberFormatException e)
                                                 {
                                                     LOG.ignore(e);
-                                                    badMessage(buffer, "Bad Content-Length");
+                                                    badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Bad Content-Length");
                                                     return true;
                                                 }
                                                 if (_contentLength <= 0)
@@ -555,11 +578,41 @@ public class HttpParser
                                                     _endOfContent=EndOfContent.CHUNKED_CONTENT;
                                                 else if (_valueString.indexOf(HttpHeaderValue.CHUNKED.toString()) >= 0)
                                                 {
-                                                    badMessage(buffer, "Bad chunking");
+                                                    badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Bad chunking");
                                                     return true;
                                                 }
                                             }
                                             break;
+                                            
+                                        case HOST:
+                                            _host=true;
+                                            String host=_valueString;
+                                            int port=0;
+                                            loop: for (int i = host.length(); i-- > 0;)
+                                            {
+                                                char c2 = (char)(0xff & host.charAt(i));
+                                                switch (c2)
+                                                {
+                                                    case ']':
+                                                        break loop;
+
+                                                    case ':':
+                                                        try
+                                                        {
+                                                            port = StringUtil.toInt(host.substring(i+1));
+                                                        }
+                                                        catch (NumberFormatException e)
+                                                        {
+                                                            LOG.debug(e);
+                                                            badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Bad Host header");
+                                                            return true;
+                                                        }
+                                                        host = host.substring(0,i);
+                                                        break loop;
+                                                }
+                                            }
+                                            if (_requestHandler!=null)
+                                                _requestHandler.parsedHostHeader(host,port);   
                                     }
                                 }
 
@@ -578,6 +631,14 @@ public class HttpParser
                                 _contentPosition=0;
 
                                 // End of headers!
+                                
+                                // Was there a required host header?
+                                if (!_host && _version!=HttpVersion.HTTP_1_0 && _requestHandler!=null)
+                                {
+                                    badMessage(buffer,HttpStatus.BAD_REQUEST_400,"No Host");
+                                    return true;
+                                }
+                                
                                 // so work out the _content demarcation
                                 if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
                                 {
@@ -1053,17 +1114,17 @@ public class HttpParser
 
             LOG.warn("badMessage: "+e.toString()+" for "+_handler);
             LOG.debug(e);
-            badMessage(buffer,e.toString());
+            badMessage(buffer,HttpStatus.BAD_REQUEST_400,e.toString());
             return true;
         }
     }
     
     /* ------------------------------------------------------------------------------- */
-    private void badMessage(ByteBuffer buffer, String reason)
+    private void badMessage(ByteBuffer buffer, int status, String reason)
     {
         BufferUtil.clear(buffer);
         _state=State.END;
-        _handler.badMessage(400, reason);
+        _handler.badMessage(status, reason);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1099,6 +1160,7 @@ public class HttpParser
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentPosition=0;
         _responseStatus=0;
+        _headerBytes=0;
         _contentChunk=null;
     }
     
@@ -1111,6 +1173,8 @@ public class HttpParser
         _contentPosition=0;
         _responseStatus=0;
         _contentChunk=null;
+        _headerBytes=0;
+        _host=false;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1165,6 +1229,13 @@ public class HttpParser
          * This is the method called by parser when the HTTP request line is parsed
          */
         public abstract boolean startRequest(HttpMethod method, String methodString, String uri, HttpVersion version);
+
+        /**
+         * This is the method called by the parser after it has parsed the host header (and checked it's format). This is 
+         * called after the {@link HttpHandler#parsedHeader(HttpHeader, String, String) methods and before 
+         * HttpHandler#headerComplete();
+         */
+        public abstract boolean parsedHostHeader(String host,int port);
     }
 
     public interface ResponseHandler extends HttpHandler

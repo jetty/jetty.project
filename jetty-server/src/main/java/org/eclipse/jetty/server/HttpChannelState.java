@@ -717,7 +717,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected void scheduleDispatch()
     {
-        _channel.execute(_handleRequest);
+        _channel.execute(_channel);
     }
 
     /* ------------------------------------------------------------ */
@@ -1102,13 +1102,4 @@ public class HttpChannelState implements AsyncContext, Continuation
             return _pathInContext;
         }
     }
-
-    private final Runnable _handleRequest = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            _channel.handle();
-        }
-    };
 }

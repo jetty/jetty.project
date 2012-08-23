@@ -23,6 +23,7 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import javax.servlet.ServletInputStream;
 
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayQueue;
 
 
@@ -42,8 +43,6 @@ public class HttpInput extends ServletInputStream
 {
     private final byte[] _oneByte=new byte[1];
     private final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
-    // TODO: what is this field for ?
-    private ByteBuffer _content;
     private boolean _inputEOF;
 
     /* ------------------------------------------------------------ */
@@ -62,15 +61,20 @@ public class HttpInput extends ServletInputStream
     {
         synchronized (lock())
         {
+            ByteBuffer content=_inputQ.peekUnsafe();;
+            while(content!=null)
+            {
+                content.clear();
+                _inputQ.pollUnsafe();
+                onContentConsumed(content);
+                
+                content=_inputQ.peekUnsafe();
+                if (content==null)
+                    onAllContentConsumed();
+            }
+            
             _inputEOF=false;
 
-            if (_content!=null)
-                onContentConsumed(_content);
-            while ((_content=_inputQ.poll())!=null)
-                onContentConsumed(_content);
-            if (_content!=null)
-                onAllContentConsumed();
-            _content=null;
         }
     }
 
@@ -115,11 +119,14 @@ public class HttpInput extends ServletInputStream
                 while (content!=null && !content.hasRemaining())
                 {
                     _inputQ.pollUnsafe();
+                    onContentConsumed(content);
                     content=_inputQ.peekUnsafe();
                 }
 
                 if (content==null)
                 {
+                    onAllContentConsumed();
+                    
                     // check for EOF
                     if (_inputEOF)
                     {
@@ -176,7 +183,9 @@ public class HttpInput extends ServletInputStream
     {
         synchronized (lock())
         {
-            // TODO: no copy of the buffer; is this safe ?
+            // The buffer is not copied here.  This relies on the caller not recycling the buffer
+            // until the it is consumed.  The onAllContentConsumed() callback is the signal to the 
+            // caller that the buffers can be recycled.
             _inputQ.add(ref);
             onContentQueued(ref);
         }
@@ -199,27 +208,33 @@ public class HttpInput extends ServletInputStream
         }
     }
 
-    // TODO: is this method needed at all ?
     public void consumeAll()
     {
-/*
-        while (true)
+        synchronized (lock())
         {
-            synchronized (lock())
+            while(!_inputEOF)
             {
-                _inputQ.clear();
-            }
-            if (_inputEOF)
-                return;
-            try
-            {
-                blockForContent();
-            }
-            catch(IOException e)
-            {
-                LOG.warn(e);
+                ByteBuffer content=_inputQ.peekUnsafe();
+                while(content!=null)
+                {
+                    content.clear();
+                    _inputQ.pollUnsafe();
+                    onContentConsumed(content);
+
+                    content=_inputQ.peekUnsafe();
+                    if (content==null)
+                        onAllContentConsumed();
+                }
+                
+                try
+                {
+                    blockForContent();
+                }
+                catch(IOException e)
+                {
+                    throw new RuntimeIOException(e);
+                }
             }
         }
-*/
     }
 }

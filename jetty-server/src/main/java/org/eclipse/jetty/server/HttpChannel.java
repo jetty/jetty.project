@@ -49,7 +49,19 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannel implements HttpParser.RequestHandler
+
+/* ------------------------------------------------------------ */
+/** HttpChannel.
+ * Represents a single endpoint for HTTP semantic processing.
+ * The HttpChannel is both a HttpParser.RequestHandler, where it passively receives events from 
+ * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
+ * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
+ * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the 
+ * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to 
+ * HttpTransport.httpChannelCompleted().
+ * 
+ */
+public class HttpChannel implements HttpParser.RequestHandler, Runnable
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
@@ -78,7 +90,6 @@ public class HttpChannel implements HttpParser.RequestHandler
     private boolean _expect = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
-    private boolean _host = false;
 
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
@@ -186,7 +197,8 @@ public class HttpChannel implements HttpParser.RequestHandler
         _uri.clear();
     }
 
-    protected boolean handle()
+    @Override
+    public void run()
     {
         LOG.debug("{} handle enter", this);
 
@@ -223,7 +235,6 @@ public class HttpChannel implements HttpParser.RequestHandler
                     else
                     {
                         _request.setDispatcherType(DispatcherType.ASYNC);
-                        // TODO: should be call customize() as above ?
                         getServer().handleAsync(this);
                     }
                 }
@@ -249,15 +260,53 @@ public class HttpChannel implements HttpParser.RequestHandler
                     handling = !_state.unhandle();
                 }
             }
-
-            return complete();
         }
         finally
         {
             if (threadName != null && LOG.isDebugEnabled())
                 Thread.currentThread().setName(threadName);
-
             setCurrentHttpChannel(null);
+            
+            if (_state.isCompleting())
+            {
+                try
+                {
+                    _state.completed();
+                    if (_expect100Continue)
+                    {
+                        LOG.debug("100 continues not sent");
+                        // We didn't send 100 continues, but the latest interpretation
+                        // of the spec (see httpbis) is that the client will either
+                        // send the body anyway, or close.  So we no longer need to
+                        // do anything special here other than make the connection not persistent
+                        _expect100Continue = false;
+                        if (!_response.isCommitted())
+                            _response.getHttpFields().add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
+                        else
+                            LOG.warn("Can't close non-100 response");
+                    }
+
+                    if (!_response.isCommitted() && !_request.isHandled())
+                        _response.sendError(404);
+
+                    // Complete generating the response
+                    _response.complete();
+
+                }
+                catch(EofException e)
+                {
+                    LOG.debug(e);
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+                finally
+                {
+                    _request.setHandled(true);
+                    _transport.httpChannelCompleted();
+                }
+            }
 
             LOG.debug("{} handle exit", this);
         }
@@ -452,7 +501,6 @@ public class HttpChannel implements HttpParser.RequestHandler
     @Override
     public boolean startRequest(HttpMethod httpMethod, String method, String uri, HttpVersion version)
     {
-        _host = false;
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
@@ -498,11 +546,6 @@ public class HttpChannel implements HttpParser.RequestHandler
         {
             switch (header)
             {
-                case HOST:
-                    // TODO check if host matched a host in the URI.
-                    _host = true;
-                    break;
-
                 case EXPECT:
                     HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                     switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -552,6 +595,14 @@ public class HttpChannel implements HttpParser.RequestHandler
             _request.getHttpFields().add(name, value);
         return false;
     }
+    
+    @Override
+    public boolean parsedHostHeader(String host, int port)
+    {
+        _request.setServerName(host);
+        _request.setServerPort(port);
+        return false;
+    }
 
     @Override
     public boolean headerComplete()
@@ -580,12 +631,6 @@ public class HttpChannel implements HttpParser.RequestHandler
 
                 if (getServer().getSendDateHeader())
                     _response.getHttpFields().putDateField(HttpHeader.DATE.toString(), _request.getTimeStamp());
-
-                if (!_host)
-                {
-                    _response.sendError(Response.SC_BAD_REQUEST, "No Host Header", null);
-                    return true;
-                }
 
                 if (_expect)
                 {
@@ -637,28 +682,21 @@ public class HttpChannel implements HttpParser.RequestHandler
         
         try
         {
-            commitResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
+            if (_state.handling())
+            {
+                commitResponse(new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(),0,status,reason,false),null,true);
+                _state.unhandle();
+            }
         }
         catch (IOException e)
         {
             LOG.warn(e);
         }
-    }
-
-    // TODO: port the logic present in this method
-    /*
-        @Override
-        public ResponseInfo commit()
+        finally
         {
-            // If we are still expecting a 100, then this response must close
-            if (_expect100Continue)
-            {
-                _expect100Continue = false;
-                _response.getHttpFields().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-            }
-            return _response.commit();
+            _state.completed();
         }
-    */
+    }
 
     protected boolean commitResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
     {

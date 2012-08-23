@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -38,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractConnection implements Runnable
+public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclispe.jetty.server.HttpConnection.UPGRADE";
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
@@ -49,10 +50,9 @@ public class HttpConnection extends AbstractConnection implements Runnable
     private final ByteBufferPool _bufferPool;
     private final Server _server;
     private final HttpGenerator _generator;
-    private final HttpChannel _channel;
+    private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
     private ByteBuffer _requestBuffer = null;
-    private int _headerBytes;
 
     public static HttpConnection getCurrentConnection()
     {
@@ -74,8 +74,8 @@ public class HttpConnection extends AbstractConnection implements Runnable
         _server = connector.getServer();
         _generator = new HttpGenerator(); // TODO: consider moving the generator to the transport, where it belongs
         _generator.setSendServerVersion(_server.getSendServerVersion());
-        _channel = new HttpChannel(connector, config, endPoint, new HttpTransportOverHttp(_bufferPool, _configuration, endPoint, _generator), new Input());
-        _parser = new HttpParser(_channel);
+        _channel = new HttpChannelOverHttp(connector, config, endPoint, this, new Input());
+        _parser = new HttpParser(_channel,config.getRequestHeaderSize());
 
         LOG.debug("New HTTP Connection {}", this);
     }
@@ -159,10 +159,6 @@ public class HttpConnection extends AbstractConnection implements Runnable
                 releaseRequestBuffer();
                 return false;
             }
-            else
-            {
-                _headerBytes += filled;
-            }
         }
 
         // Parse the buffer
@@ -189,94 +185,25 @@ public class HttpConnection extends AbstractConnection implements Runnable
             {
                 if (readAndParse())
                 {
-                    // reset header count
-                    _headerBytes = 0; // TODO: put this logic into the parser ?
-
-                    if (!_channel.getRequest().isPersistent())
-                        _generator.setPersistent(false);
-
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                    boolean complete = _channel.handle(); // TODO: should we perform special processing if we are complete ?
-
-                    if (complete)
+                    _channel.run(); 
+                    
+                    // Return if the channel is still processing the request
+                    if (_channel.getState().isSuspending())
                     {
-                        // Handle connection upgrades
-                        if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-                        {
-                            Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
-                            if (connection != null)
-                            {
-                                LOG.debug("Upgrade from {} to {}", this, connection);
-                                getEndPoint().setConnection(connection);
-                            }
-                        }
-
-                        reset();
-
-                        // Is this thread dispatched from a resume ?
-                        if (getCurrentConnection() != HttpConnection.this)
-                        {
-                            if (_parser.isStart())
-                            {
-                                // it wants to eat more
-                                if (_requestBuffer == null)
-                                {
-                                    fillInterested();
-                                }
-                                else if (getConnector().isStarted())
-                                {
-                                    LOG.debug("{} pipelined", this);
-
-                                    try
-                                    {
-                                        getExecutor().execute(this);
-                                    }
-                                    catch (RejectedExecutionException e)
-                                    {
-                                        if (getConnector().isStarted())
-                                            LOG.warn(e);
-                                        else
-                                            LOG.ignore(e);
-                                        getEndPoint().close();
-                                    }
-                                }
-                                else
-                                {
-                                    getEndPoint().close();
-                                }
-                            }
-
-                            if (_parser.isClosed() && !getEndPoint().isOutputShutdown())
-                            {
-                                // TODO This is a catch all indicating some protocol handling failure
-                                // Currently needed for requests saying they are HTTP/2.0.
-                                // This should be removed once better error handling is in place
-                                LOG.warn("Endpoint output not shutdown when seeking EOF");
-                                getEndPoint().shutdownOutput();
-                            }
-                        }
-
-                        // make sure that an oshut connection is driven towards close
-                        // TODO this is a little ugly
-                        if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
-                        {
-                            fillInterested();
-                        }
-
-                        // return if the connection has been changed
-                        if (getEndPoint().getConnection() != this)
-                            return;
+                        // release buffer if no input being held.
+                        // This is needed here to handle the case of no request input.  If there
+                        // is request input, then the release is handled by Input@onAllContentConsumed()
+                        if (_channel.getRequest().getHttpInput().available()==0)
+                            releaseRequestBuffer();
+                        return;
                     }
-                }
-                else if (_headerBytes >= _configuration.getRequestHeaderSize())
-                {
-                    _parser.reset();
-                    _parser.close();
-                    _generator.setPersistent(false);
-                    _channel.getResponse().sendError(Response.SC_REQUEST_ENTITY_TOO_LARGE, null, null);
-                    break;
+
+                    // return if the connection has been changed
+                    if (getEndPoint().getConnection()!=this)
+                        return;
                 }
                 else
                 {
@@ -316,6 +243,191 @@ public class HttpConnection extends AbstractConnection implements Runnable
         onFillable();
     }
 
+
+    @Override
+    public void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
+    {
+        // TODO This is always blocking!  One of the important use-cases is to be able to write large static content without a thread
+
+        ByteBuffer header = null;
+        out: while (true)
+        {
+            HttpGenerator.Result result = _generator.generateResponse(info, header, content, lastContent);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} generate: {} ({},{},{})@{}",
+                        this,
+                        result,
+                        BufferUtil.toSummaryString(header),
+                        BufferUtil.toSummaryString(content),
+                        lastContent,
+                        _generator.getState());
+
+            switch (result)
+            {
+                case NEED_HEADER:
+                {
+                    if (header != null)
+                        _bufferPool.release(header);
+                    header = _bufferPool.acquire(_configuration.getResponseHeaderSize(), false);
+                    continue;
+                }
+                case NEED_CHUNK:
+                {
+                    if (header != null)
+                        _bufferPool.release(header);
+                    header = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
+                    continue;
+                }
+                case FLUSH:
+                {
+                    if (_channel.getRequest().isHead())
+                    {
+                        BufferUtil.clear(content);
+                        if (BufferUtil.hasContent(header))
+                            blockingWrite(header);
+                    }
+                    else if (BufferUtil.hasContent(header))
+                    {
+                        if (BufferUtil.hasContent(content))
+                            blockingWrite(header, content);
+                        else
+                            blockingWrite(header);
+                    }
+                    else  if (BufferUtil.hasContent(content))
+                    {
+                        blockingWrite(content);
+                    }
+                    continue;
+                }
+                case SHUTDOWN_OUT:
+                {
+                    getEndPoint().shutdownOutput();
+                    continue;
+                }
+                case DONE:
+                {
+                    break out;
+                }
+                case CONTINUE:
+                {
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void write(ByteBuffer content, boolean lastContent) throws IOException
+    {
+        commit(null, content, lastContent);
+    }
+
+    private void blockingWrite(ByteBuffer... bytes) throws IOException
+    {
+        try
+        {
+            FutureCallback<Void> callback = new FutureCallback<>();
+            getEndPoint().write(null, callback, bytes);
+            callback.get();
+        }
+        catch (InterruptedException x)
+        {
+            throw (IOException)new InterruptedIOException().initCause(x);
+        }
+        catch (ExecutionException x)
+        {
+            Throwable cause = x.getCause();
+            if (cause instanceof IOException)
+                throw (IOException)cause;
+            else if (cause instanceof Exception)
+                throw new IOException(cause);
+            else
+                throw (Error)cause;
+        }
+    }
+
+    @Override
+    public void httpChannelCompleted()
+    {
+        // Finish consuming the request
+        if (_parser.isInContent() && _generator.isPersistent())
+            // Complete reading the request
+            _channel.getRequest().getHttpInput().consumeAll();
+        
+        // Handle connection upgrades
+        if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+        {
+            Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+            if (connection != null)
+            {
+                LOG.debug("Upgrade from {} to {}", this, connection);
+                getEndPoint().setConnection(connection);
+            }
+        }
+
+        reset();
+
+        // Is this thread dispatched from a resume ?
+        if (getCurrentConnection() != HttpConnection.this)
+        {
+            if (_parser.isStart())
+            {
+                // it wants to eat more
+                if (_requestBuffer == null)
+                {
+                    fillInterested();
+                }
+                else if (getConnector().isStarted())
+                {
+                    LOG.debug("{} pipelined", this);
+
+                    try
+                    {
+                        getExecutor().execute(this);
+                    }
+                    catch (RejectedExecutionException e)
+                    {
+                        if (getConnector().isStarted())
+                            LOG.warn(e);
+                        else
+                            LOG.ignore(e);
+                        getEndPoint().close();
+                    }
+                }
+                else
+                {
+                    getEndPoint().close();
+                }
+            }
+
+            if (_parser.isClosed() && !getEndPoint().isOutputShutdown())
+            {
+                // TODO This is a catch all indicating some protocol handling failure
+                // Currently needed for requests saying they are HTTP/2.0.
+                // This should be removed once better error handling is in place
+                LOG.warn("Endpoint output not shutdown when seeking EOF");
+                getEndPoint().shutdownOutput();
+            }
+        }
+
+        // make sure that an oshut connection is driven towards close
+        // TODO this is a little ugly
+        if (getEndPoint().isOpen() && getEndPoint().isOutputShutdown())
+        {
+            fillInterested();
+        }
+
+        // return if the connection has been changed
+        if (getEndPoint().getConnection() != this)
+            return;
+   
+    }
+    
+    
     private class Input extends HttpInput
     {
         @Override
@@ -343,5 +455,63 @@ public class HttpConnection extends AbstractConnection implements Runnable
                 FutureCallback.rethrow(e);
             }
         }
+
+        @Override
+        protected void onContentQueued(ByteBuffer ref)
+        {
+            /* This callback could be used to tell the connection
+             * that the request did contain content and thus the request
+             * buffer needs to be held until a call to #onAllContentConsumed
+             *
+             * However it turns out that nothing is needed here because either a
+             * request will have content, in which case the request buffer will be
+             * released by a call to onAllContentConsumed; or it will not have content.
+             * If it does not have content, either it will complete quickly and the
+             * buffers will be released in completed() or it will be suspended and
+             * onReadable() contains explicit handling to release if it is suspended.
+             *
+             * We extend this method anyway, to turn off the notify done by the
+             * default implementation as this is not needed by our implementation
+             * of blockForContent
+             */
+        }
+
+
+        @Override
+        protected void onAllContentConsumed()
+        {
+            /* This callback tells the connection that all content that has
+             * been parsed has been consumed. Thus the request buffer may be
+             * released if it is empty.
+             */
+            releaseRequestBuffer();
+        }
     }
+    
+    private class HttpChannelOverHttp extends HttpChannel
+    {
+        public HttpChannelOverHttp(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
+        {
+            super(connector,configuration,endPoint,transport,input);
+        }
+
+        @Override
+        public void badMessage(int status, String reason)
+        {
+            _generator.setPersistent(false);
+            super.badMessage(status,reason);
+        }
+
+        @Override
+        public boolean headerComplete()
+        {
+            boolean result= super.headerComplete();
+            if (!getRequest().isPersistent())
+                _generator.setPersistent(false);
+            return result;
+        }
+        
+    }
+    
+    
 }

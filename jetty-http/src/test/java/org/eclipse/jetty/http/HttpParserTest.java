@@ -740,6 +740,13 @@ public class HttpParserTest
         }
 
         @Override
+        public boolean parsedHostHeader(String host,int port)
+        {
+            // TODO test this
+            return false;
+        }
+        
+        @Override
         public boolean headerComplete()
         {
             //System.err.println("headerComplete");

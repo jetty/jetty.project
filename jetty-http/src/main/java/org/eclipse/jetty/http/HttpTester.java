@@ -275,6 +275,12 @@ public class HttpTester
         {
             put(name,value);
         }
+
+        @Override
+        public boolean parsedHostHeader(String host,int port)
+        {
+            return false;
+        }
     }
     
     public static class Response extends Message implements HttpParser.ResponseHandler

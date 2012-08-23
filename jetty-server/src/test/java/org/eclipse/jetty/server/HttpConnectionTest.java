@@ -159,12 +159,12 @@ public class HttpConnectionTest
     @Test
     public void testHead() throws Exception
     {
-        String responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
+        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
                 "\015\012");
-
-        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
+        
+        String responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
                 "\015\012");
@@ -182,9 +182,9 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testBad() throws Exception
+    public void testBadHostPort() throws Exception
     {
-        Log.getLogger(HttpParser.class).info("badMessage: 3 bad messages expected ...");
+        Log.getLogger(HttpParser.class).info("badMessage: Number formate exception expected ...");
         String response;
 
         response=connector.getResponses("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\n"+
@@ -192,12 +192,26 @@ public class HttpConnectionTest
             "Connection: close\015\012"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
+    }
+    
+    @Test
+    public void testBadURIencoding() throws Exception
+    {
+        Log.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
+        String response;
 
         response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\n"+
             "Host: localhost\n"+
             "Connection: close\n"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
+    }
+    
+    @Test
+    public void testBadUTF8FallsbackTo8859() throws Exception
+    {
+        Log.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
+        String response;
 
         response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
             "Host: localhost\n"+

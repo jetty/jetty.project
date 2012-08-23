@@ -1070,9 +1070,7 @@ public class Request implements HttpServletRequest
                         }
                         catch (NumberFormatException e)
                         {
-                            // TODO: this should be moved to the parser !
-                            if (_channel != null)
-                                getResponse().sendError(Response.SC_BAD_REQUEST, "Bad Host header", null);
+                            LOG.warn(e);
                         }
                         return _serverName;
                 }

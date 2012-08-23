@@ -256,12 +256,14 @@ abstract public class WriteFlusher
 
         protected void fail(Throwable cause)
         {
-            _callback.failed(_context, cause);
+            if (_callback!=null)
+                _callback.failed(_context, cause);
         }
 
         protected void complete()
         {
-            _callback.completed(_context);
+            if (_callback!=null)
+                _callback.completed(_context);
         }
     }
 
@@ -290,9 +292,6 @@ abstract public class WriteFlusher
         if (LOG.isDebugEnabled())
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
         
-        if (callback == null)
-            throw new IllegalArgumentException();
-
         if (!updateState(__IDLE,__WRITING))
             throw new WritePendingException();
 
@@ -317,12 +316,16 @@ abstract public class WriteFlusher
             // If updateState didn't succeed, we don't care as our buffers have been written
             if (!updateState(__WRITING,__IDLE))
                 ignoreFail();
-            callback.completed(context);
+            if (callback!=null)
+                callback.completed(context);
         }
         catch (IOException e)
         {
             if (updateState(__WRITING,__IDLE))
-                callback.failed(context, e);
+            {
+                if (callback!=null)
+                    callback.failed(context, e);
+            }
             else
                 fail(new PendingState<>(buffers, context, callback));
         }
