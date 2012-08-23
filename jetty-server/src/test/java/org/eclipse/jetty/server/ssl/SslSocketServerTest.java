@@ -77,6 +77,12 @@ public class SslSocketServerTest extends HttpServerTestBase
 
     @Override
     @Test
+    @Ignore("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
+            "but shutdownOutput() is needed by the test.")
+    public void testInterruptedRequest(){}
+
+    @Override
+    @Test
     public void testFlush() throws Exception
     {
         // TODO this test uses URL, so noop for now

@@ -21,8 +21,9 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.Enumeration;
 import java.util.Locale;
 
 import javax.servlet.ServletOutputStream;
@@ -77,6 +78,16 @@ public class Response implements HttpServletResponse
      * will be set as HTTP ONLY.
      */
     public final static String HTTP_ONLY_COMMENT="__HTTP_ONLY__";
+    
+    
+    /* ------------------------------------------------------------ */
+    public static Response getResponse(HttpServletResponse response)
+    {
+        if (response instanceof Response)
+            return (Response)response;
+
+        return AbstractHttpConnection.getCurrentConnection().getResponse();
+    }
     
     private final AbstractHttpConnection _connection;
     private int _status=SC_OK;
@@ -1079,6 +1090,29 @@ public class Response implements HttpServletResponse
             }
         }
     }
+    
+
+    public void reset(boolean preserveCookies)
+    { 
+        if (!preserveCookies)
+            reset();
+        else
+        {
+            HttpFields response_fields=_connection.getResponseFields();
+
+            ArrayList<String> cookieValues = new ArrayList<String>(5);
+            Enumeration<String> vals = response_fields.getValues(HttpHeaders.SET_COOKIE);
+            while (vals.hasMoreElements())
+                cookieValues.add((String)vals.nextElement());
+
+            reset();
+
+            for (String v:cookieValues)
+                response_fields.add(HttpHeaders.SET_COOKIE, v);
+        }
+    }
+    
+    
     
     /* ------------------------------------------------------------ */
     /*

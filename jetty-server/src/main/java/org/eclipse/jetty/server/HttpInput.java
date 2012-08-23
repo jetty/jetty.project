@@ -24,12 +24,13 @@ import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.EofException;
 
 public class HttpInput extends ServletInputStream
 {
     protected final AbstractHttpConnection _connection;
     protected final HttpParser _parser;
-    
+
     /* ------------------------------------------------------------ */
     public HttpInput(AbstractHttpConnection connection)
     {
@@ -44,11 +45,9 @@ public class HttpInput extends ServletInputStream
     @Override
     public int read() throws IOException
     {
-        int c=-1;
-        Buffer content=_parser.blockForContent(_connection.getMaxIdleTime());
-        if (content!=null)
-            c= 0xff & content.get();
-        return c;
+        byte[] bytes = new byte[1];
+        int read = read(bytes, 0, 1);
+        return read < 0 ? -1 : 0xff & bytes[0];
     }
     
     /* ------------------------------------------------------------ */
@@ -62,6 +61,8 @@ public class HttpInput extends ServletInputStream
         Buffer content=_parser.blockForContent(_connection.getMaxIdleTime());
         if (content!=null)
             l= content.get(b, off, len);
+        else if (_connection.isEarlyEOF())
+            throw new EofException("early EOF");
         return l;
     }
 
@@ -71,8 +72,4 @@ public class HttpInput extends ServletInputStream
     {
         return _parser.available();
     }
-    
-    
-    
-
 }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -28,6 +29,8 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
@@ -557,6 +560,42 @@ public class ResponseTest
         String set = response.getHttpFields().getStringField("Set-Cookie");
         
         assertEquals("name=value;Comment=comment;Path=/path;Domain=domain;Secure;HttpOnly",set);
+    }
+    
+    
+    @Test
+    public void testCookiesWithReset() throws Exception
+    { 
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+
+        Cookie cookie=new Cookie("name","value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY__");
+        response.addCookie(cookie);
+        
+        Cookie cookie2=new Cookie("name2", "value2");
+        cookie2.setDomain("domain");
+        cookie2.setPath("/path");
+        response.addCookie(cookie2);
+
+        //keep the cookies
+        response.reset(true);        
+
+        Enumeration<String> set = response.getHttpFields().getValues("Set-Cookie");
+
+        assertNotNull(set);
+        ArrayList<String> list = Collections.list(set);
+        assertEquals(2, list.size());
+        assertTrue(list.contains("name=value;Comment=comment;Path=/path;Domain=domain;Secure;HttpOnly"));
+        assertTrue(list.contains("name2=value2;Path=/path;Domain=domain"));
+        
+        //get rid of the cookies
+        response.reset();
+        
+        set = response.getHttpFields().getValues("Set-Cookie");
+        assertFalse(set.hasMoreElements());
     }
 
     private Response newResponse()
