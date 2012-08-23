@@ -20,11 +20,10 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -43,50 +42,31 @@ public class HttpWriterTest
     {
         _bytes = BufferUtil.allocate(2048);
 
+        final HttpConfiguration configuration = new HttpConfiguration(null, false);
+        final ByteBufferPool bufferPool = new StandardByteBufferPool();
         HttpChannel channel = new HttpChannel(null,null,null,null,null)
         {
             @Override
             public HttpConfiguration getHttpConfiguration()
             {
-                return null;
+                return configuration;
             }
 
             @Override
-            protected void execute(Runnable task)
+            public ByteBufferPool getByteBufferPool()
             {
-                task.run();
+                return bufferPool;
             }
-
-            @Override
-            public ScheduledExecutorService getScheduler()
-            {
-                return null;
-            }
-
-            @Override
-            public Connector getConnector()
-            {
-                return null;
-            }
-
-//            @Override
-            protected void flush(ByteBuffer content, boolean last) throws IOException
-            {
-                BufferUtil.flipPutFlip(content,_bytes);
-            }
-
-//            @Override
-            protected FutureCallback<Void> write(ResponseInfo info, ByteBuffer content) throws IOException
-            {
-                BufferUtil.flipPutFlip(content,_bytes);
-                FutureCallback<Void> fcb = new FutureCallback<>();
-                fcb.completed(null);
-                return fcb;
-            }
-
         };
 
-        _httpOut = new HttpOutput(channel);
+        _httpOut = new HttpOutput(channel)
+        {
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException
+            {
+                BufferUtil.append(_bytes, b, off, len);
+            }
+        };
     }
 
     @Test
@@ -126,7 +106,6 @@ public class HttpWriterTest
         Utf8StringBuilder buf = new Utf8StringBuilder();
         buf.append(BufferUtil.toArray(_bytes),0,_bytes.remaining());
         assertEquals(data,buf.toString());
-
     }
 
     @Test
@@ -163,7 +142,6 @@ public class HttpWriterTest
         _writer.write("How now \uFF22rown cow");
         assertEquals("How now ?rown cow",new String(BufferUtil.toArray(_bytes),StringUtil.__ISO_8859_1));
     }
-
 
     @Test
     public void testUTF16x2() throws Exception
@@ -266,13 +244,12 @@ public class HttpWriterTest
 
     private void myReportBytes(byte[] bytes) throws Exception
     {
-        for (int i = 0; i < bytes.length; i++)
-        {
-            // System.err.format("%s%x",(i == 0)?"[":(i % (HttpWriter.MAX_OUTPUT_CHARS) == 0)?"][":",",bytes[i]);
-        }
-        // System.err.format("]->%s\n",new String(bytes,StringUtil.__UTF8));
+//        for (int i = 0; i < bytes.length; i++)
+//        {
+//            System.err.format("%s%x",(i == 0)?"[":(i % (HttpWriter.MAX_OUTPUT_CHARS) == 0)?"][":",",bytes[i]);
+//        }
+//        System.err.format("]->%s\n",new String(bytes,StringUtil.__UTF8));
     }
-
 
     private void assertArrayEquals(byte[] b1, byte[] b2)
     {
