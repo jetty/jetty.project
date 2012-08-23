@@ -208,12 +208,12 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             {
                                 Connection switched=exchange.onSwitchProtocol(_endp);
                                 if (switched!=null)
-                                    connection=switched;
                                 {
                                     // switched protocol!
-                                    _pipeline = null;
                                     if (_pipeline!=null)
+                                    {
                                         _destination.send(_pipeline);
+                                    }
                                     _pipeline = null;
 
                                     connection=switched;
