@@ -579,6 +579,11 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
             {
                 // Try to commit with the passed info
                 _transport.commit(info, content, complete);
+
+                // If we are committing a 1xx response, we need to reset the commit
+                // status so that the "real" response can be committed again.
+                if (info.getStatus() < 200)
+                    _committed.set(false);
             }
             catch (Exception e)
             {
