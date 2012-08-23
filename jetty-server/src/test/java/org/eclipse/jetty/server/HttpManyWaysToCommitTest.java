@@ -370,8 +370,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
-        assertThat("response body is not foo", response.getBody(), not(is("foo")));
+        // Setting the content-length and then writing the bytes commits the response
+        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response body is foo", response.getBody(), is("foo"));
     }
 
     private class SetContentLengthAndWriteThatAmountOfBytesHandler extends ThrowExceptionOnDemandHandler
@@ -412,8 +413,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
-        assertThat("response body is not foo", response.getBody(), not(is("foo")));
+        // Setting the content-length and then writing the bytes commits the response
+        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response body is foo", response.getBody(), is("foo"));
     }
 
     private class SetContentLengthAndWriteMoreBytesHandler extends ThrowExceptionOnDemandHandler
@@ -455,8 +457,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
-        assertThat("response body is not foo", response.getBody(), not(is("foo")));
+        // Writing the bytes and then setting the content-length commits the response
+        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response body is foo", response.getBody(), is("foo"));
     }
 
     private class WriteAndSetContentLengthHandler extends ThrowExceptionOnDemandHandler
@@ -484,9 +487,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         SimpleHttpParser.TestHttpResponse response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
-        assertHeader(response, "content-length", "3");
+        // Setting a content-length too small causes throws an IllegalStateException
+        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response body is not foo", response.getBody(), not(is("foo")));
     }
 
     @Test
