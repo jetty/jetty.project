@@ -165,6 +165,7 @@ public class HttpOutput extends ServletOutputStream
 
         // Aggregate the content
         BufferUtil.append(_aggregate, b, off, len);
+        _written += len;
 
         // Check if all written or full
         if (!checkAllWritten() && BufferUtil.isFull(_aggregate))
