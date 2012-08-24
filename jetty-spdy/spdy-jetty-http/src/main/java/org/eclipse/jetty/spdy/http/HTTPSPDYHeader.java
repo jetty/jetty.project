@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.spdy.http;
 
 import java.util.HashMap;
@@ -24,6 +23,11 @@ import java.util.Map;
 
 import org.eclipse.jetty.spdy.api.SPDY;
 
+/**
+ * <p>{@link HTTPSPDYHeader} defines the SPDY headers that are not also HTTP headers,
+ * such as <tt>method</tt>, <tt>version</tt>, etc. or that are treated differently
+ * by the SPDY protocol, such as <tt>host</tt>.</p>
+ */
 public enum HTTPSPDYHeader
 {
     METHOD("method", ":method"),

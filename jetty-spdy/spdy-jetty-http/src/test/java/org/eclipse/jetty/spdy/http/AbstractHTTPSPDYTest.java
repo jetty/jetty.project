@@ -66,6 +66,7 @@ public abstract class AbstractHTTPSPDYTest
         server = new Server();
         connector = newHTTPSPDYServerConnector(version);
         connector.setPort(0);
+        connector.setIdleTimeout(30000);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -100,7 +101,7 @@ public abstract class AbstractHTTPSPDYTest
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
-        return new SPDYClient.Factory(threadPool);
+        return new SPDYClient.Factory(threadPool, null, connector.getIdleTimeout());
     }
 
     @After

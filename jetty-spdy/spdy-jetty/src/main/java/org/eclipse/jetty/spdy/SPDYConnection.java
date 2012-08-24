@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class SPDYConnection extends AbstractConnection implements Controller<StandardSession.FrameBytes>, IdleListener
 {
-    private static final Logger logger = Log.getLogger(SPDYConnection.class);
+    private static final Logger LOG = Log.getLogger(SPDYConnection.class);
     private final ByteBufferPool bufferPool;
     private final Parser parser;
     private volatile ISession session;
@@ -70,6 +70,7 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
         while (true)
         {
             int filled = fill(endPoint, buffer);
+            LOG.debug("Read {} bytes", filled);
             if (filled == 0)
             {
                 return 0;
@@ -122,11 +123,11 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
-        logger.debug("Shutting down output {}", endPoint);
+        LOG.debug("Shutting down output {}", endPoint);
         endPoint.shutdownOutput();
         if (!onlyOutput)
         {
-            logger.debug("Closing {}", endPoint);
+            LOG.debug("Closing {}", endPoint);
             endPoint.close();
         }
     }
@@ -153,7 +154,7 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
 
     private void shutdown(ISession session)
     {
-        if (session != null)
+        if (session != null && !getEndPoint().isOutputShutdown())
             session.shutdown();
     }
 

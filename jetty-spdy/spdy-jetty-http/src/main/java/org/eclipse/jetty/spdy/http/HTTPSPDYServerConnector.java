@@ -53,9 +53,8 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
     private PushStrategy getPushStrategy(short version, Map<Short, PushStrategy> pushStrategies)
     {
         PushStrategy pushStrategy = pushStrategies.get(version);
-        if(pushStrategy == null)
+        if (pushStrategy == null)
             pushStrategy = new PushStrategy.None();
         return pushStrategy;
     }
-
 }
