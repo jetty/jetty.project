@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -100,9 +101,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public void reset()
     {
-        if (_generator.isPersistent())
+        // If we are still expecting
+        if (_channel.isExpecting100Continue())
+        {
+            // reset to avoid seeking remaining content
+            _parser.reset();
+            // close to seek EOF
+            _parser.close();
+        }
+        // else if we are persistent
+        else if (_generator.isPersistent())
+            // reset to seek next request
             _parser.reset();
         else
+            // else seek EOF
             _parser.close();
 
         _generator.reset();
@@ -146,10 +158,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             while (true)
             {
-                // TODO maybe try the HttpParser first, even with an empty buffer just to see if there is a pending event that does not need IO.
-                
+                // Can the parser progress (even with an empty buffer)
+                boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
+
                 // If there is a request buffer, we are re-entering here
-                if (BufferUtil.isEmpty(_requestBuffer))
+                if (!event && BufferUtil.isEmpty(_requestBuffer))
                 {
                     if (_requestBuffer == null)
                         _requestBuffer = _bufferPool.acquire(_configuration.getRequestHeaderSize(), false);
@@ -181,11 +194,23 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         releaseRequestBuffer();
                         return;
                     }
+                    
+                    // Parse what we have read
+                    event=_parser.parseNext(_requestBuffer);
                 }
 
                 // Parse the buffer
-                if (_parser.parseNext(_requestBuffer))
+                if (event)
                 {
+                    // Parse as much content as there is available before calling the channel
+                    // this is both efficient (may queue many chunks), will correctly set available for 100 continues
+                    // and will drive the parser to completion if all content is available.
+                    while (_parser.inContentState())
+                    {
+                        if (!_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer))
+                            break;
+                    }
+                    
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
@@ -211,6 +236,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     releaseRequestBuffer();
                 }
             }
+        }
+        catch (EofException e)
+        {
+            LOG.debug(e);
         }
         catch (IOException e)
         {
@@ -249,7 +278,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
         // TODO This is always blocking!  One of the important use-cases is to be able to write large static content without a thread
-
+        
+        // If we are still expecting a 100 continues
+        if (_channel.isExpecting100Continue())
+            // then we can't be persistent
+            _generator.setPersistent(false);
+        
+        
         ByteBuffer header = null;
         ByteBuffer chunk = null;
         out: while (true)
@@ -366,7 +401,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void completed()
     {
         // Finish consuming the request
-        if (_parser.isInContent() && _generator.isPersistent())
+        if (_parser.isInContent() && _generator.isPersistent() && !_channel.isExpecting100Continue())
             // Complete reading the request
             _channel.getRequest().getHttpInput().consumeAll();
         

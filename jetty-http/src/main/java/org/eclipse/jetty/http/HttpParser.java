@@ -588,6 +588,12 @@ public class HttpParser
                                             _host=true;
                                             String host=_valueString;
                                             int port=0;
+                                            if (host==null || host.length()==0)
+                                            {
+                                                badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Bad Host header");
+                                                return true;
+                                            }
+                                            
                                             loop: for (int i = host.length(); i-- > 0;)
                                             {
                                                 char c2 = (char)(0xff & host.charAt(i));
@@ -1154,8 +1160,15 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public void close()
     {
-        if (_state!=State.END && _state!=State.CLOSED)
-            LOG.warn("Closing {}",this);
+        switch(_state)
+        {
+            case START:
+            case CLOSED:
+            case END:
+                break;
+            default:
+                LOG.warn("Closing {}",this);
+        }
         _state=State.CLOSED;
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentPosition=0;
@@ -1188,9 +1201,10 @@ public class HttpParser
     @Override
     public String toString()
     {
-        return String.format("%s{s=%s,c=%d}",
+        return String.format("%s{s=%s,%d of %d}",
                 getClass().getSimpleName(),
                 _state,
+                _contentPosition,
                 _contentLength);
     }
 

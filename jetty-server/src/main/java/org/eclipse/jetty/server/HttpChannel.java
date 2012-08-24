@@ -252,15 +252,12 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 {
                     LOG.ignore(e);
                 }
-                catch (EofException e)
+                catch (Exception e)
                 {
-                    LOG.debug(e);
-                    _state.error(e);
-                    _request.setHandled(true);
-                }
-                catch (Throwable e) // TODO: consider catching only Exception
-                {
-                    LOG.warn(String.valueOf(_uri), e);
+                    if (e instanceof EofException)
+                        LOG.debug(e);
+                    else
+                        LOG.warn(String.valueOf(_uri), e);
                     _state.error(e);
                     _request.setHandled(true);
                     handleException(e);
@@ -282,23 +279,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 try
                 {
                     _state.completed();
-
-                    // TODO move to HttpChannelOverHttp?
-                    if (_expect100Continue)
-                    {
-                        LOG.debug("100 continues not sent");
-                        // We didn't send 100 continues, but the latest interpretation
-                        // of the spec (see httpbis) is that the client will either
-                        // send the body anyway, or close.  So we no longer need to
-                        // do anything special here other than make the connection not persistent
-                        _expect100Continue = false;
-                        if (!_response.isCommitted())
-                            _response.getHttpFields().add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
-                        else
-                            // TODO mark generator as persistent(false)
-                            LOG.warn("Can't close non-100 response");
-                    }
-
+                    
                     if (!_response.isCommitted() && !_request.isHandled())
                         _response.sendError(404);
 

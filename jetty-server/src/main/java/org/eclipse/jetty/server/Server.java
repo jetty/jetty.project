@@ -31,6 +31,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
@@ -404,15 +407,35 @@ public class Server extends HandlerWrapper implements Attributes
         final Response response=connection.getResponse();
 
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("REQUEST "+target+" on "+connection);
-            handle(target, request, request, response);
-            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
+        
+        if ("*".equals(target))
+        {
+            handleOptions(request,response);
+            if (!request.isHandled())
+                handle(target, request, request, response);
         }
         else
             handle(target, request, request, response);
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
     }
 
+    /* ------------------------------------------------------------ */
+    /* Handle Options request to server
+     */
+    protected void handleOptions(Request request,Response response) throws IOException
+    {
+        if (!HttpMethod.OPTIONS.is(request.getMethod()))
+            response.sendError(HttpStatus.BAD_REQUEST_400);
+        request.setHandled(true);
+        response.setStatus(200);
+        response.getHttpFields().put(HttpHeader.ALLOW,"GET,POST,HEAD,OPTIONS");
+        response.setContentLength(0);
+        response.complete();
+    }
+    
     /* ------------------------------------------------------------ */
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,

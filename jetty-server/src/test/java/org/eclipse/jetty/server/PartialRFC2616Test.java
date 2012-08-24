@@ -32,10 +32,11 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -46,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 /**
  *
  */
-public class RFC2616Test
+public class PartialRFC2616Test
 {
     private Server server;
     private LocalConnector connector;
@@ -395,34 +396,27 @@ public class RFC2616Test
     }
 
     @Test
-    public void test8_1()
+    public void test8_1() throws Exception
     {
-        try
-        {
-            int offset=0;
-            String response = connector.getResponses("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
-            offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2 default")+10;
-            checkContains(response,offset,"Content-Length: ","8.1.2 default");
+        int offset=0;
+        String response = connector.getResponses("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
+        offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2 default")+10;
+        checkContains(response,offset,"Content-Length: ","8.1.2 default");
 
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n"+
+        offset=0;
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n"+
             "GET /R2 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n"+
             "GET /R3 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
 
-            offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2 default")+1;
-            offset=checkContains(response,offset,"/R1","8.1.2 default")+1;
+        offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2 default")+1;
+        offset=checkContains(response,offset,"/R1","8.1.2 default")+1;
 
-            assertEquals("8.1.2.1 close",-1,response.indexOf("/R3"));
+        offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2.2 pipeline")+11;
+        offset=checkContains(response,offset,"Connection: close","8.1.2.2 pipeline")+1;
+        offset=checkContains(response,offset,"/R2","8.1.2.1 close")+3;
 
-            offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2.2 pipeline")+11;
-            offset=checkContains(response,offset,"Connection: close","8.1.2.2 pipeline")+1;
-            offset=checkContains(response,offset,"/R2","8.1.2.1 close")+3;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            assertTrue(false);
-        }
+        assertEquals("8.1.2.1 close",-1,response.indexOf("/R3"));
+       
     }
 
     @Test
@@ -440,7 +434,6 @@ public class RFC2616Test
         offset=checkContains(response,offset,"HTTP/1.1 417","8.2.3 expect failure")+1;
     }
 
-    @Ignore
     @Test
     public void test8_2_3_dash5() throws Exception
     {
@@ -485,7 +478,6 @@ public class RFC2616Test
         offset=checkContains(response,offset,"654321","8.2.3 expect 100")+1;
     }
 
-    @Ignore
     @Test
     public void test8_2_4() throws Exception
     {
@@ -503,20 +495,23 @@ public class RFC2616Test
     }
 
     @Test
-    public void test9_2()
+    public void test9_2() throws Exception
     {
-        // TODO
-        /*
-         * try { TestListener listener = new TestListener(); String response;
-         * int offset=0; connector.reopen();
-         *  // Default Host offset=0; connector.reopen();
-         * response=connector.getResponses("OPTIONS * HTTP/1.1\n"+ "Connection:
-         * close\n"+ "Host: localhost\n"+ "\n");
-         * offset=checkContains(response,offset, "HTTP/1.1 200","200")+1;
-         * offset=checkContains(response,offset, "Allow: GET, HEAD, POST, PUT,
-         * DELETE, MOVE, OPTIONS, TRACE","Allow")+1;
-         *  } catch(Exception e) { e.printStackTrace(); assertTrue(false); }
-         */
+         int offset=0; 
+         
+         String response=connector.getResponses("OPTIONS * HTTP/1.1\n"+ 
+             "Connection: close\n"+ 
+             "Host: localhost\n"+ 
+             "\n");
+         offset=checkContains(response,offset, "HTTP/1.1 200","200")+1;
+         offset=checkContains(response,offset, "Allow: GET,POST,HEAD,OPTIONS","Allow")+1;
+         
+         offset=0;
+         response=connector.getResponses("GET * HTTP/1.1\n"+ 
+             "Connection: close\n"+ 
+             "Host: localhost\n"+ 
+             "\n");
+         offset=checkContains(response,offset, "HTTP/1.1 400","400")+1;
     }
 
     @Test
@@ -542,266 +537,26 @@ public class RFC2616Test
         }
     }
 
-    @Test
-    public void test9_8()
-    {
-        // TODO
-        /*
-         * try { TestListener listener = new TestListener(); String response;
-         * int offset=0; connector.reopen();
-         *  // Default Host offset=0; connector.reopen();
-         * response=connector.getResponses("TRACE /path HTTP/1.1\n"+ "Host:
-         * localhost\n"+ "Connection: close\n"+ "\n");
-         * offset=checkContains(response,offset, "HTTP/1.1 200","200")+1;
-         * offset=checkContains(response,offset, "Content-Type: message/http",
-         * "message/http")+1; offset=checkContains(response,offset, "TRACE /path
-         * HTTP/1.1\r\n"+ "Host: localhost\r\n", "Request"); } catch(Exception
-         * e) { e.printStackTrace(); assertTrue(false); }
-         */
-    }
+
 
     @Test
-    public void test10_2_7()
+    public void test14_23() throws Exception
     {
-        // TODO
-        /*
-         *
-         * try { TestListener listener = new TestListener(); String response;
-         * int offset=0; connector.reopen();
-         *  // check to see if corresponging GET w/o range would return // a)
-         * ETag // b) Content-Location // these same headers will be required
-         * for corresponding // sub range requests
-         *
-         * response=connector.getResponses("GET /" +
-         * TestRFC2616.testFiles[0].name + " HTTP/1.1\n"+ "Host: localhost\n"+
-         * "Connection: close\n"+ "\n");
-         *
-         * boolean noRangeHasContentLocation =
-         * (response.indexOf("\r\nContent-Location: ") != -1);
-         *
-         *  // now try again for the same resource but this time WITH range
-         * header
-         *
-         * response=connector.getResponses("GET /" +
-         * TestRFC2616.testFiles[0].name + " HTTP/1.1\n"+ "Host: localhost\n"+
-         * "Connection: close\n"+ "Range: bytes=1-3\n"+ "\n");
-         *
-         * offset=0; connector.reopen(); offset=checkContains(response,offset,
-         * "HTTP/1.1 206 Partial Content\r\n", "1. proper 206 status code");
-         * offset=checkContains(response,offset, "Content-Type: text/plain", "2.
-         * _content type") + 2; offset=checkContains(response,offset,
-         * "Last-Modified: " + TestRFC2616.testFiles[0].modDate + "\r\n", "3.
-         * correct resource mod date");
-         *  // if GET w/o range had Content-Location, then the corresponding //
-         * response for the a GET w/ range must also have that same header
-         *
-         * offset=checkContains(response,offset, "Content-Range: bytes 1-3/26",
-         * "4. _content range") + 2;
-         *
-         * if (noRangeHasContentLocation) {
-         * offset=checkContains(response,offset, "Content-Location: ", "5.
-         * Content-Location header as with 200"); } else { // no need to check
-         * for Conten-Location header in 206 response // spec does not require
-         * existence or absence if these want any // header for the get w/o
-         * range }
-         *
-         * String expectedData = TestRFC2616.testFiles[0].data.substring(1,
-         * 3+1); offset=checkContains(response,offset, expectedData, "6.
-         * subrange data: \"" + expectedData + "\""); } catch(Exception e) {
-         * e.printStackTrace(); assertTrue(false); }
-         *
-         */
-    }
+        int offset=0;
+        String response = connector.getResponses("GET /R1 HTTP/1.0\n" + "Connection: close\n" + "\n");
+        offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
-    @Test
-    public void test10_3()
-    {
-        // TODO
-        /*
-         * try { TestListener listener = new TestListener(); String response;
-         * int offset=0; connector.reopen();
-         *  // HTTP/1.0 offset=0; connector.reopen();
-         * response=connector.getResponses("GET /redirect HTTP/1.0\n"+
-         * "Connection: Keep-Alive\n"+ "\n" );
-         * offset=checkContains(response,offset, "HTTP/1.1 302","302")+1;
-         * checkContains(response,offset, "Location: /dump", "redirected");
-         * checkContains(response,offset, "Connection: close", "Connection:
-         * close");
-         *
-         *  // HTTP/1.1 offset=0; connector.reopen();
-         * response=connector.getResponses("GET /redirect HTTP/1.1\n"+ "Host:
-         * localhost\n"+ "\n"+ "GET /redirect HTTP/1.1\n"+ "Host: localhost\n"+
-         * "Connection: close\n"+ "\n" ); offset=checkContains(response,offset,
-         * "HTTP/1.1 302","302")+1; checkContains(response,offset, "Location:
-         * /dump", "redirected"); checkContains(response,offset,
-         * "Transfer-Encoding: chunked", "Transfer-Encoding: chunked");
-         *
-         * offset=checkContains(response,offset, "HTTP/1.1 302","302")+1;
-         * checkContains(response,offset, "Location: /dump", "redirected");
-         * checkContains(response,offset, "Connection: close", "closed");
-         *  // HTTP/1.0 _content offset=0; connector.reopen();
-         * response=connector.getResponses("GET /redirect/_content HTTP/1.0\n"+
-         * "Connection: Keep-Alive\n"+ "\n"+ "GET /redirect/_content
-         * HTTP/1.0\n"+ "\n" ); offset=checkContains(response,offset, "HTTP/1.1
-         * 302","302")+1; checkContains(response,offset, "Location: /dump",
-         * "redirected"); checkContains(response,offset, "Connection: close",
-         * "close no _content length");
-         *  // HTTP/1.1 _content offset=0; connector.reopen();
-         * response=connector.getResponses("GET /redirect/_content HTTP/1.1\n"+
-         * "Host: localhost\n"+ "\n"+ "GET /redirect/_content HTTP/1.1\n"+
-         * "Host: localhost\n"+ "Connection: close\n"+ "\n" );
-         * offset=checkContains(response,offset, "HTTP/1.1 302","302")+1;
-         * checkContains(response,offset, "Location: /dump", "redirected");
-         * checkContains(response,offset, "Transfer-Encoding: chunked", "chunked
-         * _content length");
-         *
-         * offset=checkContains(response,offset, "HTTP/1.1 302","302")+1;
-         * checkContains(response,offset, "Location: /dump", "redirected");
-         * checkContains(response,offset, "Connection: close", "closed");
-         *  } catch(Exception e) { e.printStackTrace(); assertTrue(false); }
-         *
-         */
-    }
+        offset=0;
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Connection: close\n"+"\n");
+        offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
 
-    @Test
-    public void test14_16()
-    {
-        // TODO
-        /*
-         * try { TestListener listener = new TestListener();
-         *
-         * int id = 0;
-         *
-         *  // // calibrate with normal request (no ranges); if this doesnt //
-         * work, dont expect ranges to work either //
-         * connector.checkContentRange( t, Integer.toString(id++),
-         * TestRFC2616.testFiles[0].name, null, 200, null,
-         * TestRFC2616.testFiles[0].data );
-         *
-         *  // // server should ignore all range headers which include // at
-         * least one syntactically invalid range // String [] totallyBadRanges = {
-         * "bytes=a-b", "bytes=-1-2", "bytes=-1-2,2-3", "bytes=-", "bytes=-1-",
-         * "bytes=a-b,-1-1-1", "doublehalfwords=1-2", };
-         *
-         * for (int i = 0; i < totallyBadRanges.length; i++) {
-         * connector.checkContentRange( t, "BadRange"+i,
-         * TestRFC2616.testFiles[0].name, totallyBadRanges[i], 416, null,
-         * TestRFC2616.testFiles[0].data ); }
-         *
-         *  // // should test for combinations of good and syntactically //
-         * invalid ranges here, but I am not certain what the right // behavior
-         * is abymore // // a) Range: bytes=a-b,5-8 // // b) Range:
-         * bytes=a-b,bytes=5-8 // // c) Range: bytes=a-b // Range: bytes=5-8 //
-         *
-         *  // // return data for valid ranges while ignoring unsatisfiable //
-         * ranges //
-         *
-         * connector.checkContentRange( t, "bytes=5-8",
-         * TestRFC2616.testFiles[0].name, "bytes=5-8", 206, "5-8/26",
-         * TestRFC2616.testFiles[0].data.substring(5,8+1) );
-         *  // // server should not return a 416 if at least syntactically valid
-         * ranges // are is satisfiable // connector.checkContentRange( t,
-         * "bytes=5-8,50-60", TestRFC2616.testFiles[0].name, "bytes=5-8,50-60",
-         * 206, "5-8/26", TestRFC2616.testFiles[0].data.substring(5,8+1) );
-         * connector.checkContentRange( t, "bytes=50-60,5-8",
-         * TestRFC2616.testFiles[0].name, "bytes=50-60,5-8", 206, "5-8/26",
-         * TestRFC2616.testFiles[0].data.substring(5,8+1) );
-         *  // 416 as none are satisfiable connector.checkContentRange( t,
-         * "bytes=50-60", TestRFC2616.testFiles[0].name, "bytes=50-60", 416,
-         * "*REMOVE_THIS/26", null );
-         *
-         *  }
-         *
-         * catch(Exception e) { e.printStackTrace(); assertTrue(false); }
-         */
-    }
+        offset=0;
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
+        offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
-    @Test
-    public void test14_23()
-    {
-        try
-        {
-            // HTTP/1.0 OK with no host
-            int offset=0;
-            String response = connector.getResponses("GET /R1 HTTP/1.0\n" + "Connection: close\n" + "\n");
-            offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
-
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Connection: close\n"+"\n");
-            offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
-
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-            offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
-
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host:\n"+"Connection: close\n"+"\n");
-            offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            assertTrue(false);
-        }
-    }
-
-    @Test
-    public void test14_35()
-    {
-        // TODO
-        /*
-         * try { TestListener listener = new TestListener();
-         *  // // test various valid range specs that have not been // tested
-         * yet //
-         *
-         * connector.checkContentRange( t, "bytes=0-2",
-         * TestRFC2616.testFiles[0].name, "bytes=0-2", 206, "0-2/26",
-         * TestRFC2616.testFiles[0].data.substring(0,2+1) );
-         *
-         * connector.checkContentRange( t, "bytes=23-",
-         * TestRFC2616.testFiles[0].name, "bytes=23-", 206, "23-25/26",
-         * TestRFC2616.testFiles[0].data.substring(23,25+1) );
-         *
-         * connector.checkContentRange( t, "bytes=23-42",
-         * TestRFC2616.testFiles[0].name, "bytes=23-42", 206, "23-25/26",
-         * TestRFC2616.testFiles[0].data.substring(23,25+1) );
-         *
-         * connector.checkContentRange( t, "bytes=-3",
-         * TestRFC2616.testFiles[0].name, "bytes=-3", 206, "23-25/26",
-         * TestRFC2616.testFiles[0].data.substring(23,25+1) );
-         *
-         * connector.checkContentRange( t, "bytes=23-23,-2",
-         * TestRFC2616.testFiles[0].name, "bytes=23-23,-2", 206, "23-23/26",
-         * TestRFC2616.testFiles[0].data.substring(23,23+1) );
-         *
-         * connector.checkContentRange( t, "bytes=-1,-2,-3",
-         * TestRFC2616.testFiles[0].name, "bytes=-1,-2,-3", 206, "25-25/26",
-         * TestRFC2616.testFiles[0].data.substring(25,25+1) );
-         *  }
-         *
-         * catch(Exception e) { e.printStackTrace(); assertTrue(false); }
-         */}
-
-    @Test
-    public void test14_39()
-    {
-        // TODO
-        /*
-         * try { TestListener listener = new TestListener(); String response;
-         * int offset=0; connector.reopen();
-         *  // Gzip accepted offset=0; connector.reopen();
-         * response=connector.getResponses("GET /R1?gzip HTTP/1.1\n"+ "Host:
-         * localhost\n"+ "TE: gzip;q=0.5\n"+ "Connection: close\n"+ "\n");
-         * offset=checkContains(response,offset, "HTTP/1.1 200","TE: coding")+1;
-         * offset=checkContains(response,offset, "Transfer-Encoding: gzip","TE:
-         * coding")+1;
-         *  // Gzip not accepted offset=0; connector.reopen();
-         * response=connector.getResponses("GET /R1?gzip HTTP/1.1\n"+ "Host:
-         * localhost\n"+ "TE: deflate\n"+ "Connection: close\n"+ "\n");
-         * offset=checkContains(response,offset, "HTTP/1.1 501","TE: coding not
-         * accepted")+1;
-         *  } catch(Exception e) { e.printStackTrace(); assertTrue(false); }
-         */
+        offset=0;
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host:\n"+"Connection: close\n"+"\n");
+        offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
     }
 
     @Test
@@ -863,64 +618,8 @@ public class RFC2616Test
         }
     }
 
-    private void checkContentRange(LocalConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange, String expectedData)
-    {
-        try
-        {
-            String response;
-            int offset=0;
-
-            String byteRangeHeader="";
-            if (reqRanges!=null)
-            {
-                byteRangeHeader="Range: "+reqRanges+"\n";
-            }
-
-            response=connector.getResponses("GET /"+path+" HTTP/1.1\n"+"Host: localhost\n"+byteRangeHeader+"Connection: close\n"+"\n");
-
-            switch (expectedStatus)
-            {
-                case 200:
-                {
-                    offset=checkContains(response,offset,"HTTP/1.1 200 OK\r\n",tname+".1. proper 200 OK status code");
-                    break;
-                }
-                case 206:
-                {
-                    offset=checkContains(response,offset,"HTTP/1.1 206 Partial Content\r\n",tname+".1. proper 206 Partial Content status code");
-                    break;
-                }
-                case 416:
-                {
-                    offset=checkContains(response,offset,"HTTP/1.1 416 Requested Range Not Satisfiable\r\n",tname
-                            +".1. proper 416 Requested Range not Satisfiable status code");
-                    break;
-                }
-            }
-
-            if (expectedRange!=null)
-            {
-                String expectedContentRange="Content-Range: bytes "+expectedRange+"\r\n";
-                offset=checkContains(response,offset,expectedContentRange,tname+".2. _content range "+expectedRange);
-            }
-
-            if (expectedStatus==200||expectedStatus==206)
-            {
-                offset=checkContains(response,offset,expectedData,tname+".3. subrange data: \""+expectedData+"\"");
-            }
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            assertTrue(false);
-        }
-    }
-
     private int checkContains(String s, int offset, String c, String test)
     {
-        // System.err.println("===");
-        // System.err.println(s);
-        // System.err.println("---");
         Assert.assertThat(test,s.substring(offset),containsString(c));
         return s.indexOf(c,offset);
     }
