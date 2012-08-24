@@ -25,13 +25,13 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URISyntaxException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.util.SimpleHttpParser;
+import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
+import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
@@ -69,7 +69,7 @@ public abstract class AbstractHttpTest
         server.stop();
     }
 
-    protected SimpleHttpParser.TestHttpResponse executeRequest() throws URISyntaxException, IOException
+    protected SimpleHttpResponse executeRequest() throws URISyntaxException, IOException
     {
         Socket socket = new Socket("localhost", connector.getLocalPort());
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
@@ -81,20 +81,25 @@ public abstract class AbstractHttpTest
         writer.println("\r\n");
         writer.flush();
 
-        return httpParser.readResponse(reader);
+        SimpleHttpResponse response = httpParser.readResponse(reader);
+        if ("HTTP/1.1".equals(httpVersion) && response.getHeaders().get("content-length") == null && response
+                .getHeaders().get("transfer-encoding") == null)
+            assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
+                    "it should contain connection:close", response.getHeaders().get("connection"), is("close"));
+        return response;
     }
 
-    protected void assertResponseBody(SimpleHttpParser.TestHttpResponse response, String expectedResponseBody)
+    protected void assertResponseBody(SimpleHttpResponse response, String expectedResponseBody)
     {
         assertThat("response body is" + expectedResponseBody, response.getBody(), is(expectedResponseBody));
     }
 
-    protected void assertHeader(SimpleHttpParser.TestHttpResponse response, String headerName, String expectedValue)
+    protected void assertHeader(SimpleHttpResponse response, String headerName, String expectedValue)
     {
         assertThat(headerName + "=" + expectedValue, response.getHeaders().get(headerName), is(expectedValue));
     }
 
-    private static class TestCommitException extends IllegalStateException
+    protected static class TestCommitException extends IllegalStateException
     {
         public TestCommitException()
         {
@@ -118,4 +123,5 @@ public abstract class AbstractHttpTest
                 throw new TestCommitException();
         }
     }
+
 }
