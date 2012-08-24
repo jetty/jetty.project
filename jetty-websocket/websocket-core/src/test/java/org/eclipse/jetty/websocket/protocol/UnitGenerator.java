@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.protocol;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
@@ -63,6 +63,6 @@ public class UnitGenerator extends Generator
 
     public UnitGenerator()
     {
-        super(WebSocketPolicy.newServerPolicy(),new StandardByteBufferPool());
+        super(WebSocketPolicy.newServerPolicy(),new MappedByteBufferPool());
     }
 }

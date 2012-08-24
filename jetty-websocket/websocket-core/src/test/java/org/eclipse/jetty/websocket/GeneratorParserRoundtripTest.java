@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.masks.FixedMasker;
@@ -41,7 +41,7 @@ public class GeneratorParserRoundtripTest
     public void testParserAndGenerator() throws Exception
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        StandardByteBufferPool bufferPool = new StandardByteBufferPool();
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -79,7 +79,7 @@ public class GeneratorParserRoundtripTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         policy.setMasker(new RandomMasker());
 
-        StandardByteBufferPool bufferPool = new StandardByteBufferPool();
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();

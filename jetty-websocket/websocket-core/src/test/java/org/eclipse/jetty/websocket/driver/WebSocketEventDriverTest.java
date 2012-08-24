@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.driver;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.examples.AdapterConnectCloseSocket;
@@ -50,7 +50,7 @@ public class WebSocketEventDriverTest
         EventMethodsCache methodsCache = new EventMethodsCache();
         methodsCache.register(websocket.getClass());
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ByteBufferPool bufferPool = new StandardByteBufferPool();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
         return new WebSocketEventDriver(websocket,methodsCache,policy,bufferPool);
     }
 

@@ -43,7 +43,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -95,7 +95,7 @@ public class BlockheadServer
             this.socket = socket;
             this.incomingFrames = new IncomingFramesCapture();
             this.policy = WebSocketPolicy.newServerPolicy();
-            this.bufferPool = new StandardByteBufferPool(policy.getBufferSize());
+            this.bufferPool = new MappedByteBufferPool(policy.getBufferSize());
             this.parser = new Parser(policy);
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);

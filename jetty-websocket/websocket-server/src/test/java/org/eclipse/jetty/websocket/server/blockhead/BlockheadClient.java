@@ -49,7 +49,7 @@ import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -128,7 +128,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         this.destHttpURI = new URI(scheme,destWebsocketURI.getSchemeSpecificPart(),destWebsocketURI.getFragment());
 
         this.policy = policy;
-        this.bufferPool = new StandardByteBufferPool(policy.getBufferSize());
+        this.bufferPool = new MappedByteBufferPool(policy.getBufferSize());
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy);
         this.parseCount = new AtomicInteger(0);
