@@ -24,7 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -42,7 +42,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 {
     private static final Logger LOG = Log.getLogger(WebSocketClientFactory.class);
 
-    private final ByteBufferPool bufferPool = new StandardByteBufferPool();
+    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
     private final Executor executor;
     private final ScheduledExecutorService scheduler;
     private final EventMethodsCache methodsCache;
@@ -103,7 +103,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     /**
      * The address to bind local physical (outgoing) TCP Sockets to.
-     * 
+     *
      * @return the address to bind the socket channel to
      * @see #setBindAddress(SocketAddress)
      */

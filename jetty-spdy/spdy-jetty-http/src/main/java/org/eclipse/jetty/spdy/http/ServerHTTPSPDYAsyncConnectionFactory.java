@@ -35,15 +35,13 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.spdy.ServerSPDYAsyncConnectionFactory;
+import org.eclipse.jetty.spdy.ServerSPDYConnectionFactory;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
@@ -57,7 +55,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
+public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYConnectionFactory
 {
     private static final String CHANNEL_ATTRIBUTE = "org.eclipse.jetty.spdy.http.HTTPChannelOverSPDY";
     private static final Logger logger = Log.getLogger(ServerHTTPSPDYAsyncConnectionFactory.class);
@@ -98,8 +96,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
             logger.debug("Received {} on {}", synInfo, stream);
 
-            HTTPChannelOverSPDY channel = new HTTPChannelOverSPDY(connector.getServer(), endPoint.getConnection(),
-                    stream);
+            HTTPChannelOverSPDY channel = new HTTPChannelOverSPDY(connector, null, endPoint, stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
             Headers headers = synInfo.getHeaders();
 
@@ -153,7 +150,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
                 }
             };
             logger.debug("Queuing last={} content {}", dataInfo.isClose(), copyDataInfo);
-            channel.getEventHandler().content(copyDataInfo.asByteBuffer(true));
+            channel.content(copyDataInfo.asByteBuffer(true));
             //            dataInfos.offer(copyDataInfo); //TODO:
             // .content()
             //            if (endRequest)
@@ -189,13 +186,13 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         private boolean dispatched; // Guarded by synchronization on tasks
 
 
-        public HTTPChannelOverSPDY(Server server, Connection connection, Stream stream)
+        public HTTPChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, Stream stream)
         {
-            super(server, connection, new HttpInput());
+            super(connector, configuration, endPoint, null, new HttpInput());
             this.stream = stream;
         }
 
-        @Override
+//        @Override
         public void handle()
         {
             switch (state)
@@ -220,7 +217,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
                 }
                 case HEADERS_COMPLETE:
                 {
-                    getEventHandler().headerComplete(false, false);
+                    headerComplete();
                 }
                 case CONTENT:
                 {
@@ -232,8 +229,8 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
                 }
                 case FINAL:
                 {
-                    getEventHandler().messageComplete(0);
-                    super.handle();
+                    messageComplete(0);
+                    super.run();
                     break;
                 }
                 case ASYNC:
@@ -370,7 +367,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
             logger.debug("HTTP > {} {} {}", httpMethod, uriString, httpVersion);
             //TODO: why pass httpMethod and httpMethod.asString() ?
-            getEventHandler().startRequest(httpMethod, httpMethod.asString(), uriString, httpVersion);
+            startRequest(httpMethod, httpMethod.asString(), uriString, httpVersion);
 
             Headers.Header schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(getVersion()));
             //            if (schemeHeader != null)  //TODO: thomas
@@ -413,7 +410,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
                         String value = header.value();
                         logger.debug("HTTP > {}: {}", name, value);
                         //TODO: Is it safe to pass a null HttpHeader here?
-                        getEventHandler().parsedHeader(httpHeader, name, value);
+                        parsedHeader(httpHeader, name, value);
                         break;
                     }
                 }
@@ -434,49 +431,49 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             return new HttpConfiguration(null, false);
         }
 
-        @Override
+//        @Override
         protected int write(ByteBuffer content) throws IOException
         {
             logger.debug("write");
             return 0;
         }
 
-        @Override
+//        @Override
         protected void commitResponse(HttpGenerator.ResponseInfo info, ByteBuffer content) throws IOException
         {
             logger.debug("commitResponse");
         }
 
-        @Override
+//        @Override
         protected int getContentBufferSize()
         {
             logger.debug("getContentBufferSize");
             return 0;
         }
 
-        @Override
+//        @Override
         protected void increaseContentBufferSize(int size)
         {
             logger.debug("increaseContentBufferSize");
         }
 
-        @Override
+//        @Override
         protected void resetBuffer()
         {
             logger.debug("resetBuffer");
         }
 
-        @Override
+//        @Override
         protected void flushResponse() throws IOException
         {
             logger.debug("flushResponse");
         }
 
-        @Override
+//        @Override
         protected void completeResponse() throws IOException
         {
             logger.debug("completeResponse");
-            getEventHandler().commit();
+//            commit();
             Response response = getResponse();
             Headers headers = new Headers();
             headers.put(HTTPSPDYHeader.VERSION.name(getVersion()), HttpVersion.HTTP_1_1.asString());
@@ -572,7 +569,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             return pushHeaders;
         }
 
-        @Override
+//        @Override
         protected void completed()
         {
             logger.debug("completed");

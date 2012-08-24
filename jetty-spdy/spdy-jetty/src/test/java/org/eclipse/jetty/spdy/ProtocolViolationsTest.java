@@ -25,7 +25,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
@@ -101,7 +101,7 @@ public class ProtocolViolationsTest extends AbstractTest
         readBuffer.flip();
         int streamId = readBuffer.getInt(8);
 
-        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
         byte[] bytes = new byte[1];
         ByteBuffer writeBuffer = generator.data(streamId, bytes.length, new BytesDataInfo(bytes, true));
         channel.write(writeBuffer);
@@ -157,7 +157,7 @@ public class ProtocolViolationsTest extends AbstractTest
         readBuffer.flip();
         int streamId = readBuffer.getInt(8);
 
-        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
 
         ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
         channel.write(writeBuffer);

@@ -20,7 +20,7 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
@@ -55,7 +55,7 @@ public class HeadersGenerateParseTest
     private ByteBuffer createHeadersFrameBuffer(Headers headers)
     {
         HeadersFrame frame1 = new HeadersFrame(SPDY.V2, flags, streamId, headers);
-        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
         assertThat("Buffer is not null", buffer, notNullValue());
         return buffer;

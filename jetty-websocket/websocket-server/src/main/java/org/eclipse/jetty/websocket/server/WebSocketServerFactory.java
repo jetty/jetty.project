@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -86,7 +86,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
     public WebSocketServerFactory(WebSocketPolicy policy)
     {
-        this(policy,new StandardByteBufferPool());
+        this(policy,new MappedByteBufferPool());
     }
 
     public WebSocketServerFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)

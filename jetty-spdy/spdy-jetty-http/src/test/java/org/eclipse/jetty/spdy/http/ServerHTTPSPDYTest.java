@@ -33,7 +33,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.sun.xml.internal.ws.util.ByteArrayBuffer;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.Request;
@@ -952,7 +951,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 // We use this trick that's present in Jetty code: if we add a request attribute
                 // called "org.eclipse.jetty.server.sendContent", then it will trigger the
                 // content bypass that we want to test
-                request.setAttribute("org.eclipse.jetty.server.sendContent", new ByteArrayBuffer(data));
+                request.setAttribute("org.eclipse.jetty.server.sendContent", ByteBuffer.wrap(data));
                 handlerLatch.countDown();
             }
         }), null);

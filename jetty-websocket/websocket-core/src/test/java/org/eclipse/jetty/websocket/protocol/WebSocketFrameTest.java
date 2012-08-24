@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.protocol;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.ByteBufferAssert;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -38,7 +38,7 @@ public class WebSocketFrameTest
     public static void initGenerator()
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ByteBufferPool bufferPool = new StandardByteBufferPool();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
         strictGenerator = new Generator(policy,bufferPool);
         laxGenerator = new Generator(policy,bufferPool,false);
     }

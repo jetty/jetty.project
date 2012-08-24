@@ -39,9 +39,9 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -201,7 +201,7 @@ public class SPDYClient
     {
         private final Map<String, ConnectionFactory> factories = new ConcurrentHashMap<>();
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-        private final ByteBufferPool bufferPool = new StandardByteBufferPool();
+        private final ByteBufferPool bufferPool = new MappedByteBufferPool();
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         private final Executor threadPool;
         private final SslContextFactory sslContextFactory;

@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardSession.FrameBytes;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -82,10 +82,10 @@ public class StandardSessionTest
     @Before
     public void setUp() throws Exception
     {
-        bufferPool = new StandardByteBufferPool();
+        bufferPool = new MappedByteBufferPool();
         threadPool = Executors.newCachedThreadPool();
         scheduler = Executors.newSingleThreadScheduledExecutor();
-        generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory.StandardCompressor());
+        generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
         session = new StandardSession(SPDY.V2,bufferPool,threadPool,scheduler,controller,null,1,null,generator,new FlowControlStrategy.None());
         headers = new Headers();
     }

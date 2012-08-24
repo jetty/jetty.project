@@ -35,7 +35,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.sun.xml.internal.ws.util.ByteArrayBuffer;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.Request;
@@ -954,7 +953,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     public void testGETWithMediumContentAsBufferByPassed() throws Exception
     {
         byte[] data = new byte[2048];
-        testGETWithContentByPassed(new ByteArrayBuffer(data), data.length);
+        testGETWithContentByPassed(ByteBuffer.wrap(data), data.length);
     }
 
     private void testGETWithContentByPassed(final Object content, final int length) throws Exception
