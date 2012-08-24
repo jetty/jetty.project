@@ -634,8 +634,16 @@ public class SslConnection extends AbstractConnection
                     SSLEngineResult wrapResult = _sslEngine.wrap(appOuts, _encryptedOutput);
                     LOG.debug("{} wrap {}", SslConnection.this, wrapResult);
                     BufferUtil.flipToFlush(_encryptedOutput, pos);
-                    consumed+=wrapResult.bytesConsumed();
+                    if (wrapResult.bytesConsumed()>0)
+                    {
+                        consumed+=wrapResult.bytesConsumed();
 
+                        // clear empty buffers to prevent position creeping up the buffer
+                        for (ByteBuffer b : appOuts)
+                            if (BufferUtil.isEmpty(b))
+                                BufferUtil.clear(b);
+                    }
+                    
                     // and deal with the results returned from the sslEngineWrap
                     switch (wrapResult.getStatus())
                     {

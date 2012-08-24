@@ -169,7 +169,9 @@ public class HttpOutput extends ServletOutputStream
 
         // Check if all written or full
         if (!checkAllWritten() && BufferUtil.isFull(_aggregate))
+        {
             _channel.write(_aggregate, false);
+        }
     }
 
     @Override

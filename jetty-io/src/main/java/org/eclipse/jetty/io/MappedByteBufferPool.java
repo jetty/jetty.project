@@ -26,22 +26,23 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.BufferUtil;
 
-public class StandardByteBufferPool implements ByteBufferPool
+public class MappedByteBufferPool implements ByteBufferPool
 {
     private final ConcurrentMap<Integer, Queue<ByteBuffer>> directBuffers = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, Queue<ByteBuffer>> heapBuffers = new ConcurrentHashMap<>();
     private final int factor;
 
-    public StandardByteBufferPool()
+    public MappedByteBufferPool()
     {
         this(1024);
     }
 
-    public StandardByteBufferPool(int factor)
+    public MappedByteBufferPool(int factor)
     {
         this.factor = factor;
     }
 
+    @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
         int bucket = bucketFor(size);

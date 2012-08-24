@@ -113,12 +113,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     * Feed a full header method
     */
     @Test
-    public void testFull() throws Exception
+    public void testFullMethod() throws Exception
     {
         configureServer(new HelloWorldHandler());
 
         try (Socket client = newSocket(HOST, _connector.getLocalPort()))
         {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -132,10 +134,95 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
         }
-        catch (SocketException e)
+        finally
         {
-            // TODO looks like a close is overtaking the 413 in SSL
-            Log.getLogger(SslConnection.class).warn("Investigate this!!!", e);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+        }
+    }
+
+    /*
+    * Feed a full header method
+    */
+    @Test
+    public void testFullURI() throws Exception
+    {
+        
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
+            OutputStream os = client.getOutputStream();
+
+            byte[] buffer = new byte[64 * 1024];
+            buffer[0]='G';
+            buffer[1]='E';
+            buffer[2]='T';
+            buffer[3]=' ';
+            buffer[4]='/';
+            Arrays.fill(buffer, 5,buffer.length-1,(byte)'A');
+
+            os.write(buffer);
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 414 "));
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+        }
+    }
+    
+    /*
+    * Feed a full header method
+    */
+    @Test
+    public void testFullHeader() throws Exception
+    {
+        
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(HOST, _connector.getLocalPort()))
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect header is too large, then ISE extra data ...");
+            OutputStream os = client.getOutputStream();
+
+            byte[] buffer = new byte[64 * 1024];
+            buffer[0]='G';
+            buffer[1]='E';
+            buffer[2]='T';
+            buffer[3]=' ';
+            buffer[4]='/';
+            buffer[5]=' ';
+            buffer[6]='H';
+            buffer[7]='T';
+            buffer[8]='T';
+            buffer[9]='P';
+            buffer[10]='/';
+            buffer[11]='1';
+            buffer[12]='.';
+            buffer[13]='0';
+            buffer[14]='\n';
+            buffer[15]='H';
+            buffer[16]=':';
+            Arrays.fill(buffer,17,buffer.length-1,(byte)'A');
+
+            os.write(buffer);
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 413 "));
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
         }
     }
 
@@ -350,42 +437,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    /*
-     * After several iterations, I generated some known bad fragment points.
-     */
-    @Test
-    public void testRequest2KnownBad() throws Exception
-    {
-        configureServer(new EchoHandler());
-
-        byte[] bytes = REQUEST2.getBytes();
-        int[][] badPoints = new int[][]
-                {
-                        {70}, // beginning here, drops last line of request
-                        {71}, // no response at all
-                        {72}, // again starts drops last line of request
-                        {74}, // again, no response at all
-                };
-        for (int i = 0; i < badPoints.length; ++i)
-        {
-            try (Socket client = newSocket(HOST, _connector.getLocalPort()))
-            {
-                OutputStream os = client.getOutputStream();
-                StringBuilder message = new StringBuilder();
-
-                message.append("iteration #").append(i + 1);
-                writeFragments(bytes, badPoints[i], message, os);
-
-                // Read the response
-                String response = readResponse(client);
-
-                // Check the response
-                // TODO - change to equals when code gets fixed
-                assertNotSame("response for " + message.toString(), RESPONSE2, response);
-            }
-        }
-    }
-
     @Test
     public void testFlush() throws Exception
     {
@@ -460,14 +511,22 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             int total = 0;
             int len = 0;
+            
+            
             byte[] buf = new byte[1024 * 64];
-
+            int sleeps=0;
             while (len >= 0)
             {
-                Thread.sleep(100);
                 len = is.read(buf);
                 if (len > 0)
+                {
                     total += len;
+                    if ((total/10240)>sleeps)
+                    {
+                        sleeps++;
+                        Thread.sleep(100);
+                    }
+                }
             }
 
             assertTrue(total > (1024 * 256));
@@ -488,7 +547,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             InputStream is = client.getInputStream();
 
             os.write((
-                    "GET /data?writes=512&block=1024 HTTP/1.1\r\n" +
+                    "GET /data?writes=256&block=1024 HTTP/1.1\r\n" +
                             "host: " + HOST + ":" + _connector.getLocalPort() + "\r\n" +
                             "connection: close\r\n" +
                             "content-type: unknown\r\n" +
@@ -498,18 +557,22 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             int len = 0;
             byte[] buf = new byte[1024 * 32];
-
-            int i = 0;
+            int sleeps=0;
             while (len >= 0)
             {
-                if (i++ % 10 == 0)
-                    Thread.sleep(1000);
                 len = is.read(buf);
                 if (len > 0)
+                {
                     total += len;
+                    if ((total/10240)>sleeps)
+                    {
+                        Thread.sleep(200);
+                        sleeps++; 
+                    }
+                }
             }
 
-            assertTrue(total > (512 * 1024));
+            assertTrue(total > (256 * 1024));
             assertTrue(30000L > (System.currentTimeMillis() - start));
         }
     }
@@ -922,6 +985,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try
         {
             ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit then could not send 500....");
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
@@ -946,13 +1010,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             client.close();
             Thread.sleep(200);
 
-            // TODO this sometimes fails for SSL ???
-            if (handler._endp.isOpen())
-            {
-                System.err.println(handler._endp);
-                System.err.println(((SslConnection.DecryptedEndPoint)handler._endp).getEncryptedEndPoint());
-                System.err.println(handler._endp.getConnection());
-            }
             assertTrue(!handler._endp.isOpen());
         }
         finally

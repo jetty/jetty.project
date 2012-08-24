@@ -368,7 +368,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     public void execute(Runnable job)
     {
         if (!dispatch(job))
-            throw new RejectedExecutionException(toString());
+        {
+            LOG.warn("{} rejected {}",this,job);
+            throw new RejectedExecutionException(job.toString());
+        }
     }
 
     /**

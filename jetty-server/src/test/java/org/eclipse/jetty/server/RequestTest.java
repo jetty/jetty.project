@@ -202,6 +202,7 @@ public class RequestTest
         "Connection: close\n"+
         "\n";
 
+        LOG.info("Expecting NotUtf8Exception byte 62 in state 3...");
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
@@ -868,27 +869,32 @@ public class RequestTest
     @Test
     public void testHashDOS() throws Exception
     {
+        LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
 
-        // This file is not distributed - as it is dangerous
-        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
-        if (!evil_keys.exists())
-        {
-            LOG.info("testHashDOS skipped");
-            return;
-        }
 
-        BufferedReader in = new BufferedReader(new FileReader(evil_keys));
         StringBuilder buf = new StringBuilder(4000000);
-
-        String key=null;
         buf.append("a=b");
-        while((key=in.readLine())!=null)
+        
+        // The evil keys file is not distributed - as it is dangerous
+        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
+        if (evil_keys.exists())
         {
-            buf.append("&").append(key).append("=").append("x");
+            LOG.info("Using real evil keys!");
+            BufferedReader in = new BufferedReader(new FileReader(evil_keys));
+            String key=null;
+            while((key=in.readLine())!=null)
+                buf.append("&").append(key).append("=").append("x");
+        }
+        else
+        {
+            // we will just create a lot of keys and make sure the limit is applied
+            for (int i=0;i<2000;i++)
+                buf.append("&").append("K").append(i).append("=").append("x");
         }
         buf.append("&c=d");
+
 
         _handler._checker = new RequestTester()
         {

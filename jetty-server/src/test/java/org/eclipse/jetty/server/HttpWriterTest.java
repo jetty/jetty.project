@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -43,7 +43,7 @@ public class HttpWriterTest
         _bytes = BufferUtil.allocate(2048);
 
         final HttpConfiguration configuration = new HttpConfiguration(null, false);
-        final ByteBufferPool bufferPool = new StandardByteBufferPool();
+        final ByteBufferPool bufferPool = new MappedByteBufferPool();
         HttpChannel channel = new HttpChannel(null,null,null,null,null)
         {
             @Override

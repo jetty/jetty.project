@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 
 import org.eclipse.jetty.http.HttpGenerator.RequestInfo;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -272,6 +273,7 @@ public class HttpTester
             return new HttpGenerator.RequestInfo(_version,this,_content==null?0:_content.size(),_method,_uri);
         }
         
+        @Override
         public String toString()
         {
             return String.format("%s %s %s\n%s\n",_method,_uri,_version,super.toString());
@@ -339,6 +341,7 @@ public class HttpTester
             return new HttpGenerator.ResponseInfo(_version,this,_content==null?-1:_content.size(),_status,_reason,false);
         }
 
+        @Override
         public String toString()
         {
             return String.format("%s %s %s\n%s\n",_version,_status,_reason,super.toString());

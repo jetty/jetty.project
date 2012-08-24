@@ -860,7 +860,8 @@ public class Response implements HttpServletResponse
     @Override
     public void flushBuffer() throws IOException
     {
-        _out.flush();
+        if (!_out.isClosed())
+            _out.flush();
     }
 
     @Override

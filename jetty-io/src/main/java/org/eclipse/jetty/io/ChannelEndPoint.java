@@ -184,7 +184,14 @@ public class ChannelEndPoint extends AbstractEndPoint
             throw new EofException(e);
         }
         if (flushed>0)
+        {
             notIdle();
+            
+            // clear empty buffers to prevent position creeping up the buffer
+            for (ByteBuffer b : buffers)
+                if (BufferUtil.isEmpty(b))
+                    BufferUtil.clear(b);
+        }
         return flushed;
     }
 

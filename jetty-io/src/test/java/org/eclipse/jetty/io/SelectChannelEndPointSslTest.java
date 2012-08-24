@@ -51,7 +51,7 @@ import org.junit.Test;
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 {
     private static SslContextFactory __sslCtxFactory=new SslContextFactory();
-    private static ByteBufferPool __byteBufferPool = new StandardByteBufferPool();
+    private static ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
 
     @BeforeClass
     public static void initSslEngine() throws Exception

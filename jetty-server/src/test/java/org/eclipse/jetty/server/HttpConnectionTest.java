@@ -545,12 +545,8 @@ public class HttpConnectionTest
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
             offset = checkContains(response,offset,"HTTP/1.1 200");
-            offset = checkContains(response,offset,"*");
+            offset = checkContains(response,offset,"Allow: GET,POST,HEAD");
 
-            // to prevent the DumpHandler from picking this up and returning 200 OK
-            server.stop();
-            server.setHandler(null);
-            server.start();
             offset=0;
             response=connector.getResponses("GET * HTTP/1.1\n"+
                                            "Host: localhost\n"+
@@ -561,7 +557,7 @@ public class HttpConnectionTest
                                            "5;\015\012"+
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
-            offset = checkContains(response,offset,"HTTP/1.1 404 Not Found");
+            offset = checkContains(response,offset,"HTTP/1.1 400");
 
             offset=0;
             response=connector.getResponses("GET ** HTTP/1.1\n"+

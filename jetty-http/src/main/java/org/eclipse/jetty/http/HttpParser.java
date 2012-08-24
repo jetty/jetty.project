@@ -283,7 +283,19 @@ public class HttpParser
 
             if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
             {
-                badMessage(buffer,HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
+                if (_state==State.URI)
+                {
+                    LOG.warn("URI is too large >"+_maxHeaderBytes);
+                    badMessage(buffer,HttpStatus.REQUEST_URI_TOO_LONG_414,null);
+                }
+                else
+                {
+                    if (_requestHandler!=null)
+                        LOG.warn("request is too large >"+_maxHeaderBytes);
+                    else
+                        LOG.warn("response is too large >"+_maxHeaderBytes);
+                    badMessage(buffer,HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
+                }
                 return true;
             }
 
@@ -512,6 +524,7 @@ public class HttpParser
             byte ch=buffer.get();
             if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
             {
+                LOG.warn("Header is too large >"+_maxHeaderBytes);
                 badMessage(buffer,HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,null);
                 return true;
             }
@@ -887,7 +900,7 @@ public class HttpParser
      * Parse until next Event.
      * @return True if an {@link RequestHandler} method was called and it returned true;
      */
-    public boolean parseNext(ByteBuffer buffer)
+    public boolean parseNext(ByteBuffer buffer) 
     {
         try
         {
@@ -917,17 +930,16 @@ public class HttpParser
                     return false;
 
                 case CLOSED:
-                    int count=0;
-                    while (BufferUtil.hasContent(buffer))
+                    if (BufferUtil.hasContent(buffer))
                     {
-                        byte b=buffer.get();
-                        if (!Character.isWhitespace((char)b) || count++>4)
+                        _headerBytes+=buffer.remaining();
+                        if (_headerBytes>_maxHeaderBytes)
                         {
-                            buffer.position(buffer.position()-1);
                             String chars = BufferUtil.toDetailString(buffer);
                             BufferUtil.clear(buffer);
-                            throw new EofException(this+" Extra data after oshut: "+chars);
+                            throw new IllegalStateException(this+" Extra data after oshut: "+chars);
                         }
+                        BufferUtil.clear(buffer);
                     }
                     return false;
             }
@@ -1103,18 +1115,14 @@ public class HttpParser
 
             return false;
         }
-        catch(EofException e)
-        {
-            LOG.debug(e);
-            BufferUtil.clear(buffer);
-            return false;
-        }
         catch(Exception e)
         {
             BufferUtil.clear(buffer);
             if (isClosed())
             {
                 LOG.debug(e);
+                if (e instanceof IllegalStateException)
+                    throw (IllegalStateException)e;
                 throw new IllegalStateException(e);
             }
 
@@ -1129,7 +1137,7 @@ public class HttpParser
     private void badMessage(ByteBuffer buffer, int status, String reason)
     {
         BufferUtil.clear(buffer);
-        _state=State.END;
+        _state=State.CLOSED;
         _handler.badMessage(status, reason);
     }
 

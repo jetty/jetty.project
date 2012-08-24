@@ -325,7 +325,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, Response.SC_INTERNAL_SERVER_ERROR, null, _request.isHead());
                 boolean committed = commitResponse(info, null, true);
                 if (!committed)
-                    LOG.warn("Could not send response error 500, response is already committed");
+                    LOG.warn("Could not send response error 500: "+x);
             }
             else
             {
@@ -339,7 +339,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 }
                 else
                 {
-                    LOG.warn("Could not send response error 500, response is already committed");
+                    LOG.warn("Could not send response error 500: "+x);
                 }
             }
         }

@@ -157,7 +157,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         try
         {
             while (true)
-            {
+            {                
                 // Can the parser progress (even with an empty buffer)
                 boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
 
@@ -229,11 +229,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                     // return if the connection has been changed
                     if (getEndPoint().getConnection()!=this)
+                    {
+                        releaseRequestBuffer();
                         return;
-                }
-                else
-                {
-                    releaseRequestBuffer();
+                    }
                 }
             }
         }
