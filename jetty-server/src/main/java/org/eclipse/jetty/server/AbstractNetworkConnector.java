@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -101,6 +102,14 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     {
         // Interrupting is often sufficient to close the channel
         interruptAcceptors();
+    }
+    
+
+    @Override
+    public <C> Future<C> shutdown(C c)
+    {
+        close();
+        return super.shutdown(c);
     }
 
     @Override

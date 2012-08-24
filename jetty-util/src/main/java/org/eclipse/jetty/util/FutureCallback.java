@@ -28,7 +28,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 
-//TODO: Simplify, get rid of DOING. Probably replace states with AtomicBoolean
 public class FutureCallback<C> implements Future<C>,Callback<C>
 {
     private enum State {NOT_DONE,DOING,DONE};
@@ -38,6 +37,25 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
     private C _context;
     private boolean _completed;
     
+    public FutureCallback()
+    {}
+
+    public FutureCallback(C ctx)
+    {
+        _state.set(State.DONE);
+        _context=ctx;
+        _completed=true;
+        _done.countDown();
+    }
+
+    public FutureCallback(C ctx, Throwable failed)
+    {
+        _state.set(State.DONE);
+        _context=ctx;
+        _cause=failed;
+        _done.countDown();
+    }
+
     @Override
     public void completed(C context)
     {
@@ -129,6 +147,7 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return String.format("FutureCallback@%x{%s,%b,%s}",hashCode(),_state,_completed,_context);
