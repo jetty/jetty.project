@@ -146,7 +146,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFullURI() throws Exception
     {
-        
         configureServer(new HelloWorldHandler());
 
         try (Socket client = newSocket(HOST, _connector.getLocalPort()))
