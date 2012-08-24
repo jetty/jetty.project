@@ -505,7 +505,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     {
                         // If no more input
                         if (getEndPoint().isInputShutdown())
+                        {
+                            _parser.inputShutdown();
                             return;
+                        }
                         
                         // Wait until we can read
                         FutureCallback<Void> block=new FutureCallback<>();

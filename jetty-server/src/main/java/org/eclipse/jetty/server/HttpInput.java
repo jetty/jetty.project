@@ -242,7 +242,6 @@ public class HttpInput extends ServletInputStream
                 
                 try
                 {
-                    System.err.println("consume block");
                     blockForContent();
                 }
                 catch(IOException e)

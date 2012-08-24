@@ -923,9 +923,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
 
-        System.err.println("--");
         client.close();
-        System.err.println("==");
     }
 
     @Test
