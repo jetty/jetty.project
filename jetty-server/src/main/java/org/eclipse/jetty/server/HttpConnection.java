@@ -503,6 +503,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // Do we have content ready to parse?
                     if (BufferUtil.isEmpty(_requestBuffer))
                     {
+                        // If no more input
+                        if (getEndPoint().isInputShutdown())
+                            return;
+                        
                         // Wait until we can read
                         FutureCallback<Void> block=new FutureCallback<>();
                         getEndPoint().fillInterested(null,block);
@@ -524,9 +528,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }  
                 }
             }
-            catch (InterruptedException x)
+            catch (final InterruptedException x)
             {
-                throw new InterruptedIOException();
+                throw new InterruptedIOException(getEndPoint().toString()){{initCause(x);}};
             }
             catch (ExecutionException e)
             {

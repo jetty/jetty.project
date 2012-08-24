@@ -218,7 +218,6 @@ public class SslConnection extends AbstractConnection
         private boolean _flushRequiresFillToProgress;
         private boolean _cannotAcceptMoreAppDataToFlush;
         private boolean _underFlown;
-        private boolean _ishut = false;
 
         // TODO: use ExecutorCallback ?
 //        private final Callback<Void> _writeCallback = new ExecutorCallback<Void>(getExecutor())
@@ -777,7 +776,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isInputShutdown()
         {
-            return _ishut;
+            return _sslEngine.isInboundDone();
         }
         
         @Override

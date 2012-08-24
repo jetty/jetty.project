@@ -226,7 +226,7 @@ public class HttpInput extends ServletInputStream
     {
         synchronized (lock())
         {
-            while(!_inputEOF)
+            while(!_inputEOF&&!_earlyEOF)
             {
                 ByteBuffer content=_inputQ.peekUnsafe();
                 while(content!=null)
@@ -242,10 +242,12 @@ public class HttpInput extends ServletInputStream
                 
                 try
                 {
+                    System.err.println("consume block");
                     blockForContent();
                 }
                 catch(IOException e)
                 {
+                    e.printStackTrace();
                     throw new RuntimeIOException(e);
                 }
             }

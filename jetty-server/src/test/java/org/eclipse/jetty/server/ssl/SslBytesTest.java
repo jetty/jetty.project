@@ -124,6 +124,8 @@ public abstract class SslBytesTest
 
         public void stop() throws Exception
         {
+            server.close();
+            client.close();
             serverSocket.close();
         }
 
