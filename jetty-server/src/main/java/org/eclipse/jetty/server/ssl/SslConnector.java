@@ -1,21 +1,26 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.ssl;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import java.io.File;
 import java.security.SecureRandom;
 import java.security.Security;
-
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -26,10 +31,10 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */
 /** The interface for SSL connectors and their configuration methods.
- * 
+ *
  */
 @Deprecated
-interface SslConnector 
+interface SslConnector
 {
     @Deprecated
     public static final String DEFAULT_KEYSTORE_ALGORITHM=(Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm"));
@@ -39,25 +44,25 @@ interface SslConnector
     /** Default value for the keystore location path. @deprecated */
     @Deprecated
     public static final String DEFAULT_KEYSTORE = System.getProperty("user.home") + File.separator + ".keystore";
-    
+
     /** String name of key password property. @deprecated */
     @Deprecated
     public static final String KEYPASSWORD_PROPERTY = "org.eclipse.jetty.ssl.keypassword";
-    
+
     /** String name of keystore password property. @deprecated */
     @Deprecated
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /**
      * @return the instance of SslContextFactory associated with the connector
      */
     public SslContextFactory getSslContextFactory();
-        
+
     /* ------------------------------------------------------------ */
     /**
-     * @return The array of Ciphersuite names to exclude from 
+     * @return The array of Ciphersuite names to exclude from
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
      * @deprecated
      */
@@ -66,7 +71,7 @@ interface SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param cipherSuites The array of Ciphersuite names to exclude from 
+     * @param cipherSuites The array of Ciphersuite names to exclude from
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
      * @deprecated
      */
@@ -84,7 +89,7 @@ interface SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param cipherSuites The array of Ciphersuite names to include in 
+     * @param cipherSuites The array of Ciphersuite names to include in
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
      * @deprecated
      */
@@ -109,7 +114,7 @@ interface SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param password The password (if any) for the specific key within 
+     * @param password The password (if any) for the specific key within
      * the key store
      * @deprecated
      */
@@ -202,7 +207,7 @@ interface SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The SSL provider name, which if set is passed to 
+     * @return The SSL provider name, which if set is passed to
      * {@link SSLContext#getInstance(String, String)}
      * @deprecated
      */
@@ -211,7 +216,7 @@ interface SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The algorithm name, which if set is passed to 
+     * @return The algorithm name, which if set is passed to
      * {@link SecureRandom#getInstance(String)} to obtain the {@link SecureRandom}
      * instance passed to {@link SSLContext#init(javax.net.ssl.KeyManager[], javax.net.ssl.TrustManager[], SecureRandom)}
      * @deprecated
@@ -253,7 +258,7 @@ interface SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param provider The SSL provider name, which if set is passed to 
+     * @param provider The SSL provider name, which if set is passed to
      * {@link SSLContext#getInstance(String, String)}
      * @deprecated
      */
@@ -262,7 +267,7 @@ interface SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param algorithm The algorithm name, which if set is passed to 
+     * @param algorithm The algorithm name, which if set is passed to
      * {@link SecureRandom#getInstance(String)} to obtain the {@link SecureRandom}
      * instance passed to {@link SSLContext#init(javax.net.ssl.KeyManager[], javax.net.ssl.TrustManager[], SecureRandom)}
      * @deprecated
@@ -272,7 +277,7 @@ interface SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param algorithm The algorithm name (default "SunX509") used by 
+     * @param algorithm The algorithm name (default "SunX509") used by
      * the {@link KeyManagerFactory}
      * @deprecated
      */
@@ -310,7 +315,7 @@ interface SslConnector
      */
     @Deprecated
     public abstract void setSslContext(SSLContext sslContext);
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return The SSLContext
@@ -318,7 +323,7 @@ interface SslConnector
      */
     @Deprecated
     public abstract SSLContext getSslContext();
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -332,7 +337,7 @@ interface SslConnector
     /**
      * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
      * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
-     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * does not have CVE-2009-3555 fixed, then re-negotiation should
      * not be allowed.
      * @param allowRenegotiate true if re-negotiation is allowed (default false)
      * @deprecated

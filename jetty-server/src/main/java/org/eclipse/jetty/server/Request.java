@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -21,7 +26,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -33,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -95,7 +98,7 @@ import org.eclipse.jetty.util.log.Logger;
  * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPath(String)} called as a result.</li>
  * </ul>
  *
- * A request instance is created for each {@link AbstractHttpConnection} accepted by the server and recycled for each HTTP request received via that connection.
+ * A request instance is created for each connection accepted by the server and recycled for each HTTP request received via that connection.
  * An effort is made to avoid reparsing headers and cookies that are likely to be the same for requests from the same connection.
  *
  * <p>
@@ -109,16 +112,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
-    private static final Logger LOG = Log.getLogger(Request.class);
 
+    private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
     private final HttpChannel _channel;
-    private HttpFields _fields;
-    private final HttpChannelState _state;
-
+    private final HttpFields _fields=new HttpFields();
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
+    private final HttpInput _input;
 
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
@@ -157,18 +159,26 @@ public class Request implements HttpServletRequest
     private SessionManager _sessionManager;
     private long _timeStamp;
     private long _dispatchTime;
-
     private HttpURI _uri;
-
     private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
 
-
     /* ------------------------------------------------------------ */
-    public Request(HttpChannel channel)
+    public Request(HttpChannel channel, HttpInput input)
     {
         _channel = channel;
-        _state=channel.getState();
-        _fields=_channel.getRequestFields();
+        _input = input;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpFields getHttpFields()
+    {
+        return _fields;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpInput getHttpInput()
+    {
+        return _input;
     }
 
     /* ------------------------------------------------------------ */
@@ -295,15 +305,16 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext getAsyncContext()
     {
-        if (_state.isInitial() && !_state.isAsyncStarted())
-            throw new IllegalStateException(_state.getStatusString());
-        return _state;
+        HttpChannelState continuation = getAsyncContinuation();
+        if (continuation.isInitial() && !continuation.isAsyncStarted())
+            throw new IllegalStateException(continuation.getStatusString());
+        return continuation;
     }
 
     /* ------------------------------------------------------------ */
     public HttpChannelState getAsyncContinuation()
     {
-        return _state;
+        return _channel.getState();
     }
 
     /* ------------------------------------------------------------ */
@@ -315,7 +326,7 @@ public class Request implements HttpServletRequest
     {
         Object attr = (_attributes == null)?null:_attributes.getAttribute(name);
         if (attr == null && Continuation.ATTRIBUTE.equals(name))
-            return _state;
+            return getAsyncContinuation();
         return attr;
     }
 
@@ -525,7 +536,11 @@ public class Request implements HttpServletRequest
         if (_inputState != __NONE && _inputState != _STREAM)
             throw new IllegalStateException("READER");
         _inputState = _STREAM;
-        return _channel.getInputStream();
+
+        if (_channel.isExpecting100Continue())
+            _channel.continue100(_input.available());
+
+        return _input;
     }
 
     /* ------------------------------------------------------------ */
@@ -596,22 +611,21 @@ public class Request implements HttpServletRequest
         if (acceptLanguage.size() == 0)
             return Collections.enumeration(__defaultLocale);
 
-        List<Locale> langs = new ArrayList<Locale>();
+        List<Locale> langs = new ArrayList<>();
         int size = acceptLanguage.size();
 
         // convert to locals
-        for (int i = 0; i < size; i++)
+        for (String language : acceptLanguage)
         {
-            String language = acceptLanguage.get(i);
-            language = HttpFields.valueParameters(language,null);
+            language = HttpFields.valueParameters(language, null);
             String country = "";
             int dash = language.indexOf('-');
             if (dash > -1)
             {
                 country = language.substring(dash + 1).trim();
-                language = language.substring(0,dash).trim();
+                language = language.substring(0, dash).trim();
             }
-            langs.add(new Locale(language,country));
+            langs.add(new Locale(language, country));
         }
 
         if (langs.size() == 0)
@@ -672,7 +686,7 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted)
             extractParameters();
-        return (String)_parameters.getValue(name,0);
+        return _parameters.getValue(name,0);
     }
 
     /* ------------------------------------------------------------ */
@@ -942,23 +956,20 @@ public class Request implements HttpServletRequest
     public StringBuffer getRequestURL()
     {
         final StringBuffer url = new StringBuffer(48);
-        synchronized (url)
+        String scheme = getScheme();
+        int port = getServerPort();
+
+        url.append(scheme);
+        url.append("://");
+        url.append(getServerName());
+        if (_port > 0 && ((scheme.equalsIgnoreCase(URIUtil.HTTP) && port != 80) || (scheme.equalsIgnoreCase(URIUtil.HTTPS) && port != 443)))
         {
-            String scheme = getScheme();
-            int port = getServerPort();
-
-            url.append(scheme);
-            url.append("://");
-            url.append(getServerName());
-            if (_port > 0 && ((scheme.equalsIgnoreCase(URIUtil.HTTP) && port != 80) || (scheme.equalsIgnoreCase(URIUtil.HTTPS) && port != 443)))
-            {
-                url.append(':');
-                url.append(_port);
-            }
-
-            url.append(getRequestURI());
-            return url;
+            url.append(':');
+            url.append(_port);
         }
+
+        url.append(getRequestURI());
+        return url;
     }
 
     /* ------------------------------------------------------------ */
@@ -1046,8 +1057,7 @@ public class Request implements HttpServletRequest
                         }
                         catch (NumberFormatException e)
                         {
-                            if (_channel != null)
-                                _channel.commitError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null);
+                            LOG.warn(e);
                         }
                         return _serverName;
                 }
@@ -1286,7 +1296,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isAsyncStarted()
     {
-       return _state.isAsyncStarted();
+       return getAsyncContinuation().isAsyncStarted();
     }
 
 
@@ -1393,7 +1403,7 @@ public class Request implements HttpServletRequest
         }
 
         setAuthentication(Authentication.NOT_CHECKED);
-        _state.recycle();
+        getAsyncContinuation().recycle();
         _asyncSupported = true;
         _handled = false;
         if (_context != null)
@@ -1434,6 +1444,8 @@ public class Request implements HttpServletRequest
         _savedNewSessions=null;
         _multiPartInputStream = null;
         _remote=null;
+        _fields.clear();
+        _input.recycle();
     }
 
     /* ------------------------------------------------------------ */
@@ -1466,7 +1478,7 @@ public class Request implements HttpServletRequest
     public void saveNewSession(Object key, HttpSession session)
     {
         if (_savedNewSessions == null)
-            _savedNewSessions = new HashMap<Object, HttpSession>();
+            _savedNewSessions = new HashMap<>();
         _savedNewSessions.put(key,session);
     }
 
@@ -1498,7 +1510,7 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    ((HttpChannel.Output)getServletResponse().getOutputStream()).sendContent(value);
+                    ((HttpOutput)getServletResponse().getOutputStream()).sendContent(value);
                 }
                 catch (IOException e)
                 {
@@ -1509,10 +1521,8 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    final ByteBuffer byteBuffer = (ByteBuffer)value;
                     throw new IOException("not implemented");
                     //((HttpChannel.Output)getServletResponse().getOutputStream()).sendResponse(byteBuffer);
-
                 }
                 catch (IOException e)
                 {
@@ -1872,8 +1882,9 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _state.suspend();
-        return _state;
+        HttpChannelState continuation = getAsyncContinuation();
+        continuation.suspend();
+        return continuation;
     }
 
     /* ------------------------------------------------------------ */
@@ -1882,8 +1893,9 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _state.suspend(_context,servletRequest,servletResponse);
-        return _state;
+        HttpChannelState continuation = getAsyncContinuation();
+        continuation.suspend(_context, servletRequest, servletResponse);
+        return continuation;
     }
 
     /* ------------------------------------------------------------ */

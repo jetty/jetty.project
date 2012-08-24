@@ -1,27 +1,31 @@
-// ========================================================================
-// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
-
 import javax.servlet.ServletInputStream;
 
+import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayQueue;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -29,22 +33,20 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * This class provides an HttpInput stream for the {@link HttpChannel}.
  * The input stream holds a queue of {@link ByteBuffer}s passed to it by
- * calls to {@link #content(ByteBuffer)}.  This class does not copy the buffers, 
- * but simply holds references to them, thus the caller must organise for those 
+ * calls to {@link #content(ByteBuffer)}.  This class does not copy the buffers,
+ * but simply holds references to them, thus the caller must organise for those
  * buffers to valid while held by this class.  To assist the caller, there are
  * extensible methods {@link #onContentQueued(ByteBuffer)}, {@link #onContentConsumed(ByteBuffer)}
- * and {@link #onAllContentConsumed()} that can be implemented so that the 
+ * and {@link #onAllContentConsumed()} that can be implemented so that the
  * creator of HttpInput will know when buffers are queued and dequeued.
  */
 public class HttpInput extends ServletInputStream
 {
-    private static final Logger LOG = Log.getLogger(HttpInput.class);
-    
-    protected final byte[] _oneByte=new byte[1];
-    protected final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
-    private ByteBuffer _content;
+    private final byte[] _oneByte=new byte[1];
+    private final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
+    private boolean _earlyEOF;
     private boolean _inputEOF;
-    
+
     /* ------------------------------------------------------------ */
     public HttpInput()
     {
@@ -55,24 +57,30 @@ public class HttpInput extends ServletInputStream
     {
         return _inputQ.lock();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void recycle()
     {
         synchronized (lock())
         {
-            _inputEOF=false;
+            ByteBuffer content=_inputQ.peekUnsafe();;
+            while(content!=null)
+            {
+                content.clear();
+                _inputQ.pollUnsafe();
+                onContentConsumed(content);
+                
+                content=_inputQ.peekUnsafe();
+                if (content==null)
+                    onAllContentConsumed();
+            }
             
-            if (_content!=null)
-                onContentConsumed(_content);
-            while ((_content=_inputQ.poll())!=null)
-                onContentConsumed(_content);
-            if (_content!=null)
-                onAllContentConsumed();
-            _content=null;
+            _inputEOF=false;
+            _earlyEOF=false;
+
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see java.io.InputStream#read()
@@ -99,7 +107,7 @@ public class HttpInput extends ServletInputStream
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see java.io.InputStream#read(byte[], int, int)
      */
     @Override
@@ -107,40 +115,46 @@ public class HttpInput extends ServletInputStream
     {
         synchronized (lock())
         {
-            ByteBuffer content=null;            
+            ByteBuffer content=null;
             while(content==null)
             {
                 content=_inputQ.peekUnsafe();
                 while (content!=null && !content.hasRemaining())
                 {
                     _inputQ.pollUnsafe();
+                    onContentConsumed(content);
                     content=_inputQ.peekUnsafe();
                 }
 
                 if (content==null)
                 {
+                    onAllContentConsumed();
+                    
+                    if (_earlyEOF)
+                        throw new EofException();
+                    
                     // check for EOF
                     if (_inputEOF)
                     {
                         onEof();
                         return -1;
                     }
-                    
+
                     blockForContent();
                 }
             }
-            
+
             int l=Math.min(len,content.remaining());
             content.get(b,off,l);
             return l;
         }
     }
-    
+
     protected void blockForContent() throws IOException
     {
         synchronized (lock())
         {
-            while(_inputQ.isEmpty())
+            while (_inputQ.isEmpty())
             {
                 try
                 {
@@ -153,59 +167,88 @@ public class HttpInput extends ServletInputStream
             }
         }
     }
-    
+
     protected void onContentQueued(ByteBuffer ref)
     {
         lock().notify();
     }
-    
+
     protected void onContentConsumed(ByteBuffer ref)
-    {    
+    {
     }
-    
+
     protected void onAllContentConsumed()
-    {   
+    {
     }
-    
+
     protected void onEof()
-    {   
+    {
     }
-    
+
     public boolean content(ByteBuffer ref)
     {
         synchronized (lock())
         {
+            // The buffer is not copied here.  This relies on the caller not recycling the buffer
+            // until the it is consumed.  The onAllContentConsumed() callback is the signal to the 
+            // caller that the buffers can be recycled.
             _inputQ.add(ref);
             onContentQueued(ref);
-        }              
+        }
         return true;
     }
 
-    public void shutdownInput()
+    public void earlyEOF()
     {
         synchronized (lock())
-        {             
+        {
+            _earlyEOF=true;
+        }
+    }
+
+    public void shutdown()
+    {
+        synchronized (lock())
+        {
             _inputEOF=true;
         }
     }
-    
+
+    public boolean isShutdown()
+    {
+        synchronized (lock())
+        {
+            return _inputEOF;
+        }
+    }
+
     public void consumeAll()
     {
-        while (true)
+        synchronized (lock())
         {
-            synchronized (lock())
+            while(!_inputEOF&&!_earlyEOF)
             {
-                _inputQ.clear();
-            }
-            if (_inputEOF)
-                return;
-            try
-            {
-                blockForContent();
-            }
-            catch(IOException e)
-            {
-                LOG.warn(e);
+                ByteBuffer content=_inputQ.peekUnsafe();
+                while(content!=null)
+                {
+                    content.clear();
+                    _inputQ.pollUnsafe();
+                    onContentConsumed(content);
+
+                    content=_inputQ.peekUnsafe();
+                    if (content==null)
+                        onAllContentConsumed();
+                }
+                
+                try
+                {
+                    blockForContent();
+                }
+                catch(IOException e)
+                {
+                    e.printStackTrace();
+                    throw new RuntimeIOException(e);
+                }
             }
         }
     }

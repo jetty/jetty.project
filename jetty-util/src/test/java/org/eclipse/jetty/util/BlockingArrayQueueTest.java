@@ -1,20 +1,22 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -27,15 +29,18 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 @RunWith(AdvancedRunner.class)
 public class BlockingArrayQueueTest
 {
-    
+
     @Test
     public void testWrap() throws Exception
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3);
-        
+
         assertEquals(0,queue.size());
 
         for (int i=0;i<3;i++)
@@ -78,10 +83,10 @@ public class BlockingArrayQueueTest
     public void testRemove() throws Exception
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3,3);
-       
+
         queue.add("0");
         queue.add("x");
-        
+
         for (int i=1;i<100;i++)
         {
             queue.add(""+i);
@@ -89,7 +94,7 @@ public class BlockingArrayQueueTest
             queue.remove(queue.size()-3);
             queue.set(queue.size()-3,queue.get(queue.size()-3)+"!");
         }
-        
+
         for (int i=0;i<99;i++)
             assertEquals(i+"!",queue.get(i));
     }
@@ -99,7 +104,7 @@ public class BlockingArrayQueueTest
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3,2);
         assertEquals(3,queue.getCapacity());
-        
+
         queue.add("a");
         queue.add("a");
         assertEquals(2,queue.size());
@@ -112,7 +117,7 @@ public class BlockingArrayQueueTest
         int s=5;
         int c=5;
         queue.add("a");
-        
+
         for (int t=0;t<100;t++)
         {
             assertEquals(s,queue.size());
@@ -139,7 +144,7 @@ public class BlockingArrayQueueTest
             c+=2;
         }
     }
-    
+
     @Test
     @Slow
     public void testTake() throws Exception
@@ -147,7 +152,7 @@ public class BlockingArrayQueueTest
         final String[] data=new String[4];
 
         final BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>();
-        
+
         Thread thread = new Thread()
         {
             @Override
@@ -168,9 +173,9 @@ public class BlockingArrayQueueTest
                 }
             }
         };
-        
+
         thread.start();
-        
+
         Thread.sleep(1000);
 
         queue.offer("zero");
@@ -182,11 +187,11 @@ public class BlockingArrayQueueTest
         assertEquals("one",data[1]);
         assertEquals("two",data[2]);
         assertEquals(null,data[3]);
-        
+
     }
-    
+
     volatile boolean _running;
-    
+
     @Test
     @Slow
     public void testConcurrentAccess() throws Exception
@@ -195,13 +200,13 @@ public class BlockingArrayQueueTest
         final int LOOPS=1000;
 
         final BlockingArrayQueue<Integer> queue = new BlockingArrayQueue<Integer>(1+THREADS*LOOPS);
-        
+
         final ConcurrentLinkedQueue<Integer> produced=new ConcurrentLinkedQueue<Integer>();
         final ConcurrentLinkedQueue<Integer> consumed=new ConcurrentLinkedQueue<Integer>();
-        
+
 
         _running=true;
-        
+
         // start consumers
         final CyclicBarrier barrier0 = new CyclicBarrier(THREADS+1);
         for (int i=0;i<THREADS;i++)
@@ -213,7 +218,7 @@ public class BlockingArrayQueueTest
                 public void run()
                 {
                     final Random random = new Random();
-                    
+
                     setPriority(getPriority()-1);
                     try
                     {
@@ -300,7 +305,7 @@ public class BlockingArrayQueueTest
                 }
             }.start();
         }
-        
+
         barrier1.await();
         int size=queue.size();
         int last=size-1;
@@ -309,13 +314,13 @@ public class BlockingArrayQueueTest
             last=size;
             Thread.sleep(500);
             size=queue.size();
-        }   
+        }
         _running=false;
         barrier0.await();
-        
+
         HashSet<Integer> prodSet = new HashSet<Integer>(produced);
         HashSet<Integer> consSet = new HashSet<Integer>(consumed);
-        
+
         assertEquals(prodSet,consSet);
     }
 }

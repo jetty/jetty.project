@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.webapp;
 
@@ -25,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -38,11 +42,11 @@ import org.eclipse.jetty.xml.XmlParser;
 
 /* ------------------------------------------------------------ */
 /** TagLibConfiguration.
- * 
+ *
  * The class searches for TLD descriptors found in web.xml, in WEB-INF/*.tld files of the web app
  * or *.tld files within jars found in WEB-INF/lib of the webapp.   Any listeners defined in these
  * tld's are added to the context.
- * 
+ *
  * &lt;bile&gt;This is total rubbish special case for JSPs! If there was a general use-case for web app
  * frameworks to register listeners directly, then a generic mechanism could have been added to the servlet
  * spec.  Instead some special purpose JSP support is required that breaks all sorts of encapsulation rules as
@@ -50,8 +54,8 @@ import org.eclipse.jetty.xml.XmlParser;
  * It only appears to be used by JSF, which is being developed by the same developer who implemented this
  * feature in the first place!
  * &lt;/bile&gt;
- * 
- * 
+ *
+ *
  * Note- this has been superceded by the new TldScanner in jasper which uses ServletContainerInitializer to
  * find all the listeners in tag libs and register them.
  */
@@ -60,18 +64,18 @@ public class TagLibConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(TagLibConfiguration.class);
 
     public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
-    
-  
+
+
     /**
      * TagLibListener
      *
      * A listener that does the job of finding .tld files that contain
      * (other) listeners that need to be called by the servlet container.
-     * 
+     *
      * This implementation is necessitated by the fact that it is only
      * after all the Configuration classes have run that we will
      * parse web.xml/fragments etc and thus find tlds mentioned therein.
-     * 
+     *
      * Note: TagLibConfiguration is not used in jetty-8 as jasper (JSP engine)
      * uses the new TldScanner class - a ServletContainerInitializer from
      * Servlet Spec 3 - to find all listeners in taglibs and register them
@@ -79,8 +83,8 @@ public class TagLibConfiguration extends AbstractConfiguration
      */
     public  class TagLibListener implements ServletContextListener {
         private List<EventListener> _tldListeners;
-        private WebAppContext _context;       
-        
+        private WebAppContext _context;
+
         public TagLibListener (WebAppContext context) {
             _context = context;
         }
@@ -89,7 +93,7 @@ public class TagLibConfiguration extends AbstractConfiguration
         {
             if (_tldListeners == null)
                 return;
-            
+
             for (int i=_tldListeners.size()-1; i>=0; i--) {
                 EventListener l = _tldListeners.get(i);
                 if (l instanceof ServletContextListener) {
@@ -100,18 +104,18 @@ public class TagLibConfiguration extends AbstractConfiguration
 
         public void contextInitialized(ServletContextEvent sce)
         {
-            try 
+            try
             {
-                //For jasper 2.1: 
+                //For jasper 2.1:
                 //Get the system classpath tlds and tell jasper about them, if jasper is on the classpath
                 try
                 {
                     Class<?> clazz = getClass().getClassLoader().loadClass("org.apache.jasper.compiler.TldLocationsCache");
                     assert clazz!=null;
                     Collection<Resource> tld_resources = (Collection<Resource>)_context.getAttribute(TLD_RESOURCES);
-                   
+
                     Map<URI, List<String>> tldMap = new HashMap<URI, List<String>>();
-                    
+
                     if (tld_resources != null)
                     {
                         //get the jar file names of the files
@@ -131,16 +135,16 @@ public class TagLibConfiguration extends AbstractConfiguration
                 {
                     LOG.ignore(e);
                 }
-               
+
                 //find the tld files and parse them to get out their
                 //listeners
                 Set<Resource> tlds = findTldResources();
                 List<TldDescriptor> descriptors = parseTlds(tlds);
                 processTlds(descriptors);
-                
+
                 if (_tldListeners == null)
                     return;
-                
+
                 //call the listeners that are ServletContextListeners, put the
                 //rest into the context's list of listeners to call at the appropriate
                 //moment
@@ -151,21 +155,21 @@ public class TagLibConfiguration extends AbstractConfiguration
                         _context.addEventListener(l);
                     }
                 }
-                
-            } 
+
+            }
             catch (Exception e) {
                 LOG.warn(e);
             }
         }
 
 
-        
-        
+
+
         private Resource extractJarResource (Resource r)
         {
             if (r == null)
                 return null;
-            
+
             try
             {
                 String url = r.getURI().toURL().toString();
@@ -182,24 +186,24 @@ public class TagLibConfiguration extends AbstractConfiguration
                 return null;
             }
         }
-    
+
         /**
          * Find all the locations that can harbour tld files that may contain
          * a listener which the web container is supposed to instantiate and
          * call.
-         * 
+         *
          * @return
          * @throws IOException
          */
         private Set<Resource> findTldResources () throws IOException {
-            
+
             Set<Resource> tlds = new HashSet<Resource>();
-            
+
             // Find tld's from web.xml
             // When web.xml was processed, it should have created aliases for all TLDs.  So search resources aliases
             // for aliases ending in tld
-            if (_context.getResourceAliases()!=null && 
-                    _context.getBaseResource()!=null && 
+            if (_context.getResourceAliases()!=null &&
+                    _context.getBaseResource()!=null &&
                     _context.getBaseResource().exists())
             {
                 Iterator<String> iter=_context.getResourceAliases().values().iterator();
@@ -215,7 +219,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                     }
                 }
             }
-            
+
             // Look for any tlds in WEB-INF directly.
             Resource web_inf = _context.getWebInf();
             if (web_inf!=null)
@@ -230,7 +234,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                     }
                 }
             }
-            
+
             //Look for tlds in common location of WEB-INF/tlds
             if (web_inf != null) {
                 Resource web_inf_tlds = _context.getWebInf().addPath("/tlds/");
@@ -244,7 +248,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                             tlds.add(l);
                         }
                     }
-                } 
+                }
             }
 
             // Add in tlds found in META-INF of jars. The jars that will be scanned are controlled by
@@ -254,19 +258,19 @@ public class TagLibConfiguration extends AbstractConfiguration
             Collection<Resource> tld_resources=(Collection<Resource>)_context.getAttribute(TLD_RESOURCES);
             if (tld_resources!=null)
                 tlds.addAll(tld_resources);
-            
+
             return tlds;
         }
-        
-        
+
+
         /**
          * Parse xml into in-memory tree
          * @param tlds
          * @return
          */
-        private List<TldDescriptor> parseTlds (Set<Resource> tlds) {         
+        private List<TldDescriptor> parseTlds (Set<Resource> tlds) {
             List<TldDescriptor> descriptors = new ArrayList<TldDescriptor>();
-            
+
             Resource tld = null;
             Iterator<Resource> iter = tlds.iterator();
             while (iter.hasNext())
@@ -275,7 +279,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                 {
                     tld = iter.next();
                     if (LOG.isDebugEnabled()) LOG.debug("TLD="+tld);
-                   
+
                     TldDescriptor d = new TldDescriptor(tld);
                     d.parse();
                     descriptors.add(d);
@@ -287,8 +291,8 @@ public class TagLibConfiguration extends AbstractConfiguration
             }
             return descriptors;
         }
-        
-        
+
+
         /**
          * Create listeners from the parsed tld trees
          * @param descriptors
@@ -298,15 +302,15 @@ public class TagLibConfiguration extends AbstractConfiguration
 
             TldProcessor processor = new TldProcessor();
             for (TldDescriptor d:descriptors)
-                processor.process(_context, d); 
-            
+                processor.process(_context, d);
+
             _tldListeners = new ArrayList<EventListener>(processor.getListeners());
         }
     }
-    
-    
-    
-    
+
+
+
+
     /**
      * TldDescriptor
      *
@@ -334,7 +338,7 @@ public class TagLibConfiguration extends AbstractConfiguration
         {
             // Create a TLD parser
             XmlParser parser = new XmlParser(false);
-            
+
             URL taglib11=null;
             URL taglib12=null;
             URL taglib20=null;
@@ -363,11 +367,11 @@ public class TagLibConfiguration extends AbstractConfiguration
                 if(taglib21==null)
                     taglib21=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_2_1.xsd",true);
             }
-            
+
 
             if(taglib11!=null)
             {
-                redirect(parser, "web-jsptaglib_1_1.dtd",taglib11);  
+                redirect(parser, "web-jsptaglib_1_1.dtd",taglib11);
                 redirect(parser, "web-jsptaglibrary_1_1.dtd",taglib11);
             }
             if(taglib12!=null)
@@ -385,11 +389,11 @@ public class TagLibConfiguration extends AbstractConfiguration
                 redirect(parser, "web-jsptaglib_2_1.xsd",taglib21);
                 redirect(parser, "web-jsptaglibrary_2_1.xsd",taglib21);
             }
-            
+
             parser.setXpath("/taglib/listener/listener-class");
             return parser;
         }
-        
+
         public void parse ()
         throws Exception
         {
@@ -412,8 +416,8 @@ public class TagLibConfiguration extends AbstractConfiguration
             }
         }
     }
-    
-    
+
+
     /**
      * TldProcessor
      *
@@ -425,20 +429,20 @@ public class TagLibConfiguration extends AbstractConfiguration
         XmlParser _parser;
         List<XmlParser.Node> _roots = new ArrayList<XmlParser.Node>();
         List<EventListener> _listeners;
-        
-        
+
+
         public TldProcessor ()
         throws Exception
-        {  
+        {
             _listeners = new ArrayList<EventListener>();
             registerVisitor("listener", this.getClass().getDeclaredMethod("visitListener", __signature));
         }
-      
+
 
         public void visitListener (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-        {     
+        {
             String className=node.getString("listener-class",false,true);
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("listener="+className);
 
             try
@@ -467,9 +471,9 @@ public class TagLibConfiguration extends AbstractConfiguration
 
         @Override
         public void start(WebAppContext context, Descriptor descriptor)
-        {  
+        {
         }
-        
+
         public List<EventListener> getListeners() {
             return _listeners;
         }
@@ -492,16 +496,16 @@ public class TagLibConfiguration extends AbstractConfiguration
         TagLibListener tagLibListener = new TagLibListener(context);
         context.addEventListener(tagLibListener);
     }
-    
+
 
     @Override
     public void configure (WebAppContext context) throws Exception
-    {         
+    {
     }
 
     @Override
     public void postConfigure(WebAppContext context) throws Exception
-    {     
+    {
     }
 
 
@@ -514,5 +518,5 @@ public class TagLibConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-    } 
+    }
 }

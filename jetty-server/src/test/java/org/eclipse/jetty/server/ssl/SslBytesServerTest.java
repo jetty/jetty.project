@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.ssl;
 
@@ -33,7 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.ServletException;
@@ -103,6 +107,7 @@ public class SslBytesServerTest extends SslBytesTest
         server.addConnector(connector);
         server.setHandler(new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
             {
                 try
@@ -161,6 +166,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> handshake = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -221,6 +227,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> handshake = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -322,6 +329,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -354,6 +362,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -408,6 +417,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -449,6 +459,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -497,6 +508,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> handshake = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -540,6 +552,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -615,6 +628,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -689,6 +703,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -758,6 +773,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -812,6 +828,7 @@ public class SslBytesServerTest extends SslBytesTest
         final String content = new String(data, "UTF-8");
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -869,6 +886,7 @@ public class SslBytesServerTest extends SslBytesTest
         final String content = new String(data, "UTF-8");
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -904,8 +922,6 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
 
-//        Thread.sleep(100000);
-
         client.close();
     }
 
@@ -934,6 +950,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -1013,6 +1030,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -1078,6 +1096,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -1173,6 +1192,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Renegotiate
         Future<Object> renegotiation = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -1227,6 +1247,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Write the rest of the request
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 clientOutput.write(content2.getBytes("UTF-8"));
@@ -1305,6 +1326,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Renegotiate
         Future<Object> renegotiation = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -1377,6 +1399,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Write the rest of the request
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 clientOutput.write(content2.getBytes("UTF-8"));
@@ -1491,6 +1514,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();

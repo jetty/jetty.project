@@ -1,20 +1,25 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import java.io.IOException;
 import java.util.Collection;
-
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.Cookie;
@@ -32,7 +37,7 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
     }
 
     public void addCookie(Cookie cookie)
-    {        
+    {
     }
 
     public boolean containsHeader(String name)
@@ -61,50 +66,50 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
     }
 
     public void sendError(int sc, String msg) throws IOException
-    {        
+    {
     }
 
     public void sendError(int sc) throws IOException
-    {        
+    {
     }
 
     public void sendRedirect(String location) throws IOException
-    {        
+    {
     }
 
     public void setDateHeader(String name, long date)
-    {        
+    {
     }
 
     public void addDateHeader(String name, long date)
-    {        
+    {
     }
 
     public void setHeader(String name, String value)
-    {        
+    {
     }
 
     public void addHeader(String name, String value)
-    {        
+    {
     }
 
     public void setIntHeader(String name, int value)
-    {        
+    {
     }
 
     public void addIntHeader(String name, int value)
-    {        
+    {
     }
 
     public void setStatus(int sc)
-    {        
+    {
     }
 
     public void setStatus(int sc, String sm)
-    {        
+    {
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletResponse#getHeader(java.lang.String)
      */
     public String getHeader(String name)
@@ -112,7 +117,7 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
         return null;
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletResponse#getHeaderNames()
      */
     public Collection<String> getHeaderNames()
@@ -120,7 +125,7 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
         return null;
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletResponse#getHeaders(java.lang.String)
      */
     public Collection<String> getHeaders(String name)
@@ -128,7 +133,7 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
         return null;
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletResponse#getStatus()
      */
     public int getStatus()

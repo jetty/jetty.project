@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 /*
  * Created on 9/01/2004
@@ -19,16 +24,10 @@
  */
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,6 +43,11 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -123,6 +127,20 @@ public class HttpConnectionTest
     }
 
     @Test
+    public void testNoPath() throws Exception
+    {
+        String response=connector.getResponses("GET http://localhost:80 HTTP/1.1\n"+
+                "Host: localhost:80\n"+
+                "Connection: close\n"+
+                "\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"pathInfo=/");
+    }
+
+
+    @Test
     public void testEmpty() throws Exception
     {
         String response=connector.getResponses("GET /R1 HTTP/1.1\n"+
@@ -141,12 +159,12 @@ public class HttpConnectionTest
     @Test
     public void testHead() throws Exception
     {
-        String responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
+        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
                 "\015\012");
 
-        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
+        String responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
                 "Host: localhost\015\012"+
                 "Connection: close\015\012"+
                 "\015\012");
@@ -164,9 +182,9 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void testBad() throws Exception
+    public void testBadHostPort() throws Exception
     {
-        HttpParser.LOG.info("badMessage: 3 bad messages expected ...");
+        Log.getLogger(HttpParser.class).info("badMessage: Number formate exception expected ...");
         String response;
 
         response=connector.getResponses("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\n"+
@@ -174,18 +192,38 @@ public class HttpConnectionTest
             "Connection: close\015\012"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
+    }
+
+    @Test
+    public void testBadURIencoding() throws Exception
+    {
+        Log.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
+        String response;
 
         response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\n"+
             "Host: localhost\n"+
             "Connection: close\n"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
+    }
 
-        response=connector.getResponses("GET % HTTP/1.1\n"+
+    @Test
+    public void testBadUTF8FallsbackTo8859() throws Exception
+    {
+        Log.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
+        String response;
+
+        response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
             "Host: localhost\n"+
             "Connection: close\n"+
             "\015\012");
-        checkContains(response,0,"HTTP/1.1 400");
+        checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
+
+        response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
+            "Host: localhost\n"+
+            "Connection: close\n"+
+            "\015\012");
+        checkContains(response,0,"HTTP/1.1 200"); //now fallback to iso-8859-1
     }
 
     @Test
@@ -283,7 +321,8 @@ public class HttpConnectionTest
         int offset=0;
 
         offset=0;
-        requests="GET /R1?read=1&error=500 HTTP/1.1\n"+
+        requests=
+        "GET /R1?read=1&error=500 HTTP/1.1\n"+
         "Host: localhost\n"+
         "Transfer-Encoding: chunked\n"+
         "Content-Type: text/plain; charset=utf-8\n"+
@@ -302,12 +341,12 @@ public class HttpConnectionTest
         "abcdefghij\n";
 
         response=connector.getResponses(requests);
+
         offset = checkContains(response,offset,"HTTP/1.1 500");
         offset = checkContains(response,offset,"HTTP/1.1 200");
         offset = checkContains(response,offset,"/R2");
         offset = checkContains(response,offset,"encoding=UTF-8");
         offset = checkContains(response,offset,"abcdefghij");
-
     }
 
     @Test
@@ -335,10 +374,11 @@ public class HttpConnectionTest
         "\n"+
         "abcdefghij\n";
 
+        Logger logger = Log.getLogger(HttpChannel.class);
         try
         {
-            HttpChannel.LOG.info("EXPECTING:           java.lang.IllegalStateException...");
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            logger.info("EXPECTING: java.lang.IllegalStateException...");
+            ((StdErrLog)logger).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");
             offset = checkContains(response,offset,"Connection: close");
@@ -346,7 +386,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+            ((StdErrLog)logger).setHideStacks(false);
         }
     }
 
@@ -436,65 +476,12 @@ public class HttpConnectionTest
         for (int i=0;i<500;i++)
             str+="xxxxxxxxxxxx";
         final String longstr = str;
-
+        final CountDownLatch checkError = new CountDownLatch(1);
         String response = null;
         server.stop();
         server.setHandler(new DumpHandler()
         {
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    response.setHeader(HttpHeader.CONTENT_TYPE.toString(),MimeTypes.Type.TEXT_HTML.toString());
-                    response.setHeader("LongStr", longstr);
-                    PrintWriter writer = response.getWriter();
-                    writer.write("<html><h1>FOO</h1></html>");
-                    writer.flush();
-                    if (!writer.checkError())
-                        throw new RuntimeException("SHOULD NOT GET HERE");
-                }
-                catch(Exception e)
-                {
-                    LOG.debug(e);
-                    LOG.info("correctly ignored "+e);
-                }
-            }
-        });
-        server.start();
-
-        try
-        {
-            int offset = 0;
-
-            response = connector.getResponses("GET / HTTP/1.1\n"+
-                "Host: localhost\n" +
-                "\015\012"
-             );
-
-            checkContains(response, offset, "HTTP/1.1 500");
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-            if(response != null)
-                System.err.println(response);
-            fail("Exception");
-        }
-    }
-
-    @Test
-    public void testOversizedResponse2() throws Exception
-    {
-        String str = "thisisastringthatshouldreachover1kbytes-";
-        for (int i=0;i<500;i++)
-            str+="xxxxxxxxxxxx";
-        final String longstr = str;
-
-        String response = null;
-        server.stop();
-        server.setHandler(new DumpHandler()
-        {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
@@ -503,8 +490,8 @@ public class HttpConnectionTest
                 PrintWriter writer = response.getWriter();
                 writer.write("<html><h1>FOO</h1></html>");
                 writer.flush();
-                if (!writer.checkError())
-                    throw new RuntimeException("SHOULD NOT GET HERE");
+                if (writer.checkError())
+                    checkError.countDown();
                 response.flushBuffer();
             }
         });
@@ -512,6 +499,8 @@ public class HttpConnectionTest
 
         try
         {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).info("Excpect IOException: Response header too large...");
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
             int offset = 0;
 
             response = connector.getResponses("GET / HTTP/1.1\n"+
@@ -520,13 +509,18 @@ public class HttpConnectionTest
              );
 
             checkContains(response, offset, "HTTP/1.1 500");
+            assertTrue(checkError.await(1,TimeUnit.SECONDS));
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             if(response != null)
                 System.err.println(response);
-            fail("Exception");
+            throw e;
+        }
+        finally
+        {
+
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         }
     }
 
@@ -550,12 +544,8 @@ public class HttpConnectionTest
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
             offset = checkContains(response,offset,"HTTP/1.1 200");
-            offset = checkContains(response,offset,"*");
+            offset = checkContains(response,offset,"Allow: GET,POST,HEAD");
 
-            // to prevent the DumpHandler from picking this up and returning 200 OK
-            server.stop();
-            server.setHandler(null);
-            server.start();
             offset=0;
             response=connector.getResponses("GET * HTTP/1.1\n"+
                                            "Host: localhost\n"+
@@ -566,7 +556,7 @@ public class HttpConnectionTest
                                            "5;\015\012"+
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
-            offset = checkContains(response,offset,"HTTP/1.1 404 Not Found");
+            offset = checkContains(response,offset,"HTTP/1.1 400");
 
             offset=0;
             response=connector.getResponses("GET ** HTTP/1.1\n"+

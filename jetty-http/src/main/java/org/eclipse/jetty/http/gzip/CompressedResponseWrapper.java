@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.http.gzip;
 
@@ -19,7 +24,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Set;
-
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,10 +36,10 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public abstract class CompressedResponseWrapper extends HttpServletResponseWrapper
 {
-    
+
     public static final int DEFAULT_BUFFER_SIZE = 8192;
     public static final int DEFAULT_MIN_COMPRESS_SIZE = 256;
-    
+
     private Set<String> _mimeTypes;
     private int _bufferSize=DEFAULT_BUFFER_SIZE;
     private int _minCompressSize=DEFAULT_MIN_COMPRESS_SIZE;
@@ -88,15 +92,15 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     public void setContentType(String ct)
     {
         super.setContentType(ct);
-    
+
         if (ct!=null)
         {
             int colon=ct.indexOf(";");
             if (colon>0)
                 ct=ct.substring(0,colon);
         }
-    
-        if ((_compressedStream==null || _compressedStream.getOutputStream()==null) && 
+
+        if ((_compressedStream==null || _compressedStream.getOutputStream()==null) &&
             (_mimeTypes==null && ct!=null && ct.contains("gzip") ||
              _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
         {
@@ -137,7 +141,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     {
         setContentLength((long)length);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void setContentLength(long length)
     {
@@ -172,11 +176,11 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 _compressedStream.setContentLength(_contentLength);
         }
         else if ("content-type".equalsIgnoreCase(name))
-        {   
+        {
             setContentType(value);
         }
         else if ("content-encoding".equalsIgnoreCase(name))
-        {   
+        {
             super.addHeader(name,value);
             if (!isCommitted())
             {
@@ -264,7 +268,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         resetBuffer();
         super.sendRedirect(location);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#noCompression()
@@ -284,7 +288,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#finish()
@@ -296,7 +300,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         if (_compressedStream!=null)
             _compressedStream.finish();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setHeader(java.lang.String, java.lang.String)
@@ -309,11 +313,11 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
             setContentLength(Long.parseLong(value));
         }
         else if ("content-type".equalsIgnoreCase(name))
-        {   
+        {
             setContentType(value);
         }
         else if ("content-encoding".equalsIgnoreCase(name))
-        {   
+        {
             super.setHeader(name,value);
             if (!isCommitted())
             {
@@ -323,7 +327,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         else
             super.setHeader(name,value);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#getOutputStream()
@@ -338,13 +342,13 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 setContentLength(_contentLength);
                 return getResponse().getOutputStream();
             }
-            
+
             _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minCompressSize);
         }
         else if (_writer!=null)
             throw new IllegalStateException("getWriter() called");
-        
-        return _compressedStream;   
+
+        return _compressedStream;
     }
 
     /* ------------------------------------------------------------ */
@@ -355,22 +359,22 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     public PrintWriter getWriter() throws IOException
     {
         if (_writer==null)
-        { 
+        {
             if (_compressedStream!=null)
                 throw new IllegalStateException("getOutputStream() called");
-            
+
             if (getResponse().isCommitted() || _noCompression)
             {
                 setContentLength(_contentLength);
                 return getResponse().getWriter();
             }
-            
+
             _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minCompressSize);
             _writer=newWriter(_compressedStream,getCharacterEncoding());
         }
-        return _writer;   
+        return _writer;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setIntHeader(java.lang.String, int)
@@ -387,7 +391,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
         else
             super.setIntHeader(name,value);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Allows derived implementations to replace PrintWriter implementation.
@@ -401,10 +405,10 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
     {
         return encoding==null?new PrintWriter(out):new PrintWriter(new OutputStreamWriter(out,encoding));
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     *@return the underlying CompressedStream implementation 
+     *@return the underlying CompressedStream implementation
      */
     protected abstract AbstractCompressedStream newCompressedStream(HttpServletRequest _request, HttpServletResponse response, long _contentLength2, int _bufferSize2, int _minCompressedSize2) throws IOException;
 

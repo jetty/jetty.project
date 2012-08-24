@@ -1,20 +1,24 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.Request;
@@ -23,26 +27,26 @@ import org.eclipse.jetty.server.UserIdentity;
 /* ------------------------------------------------------------ */
 /**
  * Associates UserIdentities from with threads and UserIdentity.Contexts.
- * 
+ *
  */
 public interface IdentityService
 {
-    final static String[] NO_ROLES = new String[]{}; 
-    
+    final static String[] NO_ROLES = new String[]{};
+
     /* ------------------------------------------------------------ */
     /**
      * Associate a user identity with the current thread.
-     * This is called with as a thread enters the 
+     * This is called with as a thread enters the
      * {@link SecurityHandler#handle(String, Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
      * method and then again with a null argument as that call exits.
      * @param user The current user or null for no user to associated.
      * @return an object representing the previous associated state
      */
     Object associate(UserIdentity user);
-    
+
     /* ------------------------------------------------------------ */
-    /** 
-     * Disassociate the user identity from the current thread 
+    /**
+     * Disassociate the user identity from the current thread
      * and restore previous identity.
      * @param previous The opaque object returned from a call to {@link IdentityService#associate(UserIdentity)}
      */
@@ -56,7 +60,7 @@ public interface IdentityService
      * @return The previous runAsToken or null.
      */
     Object setRunAs(UserIdentity user, RunAsToken token);
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Disassociate the current runAsToken from the thread
@@ -69,7 +73,7 @@ public interface IdentityService
     /**
      * Create a new UserIdentity for use with this identity service.
      * The UserIdentity should be immutable and able to be cached.
-     * 
+     *
      * @param subject Subject to include in UserIdentity
      * @param userPrincipal Principal to include in UserIdentity.  This will be returned from getUserPrincipal calls
      * @param roles set of roles to include in UserIdentity.

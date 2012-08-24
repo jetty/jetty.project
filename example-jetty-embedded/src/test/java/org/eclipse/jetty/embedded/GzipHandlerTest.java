@@ -1,20 +1,22 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.embedded;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.zip.GZIPInputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +39,9 @@ import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class GzipHandlerTest
 {
@@ -77,7 +81,7 @@ public class GzipHandlerTest
                 baseRequest.setHandled(true);
             }
         };
-        
+
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setHandler(testHandler);
 
@@ -104,16 +108,16 @@ public class GzipHandlerTest
         request.setHeader("Host","tester");
         request.setHeader("accept-encoding","gzip");
         request.setURI("/");
-        
+
         response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
-                
+
         assertTrue(response.get("Content-Encoding").equalsIgnoreCase("gzip"));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        
+
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
-        
+
         assertEquals(__content, testOut.toString("UTF8"));
 
     }

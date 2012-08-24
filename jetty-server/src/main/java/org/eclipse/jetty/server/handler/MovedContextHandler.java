@@ -1,20 +1,24 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,7 +32,7 @@ import org.eclipse.jetty.util.URIUtil;
 /** Moved ContextHandler.
  * This context can be used to replace a context that has changed
  * location.  Requests are redirected (either to a fixed URL or to a
- * new context base). 
+ * new context base).
  */
 public class MovedContextHandler extends ContextHandler
 {
@@ -45,7 +49,7 @@ public class MovedContextHandler extends ContextHandler
         setHandler(_redirector);
         setAllowNullPathInfo(true);
     }
-    
+
     public MovedContextHandler(HandlerContainer parent, String contextPath, String newContextURL)
     {
         super(parent,contextPath);
@@ -93,7 +97,7 @@ public class MovedContextHandler extends ContextHandler
     {
         _discardQuery = discardQuery;
     }
-    
+
     private class Redirector extends AbstractHandler
     {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -104,7 +108,7 @@ public class MovedContextHandler extends ContextHandler
             String path=_newContextURL;
             if (!_discardPathInfo && request.getPathInfo()!=null)
                 path=URIUtil.addPaths(path, request.getPathInfo());
-            
+
             StringBuilder location = URIUtil.hasScheme(path)?new StringBuilder():baseRequest.getRootURL();
 
             location.append(path);
@@ -115,17 +119,17 @@ public class MovedContextHandler extends ContextHandler
                 q=q.replaceAll("\r\n?&=","!");
                 location.append(q);
             }
-            
+
             response.setHeader(HttpHeader.LOCATION.asString(),location.toString());
 
             if (_expires!=null)
                 response.setHeader(HttpHeader.EXPIRES.asString(),_expires);
-            
+
             response.setStatus(_permanent?HttpServletResponse.SC_MOVED_PERMANENTLY:HttpServletResponse.SC_FOUND);
             response.setContentLength(0);
             baseRequest.setHandled(true);
         }
-        
+
     }
 
     /* ------------------------------------------------------------ */

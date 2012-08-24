@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.session;
 
@@ -30,7 +35,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import javax.naming.InitialContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -47,14 +51,14 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * JDBCSessionIdManager
  *
- * SessionIdManager implementation that uses a database to store in-use session ids, 
+ * SessionIdManager implementation that uses a database to store in-use session ids,
  * to support distributed sessions.
- * 
+ *
  */
 public class JDBCSessionIdManager extends AbstractSessionIdManager
-{    
+{
     final static Logger LOG = SessionHandler.LOG;
-    
+
     protected final HashSet<String> _sessionIds = new HashSet<String>();
     protected Server _server;
     protected Driver _driver;
@@ -65,66 +69,66 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected String _sessionIdTable = "JettySessionIds";
     protected String _sessionTable = "JettySessions";
     protected String _sessionTableRowId = "rowId";
-    
+
     protected Timer _timer; //scavenge timer
     protected TimerTask _task; //scavenge task
     protected long _lastScavengeTime;
     protected long _scavengeIntervalMs = 1000L * 60 * 10; //10mins
     protected String _blobType; //if not set, is deduced from the type of the database at runtime
     protected String _longType; //if not set, is deduced from the type of the database at runtime
-    
+
     protected String _createSessionIdTable;
     protected String _createSessionTable;
-                                            
+
     protected String _selectExpiredSessions;
     protected String _deleteOldExpiredSessions;
 
     protected String _insertId;
     protected String _deleteId;
     protected String _queryId;
-    
+
     protected  String _insertSession;
     protected  String _deleteSession;
     protected  String _updateSession;
     protected  String _updateSessionNode;
     protected  String _updateSessionAccessTime;
-    
+
     protected DatabaseAdaptor _dbAdaptor;
 
-    
+
     /**
      * DatabaseAdaptor
      *
      * Handles differences between databases.
-     * 
+     *
      * Postgres uses the getBytes and setBinaryStream methods to access
      * a "bytea" datatype, which can be up to 1Gb of binary data. MySQL
      * is happy to use the "blob" type and getBlob() methods instead.
-     * 
+     *
      * TODO if the differences become more major it would be worthwhile
      * refactoring this class.
      */
-    public class DatabaseAdaptor 
+    public class DatabaseAdaptor
     {
         String _dbName;
         boolean _isLower;
         boolean _isUpper;
 
-        
-        
+
+
         public DatabaseAdaptor (DatabaseMetaData dbMeta)
         throws SQLException
         {
-            _dbName = dbMeta.getDatabaseProductName().toLowerCase(); 
+            _dbName = dbMeta.getDatabaseProductName().toLowerCase();
             LOG.debug ("Using database {}",_dbName);
             _isLower = dbMeta.storesLowerCaseIdentifiers();
             _isUpper = dbMeta.storesUpperCaseIdentifiers();
         }
-        
+
         /**
          * Convert a camel case identifier into either upper or lower
          * depending on the way the db stores identifiers.
-         * 
+         *
          * @param identifier
          * @return the converted identifier
          */
@@ -134,37 +138,37 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 return identifier.toLowerCase();
             if (_isUpper)
                 return identifier.toUpperCase();
-            
+
             return identifier;
         }
-        
+
         public String getDBName ()
         {
             return _dbName;
         }
-        
+
         public String getBlobType ()
         {
             if (_blobType != null)
                 return _blobType;
-            
+
             if (_dbName.startsWith("postgres"))
                 return "bytea";
-            
+
             return "blob";
         }
-        
+
         public String getLongType ()
         {
             if (_longType != null)
                 return _longType;
-            
+
             if (_dbName.startsWith("oracle"))
                 return "number(20)";
-            
+
             return "bigint";
         }
-        
+
         public InputStream getBlobInputStream (ResultSet result, String columnName)
         throws SQLException
         {
@@ -173,11 +177,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 byte[] bytes = result.getBytes(columnName);
                 return new ByteArrayInputStream(bytes);
             }
-            
+
             Blob blob = result.getBlob(columnName);
             return blob.getBinaryStream();
         }
-        
+
         /**
          * rowId is a reserved word for Oracle, so change the name of this column
          * @return
@@ -186,17 +190,17 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         {
             if (_dbName != null && _dbName.startsWith("oracle"))
                 return "srowId";
-            
+
             return "rowId";
         }
-        
-        
+
+
         public boolean isEmptyStringNull ()
         {
             return (_dbName.startsWith("oracle"));
         }
-        
-        public PreparedStatement getLoadStatement (Connection connection, String rowId, String contextPath, String virtualHosts) 
+
+        public PreparedStatement getLoadStatement (Connection connection, String rowId, String contextPath, String virtualHosts)
         throws SQLException
         {
             if (contextPath == null || "".equals(contextPath))
@@ -211,7 +215,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     return statement;
                 }
             }
-           
+
 
 
             PreparedStatement statement = connection.prepareStatement("select * from "+_sessionTable+
@@ -223,15 +227,15 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             return statement;
         }
     }
-    
-    
-    
+
+
+
     public JDBCSessionIdManager(Server server)
     {
         super();
         _server=server;
     }
-    
+
     public JDBCSessionIdManager(Server server, Random random)
     {
        super(random);
@@ -240,7 +244,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
     /**
      * Configure jdbc connection information via a jdbc Driver
-     * 
+     *
      * @param driverClassName
      * @param connectionUrl
      */
@@ -249,10 +253,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         _driverClassName=driverClassName;
         _connectionUrl=connectionUrl;
     }
-    
+
     /**
      * Configure jdbc connection information via a jdbc Driver
-     * 
+     *
      * @param driverClass
      * @param connectionUrl
      */
@@ -261,50 +265,50 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         _driver=driverClass;
         _connectionUrl=connectionUrl;
     }
-    
-    
+
+
     public void setDatasource (DataSource ds)
     {
         _datasource = ds;
     }
-    
+
     public DataSource getDataSource ()
     {
         return _datasource;
     }
-    
+
     public String getDriverClassName()
     {
         return _driverClassName;
     }
-    
+
     public String getConnectionUrl ()
     {
         return _connectionUrl;
     }
-    
+
     public void setDatasourceName (String jndi)
     {
         _jndiName=jndi;
     }
-    
+
     public String getDatasourceName ()
     {
         return _jndiName;
     }
-   
+
     public void setBlobType (String name)
     {
         _blobType = name;
     }
-    
+
     public String getBlobType ()
     {
         return _blobType;
     }
-    
-    
-    
+
+
+
     public String getLongType()
     {
         return _longType;
@@ -322,16 +326,16 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
         long old_period=_scavengeIntervalMs;
         long period=sec*1000L;
-      
+
         _scavengeIntervalMs=period;
-        
+
         //add a bit of variability into the scavenge time so that not all
         //nodes with the same scavenge time sync up
         long tenPercent = _scavengeIntervalMs/10;
         if ((System.currentTimeMillis()%2) == 0)
             _scavengeIntervalMs += tenPercent;
-        
-        if (LOG.isDebugEnabled()) 
+
+        if (LOG.isDebugEnabled())
             LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
         if (_timer!=null && (period!=old_period || _task==null))
         {
@@ -345,27 +349,27 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     public void run()
                     {
                         scavenge();
-                    }   
+                    }
                 };
                 _timer.schedule(_task,_scavengeIntervalMs,_scavengeIntervalMs);
             }
-        }  
+        }
     }
-    
+
     public long getScavengeInterval ()
     {
         return _scavengeIntervalMs/1000;
     }
-    
-    
+
+
     public void addSession(HttpSession session)
     {
         if (session == null)
             return;
-        
+
         synchronized (_sessionIds)
         {
-            String id = ((JDBCSessionManager.Session)session).getClusterId();            
+            String id = ((JDBCSessionManager.Session)session).getClusterId();
             try
             {
                 insert(id);
@@ -377,29 +381,29 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             }
         }
     }
-    
+
     public void removeSession(HttpSession session)
     {
         if (session == null)
             return;
-        
+
         removeSession(((JDBCSessionManager.Session)session).getClusterId());
     }
-    
-    
-    
+
+
+
     public void removeSession (String id)
     {
 
         if (id == null)
             return;
-        
+
         synchronized (_sessionIds)
-        {  
+        {
             if (LOG.isDebugEnabled())
                 LOG.debug("Removing session id="+id);
             try
-            {               
+            {
                 _sessionIds.remove(id);
                 delete(id);
             }
@@ -408,13 +412,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 LOG.warn("Problem removing session id="+id, e);
             }
         }
-        
-    }
-    
 
-    /** 
+    }
+
+
+    /**
      * Get the session id without any node identifier suffix.
-     * 
+     *
      * @see org.eclipse.jetty.server.SessionIdManager#getClusterId(java.lang.String)
      */
     public String getClusterId(String nodeId)
@@ -422,11 +426,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         int dot=nodeId.lastIndexOf('.');
         return (dot>0)?nodeId.substring(0,dot):nodeId;
     }
-    
 
-    /** 
+
+    /**
      * Get the session id, including this node's id as a suffix.
-     * 
+     *
      * @see org.eclipse.jetty.server.SessionIdManager#getNodeId(java.lang.String, javax.servlet.http.HttpServletRequest)
      */
     public String getNodeId(String clusterId, HttpServletRequest request)
@@ -442,14 +446,14 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     {
         if (id == null)
             return false;
-        
+
         String clusterId = getClusterId(id);
         boolean inUse = false;
         synchronized (_sessionIds)
         {
             inUse = _sessionIds.contains(clusterId);
         }
-        
+
         if (inUse)
             return true; //optimisation - if this session is one we've been managing, we can check locally
 
@@ -465,16 +469,16 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         }
     }
 
-    /** 
+    /**
      * Invalidate the session matching the id on all contexts.
-     * 
+     *
      * @see org.eclipse.jetty.server.SessionIdManager#invalidateAll(java.lang.String)
      */
     public void invalidateAll(String id)
-    {            
+    {
         //take the id out of the list of known sessionids for this node
         removeSession(id);
-        
+
         synchronized (_sessionIds)
         {
             //tell all contexts that may have a session object with this id to
@@ -483,7 +487,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             for (int i=0; contexts!=null && i<contexts.length; i++)
             {
                 SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-                if (sessionHandler != null) 
+                if (sessionHandler != null)
                 {
                     SessionManager manager = sessionHandler.getSessionManager();
 
@@ -497,9 +501,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     }
 
 
-    /** 
+    /**
      * Start up the id manager.
-     * 
+     *
      * Makes necessary database tables and starts a Session
      * scavenger thread.
      */
@@ -507,11 +511,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     public void doStart()
     {
         try
-        {            
+        {
             initializeDatabase();
-            prepareTables();        
+            prepareTables();
             super.doStart();
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
             _timer=new Timer("JDBCSessionScavenger", true);
             setScavengeInterval(getScavengeInterval());
@@ -521,12 +525,12 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             LOG.warn("Problem initialising JettySessionIds table", e);
         }
     }
-    
-    /** 
+
+    /**
      * Stop the scavenger.
      */
     @Override
-    public void doStop () 
+    public void doStop ()
     throws Exception
     {
         synchronized(this)
@@ -539,10 +543,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         }
         super.doStop();
     }
-  
+
     /**
      * Get a connection from the driver or datasource.
-     * 
+     *
      * @return the connection for the datasource
      * @throws SQLException
      */
@@ -555,13 +559,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             return DriverManager.getConnection(_connectionUrl);
     }
 
-    
+
     private void initializeDatabase ()
     throws Exception
     {
         if (_datasource != null)
             return; //already set up
-        
+
         if (_jndiName!=null)
         {
             InitialContext ic = new InitialContext();
@@ -578,9 +582,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         else
             throw new IllegalStateException("No database configured for sessions");
     }
-    
-    
-    
+
+
+
     /**
      * Set up the tables in the database
      * @throws SQLException
@@ -614,9 +618,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 //table does not exist, so create it
                 connection.createStatement().executeUpdate(_createSessionIdTable);
             }
-            
+
             //make the session table if necessary
-            tableName = _dbAdaptor.convertIdentifier(_sessionTable);   
+            tableName = _dbAdaptor.convertIdentifier(_sessionTable);
             result = metaData.getTables(null, null, tableName, null);
             if (!result.next())
             {
@@ -629,11 +633,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                                            " lastSavedTime "+longType+", expiryTime "+longType+", map "+blobType+", primary key("+_sessionTableRowId+"))";
                 connection.createStatement().executeUpdate(_createSessionTable);
             }
-            
+
             //make some indexes on the JettySessions table
             String index1 = "idx_"+_sessionTable+"_expiry";
             String index2 = "idx_"+_sessionTable+"_session";
-            
+
             result = metaData.getIndexInfo(null, null, tableName, false, false);
             boolean index1Exists = false;
             boolean index2Exists = false;
@@ -661,7 +665,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
             _deleteSession = "delete from "+_sessionTable+
             " where "+_sessionTableRowId+" = ?";
-            
+
             _updateSession = "update "+_sessionTable+
             " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where "+_sessionTableRowId+" = ?";
 
@@ -671,7 +675,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             _updateSessionAccessTime = "update "+_sessionTable+
             " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ? where "+_sessionTableRowId+" = ?";
 
-            
+
         }
         finally
         {
@@ -679,25 +683,25 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 connection.close();
         }
     }
-    
+
     /**
      * Insert a new used session id into the table.
-     * 
+     *
      * @param id
      * @throws SQLException
      */
     private void insert (String id)
-    throws SQLException 
+    throws SQLException
     {
         Connection connection = null;
         try
         {
             connection = getConnection();
-            connection.setAutoCommit(true);            
+            connection.setAutoCommit(true);
             PreparedStatement query = connection.prepareStatement(_queryId);
             query.setString(1, id);
             ResultSet result = query.executeQuery();
-            //only insert the id if it isn't in the db already 
+            //only insert the id if it isn't in the db already
             if (!result.next())
             {
                 PreparedStatement statement = connection.prepareStatement(_insertId);
@@ -711,10 +715,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 connection.close();
         }
     }
-    
+
     /**
      * Remove a session id from the table.
-     * 
+     *
      * @param id
      * @throws SQLException
      */
@@ -736,11 +740,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 connection.close();
         }
     }
-    
-    
+
+
     /**
      * Check if a session id exists.
-     * 
+     *
      * @param id
      * @return
      * @throws SQLException
@@ -764,14 +768,14 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 connection.close();
         }
     }
-    
+
     /**
      * Look for sessions in the database that have expired.
-     * 
+     *
      * We do this in the SessionIdManager and not the SessionManager so
      * that we only have 1 scavenger, otherwise if there are n SessionManagers
      * there would be n scavengers, all contending for the database.
-     * 
+     *
      * We look first for sessions that expired in the previous interval, then
      * for sessions that expired previously - these are old sessions that no
      * node is managing any more and have become stuck in the database.
@@ -781,8 +785,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         Connection connection = null;
         List<String> expiredSessionIds = new ArrayList<String>();
         try
-        {            
-            if (LOG.isDebugEnabled()) 
+        {
+            if (LOG.isDebugEnabled())
                 LOG.debug("Scavenge sweep started at "+System.currentTimeMillis());
             if (_lastScavengeTime > 0)
             {
@@ -792,9 +796,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 PreparedStatement statement = connection.prepareStatement(_selectExpiredSessions);
                 long lowerBound = (_lastScavengeTime - _scavengeIntervalMs);
                 long upperBound = _lastScavengeTime;
-                if (LOG.isDebugEnabled()) 
+                if (LOG.isDebugEnabled())
                     LOG.debug (" Searching for sessions expired between "+lowerBound + " and "+upperBound);
-                
+
                 statement.setLong(1, lowerBound);
                 statement.setLong(2, upperBound);
                 ResultSet result = statement.executeQuery();
@@ -802,7 +806,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 {
                     String sessionId = result.getString("sessionId");
                     expiredSessionIds.add(sessionId);
-                    if (LOG.isDebugEnabled()) LOG.debug (" Found expired sessionId="+sessionId); 
+                    if (LOG.isDebugEnabled()) LOG.debug (" Found expired sessionId="+sessionId);
                 }
 
                 //tell the SessionManagers to expire any sessions with a matching sessionId in memory
@@ -811,8 +815,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 {
 
                     SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-                    if (sessionHandler != null) 
-                    { 
+                    if (sessionHandler != null)
+                    {
                         SessionManager manager = sessionHandler.getSessionManager();
                         if (manager != null && manager instanceof JDBCSessionManager)
                         {
@@ -834,13 +838,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         }
         catch (Exception e)
         {
-            if (isRunning())    
+            if (isRunning())
                 LOG.warn("Problem selecting expired sessions", e);
             else
                 LOG.ignore(e);
         }
         finally
-        {           
+        {
             _lastScavengeTime=System.currentTimeMillis();
             if (LOG.isDebugEnabled()) LOG.debug("Scavenge sweep ended at "+_lastScavengeTime);
             if (connection != null)

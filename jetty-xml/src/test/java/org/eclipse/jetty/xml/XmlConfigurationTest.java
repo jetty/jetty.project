@@ -1,24 +1,22 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.xml;
-
-import static junit.framework.Assert.assertEquals;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -26,6 +24,13 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import static junit.framework.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class XmlConfigurationTest
 {
@@ -342,7 +347,7 @@ public class XmlConfigurationTest
         xmlConfiguration.configure(tc);
         Assert.assertEquals("tc.map is has two entries as specified in the XML", 2, tc.map.size());
     }
-    
+
     @Test
     public void testConstructorNamedInjection() throws Exception
     {
@@ -352,14 +357,14 @@ public class XmlConfigurationTest
                 "  <Arg>arg2</Arg>  " +
                 "  <Arg>arg3</Arg>  " +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
-    
+
     @Test
     public void testConstructorNamedInjectionOrdered() throws Exception
     {
@@ -369,14 +374,14 @@ public class XmlConfigurationTest
                 "  <Arg name=\"second\">arg2</Arg>  " +
                 "  <Arg name=\"third\">arg3</Arg>  " +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
-    
+
     @Test
     public void testConstructorNamedInjectionUnOrdered() throws Exception
     {
@@ -386,14 +391,14 @@ public class XmlConfigurationTest
                 "  <Arg name=\"third\">arg3</Arg>  " +
                 "  <Arg name=\"second\">arg2</Arg>  " +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
-    
+
     @Test
     public void testConstructorNamedInjectionOrderedMixed() throws Exception
     {
@@ -403,14 +408,14 @@ public class XmlConfigurationTest
                 "  <Arg>arg2</Arg>  " +
                 "  <Arg name=\"third\">arg3</Arg>  " +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
-    
+
     @Test
     public void testConstructorNamedInjectionUnorderedMixed() throws Exception
     {
@@ -420,14 +425,14 @@ public class XmlConfigurationTest
                 "  <Arg>arg2</Arg>  " +
                 "  <Arg name=\"first\">arg1</Arg>  " +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
-    
+
     @Test
     public void testNestedConstructorNamedInjection() throws Exception
     {
@@ -444,18 +449,18 @@ public class XmlConfigurationTest
                 "    </New>" +
                 "  </Set>" +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
         Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
         Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
         Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
-        
+
     }
-    
+
     @Test
     public void testNestedConstructorNamedInjectionOrdered() throws Exception
     {
@@ -472,9 +477,9 @@ public class XmlConfigurationTest
                 "    </New>" +
                 "  </Set>" +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
@@ -482,7 +487,7 @@ public class XmlConfigurationTest
         Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
         Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
     }
-    
+
     @Test
     public void testNestedConstructorNamedInjectionUnOrdered() throws Exception
     {
@@ -499,9 +504,9 @@ public class XmlConfigurationTest
                 "    </New>" +
                 "  </Set>" +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
@@ -509,7 +514,7 @@ public class XmlConfigurationTest
         Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
         Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
     }
-    
+
     @Test
     public void testNestedConstructorNamedInjectionOrderedMixed() throws Exception
     {
@@ -526,9 +531,9 @@ public class XmlConfigurationTest
                 "    </New>" +
                 "  </Set>" +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
@@ -536,7 +541,7 @@ public class XmlConfigurationTest
         Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
         Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
     }
-    
+
     @Test
     public void testNestedConstructorNamedInjectionUnorderedMixed() throws Exception
     {
@@ -553,9 +558,9 @@ public class XmlConfigurationTest
                 "    </New>" +
                 "  </Set>" +
                 "</Configure>");
-        
+
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
-        
+
         Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
         Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());

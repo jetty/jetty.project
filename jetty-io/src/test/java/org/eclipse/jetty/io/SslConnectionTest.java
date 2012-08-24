@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.io;
 
 import java.io.BufferedReader;
@@ -13,18 +31,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
@@ -36,7 +51,7 @@ import org.junit.Test;
 public class SslConnectionTest
 {
     private static SslContextFactory __sslCtxFactory=new SslContextFactory();
-    private static ByteBufferPool __byteBufferPool = new StandardByteBufferPool();
+    private static ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
 
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill=true;
@@ -226,7 +241,7 @@ public class SslConnectionTest
     public void testWriteOnConnect() throws Exception
     {
         _testFill=false;
-        
+
         for (int i=0;i<1;i++)
         {
             _writeCallback = new FutureCallback<>();

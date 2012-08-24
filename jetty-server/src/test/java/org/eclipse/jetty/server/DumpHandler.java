@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -20,7 +25,6 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.Enumeration;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -39,31 +43,31 @@ import org.eclipse.jetty.util.log.Logger;
 /** Dump request handler.
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
- * 
+ *
  * @version $Id: DumpHandler.java,v 1.14 2005/08/13 00:01:26 gregwilkins Exp $
- * 
+ *
  */
 public class DumpHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(DumpHandler.class);
 
     String label="Dump HttpHandler";
-    
+
     public DumpHandler()
     {
     }
-    
+
     public DumpHandler(String label)
     {
         this.label=label;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {        
+    {
         if (!isStarted())
             return;
 
@@ -73,28 +77,28 @@ public class DumpHandler extends AbstractHandler
             for (int i=Integer.parseInt(request.getParameter("read"));i-->0;)
                 in.read();
         }
-        
+
         if (request.getParameter("ISE")!=null)
         {
             throw new IllegalStateException("Testing ISE");
         }
-        
+
         if (request.getParameter("error")!=null)
         {
             response.sendError(Integer.parseInt(request.getParameter("error")));
             return;
         }
-        
+
         if (request.getParameter("continue")!=null)
         {
             Continuation continuation = ContinuationSupport.getContinuation(request,response);
             continuation.setTimeout(Long.parseLong(request.getParameter("continue")));
             continuation.suspend();
         }
-        
+
         baseRequest.setHandled(true);
         response.setHeader(HttpHeader.CONTENT_TYPE.asString(),MimeTypes.Type.TEXT_HTML.asString());
-        
+
         OutputStream out = response.getOutputStream();
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
         Writer writer = new OutputStreamWriter(buf,StringUtil.__ISO_8859_1);
@@ -142,7 +146,7 @@ public class DumpHandler extends AbstractHandler
                 }
             }
         }
-        
+
         String cookie_name=request.getParameter("CookieName");
         if (cookie_name!=null && cookie_name.trim().length()>0)
         {
@@ -162,7 +166,7 @@ public class DumpHandler extends AbstractHandler
                 writer.write(e.toString());
             }
         }
-        
+
         writer.write("</pre>\n<h3>Cookies:</h3>\n<pre>");
         Cookie[] cookies=request.getCookies();
         if (cookies!=null && cookies.length>0)
@@ -176,7 +180,7 @@ public class DumpHandler extends AbstractHandler
                 writer.write("\n");
             }
         }
-        
+
         writer.write("</pre>\n<h3>Attributes:</h3>\n<pre>");
         Enumeration attributes=request.getAttributeNames();
         if (attributes!=null && attributes.hasMoreElements())
@@ -190,7 +194,7 @@ public class DumpHandler extends AbstractHandler
                 writer.write("\n");
             }
         }
-        
+
         writer.write("</pre>\n<h3>Content:</h3>\n<pre>");
 
         char[] content= new char[4096];
@@ -204,11 +208,11 @@ public class DumpHandler extends AbstractHandler
         {
             writer.write(e.toString());
         }
-        
+
         writer.write("</pre>\n");
         writer.write("</html>\n");
         writer.flush();
-        
+
         // commit now
         response.setContentLength(buf.size()+1000);
         response.addHeader("Before-Flush",response.isCommitted()?"Committed???":"Not Committed");

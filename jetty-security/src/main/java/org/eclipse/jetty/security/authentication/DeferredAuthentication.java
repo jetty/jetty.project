@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 
 package org.eclipse.jetty.security.authentication;
@@ -19,7 +24,6 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -55,7 +59,7 @@ public class DeferredAuthentication implements Authentication.Deferred
             throw new NullPointerException("No Authenticator");
         this._authenticator = authenticator;
     }
-    
+
     /* ------------------------------------------------------------ */
     public DeferredAuthentication(LoginAuthenticator authenticator)
     {
@@ -63,7 +67,7 @@ public class DeferredAuthentication implements Authentication.Deferred
             throw new NullPointerException("No Authenticator");
         this._authenticator = authenticator;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the identityService.
      * @return the identityService
@@ -103,7 +107,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         try
         {
             Authentication authentication = _authenticator.validateRequest(request,__deferredResponse,true);
-            
+
             if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
             {
                 if (_identityService!=null)
@@ -117,7 +121,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
         return this;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
@@ -173,7 +177,7 @@ public class DeferredAuthentication implements Authentication.Deferred
     {
         return response==__deferredResponse;
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -362,5 +366,5 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
     };
 
-    
+
 }

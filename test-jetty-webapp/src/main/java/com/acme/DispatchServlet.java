@@ -1,21 +1,26 @@
-// ========================================================================
-// Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package com.acme;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -32,8 +37,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Test Servlet RequestDispatcher.
- * 
- * 
+ *
+ *
  */
 public class DispatchServlet extends HttpServlet
 {
@@ -58,20 +63,20 @@ public class DispatchServlet extends HttpServlet
             sreq= new HttpServletRequestWrapper(sreq);
             sres= new HttpServletResponseWrapper(sres);
         }
-        
+
         if (sreq.getParameter("session") != null)
             sreq.getSession(true);
 
         String prefix=
             sreq.getContextPath() != null ? sreq.getContextPath() + sreq.getServletPath() : sreq.getServletPath();
-            
+
         String info;
-        
+
         if (sreq.getAttribute("javax.servlet.include.servlet_path") != null)
             info= (String)sreq.getAttribute("javax.servlet.include.path_info");
         else
             info= sreq.getPathInfo();
-        
+
         if (info == null)
             info= "NULL";
 
@@ -80,7 +85,7 @@ public class DispatchServlet extends HttpServlet
             sres.sendError(403,"Nested " + sreq.getServletPath() + " forbidden.");
             return;
         }
-        
+
         if(info.indexOf(getServletName()) > 0)
         {
             sres.sendError(403,"Nested " + getServletName() + " forbidden.");
@@ -95,11 +100,11 @@ public class DispatchServlet extends HttpServlet
                 info += "?Dispatch=include";
             else
                 info += "&Dispatch=include";
-            
+
             PrintWriter pout= null;
             pout= sres.getWriter();
             pout.write("<H1>Include (writer): " + info + "</H1><HR>");
-            
+
             RequestDispatcher dispatch= getServletContext().getRequestDispatcher(info);
             if (dispatch == null)
             {
@@ -108,7 +113,7 @@ public class DispatchServlet extends HttpServlet
             }
             else
                 dispatch.include(sreq, sres);
-            
+
             pout.write("<HR><H1>-- Included (writer)</H1>");
         }
         else if (info.startsWith("/includeS/"))
@@ -119,11 +124,11 @@ public class DispatchServlet extends HttpServlet
                 info += "?Dispatch=include";
             else
                 info += "&Dispatch=include";
-            
+
             OutputStream out= null;
             out= sres.getOutputStream();
             out.write(("<H1>Include (outputstream): " + info + "</H1><HR>").getBytes());
-            
+
             RequestDispatcher dispatch= getServletContext().getRequestDispatcher(info);
             if (dispatch == null)
             {
@@ -132,9 +137,9 @@ public class DispatchServlet extends HttpServlet
             }
             else
                 dispatch.include(sreq, sres);
-            
+
             out.write("<HR><H1>-- Included (outputstream)</H1>".getBytes());
-            
+
         }
         else if (info.startsWith("/forward/"))
         {
@@ -143,7 +148,7 @@ public class DispatchServlet extends HttpServlet
                 info += "?Dispatch=forward";
             else
                 info += "&Dispatch=forward";
-            
+
             RequestDispatcher dispatch= getServletContext().getRequestDispatcher(info);
             if (dispatch != null)
             {
@@ -177,13 +182,13 @@ public class DispatchServlet extends HttpServlet
                 info += "?Dispatch=forward";
             else
                 info += "&Dispatch=forward";
-            
+
             String cpath= info.substring(0, info.indexOf('/', 1));
             info= info.substring(cpath.length());
-            
+
             ServletContext context= getServletContext().getContext(cpath);
             RequestDispatcher dispatch= context.getRequestDispatcher(info);
-            
+
             if (dispatch != null)
             {
                 dispatch.forward(sreq, sres);
@@ -202,7 +207,7 @@ public class DispatchServlet extends HttpServlet
             info= info.substring(10);
             if (info.indexOf("/") >= 0)
                 info= info.substring(0, info.indexOf("/"));
-            
+
             PrintWriter pout;
             if (info.startsWith("/null"))
                 info= info.substring(5);
@@ -211,7 +216,7 @@ public class DispatchServlet extends HttpServlet
                 pout= sres.getWriter();
                 pout.write("<H1>Include named: " + info + "</H1><HR>");
             }
-            
+
             RequestDispatcher dispatch= getServletContext().getNamedDispatcher(info);
             if (dispatch != null)
                 dispatch.include(sreq, sres);
@@ -220,7 +225,7 @@ public class DispatchServlet extends HttpServlet
                 pout= sres.getWriter();
                 pout.write("<H1>No servlet named: " + info + "</H1>");
             }
-            
+
             pout= sres.getWriter();
             pout.write("<HR><H1>Included ");
         }
@@ -258,7 +263,7 @@ public class DispatchServlet extends HttpServlet
                     + prefix
                     + "/forwardC/_context/path\n</PRE>");
         }
-        
+
     }
 
     /* ------------------------------------------------------------ */

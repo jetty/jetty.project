@@ -1,24 +1,26 @@
-package org.eclipse.jetty.servlets;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -35,6 +37,9 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -242,7 +247,7 @@ public abstract class AbstractDoSFilterTest
         String responses = doRequests(request+request+request+request,1,0,0,last);
 
         System.err.println("RESPONSES: \n"+responses);
-        
+
         assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
         assertEquals(1,count(responses,"HTTP/1.1 503"));
         assertEquals(1,count(responses,"DoSFilter: delayed"));

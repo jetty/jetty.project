@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlet;
 
@@ -26,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -575,7 +579,7 @@ public class ServletHandler extends ScopedHandler
 
         // Build list of filters (list of FilterHolder objects)
         List<FilterHolder> filters = new ArrayList<>();
-        
+
         // Path filters
         if (pathInContext!=null && _filterPathMappings!=null)
         {
@@ -593,7 +597,7 @@ public class ServletHandler extends ScopedHandler
             if (_filterNameMappings.size() > 0)
             {
                 Object o= _filterNameMappings.get(servletHolder.getName());
-                
+
                 for (int i=0; i<LazyList.size(o);i++)
                 {
                     FilterMapping mapping = (FilterMapping)LazyList.get(o,i);

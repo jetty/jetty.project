@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util;
 
@@ -99,8 +104,11 @@ public class BufferUtil
      */
     public static void clear(ByteBuffer buffer)
     {
-        buffer.position(0);
-        buffer.limit(0);
+        if (buffer!=null)
+        {
+            buffer.position(0);
+            buffer.limit(0);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -301,7 +309,7 @@ public class BufferUtil
      * @param to Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
      * @return number of bytes moved
      */
-    public static int append(ByteBuffer from, ByteBuffer to)
+    public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
     {
         int pos= flipToFill(to);
         try
@@ -312,6 +320,32 @@ public class BufferUtil
         {
             flipToFlush(to,pos);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public static void append(ByteBuffer to, byte[] b,int off,int len)
+    {
+        int pos= flipToFill(to);
+        try
+        {
+            to.put(b,off,len);
+        }
+        finally
+        {
+            flipToFlush(to,pos);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public static void append(ByteBuffer to, byte b)
+    {
+        int limit=to.limit();
+        to.put(limit,b);
+        to.limit(limit+1);
     }
     
     /* ------------------------------------------------------------ */

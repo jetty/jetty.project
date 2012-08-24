@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
@@ -19,6 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -108,7 +115,7 @@ class JarFileResource extends JarResource
     
     /* ------------------------------------------------------------ */
     /**
-     * Returns true if the respresenetd resource exists.
+     * Returns true if the represented resource exists.
      */
     @Override
     public boolean exists()
@@ -240,67 +247,101 @@ class JarFileResource extends JarResource
     @Override
     public synchronized String[] list()
     {
-        
-        if(isDirectory() && _list==null)
+        if (isDirectory() && _list==null)
         {
-            ArrayList<String> list = new ArrayList<>(32);
+            List<String> list = null;
+            try
+            {
+                list = listEntries();
+            }
+            catch (Exception e)
+            {
+                //Sun's JarURLConnection impl for jar: protocol will close a JarFile in its connect() method if
+                //useCaches == false (eg someone called URLConnection with defaultUseCaches==true).
+                //As their sun.net.www.protocol.jar package caches JarFiles and/or connections, we can wind up in 
+                //the situation where the JarFile we have remembered in our _jarFile member has actually been closed
+                //by other code.
+                //So, do one retry to drop a connection and get a fresh JarFile
+                LOG.warn("Retrying list:"+e);
+                LOG.debug(e);
+                release();
+                list = listEntries();
+            }
 
-            checkConnection();
-            
-            JarFile jarFile=_jarFile;
-            if(jarFile==null)
+            if (list != null)
             {
-                try
-                {
-                    JarURLConnection jc=(JarURLConnection)((new URL(_jarUrl)).openConnection());
-                    jc.setUseCaches(getUseCaches());
-                    jarFile=jc.getJarFile();
-                }
-                catch(Exception e)
-                {
-                     LOG.ignore(e);
-                }
-                if(jarFile==null)
-                    throw new IllegalStateException();
-            }
-            
-            Enumeration<JarEntry> e=jarFile.entries();
-            String dir=_urlString.substring(_urlString.indexOf("!/")+2);
-            while(e.hasMoreElements())
-            {
-                JarEntry entry = e.nextElement();               
-                String name=entry.getName().replace('\\','/');               
-                if(!name.startsWith(dir) || name.length()==dir.length())
-                {
-                    continue;
-                }
-                String listName=name.substring(dir.length());               
-                int dash=listName.indexOf('/');
-                if (dash>=0)
-                {
-                    //when listing jar:file urls, you get back one
-                    //entry for the dir itself, which we ignore
-                    if (dash==0 && listName.length()==1)
-                        continue;
-                    //when listing jar:file urls, all files and
-                    //subdirs have a leading /, which we remove
-                    if (dash==0)
-                        listName=listName.substring(dash+1, listName.length());
-                    else
-                        listName=listName.substring(0,dash+1);
-                    
-                    if (list.contains(listName))
-                        continue;
-                }
-                
-                list.add(listName);
-            }
-            
-            _list=new String[list.size()];
-            list.toArray(_list);
+                _list=new String[list.size()];
+                list.toArray(_list);
+            }  
         }
         return _list;
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    private List<String> listEntries ()
+    {
+        checkConnection();
+        
+        ArrayList<String> list = new ArrayList<String>(32);
+        JarFile jarFile=_jarFile;
+        if(jarFile==null)
+        {
+            try
+            {
+                JarURLConnection jc=(JarURLConnection)((new URL(_jarUrl)).openConnection());
+                jc.setUseCaches(getUseCaches());
+                jarFile=jc.getJarFile();
+            }
+            catch(Exception e)
+            {
+
+                e.printStackTrace();
+                 LOG.ignore(e);
+            }
+                if(jarFile==null)
+                    throw new IllegalStateException();
+        }
+        
+        Enumeration e=jarFile.entries();
+        String dir=_urlString.substring(_urlString.indexOf("!/")+2);
+        while(e.hasMoreElements())
+        {
+            
+            JarEntry entry = (JarEntry) e.nextElement();               
+            String name=entry.getName().replace('\\','/');               
+            if(!name.startsWith(dir) || name.length()==dir.length())
+            {
+                continue;
+            }
+            String listName=name.substring(dir.length());               
+            int dash=listName.indexOf('/');
+            if (dash>=0)
+            {
+                //when listing jar:file urls, you get back one
+                //entry for the dir itself, which we ignore
+                if (dash==0 && listName.length()==1)
+                    continue;
+                //when listing jar:file urls, all files and
+                //subdirs have a leading /, which we remove
+                if (dash==0)
+                    listName=listName.substring(dash+1, listName.length());
+                else
+                    listName=listName.substring(0,dash+1);
+                
+                if (list.contains(listName))
+                    continue;
+            }
+            
+            list.add(listName);
+        }
+        
+        return list;
+    }
+    
+    
+    
+    
     
     /* ------------------------------------------------------------ */
     /**

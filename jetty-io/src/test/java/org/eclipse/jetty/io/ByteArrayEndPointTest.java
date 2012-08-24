@@ -1,11 +1,22 @@
-package org.eclipse.jetty.io;
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static junit.framework.Assert.assertEquals;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,6 +31,13 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static junit.framework.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ByteArrayEndPointTest
 {
@@ -42,26 +60,26 @@ public class ByteArrayEndPointTest
     {
         ByteArrayEndPoint endp = new ByteArrayEndPoint();
         endp.setInput("test input");
-        
+
         ByteBuffer buffer = BufferUtil.allocate(1024);
-        
+
         assertEquals(10,endp.fill(buffer));
         assertEquals("test input",BufferUtil.toString(buffer));
-        
+
         assertEquals(0,endp.fill(buffer));
-        
+
         endp.setInput(" more");
         assertEquals(5,endp.fill(buffer));
         assertEquals("test input more",BufferUtil.toString(buffer));
-        
+
         assertEquals(0,endp.fill(buffer));
 
         endp.setInput((ByteBuffer)null);
 
         assertEquals(-1,endp.fill(buffer));
-        
+
         endp.close();
-        
+
         try
         {
             endp.fill(buffer);
@@ -71,45 +89,45 @@ public class ByteArrayEndPointTest
         {
             assertThat(e.getMessage(),containsString("CLOSED"));
         }
-        
+
         endp.reset();
         endp.setInput("and more");
         buffer = BufferUtil.allocate(4);
-        
+
         assertEquals(4,endp.fill(buffer));
         assertEquals("and ",BufferUtil.toString(buffer));
         assertEquals(0,endp.fill(buffer));
         BufferUtil.clear(buffer);
         assertEquals(4,endp.fill(buffer));
         assertEquals("more",BufferUtil.toString(buffer));
-        
+
     }
-    
+
     @Test
     public void testGrowingFlush() throws Exception
     {
         ByteArrayEndPoint endp = new ByteArrayEndPoint((byte[])null,15);
         endp.setGrowOutput(true);
-        
+
         assertEquals(11,endp.flush(BufferUtil.toBuffer("some output")));
         assertEquals("some output",endp.getOutputString());
-        
+
         assertEquals(10,endp.flush(BufferUtil.toBuffer(" some more")));
         assertEquals("some output some more",endp.getOutputString());
-        
+
         assertEquals(0,endp.flush());
         assertEquals("some output some more",endp.getOutputString());
-        
+
         assertEquals(0,endp.flush(BufferUtil.EMPTY_BUFFER));
         assertEquals("some output some more",endp.getOutputString());
-        
+
         assertEquals(9,endp.flush(BufferUtil.EMPTY_BUFFER,BufferUtil.toBuffer(" and"),BufferUtil.toBuffer(" more")));
         assertEquals("some output some more and more",endp.getOutputString());
-        
-        
-        
+
+
+
     }
-    
+
     @Test
     public void testFlush() throws Exception
     {
@@ -123,11 +141,11 @@ public class ByteArrayEndPointTest
         assertEquals("data.",BufferUtil.toString(data));
 
         assertEquals("Some more ",endp.takeOutputString());
-        
+
         assertEquals(5,endp.flush(data));
         assertEquals("data.",BufferUtil.toString(endp.takeOutput()));
     }
-    
+
 
     @Test
     public void testReadable() throws Exception
@@ -282,5 +300,5 @@ public class ByteArrayEndPointTest
         Thread.sleep(1000);
         assertFalse(endp.isOpen());
     }
-    
+
 }

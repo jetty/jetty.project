@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlet;
 
@@ -18,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
@@ -30,37 +34,37 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* --------------------------------------------------------------------- */
-/** 
- * 
+/**
+ *
  */
 public class FilterHolder extends Holder<Filter>
 {
     private static final Logger LOG = Log.getLogger(FilterHolder.class);
-    
+
     /* ------------------------------------------------------------ */
     private transient Filter _filter;
     private transient Config _config;
     private transient FilterRegistration.Dynamic _registration;
-    
+
     /* ---------------------------------------------------------------- */
-    /** Constructor 
+    /** Constructor
      */
     public FilterHolder()
     {
         super (Source.EMBEDDED);
-    }   
- 
-    
+    }
+
+
     /* ---------------------------------------------------------------- */
-    /** Constructor 
+    /** Constructor
      */
     public FilterHolder(Holder.Source source)
     {
         super (source);
-    }   
-    
+    }
+
     /* ---------------------------------------------------------------- */
-    /** Constructor 
+    /** Constructor
      */
     public FilterHolder(Class<? extends Filter> filter)
     {
@@ -76,14 +80,14 @@ public class FilterHolder extends Holder<Filter>
         super (Source.EMBEDDED);
         setFilter(filter);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void doStart()
         throws Exception
     {
         super.doStart();
-        
+
         if (!javax.servlet.Filter.class
             .isAssignableFrom(_class))
         {
@@ -108,7 +112,7 @@ public class FilterHolder extends Holder<Filter>
                 throw se;
             }
         }
-        
+
         _config=new Config();
         _filter.init(_config);
     }
@@ -117,7 +121,7 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void doStop()
         throws Exception
-    {      
+    {
         if (_filter!=null)
         {
             try
@@ -131,9 +135,9 @@ public class FilterHolder extends Holder<Filter>
         }
         if (!_extInstance)
             _filter=null;
-        
+
         _config=null;
-        super.doStop();   
+        super.doStop();
     }
 
     /* ------------------------------------------------------------ */
@@ -157,7 +161,7 @@ public class FilterHolder extends Holder<Filter>
         if (getName()==null)
             setName(filter.getClass().getName());
     }
-    
+
     /* ------------------------------------------------------------ */
     public Filter getFilter()
     {
@@ -170,7 +174,7 @@ public class FilterHolder extends Holder<Filter>
     {
         return getName();
     }
-    
+
     /* ------------------------------------------------------------ */
     public FilterRegistration.Dynamic getRegistration()
     {
@@ -178,7 +182,7 @@ public class FilterHolder extends Holder<Filter>
             _registration = new Registration();
         return _registration;
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

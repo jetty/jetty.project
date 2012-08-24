@@ -1,18 +1,20 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.websocket.server;
 
@@ -28,7 +30,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -43,6 +44,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.driver.EventMethodsCache;
@@ -151,7 +154,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     }
 
     @Override
-    public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
+    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
     {
         if (methodsCache.count() < 1)
         {
@@ -194,7 +197,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
      * Get the base policy in use for WebSockets.
      * <p>
      * Note: individual WebSocket implementations can override some of the values in here by using the {@link WebSocket &#064;WebSocket} annotation.
-     * 
+     *
      * @return the base policy
      */
     public WebSocketPolicy getPolicy()
@@ -305,7 +308,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
      * <p>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
-     * 
+     *
      * @param request
      *            The request to upgrade
      * @param response
@@ -351,7 +354,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
         WebSocketServerConnection connection = new WebSocketServerConnection(endp,executor,scheduler,websocket.getPolicy(),bufferPool,this);
         // Tell jetty about the new connection
-        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTR,connection);
+        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
 
         LOG.debug("HttpConnection: {}",http);
         LOG.debug("AsyncWebSocketConnection: {}",connection);

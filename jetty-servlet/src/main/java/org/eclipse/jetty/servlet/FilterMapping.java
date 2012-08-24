@@ -1,21 +1,25 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.http.PathMap;
@@ -37,7 +41,7 @@ public class FilterMapping implements Dumpable
     public static final int ERROR=8;
     public static final int ASYNC=16;
     public static final int ALL=31;
-    
+
 
     /* ------------------------------------------------------------ */
     /** Dispatch type from name
@@ -56,7 +60,7 @@ public class FilterMapping implements Dumpable
             return DispatcherType.ASYNC;
         throw new IllegalArgumentException(type);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Dispatch type from name
      */
@@ -77,12 +81,12 @@ public class FilterMapping implements Dumpable
     	}
         throw new IllegalArgumentException(type.toString());
     }
-	
+
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    
-	
+
+
     private int _dispatches=DEFAULT;
     private String _filterName;
     private transient FilterHolder _holder;
@@ -92,7 +96,7 @@ public class FilterMapping implements Dumpable
     /* ------------------------------------------------------------ */
     public FilterMapping()
     {}
-    
+
     /* ------------------------------------------------------------ */
     /** Check if this filter applies to a path.
      * @param path The path to check or null to just check type
@@ -110,7 +114,7 @@ public class FilterMapping implements Dumpable
 
         return false;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Check if this filter applies to a particular dispatch type.
      * @param type The type of request:
@@ -123,7 +127,7 @@ public class FilterMapping implements Dumpable
     		return type==REQUEST || type==ASYNC && _holder.isAsyncSupported();
         return (_dispatches&type)!=0;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the filterName.
@@ -133,7 +137,7 @@ public class FilterMapping implements Dumpable
     {
         return _filterName;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the holder.
@@ -142,7 +146,7 @@ public class FilterMapping implements Dumpable
     {
         return _holder;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the pathSpec.
@@ -154,24 +158,24 @@ public class FilterMapping implements Dumpable
     }
 
     /* ------------------------------------------------------------ */
-    public void setDispatcherTypes(EnumSet<DispatcherType> dispatcherTypes) 
+    public void setDispatcherTypes(EnumSet<DispatcherType> dispatcherTypes)
     {
         _dispatches=DEFAULT;
         if (dispatcherTypes!=null)
         {
-            if (dispatcherTypes.contains(DispatcherType.ERROR)) 
+            if (dispatcherTypes.contains(DispatcherType.ERROR))
                 _dispatches|=ERROR;
-            if (dispatcherTypes.contains(DispatcherType.FORWARD)) 
+            if (dispatcherTypes.contains(DispatcherType.FORWARD))
                 _dispatches|=FORWARD;
-            if (dispatcherTypes.contains(DispatcherType.INCLUDE)) 
+            if (dispatcherTypes.contains(DispatcherType.INCLUDE))
                 _dispatches|=INCLUDE;
-            if (dispatcherTypes.contains(DispatcherType.REQUEST)) 
+            if (dispatcherTypes.contains(DispatcherType.REQUEST))
                 _dispatches|=REQUEST;
-            if (dispatcherTypes.contains(DispatcherType.ASYNC)) 
+            if (dispatcherTypes.contains(DispatcherType.ASYNC))
                 _dispatches|=ASYNC;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param dispatches The dispatches to set.
@@ -185,7 +189,7 @@ public class FilterMapping implements Dumpable
     {
         _dispatches = dispatches;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param filterName The filterName to set.
@@ -194,7 +198,7 @@ public class FilterMapping implements Dumpable
     {
         _filterName = filterName;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param holder The holder to set.
@@ -204,16 +208,16 @@ public class FilterMapping implements Dumpable
         _holder = holder;
         setFilterName(holder.getName());
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * @param pathSpecs The Path specifications to which this filter should be mapped. 
+     * @param pathSpecs The Path specifications to which this filter should be mapped.
      */
     public void setPathSpecs(String[] pathSpecs)
     {
         _pathSpecs = pathSpecs;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param pathSpec The pathSpec to set.
@@ -222,7 +226,7 @@ public class FilterMapping implements Dumpable
     {
         _pathSpecs = new String[]{pathSpec};
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the servletName.
@@ -232,7 +236,7 @@ public class FilterMapping implements Dumpable
     {
         return _servletNames;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param servletNames Maps the {@link #setFilterName(String) named filter} to multiple servlets
@@ -242,7 +246,7 @@ public class FilterMapping implements Dumpable
     {
         _servletNames = servletNames;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param servletName Maps the {@link #setFilterName(String) named filter} to a single servlet
@@ -256,11 +260,11 @@ public class FilterMapping implements Dumpable
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return 
+        return
         TypeUtil.asList(_pathSpecs)+"/"+
         TypeUtil.asList(_servletNames)+"=="+
         _dispatches+"=>"+
-        _filterName; 
+        _filterName;
     }
 
     /* ------------------------------------------------------------ */
@@ -273,5 +277,5 @@ public class FilterMapping implements Dumpable
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
-    }    
+    }
 }

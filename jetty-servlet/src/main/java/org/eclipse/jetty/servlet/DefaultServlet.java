@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlet;
 
@@ -23,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -91,16 +95,16 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *  resourceBase      Set to replace the context resource base
  *
- *  resourceCache     If set, this is a context attribute name, which the servlet 
- *                    will use to look for a shared ResourceCache instance. 
- *                        
+ *  resourceCache     If set, this is a context attribute name, which the servlet
+ *                    will use to look for a shared ResourceCache instance.
+ *
  *  relativeResourceBase
  *                    Set with a pathname relative to the base of the
  *                    servlet context root. Useful for only serving static content out
  *                    of only specific subdirectories.
  *
- *  pathInfoOnly      If true, only the path info will be applied to the resourceBase 
- *                        
+ *  pathInfoOnly      If true, only the path info will be applied to the resourceBase
+ *
  *  stylesheet	      Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
  *
@@ -226,7 +230,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             {
                 _stylesheet = Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
             }
-        }	
+        }
         catch(Exception e)
         {
             LOG.warn(e.toString());
@@ -275,7 +279,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (h.getServletInstance()==this)
                 _defaultHolder=h;
 
-        if (LOG.isDebugEnabled()) 
+        if (LOG.isDebugEnabled())
             LOG.debug("resource base = "+_resourceBase);
     }
 
@@ -295,7 +299,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (servletContext instanceof ContextHandler.Context)
                 return ((ContextHandler.Context)servletContext).getContextHandler();
             else
-                throw new IllegalArgumentException("The servletContext " + servletContext + " " + 
+                throw new IllegalArgumentException("The servletContext " + servletContext + " " +
                     servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
         }
         else
@@ -345,7 +349,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
      * @return The resource to serve.
      */
     public Resource getResource(String pathInContext)
-    {	
+    {
         Resource r=null;
         if (_relativeResourceBase!=null)
             pathInContext=URIUtil.addPaths(_relativeResourceBase,pathInContext);
@@ -406,10 +410,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (!hasDefinedRange(reqRanges))
                 reqRanges = null;
         }
-        
+
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
-        
+
         // Can we gzip this request?
         String pathInContextGz=null;
         boolean gzip=false;
@@ -465,11 +469,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
             if (LOG.isDebugEnabled())
                 LOG.debug("uri="+request.getRequestURI()+" resource="+resource+(content!=null?" content":""));
-            
+
             // Handle resource
             if (resource==null || !resource.exists())
             {
-                if (included) 
+                if (included)
                     throw new FileNotFoundException("!" + pathInContext);
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
             }
@@ -789,16 +793,16 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             out = response.getOutputStream();
 
             // has a filter already written to the response?
-            written = out instanceof HttpOutput 
-                ? ((HttpOutput)out).isWritten() 
+            written = out instanceof HttpOutput
+                ? ((HttpOutput)out).isWritten()
                 : true;
         }
-        catch(IllegalStateException e) 
+        catch(IllegalStateException e)
         {
             out = new WriterOutputStream(response.getWriter());
             written=true; // there may be data in writer buffer, so assume written
         }
-        
+
         if ( reqRanges == null || !reqRanges.hasMoreElements() || content_length<0)
         {
             //  if there were no ranges, send entire entity
@@ -816,7 +820,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         writeOptionHeaders(((Response)response).getHttpFields());
                         ((HttpOutput)out).sendContent(content);
                     }
-                    else 
+                    else
                     {
                         ByteBuffer buffer = direct?content.getDirectBuffer():content.getIndirectBuffer();
                         if (buffer!=null)
@@ -831,7 +835,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         }
                     }
                 }
-                else 
+                else
                 {
                     // Write headers normally
                     writeHeaders(response,content,written?-1:content_length);

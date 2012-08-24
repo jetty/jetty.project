@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.session;
 
@@ -26,7 +31,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
@@ -61,7 +65,7 @@ public class HashSessionManager extends AbstractSessionManager
     private boolean _lazyLoad=false;
     private volatile boolean _sessionsLoaded=false;
     private boolean _deleteUnrestorableSessions=false;
-    
+
 
 
 
@@ -437,13 +441,13 @@ public class HashSessionManager extends AbstractSessionManager
     {
         return _lazyLoad;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isDeleteUnrestorableSessions()
     {
         return _deleteUnrestorableSessions;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setDeleteUnrestorableSessions(boolean deleteUnrestorableSessions)
     {
@@ -492,7 +496,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         catch (Exception e)
         {
-           
+
             if (isDeleteUnrestorableSessions())
             {
                 if (file.exists())
@@ -503,7 +507,7 @@ public class HashSessionManager extends AbstractSessionManager
             }
             else
                 __log.warn("Problem restoring session "+idInCuster, e);
-                
+
         }
         return null;
     }

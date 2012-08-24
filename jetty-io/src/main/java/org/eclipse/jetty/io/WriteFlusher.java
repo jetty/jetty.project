@@ -1,14 +1,20 @@
-// ========================================================================
-// Copyright (c) 2012-2012 Mort Bay Consulting Pty. Ltd.
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.io;
 
@@ -250,12 +256,14 @@ abstract public class WriteFlusher
 
         protected void fail(Throwable cause)
         {
-            _callback.failed(_context, cause);
+            if (_callback!=null)
+                _callback.failed(_context, cause);
         }
 
         protected void complete()
         {
-            _callback.completed(_context);
+            if (_callback!=null)
+                _callback.completed(_context);
         }
     }
 
@@ -284,9 +292,6 @@ abstract public class WriteFlusher
         if (LOG.isDebugEnabled())
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
         
-        if (callback == null)
-            throw new IllegalArgumentException();
-
         if (!updateState(__IDLE,__WRITING))
             throw new WritePendingException();
 
@@ -311,12 +316,16 @@ abstract public class WriteFlusher
             // If updateState didn't succeed, we don't care as our buffers have been written
             if (!updateState(__WRITING,__IDLE))
                 ignoreFail();
-            callback.completed(context);
+            if (callback!=null)
+                callback.completed(context);
         }
         catch (IOException e)
         {
             if (updateState(__WRITING,__IDLE))
-                callback.failed(context, e);
+            {
+                if (callback!=null)
+                    callback.failed(context, e);
+            }
             else
                 fail(new PendingState<>(buffers, context, callback));
         }

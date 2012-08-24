@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -26,6 +31,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
@@ -78,7 +86,6 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
-    private boolean _uncheckedPrintWriter=false;
 
 
     /* ------------------------------------------------------------ */
@@ -347,10 +354,13 @@ public class Server extends HandlerWrapper implements Attributes
             
             for (Connector connector : _connectors)
             {
-                while (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
-                {
-                    System.err.println(((Dumpable)connector).dump());
-                    Thread.sleep(100);
+                if (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
+                {                    
+                    if (LOG.isDebugEnabled())
+                        System.err.println(((Dumpable)connector).dump());
+                    LOG.info("Waiting for connections to close on {}...",connector);
+                    while (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
+                        Thread.sleep(100);
                 }
             }
         }
@@ -397,15 +407,35 @@ public class Server extends HandlerWrapper implements Attributes
         final Response response=connection.getResponse();
 
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("REQUEST "+target+" on "+connection);
-            handle(target, request, request, response);
-            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
+        
+        if ("*".equals(target))
+        {
+            handleOptions(request,response);
+            if (!request.isHandled())
+                handle(target, request, request, response);
         }
         else
             handle(target, request, request, response);
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
     }
 
+    /* ------------------------------------------------------------ */
+    /* Handle Options request to server
+     */
+    protected void handleOptions(Request request,Response response) throws IOException
+    {
+        if (!HttpMethod.OPTIONS.is(request.getMethod()))
+            response.sendError(HttpStatus.BAD_REQUEST_400);
+        request.setHandled(true);
+        response.setStatus(200);
+        response.getHttpFields().put(HttpHeader.ALLOW,"GET,POST,HEAD,OPTIONS");
+        response.setContentLength(0);
+        response.complete();
+    }
+    
     /* ------------------------------------------------------------ */
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,
@@ -625,18 +655,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         dumpThis(out);
         dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),_connectors);
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isUncheckedPrintWriter()
-    {
-        return _uncheckedPrintWriter;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setUncheckedPrintWriter(boolean unchecked)
-    {
-        _uncheckedPrintWriter=unchecked;
     }
 
     /* ------------------------------------------------------------ */

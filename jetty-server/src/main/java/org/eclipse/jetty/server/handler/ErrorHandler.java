@@ -1,21 +1,27 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.handler;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -29,18 +35,19 @@ import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 
 /* ------------------------------------------------------------ */
 /** Handler for Error pages
- * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or 
- * {@link org.eclipse.jetty.server.Server#addBean(Object)}.   
+ * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
+ * {@link org.eclipse.jetty.server.Server#addBean(Object)}.
  * It is called by the HttpResponse.sendError method to write a error page.
- * 
+ *
  */
 public class ErrorHandler extends AbstractHandler
 {
     boolean _showStacks=true;
+    boolean _showMessageInTitle=true;
     String _cacheControl="must-revalidate,no-cache,no-store";
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
@@ -50,7 +57,7 @@ public class ErrorHandler extends AbstractHandler
         String method = request.getMethod();
         if(!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
             return;
-        response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());    
+        response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());
         if (_cacheControl!=null)
             response.setHeader(HttpHeader.CACHE_CONTROL.asString(), _cacheControl);
         ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(4096);
@@ -68,7 +75,7 @@ public class ErrorHandler extends AbstractHandler
     {
         writeErrorPage(request, writer, code, message, _showStacks);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
         throws IOException
@@ -86,13 +93,17 @@ public class ErrorHandler extends AbstractHandler
     /* ------------------------------------------------------------ */
     protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
-    {
+        {
         writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=ISO-8859-1\"/>\n");
         writer.write("<title>Error ");
         writer.write(Integer.toString(code));
-        writer.write(' ');
-        write(writer,message);
-        writer.write("</title>\n");    
+
+        if (_showMessageInTitle)
+        {
+            writer.write(' ');
+            write(writer,message);
+        }
+        writer.write("</title>\n");
     }
 
     /* ------------------------------------------------------------ */
@@ -100,7 +111,7 @@ public class ErrorHandler extends AbstractHandler
         throws IOException
     {
         String uri= request.getRequestURI();
-        
+
         writeErrorPageMessage(request,writer,code,message,uri);
         if (showStacks)
             writeErrorPageStacks(request,writer);
@@ -138,7 +149,7 @@ public class ErrorHandler extends AbstractHandler
             th =th.getCause();
         }
     }
-        
+
 
     /* ------------------------------------------------------------ */
     /** Get the cacheControl.
@@ -177,16 +188,32 @@ public class ErrorHandler extends AbstractHandler
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param showMessageInTitle if true, the error message appears in page title
+     */
+    public void setShowMessageInTitle(boolean showMessageInTitle)
+    {
+        _showMessageInTitle = showMessageInTitle;
+    }
+
+
+    /* ------------------------------------------------------------ */
+    public boolean getShowMessageInTitle()
+    {
+        return _showMessageInTitle;
+    }
+
+    /* ------------------------------------------------------------ */
     protected void write(Writer writer,String string)
         throws IOException
     {
         if (string==null)
             return;
-        
+
         for (int i=0;i<string.length();i++)
         {
             char c=string.charAt(i);
-            
+
             switch(c)
             {
                 case '&' :
@@ -198,13 +225,13 @@ public class ErrorHandler extends AbstractHandler
                 case '>' :
                     writer.write("&gt;");
                     break;
-                    
+
                 default:
                     if (Character.isISOControl(c) && !Character.isWhitespace(c))
                         writer.write('?');
-                    else 
+                    else
                         writer.write(c);
-            }          
+            }
         }
     }
 }

@@ -1,26 +1,28 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
-package org.eclipse.jetty.websocket.client.io;
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.websocket.client.internal.io;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -33,11 +35,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketClient.ConnectFuture;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
-import org.eclipse.jetty.websocket.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
 
 public class WebSocketClientSelectorManager extends SelectorManager
 {
@@ -72,11 +71,11 @@ public class WebSocketClientSelectorManager extends SelectorManager
     public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment) throws IOException
     {
         LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
-        WebSocketClient.ConnectFuture confut = (WebSocketClient.ConnectFuture)attachment;
+        IWebSocketClient client = (IWebSocketClient)attachment;
 
         try
         {
-            String scheme = confut.getWebSocketUri().getScheme();
+            String scheme = client.getWebSocketUri().getScheme();
 
             if ("wss".equalsIgnoreCase(scheme))
             {
@@ -87,7 +86,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
                     SslConnection sslConnection = new SslConnection(bufferPool,executor,endPoint,engine);
                     EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
 
-                    Connection connection = newWebSocketConnection(channel,sslEndPoint,confut);
+                    Connection connection = newUpgradeConnection(channel,sslEndPoint,client);
                     sslEndPoint.setConnection(connection);
                     connectionOpened(connection);
                     return sslConnection;
@@ -101,13 +100,13 @@ public class WebSocketClientSelectorManager extends SelectorManager
             else
             {
                 // Standard "ws://"
-                return newWebSocketConnection(channel,endPoint,confut);
+                return newUpgradeConnection(channel,endPoint,client);
             }
         }
         catch (IOException e)
         {
             LOG.debug(e);
-            confut.failed(null,e);
+            client.failed(null,e);
             // rethrow
             throw e;
         }
@@ -129,20 +128,14 @@ public class WebSocketClientSelectorManager extends SelectorManager
         return engine;
     }
 
-    public AbstractWebSocketConnection newWebSocketConnection(SocketChannel channel, EndPoint endPoint, ConnectFuture confut)
+    public UpgradeConnection newUpgradeConnection(SocketChannel channel, EndPoint endPoint, IWebSocketClient client)
     {
-        WebSocketClientFactory factory = confut.getFactory();
-        WebSocketEventDriver websocket = confut.getWebSocket();
-
+        WebSocketClientFactory factory = client.getFactory();
         Executor executor = factory.getExecutor();
-        WebSocketPolicy policy = factory.getPolicy();
-        ByteBufferPool bufferPool = factory.getBufferPool();
-        ScheduledExecutorService scheduler = factory.getScheduler();
+        UpgradeConnection connection = new UpgradeConnection(endPoint,executor,client);
 
-        AbstractWebSocketConnection connection = new WebSocketClientConnection(endPoint,executor,scheduler,policy,bufferPool,factory,confut);
-        connection.getParser().setIncomingFramesHandler(websocket);
-
-        // TODO: track open websockets? bind open websocket to connection?
+        // track the client
+        factory.getConnectionManager().addClient(client);
         return connection;
     }
 

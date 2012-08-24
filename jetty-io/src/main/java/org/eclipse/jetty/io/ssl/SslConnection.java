@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2011 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.io.ssl;
 
@@ -213,7 +218,6 @@ public class SslConnection extends AbstractConnection
         private boolean _flushRequiresFillToProgress;
         private boolean _cannotAcceptMoreAppDataToFlush;
         private boolean _underFlown;
-        private boolean _ishut = false;
 
         // TODO: use ExecutorCallback ?
 //        private final Callback<Void> _writeCallback = new ExecutorCallback<Void>(getExecutor())
@@ -277,6 +281,11 @@ public class SslConnection extends AbstractConnection
             super(null,getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
         }
 
+        public EndPoint getEncryptedEndPoint()
+        {
+            return getEndPoint();
+        }
+        
         @Override
         protected FillInterest getFillInterest()
         {
@@ -397,7 +406,7 @@ public class SslConnection extends AbstractConnection
             {
                 // Do we already have some decrypted data?
                 if (BufferUtil.hasContent(_decryptedInput))
-                    return BufferUtil.append(_decryptedInput, buffer);
+                    return BufferUtil.flipPutFlip(_decryptedInput, buffer);
 
                 // We will need a network buffer
                 if (_encryptedInput == null)
@@ -492,7 +501,7 @@ public class SslConnection extends AbstractConnection
                             {
                                 if (app_in == buffer)
                                     return unwrapResult.bytesProduced();
-                                return BufferUtil.append(_decryptedInput, buffer);
+                                return BufferUtil.flipPutFlip(_decryptedInput, buffer);
                             }
 
                             // Dang! we have to care about the handshake state
@@ -624,8 +633,16 @@ public class SslConnection extends AbstractConnection
                     SSLEngineResult wrapResult = _sslEngine.wrap(appOuts, _encryptedOutput);
                     LOG.debug("{} wrap {}", SslConnection.this, wrapResult);
                     BufferUtil.flipToFlush(_encryptedOutput, pos);
-                    consumed+=wrapResult.bytesConsumed();
+                    if (wrapResult.bytesConsumed()>0)
+                    {
+                        consumed+=wrapResult.bytesConsumed();
 
+                        // clear empty buffers to prevent position creeping up the buffer
+                        for (ByteBuffer b : appOuts)
+                            if (BufferUtil.isEmpty(b))
+                                BufferUtil.clear(b);
+                    }
+                    
                     // and deal with the results returned from the sslEngineWrap
                     switch (wrapResult.getStatus())
                     {
@@ -759,7 +776,13 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isInputShutdown()
         {
-            return _ishut;
+            return _sslEngine.isInboundDone();
+        }
+        
+        @Override
+        public String toString()
+        {
+            return super.toString()+"->"+getEndPoint().toString();
         }
     }
 }

@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2005-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.jmx;
 
@@ -22,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
-
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
@@ -42,7 +46,7 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 public class MBeanContainer extends AbstractLifeCycle implements Container.Listener, Dumpable
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
-    
+
     private final MBeanServer _server;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
     private final HashMap<String, Integer> _unique = new HashMap<String, Integer>();
@@ -74,7 +78,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
     public synchronized Object findBean(ObjectName oname)
     {
         LOG.debug("findBean {}", oname );
-        
+
         for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
         {
             ObjectName bean = entry.getValue();
@@ -228,7 +232,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      * Implementation of Container.Listener interface
      *
      * @see org.eclipse.jetty.util.component.Container.Listener#addBean(java.lang.Object)
-     * 
+     *
      * TODO improve the id property to include better information
      */
     public synchronized void addBean(Object obj)
@@ -282,7 +286,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
                     buf.append(buf.length()>0 ? ",":"");
                     buf.append("name=").append(name);
                 }
-                    
+
                 String basis = buf.toString();
                 Integer count = _unique.get(basis);
                 count = count == null ? 0 : 1 + count;

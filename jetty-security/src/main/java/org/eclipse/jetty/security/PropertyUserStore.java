@@ -1,16 +1,22 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.security;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -24,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.security.MappedLoginService.KnownUser;
@@ -40,16 +45,16 @@ import org.eclipse.jetty.util.security.Credential;
 
 /**
  * PropertyUserStore
- * 
+ *
  * This class monitors a property file of the format mentioned below and notifies registered listeners of the changes to the the given file.
- * 
+ *
  * <PRE>
  *  username: password [,rolename ...]
  * </PRE>
- * 
+ *
  * Passwords may be clear text, obfuscated or checksummed. The class com.eclipse.Util.Password should be used to generate obfuscated passwords or password
  * checksums.
- * 
+ *
  * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
  */
 public class PropertyUserStore extends AbstractLifeCycle
@@ -78,7 +83,7 @@ public class PropertyUserStore extends AbstractLifeCycle
     {
         _config = config;
     }
-    
+
     /* ------------------------------------------------------------ */
         public UserIdentity getUserIdentity(String userName)
         {
@@ -151,7 +156,7 @@ public class PropertyUserStore extends AbstractLifeCycle
                 }
                 known.add(username);
                 Credential credential = Credential.getCredential(credentials);
-                
+
                 Principal userPrincipal = new KnownUser(username,credential);
                 Subject subject = new Subject();
                 subject.getPrincipals().add(userPrincipal);
@@ -164,9 +169,9 @@ public class PropertyUserStore extends AbstractLifeCycle
                         subject.getPrincipals().add(new RolePrincipal(role));
                     }
                 }
-                
+
                 subject.setReadOnly();
-                
+
                 _knownUserIdentities.put(username,_identityService.newUserIdentity(subject,userPrincipal,roleArray));
                 notifyUpdate(username,credential,roleArray);
             }
@@ -210,8 +215,8 @@ public class PropertyUserStore extends AbstractLifeCycle
     /**
      * Depending on the value of the refresh interval, this method will either start up a scanner thread that will monitor the properties file for changes after
      * it has initially loaded it. Otherwise the users will be loaded and there will be no active monitoring thread so changes will not be detected.
-     * 
-     * 
+     *
+     *
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
     protected void doStart() throws Exception
@@ -294,7 +299,7 @@ public class PropertyUserStore extends AbstractLifeCycle
 
     /**
      * Notifies the registered listeners of potential updates to a user
-     * 
+     *
      * @param username
      * @param credential
      * @param roleArray
@@ -312,7 +317,7 @@ public class PropertyUserStore extends AbstractLifeCycle
 
     /**
      * notifies the registered listeners that a user has been removed.
-     * 
+     *
      * @param username
      */
     private void notifyRemove(String username)

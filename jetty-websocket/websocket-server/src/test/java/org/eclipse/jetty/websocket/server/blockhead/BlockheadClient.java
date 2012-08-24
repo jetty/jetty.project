@@ -1,25 +1,22 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
-package org.eclipse.jetty.websocket.server.blockhead;
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
+package org.eclipse.jetty.websocket.server.blockhead;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
@@ -42,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -68,6 +64,12 @@ import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 
 /**
  * A simple websocket client for performing unit tests with.

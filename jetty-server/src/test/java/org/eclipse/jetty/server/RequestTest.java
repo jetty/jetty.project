@@ -1,25 +1,22 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,7 +29,6 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -51,6 +47,14 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class RequestTest
 {
@@ -197,6 +201,7 @@ public class RequestTest
         "Connection: close\n"+
         "\n";
 
+        LOG.info("Expecting NotUtf8Exception byte 62 in state 3...");
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
@@ -205,24 +210,23 @@ public class RequestTest
     public void testInvalidHostHeader() throws Exception
     {
         // Use a contextHandler with vhosts to force call to Request.getServerName()
-        ContextHandler handler = new ContextHandler();
-        handler.addVirtualHosts(new String[1]);
+        ContextHandler context = new ContextHandler();
+        context.addVirtualHosts(new String[]{"something"});
         _server.stop();
-        _server.setHandler(handler);
+        _server.setHandler(context);
         _server.start();
 
+
         // Request with illegal Host header
-        String request="GET / HTTP/1.1\r\n"+
-        "Host: whatever.com:\r\n"+
+        String request="GET / HTTP/1.1\n"+
+        "Host: whatever.com:xxxx\n"+
         "Content-Type: text/html;charset=utf8\n"+
         "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
-        assertTrue("400 Bad Request response expected",responses.startsWith("HTTP/1.1 400"));
+        assertThat(responses,Matchers.startsWith("HTTP/1.1 400"));
     }
-
-
 
     @Test
     public void testContentTypeEncoding() throws Exception
@@ -375,6 +379,7 @@ public class RequestTest
             }
         };
 
+
         String content="";
 
         for (int l=0;l<1025;l++)
@@ -386,7 +391,9 @@ public class RequestTest
             "Connection: close\r\n"+
             "\r\n"+
             content;
+            Log.getRootLogger().debug("test l={}",l);
             String response = _connector.getResponses(request);
+            Log.getRootLogger().debug(response);
             assertEquals(l,length[0]);
             if (l>0)
                 assertEquals(l,_handler._content.length());
@@ -861,27 +868,32 @@ public class RequestTest
     @Test
     public void testHashDOS() throws Exception
     {
+        LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
 
-        // This file is not distributed - as it is dangerous
-        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
-        if (!evil_keys.exists())
-        {
-            LOG.info("testHashDOS skipped");
-            return;
-        }
 
-        BufferedReader in = new BufferedReader(new FileReader(evil_keys));
         StringBuilder buf = new StringBuilder(4000000);
-
-        String key=null;
         buf.append("a=b");
-        while((key=in.readLine())!=null)
+
+        // The evil keys file is not distributed - as it is dangerous
+        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
+        if (evil_keys.exists())
         {
-            buf.append("&").append(key).append("=").append("x");
+            LOG.info("Using real evil keys!");
+            BufferedReader in = new BufferedReader(new FileReader(evil_keys));
+            String key=null;
+            while((key=in.readLine())!=null)
+                buf.append("&").append(key).append("=").append("x");
+        }
+        else
+        {
+            // we will just create a lot of keys and make sure the limit is applied
+            for (int i=0;i<2000;i++)
+                buf.append("&").append("K").append(i).append("=").append("x");
         }
         buf.append("&c=d");
+
 
         _handler._checker = new RequestTester()
         {

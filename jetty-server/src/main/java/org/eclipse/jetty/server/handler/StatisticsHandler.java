@@ -1,22 +1,26 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,7 +40,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 public class StatisticsHandler extends HandlerWrapper
 {
     private final AtomicLong _statsStartedAt = new AtomicLong();
-    
+
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final CounterStatistic _dispatchedStats = new CounterStatistic();
@@ -45,7 +49,7 @@ public class StatisticsHandler extends HandlerWrapper
 
     private final AtomicInteger _resumes = new AtomicInteger();
     private final AtomicInteger _expires = new AtomicInteger();
-    
+
     private final AtomicInteger _responses1xx = new AtomicInteger();
     private final AtomicInteger _responses2xx = new AtomicInteger();
     private final AtomicInteger _responses3xx = new AtomicInteger();
@@ -59,12 +63,12 @@ public class StatisticsHandler extends HandlerWrapper
         {
             final Request request = ((HttpChannelState)continuation).getBaseRequest();
             final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
-            
+
             _requestStats.decrement();
             _requestTimeStats.set(elapsed);
-            
+
             updateResponse(request);
-            
+
             if (!continuation.isResumed())
                 _suspendStats.decrement();
         }
@@ -74,7 +78,7 @@ public class StatisticsHandler extends HandlerWrapper
             _expires.incrementAndGet();
         }
     };
-    
+
     /**
      * Resets the current request statistics.
      */
@@ -82,7 +86,7 @@ public class StatisticsHandler extends HandlerWrapper
     public void statsReset()
     {
         _statsStartedAt.set(System.currentTimeMillis());
-        
+
         _requestStats.reset();
         _requestTimeStats.reset();
         _dispatchedStats.reset();
@@ -129,10 +133,10 @@ public class StatisticsHandler extends HandlerWrapper
         {
             final long now = System.currentTimeMillis();
             final long dispatched=now-start;
-            
+
             _dispatchedStats.decrement();
             _dispatchedTimeStats.set(dispatched);
-            
+
             if (continuation.isSuspended())
             {
                 if (continuation.isInitial())
@@ -154,7 +158,7 @@ public class StatisticsHandler extends HandlerWrapper
         Response response = request.getResponse();
         switch (response.getStatus() / 100)
         {
-            case 0: 
+            case 0:
                 if (request.isHandled())
                     _responses2xx.incrementAndGet();
                 else
@@ -306,7 +310,7 @@ public class StatisticsHandler extends HandlerWrapper
     {
         return _dispatchedTimeStats.getMax();
     }
-    
+
     /**
      * @return the total time (in milliseconds) of requests handling
      * since {@link #statsReset()} was last called.
@@ -328,7 +332,7 @@ public class StatisticsHandler extends HandlerWrapper
     {
         return _dispatchedTimeStats.getMean();
     }
-    
+
     /**
      * @return the standard deviation of time (in milliseconds) of request handling
      * since {@link #statsReset()} was last called.
@@ -340,7 +344,7 @@ public class StatisticsHandler extends HandlerWrapper
     {
         return _dispatchedTimeStats.getStdDev();
     }
-    
+
     /**
      * @return the number of requests handled by this handler
      * since {@link #statsReset()} was last called, including
@@ -372,7 +376,7 @@ public class StatisticsHandler extends HandlerWrapper
     {
         return (int)_suspendStats.getMax();
     }
-    
+
     /**
      * @return the number of requests that have been resumed
      * @see #getExpires()
@@ -451,7 +455,7 @@ public class StatisticsHandler extends HandlerWrapper
     {
         return System.currentTimeMillis() - _statsStartedAt.get();
     }
-    
+
     /**
      * @return the total bytes of content sent in responses
      */
@@ -460,9 +464,9 @@ public class StatisticsHandler extends HandlerWrapper
     {
         return _responsesTotalBytes.get();
     }
-    
+
     public String toStatsHTML()
-    {   
+    {
         StringBuilder sb = new StringBuilder();
 
         sb.append("<h1>Statistics:</h1>\n");
@@ -476,7 +480,7 @@ public class StatisticsHandler extends HandlerWrapper
         sb.append("Mean request time: ").append(getRequestTimeMean()).append("<br />\n");
         sb.append("Max request time: ").append(getRequestTimeMax()).append("<br />\n");
         sb.append("Request time standard deviation: ").append(getRequestTimeStdDev()).append("<br />\n");
-        
+
 
         sb.append("<h2>Dispatches:</h2>\n");
         sb.append("Total dispatched: ").append(getDispatched()).append("<br />\n");
@@ -491,7 +495,7 @@ public class StatisticsHandler extends HandlerWrapper
         sb.append("Total requests suspended: ").append(getSuspends()).append("<br />\n");
         sb.append("Total requests expired: ").append(getExpires()).append("<br />\n");
         sb.append("Total requests resumed: ").append(getResumes()).append("<br />\n");
-        
+
         sb.append("<h2>Responses:</h2>\n");
         sb.append("1xx responses: ").append(getResponses1xx()).append("<br />\n");
         sb.append("2xx responses: ").append(getResponses2xx()).append("<br />\n");

@@ -1,6 +1,22 @@
-package org.eclipse.jetty.websocket.client;
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.hamcrest.Matchers.*;
+package org.eclipse.jetty.websocket.client;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -11,6 +27,8 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.is;
 
 public class TrackingSocket extends WebSocketAdapter
 {
@@ -44,6 +62,12 @@ public class TrackingSocket extends WebSocketAdapter
         assertNotClosed();
     }
 
+    public void assertMessage(String string)
+    {
+        // TODO Auto-generated method stub
+
+    }
+
     public void assertNotClosed()
     {
         Assert.assertThat("Close Code",close.get(),is(-1));
@@ -68,6 +92,7 @@ public class TrackingSocket extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
+        super.onWebSocketClose(statusCode,reason);
         close.set(statusCode);
         closeMessage.append(reason);
         closeLatch.countDown();
@@ -76,6 +101,7 @@ public class TrackingSocket extends WebSocketAdapter
     @Override
     public void onWebSocketConnect(WebSocketConnection connection)
     {
+        super.onWebSocketConnect(connection);
         open.set(true);
         openLatch.countDown();
     }
@@ -85,5 +111,11 @@ public class TrackingSocket extends WebSocketAdapter
     {
         dataLatch.countDown();
         messageQueue.add(message);
+    }
+
+    public void waitForResponseMessage()
+    {
+        // TODO Auto-generated method stub
+
     }
 }

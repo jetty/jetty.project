@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlet;
 
@@ -20,7 +25,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.Registration;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
@@ -37,8 +41,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /* --------------------------------------------------------------------- */
-/** 
- * 
+/**
+ *
  */
 @ManagedObject("Holder - a container for servlets and the like")
 public class Holder<T> extends AbstractLifeCycle implements Dumpable
@@ -63,12 +67,12 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         _source=source;
     }
-    
+
     public Source getSource()
     {
         return _source;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if this holder was created for a specific instance.
@@ -77,7 +81,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         return _extInstance;
     }
-    
+
     /* ------------------------------------------------------------ */
     @SuppressWarnings("unchecked")
     public void doStart()
@@ -86,7 +90,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         //if no class already loaded and no classname, make servlet permanently unavailable
         if (_class==null && (_className==null || _className.equals("")))
             throw new UnavailableException("No class for Servlet or Filter for "+_name, -1);
-        
+
         //try to load class
         if (_class==null)
         {
@@ -103,7 +107,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void doStop()
@@ -112,20 +116,20 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         if (!_extInstance)
             _class=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     @ManagedAttribute(value="Class Name", readonly=true)
     public String getClassName()
     {
         return _className;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Class<? extends T> getHeldClass()
     {
         return _class;
     }
-    
+
     /* ------------------------------------------------------------ */
     @ManagedAttribute(value="Display Name", readonly=true)
     public String getDisplayName()
@@ -140,7 +144,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             return null;
         return (String)_initParams.get(param);
     }
-    
+
     /* ------------------------------------------------------------ */
     public Enumeration getInitParameterNames()
     {
@@ -155,14 +159,14 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         return _initParams;
     }
-    
+
     /* ------------------------------------------------------------ */
     @ManagedAttribute(value="Name", readonly=true)
     public String getName()
     {
         return _name;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the servletHandler.
@@ -171,13 +175,13 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         return _servletHandler;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void destroyInstance(Object instance)
     throws Exception
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param className The className to set.
@@ -187,7 +191,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         _className = className;
         _class=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param held The class to hold
@@ -202,26 +206,26 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
                 _name=held.getName()+"-"+this.hashCode();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setDisplayName(String name)
     {
         _displayName=name;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setInitParameter(String param,String value)
     {
         _initParams.put(param,value);
     }
-    
+
     /* ---------------------------------------------------------------- */
     public void setInitParameters(Map<String,String> map)
     {
         _initParams.clear();
         _initParams.putAll(map);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * The name is a primary key for the held object.
@@ -233,7 +237,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         _name = name;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param servletHandler The {@link ServletHandler} that will handle requests dispatched to this servlet.
@@ -254,7 +258,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         return _asyncSupported;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String toString()
     {
@@ -284,14 +288,14 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
-    }    
-    
+    }
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    protected class HolderConfig 
-    {   
-        
+    protected class HolderConfig
+    {
+
         /* -------------------------------------------------------- */
         public ServletContext getServletContext()
         {
@@ -303,7 +307,7 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         {
             return Holder.this.getInitParameter(param);
         }
-    
+
         /* -------------------------------------------------------- */
         public Enumeration getInitParameterNames()
         {
@@ -387,8 +391,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             Holder.this.getInitParameters().putAll(initParameters);
             return Collections.emptySet();
         }
-        
-        
+
+
     }
 }
 

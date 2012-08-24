@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.security;
 
@@ -21,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -85,6 +91,26 @@ public class ConstraintTest
         RequestHandler _handler = new RequestHandler();
         _security.setHandler(_handler);
 
+        _security.setConstraintMappings(getConstraintMappings(), getKnownRoles());
+    }
+
+    @After
+    public void stopServer() throws Exception
+    {
+        _server.stop();
+    }
+
+    public Set<String> getKnownRoles()
+    {
+        Set<String> knownRoles=new HashSet<>();
+        knownRoles.add("user");
+        knownRoles.add("administrator");
+
+        return knownRoles;
+    }
+
+    private List<ConstraintMapping> getConstraintMappings()
+    {
         Constraint constraint0 = new Constraint();
         constraint0.setAuthenticate(true);
         constraint0.setName("forbid");
@@ -132,18 +158,7 @@ public class ConstraintTest
         mapping5.setConstraint(constraint5);
         mapping5.setMethod("POST");
 
-
-        Set<String> knownRoles=new HashSet<>();
-        knownRoles.add("user");
-        knownRoles.add("administrator");
-
-        _security.setConstraintMappings(Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5), knownRoles);
-    }
-
-    @After
-    public void stopServer() throws Exception
-    {
-        _server.stop();
+        return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5);
     }
 
     @Test
@@ -761,20 +776,22 @@ public class ConstraintTest
         _security.setHandler(check);
         _security.setAuthenticator(new BasicAuthenticator());
         _security.setStrict(false);
+
         _server.start();
 
         String response;
-        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
+        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n", 100000, TimeUnit.MILLISECONDS);
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
-                "\r\n");
+                "\r\n", 100000, TimeUnit.MILLISECONDS);
         assertThat(response,startsWith("HTTP/1.1 500 "));
 
         _server.stop();
 
         RoleRefHandler roleref = new RoleRefHandler();
+        roleref.setHandler(_security.getHandler());
         _security.setHandler(roleref);
         roleref.setHandler(check);
 
@@ -782,7 +799,7 @@ public class ConstraintTest
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
-                "\r\n");
+                "\r\n", 100000, TimeUnit.MILLISECONDS);
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
     }
 
@@ -832,6 +849,7 @@ public class ConstraintTest
     }
     private class RequestHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -863,16 +881,19 @@ public class ConstraintTest
 
             UserIdentity.Scope scope = new UserIdentity.Scope()
             {
+                @Override
                 public String getContextPath()
                 {
                     return "/";
                 }
 
+                @Override
                 public String getName()
                 {
                     return "someServlet";
                 }
 
+                @Override
                 public Map<String, String> getRoleRefMap()
                 {
                     Map<String, String> map = new HashMap<>();
@@ -896,6 +917,7 @@ public class ConstraintTest
 
     private class RoleCheckHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
             ((Request) request).setHandled(true);

@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package com.acme;
 
@@ -20,7 +25,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -34,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Dump Servlet Request.
- * 
+ *
  */
 public class SecureModeServlet extends HttpServlet
 {
@@ -58,7 +62,7 @@ public class SecureModeServlet extends HttpServlet
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-         
+
         response.setContentType("text/html");
         ServletOutputStream out = response.getOutputStream();
         out.println("<html>");
@@ -307,7 +311,7 @@ public class SecureModeServlet extends HttpServlet
         }
 
         out.println("      </p><br/><br/>");
-        
+
         /*
          * test the reading and writing of a read/write permission
          */
@@ -372,6 +376,6 @@ public class SecureModeServlet extends HttpServlet
 
         out.println("      </p><br/><br/>");
     }
- 
-    
+
+
 }

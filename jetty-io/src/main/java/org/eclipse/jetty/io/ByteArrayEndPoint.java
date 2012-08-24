@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.io;
 
@@ -296,7 +301,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             shutdownInput();
         if (_ishut)
             return -1;
-        int filled=BufferUtil.append(_in,buffer);
+        int filled=BufferUtil.flipPutFlip(_in,buffer);
         if (filled>0)
             notIdle();
         return filled;
@@ -326,12 +331,12 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                     if (b.remaining()>BufferUtil.space(_out))
                     {
                         ByteBuffer n = BufferUtil.allocate(_out.capacity()+b.remaining()*2);
-                        BufferUtil.append(_out,n);
+                        BufferUtil.flipPutFlip(_out,n);
                         _out=n;
                     }
                 }
 
-                flushed+=BufferUtil.append(b,_out);
+                flushed+=BufferUtil.flipPutFlip(b,_out);
 
                 if (BufferUtil.hasContent(b))
                     break;

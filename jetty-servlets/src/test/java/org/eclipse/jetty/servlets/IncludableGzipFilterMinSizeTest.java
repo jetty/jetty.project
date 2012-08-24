@@ -1,21 +1,25 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlets;
 
 import java.util.Arrays;
 import java.util.Collection;
-
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -31,7 +35,7 @@ import org.junit.runners.Parameterized.Parameters;
 /**
  * Perform specific tests on the IncludableGzipFilter's ability to manage
  * minGzipSize initialization parameter.
- * 
+ *
  * @see <a href="Eclipse Bug 366106">http://bugs.eclipse.org/366106</a>
  */
 @RunWith(Parameterized.class)
@@ -43,12 +47,12 @@ public class IncludableGzipFilterMinSizeTest
         String[][] data = new String[][]
                 {
                 { GzipFilter.GZIP },
-                { GzipFilter.DEFLATE } 
+                { GzipFilter.DEFLATE }
                 };
-        
+
         return Arrays.asList(data);
     }
-    
+
     public IncludableGzipFilterMinSizeTest(String compressionType)
     {
         this.compressionType = compressionType;
@@ -64,7 +68,7 @@ public class IncludableGzipFilterMinSizeTest
     public void testUnderMinSize() throws Exception
     {
         GzipTester tester = new GzipTester(testdir, compressionType);
-        // Use IncludableGzipFilter 
+        // Use IncludableGzipFilter
         tester.setGzipFilterClass(IncludableGzipFilter.class);
 
         FilterHolder holder = tester.setContentServlet(testServlet);
@@ -85,12 +89,12 @@ public class IncludableGzipFilterMinSizeTest
             tester.stop();
         }
     }
-    
+
     @Test
     public void testOverMinSize() throws Exception
     {
         GzipTester tester = new GzipTester(testdir, compressionType);
-        // Use IncludableGzipFilter 
+        // Use IncludableGzipFilter
         tester.setGzipFilterClass(IncludableGzipFilter.class);
 
         FilterHolder holder = tester.setContentServlet(testServlet);

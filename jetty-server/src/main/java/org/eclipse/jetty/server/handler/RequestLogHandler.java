@@ -1,20 +1,24 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-package org.eclipse.jetty.server.handler; 
+package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -30,11 +34,11 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 
-/** 
+/**
  * RequestLogHandler.
  * This handler can be used to wrap an individual context for context logging.
- * 
- * 
+ *
+ *
  * @org.apache.xbean.XBean
  */
 public class RequestLogHandler extends HandlerWrapper
@@ -42,9 +46,9 @@ public class RequestLogHandler extends HandlerWrapper
     private static final Logger LOG = Log.getLogger(RequestLogHandler.class);
 
     private RequestLog _requestLog;
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
@@ -56,7 +60,7 @@ public class RequestLogHandler extends HandlerWrapper
         {
             baseRequest.setDispatchTime(System.currentTimeMillis());
         }
-        
+
         try
         {
             super.handle(target, baseRequest, request, response);
@@ -67,7 +71,7 @@ public class RequestLogHandler extends HandlerWrapper
             {
                 _requestLog.log(baseRequest, (Response)response);
             }
-            
+
         }
     }
 
@@ -84,12 +88,12 @@ public class RequestLogHandler extends HandlerWrapper
         {
             LOG.warn (e);
         }
-        
+
         if (getServer()!=null)
             getServer().getContainer().update(this, _requestLog, requestLog, "logimpl",true);
-        
+
         _requestLog = requestLog;
-        
+
         //if we're already started, then start our request log
         try
         {
@@ -103,7 +107,7 @@ public class RequestLogHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#setServer(org.eclipse.jetty.server.server.Server)
      */
     @Override
@@ -122,13 +126,13 @@ public class RequestLogHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
-    public RequestLog getRequestLog() 
+    public RequestLog getRequestLog()
     {
         return _requestLog;
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#doStart()
      */
     @Override
@@ -140,7 +144,7 @@ public class RequestLogHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#doStop()
      */
     @Override
@@ -150,5 +154,5 @@ public class RequestLogHandler extends HandlerWrapper
         if (_requestLog!=null)
             _requestLog.stop();
     }
-    
+
 }

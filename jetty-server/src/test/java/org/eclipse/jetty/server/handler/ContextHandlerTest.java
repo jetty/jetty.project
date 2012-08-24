@@ -1,21 +1,22 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,19 +24,23 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$
@@ -144,6 +149,60 @@ public class ContextHandlerTest
         Assert.assertEquals(rootA._scontext,foobarA._scontext.getContext("/other"));
         Assert.assertEquals(fooA._scontext,foobarA._scontext.getContext("/foo/other"));
     }
+
+    @Test
+    public void testLifeCycle() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.setConnectors(new Connector[] { connector });
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ContextHandler root = new ContextHandler(contexts,"/");
+        root.setHandler(new ContextPathHandler());
+        ContextHandler foo = new ContextHandler(contexts,"/foo");
+        foo.setHandler(new ContextPathHandler());
+        ContextHandler foobar = new ContextHandler(contexts,"/foo/bar");
+        foobar.setHandler(new ContextPathHandler());
+
+        // check that all contexts start normally
+        server.start();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo/bar'"));
+
+        // If we stop foobar, then requests will be handled by foo
+        foobar.stop();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+
+        // If we shutdown foo then requests will be 503'd
+        foo.shutdown();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("503"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("503"));
+
+        // If we stop foo then requests will be handled by root
+        foo.stop();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+
+        // If we start foo then foobar requests will be handled by foo
+        foo.start();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+
+        // If we start foobar then foobar requests will be handled by foobar
+        foobar.start();
+        assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo/bar'"));
+    }
+
 
     @Test
     public void testContextVirtualGetContext() throws Exception
@@ -293,34 +352,34 @@ public class ContextHandlerTest
         assertEquals("333",handler.getServletContext().getAttribute("ccc"));
         assertEquals(null,handler.getServletContext().getAttribute("ddd"));
     }
-    
+
     @Test
     public void testProtected() throws Exception
     {
         ContextHandler handler = new ContextHandler();
         String[] protectedTargets = {"/foo-inf", "/bar-inf"};
         handler.setProtectedTargets(protectedTargets);
-        
+
         assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
         assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
         assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
-        
+
         protectedTargets = new String[4];
         System.arraycopy(handler.getProtectedTargets(), 0, protectedTargets, 0, 2);
         protectedTargets[2] = "/abc";
         protectedTargets[3] = "/def";
         handler.setProtectedTargets(protectedTargets);
-        
+
         assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
         assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
         assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
         assertTrue(handler.isProtectedTarget("/abc/124"));
         assertTrue(handler.isProtectedTarget("//def"));
-       
+
         assertTrue(handler.isProtectedTarget("/ABC/7777"));
     }
-    
-    
+
+
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException
     {
@@ -360,36 +419,6 @@ public class ContextHandlerTest
         return root;
     }
 
-    @Test
-    public void testUncheckedPrintWriter() throws Exception
-    {
-        Server server = new Server();
-        server.setUncheckedPrintWriter(true);
-        LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
-        ContextHandler context = new ContextHandler("/");
-        WriterHandler handler = new WriterHandler();
-        context.setHandler(handler);
-        server.setHandler(context);
-
-        try
-        {
-            server.start();
-
-            String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\nConnection:close\n\n");
-
-            Assert.assertTrue(response.indexOf("Goodbye")>0);
-            Assert.assertTrue(response.indexOf("dead")<0);
-            Thread.sleep(100);
-            Assert.assertTrue(handler.error);
-            Assert.assertTrue(handler.throwable!=null);
-        }
-        finally
-        {
-            server.stop();
-        }
-    }
-
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
     {
         LocalConnector connector = (LocalConnector)server.getConnectors()[0];
@@ -418,6 +447,7 @@ public class ContextHandlerTest
             return handled;
         }
 
+        @Override
         public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -430,37 +460,18 @@ public class ContextHandlerTest
         }
     }
 
-    private static final class WriterHandler extends AbstractHandler
+    private static final class ContextPathHandler extends AbstractHandler
     {
-        volatile boolean error;
-        volatile Throwable throwable;
-
-
+        @Override
         public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            error = false;
-            throwable=null;
 
             response.setStatus(200);
             response.setContentType("text/plain; charset=utf-8");
             response.setHeader("Connection","close");
             PrintWriter writer = response.getWriter();
-            try
-            {
-                writer.write("Goodbye cruel world\n");
-                writer.close();
-                response.flushBuffer();
-                //writer.write("speaking from the dead");
-                writer.write("give the printwriter a chance"); //should create an error
-                if (writer.checkError())
-                    writer.write("didn't take the chance, will throw now"); //write after an error
-            }
-            catch(Throwable th)
-            {
-                throwable=th;
-            }
-            error=writer.checkError();
+            writer.println("ctx='"+request.getContextPath()+"'");
         }
     }
 }

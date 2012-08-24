@@ -1,8 +1,25 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.servlet.ServletRequest;
@@ -37,10 +54,10 @@ public class HttpConfiguration extends AggregateLifeCycle
     private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
     private String _forwardedCipherSuiteHeader;
     private String _forwardedSslSessionIdHeader;
-    private int _requestHeaderSize=6*1024;
+    private int _requestHeaderSize=8*1024;
     private int _requestBufferSize=16*1024;
-    private int _responseHeaderSize=6*1024;
-    private int _responseBufferSize=16*1024;
+    private int _responseHeaderSize=8*1024;
+    private int _responseBufferSize=32*1024;
 
     public HttpConfiguration(SslContextFactory sslContextFactory,boolean ssl)
     {
@@ -139,7 +156,7 @@ public class HttpConfiguration extends AggregateLifeCycle
     /* ------------------------------------------------------------ */
     protected void checkForwardedHeaders(Request request) throws IOException
     {
-        HttpFields httpFields = request.getHttpChannel().getRequestFields();
+        HttpFields httpFields = request.getHttpFields();
 
         // Do SSL first
         if (getForwardedCipherSuiteHeader()!=null)

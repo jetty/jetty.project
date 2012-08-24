@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -17,7 +22,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -33,8 +37,8 @@ import org.eclipse.jetty.util.UrlEncoded;
 
 /* ------------------------------------------------------------ */
 /** Servlet RequestDispatcher.
- * 
- * 
+ *
+ *
  */
 public class Dispatcher implements RequestDispatcher
 {
@@ -53,7 +57,7 @@ public class Dispatcher implements RequestDispatcher
     private final String _path;
     private final String _dQuery;
     private final String _named;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param contextHandler
@@ -72,7 +76,7 @@ public class Dispatcher implements RequestDispatcher
 
 
     /* ------------------------------------------------------------ */
-    /** Constructor. 
+    /** Constructor.
      * @param contextHandler
      * @param name
      */
@@ -85,9 +89,9 @@ public class Dispatcher implements RequestDispatcher
         _path=null;
         _dQuery=null;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.RequestDispatcher#forward(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
     @Override
@@ -95,47 +99,47 @@ public class Dispatcher implements RequestDispatcher
     {
         forward(request, response, DispatcherType.FORWARD);
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.RequestDispatcher#forward(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
         forward(request, response, DispatcherType.ERROR);
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.RequestDispatcher#include(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
     @Override
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
         Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
-      
-        
+
+
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
         if (!(response instanceof HttpServletResponse))
             response = new ServletResponseHttpWrapper(response);
-            
-        
+
+
         // TODO - allow stream or writer????
-        
+
         final DispatcherType old_type = baseRequest.getDispatcherType();
         final Attributes old_attr=baseRequest.getAttributes();
         MultiMap<String> old_params=baseRequest.getParameters();
         try
         {
             baseRequest.setDispatcherType(DispatcherType.INCLUDE);
-            baseRequest.getHttpChannel().include();
+            baseRequest.getResponse().include();
             if (_named!=null)
                 _contextHandler.handle(_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
-            else 
+            else
             {
                 String query=_dQuery;
-                
+
                 if (query!=null)
                 {
                     // force parameter extraction
@@ -144,57 +148,56 @@ public class Dispatcher implements RequestDispatcher
                         baseRequest.extractParameters();
                         old_params=baseRequest.getParameters();
                     }
-                    
+
                     MultiMap<String> parameters=new MultiMap<>();
                     UrlEncoded.decodeTo(query,parameters,baseRequest.getCharacterEncoding());
-                    
+
                     if(old_params != null) {
                         // Merge parameters.
                         parameters.addAllValues(old_params);
                     }
                     baseRequest.setParameters(parameters);
                 }
-                
-                IncludeAttributes attr = new IncludeAttributes(old_attr); 
-                
+
+                IncludeAttributes attr = new IncludeAttributes(old_attr);
+
                 attr._requestURI=_uri;
                 attr._contextPath=_contextHandler.getContextPath();
                 attr._servletPath=null; // set by ServletHandler
                 attr._pathInfo=_path;
                 attr._query=query;
-                
+
                 baseRequest.setAttributes(attr);
-                
+
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
         }
         finally
         {
             baseRequest.setAttributes(old_attr);
-            baseRequest.getHttpChannel().included();
+            baseRequest.getResponse().included();
             baseRequest.setParameters(old_params);
             baseRequest.setDispatcherType(old_type);
         }
     }
 
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.RequestDispatcher#forward(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
         Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
         Response base_response=baseRequest.getResponse();
-        response.resetBuffer();
-        base_response.fwdReset();
-       
+        base_response.resetForForward();
+
 
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
         if (!(response instanceof HttpServletResponse))
             response = new ServletResponseHttpWrapper(response);
-        
+
         final boolean old_handled=baseRequest.isHandled();
         final String old_uri=baseRequest.getRequestURI();
         final String old_context_path=baseRequest.getContextPath();
@@ -204,17 +207,17 @@ public class Dispatcher implements RequestDispatcher
         final Attributes old_attr=baseRequest.getAttributes();
         final DispatcherType old_type=baseRequest.getDispatcherType();
         MultiMap<String> old_params=baseRequest.getParameters();
-        
+
         try
         {
             baseRequest.setHandled(false);
             baseRequest.setDispatcherType(dispatch);
-            
+
             if (_named!=null)
                 _contextHandler.handle(_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
-            else 
+            else
             {
-                
+
                 // process any query string from the dispatch URL
                 String query=_dQuery;
                 if (query!=null)
@@ -225,13 +228,13 @@ public class Dispatcher implements RequestDispatcher
                         baseRequest.extractParameters();
                         old_params=baseRequest.getParameters();
                     }
-                    
+
                     baseRequest.mergeQueryString(query);
                 }
-                
-                ForwardAttributes attr = new ForwardAttributes(old_attr); 
-                
-                //If we have already been forwarded previously, then keep using the established 
+
+                ForwardAttributes attr = new ForwardAttributes(old_attr);
+
+                //If we have already been forwarded previously, then keep using the established
                 //original value. Otherwise, this is the first forward and we need to establish the values.
                 //Note: the established value on the original request for pathInfo and
                 //for queryString is allowed to be null, but cannot be null for the other values.
@@ -250,16 +253,16 @@ public class Dispatcher implements RequestDispatcher
                     attr._requestURI=old_uri;
                     attr._contextPath=old_context_path;
                     attr._servletPath=old_servlet_path;
-                }     
-                
+                }
+
                 baseRequest.setRequestURI(_uri);
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(_uri);
                 baseRequest.setAttributes(attr);
-                
+
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
-                
+
                 if (!baseRequest.getAsyncContinuation().isAsyncStarted())
                     commitResponse(response,baseRequest);
             }
@@ -313,41 +316,41 @@ public class Dispatcher implements RequestDispatcher
     private class ForwardAttributes implements Attributes
     {
         final Attributes _attr;
-        
+
         String _requestURI;
         String _contextPath;
         String _servletPath;
         String _pathInfo;
         String _query;
-        
+
         ForwardAttributes(Attributes attributes)
         {
             _attr=attributes;
         }
-        
+
         /* ------------------------------------------------------------ */
         public Object getAttribute(String key)
         {
             if (Dispatcher.this._named==null)
             {
-                if (key.equals(FORWARD_PATH_INFO))    
+                if (key.equals(FORWARD_PATH_INFO))
                     return _pathInfo;
-                if (key.equals(FORWARD_REQUEST_URI))  
+                if (key.equals(FORWARD_REQUEST_URI))
                     return _requestURI;
-                if (key.equals(FORWARD_SERVLET_PATH)) 
+                if (key.equals(FORWARD_SERVLET_PATH))
                     return _servletPath;
-                if (key.equals(FORWARD_CONTEXT_PATH)) 
+                if (key.equals(FORWARD_CONTEXT_PATH))
                     return _contextPath;
-                if (key.equals(FORWARD_QUERY_STRING)) 
+                if (key.equals(FORWARD_QUERY_STRING))
                     return _query;
             }
-            
+
             if (key.startsWith(__INCLUDE_PREFIX))
                 return null;
-            
+
             return _attr.getAttribute(key);
         }
-        
+
         /* ------------------------------------------------------------ */
         public Enumeration getAttributeNames()
         {
@@ -360,7 +363,7 @@ public class Dispatcher implements RequestDispatcher
                     !name.startsWith(__FORWARD_PREFIX))
                     set.add(name);
             }
-            
+
             if (_named==null)
             {
                 if (_pathInfo!=null)
@@ -378,37 +381,37 @@ public class Dispatcher implements RequestDispatcher
 
             return Collections.enumeration(set);
         }
-        
+
         /* ------------------------------------------------------------ */
         public void setAttribute(String key, Object value)
         {
             if (_named==null && key.startsWith("javax.servlet."))
             {
-                if (key.equals(FORWARD_PATH_INFO))         
+                if (key.equals(FORWARD_PATH_INFO))
                     _pathInfo=(String)value;
-                else if (key.equals(FORWARD_REQUEST_URI))  
+                else if (key.equals(FORWARD_REQUEST_URI))
                     _requestURI=(String)value;
-                else if (key.equals(FORWARD_SERVLET_PATH)) 
+                else if (key.equals(FORWARD_SERVLET_PATH))
                     _servletPath=(String)value;
-                else if (key.equals(FORWARD_CONTEXT_PATH)) 
+                else if (key.equals(FORWARD_CONTEXT_PATH))
                     _contextPath=(String)value;
-                else if (key.equals(FORWARD_QUERY_STRING)) 
+                else if (key.equals(FORWARD_QUERY_STRING))
                     _query=(String)value;
-                
+
                 else if (value==null)
                     _attr.removeAttribute(key);
                 else
-                    _attr.setAttribute(key,value); 
+                    _attr.setAttribute(key,value);
             }
             else if (value==null)
                 _attr.removeAttribute(key);
             else
                 _attr.setAttribute(key,value);
         }
-        
+
         /* ------------------------------------------------------------ */
         @Override
-        public String toString() 
+        public String toString()
         {
             return "FORWARD+"+_attr.toString();
         }
@@ -430,18 +433,18 @@ public class Dispatcher implements RequestDispatcher
     private class IncludeAttributes implements Attributes
     {
         final Attributes _attr;
-        
+
         String _requestURI;
         String _contextPath;
         String _servletPath;
         String _pathInfo;
         String _query;
-        
+
         IncludeAttributes(Attributes attributes)
         {
             _attr=attributes;
         }
-        
+
         /* ------------------------------------------------------------ */
         /* ------------------------------------------------------------ */
         /* ------------------------------------------------------------ */
@@ -455,13 +458,13 @@ public class Dispatcher implements RequestDispatcher
                 if (key.equals(INCLUDE_QUERY_STRING)) return _query;
                 if (key.equals(INCLUDE_REQUEST_URI))  return _requestURI;
             }
-            else if (key.startsWith(__INCLUDE_PREFIX)) 
+            else if (key.startsWith(__INCLUDE_PREFIX))
                     return null;
-            
-            
+
+
             return _attr.getAttribute(key);
         }
-        
+
         /* ------------------------------------------------------------ */
         public Enumeration getAttributeNames()
         {
@@ -473,7 +476,7 @@ public class Dispatcher implements RequestDispatcher
                 if (!name.startsWith(__INCLUDE_PREFIX))
                     set.add(name);
             }
-            
+
             if (_named==null)
             {
                 if (_pathInfo!=null)
@@ -488,10 +491,10 @@ public class Dispatcher implements RequestDispatcher
                 else
                     set.remove(INCLUDE_QUERY_STRING);
             }
-            
+
             return Collections.enumeration(set);
         }
-        
+
         /* ------------------------------------------------------------ */
         public void setAttribute(String key, Object value)
         {
@@ -505,17 +508,17 @@ public class Dispatcher implements RequestDispatcher
                 else if (value==null)
                     _attr.removeAttribute(key);
                 else
-                    _attr.setAttribute(key,value); 
+                    _attr.setAttribute(key,value);
             }
             else if (value==null)
                 _attr.removeAttribute(key);
             else
                 _attr.setAttribute(key,value);
         }
-        
+
         /* ------------------------------------------------------------ */
         @Override
-        public String toString() 
+        public String toString()
         {
             return "INCLUDE+"+_attr.toString();
         }

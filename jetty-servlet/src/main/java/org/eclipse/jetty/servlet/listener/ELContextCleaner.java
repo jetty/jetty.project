@@ -1,22 +1,26 @@
-// ========================================================================
-// Copyright (c) 2011 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlet.listener;
 
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
@@ -29,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * Clean up BeanELResolver when the context is going out
  * of service:
- * 
+ *
  * See http://java.net/jira/browse/GLASSFISH-1649
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=353095
  */
@@ -54,10 +58,10 @@ public class ELContextCleaner implements ServletContextListener
 
             //Get rid of references
             purgeEntries(field);
-            
+
             LOG.info("javax.el.BeanELResolver purged");
         }
-        
+
         catch (ClassNotFoundException e)
         {
             //BeanELResolver not on classpath, ignore
@@ -78,11 +82,11 @@ public class ELContextCleaner implements ServletContextListener
         {
             LOG.info("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
         }
-       
+
     }
 
 
-    protected Field getField (Class beanELResolver) 
+    protected Field getField (Class beanELResolver)
     throws SecurityException, NoSuchFieldException
     {
         if (beanELResolver == null)
@@ -91,7 +95,7 @@ public class ELContextCleaner implements ServletContextListener
         return beanELResolver.getDeclaredField("properties");
     }
 
-    protected void purgeEntries (Field properties) 
+    protected void purgeEntries (Field properties)
     throws IllegalArgumentException, IllegalAccessException
     {
         if (properties == null)
@@ -103,15 +107,15 @@ public class ELContextCleaner implements ServletContextListener
         ConcurrentHashMap map = (ConcurrentHashMap) properties.get(null);
         if (map == null)
             return;
-        
+
         Iterator<Class> itor = map.keySet().iterator();
-        while (itor.hasNext()) 
+        while (itor.hasNext())
         {
             Class clazz = itor.next();
             LOG.info("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
-                itor.remove();  
+                itor.remove();
                 LOG.info("removed");
             }
             else
