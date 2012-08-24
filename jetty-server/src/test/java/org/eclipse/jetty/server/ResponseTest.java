@@ -71,7 +71,7 @@ public class ResponseTest
         _server.start();
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_timer, 5000);
-        HttpInput input = new HttpInput();
+        ByteBufferHttpInput input = new ByteBufferHttpInput();
         _channel = new HttpChannel(connector, new HttpConfiguration(null, false), endp, new HttpTransport()
         {
             @Override

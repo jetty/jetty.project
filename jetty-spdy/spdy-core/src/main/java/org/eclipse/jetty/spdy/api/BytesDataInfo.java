@@ -65,4 +65,13 @@ public class BytesDataInfo extends DataInfo
         index += chunk;
         return chunk;
     }
+
+    @Override
+    public int readInto(byte[] bytes, int offset, int length)
+    {
+        int chunk = Math.min(available(), length);
+        System.arraycopy(this.bytes, index, bytes, offset, chunk);
+        index += chunk;
+        return chunk;
+    }
 }

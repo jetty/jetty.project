@@ -157,7 +157,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         try
         {
             while (true)
-            {                
+            {
                 // Can the parser progress (even with an empty buffer)
                 boolean event=_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
 
@@ -194,7 +194,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         releaseRequestBuffer();
                         return;
                     }
-                    
+
                     // Parse what we have read
                     event=_parser.parseNext(_requestBuffer);
                 }
@@ -210,12 +210,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         if (!_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer))
                             break;
                     }
-                    
+
                     // The parser returned true, which indicates the channel is ready to handle a request.
                     // Call the channel and this will either handle the request/response to completion OR,
                     // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                    _channel.run(); 
-                    
+                    _channel.run();
+
                     // Return if the channel is still processing the request
                     if (_channel.getState().isSuspending())
                     {
@@ -277,13 +277,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
         // TODO This is always blocking!  One of the important use-cases is to be able to write large static content without a thread
-        
+
         // If we are still expecting a 100 continues
         if (_channel.isExpecting100Continue())
             // then we can't be persistent
             _generator.setPersistent(false);
-        
-        
+
+
         ByteBuffer header = null;
         ByteBuffer chunk = null;
         out: while (true)
@@ -318,7 +318,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         BufferUtil.clear(chunk);
                         BufferUtil.clear(content);
                     }
-                    
+
                     // If we have a header
                     if (BufferUtil.hasContent(header))
                     {
@@ -403,7 +403,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         if (_parser.isInContent() && _generator.isPersistent() && !_channel.isExpecting100Continue())
             // Complete reading the request
             _channel.getRequest().getHttpInput().consumeAll();
-        
+
         // Handle connection upgrades
         if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
@@ -470,11 +470,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         // return if the connection has been changed
         if (getEndPoint().getConnection() != this)
             return;
-   
+
     }
-    
-    
-    private class Input extends HttpInput
+
+
+    private class Input extends ByteBufferHttpInput
     {
         @Override
         protected void blockForContent() throws IOException
@@ -495,11 +495,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // need to call blockForContent again
                     while (event && BufferUtil.hasContent(_requestBuffer) && _parser.inContentState())
                         _parser.parseNext(_requestBuffer);
-                    
+
                     // If we have an event, return
                     if (event)
                         return;
-                    
+
                     // Do we have content ready to parse?
                     if (BufferUtil.isEmpty(_requestBuffer))
                     {
@@ -509,7 +509,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             _parser.inputShutdown();
                             return;
                         }
-                        
+
                         // Wait until we can read
                         FutureCallback<Void> block=new FutureCallback<>();
                         getEndPoint().fillInterested(null,block);
@@ -528,7 +528,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             _parser.inputShutdown();
                             return;
                         }
-                    }  
+                    }
                 }
             }
             catch (final InterruptedException x)
@@ -572,7 +572,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             releaseRequestBuffer();
         }
     }
-    
+
     private class HttpChannelOverHttp extends HttpChannel
     {
         public HttpChannelOverHttp(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
@@ -592,13 +592,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             boolean persistent;
             HttpVersion version = getHttpVersion();
-            
+
             switch (version)
             {
                 case HTTP_0_9:
                     persistent = false;
                     break;
-                    
+
                 case HTTP_1_0:
                     persistent = getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
                     if (persistent)
@@ -618,7 +618,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
             if (!persistent)
                 _generator.setPersistent(false);
-      
+
             return super.headerComplete();
         }
 
@@ -628,8 +628,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _generator.setPersistent(false);
             super.handleException(x);
         }
-        
+
     }
-    
-    
+
+
 }

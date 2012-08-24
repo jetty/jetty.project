@@ -1,11 +1,27 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.spdy.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -16,24 +32,20 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.Stream;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class HttpChannelOverSPDY extends HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverSPDY.class);
-    private static final DataInfo END_OF_CONTENT = new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, true);
 
     private final Queue<Runnable> tasks = new LinkedList<>();
-    private final BlockingQueue<DataInfo> dataInfos = new LinkedBlockingQueue<>();
     private final Stream stream;
     private Headers headers; // No need for volatile, guarded by state
     private DataInfo dataInfo; // No need for volatile, guarded by state
@@ -41,9 +53,9 @@ public class HttpChannelOverSPDY extends HttpChannel
     private volatile State state = State.INITIAL;
     private boolean dispatched; // Guarded by synchronization on tasks
 
-    public HttpChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, Stream stream)
+    public HttpChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInputOverSPDY input, Stream stream)
     {
-        super(connector, configuration, endPoint, transport, new HttpInput());
+        super(connector, configuration, endPoint, transport, input);
         this.stream = stream;
     }
 
@@ -130,10 +142,7 @@ public class HttpChannelOverSPDY extends HttpChannel
             }
             case CONTENT:
             {
-                final ByteBuffer buffer = this.buffer;
-                if (buffer != null && buffer.hasRemaining())
-                    if (content(buffer))
-                        run();
+                run();
                 break;
             }
             case FINAL:
@@ -240,7 +249,8 @@ public class HttpChannelOverSPDY extends HttpChannel
         // We need to copy the dataInfo since we do not know when its bytes
         // will be consumed. When the copy is consumed, we consume also the
         // original, so the implementation can send a window update.
-        ByteBufferDataInfo copyDataInfo = new ByteBufferDataInfo(dataInfo.asByteBuffer(false), dataInfo.isClose(), dataInfo.isCompress())
+        ByteBuffer copyByteBuffer = dataInfo.asByteBuffer(false);
+        ByteBufferDataInfo copyDataInfo = new ByteBufferDataInfo(copyByteBuffer, dataInfo.isClose(), dataInfo.isCompress())
         {
             @Override
             public void consume(int delta)
@@ -250,9 +260,13 @@ public class HttpChannelOverSPDY extends HttpChannel
             }
         };
         LOG.debug("Queuing last={} content {}", endRequest, copyDataInfo);
-        dataInfos.offer(copyDataInfo);
+
+        HttpInputOverSPDY input = (HttpInputOverSPDY)getRequest().getHttpInput();
+        input.offer(copyDataInfo, endRequest);
+        input.content(copyDataInfo);
         if (endRequest)
-            dataInfos.offer(END_OF_CONTENT);
+            input.shutdown();
+
         post(new Runnable()
         {
             @Override
@@ -375,5 +389,4 @@ public class HttpChannelOverSPDY extends HttpChannel
     {
         INITIAL, REQUEST, HEADERS, HEADERS_COMPLETE, CONTENT, FINAL, ASYNC
     }
-
 }

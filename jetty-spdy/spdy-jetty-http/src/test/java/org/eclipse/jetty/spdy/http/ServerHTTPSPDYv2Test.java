@@ -849,6 +849,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
         headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
             private final AtomicInteger replies = new AtomicInteger();
@@ -857,13 +858,22 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Assert.assertEquals(1, replies.incrementAndGet());
-                Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
                 Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("500"));
                 replyLatch.countDown();
+                if (replyInfo.isClose())
+                    latch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                if (dataInfo.isClose())
+                    latch.countDown();
             }
         });
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test

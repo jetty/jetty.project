@@ -83,7 +83,8 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYConnectionFa
 
             Headers headers = synInfo.getHeaders();
             HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy, stream, headers);
-            HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, configuration, endPoint, transport, stream);
+            HttpInputOverSPDY input = new HttpInputOverSPDY();
+            HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
 
             channel.beginRequest(headers, synInfo.isClose());
