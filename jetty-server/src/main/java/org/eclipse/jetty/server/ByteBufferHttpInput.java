@@ -35,7 +35,7 @@ public class ByteBufferHttpInput extends HttpInput<ByteBuffer>
     protected int get(ByteBuffer item, byte[] buffer, int offset, int length)
     {
         int l = Math.min(item.remaining(), length);
-        item.get(buffer, offset, length);
+        item.get(buffer, offset, l);
         return l;
     }
 
