@@ -1,21 +1,22 @@
-// ========================================================================
-// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.start;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,9 +26,15 @@ import java.util.List;
 import java.util.Vector;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 /* ------------------------------------------------------------ */
 /**
@@ -96,14 +103,24 @@ public class MainTest
 
         Classpath classpath = nastyWayToCreateAClasspathObject("/jetty/home with spaces/");
         CommandLineBuilder cmd = main.buildCommandLine(classpath,xmls);
-        Assert.assertThat("CommandLineBuilder shouldn't be null",cmd,notNullValue());
-        String commandLine = cmd.toString();
-        Assert.assertThat("CommandLine shouldn't be null",commandLine,notNullValue());
-        Assert.assertThat("Classpath should be correctly quoted and match expected value",commandLine,
-                containsString("-cp /jetty/home with spaces/somejar.jar:/jetty/home with spaces/someotherjar.jar"));
-        Assert.assertThat("CommandLine should contain jvmArgs",commandLine,containsString("--exec -Xms1024m -Xmx1024m"));
-        Assert.assertThat("CommandLine should contain xmls",commandLine,containsString("jetty.xml jetty-jmx.xml jetty-logging.xml"));
+        assertThat("CommandLineBuilder shouldn't be null",cmd,notNullValue());
 
+        List<String> commandArgs = cmd.getArgs();
+        assertThat("commandArgs should contain 11 elements",commandArgs.size(),equalTo(11));
+        assertThat("args does not contain -cp",commandArgs,hasItems("-cp"));
+        assertThat("Classpath should be correctly quoted and match expected value",commandArgs,
+                hasItems("/jetty/home with spaces/somejar.jar:/jetty/home with spaces/someotherjar.jar"));
+        assertThat("args does not contain --exec",commandArgs,hasItems("--exec"));
+        assertThat("CommandLine should contain jvmArgs",commandArgs,hasItems("-Xms1024m"));
+        assertThat("CommandLine should contain jvmArgs", commandArgs, hasItems("-Xmx1024m"));
+        assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty.xml"));
+        assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty-jmx.xml"));
+        assertThat("CommandLine should contain xmls", commandArgs, hasItems("jetty-logging.xml"));
+
+        String commandLine = cmd.toString();
+        assertThat("cmd.toString() should be properly escaped",commandLine,containsString("-cp /jetty/home\\ with\\ " +
+                "spaces/somejar.jar:/jetty/home\\ with\\ spaces/someotherjar.jar"));
+        assertThat("cmd.toString() doesn't contain xml config files",commandLine,containsString(" jetty.xml jetty-jmx.xml jetty-logging.xml"));
     }
 
     private Classpath nastyWayToCreateAClasspathObject(String jettyHome) throws NoSuchFieldException, IllegalAccessException

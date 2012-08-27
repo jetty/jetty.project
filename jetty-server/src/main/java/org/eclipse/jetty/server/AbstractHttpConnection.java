@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2011 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -125,6 +130,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     private boolean _head = false;
     private boolean _host = false;
     private boolean _delayedHandling=false;
+    private boolean _earlyEOF = false;
 
     /* ------------------------------------------------------------ */
     public static AbstractHttpConnection getCurrentConnection()
@@ -391,6 +397,12 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
+    public boolean isEarlyEOF()
+    {
+        return _earlyEOF;
+    }
+
+    /* ------------------------------------------------------------ */
     public void reset()
     {
         _parser.reset();
@@ -403,6 +415,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _response.recycle();
         _uri.clear();
         _writer=null;
+        _earlyEOF = false;
     }
 
     /* ------------------------------------------------------------ */
@@ -440,7 +453,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 {
                     _uri.getPort();
                     String path = null;
-                    
+
                     try
                     {
                         path = _uri.getDecodedPath();
@@ -451,7 +464,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                         LOG.ignore(e);
                         path = _uri.getDecodedPath(StringUtil.__ISO_8859_1);
                     }
-                    
+
                     info=URIUtil.canonicalPath(path);
                     if (info==null && !_request.getMethod().equals(HttpMethods.CONNECT))
                     {
@@ -720,6 +733,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 _requests);
     }
 
+    /* ------------------------------------------------------------ */
     protected void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
     {
         uri=uri.asImmutableBuffer();
@@ -779,6 +793,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         }
     }
 
+    /* ------------------------------------------------------------ */
     protected void parsedHeader(Buffer name, Buffer value) throws IOException
     {
         int ho = HttpHeaders.CACHE.getOrdinal(name);
@@ -840,6 +855,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _requestFields.add(name, value);
     }
 
+    /* ------------------------------------------------------------ */
     protected void headerComplete() throws IOException
     {
         _requests++;
@@ -910,6 +926,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             _delayedHandling=true;
     }
 
+    /* ------------------------------------------------------------ */
     protected void content(Buffer buffer) throws IOException
     {
         if (_delayedHandling)
@@ -919,6 +936,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void messageComplete(long contentLength) throws IOException
     {
         if (_delayedHandling)
@@ -926,6 +944,12 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             _delayedHandling=false;
             handleRequest();
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public void earlyEOF()
+    {
+        _earlyEOF = true;
     }
 
     /* ------------------------------------------------------------ */
@@ -996,6 +1020,18 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Bad request!: "+version+" "+status+" "+reason);
+        }
+
+        /* ------------------------------------------------------------ */
+        /*
+         * (non-Javadoc)
+         *
+         * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#earlyEOF()
+         */
+        @Override
+        public void earlyEOF()
+        {
+            AbstractHttpConnection.this.earlyEOF();
         }
     }
 

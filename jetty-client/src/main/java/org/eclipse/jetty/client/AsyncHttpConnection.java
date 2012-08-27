@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2011 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.client;
 
@@ -203,12 +208,12 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             {
                                 Connection switched=exchange.onSwitchProtocol(_endp);
                                 if (switched!=null)
-                                    connection=switched;
                                 {
                                     // switched protocol!
-                                    _pipeline = null;
                                     if (_pipeline!=null)
+                                    {
                                         _destination.send(_pipeline);
+                                    }
                                     _pipeline = null;
 
                                     connection=switched;

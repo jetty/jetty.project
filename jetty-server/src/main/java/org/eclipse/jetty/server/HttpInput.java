@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -19,12 +24,13 @@ import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.EofException;
 
 public class HttpInput extends ServletInputStream
 {
     protected final AbstractHttpConnection _connection;
     protected final HttpParser _parser;
-    
+
     /* ------------------------------------------------------------ */
     public HttpInput(AbstractHttpConnection connection)
     {
@@ -39,11 +45,9 @@ public class HttpInput extends ServletInputStream
     @Override
     public int read() throws IOException
     {
-        int c=-1;
-        Buffer content=_parser.blockForContent(_connection.getMaxIdleTime());
-        if (content!=null)
-            c= 0xff & content.get();
-        return c;
+        byte[] bytes = new byte[1];
+        int read = read(bytes, 0, 1);
+        return read < 0 ? -1 : 0xff & bytes[0];
     }
     
     /* ------------------------------------------------------------ */
@@ -57,6 +61,8 @@ public class HttpInput extends ServletInputStream
         Buffer content=_parser.blockForContent(_connection.getMaxIdleTime());
         if (content!=null)
             l= content.get(b, off, len);
+        else if (_connection.isEarlyEOF())
+            throw new EofException("early EOF");
         return l;
     }
 
@@ -66,8 +72,4 @@ public class HttpInput extends ServletInputStream
     {
         return _parser.available();
     }
-    
-    
-    
-
 }
