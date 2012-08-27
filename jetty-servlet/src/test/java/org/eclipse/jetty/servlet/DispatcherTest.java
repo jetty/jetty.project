@@ -106,7 +106,7 @@ public class DispatcherTest
             "Content-Length: 0\r\n"+
             "\r\n";
 
-        String responses = _connector.getResponses("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.1\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponses("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -127,7 +127,7 @@ public class DispatcherTest
             "/x x\r\n"+
             "/context/EchoURI/x%20x;a=1\r\n";
 
-        String responses = _connector.getResponses("GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.1\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponses("GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -143,7 +143,7 @@ public class DispatcherTest
             "Content-Length: 0\r\n"+
             "\r\n";
 
-        String responses = _connector.getResponses("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.1\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponses("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -160,7 +160,7 @@ public class DispatcherTest
             "Content-Length: 0\r\n"+
             "\r\n";
 
-        String responses = _connector.getResponses("GET /context/ForwardServlet/forwardpath?do=include HTTP/1.1\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponses("GET /context/ForwardServlet/forwardpath?do=include HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -174,10 +174,9 @@ public class DispatcherTest
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
-            "Content-Length: 0\r\n"+
             "\r\n";
 
-        String responses = _connector.getResponses("GET /context/IncludeServlet/includepath?do=forward HTTP/1.1\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponses("GET /context/IncludeServlet/includepath?do=forward HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
