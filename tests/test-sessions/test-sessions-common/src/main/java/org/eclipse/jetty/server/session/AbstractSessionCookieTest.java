@@ -139,9 +139,7 @@ public abstract class AbstractSessionCookieTest
             else if ("check-cookie".equals(action))
             {
                 HttpSession session = request.getSession(false);
-                
-                Log.info("session {}", session  );
-                
+                                
                 assertTrue(session != null);
                 
                 //request.getSession(true);
