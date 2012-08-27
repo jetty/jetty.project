@@ -65,6 +65,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
         Assert.assertTrue(response.contains("HTTP/1.1 200"));
@@ -86,6 +87,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "Origin: " + otherOrigin + "\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -109,6 +111,7 @@ public class CrossOriginFilterTest
         String request = "" +
         "GET / HTTP/1.1\r\n" +
         "Host: localhost\r\n" +
+        "Connection: close\r\n" +
         "Origin: " + origin + "\r\n" +
         "\r\n";
         String response = tester.getResponses(request);
@@ -132,6 +135,7 @@ public class CrossOriginFilterTest
         String request = "" +
         "GET / HTTP/1.1\r\n" +
         "Host: localhost\r\n" +
+        "Connection: close\r\n" +
         "Origin: " + origin + "\r\n" +
         "\r\n";
         String response = tester.getResponses(request);
@@ -155,6 +159,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "Origin: " + origin + "\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -179,6 +184,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 // Use 2 spaces as separator to test that the implementation does not fail
                 "Origin: " + otherOrigin + " " + " " + origin + "\r\n" +
                 "\r\n";
@@ -202,6 +208,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -227,6 +234,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "PUT / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -252,6 +260,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -275,6 +284,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
@@ -291,6 +301,7 @@ public class CrossOriginFilterTest
         request = "" +
                 "PUT / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         response = tester.getResponses(request);
@@ -314,6 +325,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": DELETE\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": origin,x-custom,x-requested-with\r\n" +
                 "Origin: http://localhost\r\n" +
@@ -331,6 +343,7 @@ public class CrossOriginFilterTest
         request = "" +
                 "DELETE / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "X-Custom: value\r\n" +
                 "X-Requested-With: local\r\n" +
                 "Origin: http://localhost\r\n" +
@@ -355,6 +368,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": DELETE\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": origin,x-custom,x-requested-with\r\n" +
                 "Origin: http://localhost\r\n" +
@@ -403,6 +417,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
         String response = tester.getResponses(request);
@@ -426,6 +441,7 @@ public class CrossOriginFilterTest
         String request = "" +
                 "OPTIONS / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
+                "Connection: close\r\n" +
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
