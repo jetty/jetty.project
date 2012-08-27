@@ -183,7 +183,6 @@ public class HttpOutput extends ServletOutputStream
         if (_aggregate == null)
             _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
 
-        System.err.println(BufferUtil.toDetailString(_aggregate));
         BufferUtil.append(_aggregate, (byte)b);
         _written++;
 
