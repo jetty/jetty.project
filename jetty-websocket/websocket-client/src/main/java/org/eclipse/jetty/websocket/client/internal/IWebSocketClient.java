@@ -57,6 +57,8 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
     public IWebSocketClient(WebSocketClientFactory factory, WebSocketEventDriver websocket)
     {
         this.factory = factory;
+        LOG.debug("factory.isRunning(): {}",factory.isRunning());
+        LOG.debug("factory.isStarted(): {}",factory.isStarted());
         this.policy = factory.getPolicy();
         this.websocket = websocket;
         this.upgradeRequest = new ClientUpgradeRequest();
@@ -210,9 +212,8 @@ public class IWebSocketClient extends FutureCallback<UpgradeResponse> implements
         return websocketUri;
     }
 
-    public void setUpgradeResponse(UpgradeResponse response)
+    public void setUpgradeResponse(ClientUpgradeResponse response)
     {
-        // TODO Auto-generated method stub
-
+        this.upgradeResponse = response;
     }
 }

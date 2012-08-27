@@ -28,6 +28,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -160,13 +161,19 @@ public class SelectChannelConnector extends AbstractNetworkConnector
             _acceptChannel = serverChannel;
         }
     }
+    
+    @Override
+    public <C> Future<C> shutdown(C c)
+    {
+        // TODO shutdown all the connections
+        return super.shutdown(c);
+    }
 
     @Override
     public void close()
     {
         ServerSocketChannel serverChannel = _acceptChannel;
         _acceptChannel = null;
-
 
         if (serverChannel != null)
         {

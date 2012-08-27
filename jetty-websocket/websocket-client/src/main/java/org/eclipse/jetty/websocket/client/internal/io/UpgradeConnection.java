@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -36,10 +37,17 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.internal.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.internal.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
+import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
+import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.io.WebSocketSession;
 import org.eclipse.jetty.websocket.protocol.AcceptHash;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
@@ -176,14 +184,14 @@ public class UpgradeConnection extends AbstractConnection
                     {
                         LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
                     }
-                    UpgradeResponse resp = parser.parse(buffer);
+                    ClientUpgradeResponse resp = parser.parse(buffer);
                     if (resp != null)
                     {
                         // Got a response!
                         client.setUpgradeResponse(resp);
                         validateResponse(resp);
                         notifyConnect();
-                        upgradeConnection();
+                        upgradeConnection(resp);
                         return false; // do no more reading
                     }
                 }
@@ -205,12 +213,72 @@ public class UpgradeConnection extends AbstractConnection
         }
     }
 
-    private void upgradeConnection()
+    private void upgradeConnection(ClientUpgradeResponse response)
     {
         EndPoint endp = getEndPoint();
         Executor executor = getExecutor();
-        WebSocketClientConnection conn = new WebSocketClientConnection(endp,executor,client);
-        endp.setConnection(conn);
+        WebSocketClientConnection connection = new WebSocketClientConnection(endp,executor,client);
+
+        // Initialize / Negotiate Extensions
+        WebSocketEventDriver websocket = client.getWebSocket();
+        WebSocketPolicy policy = client.getPolicy();
+        String acceptedSubProtocol = response.getAcceptedSubProtocol();
+        WebSocketSession session = new WebSocketSession(websocket,connection,policy,acceptedSubProtocol);
+        connection.setSession(session);
+        List<Extension> extensions = client.getFactory().initExtensions(response.getExtensions());
+
+        // Start with default routing.
+        IncomingFrames incoming = session;
+        OutgoingFrames outgoing = connection;
+
+        // Connect extensions
+        if (extensions != null)
+        {
+            Iterator<Extension> extIter;
+            // Connect outgoings
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextOutgoingFrames(outgoing);
+                outgoing = ext;
+
+                // Handle RSV reservations
+                if (ext.useRsv1())
+                {
+                    connection.getGenerator().setRsv1InUse(true);
+                    connection.getParser().setRsv1InUse(true);
+                }
+                if (ext.useRsv2())
+                {
+                    connection.getGenerator().setRsv2InUse(true);
+                    connection.getParser().setRsv2InUse(true);
+                }
+                if (ext.useRsv3())
+                {
+                    connection.getGenerator().setRsv3InUse(true);
+                    connection.getParser().setRsv3InUse(true);
+                }
+            }
+
+            // Connect incomings
+            Collections.reverse(extensions);
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextIncomingFrames(incoming);
+                incoming = ext;
+            }
+        }
+
+        // configure session for outgoing flows
+        session.setOutgoing(outgoing);
+        // configure connection for incoming flows
+        connection.getParser().setIncomingFramesHandler(incoming);
+
+        // Now swap out the connection
+        endp.setConnection(connection);
     }
 
     private void validateResponse(UpgradeResponse response)

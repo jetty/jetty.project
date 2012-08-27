@@ -127,7 +127,7 @@ public class BlockheadClient implements IncomingFrames, OutgoingFrames
         this.destHttpURI = new URI(scheme,destWebsocketURI.getSchemeSpecificPart(),destWebsocketURI.getFragment());
 
         this.policy = policy;
-        this.bufferPool = new MappedByteBufferPool();
+        this.bufferPool = new MappedByteBufferPool(policy.getBufferSize());
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy);
         this.parseCount = new AtomicInteger(0);

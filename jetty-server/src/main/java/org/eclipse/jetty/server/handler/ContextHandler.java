@@ -36,6 +36,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -68,6 +73,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
@@ -77,6 +83,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -97,7 +104,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
 @ManagedObject("URI Context")
-public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
+public class ContextHandler extends ScopedHandler implements Attributes, Graceful
 {
 
     private static final Logger LOG = Log.getLogger(ContextHandler.class);
@@ -644,9 +651,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      *
      */
     @Override
-    public void shutdown()
+    public <C> Future<C> shutdown(final C c)
     {
         _availability = isRunning() ? Availability.SHUTDOWN : Availability.UNAVAILABLE;
+        
+        return new FutureCallback<>(c);
     }
 
     /* ------------------------------------------------------------ */

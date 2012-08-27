@@ -57,6 +57,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
     private ByteBuffer _requestBuffer = null;
+    private ByteBuffer _chunk = null;
 
     public static HttpConnection getCurrentConnection()
     {
@@ -120,6 +121,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _generator.reset();
         _channel.reset();
         releaseRequestBuffer();
+        if (_chunk!=null)
+        {
+            _bufferPool.release(_chunk);
+            _chunk=null;
+        }
     }
 
     @Override
@@ -307,7 +313,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 }
                 case NEED_CHUNK:
                 {
-                    chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
+                    chunk = _chunk;
+                    if (chunk==null)
+                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
                     continue;
                 }
                 case FLUSH:

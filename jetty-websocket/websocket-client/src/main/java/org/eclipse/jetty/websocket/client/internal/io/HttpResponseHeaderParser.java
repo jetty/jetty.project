@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8LineParser;
 import org.eclipse.jetty.websocket.api.UpgradeException;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.internal.ClientUpgradeResponse;
 
 /**
@@ -58,7 +57,7 @@ public class HttpResponseHeaderParser
         return (state == State.END);
     }
 
-    public UpgradeResponse parse(ByteBuffer buf) throws UpgradeException
+    public ClientUpgradeResponse parse(ByteBuffer buf) throws UpgradeException
     {
         while (!isDone() && (buf.remaining() > 0))
         {

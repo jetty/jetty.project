@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -33,7 +34,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * the machinery needed to handle such tasks.</p>
  */
 @ManagedObject("Connector Interface")
-public interface Connector extends LifeCycle
+public interface Connector extends LifeCycle, Graceful
 {
     /**
      * @return the name of the connector, defaulting to host:port
