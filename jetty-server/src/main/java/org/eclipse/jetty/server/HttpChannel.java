@@ -565,7 +565,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
             try
             {
                 // Try to commit with the passed info
-                _transport.commit(info, content, complete);
+                _transport.send(info, content, complete);
 
                 // If we are committing a 1xx response, we need to reset the commit
                 // status so that the "real" response can be committed again.
@@ -576,7 +576,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
             {
                 LOG.warn(e);
                 // "application" info failed to commit, commit with a failsafe 500 info
-                _transport.commit(HttpGenerator.RESPONSE_500_INFO,null,true);
+                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true);
                 throw e;
             }
         }
@@ -600,7 +600,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     {
         if (isCommitted())
         {
-            _transport.write(content, complete);
+            _transport.send(content, complete);
         }
         else
         {

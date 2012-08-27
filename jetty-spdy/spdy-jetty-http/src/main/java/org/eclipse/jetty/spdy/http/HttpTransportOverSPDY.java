@@ -64,7 +64,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
         short version = stream.getSession().getVersion();
         Headers headers = new Headers();
@@ -104,7 +104,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void write(ByteBuffer content, boolean lastContent) throws IOException
+    public void send(ByteBuffer content, boolean lastContent) throws IOException
     {
         stream.data(new ByteBufferDataInfo(content, lastContent));
     }

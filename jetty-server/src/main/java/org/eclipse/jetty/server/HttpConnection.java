@@ -280,7 +280,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
 
     @Override
-    public void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
+    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
         // TODO This is always blocking!  One of the important use-cases is to be able to write large static content without a thread
 
@@ -375,9 +375,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public void write(ByteBuffer content, boolean lastContent) throws IOException
+    public void send(ByteBuffer content, boolean lastContent) throws IOException
     {
-        commit(null, content, lastContent);
+        send(null, content, lastContent);
     }
 
     private void blockingWrite(ByteBuffer... bytes) throws IOException
