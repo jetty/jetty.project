@@ -492,9 +492,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             EndPoint endPoint = newEndPoint(channel, this, selectionKey);
             endPointOpened(endPoint);
-            Connection asyncConnection = newConnection(channel, endPoint, selectionKey.attachment());
-            endPoint.setConnection(asyncConnection);
-            connectionOpened(asyncConnection);
+            Connection connection = newConnection(channel, endPoint, selectionKey.attachment());
+            endPoint.setConnection(connection);
+            connectionOpened(connection);
             LOG.debug("Created {}", endPoint);
             return endPoint;
         }
