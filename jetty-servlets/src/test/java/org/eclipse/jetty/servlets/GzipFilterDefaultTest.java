@@ -32,6 +32,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;

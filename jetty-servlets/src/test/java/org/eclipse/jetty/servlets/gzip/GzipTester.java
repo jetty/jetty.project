@@ -290,9 +290,13 @@ public class GzipTester
         Assert.assertThat("Response.status",response.getStatus(),is(status));
         if (expectedFilesize != (-1))
         {
-            Assert.assertThat("Response.header[Content-Length]",response.get("Content-Length"),notNullValue());
-            int serverLength = Integer.parseInt(response.get("Content-Length"));
-            Assert.assertThat("Response.header[Content-Length]",serverLength,is(expectedFilesize));
+            Assert.assertEquals(expectedFilesize,response.getContentBytes().length);
+            String cl=response.get("Content-Length");
+            if (cl!=null)
+            {
+                int serverLength = Integer.parseInt(response.get("Content-Length"));
+                Assert.assertEquals(serverLength,expectedFilesize);
+            }
         }
         Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),not(containsString(compressionType)));
     }
