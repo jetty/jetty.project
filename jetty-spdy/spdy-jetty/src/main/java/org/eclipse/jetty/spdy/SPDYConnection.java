@@ -141,6 +141,8 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
     @Override
     protected boolean onReadTimeout()
     {
+        boolean idle = this.idle;
+        LOG.debug("Idle timeout on {}, idle={}", this, idle);
         if (idle)
             goAway(session);
         return false;
