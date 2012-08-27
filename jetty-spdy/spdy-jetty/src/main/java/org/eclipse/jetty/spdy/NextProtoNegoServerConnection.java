@@ -36,7 +36,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     private final Logger logger = Log.getLogger(getClass());
     private final SocketChannel channel;
     private final SPDYServerConnector connector;
-    private volatile boolean completed;
+    private boolean completed; // No need to be volatile: it is modified and read by the same thread
 
     public NextProtoNegoServerConnection(SocketChannel channel, EndPoint endPoint, SPDYServerConnector connector)
     {
@@ -82,9 +82,9 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     @Override
     public void unsupported()
     {
-        ConnectionFactory ConnectionFactory = connector.getDefaultConnectionFactory();
+        ConnectionFactory connectionFactory = connector.getDefaultConnectionFactory();
         EndPoint endPoint = getEndPoint();
-        Connection connection = ConnectionFactory.newConnection(channel, endPoint, connector);
+        Connection connection = connectionFactory.newConnection(channel, endPoint, connector);
         connector.replaceConnection(endPoint, connection);
         completed = true;
     }

@@ -29,6 +29,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -60,8 +61,9 @@ public class ProtocolNegotiationTest
     {
         server = new Server();
         if (connector == null)
-//            connector = new SPDYServerConnector(null, newSslContextFactory()); //TODO:
+            connector = new SPDYServerConnector(server, newSslContextFactory(), null);
         connector.setPort(0);
+        connector.setIdleTimeout(30000);
         this.connector = connector;
         server.addConnector(connector);
         server.start();
@@ -84,8 +86,7 @@ public class ProtocolNegotiationTest
     public void testServerAdvertisingHTTPSpeaksHTTP() throws Exception
     {
         InetSocketAddress address = startServer(null);
-        connector.removeConnectionFactory("spdy/2");
-//        connector.putConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector)); //TODO:
+        connector.putConnectionFactory("http/1.1", new HttpServerConnectionFactory(connector));
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
@@ -141,7 +142,7 @@ public class ProtocolNegotiationTest
     public void testServerAdvertisingSPDYAndHTTPSpeaksHTTPWhenNegotiated() throws Exception
     {
         InetSocketAddress address = startServer(null);
-//        connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector)); //TODO:
+        connector.putConnectionFactory("http/1.1", new HttpServerConnectionFactory(connector));
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
@@ -199,10 +200,9 @@ public class ProtocolNegotiationTest
     @Test
     public void testServerAdvertisingSPDYAndHTTPSpeaksDefaultProtocolWhenNPNMissing() throws Exception
     {
-//        SPDYServerConnector connector = new SPDYServerConnector(null, newSslContextFactory()); //TODO:
-//        connector.setDefaultConnectionFactory(new ServerHTTPConnectionFactory(connector));
-        InetSocketAddress address = startServer(connector);
-//        connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector));
+        InetSocketAddress address = startServer(null);
+        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector));
+        connector.putConnectionFactory("http/1.1", connector.getDefaultConnectionFactory());
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
@@ -250,5 +250,4 @@ public class ProtocolNegotiationTest
 
         client.close();
     }
-
 }
