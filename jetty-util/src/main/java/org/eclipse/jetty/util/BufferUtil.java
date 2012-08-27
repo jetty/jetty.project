@@ -344,8 +344,8 @@ public class BufferUtil
     public static void append(ByteBuffer to, byte b)
     {
         int limit=to.limit();
-        to.put(limit,b);
         to.limit(limit+1);
+        to.put(limit,b);
     }
     
     /* ------------------------------------------------------------ */
@@ -359,6 +359,7 @@ public class BufferUtil
             needed=needed-channel.read(buffer);
     }
 
+    /* ------------------------------------------------------------ */
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
         ByteBuffer tmp = allocate(8192);

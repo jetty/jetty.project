@@ -941,6 +941,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         in.skip(start-pos);
                         pos=start;
                     }
+                    
+                    System.err.println("PART "+ibr);
+                    
                     IO.copy(in,multi,size);
                     pos+=size;
                 }
