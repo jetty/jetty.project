@@ -20,12 +20,9 @@
 package org.eclipse.jetty.server;
 
 import java.nio.channels.SocketChannel;
-import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HttpServerConnectionFactory implements ConnectionFactory
 {
@@ -55,20 +52,6 @@ public class HttpServerConnectionFactory implements ConnectionFactory
     @Override
     public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
     {
-        SslContextFactory sslContextFactory = connector.getSslContextFactory();
-        if (sslContextFactory != null)
-        {
-            SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
-            engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine);
-            Connection httpConnection = new HttpConnection(getHttpConfiguration(), connector, sslConnection.getDecryptedEndPoint());
-            sslConnection.getDecryptedEndPoint().setConnection(httpConnection);
-            httpConnection.onOpen();
-            return sslConnection;
-        }
-        else
-        {
-            return new HttpConnection(getHttpConfiguration(), getConnector(), endPoint);
-        }
+        return new HttpConnection(getHttpConfiguration(), getConnector(), endPoint);
     }
 }
