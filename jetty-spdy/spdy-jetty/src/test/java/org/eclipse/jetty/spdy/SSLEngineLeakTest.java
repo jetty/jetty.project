@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -33,7 +34,7 @@ import org.junit.Test;
 public class SSLEngineLeakTest extends AbstractTest
 {
     @Override
-    protected SPDYServerConnector newSPDYServerConnector(ServerSessionFrameListener listener)
+    protected SPDYServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
         return new SPDYServerConnector(server, sslContextFactory, listener);
