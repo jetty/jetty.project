@@ -136,7 +136,7 @@ public class Request implements HttpServletRequest
     private boolean _handled = false;
     private int _inputState = __NONE;
     private HttpMethod _httpMethod;
-    private String _method;
+    private String _httpMethodString;
     private MultiMap<String> _parameters;
     private boolean _paramsExtracted;
     private String _pathInfo;
@@ -674,7 +674,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        return _method;
+        return _httpMethodString;
     }
 
     /* ------------------------------------------------------------ */
@@ -1417,7 +1417,7 @@ public class Request implements HttpServletRequest
         _cookiesExtracted = false;
         _context = null;
         _serverName = null;
-        _method = null;
+        _httpMethodString = null;
         _pathInfo = null;
         _port = 0;
         _httpVersion = HttpVersion.HTTP_1_1;
@@ -1676,13 +1676,13 @@ public class Request implements HttpServletRequest
     public void setMethod(HttpMethod httpMethod, String method)
     {
         _httpMethod=httpMethod;
-        _method = method;
+        _httpMethodString = method;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isHead()
     {
-        return HttpMethod.HEAD==HttpMethod.fromString(_method);
+        return HttpMethod.HEAD==_httpMethod;
     }
 
     /* ------------------------------------------------------------ */

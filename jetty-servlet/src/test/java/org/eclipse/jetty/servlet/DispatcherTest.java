@@ -172,7 +172,6 @@ public class DispatcherTest
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
         _contextHandler.addServlet(AssertIncludeForwardServlet.class, "/AssertIncludeForwardServlet/*");
 
-
         String expected=
             "HTTP/1.1 200 OK\r\n"+
             "Content-Length: 0\r\n"+
