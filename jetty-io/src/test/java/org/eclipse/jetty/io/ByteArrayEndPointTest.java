@@ -25,15 +25,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
-import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -233,17 +235,19 @@ public class ByteArrayEndPointTest
         assertEquals(" more.", endp.getOutputString());
     }
 
+    @Slow
     @Test
     public void testIdle() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, 500);
+        long idleTimeout = 500;
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, idleTimeout);
         endp.setInput("test");
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(5));
 
         // no idle check
         assertTrue(endp.isOpen());
-        Thread.sleep(1000);
+        Thread.sleep(idleTimeout * 2);
         assertTrue(endp.isOpen());
 
         // normal read
@@ -267,16 +271,22 @@ public class ByteArrayEndPointTest
         }
         catch (ExecutionException t)
         {
-            assertThat(t.getCause(), Matchers.instanceOf(TimeoutException.class));
+            assertThat(t.getCause(), instanceOf(TimeoutException.class));
         }
-        assertThat(System.currentTimeMillis() - start, Matchers.greaterThan(100L));
+        assertThat(System.currentTimeMillis() - start, greaterThan(idleTimeout / 2));
         assertTrue(endp.isOpen());
+
+        // We need to delay the write timeout test below from the read timeout test above.
+        // The reason is that the scheduler thread that fails the endPoint WriteFlusher
+        // because of the read timeout above runs concurrently with the write below, and
+        // if it runs just after the write below, the test fails because the write callback
+        // below fails immediately rather than after the idle timeout.
+        Thread.sleep(idleTimeout / 2);
 
         // write timeout
         fcb = new FutureCallback<>();
-        start = System.currentTimeMillis();
-
         endp.write(null, fcb, BufferUtil.toBuffer("This is too long"));
+        start = System.currentTimeMillis();
         try
         {
             fcb.get();
@@ -284,21 +294,20 @@ public class ByteArrayEndPointTest
         }
         catch (ExecutionException t)
         {
-            assertThat(t.getCause(), Matchers.instanceOf(TimeoutException.class));
+            assertThat(t.getCause(), instanceOf(TimeoutException.class));
         }
-        assertThat(System.currentTimeMillis() - start, Matchers.greaterThan(100L));
+        assertThat(System.currentTimeMillis() - start, greaterThan(idleTimeout / 2));
         assertTrue(endp.isOpen());
 
         // Still no idle close
-        Thread.sleep(1000);
+        Thread.sleep(idleTimeout * 2);
         assertTrue(endp.isOpen());
 
         // shutdown out
         endp.shutdownOutput();
 
         // idle close
-        Thread.sleep(1000);
+        Thread.sleep(idleTimeout * 2);
         assertFalse(endp.isOpen());
     }
-
 }
