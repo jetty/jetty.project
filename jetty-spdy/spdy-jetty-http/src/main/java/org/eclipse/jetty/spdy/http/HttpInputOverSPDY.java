@@ -18,27 +18,11 @@
 
 package org.eclipse.jetty.spdy.http;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class HttpInputOverSPDY extends HttpInput<DataInfo>
 {
-    private static final DataInfo END_OF_CONTENT = new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, true);
-
-    private final Queue<DataInfo> dataInfos = new ConcurrentLinkedQueue<>();
-
-    public void offer(DataInfo dataInfo, boolean lastContent)
-    {
-        dataInfos.offer(dataInfo);
-//        if (lastContent)
-//            dataInfos.offer(END_OF_CONTENT); // TODO: necessary ?
-    }
-
     @Override
     protected int remaining(DataInfo item)
     {
@@ -54,8 +38,6 @@ public class HttpInputOverSPDY extends HttpInput<DataInfo>
     @Override
     protected void onContentConsumed(DataInfo dataInfo)
     {
-        boolean removed = dataInfos.remove(dataInfo);
-        if (removed)
-            dataInfo.consume(dataInfo.length());
+        dataInfo.consume(dataInfo.length());
     }
 }

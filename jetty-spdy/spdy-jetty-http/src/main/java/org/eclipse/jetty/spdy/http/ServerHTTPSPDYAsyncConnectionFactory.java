@@ -87,7 +87,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYConnectionFa
             HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
 
-            channel.beginRequest(headers, synInfo.isClose());
+            channel.requestStart(headers, synInfo.isClose());
 
             if (headers.isEmpty())
             {
@@ -114,9 +114,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYConnectionFa
         {
             logger.debug("Received {} on {}", headersInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
-            channel.headers(headersInfo.getHeaders());
-            if (headersInfo.isClose())
-                channel.endRequest();
+            channel.requestHeaders(headersInfo.getHeaders(), headersInfo.isClose());
         }
 
         @Override
@@ -124,36 +122,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYConnectionFa
         {
             logger.debug("Received {} on {}", dataInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
-            channel.content(dataInfo, dataInfo.isClose());
-            if (dataInfo.isClose())
-                channel.endRequest();
-
-            // We need to copy the dataInfo since we do not know when its bytes
-            // will be consumed. When the copy is consumed, we consume also the
-            // original, so the implementation can send a window update.
-//            ByteBufferDataInfo copyDataInfo = new ByteBufferDataInfo(dataInfo.asByteBuffer(false), dataInfo.isClose(), dataInfo.isCompress())
-//            {
-//                @Override
-//                public void consume(int delta)
-//                {
-//                    super.consume(delta);
-//                    dataInfo.consume(delta);
-//                }
-//            };
-//            logger.debug("Queuing last={} content {}", dataInfo.isClose(), copyDataInfo);
-//            channel.content(copyDataInfo.asByteBuffer(true));
-            //            dataInfos.offer(copyDataInfo); //TODO:
-            // .content()
-            //            if (endRequest)
-            //                dataInfos.offer(END_OF_CONTENT);
-            //                    updateState(State.CONTENT);
-            //                    handle();
-            //                }
-            //            });
-            //
-            //            connection.content(dataInfo, dataInfo.isClose());
-//            if (dataInfo.isClose())
-//                channel.endRequest();
+            channel.requestContent(dataInfo, dataInfo.isClose());
         }
     }
 }

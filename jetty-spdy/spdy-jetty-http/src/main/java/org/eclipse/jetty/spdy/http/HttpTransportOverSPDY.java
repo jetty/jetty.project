@@ -106,6 +106,9 @@ public class HttpTransportOverSPDY implements HttpTransport
     @Override
     public void send(ByteBuffer content, boolean lastContent) throws IOException
     {
+        // Guard against a last 0 bytes write
+        if (stream.isClosed() && BufferUtil.isEmpty(content) && lastContent)
+            return;
         stream.data(new ByteBufferDataInfo(content, lastContent));
     }
 
@@ -142,7 +145,7 @@ public class HttpTransportOverSPDY implements HttpTransport
                     public void completed(Stream pushStream)
                     {
                         HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(pushStream, pushRequestHeaders);
-                        pushChannel.beginRequest(pushRequestHeaders, true);
+                        pushChannel.requestStart(pushRequestHeaders, true);
                     }
                 });
             }
