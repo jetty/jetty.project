@@ -97,7 +97,8 @@ public class MappedByteBufferPool implements ByteBufferPool
         return bucket;
     }
 
-    private ConcurrentMap<Integer, Queue<ByteBuffer>> buffersFor(boolean direct)
+    // Package local for testing
+    ConcurrentMap<Integer, Queue<ByteBuffer>> buffersFor(boolean direct)
     {
         return direct ? directBuffers : heapBuffers;
     }

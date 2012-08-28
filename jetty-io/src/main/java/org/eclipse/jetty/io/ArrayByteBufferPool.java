@@ -35,7 +35,7 @@ public class ArrayByteBufferPool implements ByteBufferPool
     {
         this(64,2048,64*1024);
     }
-    
+
     public ArrayByteBufferPool(int minSize, int increment, int maxSize)
     {
         if (minSize>=increment)
@@ -44,10 +44,10 @@ public class ArrayByteBufferPool implements ByteBufferPool
             throw new IllegalArgumentException("increment must be a divisor of maxSize");
         _min=minSize;
         _inc=increment;
-        
+
         _direct=new Bucket[maxSize/increment];
         _indirect=new Bucket[maxSize/increment];
-        
+
         int size=0;
         for (int i=0;i<_direct.length;i++)
         {
@@ -61,7 +61,7 @@ public class ArrayByteBufferPool implements ByteBufferPool
     public ByteBuffer acquire(int size, boolean direct)
     {
         Bucket bucket = bucketFor(size,direct);
-        ByteBuffer buffer = bucket==null?null:bucket._queue.poll();;
+        ByteBuffer buffer = bucket==null?null:bucket._queue.poll();
 
         if (buffer == null)
         {
@@ -101,12 +101,12 @@ public class ArrayByteBufferPool implements ByteBufferPool
             return null;
         return direct?_direct[b]:_indirect[b];
     }
-    
+
     private static class Bucket
     {
         final int _size;
         final Queue<ByteBuffer> _queue= new ConcurrentLinkedQueue<>();
-        
+
         Bucket(int size)
         {
             _size=size;
