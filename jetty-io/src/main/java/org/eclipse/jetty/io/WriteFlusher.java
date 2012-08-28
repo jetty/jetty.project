@@ -291,7 +291,7 @@ abstract public class WriteFlusher
     {
         if (LOG.isDebugEnabled())
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
-        
+
         if (!updateState(__IDLE,__WRITING))
             throw new WritePendingException();
 
@@ -343,7 +343,7 @@ abstract public class WriteFlusher
     public void completeWrite()
     {
         LOG.debug("completeWrite: {}", this);
-        
+
         State previous = _state.get();
 
         if (previous.getType()!=StateType.PENDING)
@@ -388,7 +388,7 @@ abstract public class WriteFlusher
 
     public void onFail(Throwable cause)
     {
-        LOG.debug("failed: " + this, cause);
+        LOG.debug("failed: {} {}", this, cause);
 
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while(true)
