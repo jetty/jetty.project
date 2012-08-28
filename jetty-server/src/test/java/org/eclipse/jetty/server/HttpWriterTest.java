@@ -44,7 +44,7 @@ public class HttpWriterTest
 
         final HttpConfiguration configuration = new HttpConfiguration(null, false);
         final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        HttpChannel channel = new HttpChannel(null,null,null,null,null)
+        HttpChannel channel = new HttpChannel<ByteBuffer>(null,null,null,null,null)
         {
             @Override
             public HttpConfiguration getHttpConfiguration()

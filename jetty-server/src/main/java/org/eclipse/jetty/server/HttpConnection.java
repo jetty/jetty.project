@@ -581,9 +581,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    private class HttpChannelOverHttp extends HttpChannel
+    private class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
     {
-        public HttpChannelOverHttp(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
+        public HttpChannelOverHttp(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
             super(connector,configuration,endPoint,transport,input);
         }

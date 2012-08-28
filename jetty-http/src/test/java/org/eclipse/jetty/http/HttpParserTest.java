@@ -697,7 +697,7 @@ public class HttpParserTest
     private boolean _headerCompleted;
     private boolean _messageCompleted;
 
-    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler
+    private class Handler implements HttpParser.RequestHandler<ByteBuffer>, HttpParser.ResponseHandler<ByteBuffer>
     {
         private HttpFields fields;
         private boolean request;

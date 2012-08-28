@@ -1222,9 +1222,9 @@ public class HttpParser
      * These methods return true if they want parsing to return to
      * the caller.
      */
-    public interface HttpHandler
+    public interface HttpHandler<T>
     {
-        public boolean content(ByteBuffer ref);
+        public boolean content(T item);
 
         public boolean headerComplete();
 
@@ -1244,7 +1244,7 @@ public class HttpParser
         public void badMessage(int status, String reason);
     }
 
-    public interface RequestHandler extends HttpHandler
+    public interface RequestHandler<T> extends HttpHandler<T>
     {
         /**
          * This is the method called by parser when the HTTP request line is parsed
@@ -1259,7 +1259,7 @@ public class HttpParser
         public abstract boolean parsedHostHeader(String host,int port);
     }
 
-    public interface ResponseHandler extends HttpHandler
+    public interface ResponseHandler<T> extends HttpHandler<T>
     {
         /**
          * This is the method called by parser when the HTTP request line is parsed

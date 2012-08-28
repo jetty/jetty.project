@@ -43,7 +43,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -61,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
  * HttpTransport.completed().
  *
  */
-public class HttpChannel implements HttpParser.RequestHandler, Runnable
+public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
@@ -91,7 +90,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
 
-    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<T> input)
     {
         _connector = connector;
         _configuration = configuration;
@@ -279,7 +278,7 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
                 try
                 {
                     _state.completed();
-                    
+
                     if (!_response.isCommitted() && !_request.isHandled())
                         _response.sendError(404);
 
@@ -511,11 +510,13 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
     }
 
     @Override
-    public boolean content(ByteBuffer ref)
+    public boolean content(T item)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} content {}", this, BufferUtil.toDetailString(ref));
-        _request.getHttpInput().content(ref);
+            LOG.debug("{} content {}", this, item);
+        @SuppressWarnings("unchecked")
+        HttpInput<T> input = _request.getHttpInput();
+        input.content(item);
         return true;
     }
 
@@ -616,7 +617,6 @@ public class HttpChannel implements HttpParser.RequestHandler, Runnable
         _connector.getExecutor().execute(task);
     }
 
-    // TODO: remove
     public ScheduledExecutorService getScheduler()
     {
         return _connector.getScheduler();

@@ -38,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 
 public class HttpGeneratorServerTest
 {
-    private class Handler implements HttpParser.ResponseHandler
+    private class Handler implements HttpParser.ResponseHandler<ByteBuffer>
     {
         @Override
         public boolean content(ByteBuffer ref)

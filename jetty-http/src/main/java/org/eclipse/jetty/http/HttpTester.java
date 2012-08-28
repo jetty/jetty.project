@@ -31,14 +31,14 @@ import org.eclipse.jetty.util.StringUtil;
 
 public class HttpTester
 {
-    private HttpTester(){};
+    private HttpTester()
+    {
+    }
 
     public static Request newRequest()
     {
         return new Request();
     }
-
-
 
     public static Request parseRequest(String request)
     {
@@ -73,7 +73,7 @@ public class HttpTester
     }
 
 
-    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
+    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler<ByteBuffer>
     {
         ByteArrayOutputStream _content;
         HttpVersion _version=HttpVersion.HTTP_1_0;
@@ -232,7 +232,7 @@ public class HttpTester
 
     }
 
-    public static class Request extends Message implements HttpParser.RequestHandler
+    public static class Request extends Message implements HttpParser.RequestHandler<ByteBuffer>
     {
         private String _method;
         private String _uri;
@@ -290,7 +290,7 @@ public class HttpTester
         }
     }
 
-    public static class Response extends Message implements HttpParser.ResponseHandler
+    public static class Response extends Message implements HttpParser.ResponseHandler<ByteBuffer>
     {
         private int _status;
         private String _reason;
