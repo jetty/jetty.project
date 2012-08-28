@@ -258,6 +258,9 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             // expected
         }
+
+        Thread.sleep(2 * MAX_IDLE_TIME);
+
         // check the server side is closed
         Assert.assertFalse(endPoint.isOpen());
     }
