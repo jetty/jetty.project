@@ -206,9 +206,10 @@ public class SslConnection extends AbstractConnection
     @Override
     public String toString()
     {
-        return String.format("SslConnection@%x{%s}",
+        return String.format("SslConnection@%x{%s} -> %s",
                 hashCode(),
-                _sslEngine.getHandshakeStatus());
+                _sslEngine.getHandshakeStatus(),
+                _decryptedEndPoint.getConnection());
     }
 
     /* ------------------------------------------------------------ */
@@ -285,7 +286,7 @@ public class SslConnection extends AbstractConnection
         {
             return getEndPoint();
         }
-        
+
         @Override
         protected FillInterest getFillInterest()
         {
@@ -460,7 +461,7 @@ public class SslConnection extends AbstractConnection
 
                                 case NEED_WRAP:
                                     // we need to send some handshake data (probably to send a close handshake).
-                                    
+
                                     // If we were called from flush,
                                     if (buffer==__FLUSH_CALLED_FILL)
                                         return -1; // it can deal with the close handshake
@@ -523,11 +524,11 @@ public class SslConnection extends AbstractConnection
 
                                 case NEED_WRAP:
                                     // we need to send some handshake data
-                                    
+
                                     // if we are called from flush
                                     if (buffer==__FLUSH_CALLED_FILL)
                                         return 0; // let it do the wrapping
-                                    
+
                                     _fillRequiresFlushToProgress = true;
                                     flush(__FILL_CALLED_FLUSH);
                                     if (BufferUtil.isEmpty(_encryptedOutput))
@@ -642,7 +643,7 @@ public class SslConnection extends AbstractConnection
                             if (BufferUtil.isEmpty(b))
                                 BufferUtil.clear(b);
                     }
-                    
+
                     // and deal with the results returned from the sslEngineWrap
                     switch (wrapResult.getStatus())
                     {
@@ -778,7 +779,7 @@ public class SslConnection extends AbstractConnection
         {
             return _sslEngine.isInboundDone();
         }
-        
+
         @Override
         public String toString()
         {

@@ -350,9 +350,7 @@ public class SPDYClient
                     else
                     {
                         ConnectionFactory connectionFactory = new ClientSPDYConnectionFactory();
-                        Connection connection = connectionFactory.newConnection(channel, endPoint, attachment);
-                        endPoint.setConnection(connection);
-                        return connection;
+                        return connectionFactory.newConnection(channel, endPoint, attachment);
                     }
                 }
                 catch (RuntimeException x)

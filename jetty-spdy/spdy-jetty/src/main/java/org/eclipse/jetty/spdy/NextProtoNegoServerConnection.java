@@ -60,7 +60,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
             int filled = fill();
             if (filled == 0 && !completed)
                 fillInterested();
-            if (filled <= 0)
+            if (filled <= 0 || completed)
                 break;
         }
     }
