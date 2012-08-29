@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +38,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 // Some code is duplicated for clarity.
 public class ChatServlet extends HttpServlet
 {
-    
+
     // inner class to hold message queue for each chat room member
     class Member
     {
@@ -49,12 +48,12 @@ public class ChatServlet extends HttpServlet
     }
 
     Map<String,Map<String,Member>> _rooms = new HashMap<String,Map<String, Member>>();
-    
-    
+
+
     // Handle Ajax calls from browser
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-    {   
+    {
         // Ajax calls are form encoded
         String action = request.getParameter("action");
         String message = request.getParameter("message");
@@ -79,7 +78,7 @@ public class ChatServlet extends HttpServlet
             room=new HashMap<String,Member>();
             _rooms.put(request.getPathInfo(),room);
         }
-        room.put(username,member); 
+        room.put(username,member);
         response.setContentType("text/json;charset=utf-8");
         PrintWriter out=response.getWriter();
         out.print("{action:\"join\"}");
@@ -128,10 +127,10 @@ public class ChatServlet extends HttpServlet
                 response.setContentLength(bytes.length);
                 response.getOutputStream().write(bytes);
             }
-            else 
+            else
             {
                 Continuation continuation = ContinuationSupport.getContinuation(request);
-                if (continuation.isInitial()) 
+                if (continuation.isInitial())
                 {
                     // No chat in queue, so suspend and wait for timeout or chat
                     continuation.setTimeout(20000);
@@ -175,9 +174,9 @@ public class ChatServlet extends HttpServlet
 
         response.setContentType("text/json;charset=utf-8");
         PrintWriter out=response.getWriter();
-        out.print("{action:\"chat\"}");  
+        out.print("{action:\"chat\"}");
     }
-    
+
     // Serve the HTML with embedded CSS and Javascript.
     // This should be static content and should use real JS libraries.
     @Override
@@ -188,5 +187,5 @@ public class ChatServlet extends HttpServlet
         else
             getServletContext().getNamedDispatcher("default").forward(request,response);
     }
-    
+
 }

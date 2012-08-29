@@ -20,7 +20,6 @@ package org.eclipse.jetty.server.session;
 
 import java.security.SecureRandom;
 import java.util.Random;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.SessionIdManager;
@@ -32,17 +31,17 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 {
     private static final Logger LOG = Log.getLogger(AbstractSessionIdManager.class);
 
-    private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";  
-    
+    private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";
+
     protected Random _random;
     protected boolean _weakRandom;
     protected String _workerName;
-    
+
     /* ------------------------------------------------------------ */
     public AbstractSessionIdManager()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     public AbstractSessionIdManager(Random random)
     {
@@ -54,7 +53,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     /**
      * Get the workname. If set, the workername is dot appended to the session
      * ID and can be used to assist session affinity in a load balancer.
-     * 
+     *
      * @return String or null
      */
     public String getWorkerName()
@@ -66,7 +65,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     /**
      * Set the workname. If set, the workername is dot appended to the session
      * ID and can be used to assist session affinity in a load balancer.
-     * 
+     *
      * @param workerName
      */
     public void setWorkerName(String workerName)
@@ -88,11 +87,11 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         _random=random;
         _weakRandom=false;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Create a new session id if necessary.
-     * 
+     *
      * @see org.eclipse.jetty.server.SessionIdManager#newSessionId(javax.servlet.http.HttpServletRequest, long)
      */
     public String newSessionId(HttpServletRequest request, long created)
@@ -115,7 +114,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
                 if (new_id!=null&&idInUse(new_id))
                     return new_id;
             }
-            
+
             // pick a new unique ID!
             String id=null;
             while (id==null||id.length()==0||idInUse(id))
@@ -131,7 +130,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
                 if (r1<0)
                     r1=-r1;
                 id=Long.toString(r0,36)+Long.toString(r1,36);
-                
+
                 //add in the id of the node to ensure unique id across cluster
                 //NOTE this is different to the node suffix which denotes which node the request was received on
                 if (_workerName!=null)
@@ -149,17 +148,17 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     {
        initRandom();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Set up a random number generator for the sessionids.
-     * 
+     *
      * By preference, use a SecureRandom but allow to be injected.
      */
     public void initRandom ()
@@ -178,8 +177,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             }
         }
         else
-            _random.setSeed(_random.nextLong()^System.currentTimeMillis()^hashCode()^Runtime.getRuntime().freeMemory()); 
+            _random.setSeed(_random.nextLong()^System.currentTimeMillis()^hashCode()^Runtime.getRuntime().freeMemory());
     }
-    
-    
+
+
 }

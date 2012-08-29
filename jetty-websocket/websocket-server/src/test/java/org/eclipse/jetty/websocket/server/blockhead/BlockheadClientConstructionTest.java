@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.blockhead;
 
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -31,6 +29,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import static org.hamcrest.Matchers.is;
 
 /**
  * Gotta test some basic constructors of the BlockheadClient.

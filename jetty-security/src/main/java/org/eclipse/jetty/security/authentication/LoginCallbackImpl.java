@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.security.IdentityService;
@@ -27,7 +26,7 @@ import org.eclipse.jetty.security.IdentityService;
 /**
  * This is similar to the jaspi PasswordValidationCallback but includes user
  * principal and group info as well.
- * 
+ *
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public class LoginCallbackImpl implements LoginCallback

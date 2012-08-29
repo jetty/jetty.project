@@ -22,7 +22,6 @@ import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.X509KeyManager;
 
 
@@ -64,7 +63,7 @@ public class AliasedX509KeyManager implements X509KeyManager
      * @see javax.net.ssl.X509KeyManager#chooseServerAlias(java.lang.String, java.security.Principal[], java.net.Socket)
      */
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
-    {   
+    {
         return _keyAlias == null ?_keyManager.chooseServerAlias(keyType, issuers, socket) : _keyAlias;
     }
 

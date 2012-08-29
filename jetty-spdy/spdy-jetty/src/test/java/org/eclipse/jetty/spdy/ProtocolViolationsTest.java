@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -28,7 +25,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
@@ -48,6 +45,9 @@ import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class ProtocolViolationsTest extends AbstractTest
 {
@@ -101,7 +101,7 @@ public class ProtocolViolationsTest extends AbstractTest
         readBuffer.flip();
         int streamId = readBuffer.getInt(8);
 
-        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
         byte[] bytes = new byte[1];
         ByteBuffer writeBuffer = generator.data(streamId, bytes.length, new BytesDataInfo(bytes, true));
         channel.write(writeBuffer);
@@ -114,7 +114,7 @@ public class ProtocolViolationsTest extends AbstractTest
         Assert.assertEquals(streamId, readBuffer.getInt(8));
 
         session.goAway().get(5,TimeUnit.SECONDS);
-        
+
         server.close();
     }
 
@@ -157,7 +157,7 @@ public class ProtocolViolationsTest extends AbstractTest
         readBuffer.flip();
         int streamId = readBuffer.getInt(8);
 
-        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
 
         ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
         channel.write(writeBuffer);

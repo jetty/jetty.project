@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.util.EventListener;
 import java.util.Set;
-
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.Cookie;
@@ -281,7 +280,7 @@ public interface SessionManager extends LifeCycle
      * @return whether the session management is handled via cookies.
      */
     public boolean isUsingCookies();
-    
+
     /**
      * @return whether the session management is handled via URLs.
      */
@@ -294,12 +293,12 @@ public interface SessionManager extends LifeCycle
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes);
 
     public SessionCookieConfig getSessionCookieConfig();
-    
+
     /**
      * @return True if absolute URLs are check for remoteness before being session encoded.
      */
     public boolean isCheckingRemoteSessionIdEncoding();
-    
+
     /**
      * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */

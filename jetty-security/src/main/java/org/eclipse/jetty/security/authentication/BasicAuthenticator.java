@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -38,13 +37,13 @@ import org.eclipse.jetty.util.security.Constraint;
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
-public class BasicAuthenticator extends LoginAuthenticator 
-{   
+public class BasicAuthenticator extends LoginAuthenticator
+{
     /* ------------------------------------------------------------ */
     public BasicAuthenticator()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.security.Authenticator#getAuthMethod()
@@ -68,9 +67,9 @@ public class BasicAuthenticator extends LoginAuthenticator
         {
             if (!mandatory)
                 return _deferred;
-                
+
             if (credentials != null)
-            {                 
+            {
                 int space=credentials.indexOf(' ');
                 if (space>0)
                 {
@@ -98,7 +97,7 @@ public class BasicAuthenticator extends LoginAuthenticator
 
             if (_deferred.isDeferred(response))
                 return Authentication.UNAUTHENTICATED;
-            
+
             response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + _loginService.getName() + '"');
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return Authentication.SEND_CONTINUE;

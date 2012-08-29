@@ -31,7 +31,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
@@ -66,7 +65,7 @@ public class HashSessionManager extends AbstractSessionManager
     private boolean _lazyLoad=false;
     private volatile boolean _sessionsLoaded=false;
     private boolean _deleteUnrestorableSessions=false;
-    
+
 
 
 
@@ -442,13 +441,13 @@ public class HashSessionManager extends AbstractSessionManager
     {
         return _lazyLoad;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isDeleteUnrestorableSessions()
     {
         return _deleteUnrestorableSessions;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setDeleteUnrestorableSessions(boolean deleteUnrestorableSessions)
     {
@@ -497,7 +496,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         catch (Exception e)
         {
-           
+
             if (isDeleteUnrestorableSessions())
             {
                 if (file.exists())
@@ -508,7 +507,7 @@ public class HashSessionManager extends AbstractSessionManager
             }
             else
                 __log.warn("Problem restoring session "+idInCuster, e);
-                
+
         }
         return null;
     }

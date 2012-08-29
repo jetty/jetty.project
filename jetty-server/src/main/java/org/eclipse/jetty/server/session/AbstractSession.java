@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionActivationListener;
@@ -43,13 +42,13 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Implements {@link javax.servlet.http.HttpSession} from the <code>javax.servlet</code> package.
  * </p>
- * 
+ *
  */
 @SuppressWarnings("deprecation")
 public abstract class AbstractSession implements AbstractSessionManager.SessionIf
 {
     final static Logger LOG = SessionHandler.LOG;
-    
+
     private final AbstractSessionManager _manager;
     private final String _clusterId; // ID unique within cluster
     private final String _nodeId;    // ID unique within node
@@ -67,12 +66,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
 
     // TODO remove this.
     protected final Map<String,Object> _jdbcAttributes=_attributes;
-    
+
     /* ------------------------------------------------------------- */
     protected AbstractSession(AbstractSessionManager abstractSessionManager, HttpServletRequest request)
     {
         _manager = abstractSessionManager;
-        
+
         _newSession=true;
         _created=System.currentTimeMillis();
         _clusterId=_manager._sessionIdManager.newSessionId(request,_created);
@@ -99,7 +98,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         if (LOG.isDebugEnabled())
             LOG.debug("new session "+_nodeId+" "+_clusterId);
     }
-    
+
     /* ------------------------------------------------------------- */
     /**
      * asserts that the session is valid
@@ -109,7 +108,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         if (_invalid)
             throw new IllegalStateException();
     }
-    
+
     /* ------------------------------------------------------------- */
     @Override
     public AbstractSession getSession()
@@ -131,7 +130,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     {
         return _attributes;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public Object getAttribute(String name)
@@ -142,7 +141,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             return _attributes.get(name);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public int getAttributes()
     {
@@ -165,12 +164,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             return Collections.enumeration(names);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public Set<String> getNames()
     {
         synchronized (this)
-        { 
+        {
             return new HashSet<String>(_attributes.keySet());
         }
     }
@@ -284,7 +283,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             _lastAccessed=_accessed;
             _accessed=time;
 
-            if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time) 
+            if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time)
             {
                 invalidate();
                 return false;
@@ -354,7 +353,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    public void clearAttributes() 
+    public void clearAttributes()
     {
         while (_attributes!=null && _attributes.size()>0)
         {
@@ -378,11 +377,11 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
 
                 _manager.doSessionAttributeListeners(this,key,value,null);
             }
-        } 
+        }
         if (_attributes!=null)
             _attributes.clear();
     }
-    
+
     /* ------------------------------------------------------------- */
     public boolean isIdChanged()
     {
@@ -439,7 +438,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     {
         return _attributes.get(name);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void setAttribute(String name, Object value)
@@ -450,7 +449,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             checkValid();
             old=doPutOrRemove(name,value);
         }
-        
+
         if (value==null || !value.equals(old))
         {
             if (old!=null)
@@ -459,7 +458,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
                 bindValue(name,value);
 
             _manager.doSessionAttributeListeners(this,name,old,value);
-            
+
         }
     }
 
@@ -523,7 +522,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             _requests=requests;
         }
     }
-    
+
     /* ------------------------------------------------------------- */
     /** If value implements HttpSessionBindingListener, call valueUnbound() */
     public void unbindValue(java.lang.String name, Object value)
@@ -567,6 +566,6 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             }
         }
     }
-    
-    
+
+
 }

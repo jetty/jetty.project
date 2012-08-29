@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class Utf8StringBuilderTest
 {
@@ -49,7 +49,7 @@ public class Utf8StringBuilderTest
             }
         }
     }
-    
+
     @Test
     public void testFastFail_1() throws Exception
     {
@@ -72,7 +72,7 @@ public class Utf8StringBuilderTest
             // expected path
         }
     }
-    
+
     @Test
     public void testFastFail_2() throws Exception
     {

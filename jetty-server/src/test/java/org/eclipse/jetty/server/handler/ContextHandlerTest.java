@@ -18,31 +18,29 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$
@@ -173,15 +171,15 @@ public class ContextHandlerTest
         assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
         assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
         assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo/bar'"));
-        
+
         // If we stop foobar, then requests will be handled by foo
         foobar.stop();
         assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
         assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
         assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
-        
+
         // If we shutdown foo then requests will be 503'd
-        foo.shutdown();
+        foo.shutdown(null).get();
         assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
         assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("503"));
         assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("503"));
@@ -191,21 +189,21 @@ public class ContextHandlerTest
         assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
         assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
         assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
-        
+
         // If we start foo then foobar requests will be handled by foo
         foo.start();
         assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
         assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
         assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
-        
+
         // If we start foobar then foobar requests will be handled by foobar
         foobar.start();
         assertThat(connector.getResponses("GET / HTTP/1.0\n\n"),Matchers.containsString("ctx=''"));
         assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo'"));
-        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo/bar'"));      
+        assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"),Matchers.containsString("ctx='/foo/bar'"));
     }
-    
-    
+
+
     @Test
     public void testContextVirtualGetContext() throws Exception
     {
@@ -354,34 +352,34 @@ public class ContextHandlerTest
         assertEquals("333",handler.getServletContext().getAttribute("ccc"));
         assertEquals(null,handler.getServletContext().getAttribute("ddd"));
     }
-    
+
     @Test
     public void testProtected() throws Exception
     {
         ContextHandler handler = new ContextHandler();
         String[] protectedTargets = {"/foo-inf", "/bar-inf"};
         handler.setProtectedTargets(protectedTargets);
-        
+
         assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
         assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
         assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
-        
+
         protectedTargets = new String[4];
         System.arraycopy(handler.getProtectedTargets(), 0, protectedTargets, 0, 2);
         protectedTargets[2] = "/abc";
         protectedTargets[3] = "/def";
         handler.setProtectedTargets(protectedTargets);
-        
+
         assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
         assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
         assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
         assertTrue(handler.isProtectedTarget("/abc/124"));
         assertTrue(handler.isProtectedTarget("//def"));
-       
+
         assertTrue(handler.isProtectedTarget("/ABC/7777"));
     }
-    
-    
+
+
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException
     {
@@ -461,7 +459,7 @@ public class ContextHandlerTest
             handled = false;
         }
     }
-    
+
     private static final class ContextPathHandler extends AbstractHandler
     {
         @Override

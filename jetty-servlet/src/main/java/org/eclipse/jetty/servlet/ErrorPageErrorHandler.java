@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -183,7 +182,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     {
         _errorPages.put(exception.getName(),uri);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Add Error Page mapping for an exception class
      * This method is called as a result of an exception-type element in a web.xml file

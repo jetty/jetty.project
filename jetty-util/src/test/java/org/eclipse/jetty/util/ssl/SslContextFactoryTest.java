@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static junit.framework.Assert.assertTrue;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
@@ -34,6 +29,11 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static junit.framework.Assert.assertTrue;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 
 public class SslContextFactoryTest
@@ -53,12 +53,12 @@ public class SslContextFactoryTest
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        
+
         cf.start();
-        
+
         assertTrue(cf.getSslContext()!=null);
     }
-    
+
     @Test
     public void testNoTsSetKs() throws Exception
     {
@@ -69,19 +69,19 @@ public class SslContextFactoryTest
 
         cf.setKeyStore(ks);
         cf.setKeyManagerPassword("keypwd");
-        
+
         cf.start();
-        
+
         assertTrue(cf.getSslContext()!=null);
     }
-    
+
     @Test
     public void testNoTsNoKs() throws Exception
     {
         cf.start();
         assertTrue(cf.getSslContext()!=null);
     }
-    
+
     @Test
     public void testTrustAll() throws Exception
     {
@@ -167,7 +167,7 @@ public class SslContextFactoryTest
         {
         }
     }
-    
+
     @Test
     public void testNoKeyConfig() throws Exception
     {
@@ -181,7 +181,7 @@ public class SslContextFactoryTest
         }
         catch (IllegalStateException e)
         {
-            
+
         }
         catch (Exception e)
         {

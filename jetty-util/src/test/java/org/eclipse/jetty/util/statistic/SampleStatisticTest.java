@@ -18,24 +18,24 @@
 
 package org.eclipse.jetty.util.statistic;
 
-import static org.junit.Assert.assertEquals;
-
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 
 /* ------------------------------------------------------------ */
 public class SampleStatisticTest
 {
-    private static long[][] data = 
+    private static long[][] data =
     {
         {100,100,100,100,100,100,100,100,100,100},
         {100,100,100,100,100,100,100,100,100,100,90,110},
         {100,100,100,100,100,100,100,100,90,110,95,105,97,103},
         {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,90,110,95,105,97,103},
     };
-    
+
     private static double[][] results =
     { /* {mean,stddev}*/
         {100.0,0.0},
@@ -44,8 +44,8 @@ public class SampleStatisticTest
         {100.0,Math.sqrt((10*10+10*10+5*5+5*5+3*3+3*3)/24.0)},
         {100.0,Math.sqrt((10*10+10*10+5*5+5*5+3*3+3*3)/104.0)}
     };
-    
-    
+
+
     @Test
     public void testData()
         throws Exception
@@ -68,5 +68,5 @@ public class SampleStatisticTest
         Assert.assertThat(actual,Matchers.greaterThan(expected-0.1D));
         Assert.assertThat(actual,Matchers.lessThan(expected+0.1D));
     }
-    
+
 }

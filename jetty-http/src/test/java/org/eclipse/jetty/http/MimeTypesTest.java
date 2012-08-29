@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.http;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
-import org.junit.Test;
 
 public class MimeTypesTest
 {
@@ -66,7 +66,7 @@ public class MimeTypesTest
         assertNotNull(prefix,contentType);
         assertEquals(prefix,expectedMimeType,contentType);
     }
-    
+
     @Test
     public void testCharsetFromContentType()
     {
@@ -84,9 +84,9 @@ public class MimeTypesTest
         assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("foo/bar;charset=uTf8"));
         assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("foo/bar;other=\"charset=abc\";charset=uTf8"));
         assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("text/html;charset=utf-8"));
-        
+
     }
-    
+
     @Test
     public void testContentTypeWithoutCharset()
     {

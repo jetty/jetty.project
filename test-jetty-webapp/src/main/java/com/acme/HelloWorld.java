@@ -17,8 +17,8 @@
 //
 
 package com.acme;
-import java.io.IOException;
 
+import java.io.IOException;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /* ------------------------------------------------------------ */
 /** Dump Servlet Request.
- * 
+ *
  */
 public class HelloWorld extends HttpServlet
 {
@@ -57,7 +57,7 @@ public class HelloWorld extends HttpServlet
         out.println("<h1>Hello World</h1>");
         out.println("</html>");
         out.flush();
-        
+
         try
         {
             Thread.sleep(200);
@@ -68,7 +68,7 @@ public class HelloWorld extends HttpServlet
         }
     }
 
-    
- 
-    
+
+
+
 }

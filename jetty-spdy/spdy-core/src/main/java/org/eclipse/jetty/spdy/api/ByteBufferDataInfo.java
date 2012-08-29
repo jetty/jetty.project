@@ -72,6 +72,16 @@ public class ByteBufferDataInfo extends DataInfo
     }
 
     @Override
+    public int readInto(byte[] bytes, int offset, int length)
+    {
+        int available = available();
+        if (available < length)
+            length = available;
+        buffer.get(bytes, offset, length);
+        return length;
+    }
+
+    @Override
     protected ByteBuffer allocate(int size)
     {
         return buffer.isDirect() ? ByteBuffer.allocateDirect(size) : super.allocate(size);

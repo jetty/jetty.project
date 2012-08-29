@@ -28,7 +28,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -36,6 +38,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -162,11 +165,17 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     }
 
     @Override
+    public <C> Future<C> shutdown(C c)
+    {
+        // TODO shutdown all the connections
+        return super.shutdown(c);
+    }
+
+    @Override
     public void close()
     {
         ServerSocketChannel serverChannel = _acceptChannel;
         _acceptChannel = null;
-
 
         if (serverChannel != null)
         {
@@ -248,7 +257,25 @@ public class SelectChannelConnector extends AbstractNetworkConnector
 
     protected Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
     {
-        return getDefaultConnectionFactory().newConnection(channel, endPoint, attachment);
+        SslContextFactory sslContextFactory = getSslContextFactory();
+        if (sslContextFactory != null)
+        {
+            SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
+            engine.setUseClientMode(false);
+
+            SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
+
+            EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
+            Connection connection = getDefaultConnectionFactory().newConnection(channel, appEndPoint, attachment);
+            appEndPoint.setConnection(connection);
+            connection.onOpen();
+
+            return sslConnection;
+        }
+        else
+        {
+            return getDefaultConnectionFactory().newConnection(channel, endPoint, attachment);
+        }
     }
 
     /**

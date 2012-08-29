@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -49,6 +43,12 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
@@ -125,7 +125,7 @@ public class SelectChannelEndPointTest
         {
             super(endp, _threadPool);
         }
-        
+
         @Override
         public void onOpen()
         {
@@ -163,7 +163,7 @@ public class SelectChannelEndPointTest
                     }
 
                     // Copy to the out buffer
-                    if (BufferUtil.hasContent(_in) && BufferUtil.append(_in, _out) > 0)
+                    if (BufferUtil.hasContent(_in) && BufferUtil.flipPutFlip(_in, _out) > 0)
                         progress = true;
 
                     // Blocking writes
@@ -474,7 +474,7 @@ public class SelectChannelEndPointTest
         if(_lastEndPoint.isOpen())
             // Wait for another idle callback
             Thread.sleep(idleTimeout * 2);
-        
+
         // endpoint is closed.
         assertFalse(_lastEndPoint.isOpen());
     }

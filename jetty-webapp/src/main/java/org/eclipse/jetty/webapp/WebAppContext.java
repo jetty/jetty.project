@@ -29,7 +29,6 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -82,9 +81,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public final static String SERVER_CONFIG = "org.eclipse.jetty.webapp.configuration";
     public final static String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public final static String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
-    
+
     private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
-    
+
     private static String[] __dftConfigurationClasses =
     {
         "org.eclipse.jetty.webapp.WebInfConfiguration",
@@ -159,8 +158,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationsSet=false;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
-    
-    
+
+
 
     private MetaData _metadata=new MetaData();
 
@@ -290,7 +289,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_resourceAliases == null)
             return null;
         String alias = _resourceAliases.get(path);
-        
+
         int slash=path.length();
         while (alias==null)
         {
@@ -299,7 +298,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 break;
             String match=_resourceAliases.get(path.substring(0,slash+1));
             if (match!=null)
-                alias=match+path.substring(slash+1);            
+                alias=match+path.substring(slash+1);
         }
         return alias;
     }
@@ -857,7 +856,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
     }
 
-  
+
 
     /* ------------------------------------------------------------ */
     @Override

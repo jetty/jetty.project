@@ -27,14 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -45,7 +43,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.After;
@@ -92,7 +89,7 @@ public class ConstraintTest
         _security = new ConstraintSecurityHandler();
         _session.setHandler(_security);
         RequestHandler _handler = new RequestHandler();
-        _security.setHandler(_handler);     
+        _security.setHandler(_handler);
 
         _security.setConstraintMappings(getConstraintMappings(), getKnownRoles());
     }
@@ -102,13 +99,13 @@ public class ConstraintTest
     {
         _server.stop();
     }
-    
+
     public Set<String> getKnownRoles()
     {
         Set<String> knownRoles=new HashSet<>();
         knownRoles.add("user");
         knownRoles.add("administrator");
-        
+
         return knownRoles;
     }
 
@@ -163,7 +160,7 @@ public class ConstraintTest
 
         return Arrays.asList(mapping0, mapping1, mapping2, mapping3, mapping4, mapping5);
     }
-    
+
     @Test
     public void testConstraints() throws Exception
     {
@@ -779,7 +776,7 @@ public class ConstraintTest
         _security.setHandler(check);
         _security.setAuthenticator(new BasicAuthenticator());
         _security.setStrict(false);
-        
+
         _server.start();
 
         String response;
@@ -792,14 +789,14 @@ public class ConstraintTest
         assertThat(response,startsWith("HTTP/1.1 500 "));
 
         _server.stop();
-        
+
         RoleRefHandler roleref = new RoleRefHandler();
         roleref.setHandler(_security.getHandler());
         _security.setHandler(roleref);
         roleref.setHandler(check);
 
         _server.start();
-        
+
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
                 "\r\n", 100000, TimeUnit.MILLISECONDS);

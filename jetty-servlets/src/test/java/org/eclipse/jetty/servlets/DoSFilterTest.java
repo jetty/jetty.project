@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -29,6 +26,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class DoSFilterTest extends AbstractDoSFilterTest
 {
@@ -45,7 +45,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         @Override
         public void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
         {
-            try 
+            try
             {
                 response.getWriter().append("DoSFilter: timeout");
                 super.closeConnection(request,response,thread);

@@ -18,17 +18,18 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpParser.State;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -43,7 +44,7 @@ public class HttpParserTest
      * @param parser TODO
      * @throws IllegalStateException If the buffers have already been partially parsed.
      */
-    public static void parseAll(HttpParser parser, ByteBuffer buffer)
+    public static void parseAll(HttpParser parser, ByteBuffer buffer) throws EofException
     {
         if (parser.isState(State.END))
             parser.reset();
@@ -59,7 +60,7 @@ public class HttpParserTest
                 break;
         }
     }
-    
+
     @Test
     public void testLineParse0() throws Exception
     {
@@ -215,7 +216,7 @@ public class HttpParserTest
             {
                 // consumed all
                 assertEquals(0,buffer.remaining());
-                
+
                 // parse the rest
                 buffer.limit(buffer.capacity()-2);
                 parser.parseNext(buffer);
@@ -281,15 +282,15 @@ public class HttpParserTest
                         + "1a\015\012"
                         + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\015\012"
                         + "0\015\012"
-                        
+
                         + "\015\012"
-                        
+
                         + "POST /foo HTTP/1.0\015\012"
                         + "Connection: Keep-Alive\015\012"
                         + "Header2: value2\015\012"
                         + "Content-Length: 0\015\012"
                         + "\015\012"
-                        
+
                         + "PUT /doodle HTTP/1.0\015\012"
                         + "Connection: close\015\012"
                         + "Header3: value3\015\012"
@@ -379,7 +380,7 @@ public class HttpParserTest
                           "HTTP/1.1 204 No-Content\015\012"
                         + "Header: value\015\012"
                         + "\015\012"
-                        
+
                         + "HTTP/1.1 200 Correct\015\012"
                         + "Content-Length: 10\015\012"
                         + "Content-Type: text/plain\015\012"
@@ -397,7 +398,7 @@ public class HttpParserTest
 
         parser.reset();
         init();
-        
+
         parser.parseNext(buffer);
         parser.inputShutdown();
         assertEquals("HTTP/1.1", _methodOrVersion);
@@ -512,7 +513,7 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("No URI",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
 
 
@@ -532,9 +533,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("No URI",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
+
     @Test
     public void testUnknownReponseVersion() throws Exception
     {
@@ -551,9 +552,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("Unknown Version",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
+
     @Test
     public void testNoStatus() throws Exception
     {
@@ -570,9 +571,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("No Status",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
+
     @Test
     public void testNoStatus2() throws Exception
     {
@@ -589,9 +590,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("No Status",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
+
     @Test
     public void testBadRequestVersion() throws Exception
     {
@@ -608,9 +609,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("Unknown Version",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
+
     @Test
     public void testBadContentLength0() throws Exception
     {
@@ -627,9 +628,9 @@ public class HttpParserTest
         assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
+
     @Test
     public void testBadContentLength1() throws Exception
     {
@@ -646,9 +647,9 @@ public class HttpParserTest
         assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
+
     @Test
     public void testBadContentLength2() throws Exception
     {
@@ -665,10 +666,10 @@ public class HttpParserTest
         assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.END,parser.getState());
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
-    
+
+
     @Before
     public void init()
     {
@@ -683,7 +684,7 @@ public class HttpParserTest
         _headerCompleted=false;
         _messageCompleted=false;
     }
-    
+
     private String _bad;
     private String _content;
     private String _methodOrVersion;
@@ -696,7 +697,7 @@ public class HttpParserTest
     private boolean _headerCompleted;
     private boolean _messageCompleted;
 
-    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler
+    private class Handler implements HttpParser.RequestHandler<ByteBuffer>, HttpParser.ResponseHandler<ByteBuffer>
     {
         private HttpFields fields;
         private boolean request;
@@ -740,6 +741,13 @@ public class HttpParserTest
         }
 
         @Override
+        public boolean parsedHostHeader(String host,int port)
+        {
+            // TODO test this
+            return false;
+        }
+
+        @Override
         public boolean headerComplete()
         {
             //System.err.println("headerComplete");
@@ -748,8 +756,6 @@ public class HttpParserTest
             String s1=fields.toString();
             if (!s0.equals(s1))
             {
-                //System.err.println(s0);
-                //System.err.println(s1);
                 throw new IllegalStateException();
             }
 

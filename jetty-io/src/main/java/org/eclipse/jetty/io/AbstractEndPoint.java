@@ -50,8 +50,8 @@ public abstract class AbstractEndPoint implements EndPoint
                 scheduleIdleTimeout(idleLeft > 0 ? idleLeft : getIdleTimeout());
         }
     };
-    
-    
+
+
     private volatile long _idleTimeout;
     private volatile long _idleTimestamp=System.currentTimeMillis();
     private volatile Connection _connection;
@@ -150,6 +150,7 @@ public abstract class AbstractEndPoint implements EndPoint
     @Override
     public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
     {
+        notIdle();
         _fillInterest.register(context, callback);
     }
 
@@ -158,16 +159,16 @@ public abstract class AbstractEndPoint implements EndPoint
     {
         _writeFlusher.write(context, callback, buffers);
     }
-    
+
     protected abstract void onIncompleteFlush();
 
     protected abstract boolean needsFill() throws IOException;
-    
+
     protected FillInterest getFillInterest()
     {
         return _fillInterest;
     }
-    
+
     protected WriteFlusher getWriteFlusher()
     {
         return _writeFlusher;
@@ -212,16 +213,16 @@ public abstract class AbstractEndPoint implements EndPoint
                     }
                 }
             }
-            
+
             return idleLeft>=0?idleLeft:0;
         }
         return -1;
     }
-    
+
     @Override
     public String toString()
     {
-        
+
         return String.format("%s@%x{%s<r-l>%s,o=%b,is=%b,os=%b,fi=%s,wf=%s}{%s}",
                 getClass().getSimpleName(),
                 hashCode(),

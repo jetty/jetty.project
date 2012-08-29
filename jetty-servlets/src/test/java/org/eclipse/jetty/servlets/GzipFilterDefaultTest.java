@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,31 +55,31 @@ public class GzipFilterDefaultTest
 
         return Arrays.asList(data);
     }
-    
+
     private String compressionType;
-    
+
     public GzipFilterDefaultTest(String compressionType)
     {
         this.compressionType = compressionType;
     }
-    
+
     public static class HttpStatusServlet extends HttpServlet
     {
         private int _status = 204;
-        
+
         public HttpStatusServlet()
         {
             super();
         }
-        
+
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             resp.setStatus(_status);
         }
-        
+
     }
-    
+
     public static class HttpErrorServlet extends HttpServlet
     {
         private int _status = 400;
@@ -96,7 +96,7 @@ public class GzipFilterDefaultTest
             resp.setStatus(_status);
         }
     }
-    
+
     @Rule
     public TestingDir testingdir = new TestingDir();
 
@@ -108,7 +108,7 @@ public class GzipFilterDefaultTest
         // Test content that is smaller than the buffer.
         int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
         tester.prepareServerFile("file.txt",filesize);
-        
+
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
         holder.setInitParameter("mimeTypes","text/plain");
 
@@ -122,7 +122,7 @@ public class GzipFilterDefaultTest
             tester.stop();
         }
     }
-    
+
     @Test
     public void testIsGzipCompressedLarge() throws Exception
     {
@@ -131,7 +131,7 @@ public class GzipFilterDefaultTest
         // Test content that is smaller than the buffer.
         int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
         tester.prepareServerFile("file.txt",filesize);
-        
+
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
         holder.setInitParameter("mimeTypes","text/plain");
 
@@ -145,7 +145,7 @@ public class GzipFilterDefaultTest
             tester.stop();
         }
     }
-    
+
     @Test
     public void testIsNotGzipCompressed() throws Exception
     {
@@ -154,7 +154,7 @@ public class GzipFilterDefaultTest
         // Test content that is smaller than the buffer.
         int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
         tester.prepareServerFile("file.mp3",filesize);
-        
+
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
         holder.setInitParameter("mimeTypes","text/plain");
 
@@ -168,10 +168,10 @@ public class GzipFilterDefaultTest
             tester.stop();
         }
     }
-    
+
     @Test
     public void testIsNotGzipCompressedHttpStatus() throws Exception
-    { 
+    {
         GzipTester tester = new GzipTester(testingdir, compressionType);
 
         // Test error code 204
@@ -189,16 +189,16 @@ public class GzipFilterDefaultTest
         }
 
     }
-    
+
     @Test
     public void testIsNotGzipCompressedHttpBadRequestStatus() throws Exception
-    { 
+    {
         GzipTester tester = new GzipTester(testingdir, compressionType);
-        
+
         // Test error code 400
         FilterHolder holder = tester.setContentServlet(HttpErrorServlet.class);
         holder.setInitParameter("mimeTypes","text/plain");
-        
+
         try
         {
             tester.start();
@@ -208,7 +208,7 @@ public class GzipFilterDefaultTest
         {
             tester.stop();
         }
-        
+
     }
 
     @Test

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,7 +30,6 @@ import java.util.Collection;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
@@ -49,6 +46,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.junit.Assert.assertEquals;
+
 @RunWith(Parameterized.class)
 public class IncludableGzipFilterTest
 {
@@ -58,15 +57,15 @@ public class IncludableGzipFilterTest
         String[][] data = new String[][]
                 {
                 { GzipFilter.GZIP },
-                { GzipFilter.DEFLATE } 
+                { GzipFilter.DEFLATE }
                 };
-        
+
         return Arrays.asList(data);
     }
-    
+
     @Rule
     public TestingDir testdir = new TestingDir();
-    
+
     private static String __content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
         "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
@@ -83,12 +82,12 @@ public class IncludableGzipFilterTest
 
     private ServletTester tester;
     private String compressionType;
-    
+
     public IncludableGzipFilterTest(String compressionType)
     {
         this.compressionType = compressionType;
     }
-    
+
     @Before
     public void setUp() throws Exception
     {
@@ -99,7 +98,7 @@ public class IncludableGzipFilterTest
         ByteArrayInputStream testIn = new ByteArrayInputStream(__content.getBytes("ISO8859_1"));
         IO.copy(testIn,testOut);
         testOut.close();
-        
+
         tester=new ServletTester("/context");
         tester.getContext().setResourceBase(testdir.getDir().getCanonicalPath());
         tester.getContext().addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
@@ -119,19 +118,19 @@ public class IncludableGzipFilterTest
     public void testGzipFilter() throws Exception
     {
         // generated and parsed test
-       
+
         ByteBuffer request=BufferUtil.toBuffer(
             "GET /context/file.txt HTTP/1.0\r\n"+
             "Host: tester\r\n"+
             "Accept-Encoding: "+compressionType+"\r\n"+
             "\r\n");
 
-        
+
         HttpTester.Response response=HttpTester.parseResponse(tester.getResponses(request));
-        
+
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertEquals(compressionType,response.get("Content-Encoding"));
-        
+
         InputStream testIn = null;
         ByteArrayInputStream compressedResponseStream = new ByteArrayInputStream(response.getContentBytes());
         if (compressionType.equals(GzipFilter.GZIP))
@@ -144,7 +143,7 @@ public class IncludableGzipFilterTest
         }
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
-        
+
         assertEquals(__content, testOut.toString("ISO8859_1"));
     }
 }

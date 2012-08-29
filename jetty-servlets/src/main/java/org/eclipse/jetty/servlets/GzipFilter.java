@@ -26,7 +26,6 @@ import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -55,49 +54,49 @@ import org.eclipse.jetty.util.log.Logger;
  * if no mimeTypes are defined the content-type is not "application/gzip"</li>
  * <li>No content-encoding is specified by the resource</li>
  * </ul>
- * 
+ *
  * <p>
  * If both gzip and deflate are specified in the accept-encoding header, then gzip will be used.
  * </p>
  * <p>
  * Compressing the content can greatly improve the network bandwidth usage, but at a cost of memory and
- * CPU cycles. If this filter is mapped for static content, then use of efficient direct NIO may be 
- * prevented, thus use of the gzip mechanism of the {@link org.eclipse.jetty.servlet.DefaultServlet} is 
+ * CPU cycles. If this filter is mapped for static content, then use of efficient direct NIO may be
+ * prevented, thus use of the gzip mechanism of the {@link org.eclipse.jetty.servlet.DefaultServlet} is
  * advised instead.
  * </p>
  * <p>
- * This filter extends {@link UserAgentFilter} and if the the initParameter <code>excludedAgents</code> 
+ * This filter extends {@link UserAgentFilter} and if the the initParameter <code>excludedAgents</code>
  * is set to a comma separated list of user agents, then these agents will be excluded from gzip content.
  * </p>
  * <p>Init Parameters:</p>
  * <PRE>
- * bufferSize                 The output buffer size. Defaults to 8192. Be careful as values <= 0 will lead to an 
- *                            {@link IllegalArgumentException}. 
+ * bufferSize                 The output buffer size. Defaults to 8192. Be careful as values <= 0 will lead to an
+ *                            {@link IllegalArgumentException}.
  *                            See: {@link java.util.zip.GZIPOutputStream#GZIPOutputStream(java.io.OutputStream, int)}
  *                            and: {@link java.util.zip.DeflaterOutputStream#DeflaterOutputStream(java.io.OutputStream, Deflater, int)}
- *                      
+ *
  * minGzipSize                Content will only be compressed if content length is either unknown or greater
  *                            than <code>minGzipSize</code>.
- *                      
+ *
  * deflateCompressionLevel    The compression level used for deflate compression. (0-9).
  *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
- *                            
+ *
  * deflateNoWrap              The noWrap setting for deflate compression. Defaults to true. (true/false)
  *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
  *
  * mimeTypes                  Comma separated list of mime types to compress. See description above.
- * 
- * excludedAgents             Comma separated list of user agents to exclude from compression. Does a 
+ *
+ * excludedAgents             Comma separated list of user agents to exclude from compression. Does a
  *                            {@link String#contains(CharSequence)} to check if the excluded agent occurs
  *                            in the user-agent header. If it does -> no compression
- *                            
+ *
  * excludeAgentPatterns       Same as excludedAgents, but accepts regex patterns for more complex matching.
- * 
- * excludePaths               Comma separated list of paths to exclude from compression. 
+ *
+ * excludePaths               Comma separated list of paths to exclude from compression.
  *                            Does a {@link String#startsWith(String)} comparison to check if the path matches.
  *                            If it does match -> no compression. To match subpaths use <code>excludePathPatterns</code>
  *                            instead.
- * 
+ *
  * excludePathPatterns        Same as excludePath, but accepts regex patterns for more complex matching.
  * </PRE>
  */
@@ -117,7 +116,7 @@ public class GzipFilter extends UserAgentFilter
     protected Set<String> _excludedPaths;
     protected Set<Pattern> _excludedPathPatterns;
 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#init(javax.servlet.FilterConfig)
@@ -126,7 +125,7 @@ public class GzipFilter extends UserAgentFilter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         super.init(filterConfig);
-        
+
         String tmp=filterConfig.getInitParameter("bufferSize");
         if (tmp!=null)
             _bufferSize=Integer.parseInt(tmp);
@@ -134,15 +133,15 @@ public class GzipFilter extends UserAgentFilter
         tmp=filterConfig.getInitParameter("minGzipSize");
         if (tmp!=null)
             _minGzipSize=Integer.parseInt(tmp);
-        
+
         tmp=filterConfig.getInitParameter("deflateCompressionLevel");
         if (tmp!=null)
             _deflateCompressionLevel=Integer.parseInt(tmp);
-        
+
         tmp=filterConfig.getInitParameter("deflateNoWrap");
         if (tmp!=null)
             _deflateNoWrap=Boolean.parseBoolean(tmp);
-        
+
         tmp=filterConfig.getInitParameter("mimeTypes");
         if (tmp!=null)
         {
@@ -159,33 +158,33 @@ public class GzipFilter extends UserAgentFilter
             while (tok.hasMoreTokens())
                _excludedAgents.add(tok.nextToken());
         }
-        
+
                 tmp=filterConfig.getInitParameter("excludeAgentPatterns");
         if (tmp!=null)
         {
             _excludedAgentPatterns=new HashSet<Pattern>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedAgentPatterns.add(Pattern.compile(tok.nextToken()));            
-        }        
-        
+                _excludedAgentPatterns.add(Pattern.compile(tok.nextToken()));
+        }
+
         tmp=filterConfig.getInitParameter("excludePaths");
         if (tmp!=null)
         {
             _excludedPaths=new HashSet<String>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedPaths.add(tok.nextToken());            
+                _excludedPaths.add(tok.nextToken());
         }
-        
+
         tmp=filterConfig.getInitParameter("excludePathPatterns");
         if (tmp!=null)
         {
             _excludedPathPatterns=new HashSet<Pattern>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excludedPathPatterns.add(Pattern.compile(tok.nextToken()));            
-        }       
+                _excludedPathPatterns.add(Pattern.compile(tok.nextToken()));
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -196,18 +195,18 @@ public class GzipFilter extends UserAgentFilter
     public void destroy()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
     @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) 
+    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
         throws IOException, ServletException
     {
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
-        
+
         // Inform caches that responses may vary according to Accept-Encoding
         response.setHeader("Vary","Accept-Encoding");
 
@@ -227,9 +226,9 @@ public class GzipFilter extends UserAgentFilter
                 super.doFilter(request,response,chain);
                 return;
             }
-            
+
             CompressedResponseWrapper wrappedResponse = createWrappedResponse(request,response,compressionType);
-            
+
             boolean exceptional=true;
             try
             {
@@ -239,7 +238,7 @@ public class GzipFilter extends UserAgentFilter
             finally
             {
                 Continuation continuation = ContinuationSupport.getContinuation(request);
-                if (continuation.isSuspended() && continuation.isResponseWrapped())   
+                if (continuation.isSuspended() && continuation.isResponseWrapped())
                 {
                     continuation.addContinuationListener(new ContinuationListenerWaitingForWrappedResponseToFinish(wrappedResponse));
                 }
@@ -272,7 +271,7 @@ public class GzipFilter extends UserAgentFilter
         }
         return null;
     }
-    
+
     protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
     {
         CompressedResponseWrapper wrappedResponse = null;
@@ -326,9 +325,9 @@ public class GzipFilter extends UserAgentFilter
         wrappedResponse.setBufferSize(_bufferSize);
         wrappedResponse.setMinCompressSize(_minGzipSize);
     }
-     
+
     private class ContinuationListenerWaitingForWrappedResponseToFinish implements ContinuationListener{
-        
+
         private CompressedResponseWrapper wrappedResponse;
 
         public ContinuationListenerWaitingForWrappedResponseToFinish(CompressedResponseWrapper wrappedResponse)
@@ -352,10 +351,10 @@ public class GzipFilter extends UserAgentFilter
         {
         }
     }
-    
+
     /**
      * Checks to see if the userAgent is excluded
-     * 
+     *
      * @param ua
      *            the user agent
      * @return boolean true if excluded
@@ -388,7 +387,7 @@ public class GzipFilter extends UserAgentFilter
 
     /**
      * Checks to see if the path is excluded
-     * 
+     *
      * @param requestURI
      *            the request uri
      * @return boolean true if excluded

@@ -26,13 +26,11 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
-import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.server.session.HashedSession;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public abstract class LoginAuthenticator implements Authenticator
-{            
+{
     private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
 
     protected final DeferredAuthentication _deferred=new DeferredAuthentication(this);
@@ -54,12 +52,12 @@ public abstract class LoginAuthenticator implements Authenticator
             throw new IllegalStateException("No IdentityService for "+this+" in "+configuration);
         _renewSession=configuration.isSessionRenewedOnAuthentication();
     }
-    
+
     public LoginService getLoginService()
     {
         return _loginService;
     }
-    
+
     /** Change the session id.
      * The session is changed to a new instance with a new ID if and only if:<ul>
      * <li>A session exists.

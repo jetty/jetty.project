@@ -25,7 +25,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -39,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Dump Servlet Request.
- * 
+ *
  */
 public class SecureModeServlet extends HttpServlet
 {
@@ -63,7 +62,7 @@ public class SecureModeServlet extends HttpServlet
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-         
+
         response.setContentType("text/html");
         ServletOutputStream out = response.getOutputStream();
         out.println("<html>");
@@ -312,7 +311,7 @@ public class SecureModeServlet extends HttpServlet
         }
 
         out.println("      </p><br/><br/>");
-        
+
         /*
          * test the reading and writing of a read/write permission
          */
@@ -377,6 +376,6 @@ public class SecureModeServlet extends HttpServlet
 
         out.println("      </p><br/><br/>");
     }
- 
-    
+
+
 }

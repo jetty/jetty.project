@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.protocol;
 
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -28,6 +26,8 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class ClosePayloadParserTest
 {

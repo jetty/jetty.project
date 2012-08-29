@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.StringTokenizer;
-
 import javax.servlet.jsp.JspContext;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.JspFragment;
@@ -31,13 +30,13 @@ import javax.servlet.jsp.tagext.SimpleTagSupport;
 public class Date2Tag extends SimpleTagSupport
 {
     String format;
-    
+
     public void setFormat(String value) {
         this.format = value;
     }
 
     public void doTag() throws JspException, IOException {
-        String formatted = 
+        String formatted =
             new SimpleDateFormat("long".equals(format)?"EEE 'the' d:MMM:yyyy":"d:MM:yy")
             .format(new Date());
         StringTokenizer tok = new StringTokenizer(formatted,":");

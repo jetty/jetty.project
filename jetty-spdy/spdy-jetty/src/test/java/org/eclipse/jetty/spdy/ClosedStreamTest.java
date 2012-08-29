@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -30,7 +26,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
@@ -55,6 +51,10 @@ import org.eclipse.jetty.spdy.parser.Parser.Listener;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 public class ClosedStreamTest extends AbstractTest
 {
@@ -83,7 +83,7 @@ public class ClosedStreamTest extends AbstractTest
         readBuffer.flip();
         int streamId = readBuffer.getInt(8);
 
-        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
 
         ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
         channel.write(writeBuffer);
@@ -214,7 +214,7 @@ public class ClosedStreamTest extends AbstractTest
             }
         });
 
-        final Generator generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory().newCompressor());
+        final Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
         int streamId = 1;
         ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE, streamId,0,(byte)0,(short)0,new Headers()));
 

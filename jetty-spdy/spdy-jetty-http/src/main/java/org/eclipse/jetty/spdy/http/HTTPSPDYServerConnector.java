@@ -22,48 +22,39 @@ package org.eclipse.jetty.spdy.http;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class HTTPSPDYServerConnector extends AbstractHTTPSPDYServerConnector
+public class HTTPSPDYServerConnector extends SPDYServerConnector
 {
-    public HTTPSPDYServerConnector()
+    public HTTPSPDYServerConnector(Server server)
     {
-        this(null, Collections.<Short, PushStrategy>emptyMap());
+        this(server, Collections.<Short, PushStrategy>emptyMap());
     }
 
-    public HTTPSPDYServerConnector(Map<Short, PushStrategy> pushStrategies)
-    {
-        this(null, pushStrategies);
-    }
-
-    public HTTPSPDYServerConnector(SslContextFactory sslContextFactory)
-    {
-        this(sslContextFactory, Collections.<Short, PushStrategy>emptyMap());
-    }
-
-    public HTTPSPDYServerConnector(SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
+    public HTTPSPDYServerConnector(Server server, Map<Short, PushStrategy> pushStrategies)
     {
         // We pass a null ServerSessionFrameListener because for
         // HTTP over SPDY we need one that references the endPoint
-        super(null, sslContextFactory);
-        clearAsyncConnectionFactories();
+        super(server, null);
+        clearConnectionFactories();
         // The "spdy/3" protocol handles HTTP over SPDY
-        putAsyncConnectionFactory("spdy/3", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V3,pushStrategies)));
+        putConnectionFactory("spdy/3", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V3, pushStrategies)));
         // The "spdy/2" protocol handles HTTP over SPDY
-        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V2,pushStrategies)));
+        putConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V2, pushStrategies)));
         // The "http/1.1" protocol handles browsers that support NPN but not SPDY
-        putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
+        putConnectionFactory("http/1.1", new HttpServerConnectionFactory(this));
         // The default connection factory handles plain HTTP on non-SSL or non-NPN connections
-        setDefaultAsyncConnectionFactory(getAsyncConnectionFactory("http/1.1"));
+        setDefaultConnectionFactory(getConnectionFactory("http/1.1"));
     }
 
     private PushStrategy getPushStrategy(short version, Map<Short, PushStrategy> pushStrategies)
     {
         PushStrategy pushStrategy = pushStrategies.get(version);
-        if(pushStrategy == null)
+        if (pushStrategy == null)
             pushStrategy = new PushStrategy.None();
         return pushStrategy;
     }
-
 }

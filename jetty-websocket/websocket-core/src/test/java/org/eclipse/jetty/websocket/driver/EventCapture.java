@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.driver;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 @SuppressWarnings("serial")
 public class EventCapture extends ArrayList<String>

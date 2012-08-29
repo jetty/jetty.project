@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.ab;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -39,6 +37,8 @@ import org.eclipse.jetty.websocket.server.ByteBufferAssert;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.is;
 
 /**
  * Fuzzing utility for the AB tests.

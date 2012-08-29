@@ -19,11 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-
-import org.eclipse.jetty.util.ByteArrayOutputStream2;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  */
@@ -31,20 +26,20 @@ public class Iso88591HttpWriter extends HttpWriter
 {
     /* ------------------------------------------------------------ */
     public Iso88591HttpWriter(HttpOutput out)
-    {    
+    {
         super(out);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void write (char[] s,int offset, int length) throws IOException
-    {              
-        HttpOutput out = _out; 
+    {
+        HttpOutput out = _out;
         if (length==0)
             out.checkAllWritten();
-        
+
         while (length > 0)
-        {  
+        {
             _bytes.reset();
             int chars = length>MAX_OUTPUT_CHARS?MAX_OUTPUT_CHARS:length;
 
@@ -61,7 +56,7 @@ public class Iso88591HttpWriter extends HttpWriter
             }
             if (bytes>=0)
                 _bytes.setCount(bytes);
-            
+
             _bytes.writeTo(out);
             length-=chars;
             offset+=chars;

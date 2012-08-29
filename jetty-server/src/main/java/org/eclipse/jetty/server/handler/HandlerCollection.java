@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,28 +34,28 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /* ------------------------------------------------------------ */
-/** A collection of handlers.  
+/** A collection of handlers.
  * <p>
- * The default implementations  calls all handlers in list order, 
+ * The default implementations  calls all handlers in list order,
  * regardless of the response status or exceptions. Derived implementation
- * may alter the order or the conditions of calling the contained 
+ * may alter the order or the conditions of calling the contained
  * handlers.
  * <p>
- * 
+ *
  */
 @ManagedObject("Handler of multiple handlers")
 public class HandlerCollection extends AbstractHandlerContainer
 {
     private final boolean _mutableWhenRunning;
     private volatile Handler[] _handlers;
-    private boolean _parallelStart=false; 
+    private boolean _parallelStart=false;
 
     /* ------------------------------------------------------------ */
     public HandlerCollection()
     {
         _mutableWhenRunning=false;
     }
-    
+
     /* ------------------------------------------------------------ */
     public HandlerCollection(boolean mutableWhenRunning)
     {
@@ -73,20 +72,20 @@ public class HandlerCollection extends AbstractHandlerContainer
     {
         return _handlers;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      * @param handlers The handlers to set.
      */
     public void setHandlers(Handler[] handlers)
     {
         if (!_mutableWhenRunning && isStarted())
             throw new IllegalStateException(STARTED);
-        
+
         Handler [] old_handlers = _handlers==null?null:_handlers.clone();
         _handlers = handlers;
-        
+
         Server server = getServer();
         MultiException mex = new MultiException();
         for (int i=0;handlers!=null && i<handlers.length;i++)
@@ -97,7 +96,7 @@ public class HandlerCollection extends AbstractHandlerContainer
 
         if (getServer()!=null)
             getServer().getContainer().update(this, old_handlers, handlers, "handler");
-        
+
         // stop old handlers
         for (int i=0;old_handlers!=null && i<old_handlers.length;i++)
         {
@@ -114,12 +113,12 @@ public class HandlerCollection extends AbstractHandlerContainer
                 }
             }
         }
-                
+
         mex.ifExceptionThrowRuntime();
     }
-    
 
-    
+
+
     /* ------------------------------------------------------------ */
     /** Get the parrallelStart.
      * @return true if the contained handlers are started in parallel.
@@ -145,13 +144,13 @@ public class HandlerCollection extends AbstractHandlerContainer
     /**
      * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
      */
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) 
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
         if (_handlers!=null && isStarted())
         {
             MultiException mex=null;
-            
+
             for (int i=0;i<_handlers.length;i++)
             {
                 try
@@ -180,12 +179,12 @@ public class HandlerCollection extends AbstractHandlerContainer
                 else
                     throw new ServletException(mex);
             }
-            
-        }    
+
+        }
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.handler.AbstractHandler#doStart()
      */
     @Override
@@ -241,7 +240,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.handler.AbstractHandler#doStop()
      */
     @Override
@@ -256,42 +255,42 @@ public class HandlerCollection extends AbstractHandlerContainer
         }
         mex.ifExceptionThrow();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void setServer(Server server)
     {
         if (isStarted())
             throw new IllegalStateException(STARTED);
-        
+
         Server old_server=getServer();
-        
+
         super.setServer(server);
 
         Handler[] h=getHandlers();
         for (int i=0;h!=null && i<h.length;i++)
             h[i].setServer(server);
-        
+
         if (server!=null && server!=old_server)
             server.getContainer().update(this, null,_handlers, "handler");
-        
+
     }
 
     /* ------------------------------------------------------------ */
     /* Add a handler.
-     * This implementation adds the passed handler to the end of the existing collection of handlers. 
+     * This implementation adds the passed handler to the end of the existing collection of handlers.
      * @see org.eclipse.jetty.server.server.HandlerContainer#addHandler(org.eclipse.jetty.server.server.Handler)
      */
     public void addHandler(Handler handler)
     {
         setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
     }
-    
+
     /* ------------------------------------------------------------ */
     public void removeHandler(Handler handler)
     {
         Handler[] handlers = getHandlers();
-        
+
         if (handlers!=null && handlers.length>0 )
             setHandlers(ArrayUtil.removeFromArray(handlers, handler));
     }

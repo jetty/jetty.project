@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
@@ -31,11 +30,11 @@ import org.eclipse.jetty.server.UserIdentity;
  *
  */
 public class DefaultUserIdentity implements UserIdentity
-{    
+{
     private final Subject _subject;
     private final Principal _userPrincipal;
     private final String[] _roles;
-    
+
     public DefaultUserIdentity(Subject subject, Principal userPrincipal, String[] roles)
     {
         _subject=subject;

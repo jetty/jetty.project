@@ -16,26 +16,21 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.plugins;
 
 import java.util.List;
 
 import org.eclipse.jetty.plugins.model.Plugin;
 
-
-/* ------------------------------------------------------------ */
-/**
- */
 public interface MavenService
 {
     public List<String> listAvailablePlugins();
-    
+
     public Plugin getPlugin(String pluginName);
-    
-	public void setGroupId(String groupId);
 
-	public void setRepositoryUrl(String repositoryUrl);
+    public void setGroupId(String groupId);
 
-	public void setVersion(String version);
+    public void setRepositoryUrl(String repositoryUrl);
+
+    public void setVersion(String version);
 }

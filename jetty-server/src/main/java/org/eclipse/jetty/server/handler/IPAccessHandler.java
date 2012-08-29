@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Controls access to the wrapped handler by the real remote IP. Control is provided
  * by white/black lists that include both internet addresses and URIs. This handler
  * uses the real internet address of the connection, not one reported in the forwarded
- * for headers, as this cannot be as easily forged. 
+ * for headers, as this cannot be as easily forged.
  * <p>
  * Typically, the black/white lists will be used in one of three modes:
  * <ul>
@@ -56,15 +55,15 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * An empty white list is treated as match all. If there is at least one entry in
  * the white list, then a request must match a white list entry. Black list entries
- * are always applied, so that even if an entry matches the white list, a black list 
+ * are always applied, so that even if an entry matches the white list, a black list
  * entry will override it.
  * <p>
- * Internet addresses may be specified as absolute address or as a combination of 
+ * Internet addresses may be specified as absolute address or as a combination of
  * four octet wildcard specifications (a.b.c.d) that are defined as follows.
  * </p>
  * <pre>
  * nnn - an absolute value (0-255)
- * mmm-nnn - an inclusive range of absolute values, 
+ * mmm-nnn - an inclusive range of absolute values,
  *           with following shorthand notations:
  *           nnn- => nnn-255
  *           -nnn => 0-nnn
@@ -73,13 +72,13 @@ import org.eclipse.jetty.util.log.Logger;
  * </pre>
  * <p>
  * Internet address specification is separated from the URI pattern using the "|" (pipe)
- * character. URI patterns follow the servlet specification for simple * prefix and 
+ * character. URI patterns follow the servlet specification for simple * prefix and
  * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).
  * <p>
  * Earlier versions of the handler used internet address prefix wildcard specification
  * to define a range of the internet addresses (e.g. 127., 10.10., 172.16.1.).
- * They also used the first "/" character of the URI pattern to separate it from the 
- * internet address. Both of these features have been deprecated in the current version. 
+ * They also used the first "/" character of the URI pattern to separate it from the
+ * internet address. Both of these features have been deprecated in the current version.
  * <p>
  * Examples of the entry specifications are:
  * <ul>
@@ -95,8 +94,8 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Earlier versions of the handler used internet address prefix wildcard specification
  * to define a range of the internet addresses (e.g. 127., 10.10., 172.16.1.).
- * They also used the first "/" character of the URI pattern to separate it from the 
- * internet address. Both of these features have been deprecated in the current version. 
+ * They also used the first "/" character of the URI pattern to separate it from the
+ * internet address. Both of these features have been deprecated in the current version.
  */
 public class IPAccessHandler extends HandlerWrapper
 {
@@ -113,72 +112,72 @@ public class IPAccessHandler extends HandlerWrapper
     {
         super();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Creates new handler object and initializes white- and black-list
-     * 
+     *
      * @param white array of whitelist entries
      * @param black array of blacklist entries
      */
     public IPAccessHandler(String[] white, String []black)
     {
         super();
-        
+
         if (white != null && white.length > 0)
             setWhite(white);
         if (black != null && black.length > 0)
             setBlack(black);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Add a whitelist entry to an existing handler configuration
-     * 
+     *
      * @param entry new whitelist entry
      */
     public void addWhite(String entry)
     {
         add(entry, _white);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Add a blacklist entry to an existing handler configuration
-     * 
+     *
      * @param entry new blacklist entry
      */
     public void addBlack(String entry)
     {
         add(entry, _black);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Re-initialize the whitelist of existing handler object
-     * 
+     *
      * @param entries array of whitelist entries
      */
     public void setWhite(String[] entries)
     {
         set(entries, _white);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Re-initialize the blacklist of existing handler object
-     * 
+     *
      * @param entries array of blacklist entries
      */
     public void setBlack(String[] entries)
     {
         set(entries, _black);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Checks the incoming request against the whitelist and blacklist
-     * 
+     *
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
@@ -188,7 +187,7 @@ public class IPAccessHandler extends HandlerWrapper
         HttpChannel channel = baseRequest.getHttpChannel();
         if (channel!=null)
         {
-            EndPoint endp=channel.getConnection().getEndPoint();
+            EndPoint endp=channel.getEndPoint();
             if (endp!=null)
             {
                 InetSocketAddress address = endp.getRemoteAddress();
@@ -200,16 +199,16 @@ public class IPAccessHandler extends HandlerWrapper
                 }
             }
         }
-        
+
         getHandler().handle(target,baseRequest, request, response);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /**
-     * Helper method to parse the new entry and add it to 
+     * Helper method to parse the new entry and add it to
      * the specified address pattern map.
-     * 
+     *
      * @param entry new entry
      * @param patternMap target address pattern map
      */
@@ -228,15 +227,15 @@ public class IPAccessHandler extends HandlerWrapper
                 idx = entry.indexOf('/');
                 deprecated = (idx >= 0);
             }
-            
-            String addr = idx > 0 ? entry.substring(0,idx) : entry;        
+
+            String addr = idx > 0 ? entry.substring(0,idx) : entry;
             String path = idx > 0 ? entry.substring(idx) : "/*";
-            
+
             if (addr.endsWith("."))
                 deprecated = true;
             if (path!=null && (path.startsWith("|") || path.startsWith("/*.")))
                 path=path.substring(1);
-           
+
             PathMap pathMap = patternMap.get(addr);
             if (pathMap == null)
             {
@@ -245,7 +244,7 @@ public class IPAccessHandler extends HandlerWrapper
             }
             if (path != null && !"".equals(path))
                 pathMap.put(path,path);
-            
+
             if (deprecated)
                 LOG.debug(toString() +" - deprecated specification syntax: "+entry);
         }
@@ -253,16 +252,16 @@ public class IPAccessHandler extends HandlerWrapper
 
     /* ------------------------------------------------------------ */
     /**
-     * Helper method to process a list of new entries and replace 
+     * Helper method to process a list of new entries and replace
      * the content of the specified address pattern map
-     * 
+     *
      * @param entries new entries
      * @param patternMap target address pattern map
      */
     protected void set(String[] entries,  IPAddressMap<PathMap> patternMap)
     {
         patternMap.clear();
-        
+
         if (entries != null && entries.length > 0)
         {
             for (String addrPath:entries)
@@ -271,11 +270,11 @@ public class IPAccessHandler extends HandlerWrapper
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Check if specified request is allowed by current IPAccess rules.
-     * 
+     *
      * @param addr internet address
      * @param path context path
      * @return true if request is allowed
@@ -286,9 +285,9 @@ public class IPAccessHandler extends HandlerWrapper
         if (_white.size()>0)
         {
             boolean match = false;
-            
+
             Object whiteObj = _white.getLazyMatches(addr);
-            if (whiteObj != null) 
+            if (whiteObj != null)
             {
                 List whiteList = (whiteObj instanceof List) ? (List)whiteObj : Collections.singletonList(whiteObj);
 
@@ -299,7 +298,7 @@ public class IPAccessHandler extends HandlerWrapper
                         break;
                 }
             }
-            
+
             if (!match)
                 return false;
         }
@@ -307,10 +306,10 @@ public class IPAccessHandler extends HandlerWrapper
         if (_black.size() > 0)
         {
             Object blackObj = _black.getLazyMatches(addr);
-            if (blackObj != null) 
+            if (blackObj != null)
             {
                 List blackList = (blackObj instanceof List) ? (List)blackObj : Collections.singletonList(blackObj);
-    
+
                 for (Object entry: blackList)
                 {
                     PathMap pathMap = ((Map.Entry<String,PathMap>)entry).getValue();
@@ -319,14 +318,14 @@ public class IPAccessHandler extends HandlerWrapper
                 }
             }
         }
-        
+
         return true;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Dump the white- and black-list configurations when started
-     * 
+     *
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
      */
     @Override
@@ -334,13 +333,13 @@ public class IPAccessHandler extends HandlerWrapper
         throws Exception
     {
         super.doStart();
-        
+
         if (LOG.isDebugEnabled())
         {
             System.err.println(dump());
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Dump the handler configuration
@@ -348,21 +347,21 @@ public class IPAccessHandler extends HandlerWrapper
     public String dump()
     {
         StringBuilder buf = new StringBuilder();
-        
+
         buf.append(toString());
         buf.append(" WHITELIST:\n");
         dump(buf, _white);
         buf.append(toString());
         buf.append(" BLACKLIST:\n");
         dump(buf, _black);
-        
+
         return buf.toString();
-    }    
-    
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * Dump a pattern map into a StringBuilder buffer
-     * 
+     *
      * @param buf buffer
      * @param patternMap pattern map to dump
      */
@@ -377,7 +376,7 @@ public class IPAccessHandler extends HandlerWrapper
                 buf.append("|");
                 buf.append(path);
                 buf.append("\n");
-            }       
+            }
         }
     }
  }

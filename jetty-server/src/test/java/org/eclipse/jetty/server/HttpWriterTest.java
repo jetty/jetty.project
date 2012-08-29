@@ -18,19 +18,19 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class HttpWriterTest
 {
@@ -42,78 +42,31 @@ public class HttpWriterTest
     {
         _bytes = BufferUtil.allocate(2048);
 
-        HttpChannel channel = new HttpChannel(null,null,null)
+        final HttpConfiguration configuration = new HttpConfiguration(null, false);
+        final ByteBufferPool bufferPool = new MappedByteBufferPool();
+        HttpChannel channel = new HttpChannel<ByteBuffer>(null,null,null,null,null)
         {
             @Override
             public HttpConfiguration getHttpConfiguration()
             {
-                return null;
+                return configuration;
             }
 
             @Override
-            protected int write(ByteBuffer content) throws IOException
+            public ByteBufferPool getByteBufferPool()
             {
-                return BufferUtil.append(content,_bytes);
+                return bufferPool;
             }
-
-            @Override
-            protected void commitResponse(ResponseInfo info, ByteBuffer content) throws IOException
-            {
-            }
-
-            @Override
-            protected int getContentBufferSize()
-            {
-                return 0;
-            }
-
-            @Override
-            protected void increaseContentBufferSize(int size)
-            {
-            }
-
-            @Override
-            protected void resetBuffer()
-            {
-                BufferUtil.clear(_bytes);
-            }
-
-            @Override
-            protected void flushResponse() throws IOException
-            {
-            }
-
-            @Override
-            protected void completeResponse() throws IOException
-            {
-            }
-
-            @Override
-            protected void completed()
-            {
-            }
-
-            @Override
-            protected void execute(Runnable task)
-            {
-                task.run();
-            }
-
-            @Override
-            public ScheduledExecutorService getScheduler()
-            {
-                return null;
-            }
-            
-            @Override
-            public Connector getConnector()
-            {
-                return null;
-            }
-
         };
 
-        _httpOut = new HttpOutput(channel);
+        _httpOut = new HttpOutput(channel)
+        {
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException
+            {
+                BufferUtil.append(_bytes, b, off, len);
+            }
+        };
     }
 
     @Test
@@ -131,7 +84,7 @@ public class HttpWriterTest
         _writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StringUtil.__UTF8),BufferUtil.toArray(_bytes));
     }
-    
+
     @Test
     public void testUTF16() throws Exception
     {
@@ -153,7 +106,6 @@ public class HttpWriterTest
         Utf8StringBuilder buf = new Utf8StringBuilder();
         buf.append(BufferUtil.toArray(_bytes),0,_bytes.remaining());
         assertEquals(data,buf.toString());
-
     }
 
     @Test
@@ -190,7 +142,6 @@ public class HttpWriterTest
         _writer.write("How now \uFF22rown cow");
         assertEquals("How now ?rown cow",new String(BufferUtil.toArray(_bytes),StringUtil.__ISO_8859_1));
     }
-
 
     @Test
     public void testUTF16x2() throws Exception
@@ -293,13 +244,12 @@ public class HttpWriterTest
 
     private void myReportBytes(byte[] bytes) throws Exception
     {
-        for (int i = 0; i < bytes.length; i++)
-        {
-            // System.err.format("%s%x",(i == 0)?"[":(i % (HttpWriter.MAX_OUTPUT_CHARS) == 0)?"][":",",bytes[i]);
-        }
-        // System.err.format("]->%s\n",new String(bytes,StringUtil.__UTF8));
+//        for (int i = 0; i < bytes.length; i++)
+//        {
+//            System.err.format("%s%x",(i == 0)?"[":(i % (HttpWriter.MAX_OUTPUT_CHARS) == 0)?"][":",",bytes[i]);
+//        }
+//        System.err.format("]->%s\n",new String(bytes,StringUtil.__UTF8));
     }
-
 
     private void assertArrayEquals(byte[] b1, byte[] b2)
     {

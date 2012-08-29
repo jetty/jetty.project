@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -53,7 +52,7 @@ public class TestDirContentServlet extends HttpServlet
         String relPath = fileName;
         relPath = relPath.replaceFirst("^/context/","");
         relPath = relPath.replaceFirst("^/","");
-        
+
         File contentFile =  getTestFile(relPath);
 
         FileInputStream in = null;

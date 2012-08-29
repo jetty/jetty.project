@@ -20,7 +20,6 @@ package org.eclipse.jetty.security;
 
 import java.security.Principal;
 import java.util.List;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
@@ -30,15 +29,15 @@ public class SpnegoUserIdentity implements UserIdentity
     private Subject _subject;
     private Principal _principal;
     private List<String> _roles;
-    
+
     public SpnegoUserIdentity( Subject subject, Principal principal, List<String> roles )
     {
         _subject = subject;
         _principal = principal;
         _roles = roles;
     }
-    
-    
+
+
     public Subject getSubject()
     {
         return _subject;

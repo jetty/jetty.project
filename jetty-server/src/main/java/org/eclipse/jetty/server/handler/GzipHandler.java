@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -54,7 +53,7 @@ import org.eclipse.jetty.util.log.Logger;
  * content-type is not "application/gzip"</li>
  * <li>No content-encoding is specified by the resource</li>
  * </ul>
- * 
+ *
  * <p>
  * Compressing the content can greatly improve the network bandwidth usage, but at a cost of memory and CPU cycles. If this handler is used for static content,
  * then use of efficient direct NIO may be prevented, thus use of the gzip mechanism of the <code>org.eclipse.jetty.servlet.DefaultServlet</code> is advised instead.
@@ -80,7 +79,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Get the mime types.
-     * 
+     *
      * @return mime types to set
      */
     public Set<String> getMimeTypes()
@@ -91,7 +90,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Set the mime types.
-     * 
+     *
      * @param mimeTypes
      *            the mime types to set
      */
@@ -103,7 +102,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Set the mime types.
-     * 
+     *
      * @param mimeTypes
      *            the mime types to set
      */
@@ -123,7 +122,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Get the excluded user agents.
-     * 
+     *
      * @return excluded user agents
      */
     public Set<String> getExcluded()
@@ -134,7 +133,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Set the excluded user agents.
-     * 
+     *
      * @param excluded
      *            excluded user agents to set
      */
@@ -146,7 +145,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Set the excluded user agents.
-     * 
+     *
      * @param excluded
      *            excluded user agents to set
      */
@@ -164,7 +163,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Get the buffer size.
-     * 
+     *
      * @return the buffer size
      */
     public int getBufferSize()
@@ -175,7 +174,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Set the buffer size.
-     * 
+     *
      * @param bufferSize
      *            buffer size to set
      */
@@ -187,7 +186,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Get the minimum reponse size.
-     * 
+     *
      * @return minimum reponse size
      */
     public int getMinGzipSize()
@@ -198,7 +197,7 @@ public class GzipHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Set the minimum reponse size.
-     * 
+     *
      * @param minGzipSize
      *            minimum reponse size
      */
@@ -231,7 +230,7 @@ public class GzipHandler extends HandlerWrapper
                 }
 
                 final CompressedResponseWrapper wrappedResponse = newGzipResponseWrapper(request,response);
-                
+
                 boolean exceptional=true;
                 try
                 {
@@ -241,7 +240,7 @@ public class GzipHandler extends HandlerWrapper
                 finally
                 {
                     Continuation continuation = ContinuationSupport.getContinuation(request);
-                    if (continuation.isSuspended() && continuation.isResponseWrapped())   
+                    if (continuation.isSuspended() && continuation.isResponseWrapped())
                     {
                         continuation.addContinuationListener(new ContinuationListener()
                         {
@@ -293,7 +292,7 @@ public class GzipHandler extends HandlerWrapper
                 super.setBufferSize(GzipHandler.this._bufferSize);
                 super.setMinCompressSize(GzipHandler.this._minGzipSize);
             }
-            
+
             @Override
             protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
             {
@@ -306,7 +305,7 @@ public class GzipHandler extends HandlerWrapper
                     }
                 };
             }
-            
+
             @Override
             protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
             {
@@ -314,7 +313,7 @@ public class GzipHandler extends HandlerWrapper
             }
         };
     }
-    
+
     /**
      * Allows derived implementations to replace PrintWriter implementation.
      *

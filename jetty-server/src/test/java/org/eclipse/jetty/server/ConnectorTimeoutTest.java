@@ -128,7 +128,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    exchanger.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
+                    exchanger.exchange(baseRequest.getHttpChannel().getEndPoint());
                 }
                 catch (Exception e)
                 {
@@ -203,7 +203,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    exchanger.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
+                    exchanger.exchange(baseRequest.getHttpChannel().getEndPoint());
                 }
                 catch (Exception e)
                 {
@@ -258,6 +258,9 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             // expected
         }
+
+        Thread.sleep(2 * MAX_IDLE_TIME);
+
         // check the server side is closed
         Assert.assertFalse(endPoint.isOpen());
     }
@@ -274,7 +277,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    exchanger.exchange(baseRequest.getHttpChannel().getConnection().getEndPoint());
+                    exchanger.exchange(baseRequest.getHttpChannel().getEndPoint());
                 }
                 catch (Exception e)
                 {

@@ -26,12 +26,24 @@ import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.Stream;
 
 /**
- *
+ * <p>{@link PushStrategy} encapsulates the decisions about performing
+ * SPDY pushes of secondary resources associated with a primary resource.</p>
  */
 public interface PushStrategy
 {
+    /**
+     * <p>Applies the SPDY push logic for the primary resource.</p>
+     *
+     * @param stream the primary resource stream
+     * @param requestHeaders the primary resource request headers
+     * @param responseHeaders the primary resource response headers
+     * @return a list of secondary resource URIs to push
+     */
     public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders);
 
+    /**
+     * An implementation that returns an empty list of secondary resources
+     */
     public static class None implements PushStrategy
     {
         @Override

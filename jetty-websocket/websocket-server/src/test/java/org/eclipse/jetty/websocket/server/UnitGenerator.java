@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.Generator;
 
@@ -29,6 +29,6 @@ public class UnitGenerator extends Generator
 {
     public UnitGenerator()
     {
-        super(WebSocketPolicy.newServerPolicy(),new StandardByteBufferPool());
+        super(WebSocketPolicy.newServerPolicy(),new MappedByteBufferPool());
     }
 }

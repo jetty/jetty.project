@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.servlets.gzip;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -42,7 +34,6 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
@@ -56,6 +47,14 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 public class GzipTester
 {
@@ -93,7 +92,7 @@ public class GzipTester
             request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
 
-        // Issue the request                
+        // Issue the request
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
 
         // Assert the response headers
@@ -165,7 +164,7 @@ public class GzipTester
 
         // Issue the request
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        
+
         dumpHeaders(requestedFilename + " / Response Headers",response);
 
         // Assert the response headers
@@ -243,7 +242,7 @@ public class GzipTester
         {
             File serverFile = testdir.getFile(filename);
             String expectedResponse = IO.readToString(serverFile);
-            
+
             String actual = readResponse(response);
             Assert.assertEquals("Expected response equals actual response",expectedResponse,actual);
         }
@@ -269,7 +268,7 @@ public class GzipTester
         String actual = readResponse(response);
         Assert.assertEquals("Expected response equals actual response",expectedResponse,actual);
     }
-    
+
     /**
      * Asserts that the request results in a properly structured GzipFilter response, where the content is
      * not compressed, and the content-length is returned appropriately.
@@ -291,9 +290,13 @@ public class GzipTester
         Assert.assertThat("Response.status",response.getStatus(),is(status));
         if (expectedFilesize != (-1))
         {
-            Assert.assertThat("Response.header[Content-Length]",response.get("Content-Length"),notNullValue());
-            int serverLength = Integer.parseInt(response.get("Content-Length"));
-            Assert.assertThat("Response.header[Content-Length]",serverLength,is(expectedFilesize));
+            Assert.assertEquals(expectedFilesize,response.getContentBytes().length);
+            String cl=response.get("Content-Length");
+            if (cl!=null)
+            {
+                int serverLength = Integer.parseInt(response.get("Content-Length"));
+                Assert.assertEquals(serverLength,expectedFilesize);
+            }
         }
         Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),not(containsString(compressionType)));
     }
@@ -303,14 +306,14 @@ public class GzipTester
         System.err.printf("[GzipTester] requesting %s%n",uri);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
-        
+
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding",compressionType);
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
-        
+
         request.setURI(uri);
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         return response;
@@ -460,7 +463,7 @@ public class GzipTester
     {
         this.encoding = encoding;
     }
-    
+
     public void setUserAgent(String ua)
     {
         this.userAgent = ua;

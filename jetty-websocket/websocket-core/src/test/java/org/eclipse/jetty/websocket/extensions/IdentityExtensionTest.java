@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.extensions;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -36,6 +34,8 @@ import org.eclipse.jetty.websocket.protocol.OutgoingFramesCapture.Write;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class IdentityExtensionTest
 {

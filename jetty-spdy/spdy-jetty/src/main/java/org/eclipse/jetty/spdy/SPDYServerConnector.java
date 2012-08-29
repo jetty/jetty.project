@@ -32,7 +32,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
-import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -114,10 +113,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
         else
         {
-            ConnectionFactory connectionFactory = getDefaultConnectionFactory();
-            Connection connection = connectionFactory.newConnection(channel, endPoint, this);
-            endPoint.setConnection(connection);
-            return connection;
+            return super.newConnection(channel, endPoint, this);
         }
     }
 
@@ -173,6 +169,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     public void replaceConnection(EndPoint endPoint, Connection connection)
     {
         Connection oldConnection = endPoint.getConnection();
+        LOG.debug("Upgrading connection {} -> {} on endPoint {}", oldConnection, connection, endPoint);
         endPoint.setConnection(connection);
         getSelectorManager().connectionUpgraded(endPoint, oldConnection);
     }

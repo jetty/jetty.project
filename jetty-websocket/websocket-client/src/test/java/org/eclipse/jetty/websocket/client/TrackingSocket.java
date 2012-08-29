@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
@@ -30,6 +30,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Testing Socket used on client side WebSocket testing.
@@ -39,6 +42,7 @@ public class TrackingSocket extends WebSocketAdapter
     private static final Logger LOG = Log.getLogger(TrackingSocket.class);
 
     public int closeCode = -1;
+    public Exchanger<String> messageExchanger;
     public StringBuilder closeMessage = new StringBuilder();
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
@@ -59,7 +63,7 @@ public class TrackingSocket extends WebSocketAdapter
 
     private void assertCloseReason(String expectedReason)
     {
-        Assert.assertThat("Close Reaosn",closeMessage.toString(),is(expectedReason));
+        Assert.assertThat("Close Reason",closeMessage.toString(),is(expectedReason));
     }
 
     public void assertIsOpen() throws InterruptedException
@@ -89,6 +93,32 @@ public class TrackingSocket extends WebSocketAdapter
         Assert.assertThat("Was Opened",openLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
 
+    public void awaitMessage(int expectedMessageCount, TimeUnit timeoutUnit, int timeoutDuration) throws TimeoutException
+    {
+        int startCount = messageQueue.size();
+        long msDur = TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
+        long now = System.currentTimeMillis();
+        long expireOn = now + msDur;
+        LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
+
+        while (messageQueue.size() < (startCount + expectedMessageCount))
+        {
+            try
+            {
+                TimeUnit.MILLISECONDS.sleep(20);
+            }
+            catch (InterruptedException gnore)
+            {
+                /* ignore */
+            }
+            if (!LOG.isDebugEnabled() && (System.currentTimeMillis() > expireOn))
+            {
+                throw new TimeoutException(String.format("Timeout reading all %d expected messages. (managed to only read %d messages)",expectedMessageCount,
+                        messageQueue.size()));
+            }
+        }
+    }
+
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
@@ -99,6 +129,7 @@ public class TrackingSocket extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
+        LOG.debug("onWebSocketClose({},{})",statusCode,reason);
         super.onWebSocketClose(statusCode,reason);
         closeCode = statusCode;
         closeMessage.append(reason);
@@ -116,8 +147,20 @@ public class TrackingSocket extends WebSocketAdapter
     public void onWebSocketText(String message)
     {
         LOG.debug("onWebSocketText({})",message);
-        messageQueue.add(message);
+        messageQueue.offer(message);
         dataLatch.countDown();
+
+        if (messageExchanger != null)
+        {
+            try
+            {
+                messageExchanger.exchange(message);
+            }
+            catch (InterruptedException e)
+            {
+                LOG.debug(e);
+            }
+        }
     }
 
     public void waitForMessage(TimeUnit timeoutUnit, int timeoutDuration) throws InterruptedException

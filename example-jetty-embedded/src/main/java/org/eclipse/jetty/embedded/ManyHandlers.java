@@ -21,7 +21,6 @@ package org.eclipse.jetty.embedded;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -49,7 +48,7 @@ import org.eclipse.jetty.util.ajax.JSON;
  * <li>select another handler to pass the request to.
  * <li>use business logic to decide to do one of the above.
  * </ul>
- * 
+ *
  * Multiple handlers may be combined with:
  * <ul>
  * <li>{@link HandlerWrapper} which will nest one handler inside another. In

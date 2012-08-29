@@ -159,7 +159,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         {
             LOG.warn("{} threads could not be stopped", size);
 
-            if (size<=Runtime.getRuntime().availableProcessors() || LOG.isDebugEnabled())
+            if ((size<=Runtime.getRuntime().availableProcessors()) || LOG.isDebugEnabled())
             {
                 for (Thread unstopped : _threads)
                 {
@@ -168,7 +168,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     {
                         dmp.append(StringUtil.__LINE_SEPARATOR).append("\tat ").append(element);
                     }
-                    LOG.debug("Couldn't stop {}{}", unstopped, dmp.toString());
+                    LOG.warn("Couldn't stop {}{}", unstopped, dmp.toString());
                 }
             }
         }
@@ -368,7 +368,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     public void execute(Runnable job)
     {
         if (!dispatch(job))
-            throw new RejectedExecutionException(toString());
+        {
+            LOG.warn("{} rejected {}",this,job);
+            throw new RejectedExecutionException(job.toString());
+        }
     }
 
     /**

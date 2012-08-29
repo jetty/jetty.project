@@ -104,8 +104,11 @@ public class BufferUtil
      */
     public static void clear(ByteBuffer buffer)
     {
-        buffer.position(0);
-        buffer.limit(0);
+        if (buffer!=null)
+        {
+            buffer.position(0);
+            buffer.limit(0);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -306,7 +309,7 @@ public class BufferUtil
      * @param to Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
      * @return number of bytes moved
      */
-    public static int append(ByteBuffer from, ByteBuffer to)
+    public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
     {
         int pos= flipToFill(to);
         try
@@ -317,6 +320,32 @@ public class BufferUtil
         {
             flipToFlush(to,pos);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public static void append(ByteBuffer to, byte[] b,int off,int len)
+    {
+        int pos= flipToFill(to);
+        try
+        {
+            to.put(b,off,len);
+        }
+        finally
+        {
+            flipToFlush(to,pos);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public static void append(ByteBuffer to, byte b)
+    {
+        int limit=to.limit();
+        to.limit(limit+1);
+        to.put(limit,b);
     }
     
     /* ------------------------------------------------------------ */
@@ -330,6 +359,7 @@ public class BufferUtil
             needed=needed-channel.read(buffer);
     }
 
+    /* ------------------------------------------------------------ */
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
         ByteBuffer tmp = allocate(8192);

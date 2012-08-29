@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.plugins.impl;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.when;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -31,6 +27,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import junit.framework.Assert;
 import org.eclipse.jetty.plugins.MavenService;
 import org.eclipse.jetty.plugins.model.Plugin;
 import org.junit.Before;
@@ -39,123 +36,115 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-/* ------------------------------------------------------------ */
-/**
- */
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.when;
+
 @RunWith(MockitoJUnitRunner.class)
-public class PluginManagerTest {
-	@Mock
-	private MavenService _mavenService;
+public class PluginManagerTest
+{
+    @Mock
+    private MavenService _mavenService;
+    private PluginManagerImpl _pluginManager;
+    private List<String> availablePlugins = createAvailablePluginsTestData();
+    private ClassLoader _classLoader = this.getClass().getClassLoader();
+    private String _tmpDir;
+    private File _javaTmpDir = new File(System.getProperty("java.io.tmpdir"));
 
-	private PluginManagerImpl _pluginManager;
+    @Before
+    public void setUp() throws Exception
+    {
+        URL resource = this.getClass().getResource("/jetty_home");
+        _tmpDir = resource.getFile();
+        _pluginManager = new PluginManagerImpl(_mavenService, _tmpDir);
+    }
 
-	private List<String> availablePlugins = createAvailablePluginsTestData();
-	private ClassLoader _classLoader = this.getClass().getClassLoader();
-	private String _tmpDir;
-	private File _javaTmpDir = new File(System.getProperty("java.io.tmpdir"));
+    @Test
+    public void testListAvailablePlugins()
+    {
+        when(_mavenService.listAvailablePlugins()).thenReturn(availablePlugins);
+        List<String> availablePlugins = _pluginManager.listAvailablePlugins();
+        assertThat("jetty-jmx not found",
+                availablePlugins.contains("jetty-jmx"), is(true));
+        assertThat("jetty-jta not found",
+                availablePlugins.contains("jetty-jta"), is(true));
+    }
 
-	/* ------------------------------------------------------------ */
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {
-		URL resource = this.getClass().getResource("/jetty_home");
-		_tmpDir = resource.getFile();
-		_pluginManager = new PluginManagerImpl(_mavenService, _tmpDir);
-	}
+    @Test
+    public void testInstallPluginJar()
+    {
+        String pluginName = "jetty-plugin-with-plugin-jar";
+        URL resource = _classLoader.getResource("example-plugin.jar");
+        Assert.assertNotNull(resource);
+        String pluginJar = resource.getFile();
+        File pluginJarFile = new File(pluginJar);
+        Plugin plugin = createTestPlugin(pluginName, pluginJarFile);
 
-	@Test
-	public void testListAvailablePlugins() {
-		when(_mavenService.listAvailablePlugins()).thenReturn(availablePlugins);
-		List<String> availablePlugins = _pluginManager.listAvailablePlugins();
-		assertThat("jetty-jmx not found",
-				availablePlugins.contains("jetty-jmx"), is(true));
-		assertThat("jetty-jta not found",
-				availablePlugins.contains("jetty-jta"), is(true));
-	}
+        when(_mavenService.getPlugin(pluginName)).thenReturn(plugin);
 
-	@Test
-	public void testInstallPluginJar() {
-		String pluginName = "jetty-plugin-with-plugin-jar";
-		String pluginJar = _classLoader.getResource("example-plugin.jar")
-				.getFile();
-		File pluginJarFile = new File(pluginJar);
-		Plugin plugin = createTestPlugin(pluginName, pluginJarFile);
+        _pluginManager.installPlugin(pluginName);
 
-		when(_mavenService.getPlugin(pluginName)).thenReturn(plugin);
+        File someJar = new File(_tmpDir + File.separator + "lib" + File.separator + "somejar.jar");
+        assertThat("someJar.jar does not exist", someJar.exists(), is(true));
+        File someOtherJar = new File(_tmpDir + File.separator + "lib"
+                + File.separator + "someotherjar.jar");
+        assertThat("someOtherJar.jar does not exist", someOtherJar.exists(),
+                is(true));
+    }
 
-		_pluginManager.installPlugin(pluginName);
+    @Test
+    public void testInstallPlugins() throws IOException
+    {
+        String pluginName = "jetty-jmx";
+        URL resource = _classLoader.getResource("jetty-jmx-7.6.0.v20120127-plugin.jar");
+        Assert.assertNotNull(resource);
+        String jmxPluginConfigJar = resource.getFile();
+        File jmxPluginConfigJarFile = new File(jmxPluginConfigJar);
 
-		File someJar = new File(_tmpDir + File.separator + "lib"
-				+ File.separator + "someJar.jar");
-		assertThat("someJar.jar does not exist", someJar.exists(), is(true));
-		File someOtherJar = new File(_tmpDir + File.separator + "lib"
-				+ File.separator + "someOtherJar.jar");
-		assertThat("someOtherJar.jar does not exist", someOtherJar.exists(),
-				is(true));
-	}
+        // Need to copy it to a temp file since the implementation will move the
+        // file and we need to keep the test files where they are.
+        File jmxPluginConfigTempCopy = copyToTempFile(jmxPluginConfigJarFile);
 
-	@Test
-	public void testInstallPlugins() throws IOException {
+        Plugin plugin = new Plugin(pluginName, jmxPluginConfigTempCopy);
 
-		String pluginName = "jetty-jmx";
-		String jmxPluginConfigJar = _classLoader.getResource(
-				"jetty-jmx-7.6.0.v20120127-plugin.jar").getFile();
-		File jmxPluginConfigJarFile = new File(jmxPluginConfigJar);
+        when(_mavenService.getPlugin(pluginName)).thenReturn(plugin);
 
-		// Need to copy it to a temp file since the implementation will move the
-		// file and we need to keep the test files where they are.
-		File jmxPluginConfigTempCopy = copyToTempFile(jmxPluginConfigJarFile);
+        _pluginManager.installPlugin(pluginName);
 
-		Plugin plugin = new Plugin(pluginName, jmxPluginConfigTempCopy);
+        File metaInf = new File(_tmpDir + File.separator + "META-INF");
+        File jettyXmlConfigFile = new File(_tmpDir + File.separator + "start.d"
+                + File.separator + "20-jetty-jmx.xml");
+        File jettyJmxJarFile = new File(_tmpDir + File.separator + "lib"
+                + File.separator + "jetty-jmx-7.6.0.v20120127.jar");
+        assertThat("META-INF should be skipped", metaInf.exists(), not(true));
+        assertThat("20-jetty-jmx.xml does not exist",
+                jettyXmlConfigFile.exists(), is(true));
+        assertThat("jetty-jmx-7.6.0.v20120127.jar does not exist",
+                jettyJmxJarFile.exists(), is(true));
+    }
 
-		when(_mavenService.getPlugin(pluginName)).thenReturn(plugin);
+    public File copyToTempFile(File sourceFile) throws IOException
+    {
+        File destFile = new File(_javaTmpDir + File.separator + sourceFile.getName());
+        try (FileChannel destination = new FileOutputStream(destFile).getChannel();
+             FileChannel source = new FileInputStream(sourceFile).getChannel())
+        {
+            destination.transferFrom(source, 0, source.size());
+        }
+        return destFile;
+    }
 
-		_pluginManager.installPlugin(pluginName);
+    private List<String> createAvailablePluginsTestData()
+    {
+        List<String> availablePlugins = new ArrayList<>();
+        availablePlugins.add("jetty-jmx");
+        availablePlugins.add("jetty-jta");
+        return availablePlugins;
+    }
 
-		File metaInf = new File(_tmpDir + File.separator + "META-INF");
-		File jettyXmlConfigFile = new File(_tmpDir + File.separator + "start.d"
-				+ File.separator + "20-jetty-jmx.xml");
-		File jettyJmxJarFile = new File(_tmpDir + File.separator + "lib"
-				+ File.separator + "jetty-jmx-7.6.0.v20120127.jar");
-		assertThat("META-INF should be skipped", metaInf.exists(), not(true));
-		assertThat("20-jetty-jmx.xml does not exist",
-				jettyXmlConfigFile.exists(), is(true));
-		assertThat("jetty-jmx-7.6.0.v20120127.jar does not exist",
-				jettyJmxJarFile.exists(), is(true));
-	}
-
-	public File copyToTempFile(File sourceFile) throws IOException {
-		File destFile = new File(_javaTmpDir + File.separator
-				+ sourceFile.getName());
-		FileChannel source = null;
-		FileChannel destination = null;
-		try {
-			source = new FileInputStream(sourceFile).getChannel();
-			destination = new FileOutputStream(destFile).getChannel();
-			destination.transferFrom(source, 0, source.size());
-		} finally {
-			if (source != null) {
-				source.close();
-			}
-			if (destination != null) {
-				destination.close();
-			}
-		}
-		return destFile;
-	}
-
-	private List<String> createAvailablePluginsTestData() {
-		List<String> availablePlugins = new ArrayList<String>();
-		availablePlugins.add("jetty-jmx");
-		availablePlugins.add("jetty-jta");
-		return availablePlugins;
-	}
-
-	private Plugin createTestPlugin(String name, File jar) {
-		Plugin plugin = new Plugin(name, jar);
-		return plugin;
-	}
-
+    private Plugin createTestPlugin(String name, File jar)
+    {
+        return new Plugin(name, jar);
+    }
 }

@@ -61,11 +61,10 @@ public abstract class AbstractTest
 
     protected InetSocketAddress startServer(short version, ServerSessionFrameListener listener) throws Exception
     {
-        QueuedThreadPool pool = new QueuedThreadPool();
-        pool.setName(pool.getName()+"-server");
-        server = new Server(pool);
+        if (server == null)
+            server = newServer();
         if (connector == null)
-            connector = newSPDYServerConnector(listener);
+            connector = newSPDYServerConnector(server, listener);
         if (listener == null)
             listener = connector.getServerSessionFrameListener();
         connector.setDefaultConnectionFactory(new ServerSPDYConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), listener));
@@ -75,7 +74,14 @@ public abstract class AbstractTest
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 
-    protected SPDYServerConnector newSPDYServerConnector(ServerSessionFrameListener listener)
+    protected Server newServer()
+    {
+        QueuedThreadPool pool = new QueuedThreadPool();
+        pool.setName(pool.getName()+"-server");
+        return new Server(pool);
+    }
+
+    protected SPDYServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {
         return new SPDYServerConnector(server, listener);
     }

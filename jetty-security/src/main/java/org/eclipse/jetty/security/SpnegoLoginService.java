@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security;
 
 import java.util.Properties;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;

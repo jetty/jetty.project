@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.client.internal;
 
-import static org.hamcrest.Matchers.*;
-
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class ConnectionManagerTest
 {

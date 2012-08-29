@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.driver;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-
 import org.eclipse.jetty.websocket.annotations.BadBinarySignatureSocket;
 import org.eclipse.jetty.websocket.annotations.BadDuplicateBinarySocket;
 import org.eclipse.jetty.websocket.annotations.BadDuplicateFrameSocket;
@@ -44,6 +39,11 @@ import org.eclipse.jetty.websocket.examples.AnnotatedTextStreamSocket;
 import org.eclipse.jetty.websocket.examples.ListenerBasicSocket;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 public class EventMethodsCacheTest
 {

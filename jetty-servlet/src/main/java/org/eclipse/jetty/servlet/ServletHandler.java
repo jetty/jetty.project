@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -580,7 +579,7 @@ public class ServletHandler extends ScopedHandler
 
         // Build list of filters (list of FilterHolder objects)
         List<FilterHolder> filters = new ArrayList<>();
-        
+
         // Path filters
         if (pathInContext!=null && _filterPathMappings!=null)
         {
@@ -598,7 +597,7 @@ public class ServletHandler extends ScopedHandler
             if (_filterNameMappings.size() > 0)
             {
                 Object o= _filterNameMappings.get(servletHolder.getName());
-                
+
                 for (int i=0; i<LazyList.size(o);i++)
                 {
                     FilterMapping mapping = (FilterMapping)LazyList.get(o,i);

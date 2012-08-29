@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.net.URI;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.server.SelectChannelConnector;

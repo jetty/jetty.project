@@ -21,7 +21,6 @@ package com.acme;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.JspTagException;
 import javax.servlet.jsp.PageContext;
@@ -43,7 +42,7 @@ public class DateTag extends BodyTagSupport
     public void setTz(String value) {tz=value;}
 
     public int doStartTag() throws JspException {return EVAL_BODY_TAG;}
-    
+
     public int doEndTag() throws JspException {return EVAL_PAGE;}
 
     public void doInitBody() throws JspException {}

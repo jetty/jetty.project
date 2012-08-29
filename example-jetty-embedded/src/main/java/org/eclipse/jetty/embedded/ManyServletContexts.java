@@ -19,12 +19,8 @@
 package org.eclipse.jetty.embedded;
 
 
-
 import java.lang.management.ManagementFactory;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.providers.ContextProvider;
-import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -43,7 +39,7 @@ public class ManyServletContexts
         mbContainer.start();
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer,true);
-        
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 

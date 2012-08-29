@@ -18,22 +18,21 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class HttpURITest
 {
@@ -231,7 +230,7 @@ public class HttpURITest
         catch (IllegalArgumentException e)
         {
         }
-        
+
         try
         {
             HttpURI huri=new HttpURI(uri);
@@ -242,8 +241,8 @@ public class HttpURITest
         }
         catch (IllegalArgumentException e)
         {
-        }        
-        
+        }
+
     }
 
     @Test
@@ -252,14 +251,14 @@ public class HttpURITest
         for (String value: new String[]{"a","abcdABCD","\u00C0","\u697C","\uD869\uDED5","\uD840\uDC08"} )
         {
             HttpURI uri = new HttpURI("/path?value="+URLEncoder.encode(value,"UTF-8"));
-            
+
             MultiMap<String> parameters = new MultiMap<>();
             uri.decodeQueryTo(parameters,"UTF-8");
             assertEquals(value,parameters.getString("value"));
         }
     }
-    
-    
+
+
     private final String[][] connect_tests=
     {
        /* 0*/ {"  localhost:8080  ","localhost","8080"},
@@ -278,7 +277,7 @@ public class HttpURITest
             try
             {
                 byte[] buf = connect_tests[i][0].getBytes(StringUtil.__UTF8);
-                
+
                 uri.parseConnect(buf,2,buf.length-4);
                 assertEquals("path"+i,connect_tests[i][1]+":"+connect_tests[i][2],uri.getPath());
                 assertEquals("host"+i,connect_tests[i][1],uri.getHost());
@@ -290,7 +289,7 @@ public class HttpURITest
             }
         }
     }
-    
+
     @Test
     public void testNonURIAscii() throws Exception
     {

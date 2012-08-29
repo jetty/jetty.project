@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.client.internal.io;
 
-import static org.hamcrest.Matchers.*;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +27,10 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 public class HttpResponseHeaderParserTest
 {

@@ -18,13 +18,11 @@
 
 package org.eclipse.jetty;
 
+import com.acme.DispatchServlet;
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
-
-import com.acme.DispatchServlet;
 
 /**
  * Simple tests against DispatchServlet.
@@ -33,9 +31,9 @@ public class DispatchServletTest extends TestCase
 {
     /**
      * As filed in JETTY-978.
-     * 
+     *
      * Security problems in demo dispatch servlet.
-     * 
+     *
      * <blockquote>
      * <p>
      * The dispatcher servlet (com.acme.DispatchServlet) is prone to a Denial of
@@ -64,18 +62,18 @@ public class DispatchServletTest extends TestCase
      * afflict the Jetty's core."
      * </p>
      * </blockquote>
-     * 
+     *
      * @throws Exception
      */
     public void testSelfRefForwardDenialOfService() throws Exception
     {
         ServletTester tester = new ServletTester();
         tester.setContextPath("/tests");
-      
+
         ServletHolder dispatch = tester.addServlet(DispatchServlet.class,"/dispatch/*");
         tester.addServlet(DefaultServlet.class,"/");
         tester.start();
-        
+
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /tests/dispatch/includeN/"+dispatch.getName()+" HTTP/1.1\n");
         req1.append("Host: tester\n");
@@ -83,13 +81,13 @@ public class DispatchServletTest extends TestCase
         req1.append("\n");
 
         String response = tester.getResponses(req1.toString());
-        
+
         String msg = "Response code on SelfRefDoS";
 
         assertFalse(msg + " should not be code 500.",response.startsWith("HTTP/1.1 500 "));
         assertTrue(msg + " should return error code 403 (Forbidden)", response.startsWith("HTTP/1.1 403 "));
     }
-    
+
     public void testSelfRefDeep() throws Exception
     {
         ServletTester tester = new ServletTester();
@@ -97,7 +95,7 @@ public class DispatchServletTest extends TestCase
         tester.addServlet(DispatchServlet.class,"/dispatch/*");
         tester.addServlet(DefaultServlet.class,"/");
         tester.start();
-        
+
         String selfRefs[] =
         { "/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN", };
 
@@ -130,12 +128,12 @@ public class DispatchServletTest extends TestCase
             msg.append("Response code on nested \"").append(selfRef).append("\"");
             msg.append(" (depth:").append(nestedDepth).append(")");
 
-            assertFalse(msg + " should not be code 413 (Request Entity Too Large)," + 
+            assertFalse(msg + " should not be code 413 (Request Entity Too Large)," +
                     "the nestedDepth in the TestCase is too large (reduce it)",
                     response.startsWith("HTTP/1.1 413 "));
 
             assertFalse(msg + " should not be code 500.",response.startsWith("HTTP/1.1 500 "));
-            
+
             assertTrue(msg + " should return error code 403 (Forbidden)", response.startsWith("HTTP/1.1 403 "));
         }
     }

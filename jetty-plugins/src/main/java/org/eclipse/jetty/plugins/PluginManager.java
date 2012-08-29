@@ -16,15 +16,10 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.plugins;
 
 import java.util.List;
 
-
-/* ------------------------------------------------------------ */
-/**
- */
 public interface PluginManager
 {
     public List<String> listAvailablePlugins();

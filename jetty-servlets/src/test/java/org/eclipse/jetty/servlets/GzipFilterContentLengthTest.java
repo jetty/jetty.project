@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlets;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
@@ -72,13 +71,13 @@ public class GzipFilterContentLengthTest
         { TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
         { TestServletStreamTypeLengthWrite.class, GzipFilter.GZIP },
         { TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
-        { TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP }, 
+        { TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         { TestServletLengthStreamTypeWrite.class, GzipFilter.DEFLATE },
         { TestServletLengthTypeStreamWrite.class, GzipFilter.DEFLATE },
         { TestServletStreamLengthTypeWrite.class, GzipFilter.DEFLATE },
         { TestServletStreamTypeLengthWrite.class, GzipFilter.DEFLATE },
         { TestServletTypeLengthStreamWrite.class, GzipFilter.DEFLATE },
-        { TestServletTypeStreamLengthWrite.class, GzipFilter.DEFLATE } 
+        { TestServletTypeStreamLengthWrite.class, GzipFilter.DEFLATE }
         });
     }
 
@@ -86,7 +85,7 @@ public class GzipFilterContentLengthTest
     private static final int MEDIUM = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE;
     private static final int SMALL = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
     private static final int TINY = CompressedResponseWrapper.DEFAULT_MIN_COMPRESS_SIZE/ 2;
-    
+
     private String compressionType;
 
     public GzipFilterContentLengthTest(Class<? extends Servlet> testServlet, String compressionType)
@@ -94,7 +93,7 @@ public class GzipFilterContentLengthTest
         this.testServlet = testServlet;
         this.compressionType = compressionType;
     }
-    
+
     @Rule
     public TestingDir testingdir = new TestingDir();
 

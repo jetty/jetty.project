@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +33,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.is;
 
 public class SafariD00
 {
@@ -52,7 +52,7 @@ public class SafariD00
 
     /**
      * Open the Socket to the destination endpoint and
-     * 
+     *
      * @return the open java Socket.
      * @throws IOException
      */
@@ -74,7 +74,7 @@ public class SafariD00
 
     /**
      * Issue an Http websocket (Draft-0) upgrade request using the Safari particulars.
-     * 
+     *
      * @throws UnsupportedEncodingException
      */
     public void issueHandshake() throws IOException

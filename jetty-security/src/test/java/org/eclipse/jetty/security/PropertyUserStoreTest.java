@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.util.security.Credential;
 import org.junit.After;
 import org.junit.Before;
@@ -141,7 +140,7 @@ public class PropertyUserStoreTest
         {
             Thread.sleep(10);
         }
-        
+
         Assert.assertNotNull("Failed to retrieve UserIdentity from PropertyUserStore directly", store.getUserIdentity("skip"));
         Assert.assertEquals(4,userCount.get());
 

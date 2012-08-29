@@ -17,8 +17,8 @@
 //
 
 package com.acme;
-import java.io.IOException;
 
+import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -29,8 +29,8 @@ import javax.servlet.http.HttpServletResponse;
 
 /* ------------------------------------------------------------ */
 /** Test Servlet Rewrite
- * 
- * 
+ *
+ *
  */
 public class RewriteServlet extends HttpServlet
 {
@@ -49,7 +49,7 @@ public class RewriteServlet extends HttpServlet
         out.println("<html><body><table>");
         out.println("<tr><th>Original request URI: </th><td>" + req.getAttribute("requestedPath") + "</td></tr>");
         out.println("<tr><th>Rewritten request URI: </th><td>" + req.getRequestURI() + "</td></tr>");
-       
+
         Cookie cookie = null;
         for(Cookie c: req.getCookies())
         {

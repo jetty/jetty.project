@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.server;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,6 +27,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * HttpServer Tester.
@@ -49,14 +49,14 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
     private static int __length = __content.length();
-    
+
     /* ------------------------------------------------------------ */
     @Test
     public void testCloseBetweenRequests() throws Exception
     {
         final int requestCount = 32;
         final CountDownLatch latch = new CountDownLatch(requestCount);
-        
+
         configureServer(new HelloWorldHandler());
 
         Socket client = newSocket(HOST,_connector.getLocalPort());
@@ -66,7 +66,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 
             ResponseReader reader = new ResponseReader(client) {
                 private int _index = 0;
-                
+
                 /* ------------------------------------------------------------ */
                 @Override
                 protected int doRead() throws IOException, InterruptedException
@@ -81,11 +81,11 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                             _index = idx + 15;
                         }
                     }
-                    
+
                     return count;
                 }
             };
-            
+
             Thread runner = new Thread(reader);
             runner.start();
 
@@ -99,7 +99,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                     _connector.close();
                 }
 
-                String request = 
+                String request =
                         "GET /data?writes=1&block=16&id="+pipeline+" HTTP/1.1\r\n"+
                         "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
                         "user-agent: testharness/1.0 (blah foo/bar)\r\n"+
@@ -111,7 +111,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 
                 Thread.sleep(25);
             }
-            
+
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             reader.setDone();
@@ -145,7 +145,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             runner.start();
 
             byte[] bytes = __content.getBytes("utf-8");
-            
+
             os.write((
                 "POST /echo?charset=utf-8 HTTP/1.1\r\n"+
                 "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
@@ -163,7 +163,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 offset += 64;
                 Thread.sleep(25);
             }
-            
+
             _connector.close();
 
             while (offset < len)
@@ -176,7 +176,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 
             reader.setDone();
             runner.join();
-            
+
             String in = reader.getResponse().toString();
             assertTrue(in.indexOf(__content.substring(__length-64))>0);
         }
@@ -195,7 +195,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         protected char[] _buffer;
         protected StringBuffer _response;
         protected BufferedReader _reader;
-        
+
         /* ------------------------------------------------------------ */
         public ResponseReader(Socket client) throws IOException
         {
@@ -203,18 +203,18 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             _response = new StringBuffer();
             _reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
         }
-        
+
         /* ------------------------------------------------------------ */
         public void setDone()
         {
             _done = true;
         }
-        
+
         public StringBuffer getResponse()
         {
             return _response;
         }
-        
+
         /* ------------------------------------------------------------ */
         /**
          * @see java.lang.Runnable#run()
@@ -249,7 +249,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 Thread.sleep(25);
             }
 
-            int count = 0;           
+            int count = 0;
             if (_reader.ready())
             {
                 count = _reader.read(_buffer);
@@ -258,7 +258,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                     _response.append(_buffer, 0, count);
                 }
             }
-            
+
             return count;
         }
     }

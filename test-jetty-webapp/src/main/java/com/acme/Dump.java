@@ -17,6 +17,7 @@
 //
 
 package com.acme;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +35,6 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Dump Servlet Request.
- * 
+ *
  */
 public class Dump extends HttpServlet
 {
@@ -70,20 +70,20 @@ public class Dump extends HttpServlet
 
     boolean fixed;
     Timer _timer;
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void init(ServletConfig config) throws ServletException
     {
     	super.init(config);
-    	
+
     	if (config.getInitParameter("unavailable")!=null && !fixed)
     	{
-    	    
+
     	    fixed=true;
     	    throw new UnavailableException("Unavailable test",Integer.parseInt(config.getInitParameter("unavailable")));
     	}
-    	
+
     	_timer=new Timer(true);
     }
 
@@ -117,18 +117,18 @@ public class Dump extends HttpServlet
     @Override
     public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
-        if (!request.isUserInRole("user")) 
+        if (!request.isUserInRole("user"))
         {
-            try 
+            try
             {
                 request.login("user", "password");
-            } 
-            catch(ServletException se) 
+            }
+            catch(ServletException se)
             {
             	se.printStackTrace();
             }
         }
-        
+
         // Handle a dump of data
         final String data= request.getParameter("data");
         final String chars= request.getParameter("chars");
@@ -136,29 +136,29 @@ public class Dump extends HttpServlet
         final String dribble= request.getParameter("dribble");
         final boolean flush= request.getParameter("flush")!=null?Boolean.parseBoolean(request.getParameter("flush")):false;
 
-        
+
         if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
         {
             response.sendRedirect(response.encodeRedirectURL(getServletContext().getContextPath() + "/dump/info"));
             return;
         }
-            
+
         request.setCharacterEncoding("UTF-8");
-        
+
         if (request.getParameter("busy")!=null)
         {
             long end = System.currentTimeMillis()+Long.parseLong(request.getParameter("busy"));
             while(System.currentTimeMillis()<end)
             {}
         }
-        
+
         if (request.getParameter("empty")!=null)
         {
             response.setStatus(200);
             response.flushBuffer();
             return;
         }
-        
+
         if (request.getParameter("sleep")!=null)
         {
             try
@@ -197,7 +197,7 @@ public class Dump extends HttpServlet
                     continuation.resume();
                 }
             },resume);
-  
+
         }
 
         if (request.getParameter("complete")!=null)
@@ -211,7 +211,7 @@ public class Dump extends HttpServlet
                     try
                     {
                         response.setContentType("text/html");
-                        response.getOutputStream().println("<h1>COMPLETED</h1>"); 
+                        response.getOutputStream().println("<h1>COMPLETED</h1>");
                         Continuation continuation = ContinuationSupport.getContinuation(request);
                         continuation.complete();
                     }
@@ -222,7 +222,7 @@ public class Dump extends HttpServlet
                 }
             },complete);
         }
-        
+
         if (request.getParameter("suspend")!=null && request.getAttribute("SUSPEND")!=Boolean.TRUE)
         {
             request.setAttribute("SUSPEND",Boolean.TRUE);
@@ -231,9 +231,9 @@ public class Dump extends HttpServlet
                 Continuation continuation = ContinuationSupport.getContinuation(request);
                 continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
                 continuation.suspend();
-                
+
                 continuation.addContinuationListener(new ContinuationListener()
-                {   
+                {
                     public void onTimeout(Continuation continuation)
                     {
                         response.addHeader("Dump","onTimeout");
@@ -251,21 +251,21 @@ public class Dump extends HttpServlet
                             LOG.ignore(e);
                         }
                     }
-                    
+
                     public void onComplete(Continuation continuation)
                     {
                         response.addHeader("Dump","onComplete");
                     }
                 });
-                
+
                 continuation.undispatch();
             }
             catch(Exception e)
             {
                 throw new ServletException(e);
             }
-        }        
-            
+        }
+
         request.setAttribute("Dump", this);
         getServletContext().setAttribute("Dump",this);
         // getServletContext().log("dump "+request.getRequestURI());
@@ -280,7 +280,7 @@ public class Dump extends HttpServlet
         // Handle a dump of data
         if (dump(response,data,chars,block,dribble,flush))
             return;
-        
+
         // handle an exception
         String info= request.getPathInfo();
         if (info != null && info.endsWith("Exception"))
@@ -303,8 +303,8 @@ public class Dump extends HttpServlet
             response.setHeader("SHOULD_NOT","BE SEEN");
             response.reset();
         }
-        
-        
+
+
         // handle an redirect
         String redirect= request.getParameter("redirect");
         if (redirect != null && redirect.length() > 0)
@@ -336,7 +336,7 @@ public class Dump extends HttpServlet
             {
                 try
                 {
-                    response.getWriter().println("NOR THIS!!"); 
+                    response.getWriter().println("NOR THIS!!");
                 }
                 catch(IOException e2){}
             }
@@ -344,7 +344,7 @@ public class Dump extends HttpServlet
             return;
         }
 
-        // Handle a extra headers 
+        // Handle a extra headers
         String headers= request.getParameter("headers");
         if (headers != null && headers.length() > 0)
         {
@@ -409,9 +409,9 @@ public class Dump extends HttpServlet
             response.setHeader("Connection","close");
 
         String buffered= request.getParameter("buffered");
-        
+
         PrintWriter pout=null;
-        
+
         try
         {
             pout =response.getWriter();
@@ -422,7 +422,7 @@ public class Dump extends HttpServlet
         }
         if (buffered!=null)
             pout = new PrintWriter(new BufferedWriter(pout,Integer.parseInt(buffered)));
-        
+
         try
         {
             pout.write("<html>\n<body>\n");
@@ -459,7 +459,7 @@ public class Dump extends HttpServlet
             pout.write("<th align=\"right\">getQueryString:&nbsp;</th>");
             pout.write("<td>"+notag(request.getQueryString())+"</td>");
             pout.write("</tr><tr>\n");
-            
+
             pout.write("<th align=\"right\">getProtocol:&nbsp;</th>");
             pout.write("<td>"+request.getProtocol()+"</td>");
             pout.write("</tr><tr>\n");
@@ -509,7 +509,7 @@ public class Dump extends HttpServlet
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getLocale:&nbsp;</th>");
             pout.write("<td>"+request.getLocale()+"</td>");
-            
+
             Enumeration locales= request.getLocales();
             while (locales.hasMoreElements())
             {
@@ -518,7 +518,7 @@ public class Dump extends HttpServlet
                 pout.write("<td>"+locales.nextElement()+"</td>");
             }
             pout.write("</tr><tr>\n");
-            
+
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Other HTTP Headers:</big></th>");
             Enumeration h= request.getHeaderNames();
             String name;
@@ -574,7 +574,7 @@ public class Dump extends HttpServlet
                 pout.write("<th align=\"right\">"+notag(cookie.getName())+":&nbsp;</th>");
                 pout.write("<td>"+notag(cookie.getValue())+"</td>");
             }
-            
+
             String content_type=request.getContentType();
             if (content_type!=null &&
                 !content_type.startsWith("application/x-www-form-urlencoded") &&
@@ -588,7 +588,7 @@ public class Dump extends HttpServlet
                 int len;
                 try{
                     Reader in=request.getReader();
-                    
+
                     while((len=in.read(content))>=0)
                         pout.write(notag(new String(content,0,len)));
                 }
@@ -596,10 +596,10 @@ public class Dump extends HttpServlet
                 {
                     pout.write(e.toString());
                 }
-                
+
                 pout.write("</pre></td>");
             }
-            
+
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Request Attributes:</big></th>");
             Enumeration a= request.getAttributeNames();
@@ -619,7 +619,7 @@ public class Dump extends HttpServlet
             }
             request.setAttribute("org.eclipse.jetty.servlet.MultiPartFilter.files",null);
 
-            
+
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Servlet InitParameters:</big></th>");
             a= getInitParameterNames();
@@ -663,30 +663,30 @@ public class Dump extends HttpServlet
                 pout.write("<th align=\"right\">getServletContext().getResource(...):&nbsp;</th>");
                 try{pout.write("<td>"+getServletContext().getResource(res)+"</td>");}
                 catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
-                
+
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">getServletContext().getResourcePaths(...):&nbsp;</th>");
                 try{pout.write("<td>"+getServletContext().getResourcePaths(res)+"</td>");}
                 catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
-                
+
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">getServletContext().getContext(...):&nbsp;</th>");
-                
+
                 ServletContext context = getServletContext().getContext(res);
                 pout.write("<td>"+context+"</td>");
-                
+
                 if (context!=null)
                 {
                     pout.write("</tr><tr>\n");
                     pout.write("<th align=\"right\">getServletContext().getContext(...).getResource(...):&nbsp;</th>");
                     try{pout.write("<td>"+context.getResource(res)+"</td>");}
                     catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
-                    
+
                     pout.write("</tr><tr>\n");
                     pout.write("<th align=\"right\">getServletContext().getContext(...).getResourcePaths(...):&nbsp;</th>");
                     try{pout.write("<td>"+context.getResourcePaths(res)+"</td>");}
                     catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
-                    
+
                     String cp=context.getContextPath();
                     if (cp==null || "/".equals(cp))
                         cp="";
@@ -715,7 +715,7 @@ public class Dump extends HttpServlet
                     pout.write("<td>"+Collections.list(urls)+"</td>");
 
             }
-            
+
             pout.write("</tr></table>\n");
 
             /* ------------------------------------------------------------ */
@@ -747,7 +747,7 @@ public class Dump extends HttpServlet
                 else
                     rsw=null;
             }
-            
+
             pout.write("<br/>");
             pout.write("<h2>International Characters (UTF-8)</h2>");
             pout.write("LATIN LETTER SMALL CAPITAL AE<br/>\n");
@@ -763,7 +763,7 @@ public class Dump extends HttpServlet
             pout.write("</form>");
 
             pout.write("<br/>");
-            
+
             pout.write("<h2>Form to generate POST content</h2>");
             pout.write("<form method=\"POST\" accept-charset=\"utf-8\" action=\""+response.encodeURL(getURI(request))+"\">");
             pout.write("TextField: <input type=\"text\" name=\"TextField\" value=\"value\"/><br/>\n");
@@ -775,7 +775,7 @@ public class Dump extends HttpServlet
             pout.write("<input type=\"submit\" name=\"Action\" value=\"Submit\"><br/>");
             pout.write("</form>");
             pout.write("<br/>");
-            
+
             pout.write("<h2>Form to generate UPLOAD content</h2>");
             pout.write("<form method=\"POST\" enctype=\"multipart/form-data\" accept-charset=\"utf-8\" action=\""+
                     response.encodeURL(getURI(request))+(request.getQueryString()==null?"":("?"+request.getQueryString()))+
@@ -792,7 +792,7 @@ public class Dump extends HttpServlet
             pout.write("value: <input type=\"text\" name=\"cookiev\" /><br/>\n");
             pout.write("<input type=\"submit\" name=\"Action\" value=\"setCookie\">");
             pout.write("</form>\n");
-            
+
             pout.write("<h2>Form to get Resource</h2>");
             pout.write("<form method=\"POST\" action=\""+response.encodeURL(getURI(request))+"\">");
             pout.write("resource: <input type=\"text\" name=\"resource\" /><br/>\n");
@@ -803,7 +803,7 @@ public class Dump extends HttpServlet
         {
             getServletContext().log("dump "+e);
         }
-        
+
         String lines= request.getParameter("lines");
         if (lines!=null)
         {
@@ -814,9 +814,9 @@ public class Dump extends HttpServlet
                 pout.write(line);
             }
         }
-        
+
         pout.write("</body>\n</html>\n");
-        
+
         pout.close();
 
         if (pi != null)
@@ -883,13 +883,13 @@ public class Dump extends HttpServlet
                     return sb.toString();
                 }
                 else
-                { 
+                {
                     int length = Array.getLength(o);
                     for (int i=0;i<length;i++)
                     {
                         if (i > 0)
                             sb.append("\n");
-                        sb.append(o.getClass().getComponentType().getName()); 
+                        sb.append(o.getClass().getComponentType().getName());
                         sb.append("[");
                         sb.append(i);
                         sb.append("]=");
@@ -916,7 +916,7 @@ public class Dump extends HttpServlet
             byte[] buf=new byte[b];
             for (int i=0;i<b;i++)
             {
-                
+
                 buf[i]=(byte)('0'+(i%10));
                 if (i%10==9)
                     buf[i]=(byte)'\n';
@@ -941,7 +941,7 @@ public class Dump extends HttpServlet
                     out.write(buf,0,(int)d);
                     d=0;
                 }
-                
+
                 if (dribble!=null)
                 {
                     out.flush();
@@ -955,12 +955,12 @@ public class Dump extends HttpServlet
                         break;
                     }
                 }
-                
+
             }
-            
+
             if (flush)
                 out.flush();
-            
+
             return true;
         }
 
@@ -998,10 +998,10 @@ public class Dump extends HttpServlet
                 }
             }
             return true;
-        }    
+        }
         return false;
     }
-    
+
     private String notag(String s)
     {
         if (s==null)

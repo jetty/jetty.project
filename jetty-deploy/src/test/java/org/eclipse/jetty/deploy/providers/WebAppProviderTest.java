@@ -69,7 +69,7 @@ public class WebAppProviderTest
         File workDir = jetty.getJettyDir("workish");
 
         System.err.println("workDir="+workDir);
-        
+
         // Test for regressions
         assertDirNotExists("root of work directory",workDir,"webinf");
         assertDirNotExists("root of work directory",workDir,"jsp");
@@ -80,16 +80,19 @@ public class WebAppProviderTest
 
     private static boolean hasJettyGeneratedPath(File basedir, String expectedWarFilename)
     {
-        for (File path : basedir.listFiles())
+        File[] paths = basedir.listFiles();
+        if (paths != null)
         {
-            if (path.exists() && path.isDirectory() && path.getName().startsWith("jetty-") && path.getName().contains(expectedWarFilename))
+            for (File path : paths)
             {
-                System.out.println("Found expected generated directory: " + path);
-                return true;
+                if (path.exists() && path.isDirectory() && path.getName().startsWith("jetty-") && path.getName().contains(expectedWarFilename))
+                {
+                    System.err.println("Found expected generated directory: " + path);
+                    return true;
+                }
             }
+            System.err.println("did not find "+expectedWarFilename+" in "+Arrays.asList(paths));
         }
-
-        System.err.println("did not find "+expectedWarFilename+" in "+Arrays.asList(basedir.listFiles()));
         return false;
     }
 

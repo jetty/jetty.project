@@ -20,21 +20,24 @@ package org.eclipse.jetty.plugins.model;
 
 import java.io.File;
 
-public class Plugin {
-	private String name;
+public class Plugin
+{
+    private final String name;
+    private final File pluginJar;
 
-	private File pluginJar;
+    public Plugin(String name, File configJar)
+    {
+        this.name = name;
+        this.pluginJar = configJar;
+    }
 
-	public Plugin(String name, File configJar) {
-		this.name = name;
-		this.pluginJar = configJar;
-	}
-	
-	public String getName() {
-		return name;
-	}
+    public String getName()
+    {
+        return name;
+    }
 
-	public File getPluginJar() {
-		return pluginJar;
-	}
+    public File getPluginJar()
+    {
+        return pluginJar;
+    }
 }

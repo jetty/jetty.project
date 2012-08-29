@@ -19,17 +19,12 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-
-import org.eclipse.jetty.util.ByteArrayOutputStream2;
-import org.eclipse.jetty.util.StringUtil;
 
 /** OutputWriter.
  * A writer that can wrap a {@link HttpOutput} stream and provide
  * character encodings.
  *
- * The UTF-8 encoding is done by this class and no additional 
+ * The UTF-8 encoding is done by this class and no additional
  * buffers or Writers are used.
  * The UTF-8 code was inspired by http://javolution.org
  */
@@ -46,13 +41,13 @@ public class Utf8HttpWriter extends HttpWriter
     /* ------------------------------------------------------------ */
     @Override
     public void write (char[] s,int offset, int length) throws IOException
-    {              
-        HttpOutput out = _out; 
+    {
+        HttpOutput out = _out;
         if (length==0)
             out.checkAllWritten();
-        
+
         while (length > 0)
-        {  
+        {
             _bytes.reset();
             int chars = length>MAX_OUTPUT_CHARS?MAX_OUTPUT_CHARS:length;
 
@@ -74,7 +69,7 @@ public class Utf8HttpWriter extends HttpWriter
                     {
                         _surrogate=code; // UCS-?
                         continue;
-                    }                            
+                    }
                 }
                 // else handle a low surrogate
                 else if(Character.isLowSurrogate((char)code))
@@ -89,7 +84,7 @@ public class Utf8HttpWriter extends HttpWriter
                     i--;
                 }
 
-                if ((code & 0xffffff80) == 0) 
+                if ((code & 0xffffff80) == 0)
                 {
                     // 1b
                     if (bytes>=buffer.length)
@@ -169,7 +164,7 @@ public class Utf8HttpWriter extends HttpWriter
                     else
                     {
                         buffer[bytes++]=(byte)('?');
-                    } 
+                    }
 
                     _surrogate=0; // USED
 

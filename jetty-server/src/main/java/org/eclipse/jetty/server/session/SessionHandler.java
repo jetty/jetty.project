@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.session;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.EventListener;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
@@ -47,8 +46,8 @@ public class SessionHandler extends ScopedHandler
 
     public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,SessionTrackingMode.URL);
 
-  
-    
+
+
     /* -------------------------------------------------------------- */
     private SessionManager _sessionManager;
 
@@ -138,7 +137,7 @@ public class SessionHandler extends ScopedHandler
         super.doStop();
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
@@ -197,10 +196,10 @@ public class SessionHandler extends ScopedHandler
                 _nextScope.doScope(target,baseRequest,request, response);
             else if (_outerScope!=null)
                 _outerScope.doHandle(target,baseRequest,request, response);
-            else 
+            else
                 doHandle(target,baseRequest,request, response);
             // end manual inline (pathentic attempt to reduce stack depth)
-            
+
         }
         finally
         {
@@ -245,9 +244,9 @@ public class SessionHandler extends ScopedHandler
     protected void checkRequestedSessionId(Request baseRequest, HttpServletRequest request)
     {
         String requested_session_id=request.getRequestedSessionId();
-        
+
         SessionManager sessionManager = getSessionManager();
-        
+
         if (requested_session_id!=null && sessionManager!=null)
         {
             HttpSession session=sessionManager.getHttpSession(requested_session_id);
@@ -276,7 +275,7 @@ public class SessionHandler extends ScopedHandler
                         requested_session_id_from_cookie = true;
                         if(LOG.isDebugEnabled())
                             LOG.debug("Got Session ID {} from cookie",requested_session_id);
-                        
+
                         session=sessionManager.getHttpSession(requested_session_id);
                         if (session!=null && sessionManager.isValid(session))
                             break;
@@ -294,7 +293,7 @@ public class SessionHandler extends ScopedHandler
             {
                 int s = uri.indexOf(prefix);
                 if (s>=0)
-                {   
+                {
                     s+=prefix.length();
                     int i=s;
                     while (i<uri.length())
@@ -315,9 +314,9 @@ public class SessionHandler extends ScopedHandler
         }
 
         baseRequest.setRequestedSessionId(requested_session_id);
-        baseRequest.setRequestedSessionIdFromCookie(requested_session_id!=null && requested_session_id_from_cookie); 
+        baseRequest.setRequestedSessionIdFromCookie(requested_session_id!=null && requested_session_id_from_cookie);
         if (session!=null && sessionManager.isValid(session))
-            baseRequest.setSession(session);                 
+            baseRequest.setSession(session);
     }
 
     /* ------------------------------------------------------------ */

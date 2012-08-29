@@ -22,7 +22,6 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionBindingEvent;
@@ -44,17 +43,17 @@ public class SessionAuthentication implements Authentication.User, Serializable,
 
     private static final long serialVersionUID = -4643200685888258706L;
 
-    
+
 
     public final static String __J_AUTHENTICATED="org.eclipse.jetty.security.UserIdentity";
 
     private final String _method;
     private final String _name;
     private final Object _credentials;
-    
+
     private transient UserIdentity _userIdentity;
     private transient HttpSession _session;
-    
+
     public SessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
     {
         _method = method;
@@ -78,30 +77,30 @@ public class SessionAuthentication implements Authentication.User, Serializable,
         return _userIdentity.isUserInRole(role, scope);
     }
 
-    private void readObject(ObjectInputStream stream) 
-        throws IOException, ClassNotFoundException 
+    private void readObject(ObjectInputStream stream)
+        throws IOException, ClassNotFoundException
     {
         stream.defaultReadObject();
-        
+
         SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
         if (security==null)
             throw new IllegalStateException("!SecurityHandler");
         LoginService login_service=security.getLoginService();
         if (login_service==null)
             throw new IllegalStateException("!LoginService");
-        
+
         _userIdentity=login_service.login(_name,_credentials);
         LOG.debug("Deserialized and relogged in {}",this);
     }
-    
+
     public void logout()
     {
         if (_session!=null && _session.getAttribute(__J_AUTHENTICATED)!=null)
             _session.removeAttribute(__J_AUTHENTICATED);
-        else 
+        else
             doLogout();
     }
-    
+
     private void doLogout()
     {
         SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
@@ -110,7 +109,7 @@ public class SessionAuthentication implements Authentication.User, Serializable,
         if (_session!=null)
             _session.removeAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED);
     }
-        
+
     @Override
     public String toString()
     {
@@ -139,5 +138,5 @@ public class SessionAuthentication implements Authentication.User, Serializable,
     {
         doLogout();
     }
-    
+
 }

@@ -19,10 +19,8 @@
     <modules>
         <module>spdy-core</module>
         <module>spdy-jetty</module>
-        <!--
         <module>spdy-jetty-http</module>
         <module>spdy-jetty-http-webapp</module>
-        -->
     </modules>
 
     <build>

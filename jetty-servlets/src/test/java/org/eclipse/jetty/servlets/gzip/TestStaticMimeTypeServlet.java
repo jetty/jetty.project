@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlets.gzip;
 
 import java.io.IOException;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -47,7 +46,7 @@ public class TestStaticMimeTypeServlet extends TestDirContentServlet
         mimeTypes.addMimeMapping("tga","application/tga");
         mimeTypes.addMimeMapping("xcf","image/xcf");
         mimeTypes.addMimeMapping("jp2","image/jpeg2000");
-        
+
         // Some of the other gzip mime-types seen in the wild.
         // NOTE: Using oddball extensions just so that the calling request can specify
         //       which strange mime type to use.

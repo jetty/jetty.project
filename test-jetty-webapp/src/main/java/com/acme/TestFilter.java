@@ -21,7 +21,6 @@ package com.acme;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -39,11 +38,11 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** TestFilter.
- * 
+ *
  * This filter checks for a none local request, and if the init parameter
  * "remote" is not set to true, then all non local requests are forwarded
  * to /remote.html
- * 
+ *
  */
 public class TestFilter implements Filter
 {
@@ -52,9 +51,9 @@ public class TestFilter implements Filter
     private boolean _remote;
     private ServletContext _context;
     private final Set<String> _allowed = new HashSet<String>();
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
      */
     public void init(FilterConfig filterConfig) throws ServletException
@@ -63,12 +62,12 @@ public class TestFilter implements Filter
         _remote=Boolean.parseBoolean(filterConfig.getInitParameter("remote"));
         _allowed.add("/favicon.ico");
         _allowed.add("/jetty_banner.gif");
-        
+
         LOG.debug("TestFilter#remote="+_remote);
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -88,27 +87,27 @@ public class TestFilter implements Filter
                 ((HttpServletResponse)response).sendRedirect("/remote.html");
             return;
         }
-        
+
         Integer old_value=null;
         ServletRequest r = request;
         while (r instanceof ServletRequestWrapper)
             r=((ServletRequestWrapper)r).getRequest();
-        
+
         try
         {
             old_value=(Integer)request.getAttribute("testFilter");
-            
+
             Integer value=(old_value==null)?new Integer(1):new Integer(old_value.intValue()+1);
-                        
+
             request.setAttribute("testFilter", value);
-            
+
             String qString = ((HttpServletRequest)request).getQueryString();
             if (qString != null && qString.indexOf("wrap")>=0)
             {
                 request=new HttpServletRequestWrapper((HttpServletRequest)request);
             }
             _context.setAttribute("request"+r.hashCode(),value);
-            
+
             chain.doFilter(request, response);
         }
         finally
@@ -119,7 +118,7 @@ public class TestFilter implements Filter
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.Filter#destroy()
      */
     public void destroy()

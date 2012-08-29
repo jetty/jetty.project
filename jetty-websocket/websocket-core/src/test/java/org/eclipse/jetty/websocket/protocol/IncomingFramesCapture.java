@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.protocol;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-
 import java.util.LinkedList;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,6 +26,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 
 public class IncomingFramesCapture implements IncomingFrames
 {

@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.server.ab;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.protocol.Generator;
@@ -47,7 +47,7 @@ public abstract class AbstractABCase
     public static void initGenerators()
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        ByteBufferPool bufferPool = new StandardByteBufferPool();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
         strictGenerator = new Generator(policy,bufferPool,true);
         laxGenerator = new Generator(policy,bufferPool,false);
     }

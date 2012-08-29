@@ -18,30 +18,27 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import java.net.URL;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * Provides a way of globally setting various aspects of webapp contexts.
- * 
- * Adding this binding will allow the user to arbitrarily apply a file of 
+ *
+ * Adding this binding will allow the user to arbitrarily apply a file of
  * jetty-web.xml like settings to a webapp context.
- * 
+ *
  * Example usage would be:
  * - adding a server or system class setting to all webapp contexts
- * - adding an override descriptor 
- * 
- * Note: Currently properties from startup will not be available for 
+ * - adding an override descriptor
+ *
+ * Note: Currently properties from startup will not be available for
  * reference.
  *
  */
@@ -88,7 +85,7 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
             {
                 LOG.warn("Binding: global context binding is enabled but no jetty-web.xml file has been registered");
             }
-            
+
             Resource globalContextSettings = Resource.newResource(_jettyXml);
 
             if (globalContextSettings.exists())

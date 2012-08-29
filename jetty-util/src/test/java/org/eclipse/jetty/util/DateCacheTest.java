@@ -24,14 +24,13 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 
-/** 
+/**
  * Util meta Tests.
  */
 @RunWith(AdvancedRunner.class)
@@ -46,17 +45,17 @@ public class DateCacheTest
         //                            012345678901234567890123456789
         DateCache dc = new DateCache("EEE, dd MMM yyyy HH:mm:ss zzz ZZZ",Locale.US);
         dc.setTimeZone(TimeZone.getTimeZone("GMT"));
-        
+
         Thread.sleep(2000);
 
         long now=System.currentTimeMillis();
         long end=now+3000;
         String f=dc.format(now);
         String last=f;
-        
+
         int hits=0;
         int misses=0;
-        
+
         while (now<end)
         {
             last=f;
@@ -66,7 +65,7 @@ public class DateCacheTest
                 hits++;
             else
                 misses++;
-            
+
             TimeUnit.MILLISECONDS.sleep(50);
             now=System.currentTimeMillis();
         }

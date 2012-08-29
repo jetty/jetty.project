@@ -39,11 +39,11 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>A SPDY push strategy that auto-populates push metadata based on referrer URLs.</p>
  * <p>A typical request for a main resource such as <tt>index.html</tt> is immediately
  * followed by a number of requests for associated resources. Associated resource requests
- * will have a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>, which we
- * use to link the associated resource to the main resource.</p>
+ * will have a <tt>Referer</tt> HTTP header that points to <tt>index.html</tt>, which is
+ * used to link the associated resource to the main resource.</p>
  * <p>However, also following a hyperlink generates a HTTP request with a <tt>Referer</tt>
  * HTTP header that points to <tt>index.html</tt>; therefore a proper value for {@link #getReferrerPushPeriod()}
- * has to be set. If the referrerPushPeriod for a main resource has been passed, no more
+ * has to be set. If the referrerPushPeriod for a main resource has elapsed, no more
  * associated resources will be added for that main resource.</p>
  * <p>This class distinguishes associated main resources by their URL path suffix and content
  * type.

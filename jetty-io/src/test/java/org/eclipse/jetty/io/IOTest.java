@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -43,6 +38,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class IOTest
 {
@@ -306,7 +306,7 @@ public class IOTest
             e.printStackTrace();
         }
     }
-    
+
     @Test
     public void testServerChannelInterrupt() throws Exception
     {
@@ -326,12 +326,12 @@ public class IOTest
         // Server reads
         assertEquals(1, server.getInputStream().read());
 
-        // Write from server to client 
+        // Write from server to client
         server.getOutputStream().write(1);
         // Client reads
         assertEquals(1, client.getInputStream().read());
 
-        
+
         // block a thread in accept
         final CountDownLatch alatch=new CountDownLatch(2);
         Thread acceptor = new Thread()
@@ -356,16 +356,16 @@ public class IOTest
         acceptor.start();
         while (alatch.getCount()==2)
             Thread.sleep(10);
-        
+
         // interrupt the acceptor
         acceptor.interrupt();
-        
+
         // wait for acceptor to exit
         assertTrue(alatch.await(10,TimeUnit.SECONDS));
-        
+
         // connector is closed
         assertFalse(connector.isOpen());
-        
+
         // but connection is still open
         assertFalse(client.isClosed());
         assertFalse(server.isClosed());
@@ -379,12 +379,12 @@ public class IOTest
         server.getOutputStream().write(43);
         // Client reads
         assertEquals(43, client.getInputStream().read());
-        
+
         client.close();
-        
+
     }
-    
-    
+
+
 
     @Test
     public void testReset() throws Exception

@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -70,7 +69,7 @@ public class ResourceHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     public ResourceHandler()
     {
-    	
+
     }
 
     /* ------------------------------------------------------------ */
@@ -191,7 +190,7 @@ public class ResourceHandler extends HandlerWrapper
             throw new IllegalArgumentException(resourceBase);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the stylesheet as a Resource.
@@ -214,12 +213,12 @@ public class ResourceHandler extends HandlerWrapper
     	        {
     	            LOG.warn(e.toString());
     	            LOG.debug(e);
-    	        }	 
+    	        }
     	    }
     	    return _defaultStylesheet;
     	}
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
@@ -302,7 +301,7 @@ public class ResourceHandler extends HandlerWrapper
         {
             servletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
             pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
- 
+
             if (servletPath == null && pathInfo == null)
             {
                 servletPath = request.getServletPath();
@@ -314,7 +313,7 @@ public class ResourceHandler extends HandlerWrapper
             servletPath = request.getServletPath();
             pathInfo = request.getPathInfo();
         }
-        
+
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         return getResource(pathInContext);
     }
@@ -367,26 +366,26 @@ public class ResourceHandler extends HandlerWrapper
             }
             skipContentBody = true;
         }
-        
+
         Resource resource = getResource(request);
-        
+
         if (resource==null || !resource.exists())
         {
             if (target.endsWith("/jetty-dir.css"))
-            {	                
+            {
                 resource = getStylesheet();
                 if (resource==null)
                     return;
                 response.setContentType("text/css");
             }
-            else 
+            else
             {
                 //no resource - try other handlers
                 super.handle(target, baseRequest, request, response);
                 return;
             }
         }
-            
+
         if (!_aliases && resource.getAlias()!=null)
         {
             LOG.info(resource+" aliased to "+resource.getAlias());

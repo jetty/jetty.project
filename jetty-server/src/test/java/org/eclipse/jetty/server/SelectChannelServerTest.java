@@ -30,24 +30,11 @@ public class SelectChannelServerTest extends HttpServerTestBase
     {
         startServer(new SelectChannelConnector(_server));
     }
-
-    @Override
-    public void testRequest1() throws Exception
-    {
-        super.testRequest1();
-    }
-
-    @Override
-    public void testSuspendedPipeline() throws Exception
-    {
-        super.testSuspendedPipeline();
-    }
     
     @Override
-    public void testUnreadInput() throws Exception
+    public void testBlockingWhileWritingResponseContent() throws Exception
     {
-        super.testUnreadInput();
+        super.testBlockingWhileWritingResponseContent();
     }
-
 
 }

@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -39,6 +36,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class LocalAsyncContextTest
 {
@@ -57,7 +56,7 @@ public class LocalAsyncContextTest
 
         _server.setHandler(session);
         _server.start();
-        
+
         __completed.set(0);
         __completed1.set(0);
     }

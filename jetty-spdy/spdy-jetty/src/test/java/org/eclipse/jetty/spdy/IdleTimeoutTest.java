@@ -44,7 +44,8 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeout() throws Exception
     {
-        connector = newSPDYServerConnector(new ServerSessionFrameListener.Adapter()
+        server = newServer();
+        connector = newSPDYServerConnector(server, new ServerSessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -73,7 +74,8 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
-        connector = newSPDYServerConnector(null);
+        server = newServer();
+        connector = newSPDYServerConnector(server, null);
         connector.setIdleTimeout(idleTimeout);
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -95,7 +97,8 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerNotEnforcingIdleTimeoutWithPendingStream() throws Exception
     {
-        connector = newSPDYServerConnector(new ServerSessionFrameListener.Adapter()
+        server = newServer();
+        connector = newSPDYServerConnector(server, new ServerSessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -115,13 +118,13 @@ public class IdleTimeoutTest extends AbstractTest
         });
         connector.setIdleTimeout(idleTimeout);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch goAwayLatch = new CountDownLatch(1);
         Session session = startClient(startServer(null), new SessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
             {
-                latch.countDown();
+                goAwayLatch.countDown();
             }
         });
 
@@ -136,7 +139,9 @@ public class IdleTimeoutTest extends AbstractTest
         });
 
         Assert.assertTrue(replyLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(latch.await(1000, TimeUnit.MILLISECONDS));
+
+        // Just make sure onGoAway has never been called, but don't wait too much
+        Assert.assertFalse(goAwayLatch.await(idleTimeout / 2, TimeUnit.MILLISECONDS));
     }
 
     @Test

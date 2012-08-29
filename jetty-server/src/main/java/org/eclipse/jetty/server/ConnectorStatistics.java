@@ -19,9 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.server.Connector.Statistics;
@@ -184,7 +182,7 @@ class ConnectorStatistics extends AbstractLifeCycle implements Statistics, Dumpa
             _connectionDurationStats.set(duration);
         }
     }
-    
+
 
     @Override
     @ManagedOperation("dump thread state")

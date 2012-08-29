@@ -154,12 +154,25 @@ public abstract class DataInfo
      * then after the read {@link #available()} will return a positive value, and further content
      * may be retrieved by invoking again this method with a new output buffer.</p>
      *
-     * @param output the {@link ByteBuffer} to copy to bytes into
+     * @param output the {@link ByteBuffer} to copy the bytes into
      * @return the number of bytes copied
      * @see #available()
      * @see #consumeInto(ByteBuffer)
      */
     public abstract int readInto(ByteBuffer output);
+
+    /**
+     * <p>Copies the content bytes of this {@link DataInfo} into the given byte array.</p>
+     * <p>If the given byte array cannot contain the whole content of this {@link DataInfo}
+     * then after the read {@link #available()} will return a positive value, and further content
+     * may be retrieved by invoking again this method with a new byte array.</p>
+     *
+     * @param bytes the byte array to copy the bytes into
+     * @param offset the index of the byte array to start copying
+     * @param length the number of bytes to copy
+     * @return the number of bytes copied
+     */
+    public abstract int readInto(byte[] bytes, int offset, int length);
 
     /**
      * <p>Reads and consumes the content bytes of this {@link DataInfo} into the given {@link ByteBuffer}.</p>
@@ -171,6 +184,22 @@ public abstract class DataInfo
     public int consumeInto(ByteBuffer output)
     {
         int read = readInto(output);
+        consume(read);
+        return read;
+    }
+
+    /**
+     * <p>Reads and consumes the content bytes of this {@link DataInfo} into the given byte array,
+     * starting from index {@code offset} for {@code length} bytes.</p>
+     *
+     * @param bytes the byte array to copy the bytes into
+     * @param offset the offset of the byte array to start copying
+     * @param length the number of bytes to copy
+     * @return the number of bytes copied
+     */
+    public int consumeInto(byte[] bytes, int offset, int length)
+    {
+        int read = readInto(bytes, offset, length);
         consume(read);
         return read;
     }

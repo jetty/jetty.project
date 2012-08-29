@@ -35,7 +35,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
@@ -602,7 +601,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             throw new IllegalStateException("No session id manager defined");
 
         _jdbcSessionIdMgr = (JDBCSessionIdManager)_sessionIdManager;
-        
+
         _sessions = new ConcurrentHashMap<String, AbstractSession>();
         super.doStart();
     }

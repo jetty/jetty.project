@@ -20,7 +20,6 @@ package org.eclipse.jetty.continuation;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;

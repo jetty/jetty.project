@@ -20,21 +20,20 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.channels.AsynchronousCloseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import javax.print.attribute.standard.MediaSize.ISO;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -90,7 +89,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
                 return new Thread(r, "Scheduler-" + getName());
             }
         });
-        _byteBufferPool = pool!=null?pool:new StandardByteBufferPool();
+        _byteBufferPool = pool!=null?pool:new MappedByteBufferPool();
         _sslContextFactory = sslContextFactory;
 
         addBean(_server,false);
@@ -192,6 +191,12 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
             if (thread != null)
                 thread.interrupt();
         }
+    }
+
+    @Override
+    public <C> Future<C> shutdown(C c)
+    {
+        return new FutureCallback<C>(c);
     }
 
     @Override

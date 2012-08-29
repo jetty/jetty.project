@@ -21,7 +21,6 @@ package org.eclipse.jetty;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -58,38 +57,38 @@ public class TestServer
     public static void main(String[] args) throws Exception
     {
         ((StdErrLog)Log.getLog()).setSource(false);
-        
+
         String jetty_root = "..";
 
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setMaxThreads(100);
-        
+
         // Setup server
         Server server = new Server(threadPool);
         server.manage(threadPool);
         server.setSendDateHeader(true);
-        
+
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
         mbContainer.addBean(Log.getLog());
-        
+
         // Setup Connectors
         SelectChannelConnector connector0 = new SelectChannelConnector(server);
         connector0.setPort(8080);
         connector0.setIdleTimeout(30000);
         ((HttpServerConnectionFactory)connector0.getDefaultConnectionFactory()).getHttpConfiguration().setConfidentialPort(8443);
         server.addConnector(connector0);
-        
+
         // Setup Connectors
         SelectChannelConnector connector1 = new SelectChannelConnector(server);
         connector1.setPort(8081);
         connector0.setIdleTimeout(30000);
         ((HttpServerConnectionFactory)connector0.getDefaultConnectionFactory()).getHttpConfiguration().setConfidentialPort(8443);
         server.addConnector(connector1);
-        
+
         SelectChannelConnector ssl_connector = new SelectChannelConnector(server,new SslContextFactory());
         ssl_connector.setPort(8443);
         SslContextFactory cf = ssl_connector.getSslContextFactory();
@@ -105,14 +104,14 @@ public class TestServer
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         handlers.setHandlers(new Handler[]
         { contexts, new DefaultHandler(), requestLogHandler });
-        
+
         // Add restart handler to test the ability to save sessions and restart
         RestartHandler restart = new RestartHandler();
         restart.setHandler(handlers);
-        
+
         server.setHandler(restart);
 
-        
+
         // Setup deployers
 
         HashLoginService login = new HashLoginService();
@@ -127,7 +126,7 @@ public class TestServer
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
-        
+
         WebAppContext webapp = new WebAppContext();
         webapp.setParentLoaderPriority(true);
         webapp.setResourceBase("./src/main/webapp");
@@ -139,19 +138,19 @@ public class TestServer
         sessiondir.deleteOnExit();
         ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setStoreDirectory(sessiondir);
         ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
-        
+
         contexts.addHandler(webapp);
-        
+
         ContextHandler srcroot = new ContextHandler();
         srcroot.setResourceBase(".");
         srcroot.setHandler(new ResourceHandler());
         srcroot.setContextPath("/src");
         contexts.addHandler(srcroot);
-        
+
         server.start();
         server.join();
     }
-    
+
     private static class RestartHandler extends HandlerWrapper
     {
 
@@ -166,7 +165,7 @@ public class TestServer
             if (Boolean.valueOf(request.getParameter("restart")))
             {
                 final Server server=getServer();
-                
+
                 new Thread()
                 {
                     public void run()
@@ -186,7 +185,7 @@ public class TestServer
                 }.start();
             }
         }
-        
+
     }
 
 }

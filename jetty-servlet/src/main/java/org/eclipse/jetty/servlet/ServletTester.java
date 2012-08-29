@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Map;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -157,12 +156,12 @@ public class ServletTester extends AggregateLifeCycle
     {
         this("/",ServletContextHandler.SECURITY|ServletContextHandler.SESSIONS);
     }
-    
+
     public ServletTester(String ctxPath)
     {
         this(ctxPath,ServletContextHandler.SECURITY|ServletContextHandler.SESSIONS);
     }
-    
+
     public ServletTester(String contextPath,int options)
     {
         _context=new ServletContextHandler(_server,contextPath,options);
@@ -170,7 +169,7 @@ public class ServletTester extends AggregateLifeCycle
         _server.setConnectors(new Connector[]{_connector});
         addBean(_server);
     }
-    
+
     public ServletContextHandler getContext()
     {
         return _context;
@@ -180,12 +179,12 @@ public class ServletTester extends AggregateLifeCycle
     {
         return _connector.getResponses(request);
     }
-    
+
     public ByteBuffer getResponses(ByteBuffer request) throws Exception
     {
         return _connector.getResponses(request);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Create a port based connector.
      * This methods adds a port connector to the server
@@ -193,7 +192,7 @@ public class ServletTester extends AggregateLifeCycle
      * @throws Exception
      */
     public String createConnector(boolean localhost) throws Exception
-    {        
+    {
         SelectChannelConnector connector = new SelectChannelConnector(_server);
         if (localhost)
             connector.setHost("127.0.0.1");
@@ -214,7 +213,7 @@ public class ServletTester extends AggregateLifeCycle
         _server.addConnector(connector);
         return connector;
     }
-    
-    
-    
+
+
+
 }

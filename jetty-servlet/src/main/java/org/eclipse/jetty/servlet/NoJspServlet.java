@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -28,9 +27,9 @@ import javax.servlet.http.HttpServletResponse;
 public class NoJspServlet extends HttpServlet
 {
     private boolean _warned;
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException

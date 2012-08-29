@@ -124,6 +124,9 @@ public abstract class SslBytesTest
 
         public void stop() throws Exception
         {
+            server.close();
+            if (client != null) // some tests only run on linux, those won't create a client on other OS
+                client.close();
             serverSocket.close();
         }
 

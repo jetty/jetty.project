@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.OutputStream;
@@ -30,7 +27,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletResponse;
 
@@ -42,6 +38,9 @@ import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class PutFilterTest
 {
@@ -226,7 +225,7 @@ public class PutFilterTest
         request.setContent(data1);
         System.err.println(request);
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        
+
         assertEquals(HttpServletResponse.SC_CREATED,response.getStatus());
 
         File file=new File(_dir,"file.txt");

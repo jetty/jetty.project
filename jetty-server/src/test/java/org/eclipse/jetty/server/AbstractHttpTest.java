@@ -57,8 +57,9 @@ public abstract class AbstractHttpTest
     {
         server = new Server();
         connector = new SelectChannelConnector(server);
-        server.setConnectors(new Connector[]{connector});
-        httpParser = new SimpleHttpParser(httpVersion);
+        connector.setIdleTimeout(10000);
+        server.addConnector(connector);
+        httpParser = new SimpleHttpParser();
         ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
     }
 
@@ -72,6 +73,7 @@ public abstract class AbstractHttpTest
     protected SimpleHttpResponse executeRequest() throws URISyntaxException, IOException
     {
         Socket socket = new Socket("localhost", connector.getLocalPort());
+        socket.setSoTimeout((int)connector.getIdleTimeout());
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
         String request = "GET / " + httpVersion + "\r\n";
@@ -110,6 +112,7 @@ public abstract class AbstractHttpTest
     protected class ThrowExceptionOnDemandHandler extends AbstractHandler
     {
         private final boolean throwException;
+        private volatile Throwable failure;
 
         protected ThrowExceptionOnDemandHandler(boolean throwException)
         {
@@ -121,6 +124,16 @@ public abstract class AbstractHttpTest
         {
             if (throwException)
                 throw new TestCommitException();
+        }
+
+        protected void markFailed(Throwable x)
+        {
+            this.failure = x;
+        }
+
+        public Throwable failure()
+        {
+            return failure;
         }
     }
 

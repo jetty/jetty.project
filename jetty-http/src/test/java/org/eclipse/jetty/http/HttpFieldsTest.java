@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -34,6 +27,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -85,12 +85,12 @@ public class HttpFieldsTest
         header.putTo(buffer);
         BufferUtil.flipToFlush(buffer,0);
         String result=BufferUtil.toString(buffer);
-        
+
         assertThat(result,Matchers.containsString("name0: value0"));
         assertThat(result,Matchers.containsString("name1: value:A"));
         assertThat(result,Matchers.containsString("name1: value:B"));
     }
-    
+
     @Test
     public void testGet() throws Exception
     {

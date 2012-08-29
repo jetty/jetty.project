@@ -57,13 +57,7 @@
         <dependency>
             <groupId>org.eclipse.jetty.npn</groupId>
             <artifactId>npn-api</artifactId>
-            <version>1.0.0.v20120402</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-client</artifactId>
-            <version>${project.version}</version>
+            <version>${npn.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -23,10 +23,8 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
-import org.eclipse.jetty.util.ByteArrayOutputStream2;
-
 /**
- * 
+ *
  */
 public class EncodingHttpWriter extends HttpWriter
 {
@@ -37,8 +35,8 @@ public class EncodingHttpWriter extends HttpWriter
     {
         super(out);
         try
-        {    
-            _converter = new OutputStreamWriter(_bytes, encoding);  
+        {
+            _converter = new OutputStreamWriter(_bytes, encoding);
         }
         catch (UnsupportedEncodingException e)
         {
@@ -49,12 +47,12 @@ public class EncodingHttpWriter extends HttpWriter
     /* ------------------------------------------------------------ */
     @Override
     public void write (char[] s,int offset, int length) throws IOException
-    {              
+    {
         if (length==0)
             _out.checkAllWritten();
-        
+
         while (length > 0)
-        {  
+        {
             _bytes.reset();
             int chars = length>MAX_OUTPUT_CHARS?MAX_OUTPUT_CHARS:length;
 

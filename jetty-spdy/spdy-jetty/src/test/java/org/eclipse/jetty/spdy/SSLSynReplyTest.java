@@ -22,6 +22,7 @@ package org.eclipse.jetty.spdy;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Before;
@@ -29,7 +30,7 @@ import org.junit.Before;
 public class SSLSynReplyTest extends SynReplyTest
 {
     @Override
-    protected SPDYServerConnector newSPDYServerConnector(ServerSessionFrameListener listener)
+    protected SPDYServerConnector newSPDYServerConnector(Server server, ServerSessionFrameListener listener)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
         return new SPDYServerConnector(server, sslContextFactory, listener);

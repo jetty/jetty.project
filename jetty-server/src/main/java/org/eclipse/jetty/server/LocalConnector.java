@@ -26,10 +26,13 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -153,12 +156,32 @@ public class LocalConnector extends AbstractConnector
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
         LOG.debug("accepting {}", acceptorID);
-        LocalEndPoint endp = _connects.take();
-        Connection connection = getDefaultConnectionFactory().newConnection(null, endp, null);
-        endp.setConnection(connection);
-        endp.onOpen();
-        connectionOpened(connection);
-        connection.onOpen();
+        LocalEndPoint endPoint = _connects.take();
+        endPoint.onOpen();
+
+        SslContextFactory sslContextFactory = getSslContextFactory();
+        if (sslContextFactory != null)
+        {
+            SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
+            engine.setUseClientMode(false);
+
+            SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
+            endPoint.setConnection(sslConnection);
+            connectionOpened(sslConnection);
+            sslConnection.onOpen();
+
+            EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
+            Connection connection = getDefaultConnectionFactory().newConnection(null, appEndPoint, null);
+            appEndPoint.setConnection(connection);
+            connection.onOpen();
+        }
+        else
+        {
+            Connection connection = getDefaultConnectionFactory().newConnection(null, endPoint, null);
+            endPoint.setConnection(connection);
+            connectionOpened(connection);
+            connection.onOpen();
+        }
     }
 
     public class LocalEndPoint extends ByteArrayEndPoint
@@ -238,7 +261,10 @@ public class LocalConnector extends AbstractConnector
                     if (!_closed.await(idleFor,units))
                     {
                         if (size==getOutput().remaining())
+                        {
+                            LOG.debug("idle for {} {}",idleFor,units);
                             return;
+                        }
                         size=getOutput().remaining();
                     }
                 }

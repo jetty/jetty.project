@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.ssl;
 import java.io.FileInputStream;
 import java.net.Socket;
 import java.security.KeyStore;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -29,7 +28,6 @@ import org.eclipse.jetty.server.ConnectorTimeoutTest;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
 {

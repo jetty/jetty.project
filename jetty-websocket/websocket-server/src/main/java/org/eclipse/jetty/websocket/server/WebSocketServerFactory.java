@@ -30,14 +30,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -45,10 +44,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.driver.EventMethodsCache;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
@@ -87,7 +86,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
     public WebSocketServerFactory(WebSocketPolicy policy)
     {
-        this(policy,new StandardByteBufferPool());
+        this(policy,new MappedByteBufferPool());
     }
 
     public WebSocketServerFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -198,7 +197,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
      * Get the base policy in use for WebSockets.
      * <p>
      * Note: individual WebSocket implementations can override some of the values in here by using the {@link WebSocket &#064;WebSocket} annotation.
-     * 
+     *
      * @return the base policy
      */
     public WebSocketPolicy getPolicy()
@@ -309,7 +308,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
      * <p>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
-     * 
+     *
      * @param request
      *            The request to upgrade
      * @param response
@@ -355,7 +354,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
         WebSocketServerConnection connection = new WebSocketServerConnection(endp,executor,scheduler,websocket.getPolicy(),bufferPool,this);
         // Tell jetty about the new connection
-        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTR,connection);
+        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
 
         LOG.debug("HttpConnection: {}",http);
         LOG.debug("AsyncWebSocketConnection: {}",connection);

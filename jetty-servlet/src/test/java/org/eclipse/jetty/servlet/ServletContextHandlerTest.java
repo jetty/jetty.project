@@ -18,18 +18,14 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.AssertionFailedError;
-
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -42,11 +38,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class ServletContextHandlerTest
 {
     private Server _server;
     private LocalConnector _connector;
-    
+
     @Before
     public void createServer()
     {
@@ -55,14 +53,14 @@ public class ServletContextHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
     }
-    
+
     @After
     public void destroyServer() throws Exception
     {
         _server.stop();
         _server.join();
     }
-    
+
     @Test
     public void testFindContainer() throws Exception
     {
@@ -70,14 +68,14 @@ public class ServletContextHandlerTest
         _server.setHandler(contexts);
 
         ServletContextHandler root = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
-        
+
         SessionHandler session = root.getSessionHandler();
         ServletHandler servlet = root.getServletHandler();
         SecurityHandler security = new ConstraintSecurityHandler();
         root.setSecurityHandler(security);
-        
+
         _server.start();
-        
+
         assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, session));
         assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, security));
         assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, servlet));
@@ -91,7 +89,7 @@ public class ServletContextHandlerTest
         context.setContextPath("/");
         _server.setHandler(context);
         _server.start();
-        
+
         StringBuffer request = new StringBuffer();
         request.append("GET /test HTTP/1.1\n");
         request.append("Host: localhost\n");
@@ -191,7 +189,7 @@ public class ServletContextHandlerTest
         }
         return idx;
     }
-    
+
     public static class HelloServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;

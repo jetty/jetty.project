@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.ab;
 
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -34,6 +32,8 @@ import org.eclipse.jetty.websocket.protocol.UnitGenerator;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 /**
  * Binary Message Spec testing the {@link Generator} and {@link Parser}

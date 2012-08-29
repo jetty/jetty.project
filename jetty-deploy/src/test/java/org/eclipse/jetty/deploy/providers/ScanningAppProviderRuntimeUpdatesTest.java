@@ -104,7 +104,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         }
         while(_scans.get()<scan);
     }
-    
+
     /**
      * Simple webapp deployment after startup of server.
      */
@@ -153,7 +153,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         Assume.assumeTrue(!OS.IS_WINDOWS);
         Assume.assumeTrue(!OS.IS_OSX); // build server has issues with finding itself apparently
 
-        
+
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");
 
@@ -166,7 +166,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.assertResponseContains("/foo/info","FooServlet-1");
 
         waitForDirectoryScan();
-        System.out.println("Updating war files");
+        System.err.println("Updating war files");
         jetty.copyContext("foo.xml","foo.xml"); // essentially "touch" the context xml
         jetty.copyWebapp("foo-webapp-2.war","foo.war");
 

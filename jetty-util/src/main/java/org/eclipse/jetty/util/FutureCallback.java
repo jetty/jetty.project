@@ -28,10 +28,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 
-//TODO: Simplify, get rid of DOING. Probably replace states with AtomicBoolean
 public class FutureCallback<C> implements Future<C>,Callback<C>
 {
-    // TODO investigate use of a phasor
     private enum State {NOT_DONE,DOING,DONE};
     private final AtomicReference<State> _state=new AtomicReference<>(State.NOT_DONE);
     private CountDownLatch _done= new CountDownLatch(1);
@@ -39,17 +37,25 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
     private C _context;
     private boolean _completed;
     
-    private void recycle()
+    public FutureCallback()
+    {}
+
+    public FutureCallback(C ctx)
     {
-        // TODO make this public?
-        if (!isDone())
-            throw new IllegalStateException();
-        _cause=null;
-        _context=null;
-        _completed=false;
-        _done=new CountDownLatch(1);
+        _state.set(State.DONE);
+        _context=ctx;
+        _completed=true;
+        _done.countDown();
     }
-    
+
+    public FutureCallback(C ctx, Throwable failed)
+    {
+        _state.set(State.DONE);
+        _context=ctx;
+        _cause=failed;
+        _done.countDown();
+    }
+
     @Override
     public void completed(C context)
     {
@@ -141,6 +147,7 @@ public class FutureCallback<C> implements Future<C>,Callback<C>
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return String.format("FutureCallback@%x{%s,%b,%s}",hashCode(),_state,_completed,_context);

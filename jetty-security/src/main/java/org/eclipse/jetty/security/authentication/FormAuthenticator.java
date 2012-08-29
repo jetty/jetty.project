@@ -21,7 +21,6 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -43,7 +42,6 @@ import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.session.HashedSession;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -209,7 +207,7 @@ public class FormAuthenticator extends LoginAuthenticator
             {
                 final String username = request.getParameter(__J_USERNAME);
                 final String password = request.getParameter(__J_PASSWORD);
-                
+
                 UserIdentity user = _loginService.login(username,password);
                 LOG.debug("jsecuritycheck {} {}",username,user);
                 if (user!=null)

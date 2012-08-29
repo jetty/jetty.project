@@ -21,7 +21,6 @@ package org.eclipse.jetty.start;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -188,7 +187,7 @@ public class Classpath
     /**
      * Overlay another classpath, copying its elements into place on this
      * Classpath, while eliminating duplicate entries on the classpath.
-     * 
+     *
      * @param cpOther the other classpath to overlay
      */
     public void overlay(Classpath cpOther)

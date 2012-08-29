@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -33,21 +34,21 @@ import org.eclipse.jetty.spdy.parser.Parser;
 public class ServerSPDYConnectionFactory implements ConnectionFactory
 {
     private final ByteBufferPool bufferPool;
-    private final Executor threadPool;
+    private final Executor executor;
     private final ScheduledExecutorService scheduler;
     private final short version;
     private final ServerSessionFrameListener listener;
 
-    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler)
+    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor executor, ScheduledExecutorService scheduler)
     {
-        this(version, bufferPool, threadPool, scheduler, null);
+        this(version, bufferPool, executor, scheduler, null);
     }
 
-    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
+    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor executor, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
     {
         this.version = version;
         this.bufferPool = bufferPool;
-        this.threadPool = threadPool;
+        this.executor = executor;
         this.scheduler = scheduler;
         this.listener = listener;
     }
@@ -71,8 +72,8 @@ public class ServerSPDYConnectionFactory implements ConnectionFactory
 
         FlowControlStrategy flowControlStrategy = connector.newFlowControlStrategy(version);
 
-        StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator, flowControlStrategy);
-        session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddress());
+        StandardSession session = new StandardSession(getVersion(), getBufferPool(), getExecutor(), getScheduler(), connection, connection, 2, listener, generator, flowControlStrategy);
+        session.setAttribute("org.eclipse.jetty.spdy.remoteAddress", endPoint.getRemoteAddress()); // TODO: make this available through API
         session.setWindowSize(connector.getInitialWindowSize());
         parser.addListener(session);
         connection.setSession(session);
@@ -87,11 +88,26 @@ public class ServerSPDYConnectionFactory implements ConnectionFactory
         return listener;
     }
 
-    private static class ServerSPDYConnection extends SPDYConnection
+    protected ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
+    }
+
+    protected Executor getExecutor()
+    {
+        return executor;
+    }
+
+    public ScheduledExecutorService getScheduler()
+    {
+        return scheduler;
+    }
+
+    private static class ServerSPDYConnection extends SPDYConnection implements Runnable
     {
         private final ServerSessionFrameListener listener;
         private final SPDYServerConnector connector;
-        private volatile boolean connected;
+        private final AtomicBoolean connected = new AtomicBoolean();
 
         private ServerSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
         {
@@ -103,14 +119,9 @@ public class ServerSPDYConnectionFactory implements ConnectionFactory
         @Override
         public void onOpen()
         {
-            if (!connected)
-            {
-                // NPE guard to support tests
-                if (listener != null)
-                    listener.onConnect(getSession());
-                connected = true;
-            }
             super.onOpen();
+            if (connected.compareAndSet(false, true))
+                getExecutor().execute(this);
         }
 
         @Override
@@ -118,6 +129,14 @@ public class ServerSPDYConnectionFactory implements ConnectionFactory
         {
             super.onClose();
             connector.sessionClosed(getSession());
+        }
+
+        @Override
+        public void run()
+        {
+            // NPE guard to support tests
+            if (listener != null)
+                listener.onConnect(getSession());
         }
     }
 }

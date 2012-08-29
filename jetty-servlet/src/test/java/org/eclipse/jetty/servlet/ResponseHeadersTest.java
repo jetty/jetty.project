@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +27,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -44,6 +40,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+
 public class ResponseHeadersTest
 {
     /** Pretend to be a WebSocket Upgrade (not real) */
@@ -56,11 +55,11 @@ public class ResponseHeadersTest
             response.setHeader("Upgrade","WebSocket");
             response.addHeader("Connection","Upgrade");
             response.addHeader("Sec-WebSocket-Accept","123456789==");
-            
+
             response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         }
     }
-    
+
     private static Server server;
     private static SelectChannelConnector connector;
     private static URI serverUri;
@@ -132,7 +131,7 @@ public class ResponseHeadersTest
             // Read response
             String respHeader = readResponseHeader(in);
             System.out.println("RESPONSE: " + respHeader);
-            
+
             // Now test for properly formatted HTTP Response Headers.
 
             Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
@@ -146,7 +145,7 @@ public class ResponseHeadersTest
             socket.close();
         }
     }
-    
+
     private String readResponseHeader(InputStream in) throws IOException
     {
         InputStreamReader isr = new InputStreamReader(in);

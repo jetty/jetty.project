@@ -20,7 +20,6 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 
 /**
@@ -47,7 +46,7 @@ public class Utf8LineParser
 
     /**
      * Parse a ByteBuffer (could be a partial buffer), and return once a complete line of UTF8 parsed text has been reached.
-     * 
+     *
      * @param buf
      *            the buffer to parse (could be an incomplete buffer)
      * @return the line of UTF8 parsed text, or null if no line end termination has been reached within the {@link ByteBuffer#remaining() remaining} bytes of

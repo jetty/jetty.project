@@ -23,9 +23,9 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYClient;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -66,6 +66,7 @@ public abstract class AbstractHTTPSPDYTest
         server = new Server();
         connector = newHTTPSPDYServerConnector(version);
         connector.setPort(0);
+        connector.setIdleTimeout(30000);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -75,9 +76,9 @@ public abstract class AbstractHTTPSPDYTest
     protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
-        SPDYServerConnector connector = new HTTPSPDYServerConnector();
-        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new PushStrategy.None());
-        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+        SPDYServerConnector connector = new HTTPSPDYServerConnector(server);
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new PushStrategy.None());
+        connector.setDefaultConnectionFactory(defaultFactory);
         return connector;
     }
 
@@ -100,7 +101,7 @@ public abstract class AbstractHTTPSPDYTest
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
-        return new SPDYClient.Factory(threadPool);
+        return new SPDYClient.Factory(threadPool, null, connector.getIdleTimeout());
     }
 
     @After

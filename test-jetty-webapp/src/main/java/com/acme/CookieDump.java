@@ -17,9 +17,9 @@
 //
 
 package com.acme;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 /* ------------------------------------------------------------ */
 /** Test Servlet Cookies.
  *
- * 
+ *
  */
 public class CookieDump extends HttpServlet
 {
@@ -38,7 +38,7 @@ public class CookieDump extends HttpServlet
 
     /* ------------------------------------------------------------ */
     protected void handleForm(HttpServletRequest request,
-                          HttpServletResponse response) 
+                          HttpServletResponse response)
     {
         String name =  request.getParameter("Name");
         String value =  request.getParameter("Value");
@@ -52,11 +52,11 @@ public class CookieDump extends HttpServlet
             response.addCookie(cookie);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void doPost(HttpServletRequest request,
-                       HttpServletResponse response) 
+                       HttpServletResponse response)
         throws ServletException, IOException
     {
         handleForm(request,response);
@@ -64,29 +64,29 @@ public class CookieDump extends HttpServlet
         String encodedUrl=response.encodeRedirectURL(nextUrl);
         response.sendRedirect(encodedUrl);
     }
-        
+
     /* ------------------------------------------------------------ */
     @Override
     public void doGet(HttpServletRequest request,
-                      HttpServletResponse response) 
+                      HttpServletResponse response)
         throws ServletException, IOException
     {
         handleForm(request,response);
-        
+
         response.setContentType("text/html");
 
-        
+
         PrintWriter out = response.getWriter();
-        out.println("<h1>Cookie Dump Servlet:</h1>");       
-        
+        out.println("<h1>Cookie Dump Servlet:</h1>");
+
         Cookie[] cookies = request.getCookies();
-        
+
         for (int i=0;cookies!=null && i<cookies.length;i++)
         {
             out.println("<b>"+deScript(cookies[i].getName())+"</b>="+deScript(cookies[i].getValue())+"<br/>");
         }
-        
-        out.println("<form action=\""+response.encodeURL(getURI(request))+"\" method=\"post\">"); 
+
+        out.println("<form action=\""+response.encodeURL(getURI(request))+"\" method=\"post\">");
 
         out.println("<b>Name:</b><input type=\"text\" name=\"Name\" value=\"name\"/><br/>");
         out.println("<b>Value:</b><input type=\"text\" name=\"Value\" value=\"value\"/><br/>");
@@ -120,5 +120,5 @@ public class CookieDump extends HttpServlet
         string=string.replace( ">", "&gt;");
         return string;
     }
-    
+
 }

@@ -20,17 +20,26 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
@@ -43,6 +52,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -318,47 +328,49 @@ public class Server extends HandlerWrapper implements Attributes
 
         MultiException mex=new MultiException();
 
+        // list if graceful futures
+        List<Future<Void>> futures = new ArrayList<>();
         
         // First close the network connectors to stop accepting new connections
         for (Connector connector : _connectors)
-        {
-            if (connector instanceof NetworkConnector)
-                ((NetworkConnector)connector).close();
-        }
+            futures.add(connector.shutdown((Void)null));
 
         // Then tell the contexts that we are shutting down
         Handler[] contexts = getChildHandlersByClass(Graceful.class);
         for (Handler context : contexts)
-        {
-            Graceful graceful = (Graceful)context;
-            graceful.shutdown();
-        }
-            
+            futures.add(((Graceful)context).shutdown((Void)null));
+
         // Shall we gracefully wait for zero connections?
         long stopTimeout = getStopTimeout();
-        if (stopTimeout>0 && LOG.isDebugEnabled()) // TODO disabled unless debg for now
+        if (stopTimeout>0) 
         {
             long stop_by=System.currentTimeMillis()+stopTimeout;
             LOG.info("Graceful shutdown {} by ",this,new Date(stop_by));
 
-            // TODO Need to be able to set the maxIdleTime on each individual connection
-            for (Connector connector : _connectors)
+            // Wait for shutdowns
+            for (Future<Void> future: futures)
             {
-                // TODO this is not good enough
-                if (connector instanceof AbstractConnector)
-                    ((AbstractConnector)connector).setIdleTimeout(1);
-            }
-            
-            for (Connector connector : _connectors)
-            {
-                while (connector.getStatistics().isRunning() && connector.getStatistics().getConnectionsOpen()>0 && System.currentTimeMillis()<stop_by)
+                try
                 {
-                    System.err.println(((Dumpable)connector).dump());
-                    Thread.sleep(100);
+                    if (!future.isDone())
+                        future.get(Math.max(1L,stop_by-System.currentTimeMillis()),TimeUnit.MILLISECONDS);
+                }
+                catch (ExecutionException e)
+                {
+                    mex.add(e.getCause());
+                }
+                catch (Exception e)
+                {
+                    mex.add(e.getCause());
                 }
             }
         }
-    
+
+        // Cancel any shutdowns not done
+        for (Future<Void> future: futures)
+            if (!future.isDone())
+                future.cancel(true);
+            
         // Now stop the connectors (this will close existing connections)
         for (Connector connector : _connectors)
         {
@@ -372,7 +384,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
         }
 
-        // And finall stop everything else
+        // And finally stop everything else
         try
         {
             super.doStop();
@@ -382,10 +394,11 @@ public class Server extends HandlerWrapper implements Attributes
             mex.add(e);
         }
 
-        mex.ifExceptionThrow();
-
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
+        
+        mex.ifExceptionThrow();
+
     }
 
     /* ------------------------------------------------------------ */
@@ -401,15 +414,35 @@ public class Server extends HandlerWrapper implements Attributes
         final Response response=connection.getResponse();
 
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("REQUEST "+target+" on "+connection);
-            handle(target, request, request, response);
-            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
+        
+        if ("*".equals(target))
+        {
+            handleOptions(request,response);
+            if (!request.isHandled())
+                handle(target, request, request, response);
         }
         else
             handle(target, request, request, response);
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
     }
 
+    /* ------------------------------------------------------------ */
+    /* Handle Options request to server
+     */
+    protected void handleOptions(Request request,Response response) throws IOException
+    {
+        if (!HttpMethod.OPTIONS.is(request.getMethod()))
+            response.sendError(HttpStatus.BAD_REQUEST_400);
+        request.setHandled(true);
+        response.setStatus(200);
+        response.getHttpFields().put(HttpHeader.ALLOW,"GET,POST,HEAD,OPTIONS");
+        response.setContentLength(0);
+        response.complete();
+    }
+    
     /* ------------------------------------------------------------ */
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,
@@ -629,18 +662,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         dumpThis(out);
         dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),_connectors);
-    }
-
-    /* ------------------------------------------------------------ */
-    /* A handler that can be gracefully shutdown.
-     * Called by doStop if a {@link #setGracefulShutdown} period is set.
-     * TODO: this interface should be part of a restructuring of how we manage the lifecycle of components
-     * TODO: it should extend LifeCycle rather than Handler, for example, and should play in concert with
-     * TODO: LifeCycle.stop() so that stop==shutdown+await(stopTimeout) to keep the stop semantic.
-     */
-    public interface Graceful extends Handler
-    {
-        public void shutdown();
     }
 
     /* ------------------------------------------------------------ */

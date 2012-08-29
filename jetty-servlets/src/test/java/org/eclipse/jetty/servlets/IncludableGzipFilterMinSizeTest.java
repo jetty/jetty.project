@@ -20,7 +20,6 @@ package org.eclipse.jetty.servlets;
 
 import java.util.Arrays;
 import java.util.Collection;
-
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -36,7 +35,7 @@ import org.junit.runners.Parameterized.Parameters;
 /**
  * Perform specific tests on the IncludableGzipFilter's ability to manage
  * minGzipSize initialization parameter.
- * 
+ *
  * @see <a href="Eclipse Bug 366106">http://bugs.eclipse.org/366106</a>
  */
 @RunWith(Parameterized.class)
@@ -48,12 +47,12 @@ public class IncludableGzipFilterMinSizeTest
         String[][] data = new String[][]
                 {
                 { GzipFilter.GZIP },
-                { GzipFilter.DEFLATE } 
+                { GzipFilter.DEFLATE }
                 };
-        
+
         return Arrays.asList(data);
     }
-    
+
     public IncludableGzipFilterMinSizeTest(String compressionType)
     {
         this.compressionType = compressionType;
@@ -69,7 +68,7 @@ public class IncludableGzipFilterMinSizeTest
     public void testUnderMinSize() throws Exception
     {
         GzipTester tester = new GzipTester(testdir, compressionType);
-        // Use IncludableGzipFilter 
+        // Use IncludableGzipFilter
         tester.setGzipFilterClass(IncludableGzipFilter.class);
 
         FilterHolder holder = tester.setContentServlet(testServlet);
@@ -90,12 +89,12 @@ public class IncludableGzipFilterMinSizeTest
             tester.stop();
         }
     }
-    
+
     @Test
     public void testOverMinSize() throws Exception
     {
         GzipTester tester = new GzipTester(testdir, compressionType);
-        // Use IncludableGzipFilter 
+        // Use IncludableGzipFilter
         tester.setGzipFilterClass(IncludableGzipFilter.class);
 
         FilterHolder holder = tester.setContentServlet(testServlet);

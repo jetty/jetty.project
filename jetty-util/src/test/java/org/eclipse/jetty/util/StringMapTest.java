@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 
 /**
- * 
+ *
  *
  */
 public class StringMapTest
@@ -42,22 +42,22 @@ public class StringMapTest
     /*
      * @see TestCase#setUp()
      */
-    
+
     @Before
     public void setUp() throws Exception
     {
         m0=new StringMap<String>();
         m1=new StringMap<String>(false);
         m1.put("abc", "0");
-        
+
         m5=new StringMap<String>(false);
         m5.put("a", "0");
         m5.put("ab", "1");
         m5.put("abc", "2");
         m5.put("abb", "3");
         m5.put("bbb", "4");
-        
-        m5i=new StringMap<String>(true); 
+
+        m5i=new StringMap<String>(true);
         m5i.put("ab", "1");
         m5i.put("abc", "2");
         m5i.put("abb", "3");
@@ -70,7 +70,7 @@ public class StringMapTest
         assertEquals(1, m1.size());
         assertEquals(5, m5.size());
         assertEquals(3, m5i.size());
-        
+
         m1.remove("abc");
         m5.remove("abc");
         m5.put("bbb","x");
@@ -117,7 +117,7 @@ public class StringMapTest
         assertEquals(null,m5.get("aBc"));
         assertEquals("2",m5i.get("abc"));
         assertEquals("2",m5i.get("aBc"));
-        
+
         m5.put("aBc", "x");
         m5i.put("AbC", "x");
 
@@ -127,8 +127,8 @@ public class StringMapTest
         assertEquals("x",m5.get(buffer));
         assertEquals("x",m5i.get((Object)"abc"));
         assertEquals("x",m5i.get("aBc"));
-        
-        
+
+
     }
 
     /*
@@ -177,7 +177,7 @@ public class StringMapTest
         assertTrue(!m5.containsKey("aBc"));
         assertTrue(m5.containsKey("bbb"));
         assertTrue(!m5.containsKey("xyz"));
-        
+
         assertTrue(m5i.containsKey("abc"));
         assertTrue(m5i.containsKey("aBc"));
         assertTrue(m5i.containsKey("ABC"));
@@ -190,7 +190,7 @@ public class StringMapTest
         assertEquals("{abc=0}",m1.toString());
         assertTrue(m5.toString().indexOf("abc=2")>0);
     }
-    
+
     @Test
     public void testIgnoreCase()
     {
@@ -203,15 +203,15 @@ public class StringMapTest
         map.put("TRACE","6");
         map.put("CONNECT","7");
         map.put("Upgrade","8");
-        
+
         assertEquals("1",map.get("POST"));
         assertEquals("1",map.get("pOST"));
         assertEquals("1",map.get("Post"));
-        
+
         assertEquals("8",map.get("UPGRADE"));
         assertEquals("8",map.get("Upgrade"));
         assertEquals("8",map.get("upgrade"));
-        
+
     }
 
 }

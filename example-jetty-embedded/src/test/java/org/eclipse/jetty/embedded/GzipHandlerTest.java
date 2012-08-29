@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.embedded;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.zip.GZIPInputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -43,6 +39,9 @@ import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class GzipHandlerTest
 {
@@ -82,7 +81,7 @@ public class GzipHandlerTest
                 baseRequest.setHandled(true);
             }
         };
-        
+
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setHandler(testHandler);
 
@@ -109,16 +108,16 @@ public class GzipHandlerTest
         request.setHeader("Host","tester");
         request.setHeader("accept-encoding","gzip");
         request.setURI("/");
-        
+
         response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
-                
+
         assertTrue(response.get("Content-Encoding").equalsIgnoreCase("gzip"));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        
+
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
-        
+
         assertEquals(__content, testOut.toString("UTF8"));
 
     }

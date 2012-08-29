@@ -18,42 +18,42 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 
 /* ------------------------------------------------------------ */
 /** Util meta Tests.
- * 
+ *
  */
 public class URLEncodedTest
 {
-    
+
     /* -------------------------------------------------------------- */
-    static 
+    static
     {
         /*
          * Uncomment to set setting the System property to something other than the default of UTF-8.
          * Beware however that you will have to @Ignore all the other tests other than testUrlEncodedStream!
-         
+
             System.setProperty("org.eclipse.jetty.util.UrlEncoding.charset", StringUtil.__ISO_8859_1);
          */
     }
 
-    
+
     /* -------------------------------------------------------------- */
     @Test
     public void testUrlEncoded()
     {
-          
+
         UrlEncoded url_encoded = new UrlEncoded();
         assertEquals("Initially not empty",0, url_encoded.size());
-        
+
         url_encoded.clear();
         url_encoded.decode("");
         assertEquals("Not empty after decode(\"\")",0, url_encoded.size());
@@ -63,19 +63,19 @@ public class URLEncodedTest
         assertEquals("simple param size",1, url_encoded.size());
         assertEquals("simple encode","Name1=Value1", url_encoded.encode());
         assertEquals("simple get","Value1", url_encoded.getString("Name1"));
-        
+
         url_encoded.clear();
         url_encoded.decode("Name2=");
         assertEquals("dangling param size",1, url_encoded.size());
         assertEquals("dangling encode","Name2", url_encoded.encode());
         assertEquals("dangling get","", url_encoded.getString("Name2"));
-    
+
         url_encoded.clear();
         url_encoded.decode("Name3");
         assertEquals("noValue param size",1, url_encoded.size());
         assertEquals("noValue encode","Name3", url_encoded.encode());
         assertEquals("noValue get","", url_encoded.getString("Name3"));
-    
+
         url_encoded.clear();
         url_encoded.decode("Name4=V\u0629lue+4%21");
         assertEquals("encoded param size",1, url_encoded.size());
@@ -87,14 +87,14 @@ public class URLEncodedTest
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded encode","Name4=Value%2B4%21", url_encoded.encode());
         assertEquals("encoded get","Value+4!", url_encoded.getString("Name4"));
-        
+
         url_encoded.clear();
         url_encoded.decode("Name4=Value+4%21%20%214");
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded encode","Name4=Value+4%21+%214", url_encoded.encode());
         assertEquals("encoded get","Value 4! !4", url_encoded.getString("Name4"));
 
-        
+
         url_encoded.clear();
         url_encoded.decode("Name5=aaa&Name6=bbb");
         assertEquals("multi param size",2, url_encoded.size());
@@ -104,7 +104,7 @@ public class URLEncodedTest
                    );
         assertEquals("multi get","aaa", url_encoded.getString("Name5"));
         assertEquals("multi get","bbb", url_encoded.getString("Name6"));
-    
+
         url_encoded.clear();
         url_encoded.decode("Name7=aaa&Name7=b%2Cb&Name7=ccc");
         assertEquals("multi encode","Name7=aaa&Name7=b%2Cb&Name7=ccc",url_encoded.encode());
@@ -118,40 +118,40 @@ public class URLEncodedTest
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded encode","Name8=xx%2C++yy++%2Czz", url_encoded.encode());
         assertEquals("encoded get", url_encoded.getString("Name8"),"xx,  yy  ,zz");
-        
+
         url_encoded.clear();
         url_encoded.decode("Name11=xxVerdi+%C6+og+2zz", "ISO-8859-1");
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded get", url_encoded.getString("Name11"),"xxVerdi \u00c6 og 2zz");
-        
+
         url_encoded.clear();
         url_encoded.decode("Name12=xxVerdi+%2F+og+2zz", "UTF-8");
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded get", url_encoded.getString("Name12"),"xxVerdi / og 2zz");
-        
+
         url_encoded.clear();
         url_encoded.decode("Name14=%GG%+%%+%", "ISO-8859-1");
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded get", url_encoded.getString("Name14"),"%GG% %% %");
-        
+
         url_encoded.clear();
         url_encoded.decode("Name14=%GG%+%%+%", "UTF-8");
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded get", url_encoded.getString("Name14"),"%GG% %% %");
 
         /* Not every jvm supports this encoding */
-        
+
         if (java.nio.charset.Charset.isSupported("SJIS"))
         {
             url_encoded.clear();
             url_encoded.decode("Name9=%83e%83X%83g", "SJIS"); // "Test" in Japanese Katakana
             assertEquals("encoded param size",1, url_encoded.size());
-            assertEquals("encoded get", "\u30c6\u30b9\u30c8", url_encoded.getString("Name9"));   
+            assertEquals("encoded get", "\u30c6\u30b9\u30c8", url_encoded.getString("Name9"));
         }
         else
             assertTrue("Charset SJIS not supported by jvm", true);
     }
-    
+
 
     /* -------------------------------------------------------------- */
     @Test
@@ -161,11 +161,11 @@ public class URLEncodedTest
         url_encoded.decode("Name15=xx%zz", "UTF-8");
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded get", "xx%zz", url_encoded.getString("Name15"));
-        
+
         assertEquals("%u123",UrlEncoded.decodeString("%u123",0,5,"UTF-8"));
     }
-    
-    
+
+
     /* -------------------------------------------------------------- */
     @Test
     public void testUrlEncodedStream()
@@ -178,7 +178,7 @@ public class URLEncodedTest
            {StringUtil.__UTF8,StringUtil.__UTF8},
            {StringUtil.__UTF16,StringUtil.__UTF16},
         };
-        
+
 
         for (int i=0;i<charsets.length;i++)
         {
@@ -191,8 +191,8 @@ public class URLEncodedTest
             assertEquals(i+" stream name2","",m.getString("name2"));
             assertEquals(i+" stream n\u00e3me3","value 3",m.getString("n\u00e3me3"));
         }
-        
-        
+
+
         if (java.nio.charset.Charset.isSupported("Shift_JIS"))
         {
             ByteArrayInputStream in2 = new ByteArrayInputStream ("name=%83e%83X%83g".getBytes());
@@ -203,28 +203,28 @@ public class URLEncodedTest
         }
         else
             assertTrue("Charset Shift_JIS not supported by jvm", true);
-     
+
     }
-    
-    
+
+
     /* -------------------------------------------------------------- */
     @Test
     public void testCharsetViaSystemProperty ()
-    throws Exception 
-    {        
+    throws Exception
+    {
         /*
          * Uncomment to test setting a non-UTF-8 default character encoding using the SystemProperty org.eclipse.jetty.util.UrlEncoding.charset.
          * You will also need to uncomment the static initializer that sets this SystemProperty near the top of this file.
-  
+
 
         ByteArrayInputStream in3 = new ByteArrayInputStream("name=libell%E9".getBytes(StringUtil.__ISO_8859_1));
         MultiMap m3 = new MultiMap();
         UrlEncoded.decodeTo(in3, m3, null, -1);
         assertEquals("stream name", "libell\u00E9", m3.getString("name"));
-        
-        */ 
+
+        */
     }
-    
+
     /* -------------------------------------------------------------- */
     @Test
     public void testUtf8()
@@ -235,18 +235,18 @@ public class URLEncodedTest
 
         url_encoded.clear();
         url_encoded.decode("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit");
-        
+
         String hex ="E0B89FE0B8ABE0B881E0B8A7E0B894E0B8B2E0B988E0B881E0B89FE0B8A7E0B8ABE0B8AAE0B894E0B8B2E0B988E0B8ABE0B89FE0B881E0B8A7E0B894E0B8AAE0B8B2E0B89FE0B881E0B8ABE0B8A3E0B894E0B989E0B89FE0B8ABE0B899E0B881E0B8A3E0B894E0B8B5";
         String expected = new String(TypeUtil.fromHexString(hex),"utf-8");
         Assert.assertEquals(expected,url_encoded.getString("text"));
     }
-    
+
     /* -------------------------------------------------------------- */
     @Test
     public void testNotUtf8() throws Exception
-    {   
+    {
         String query="name=X%c0%afZ";
-        
+
         MultiMap<String> map = new MultiMap<>();
         UrlEncoded.LOG.info("EXPECT 4 Not Valid UTF8 warnings...");
         UrlEncoded.decodeUtf8To(query.getBytes(StringUtil.__ISO_8859_1),0,query.length(),map);

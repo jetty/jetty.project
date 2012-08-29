@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Stack;
 import java.util.StringTokenizer;
-
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
@@ -51,10 +50,10 @@ import org.xml.sax.helpers.DefaultHandler;
  * XML Parser wrapper. This class wraps any standard JAXP1.1 parser with convieniant error and
  * entity handlers and a mini dom-like document tree.
  * <P>
- * By default, the parser is created as a validating parser only if xerces is present. This can be 
+ * By default, the parser is created as a validating parser only if xerces is present. This can be
  * configured by setting the "org.eclipse.jetty.xml.XmlParser.Validating" system property.
- * 
- * 
+ *
+ *
  */
 public class XmlParser
 {
@@ -89,7 +88,7 @@ public class XmlParser
     {
         setValidating(validating);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setValidating(boolean validating)
     {
@@ -98,7 +97,7 @@ public class XmlParser
             SAXParserFactory factory = SAXParserFactory.newInstance();
             factory.setValidating(validating);
             _parser = factory.newSAXParser();
-            
+
             try
             {
                 if (validating)
@@ -114,7 +113,7 @@ public class XmlParser
 
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/validation", validating);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespaces", true);
-            _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespace-prefixes", false);  
+            _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespace-prefixes", false);
             try
             {
                 if (validating)
@@ -131,7 +130,7 @@ public class XmlParser
             throw new Error(e.toString());
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param name
@@ -145,7 +144,7 @@ public class XmlParser
 
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      * @return Returns the xpath.
      */
     public String getXpath()
@@ -157,7 +156,7 @@ public class XmlParser
     /**
      * Set an XPath A very simple subset of xpath is supported to select a partial tree. Currently
      * only path like "/node1/nodeA | /node1/nodeB" are supported.
-     * 
+     *
      * @param xpath The xpath to set.
      */
     public void setXpath(String xpath)
@@ -179,7 +178,7 @@ public class XmlParser
      * Add a ContentHandler. Add an additional _content handler that is triggered on a tag name. SAX
      * events are passed to the ContentHandler provided from a matching start element to the
      * corresponding end element. Only a single _content handler can be registered against each tag.
-     * 
+     *
      * @param trigger Tag local or q name.
      * @param observer SAX ContentHandler
      */
@@ -278,7 +277,7 @@ public class XmlParser
                 _depth--;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class Handler extends DefaultHandler
@@ -312,7 +311,7 @@ public class XmlParser
                 name = qName;
 
             Node node = new Node(_context, name, attrs);
-            
+
 
             // check if the node matches any xpaths set?
             if (_xpaths != null)
@@ -416,10 +415,10 @@ public class XmlParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("resolveEntity(" + pid + ", " + sid + ")");
-            
+
             if (sid!=null && sid.endsWith(".dtd"))
                 _dtd=sid;
-            
+
             URL entity = null;
             if (pid != null)
                 entity = (URL) _redirectMap.get(pid);
@@ -553,7 +552,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Get an element attribute.
-         * 
+         *
          * @return attribute or null.
          */
         public String getAttribute(String name)
@@ -564,7 +563,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Get an element attribute.
-         * 
+         *
          * @return attribute or null.
          */
         public String getAttribute(String name, String dft)
@@ -591,7 +590,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Get the ith child node or content.
-         * 
+         *
          * @return Node or String.
          */
         public Object get(int i)
@@ -604,7 +603,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Get the first child node with the tag.
-         * 
+         *
          * @param tag
          * @return Node or null.
          */
@@ -661,7 +660,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Get a tag as a string.
-         * 
+         *
          * @param tag The tag to get
          * @param tags IF true, tags are included in the value.
          * @param trim If true, trim the value.
@@ -687,7 +686,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Convert to a string.
-         * 
+         *
          * @param tag If false, only _content is shown.
          */
         public synchronized String toString(boolean tag)
@@ -700,7 +699,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Convert to a string.
-         * 
+         *
          * @param tag If false, only _content is shown.
          */
         public synchronized String toString(boolean tag, boolean trim)
@@ -760,7 +759,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Iterator over named child nodes.
-         * 
+         *
          * @param tag The tag of the nodes.
          * @return Iterator over all child nodes with the specified tag.
          */

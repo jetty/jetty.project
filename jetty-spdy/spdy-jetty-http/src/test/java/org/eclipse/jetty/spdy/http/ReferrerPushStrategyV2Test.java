@@ -28,9 +28,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
@@ -54,8 +54,8 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         SPDYServerConnector connector = super.newHTTPSPDYServerConnector(version);
-        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
-        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
+        connector.setDefaultConnectionFactory(defaultFactory);
         return connector;
     }
 
@@ -67,8 +67,8 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
-        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+        connector.setDefaultConnectionFactory(defaultFactory);
 
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
         Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);
@@ -89,8 +89,9 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
-        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(),
+                connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+        connector.setDefaultConnectionFactory(defaultFactory);
 
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
         Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);
@@ -110,8 +111,9 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         pushStrategy.setMaxAssociatedResources(1);
-        AsyncConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
-        connector.setDefaultAsyncConnectionFactory(defaultFactory);
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(),
+                connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+        connector.setDefaultConnectionFactory(defaultFactory);
 
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
         Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);

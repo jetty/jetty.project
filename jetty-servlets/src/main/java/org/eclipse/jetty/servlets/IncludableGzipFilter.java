@@ -26,7 +26,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -39,11 +38,11 @@ import org.eclipse.jetty.io.UncheckedPrintWriter;
 /* ------------------------------------------------------------ */
 /** Includable GZip Filter.
  * This extension to the {@link GzipFilter} that uses Jetty features to allow
- * headers to be set during calls to 
+ * headers to be set during calls to
  * {@link javax.servlet.RequestDispatcher#include(javax.servlet.ServletRequest, javax.servlet.ServletResponse)}.
  * This allows the gzip filter to function correct during includes and to make a decision to gzip or not
  * at the time the buffer fills and on the basis of all response headers.
- * 
+ *
  * If the init parameter "uncheckedPrintWriter" is set to "true", then the PrintWriter used by
  * the wrapped getWriter will be {@link UncheckedPrintWriter}.
  *
@@ -56,7 +55,7 @@ public class IncludableGzipFilter extends GzipFilter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         super.init(filterConfig);
-        
+
         String tmp=filterConfig.getInitParameter("uncheckedPrintWriter");
         if (tmp!=null)
             _uncheckedPrintWriter=Boolean.valueOf(tmp).booleanValue();

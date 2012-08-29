@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.File;
 import java.util.List;
 
@@ -35,6 +33,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.Matchers.not;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
@@ -68,9 +71,9 @@ public class GlobalWebappConfigBindingTest
     public void testServerAndSystemClassesOverride() throws Exception
     {
         File srcXml = MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml");
-        File destXml = new File(jetty.getJettyHome(),"context-binding-test-1.xml"); 
+        File destXml = new File(jetty.getJettyHome(),"context-binding-test-1.xml");
         IO.copy(srcXml,destXml);
-        
+
         PathAssert.assertFileExists("Context Binding XML",destXml);
 
         jetty.addConfiguration("binding-test-contexts-1.xml");
@@ -79,7 +82,7 @@ public class GlobalWebappConfigBindingTest
 
         List<WebAppContext> contexts = jetty.getWebAppContexts();
         Assert.assertThat("List of Contexts", contexts, hasSize(greaterThan(0)));
-        
+
         WebAppContext context = contexts.get(0);
 
         Assert.assertNotNull("Context should not be null",context);
@@ -101,7 +104,7 @@ public class GlobalWebappConfigBindingTest
         //                jndiPackage = true;
         //            }
         //        }
-        //        
+        //
         //        Assert.assertFalse(jndiPackage);
     }
 }

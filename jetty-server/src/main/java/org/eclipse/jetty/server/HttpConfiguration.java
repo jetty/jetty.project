@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.servlet.ServletRequest;
@@ -55,10 +54,10 @@ public class HttpConfiguration extends AggregateLifeCycle
     private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
     private String _forwardedCipherSuiteHeader;
     private String _forwardedSslSessionIdHeader;
-    private int _requestHeaderSize=6*1024;
+    private int _requestHeaderSize=8*1024;
     private int _requestBufferSize=16*1024;
-    private int _responseHeaderSize=6*1024;
-    private int _responseBufferSize=16*1024;
+    private int _responseHeaderSize=8*1024;
+    private int _responseBufferSize=32*1024;
 
     public HttpConfiguration(SslContextFactory sslContextFactory,boolean ssl)
     {

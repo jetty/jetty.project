@@ -24,7 +24,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.zip.DeflaterOutputStream;
-
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  * Major work and configuration is done here. Subclasses using different kinds of compression only have to implement the abstract methods doCompress() and
  * setContentEncoding() using the desired compression and setting the appropriate Content-Encoding header string.
  */
-public abstract class AbstractCompressedStream extends ServletOutputStream 
+public abstract class AbstractCompressedStream extends ServletOutputStream
 {
     private final String _encoding;
     protected HttpServletRequest _request;
@@ -53,7 +52,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
     /**
      * Instantiates a new compressed stream.
-     * 
+     *
      * @param request
      *            the request
      * @param response
@@ -98,7 +97,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
     /**
      * Sets the content length.
-     * 
+     *
      * @param length
      *            the new content length
      */
@@ -170,7 +169,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
     /**
      * Finish.
-     * 
+     *
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
@@ -226,7 +225,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
         checkOut(len);
         _out.write(b,off,len);
     }
-    
+
     /**
      * Do compress.
      *
@@ -234,12 +233,12 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
      */
     public void doCompress() throws IOException
     {
-        if (_compressedOutputStream==null) 
+        if (_compressedOutputStream==null)
         {
             if (_response.isCommitted())
                 throw new IllegalStateException();
-            
-            setHeader("Content-Encoding", _encoding);            
+
+            setHeader("Content-Encoding", _encoding);
             if (_response.containsHeader("Content-Encoding"))
             {
                 _out=_compressedOutputStream=createStream();
@@ -250,14 +249,14 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
                     _bOut=null;
                 }
             }
-            else 
+            else
                 doNotCompress();
         }
     }
 
     /**
      * Do not compress.
-     * 
+     *
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
@@ -280,7 +279,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
     /**
      * Check out.
-     * 
+     *
      * @param length
      *            the length
      * @throws IOException
@@ -324,7 +323,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     {
         return _closed;
     }
-    
+
     /**
      * Allows derived implementations to replace PrintWriter implementation.
      */
@@ -337,10 +336,10 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     {
         _response.setHeader(name, value);
     }
-    
+
     /**
      * Create the stream fitting to the underlying compression type.
-     * 
+     *
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */

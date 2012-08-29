@@ -18,26 +18,24 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.util.MultiPartInputStream.MultiPart;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 /**
  * MultiPartInputStreamTest
@@ -50,24 +48,24 @@ public class MultiPartInputStreamTest extends TestCase
     protected String _contentType = "multipart/form-data, boundary=AaB03x";
     protected String _multi = createMultipartRequestString(FILENAME);
     protected String _dirname = System.getProperty("java.io.tmpdir")+File.separator+"myfiles-"+System.currentTimeMillis();
-    
-    
+
+
     public void testNonMultiPartRequest()
     throws Exception
     {
-        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
                                                              "Content-type: text/plain",
                                                              config,
                                                              new File(_dirname));
-        assertTrue(mpis.getParts().isEmpty());   
+        assertTrue(mpis.getParts().isEmpty());
     }
-    
+
     public void testNoLimits()
     throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname);
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
                                                              _contentType,
                                                              config,
                                                              new File(_dirname));
@@ -78,12 +76,12 @@ public class MultiPartInputStreamTest extends TestCase
     public void testRequestTooBig ()
     throws Exception
     {
-        MultipartConfigElement config = new MultipartConfigElement(_dirname, 60, 100, 50);  
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 60, 100, 50);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
                                                             _contentType,
                                                              config,
                                                              new File(_dirname));
-        
+
         try
         {
             mpis.getParts();
@@ -94,16 +92,16 @@ public class MultiPartInputStreamTest extends TestCase
             assertTrue(e.getMessage().startsWith("Request exceeds maxRequestSize"));
         }
     }
-    
+
     public void testFileTooBig()
     throws Exception
     {
-        MultipartConfigElement config = new MultipartConfigElement(_dirname, 40, 1024, 30);  
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 40, 1024, 30);
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
                                                             _contentType,
                                                              config,
                                                              new File(_dirname));
-        
+
         try
         {
             mpis.getParts();
@@ -114,8 +112,8 @@ public class MultiPartInputStreamTest extends TestCase
             assertTrue(e.getMessage().startsWith("Multipart Mime part"));
         }
     }
-    
-    
+
+
     public void testMulti ()
     throws Exception
     {
@@ -129,12 +127,12 @@ public class MultiPartInputStreamTest extends TestCase
 
     private void testMulti(String filename) throws IOException, ServletException
     {
-        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(createMultipartRequestString(filename).getBytes()),
                 _contentType,
                 config,
                 new File(_dirname));
-        
+
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(2));
         Part field1 = mpis.getPart("field1");
@@ -145,7 +143,7 @@ public class MultiPartInputStreamTest extends TestCase
         IO.copy(is, os);
         assertEquals("Joe Blow", new String(os.toByteArray()));
         assertEquals(8, field1.getSize());
-        
+
         assertNotNull(((MultiPartInputStream.MultiPart)field1).getBytes()); //in internal buffer
         field1.write("field1.txt");
         assertNull(((MultiPartInputStream.MultiPart)field1).getBytes()); //no longer in internal buffer
@@ -157,7 +155,7 @@ public class MultiPartInputStreamTest extends TestCase
         assertFalse(f.exists()); //should have been renamed
         field1.delete();  //file should be deleted
         assertFalse(f2.exists());
-        
+
         MultiPart stuff = (MultiPart)mpis.getPart("stuff");
         assertThat(stuff.getContentDispositionFilename(), is(filename));
         assertThat(stuff.getContentType(),is("text/plain"));
@@ -190,24 +188,24 @@ public class MultiPartInputStreamTest extends TestCase
         "\r\n"+
         "000000000000000000000000000000000000000000000000000\r\n"+
         "--AaB03x--\r\n";
-        
-        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);          
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(sameNames.getBytes()),
                                                              _contentType,
                                                              config,
                                                              new File(_dirname));
-        
+
         Collection<Part> parts = mpis.getParts();
         assertEquals(2, parts.size());
         for (Part p:parts)
             assertEquals("stuff", p.getName());
-        
+
         //if they all have the name name, then only retrieve the first one
         Part p = mpis.getPart("stuff");
         assertNotNull(p);
         assertEquals(5, p.getSize());
     }
-    
+
     private String createMultipartRequestString(String filename)
     {
         return "--AaB03x\r\n"+
