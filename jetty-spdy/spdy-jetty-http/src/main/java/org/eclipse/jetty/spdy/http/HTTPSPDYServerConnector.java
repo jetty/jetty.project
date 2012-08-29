@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.HttpServerConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTPSPDYServerConnector extends SPDYServerConnector
 {
@@ -34,11 +35,21 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
         this(server, Collections.<Short, PushStrategy>emptyMap());
     }
 
+    public HTTPSPDYServerConnector(Server server, SslContextFactory sslContextFactory)
+    {
+        this(server, sslContextFactory, Collections.<Short, PushStrategy>emptyMap());
+    }
+
     public HTTPSPDYServerConnector(Server server, Map<Short, PushStrategy> pushStrategies)
+    {
+        this(server, null, pushStrategies);
+    }
+
+    public HTTPSPDYServerConnector(Server server, SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
     {
         // We pass a null ServerSessionFrameListener because for
         // HTTP over SPDY we need one that references the endPoint
-        super(server, null);
+        super(server, sslContextFactory, null);
         clearConnectionFactories();
         // The "spdy/3" protocol handles HTTP over SPDY
         putConnectionFactory("spdy/3", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V3, pushStrategies)));
