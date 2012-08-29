@@ -20,6 +20,7 @@
 package org.eclipse.jetty.spdy.proxy;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
 import org.eclipse.jetty.spdy.api.Headers;
@@ -73,9 +74,9 @@ public abstract class ProxyEngine
     protected void addRequestProxyHeaders(Stream stream, Headers headers)
     {
         addViaHeader(headers);
-        String address = (String)stream.getSession().getAttribute("org.eclipse.jetty.spdy.remoteAddress");
+        InetSocketAddress address = (InetSocketAddress)stream.getSession().getAttribute("org.eclipse.jetty.spdy.remoteAddress");
         if (address != null)
-            headers.add("X-Forwarded-For", address);
+            headers.add("X-Forwarded-For", address.getHostName());
     }
 
     protected void addResponseProxyHeaders(Stream stream, Headers headers)

@@ -11,9 +11,7 @@
         <Set name="protocol">TLSv1</Set>
     </New>
 
-    <!-- Uncomment to create a ReferrerPushStrategy that can be added to the Connectors -->
-
-    <!--
+    <!-- Uncomment to create a ReferrerPushStrategy that can be added to the Connectors
     <New id="pushStrategy" class="org.eclipse.jetty.spdy.http.ReferrerPushStrategy">
         <Arg type="List">
             <Array type="String">
@@ -27,16 +25,19 @@
     </New>
     -->
 
-    <!--<Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>-->
+    <!--
+    <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
+    -->
 
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">
-                <!-- uncomment to enable to apply ReferrerPushStrategy for spdy/3
+                <Arg>
+                    <Ref id="Server"/>
+                </Arg>
+                <!-- Uncomment to enable to apply ReferrerPushStrategy for spdy/3
                      if you want to support it in both spdy/2 and spdy/3, just replace the
                      value in the first map entry.
-                -->
-                <!--
                 <Arg name="pushStrategies">
                     <Map>
                         <Entry>
@@ -58,13 +59,14 @@
         <Arg>
             <New class="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">
                 <Arg>
-                    <Ref id="sslContextFactory" />
+                    <Ref id="Server"/>
                 </Arg>
-                <!-- uncomment to enable to apply ReferrerPushStrategy for spdy/3
+                <Arg>
+                    <Ref id="sslContextFactory"/>
+                </Arg>
+                <!-- Uncomment to enable to apply ReferrerPushStrategy for spdy/3
                      if you want to support it in both spdy/2 and spdy/3, just replace the
                      value in the first map entry.
-                -->
-                <!--
                 <Arg name="pushStrategies">
                     <Map>
                         <Entry>

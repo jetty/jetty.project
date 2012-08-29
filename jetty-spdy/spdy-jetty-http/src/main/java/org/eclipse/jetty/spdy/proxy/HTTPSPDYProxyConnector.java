@@ -19,21 +19,27 @@
 
 package org.eclipse.jetty.spdy.proxy;
 
-public class HTTPSPDYProxyConnector //extends AbstractHTTPSPDYServerConnector
-{
-//    public HTTPSPDYProxyConnector(ProxyEngineSelector proxyEngineSelector)
-//    {
-//        this(proxyEngineSelector, null);
-//    }
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.spdy.SPDYServerConnector;
+import org.eclipse.jetty.spdy.ServerSPDYConnectionFactory;
+import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-//    public HTTPSPDYProxyConnector(ProxyEngineSelector proxyEngineSelector, SslContextFactory sslContextFactory)
-//    {
-//        super(proxyEngineSelector, sslContextFactory);
-//        clearAsyncConnectionFactories();
-//
-//        putAsyncConnectionFactory("spdy/3", new ServerSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), proxyEngineSelector));
-//        putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), proxyEngineSelector));
-//        putAsyncConnectionFactory("http/1.1", new ProxyHTTPAsyncConnectionFactory(this, SPDY.V2, proxyEngineSelector));
-//        setDefaultAsyncConnectionFactory(getAsyncConnectionFactory("http/1.1"));
-//    }
+public class HTTPSPDYProxyConnector extends SPDYServerConnector
+{
+    public HTTPSPDYProxyConnector(Server server, ProxyEngineSelector proxyEngineSelector)
+    {
+        this(server, null, proxyEngineSelector);
+    }
+
+    public HTTPSPDYProxyConnector(Server server, SslContextFactory sslContextFactory, ProxyEngineSelector proxyEngineSelector)
+    {
+        super(server, sslContextFactory, proxyEngineSelector);
+        clearConnectionFactories();
+
+        putConnectionFactory("spdy/3", new ServerSPDYConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), proxyEngineSelector));
+        putConnectionFactory("spdy/2", new ServerSPDYConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), proxyEngineSelector));
+        putConnectionFactory("http/1.1", new ProxyHTTPConnectionFactory(this, SPDY.V2, proxyEngineSelector));
+        setDefaultConnectionFactory(getConnectionFactory("http/1.1"));
+    }
 }

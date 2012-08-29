@@ -21,9 +21,12 @@
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">
+                <Arg>
+                    <Ref id="Server"/>
+                </Arg>
                 <Set name="Port">9090</Set>
-                <Set name="defaultAsyncConnectionFactory">
-                    <Call name="getAsyncConnectionFactory">
+                <Set name="defaultConnectionFactory">
+                    <Call name="getConnectionFactory">
                         <Arg>spdy/2</Arg>
                     </Call>
                 </Set>
@@ -79,7 +82,12 @@
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.spdy.proxy.HTTPSPDYProxyConnector">
-                <Arg><Ref id="proxyEngineSelector" /></Arg>
+                <Arg>
+                    <Ref id="Server"/>
+                </Arg>
+                <Arg>
+                    <Ref id="proxyEngineSelector"/>
+                </Arg>
                 <Set name="Port">8080</Set>
             </New>
         </Arg>
@@ -87,12 +95,18 @@
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.spdy.proxy.HTTPSPDYProxyConnector">
-                <Arg><Ref id="proxyEngineSelector" /></Arg>
-                <Arg><Ref id="sslContextFactory" /></Arg>
+                <Arg>
+                    <Ref id="Server"/>
+                </Arg>
+                <Arg>
+                    <Ref id="sslContextFactory"/>
+                </Arg>
+                <Arg>
+                    <Ref id="proxyEngineSelector"/>
+                </Arg>
                 <Set name="Port">8443</Set>
             </New>
         </Arg>
     </Call>
-
 
 </Configure>

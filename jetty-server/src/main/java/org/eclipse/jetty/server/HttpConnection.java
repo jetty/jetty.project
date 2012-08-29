@@ -51,8 +51,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private final HttpConfiguration _configuration;
     private final Connector _connector;
-    private final ByteBufferPool _bufferPool;
-    private final Server _server;
+    private final ByteBufferPool _bufferPool; // TODO: remove field, use a _connector.getByteBufferPool()
     private final HttpGenerator _generator;
     private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
@@ -76,18 +75,22 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _configuration = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
-        _server = connector.getServer();
         _generator = new HttpGenerator(); // TODO: consider moving the generator to the transport, where it belongs
-        _generator.setSendServerVersion(_server.getSendServerVersion());
+        _generator.setSendServerVersion(getServer().getSendServerVersion());
         _channel = new HttpChannelOverHttp(connector, config, endPoint, this, new Input());
-        _parser = new HttpParser(_channel,config.getRequestHeaderSize());
+        _parser = new HttpParser(newRequestHandler(),config.getRequestHeaderSize());
 
         LOG.debug("New HTTP Connection {}", this);
     }
 
+    protected HttpParser.RequestHandler<ByteBuffer> newRequestHandler()
+    {
+        return _channel;
+    }
+
     public Server getServer()
     {
-        return _server;
+        return _connector.getServer();
     }
 
     public Connector getConnector()
