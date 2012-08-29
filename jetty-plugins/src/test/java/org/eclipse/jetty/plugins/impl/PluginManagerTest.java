@@ -89,11 +89,11 @@ public class PluginManagerTest {
 		_pluginManager.installPlugin(pluginName);
 
 		File someJar = new File(_tmpDir + File.separator + "lib"
-				+ File.separator + "someJar.jar");
-		assertThat("someJar.jar does not exist", someJar.exists(), is(true));
+				+ File.separator + "somejar.jar");
+		assertThat("somejar.jar does not exist", someJar.exists(), is(true));
 		File someOtherJar = new File(_tmpDir + File.separator + "lib"
-				+ File.separator + "someOtherJar.jar");
-		assertThat("someOtherJar.jar does not exist", someOtherJar.exists(),
+				+ File.separator + "someotherjar.jar");
+		assertThat("someotherjar.jar does not exist", someOtherJar.exists(),
 				is(true));
 	}
 
