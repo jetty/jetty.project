@@ -92,7 +92,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
     {
         // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
         EndPoint endPoint = getEndPoint();
-        Connection connection = client.getDefaultConnectionFactory().newConnection(channel, endPoint, attachment);
+        Connection connection = client.getConnectionFactory().newConnection(channel, endPoint, attachment);
         client.replaceConnection(endPoint, connection);
         completed = true;
     }
@@ -104,7 +104,7 @@ public class NextProtoNegoClientConnection extends AbstractConnection implements
         if (protocol == null)
             return null;
         EndPoint endPoint = getEndPoint();
-        Connection connection = client.getConnectionFactory(protocol).newConnection(channel, endPoint, attachment);
+        Connection connection = client.getConnectionFactory().newConnection(channel, endPoint, attachment);
         client.replaceConnection(endPoint, connection);
         completed = true;
         return protocol;
