@@ -23,17 +23,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class StreamUtils {
-	public static String inputStreamToString(InputStream inputStream) throws IOException {
-		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-		StringBuilder stringBuilder = new StringBuilder();
-		String line = null;
-
-	    while ((line = bufferedReader.readLine()) != null) {
-	    	stringBuilder.append(line + "\n");
-	    }
-	
-	    bufferedReader.close();
-	    return stringBuilder.toString();
+public class StreamUtils
+{
+    public static String inputStreamToString(InputStream inputStream) throws IOException
+    {
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream)))
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            while ((line = bufferedReader.readLine()) != null)
+                stringBuilder.append(line).append("\n");
+            return stringBuilder.toString();
+        }
     }
 }
