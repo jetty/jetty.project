@@ -82,6 +82,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         headers.put(HTTPSPDYHeader.STATUS.name(version), httpStatus.toString());
         LOG.debug("HTTP < {} {}", httpVersion, httpStatus);
 
+        // TODO merge the two Field classes into one
         HttpFields fields = info.getHttpFields();
         if (fields != null)
         {
@@ -107,12 +108,14 @@ public class HttpTransportOverSPDY implements HttpTransport
     public void send(ByteBuffer content, boolean lastContent) throws IOException
     {
         // Guard against a last 0 bytes write
+        // TODO work out if we can avoid double calls for lastContent==true
         if (stream.isClosed() && BufferUtil.isEmpty(content) && lastContent)
             return;
         stream.data(new ByteBufferDataInfo(content, lastContent));
     }
 
     @Override
+    // TODO move to channel ?
     public void completed()
     {
         LOG.debug("completed");
