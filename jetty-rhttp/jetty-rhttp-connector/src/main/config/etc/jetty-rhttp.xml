@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Reverse HTTP Connector                      -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call name="addConnector">
+    <Arg>
+      <New class="org.eclipse.jetty.rhttp.connector.ReverseHTTPConnector">
+        <New class="org.eclipse.jetty.rhttp.client.JettyClient">
+	  <Arg>
+	    <New class="HttpClient">
+	    </New>
+	  </Arg>
+	  <Arg>http://localhost:8888/</Arg>
+	  <Arg>nodeA</Arg>
+        </New>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
