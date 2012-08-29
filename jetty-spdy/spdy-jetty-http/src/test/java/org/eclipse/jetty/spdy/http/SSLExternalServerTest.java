@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.spdy.SPDYClient;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
@@ -42,6 +41,11 @@ import org.junit.Test;
 
 public class SSLExternalServerTest extends AbstractHTTPSPDYTest
 {
+    public SSLExternalServerTest(short version)
+    {
+        super(version);
+    }
+
     @Override
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
@@ -70,7 +74,6 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
             Assume.assumeNoException(x);
         }
 
-        final short version = SPDY.V2;
         Session session = startClient(version, address, null);
         Headers headers = new Headers();
         headers.put(HTTPSPDYHeader.SCHEME.name(version), "https");

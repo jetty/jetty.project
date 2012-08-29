@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.spdy.http;
 
 import java.io.IOException;
@@ -44,11 +43,15 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
+public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 {
-
     private final String mainResource = "/index.html";
     private final String cssResource = "/style.css";
+
+    public ReferrerPushStrategyTest(short version)
+    {
+        super(version);
+    }
 
     @Override
     protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
@@ -67,7 +70,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
         connector.setDefaultConnectionFactory(defaultFactory);
 
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
@@ -89,7 +92,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(),
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version,
                 connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
         connector.setDefaultConnectionFactory(defaultFactory);
 
@@ -111,7 +114,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         pushStrategy.setMaxAssociatedResources(1);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version(),
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version,
                 connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
         connector.setDefaultConnectionFactory(defaultFactory);
 
@@ -125,7 +128,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
     private InetSocketAddress createServer() throws Exception
     {
-        return startHTTPServer(version(), new AbstractHandler()
+        return startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -145,7 +148,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
     private Session sendMainRequestAndCSSRequest(InetSocketAddress address, Headers mainRequestHeaders) throws Exception
     {
-        Session session1 = startClient(version(), address, null);
+        Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
         session1.syn(new SynInfo(mainRequestHeaders, true), new StreamFrameListener.Adapter()
@@ -203,7 +206,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
         final CountDownLatch pushSynHeadersValid = new CountDownLatch(1);
-        Session session2 = startClient(version(), address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -212,7 +215,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
                     validateHeaders(synInfo.getHeaders(), pushSynHeadersValid);
 
                 Assert.assertTrue(stream.isUnidirectional());
-                Assert.assertTrue(synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version())).value().endsWith(".css"));
+                Assert.assertTrue(synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value().endsWith(".css"));
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
@@ -253,7 +256,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     @Test
     public void testAssociatedResourceIsPushed() throws Exception
     {
-        InetSocketAddress address = startHTTPServer(version(), new AbstractHandler()
+        InetSocketAddress address = startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -267,7 +270,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
                 baseRequest.setHandled(true);
             }
         });
-        Session session1 = startClient(version(), address, null);
+        Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
@@ -302,7 +305,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
-        Session session2 = startClient(version(), address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -346,7 +349,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     public void testAssociatedResourceWithWrongContentTypeIsNotPushed() throws Exception
     {
         final String fakeResource = "/fake.png";
-        InetSocketAddress address = startHTTPServer(version(), new AbstractHandler()
+        InetSocketAddress address = startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -371,7 +374,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
                 baseRequest.setHandled(true);
             }
         });
-        Session session1 = startClient(version(), address, null);
+        Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
@@ -422,13 +425,13 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
-        Session session2 = startClient(version(), address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 Assert.assertTrue(stream.isUnidirectional());
-                Assert.assertTrue(synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version())).value().endsWith(".css"));
+                Assert.assertTrue(synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value().endsWith(".css"));
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
@@ -466,7 +469,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     @Test
     public void testNestedAssociatedResourceIsPushed() throws Exception
     {
-        InetSocketAddress address = startHTTPServer(version(), new AbstractHandler()
+        InetSocketAddress address = startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -482,7 +485,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
                 baseRequest.setHandled(true);
             }
         });
-        Session session1 = startClient(version(), address, null);
+        Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
@@ -533,7 +536,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(2);
-        Session session2 = startClient(version(), address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -576,7 +579,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     @Test
     public void testMainResourceWithReferrerIsNotPushed() throws Exception
     {
-        InetSocketAddress address = startHTTPServer(version(), new AbstractHandler()
+        InetSocketAddress address = startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -588,7 +591,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
                 baseRequest.setHandled(true);
             }
         });
-        Session session1 = startClient(version(), address, null);
+        Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
@@ -625,7 +628,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushLatch = new CountDownLatch(1);
-        Session session2 = startClient(version(), address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -659,7 +662,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     @Test
     public void testRequestWithIfModifiedSinceHeaderPreventsPush() throws Exception
     {
-        InetSocketAddress address = startHTTPServer(version(), new AbstractHandler()
+        InetSocketAddress address = startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -673,7 +676,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
                 baseRequest.setHandled(true);
             }
         });
-        Session session1 = startClient(version(), address, null);
+        Session session1 = startClient(version, address, null);
 
         final CountDownLatch mainResourceLatch = new CountDownLatch(1);
         Headers mainRequestHeaders = createHeaders(mainResource);
@@ -709,7 +712,7 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
         final CountDownLatch mainStreamLatch = new CountDownLatch(2);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
-        Session session2 = startClient(version(), address, new SessionFrameListener.Adapter()
+        Session session2 = startClient(version, address, new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -751,8 +754,8 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
     private void validateHeaders(Headers headers, CountDownLatch pushSynHeadersValid)
     {
-        if (validateHeader(headers, HTTPSPDYHeader.STATUS.name(version()), "200")
-                && validateHeader(headers, HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1")
+        if (validateHeader(headers, HTTPSPDYHeader.STATUS.name(version), "200")
+                && validateHeader(headers, HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1")
                 && validateUriHeader(headers))
             pushSynHeadersValid.countDown();
     }
@@ -768,14 +771,14 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
 
     private boolean validateUriHeader(Headers headers)
     {
-        Headers.Header uriHeader = headers.get(HTTPSPDYHeader.URI.name(version()));
+        Headers.Header uriHeader = headers.get(HTTPSPDYHeader.URI.name(version));
         if (uriHeader != null)
-            if (version() == SPDY.V2 && uriHeader.value().startsWith("http://"))
+            if (version == SPDY.V2 && uriHeader.value().startsWith("http://"))
                 return true;
-            else if (version() == SPDY.V3 && uriHeader.value().startsWith("/")
-                    && headers.get(HTTPSPDYHeader.HOST.name(version())) != null && headers.get(HTTPSPDYHeader.SCHEME.name(version())) != null)
+            else if (version == SPDY.V3 && uriHeader.value().startsWith("/")
+                    && headers.get(HTTPSPDYHeader.HOST.name(version)) != null && headers.get(HTTPSPDYHeader.SCHEME.name(version)) != null)
                 return true;
-        System.out.println(HTTPSPDYHeader.URI.name(version()) + " not valid!");
+        System.out.println(HTTPSPDYHeader.URI.name(version) + " not valid!");
         return false;
     }
 
@@ -794,11 +797,11 @@ public class ReferrerPushStrategyV2Test extends AbstractHTTPSPDYTest
     private Headers createHeadersWithoutReferrer(String resource)
     {
         Headers associatedRequestHeaders = new Headers();
-        associatedRequestHeaders.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        associatedRequestHeaders.put(HTTPSPDYHeader.URI.name(version()), resource);
-        associatedRequestHeaders.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        associatedRequestHeaders.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        associatedRequestHeaders.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        associatedRequestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        associatedRequestHeaders.put(HTTPSPDYHeader.URI.name(version), resource);
+        associatedRequestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        associatedRequestHeaders.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        associatedRequestHeaders.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         return associatedRequestHeaders;
     }
 }

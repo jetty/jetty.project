@@ -16,10 +16,11 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.spdy.http;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -35,10 +36,19 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatchman;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.model.FrameworkMethod;
 
+@RunWith(Parameterized.class)
 public abstract class AbstractHTTPSPDYTest
 {
+    @Parameterized.Parameters
+    public static Collection<Short[]> parameters()
+    {
+        return Arrays.asList(new Short[]{SPDY.V2}, new Short[]{SPDY.V3});
+    }
+
     @Rule
     public final TestWatchman testName = new TestWatchman()
     {
@@ -52,9 +62,15 @@ public abstract class AbstractHTTPSPDYTest
         }
     };
 
+    protected final short version;
     protected Server server;
     protected SPDYClient.Factory clientFactory;
     protected SPDYServerConnector connector;
+
+    protected AbstractHTTPSPDYTest(short version)
+    {
+        this.version = version;
+    }
 
     protected InetSocketAddress startHTTPServer(Handler handler) throws Exception
     {
@@ -116,10 +132,5 @@ public abstract class AbstractHTTPSPDYTest
             server.stop();
             server.join();
         }
-    }
-
-    protected short version()
-    {
-        return SPDY.V2;
     }
 }

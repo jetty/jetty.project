@@ -43,7 +43,9 @@ import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.junit.Ignore;
 
+@Ignore // TODO: update when jetty client is available
 public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
 {
     // Sample resources size from webtide.com home page
@@ -60,12 +62,17 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
     private final long roundtrip = 100;
     private final int runs = 10;
 
+    public PushStrategyBenchmarkTest(short version)
+    {
+        super(version);
+    }
+
     //TODO:
 
 //    @Test
 //    public void benchmarkPushStrategy() throws Exception
 //    {
-//        InetSocketAddress address = startHTTPServer(version(), new PushStrategyBenchmarkHandler());
+//        InetSocketAddress address = startHTTPServer(version, new PushStrategyBenchmarkHandler());
 //
 //        // Plain HTTP
 //        ConnectionFactory dacf = new ServerHTTPAsyncConnectionFactory(connector);
@@ -79,17 +86,17 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
 //
 //        // First push strategy
 //        PushStrategy pushStrategy = new PushStrategy.None();
-//        dacf = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+//        dacf = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
 //        connector.setDefaultAsyncConnectionFactory(dacf);
-//        Session session = startClient(version(), address, new ClientSessionFrameListener());
+//        Session session = startClient(version, address, new ClientSessionFrameListener());
 //        benchmarkSPDY(pushStrategy, session);
 //        session.goAway().get(5, TimeUnit.SECONDS);
 //
 //        // Second push strategy
 //        pushStrategy = new ReferrerPushStrategy();
-//        dacf = new ServerHTTPSPDYAsyncConnectionFactory(version(), connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+//        dacf = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
 //        connector.setDefaultAsyncConnectionFactory(dacf);
-//        session = startClient(version(), address, new ClientSessionFrameListener());
+//        session = startClient(version, address, new ClientSessionFrameListener());
 //        benchmarkSPDY(pushStrategy, session);
 //        session.goAway().get(5, TimeUnit.SECONDS);
 //    }
@@ -209,11 +216,11 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
             String primaryPath = "/" + j + ".html";
             String referrer = new StringBuilder("http://localhost:").append(connector.getLocalPort()).append(primaryPath).toString();
             Headers headers = new Headers();
-            headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-            headers.put(HTTPSPDYHeader.URI.name(version()), primaryPath);
-            headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-            headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-            headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+            headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+            headers.put(HTTPSPDYHeader.URI.name(version), primaryPath);
+            headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+            headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+            headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
             // Wait for the HTML to simulate browser's behavior
             ++result;
             final CountDownLatch htmlLatch = new CountDownLatch(1);
@@ -267,11 +274,11 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
     {
         Headers headers;
         headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         headers.put("referer", referrer);
         return headers;
     }
@@ -336,7 +343,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
 
     private void addPushedResource(String pushedURI)
     {
-        switch (version())
+        switch (version)
         {
             case SPDY.V2:
             {
@@ -362,7 +369,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         @Override
         public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
         {
-            String path = synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version())).value();
+            String path = synInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version)).value();
             addPushedResource(path);
             return new DataListener();
         }

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.spdy.http;
 
 import java.io.ByteArrayInputStream;
@@ -52,14 +51,19 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
+public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
+    public ServerHTTPSPDYTest(short version)
+    {
+        super(version);
+    }
+
     @Test
     public void testSimpleGET() throws Exception
     {
         final String path = "/foo";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -75,11 +79,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -88,7 +92,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -103,7 +107,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final String query = "p=1";
         final String uri = path + "?" + query;
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -119,11 +123,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), uri);
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), uri);
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -132,7 +136,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -145,7 +149,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     {
         final String path = "/foo";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -160,11 +164,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "HEAD");
-        headers.put(HTTPSPDYHeader.URI.name(version()), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "HEAD");
+        headers.put(HTTPSPDYHeader.URI.name(version), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -173,7 +177,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         });
@@ -187,7 +191,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final String path = "/foo";
         final String data = "a=1&b=2";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -210,11 +214,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version()), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
+        headers.put(HTTPSPDYHeader.URI.name(version), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
@@ -224,7 +228,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
@@ -241,7 +245,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final String data1 = "a=1&";
         final String data2 = "b=2";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -256,11 +260,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version()), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
+        headers.put(HTTPSPDYHeader.URI.name(version), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
@@ -270,7 +274,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
@@ -290,7 +294,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final String data1 = "a=1&";
         final String data2 = "b=2";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -305,11 +309,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version()), path);
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
+        headers.put(HTTPSPDYHeader.URI.name(version), path);
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
@@ -319,7 +323,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.toString(), replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.toString(), replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
@@ -336,7 +340,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     {
         final String data = "0123456789ABCDEF";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -351,11 +355,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -365,7 +369,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -387,7 +391,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     {
         final char data = 'x';
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -402,11 +406,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -416,7 +420,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -441,7 +445,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final String data1 = "0123456789ABCDEF";
         final String data2 = "FEDCBA9876543210";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -458,11 +462,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -476,7 +480,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
                 Assert.assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -503,7 +507,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final byte[] data = new byte[128 * 1024];
         Arrays.fill(data, (byte)'x');
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -518,11 +522,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -534,7 +538,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -560,7 +564,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final byte[] data = new byte[128 * 1024];
         Arrays.fill(data, (byte)'y');
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -576,11 +580,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -592,7 +596,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -617,7 +621,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     {
         final String data = "0123456789ABCDEF";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -634,11 +638,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -650,7 +654,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -678,7 +682,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final String data1 = "0123456789ABCDEF";
         final String data2 = "FEDCBA9876543210";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -697,11 +701,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -713,7 +717,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -740,7 +744,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     {
         final String suffix = "/redirect";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -755,11 +759,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
@@ -771,7 +775,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
                 Assert.assertEquals(1, replies.incrementAndGet());
                 Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("302"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("302"));
                 Assert.assertTrue(replyHeaders.get("location").value().endsWith(suffix));
                 replyLatch.countDown();
             }
@@ -784,7 +788,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     public void testGETWithSendError() throws Exception
     {
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -797,11 +801,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -814,7 +818,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
                 Assert.assertEquals(1, replies.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("404"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("404"));
                 replyLatch.countDown();
             }
 
@@ -833,7 +837,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     @Test
     public void testGETWithException() throws Exception
     {
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -844,11 +848,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch latch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -860,7 +864,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertEquals(1, replies.incrementAndGet());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("500"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("500"));
                 replyLatch.countDown();
                 if (replyInfo.isClose())
                     latch.countDown();
@@ -883,7 +887,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         final String pangram1 = "the quick brown fox jumps over the lazy dog";
         final String pangram2 = "qualche vago ione tipo zolfo, bromo, sodio";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -901,11 +905,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -919,7 +923,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
                 Assert.assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 Assert.assertTrue(replyHeaders.get("extra").value().contains("X"));
                 replyLatch.countDown();
             }
@@ -972,7 +976,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     private void testGETWithContentByPassed(final Object content, final int length) throws Exception
     {
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -988,11 +992,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -1006,7 +1010,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
                 Assert.assertEquals(1, replyFrames.incrementAndGet());
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -1030,7 +1034,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     public void testGETWithMultipleMediumContentByPassed() throws Exception
     {
         final byte[] data = new byte[2048];
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -1049,11 +1053,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "GET");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         final AtomicInteger contentLength = new AtomicInteger();
@@ -1064,7 +1068,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             {
                 Assert.assertFalse(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
 
@@ -1086,7 +1090,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     {
         final byte[] data = new byte[2000];
         final CountDownLatch latch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -1122,11 +1126,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1134,7 +1138,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
@@ -1149,7 +1153,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     {
         final byte[] data = new byte[2000];
         final CountDownLatch latch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -1185,11 +1189,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1197,7 +1201,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 replyLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
@@ -1213,7 +1217,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
     {
         final byte[] data = new byte[1000];
         final CountDownLatch latch = new CountDownLatch(1);
-        Session session = startClient(version(), startHTTPServer(version(), new AbstractHandler()
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
         {
             @Override
             public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -1258,11 +1262,11 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
         }), null);
 
         Headers headers = new Headers();
-        headers.put(HTTPSPDYHeader.METHOD.name(version()), "POST");
-        headers.put(HTTPSPDYHeader.URI.name(version()), "/foo");
-        headers.put(HTTPSPDYHeader.VERSION.name(version()), "HTTP/1.1");
-        headers.put(HTTPSPDYHeader.SCHEME.name(version()), "http");
-        headers.put(HTTPSPDYHeader.HOST.name(version()), "localhost:" + connector.getLocalPort());
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
         final CountDownLatch responseLatch = new CountDownLatch(2);
         Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
         {
@@ -1270,7 +1274,7 @@ public class ServerHTTPSPDYv2Test extends AbstractHTTPSPDYTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version())).value().contains("200"));
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
                 responseLatch.countDown();
             }
 
