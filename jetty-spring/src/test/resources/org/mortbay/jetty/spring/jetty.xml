@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>
+  <bean id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+  <bean id="Server" name="Main" class="org.mortbay.jetty.spring.Server">
+ 
+    <property name="threadPool">  
+      <bean id="ThreadPool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+        <property name="minThreads" value="10"/>
+        <property name="maxThreads" value="200"/>
+      </bean>
+    </property>
+ 
+    <property name="connectors">
+      <list>
+        <bean id="Connector" class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+          <property name="port" value="0"/>
+        </bean>
+      </list>
+    </property>
+ 
+    <property name="handler">
+      <bean id="handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+        <property name="handlers">
+          <list>
+             <ref bean="Contexts"/>
+             <bean id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+          </list>
+        </property>
+      </bean>
+    </property>
+    
+    <property name="stopAtShutdown" value="true"/>
+    <property name="sendServerVersion" value="true"/>
+    <property name="sendDateHeader" value="true"/>
+    <property name="gracefulShutdown" value="1000"/>
+    <property name="dumpAfterStart" value="true"/>
+    <property name="dumpBeforeStop" value="false"/>
+   
+  </bean>
+</beans>
+
+

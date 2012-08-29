@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>
+  <!-- define the singleton properties Map, filled in with XmlConfiguration.getProperties() -->
+  <bean id="properties" class="java.util.Map"/>
+  
+  <!-- extract a value from the property map -->
+  <bean id="testProperty" singleton="false" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject"><ref local="properties" /></property>
+    <property name="targetMethod"><value>get</value></property>
+    <property name="arguments"><list><value>test</value></list></property>
+  </bean>
+  
+  <bean id="root" name="Some,Names,Main" class="org.mortbay.jetty.spring.TestConfiguration">
+    <property name="testString1"><value>SetValue</value></property>
+    <property name="testInt1"><value>1</value></property>
+    <property name="nested" ref="nested"/>
+    <property name="testString2" ref="testProperty"/>
+  </bean>
+  
+  <bean id="nested" class="org.mortbay.jetty.spring.TestConfiguration">
+    <property name="testInt2"><value>2</value></property>
+    <property name="testString1"><value>nested</value></property>
+    <property name="nested" ref="nestedDeep"/>
+  </bean>
+  
+  <bean id="nestedDeep" class="org.mortbay.jetty.spring.TestConfiguration">
+    <property name="testString1"><value>deep</value></property>
+    <property name="testInt2"><value>2</value></property>
+  </bean>
+
+</beans>
