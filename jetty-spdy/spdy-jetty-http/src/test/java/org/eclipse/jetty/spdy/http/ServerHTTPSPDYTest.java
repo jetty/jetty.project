@@ -882,7 +882,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
     }
 
     @Test
-    public void testGETWithSmallResponseChunked() throws Exception
+    public void testGETWithSmallResponseContentChunked() throws Exception
     {
         final String pangram1 = "the quick brown fox jumps over the lazy dog";
         final String pangram2 = "qualche vago ione tipo zolfo, bromo, sodio";
@@ -1286,6 +1286,46 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             }
         }).get(5, TimeUnit.SECONDS);
         stream.data(new BytesDataInfo(data, true));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPOSTThenResponseWithoutReadingContent() throws Exception
+    {
+        final byte[] data = new byte[1000];
+        final CountDownLatch latch = new CountDownLatch(1);
+        Session session = startClient(version, startHTTPServer(version, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                latch.countDown();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put(HTTPSPDYHeader.METHOD.name(version), "POST");
+        headers.put(HTTPSPDYHeader.URI.name(version), "/foo");
+        headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
+        headers.put(HTTPSPDYHeader.SCHEME.name(version), "http");
+        headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + connector.getLocalPort());
+        final CountDownLatch responseLatch = new CountDownLatch(1);
+        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().contains("200"));
+                responseLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+        stream.data(new BytesDataInfo(data, false));
+        stream.data(new BytesDataInfo(data, true)).get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
