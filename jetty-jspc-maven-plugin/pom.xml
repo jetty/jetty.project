@@ -1,27 +1,17 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
     <version>9.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <artifactId>jetty-jspc-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <name>Jetty :: Jetty Maven Plugin</name>
+  <name>Jetty :: Jetty JSPC Maven Plugin</name>
   <properties>
-    <mavenVersion>3.0.3</mavenVersion>
-    <pluginToolsVersion>2.9</pluginToolsVersion>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-          <verbose>false</verbose>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
@@ -30,11 +20,10 @@
       </plugin>
       <plugin>
         <artifactId>maven-plugin-plugin</artifactId>
-        <version>${pluginToolsVersion}</version>
         <executions>
           <execution>
             <id>exec-plugin-doc</id>
-            <phase>generate-sources</phase>
+            <phase>generate-sources</phase>            
             <goals>
               <goal>xdoc</goal>
               <goal>helpmojo</goal>
@@ -51,67 +40,31 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-project</artifactId>
+      <version>2.0.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
-      <version>${mavenVersion}</version>
+      <version>2.0.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
-      <version>${mavenVersion}</version>
+      <version>2.0.3</version>
     </dependency>
-     <dependency>
+    <dependency>
       <groupId>org.apache.maven</groupId>
-      <artifactId>maven-core</artifactId>
-      <version>${mavenVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-tools-api</artifactId>
-      <version>${pluginToolsVersion}</version>
+      <version>2.0.3</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
-      <version>${project.version}</version>
-     </dependency>
-     <!--dependency>
-       <groupId>org.eclipse.jetty</groupId>
-       <artifactId>jetty-websocket</artifactId>
-       <version>${project.version}</version>
-     </dependency-->
-      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jsp</artifactId>
         <version>${project.version}</version>
       </dependency>
-  </dependencies>
+    </dependencies>
   <reporting>
   <plugins>
     <plugin>

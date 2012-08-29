@@ -376,14 +376,16 @@
 
     <!--<module>jetty-client</module>-->
     <!--<module>jetty-proxy</module>-->
-    <!-- Not ready to bring in yet module>jetty-maven-plugin</module>
-    <module>jetty-jspc-maven-plugin</module-->
+    <module>jetty-maven-plugin</module>
+    <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
     <module>jetty-start</module>
     <module>jetty-plugins</module>
     <module>jetty-plus</module>
     <module>jetty-annotations</module>
     <module>jetty-jndi</module>
+    <module>jetty-jsp</module>
+   
     <!--
     <module>jetty-jaspi</module>
     
@@ -396,7 +398,6 @@
     <module>jetty-overlay-deployer</module>
     <module>jetty-nosql</module>
     <module>jetty-http-spi</module>
-    <module>jetty-jsp</module>
     <module>test-jetty-nested</module>
     <module>test-jetty-servlet</module>
     <module>example-async-rest</module>
