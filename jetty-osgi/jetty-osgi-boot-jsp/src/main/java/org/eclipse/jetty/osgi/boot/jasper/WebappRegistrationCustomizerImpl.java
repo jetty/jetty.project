@@ -139,17 +139,23 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     public URL[] getJarsWithTlds(DeploymentManager deployer, BundleFileLocatorHelper locatorHelper) throws Exception
     {
 
-    	HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
+        ArrayList<URL> urls = new ArrayList<URL>();
+        HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
 
         // Look for the jstl bundle
         // We assume the jstl's tlds are defined there.
         // We assume that the jstl bundle is imported by this bundle
         // So we can look for this class using this bundle's classloader:
-        Class<?> jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
+        try
+        {
+            Class<?> jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
 
-        classesToAddToTheTldBundles.add(jstlClass);
-
-        ArrayList<URL> urls = new ArrayList<URL>();
+            classesToAddToTheTldBundles.add(jstlClass);
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOG.info("jstl not on classpath", e);
+        }
         for (Class<?> cl : classesToAddToTheTldBundles)
         {
             Bundle tldBundle = FrameworkUtil.getBundle(cl);
