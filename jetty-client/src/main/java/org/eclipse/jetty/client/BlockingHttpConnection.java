@@ -122,6 +122,8 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                                 Buffer chunk=_requestContentChunk;
                                 _requestContentChunk=exchange.getRequestContentChunk(null);
                                 _generator.addContent(chunk,_requestContentChunk==null);
+                                if (_requestContentChunk==null)
+                                    exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
                             }
                         }
                     }

@@ -18,16 +18,10 @@
 
 package org.eclipse.jetty.osgi.boot;
 
-import java.util.Dictionary;
-import java.util.Hashtable;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.osgi.boot.utils.EventSender;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceRegistration;
 
 
 /**
@@ -41,18 +35,27 @@ public class OSGiDeployer extends StandardDeployer
     /* ------------------------------------------------------------ */
     public void processBinding(Node node, App app) throws Exception
     {
-        //TODO  how to NOT send this event if its not a webapp!
-        EventSender.getInstance().send(EventSender.DEPLOYING_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());
-        try
+        //TODO  how to NOT send this event if its not a webapp: 
+        //OSGi Enterprise Spec only wants an event sent if its a webapp bundle (ie not a ContextHandler)
+        if (!(app instanceof AbstractOSGiApp))
         {
             super.processBinding(node,app);
-            ((AbstractOSGiApp)app).registerAsOSGiService();
-            EventSender.getInstance().send(EventSender.DEPLOYED_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());
         }
-        catch (Exception e)
+        else
         {
-            EventSender.getInstance().send(EventSender.FAILED_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath()); 
-            throw e;
+            EventSender.getInstance().send(EventSender.DEPLOYING_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());
+            try
+            {
+                super.processBinding(node,app);
+                ((AbstractOSGiApp)app).registerAsOSGiService();
+                EventSender.getInstance().send(EventSender.DEPLOYED_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());
+            }
+            catch (Exception e)
+            {
+                EventSender.getInstance().send(EventSender.FAILED_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath()); 
+                throw e;
+            }
         }
+        
     }
 }
