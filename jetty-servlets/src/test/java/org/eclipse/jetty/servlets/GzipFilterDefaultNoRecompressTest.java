@@ -65,6 +65,10 @@ public class GzipFilterDefaultNoRecompressTest
                 { "jetty_logo.tiff", "image/tiff", GzipFilter.GZIP },
                 { "jetty_logo.xcf", "image/xcf", GzipFilter.GZIP },
                 { "jetty_logo.jp2", "image/jpeg2000", GzipFilter.GZIP },
+                //qvalue disables compression
+                { "test_quotes.txt", "text/plain", GzipFilter.GZIP+";q=0"},
+                { "test_quotes.txt", "text/plain", GzipFilter.GZIP+"; q =    0 "},
+               
 
                 // Same tests again for deflate
                 // Some already compressed files
