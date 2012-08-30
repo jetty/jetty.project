@@ -172,6 +172,9 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
     {
     }
 
+    /**
+     * @throws IOException
+     */
     protected void commitRequest() throws IOException
     {
         synchronized (this)
@@ -223,6 +226,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 requestHeaders.putLongField(HttpHeaders.CONTENT_LENGTH, requestContent.length());
                 _generator.completeHeader(requestHeaders,false);
                 _generator.addContent(new View(requestContent),true);
+                _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
             }
             else
             {
@@ -230,24 +234,14 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 if (requestContentStream != null)
                 {
                     _generator.completeHeader(requestHeaders, false);
-                    int available = requestContentStream.available();
-                    if (available > 0)
-                    {
-                        // TODO deal with any known content length
-                        // TODO reuse this buffer!
-                        byte[] buf = new byte[available];
-                        int length = requestContentStream.read(buf);
-                        _generator.addContent(new ByteArrayBuffer(buf, 0, length), false);
-                    }
                 }
                 else
                 {
                     requestHeaders.remove(HttpHeaders.CONTENT_LENGTH);
                     _generator.completeHeader(requestHeaders, true);
+                    _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
                 }
             }
-
-            _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
         }
     }
 
