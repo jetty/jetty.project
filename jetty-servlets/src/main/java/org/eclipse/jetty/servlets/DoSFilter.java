@@ -1,29 +1,31 @@
-// ========================================================================
-// Copyright (c) 2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Queue;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -43,6 +45,8 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -107,15 +111,15 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * <dt>ipWhitelist</dt>
  *                      <dd>a comma-separated list of IP addresses that will not be rate limited</dd>
- * 
+ *
  * <dt>managedAttr</dt>
- *                      <dd>if set to true, then this servlet is set as a {@link ServletContext} attribute with the 
+ *                      <dd>if set to true, then this servlet is set as a {@link ServletContext} attribute with the
  * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
  * manage the configuration of the filter.</dd>
  * </dl>
  * </p>
  */
-
+@ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
 public class DoSFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(DoSFilter.class);
@@ -339,18 +343,18 @@ public class DoSFilter implements Filter
                     // Reject this request
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","unavailable");
-                    
+
                     ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                     return;
                 }
                 case 0:
                 {
-                    // fall through to throttle code 
+                    // fall through to throttle code
                     request.setAttribute(__TRACKER,tracker);
                     break;
                 }
                 default:
-                { 
+                {
                     // insert a delay before throttling the request
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","delayed");
@@ -358,7 +362,7 @@ public class DoSFilter implements Filter
                     request.setAttribute(__TRACKER,tracker);
                     if (_delayMs > 0)
                         continuation.setTimeout(_delayMs);
-                    continuation.addContinuationListener(new ContinuationListener() 
+                    continuation.addContinuationListener(new ContinuationListener()
                     {
 
                         public void onComplete(Continuation continuation)
@@ -661,38 +665,40 @@ public class DoSFilter implements Filter
 
         LOG.info("Whitelisted IP addresses: {}", _whitelist.toString());
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Get maximum number of requests from a connection per
      * second. Requests in excess of this are first delayed,
      * then throttled.
-     * 
+     *
      * @return maximum number of requests
      */
+    @ManagedAttribute("maximum number of requests allowed from a connection per second")
     public int getMaxRequestsPerSec()
     {
         return _maxRequestsPerSec;
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Get maximum number of requests from a connection per
      * second. Requests in excess of this are first delayed,
      * then throttled.
-     * 
+     *
      * @param value maximum number of requests
      */
     public void setMaxRequestsPerSec(int value)
     {
         _maxRequestsPerSec = value;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * Get delay (in milliseconds) that is applied to all requests 
-     * over the rate limit, before they are considered at all. 
+     * Get delay (in milliseconds) that is applied to all requests
+     * over the rate limit, before they are considered at all.
      */
+    @ManagedAttribute("delay applied to all requests over the rate limit (in ms)")
     public long getDelayMs()
     {
         return _delayMs;
@@ -700,33 +706,34 @@ public class DoSFilter implements Filter
 
     /* ------------------------------------------------------------ */
     /**
-     * Set delay (in milliseconds) that is applied to all requests 
-     * over the rate limit, before they are considered at all. 
-     * 
+     * Set delay (in milliseconds) that is applied to all requests
+     * over the rate limit, before they are considered at all.
+     *
      * @param value delay (in milliseconds), 0 - no delay, -1 - reject request
      */
     public void setDelayMs(long value)
     {
         _delayMs = value;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Get maximum amount of time (in milliseconds) the filter will
      * blocking wait for the throttle semaphore.
-     * 
+     *
      * @return maximum wait time
      */
+    @ManagedAttribute("maximum time the filter will block waiting throttled connections, (0 for no delay, -1 to reject requests)")
     public long getMaxWaitMs()
     {
         return _maxWaitMs;
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Set maximum amount of time (in milliseconds) the filter will
      * blocking wait for the throttle semaphore.
-     * 
+     *
      * @param value maximum wait time
      */
     public void setMaxWaitMs(long value)
@@ -738,9 +745,10 @@ public class DoSFilter implements Filter
     /**
      * Get number of requests over the rate limit able to be
      * considered at once.
-     * 
+     *
      * @return number of requests
      */
+    @ManagedAttribute("number of requests over rate limit")
     public int getThrottledRequests()
     {
         return _throttledRequests;
@@ -750,7 +758,7 @@ public class DoSFilter implements Filter
     /**
      * Set number of requests over the rate limit able to be
      * considered at once.
-     * 
+     *
      * @param value number of requests
      */
     public void setThrottledRequests(int value)
@@ -762,9 +770,10 @@ public class DoSFilter implements Filter
     /* ------------------------------------------------------------ */
     /**
      * Get amount of time (in milliseconds) to async wait for semaphore.
-     * 
+     *
      * @return wait time
      */
+    @ManagedAttribute("amount of time to async wait for semaphore")
     public long getThrottleMs()
     {
         return _throttleMs;
@@ -773,7 +782,7 @@ public class DoSFilter implements Filter
     /* ------------------------------------------------------------ */
     /**
      * Set amount of time (in milliseconds) to async wait for semaphore.
-     * 
+     *
      * @param value wait time
      */
     public void setThrottleMs(long value)
@@ -782,22 +791,23 @@ public class DoSFilter implements Filter
     }
 
     /* ------------------------------------------------------------ */
-    /** 
-     * Get maximum amount of time (in milliseconds) to allow 
+    /**
+     * Get maximum amount of time (in milliseconds) to allow
      * the request to process.
-     * 
+     *
      * @return maximum processing time
      */
+    @ManagedAttribute("maximum time to allow requests to process (in ms)")
     public long getMaxRequestMs()
     {
         return _maxRequestMs;
     }
 
     /* ------------------------------------------------------------ */
-    /** 
-     * Set maximum amount of time (in milliseconds) to allow 
+    /**
+     * Set maximum amount of time (in milliseconds) to allow
      * the request to process.
-     * 
+     *
      * @param value maximum processing time
      */
     public void setMaxRequestMs(long value)
@@ -808,22 +818,23 @@ public class DoSFilter implements Filter
     /* ------------------------------------------------------------ */
     /**
      * Get maximum amount of time (in milliseconds) to keep track
-     * of request rates for a connection, before deciding that 
+     * of request rates for a connection, before deciding that
      * the user has gone away, and discarding it.
-     * 
+     *
      * @return maximum tracking time
      */
+    @ManagedAttribute("maximum time to track of request rates for connection before discarding")
     public long getMaxIdleTrackerMs()
     {
         return _maxIdleTrackerMs;
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Set maximum amount of time (in milliseconds) to keep track
-     * of request rates for a connection, before deciding that 
+     * of request rates for a connection, before deciding that
      * the user has gone away, and discarding it.
-     * 
+     *
      * @param value maximum tracking time
      */
     public void setMaxIdleTrackerMs(long value)
@@ -832,20 +843,21 @@ public class DoSFilter implements Filter
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Check flag to insert the DoSFilter headers into the response.
-     * 
+     *
      * @return value of the flag
      */
+    @ManagedAttribute("inser DoSFilter headers in response")
     public boolean isInsertHeaders()
     {
         return _insertHeaders;
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Set flag to insert the DoSFilter headers into the response.
-     * 
+     *
      * @param value value of the flag
      */
     public void setInsertHeaders(boolean value)
@@ -854,18 +866,19 @@ public class DoSFilter implements Filter
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Get flag to have usage rate tracked by session if a session exists.
-     * 
+     *
      * @return value of the flag
      */
+    @ManagedAttribute("usage rate is tracked by session if one exists")
     public boolean isTrackSessions()
     {
         return _trackSessions;
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Set flag to have usage rate tracked by session if a session exists.
      * @param value value of the flag
      */
@@ -875,12 +888,13 @@ public class DoSFilter implements Filter
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Get flag to have usage rate tracked by IP+port (effectively connection)
      * if session tracking is not used.
-     * 
+     *
      * @return value of the flag
      */
+    @ManagedAttribute("usage rate is tracked by IP+port is session tracking not used")
     public boolean isRemotePort()
     {
         return _remotePort;
@@ -888,10 +902,10 @@ public class DoSFilter implements Filter
 
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Set flag to have usage rate tracked by IP+port (effectively connection)
      * if session tracking is not used.
-     * 
+     *
      * @param value value of the flag
      */
     public void setRemotePort(boolean value)
@@ -902,9 +916,10 @@ public class DoSFilter implements Filter
     /* ------------------------------------------------------------ */
     /**
      * Get a list of IP addresses that will not be rate limited.
-     * 
+     *
      * @return comma-separated whitelist
      */
+    @ManagedAttribute("list of IPs that will not be rate limited")
     public String getWhitelist()
     {
         return _whitelistStr;
@@ -914,7 +929,7 @@ public class DoSFilter implements Filter
     /* ------------------------------------------------------------ */
     /**
      * Set a list of IP addresses that will not be rate limited.
-     * 
+     *
      * @param value comma-separated whitelist
      */
     public void setWhitelist(String value)
@@ -933,8 +948,8 @@ public class DoSFilter implements Filter
         transient protected final int _type;
         transient protected final long[] _timestamps;
         transient protected int _next;
-       
-        
+
+
         public RateTracker(String id, int type,int maxRequestsPerSecond)
         {
             _id = id;
@@ -973,7 +988,7 @@ public class DoSFilter implements Filter
 
 
         public void valueBound(HttpSessionBindingEvent event)
-        { 
+        {
             if (LOG.isDebugEnabled())
                 LOG.debug("Value bound:"+_id);
         }
@@ -982,7 +997,7 @@ public class DoSFilter implements Filter
         {
             //take the tracker out of the list of trackers
             if (_rateTrackers != null)
-                _rateTrackers.remove(_id); 
+                _rateTrackers.remove(_id);
            if (LOG.isDebugEnabled()) LOG.debug("Tracker removed: "+_id);
         }
 
@@ -1000,14 +1015,14 @@ public class DoSFilter implements Filter
         {
             LOG.warn("Unexpected session activation");
         }
-        
-        
+
+
         public void expired()
         {
             if (_rateTrackers != null && _trackerTimeoutQ != null)
             {
                 long now = _trackerTimeoutQ.getNow();
-                int latestIndex = _next == 0 ? 3 : (_next - 1 ) % _timestamps.length;
+                int latestIndex = _next == 0 ? (_timestamps.length-1) : (_next - 1 );
                 long last=_timestamps[latestIndex];
                 boolean hasRecentRequest = last != 0 && (now-last)<1000L;
 
@@ -1024,7 +1039,7 @@ public class DoSFilter implements Filter
             return "RateTracker/"+_id+"/"+_type;
         }
 
-    
+
     }
 
     class FixedRateTracker extends RateTracker

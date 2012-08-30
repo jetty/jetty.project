@@ -1,19 +1,22 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
-package org.eclipse.jetty.servlets;
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.net.URL;
@@ -28,10 +31,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.LocalHttpConnector;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -40,12 +42,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class QoSFilterTest
 {
     private static final Logger LOG = Log.getLogger(QoSFilterTest.class);
 
     private ServletTester _tester;
-    private LocalHttpConnector[] _connectors;
+    private LocalConnector[] _connectors;
     private CountDownLatch _doneRequests;
     private final int NUM_CONNECTIONS = 8;
     private final int NUM_LOOPS = 6;
@@ -60,7 +65,7 @@ public class QoSFilterTest
         TestServlet.__maxSleepers=0;
         TestServlet.__sleepers=0;
 
-        _connectors = new LocalHttpConnector[NUM_CONNECTIONS];
+        _connectors = new LocalConnector[NUM_CONNECTIONS];
         for(int i = 0; i < _connectors.length; ++i)
             _connectors[i] = _tester.createLocalConnector();
 

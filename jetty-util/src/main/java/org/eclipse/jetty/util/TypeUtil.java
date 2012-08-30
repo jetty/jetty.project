@@ -1,30 +1,37 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -44,7 +51,7 @@ public class TypeUtil
     public static int LF = '\012';
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<String, Class> name2Class=new HashMap<String, Class>();
+    private static final HashMap<String, Class<?>> name2Class=new HashMap<>();
     static
     {
         name2Class.put("boolean",java.lang.Boolean.TYPE);
@@ -92,7 +99,7 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<Class, String> class2Name=new HashMap<Class, String>();
+    private static final HashMap<Class<?>, String> class2Name=new HashMap<>();
     static
     {
         class2Name.put(java.lang.Boolean.TYPE,"boolean");
@@ -119,12 +126,12 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<Class, Method> class2Value=new HashMap<Class, Method>();
+    private static final HashMap<Class<?>, Method> class2Value=new HashMap<>();
     static
     {
         try
         {
-            Class[] s ={java.lang.String.class};
+            Class<?>[] s ={java.lang.String.class};
 
             class2Value.put(java.lang.Boolean.TYPE,
                            java.lang.Boolean.class.getMethod("valueOf",s));
@@ -158,7 +165,7 @@ public class TypeUtil
         }
         catch(Exception e)
         {
-            e.printStackTrace();
+            throw new Error(e);
         }
     }
 
@@ -168,19 +175,19 @@ public class TypeUtil
      * Works like {@link Arrays#asList(Object...)}, but handles null arrays.
      * @return a list backed by the array.
      */
-    public static <T> List<T> asList(T[] a) 
+    public static <T> List<T> asList(T[] a)
     {
         if (a==null)
             return Collections.emptyList();
         return Arrays.asList(a);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Class from a canonical name for a type.
      * @param name A class or type name.
      * @return A class , which may be a primitive TYPE field..
      */
-    public static Class fromName(String name)
+    public static Class<?> fromName(String name)
     {
         return name2Class.get(name);
     }
@@ -190,7 +197,7 @@ public class TypeUtil
      * @param type A class , which may be a primitive TYPE field.
      * @return Canonical name.
      */
-    public static String toName(Class type)
+    public static String toName(Class<?> type)
     {
         return class2Name.get(type);
     }
@@ -201,7 +208,7 @@ public class TypeUtil
      * @param value The value as a string.
      * @return The value as an Object.
      */
-    public static Object valueOf(Class type, String value)
+    public static Object valueOf(Class<?> type, String value)
     {
         try
         {
@@ -214,28 +221,20 @@ public class TypeUtil
 
             if (type.equals(java.lang.Character.TYPE) ||
                 type.equals(java.lang.Character.class))
-                return new Character(value.charAt(0));
+                return value.charAt(0);
 
-            Constructor c = type.getConstructor(java.lang.String.class);
+            Constructor<?> c = type.getConstructor(java.lang.String.class);
             return c.newInstance(value);
         }
-        catch(NoSuchMethodException e)
+        catch (NoSuchMethodException | IllegalAccessException | InstantiationException x)
         {
-            // LogSupport.ignore(log,e);
+            LOG.ignore(x);
         }
-        catch(IllegalAccessException e)
+        catch (InvocationTargetException x)
         {
-            // LogSupport.ignore(log,e);
-        }
-        catch(InstantiationException e)
-        {
-            // LogSupport.ignore(log,e);
-        }
-        catch(InvocationTargetException e)
-        {
-            if (e.getTargetException() instanceof Error)
-                throw (Error)(e.getTargetException());
-            // LogSupport.ignore(log,e);
+            if (x.getTargetException() instanceof Error)
+                throw (Error)x.getTargetException();
+            LOG.ignore(x);
         }
         return null;
     }
@@ -390,7 +389,7 @@ public class TypeUtil
     {
         return toHexString(new byte[]{b}, 0, 1);
     }
-    
+
     /* ------------------------------------------------------------ */
     public static String toHexString(byte[] b)
     {
@@ -431,7 +430,7 @@ public class TypeUtil
     }
 
 
-    public static void dump(Class c)
+    public static void dump(Class<?> c)
     {
         System.err.println("Dump: "+c);
         dump(c.getClassLoader());
@@ -499,54 +498,140 @@ public class TypeUtil
         return buf;
     }
 
-    public static URL jarFor(String className)
-    {
-        try
-        {
-            className=className.replace('.','/')+".class";
-            // hack to discover jstl libraries
-            URL url = Loader.getResource(null,className,false);
-            String s=url.toString();
-            if (s.startsWith("jar:file:"))
-                return new URL(s.substring(4,s.indexOf("!/")));
-        }
-        catch(Exception e)
-        {
-            LOG.ignore(e);
-        }
-        return null;
-    }
-    
-    public static Object call(Class<?> oClass, String method, Object obj, Object[] arg) 
+    public static Object call(Class<?> oClass, String methodName, Object obj, Object[] arg)
        throws InvocationTargetException, NoSuchMethodException
     {
         // Lets just try all methods for now
-        Method[] methods = oClass.getMethods();
-        for (int c = 0; methods != null && c < methods.length; c++)
+        for (Method method : oClass.getMethods())
         {
-            if (!methods[c].getName().equals(method))
+            if (!method.getName().equals(methodName))
+                continue;            
+            if (method.getParameterTypes().length != arg.length)
                 continue;
-            if (methods[c].getParameterTypes().length != arg.length)
+            if (Modifier.isStatic(method.getModifiers()) != (obj == null))
                 continue;
-            if (Modifier.isStatic(methods[c].getModifiers()) != (obj == null))
-                continue;
-            if ((obj == null) && methods[c].getDeclaringClass() != oClass)
+            if ((obj == null) && method.getDeclaringClass() != oClass)
                 continue;
 
             try
             {
-                return methods[c].invoke(obj,arg);
+                return method.invoke(obj, arg);
             }
-            catch (IllegalAccessException e)
-            {
-                LOG.ignore(e);
-            }
-            catch (IllegalArgumentException e)
+            catch (IllegalAccessException | IllegalArgumentException e)
             {
                 LOG.ignore(e);
             }
         }
+        
+        // Lets look for a method with optional arguments
+        Object[] args_with_opts=null;
+        
+        for (Method method : oClass.getMethods())
+        {
+            if (!method.getName().equals(methodName))
+                continue;            
+            if (method.getParameterTypes().length != arg.length+1)
+                continue;
+            if (!method.getParameterTypes()[arg.length].isArray())
+                continue;
+            if (Modifier.isStatic(method.getModifiers()) != (obj == null))
+                continue;
+            if ((obj == null) && method.getDeclaringClass() != oClass)
+                continue;
 
-        throw new NoSuchMethodException(method);
+            if (args_with_opts==null)
+                args_with_opts=ArrayUtil.addToArray(arg,new Object[]{},Object.class);
+            try
+            {
+                return method.invoke(obj, args_with_opts);
+            }
+            catch (IllegalAccessException | IllegalArgumentException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        
+        
+        throw new NoSuchMethodException(methodName);
+    }
+
+    public static Object construct(Class<?> klass, Object[] arguments) throws InvocationTargetException, NoSuchMethodException
+    {
+        for (Constructor<?> constructor : klass.getConstructors())
+        {
+            if (constructor.getParameterTypes().length != arguments.length)
+                continue;
+
+            try
+            {
+                return constructor.newInstance(arguments);
+            }
+            catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        throw new NoSuchMethodException("<init>");
+    }
+    
+    public static Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
+    {
+        for (Constructor<?> constructor : klass.getConstructors())
+        {
+            if (constructor.getParameterTypes().length != arguments.length)
+                continue;
+
+            try
+            {
+                Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
+                
+                // target has no annotations
+                if ( parameterAnnotations == null || parameterAnnotations.length == 0 )
+                {                
+                    LOG.debug("Target has no parameter annotations");                   
+                    return constructor.newInstance(arguments);
+                }
+                else
+                {
+                   Object[] swizzled = new Object[arguments.length];
+                   
+                   int count = 0;
+                   for ( Annotation[] annotations : parameterAnnotations )
+                   {
+                       for ( Annotation annotation : annotations)
+                       {
+                           if ( annotation instanceof Name )
+                           {
+                               Name param = (Name)annotation;
+                               
+                               if (namedArgMap.containsKey(param.value()))
+                               {
+                                   LOG.debug("placing named {} in position {}", param.value(), count);
+                                   swizzled[count] = namedArgMap.get(param.value());
+                               }
+                               else
+                               {
+                                   LOG.debug("placing {} in position {}", arguments[count], count);
+                                   swizzled[count] = arguments[count];
+                               }
+                               ++count;
+                           }
+                           else
+                           {
+                               LOG.debug("passing on annotation {}", annotation);
+                           }
+                       }
+                   }
+                   
+                   return constructor.newInstance(swizzled);
+                }
+                
+            }
+            catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        throw new NoSuchMethodException("<init>");
     }
 }

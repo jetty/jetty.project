@@ -1,32 +1,37 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
-
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.WebSocketServletRFCTest.RFCServlet;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.EchoServlet;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 public class DeflateExtensionTest
 {
@@ -35,7 +40,7 @@ public class DeflateExtensionTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new SimpleServletServer(new RFCServlet());
+        server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
 
@@ -46,12 +51,12 @@ public class DeflateExtensionTest
     }
 
     @Test
+    @Ignore("Not yet working")
     public void testDeflateFrameExtension() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.clearExtensions();
-        client.addExtensions("x-deflate-frame;minLength=64");
-        // client.addExtensions("fragment;minFragments=2");
+        client.addExtensions("x-deflate-frame;minLength=8");
         client.setProtocols("echo");
 
         try
@@ -65,18 +70,18 @@ public class DeflateExtensionTest
             Assert.assertThat("Response",resp,containsString("x-deflate"));
 
             // Server sends a big message
-            String text = "0123456789ABCDEF ";
-            text = text + text + text + text;
-            text = text + text + text + text;
-            text = text + text + text + text + 'X';
+            StringBuilder msg = new StringBuilder();
+            for (int i = 0; i < 400; i++)
+            {
+                msg.append("0123456789ABCDEF ");
+            }
+            msg.append('X'); // so we can see the end in our debugging
 
-            client.write(WebSocketFrame.text(text));
+            client.write(WebSocketFrame.text(msg.toString()));
 
-            // TODO: use socket that captures frame payloads to verify fragmentation
-
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(text));
+            IncomingFramesCapture capture = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
+            WebSocketFrame frame = capture.getFrames().get(0);
+            Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg.toString()));
         }
         finally
         {

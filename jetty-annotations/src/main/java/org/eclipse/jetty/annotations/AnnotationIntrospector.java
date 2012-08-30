@@ -1,22 +1,25 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.eclipse.jetty.util.log.Log;
 
 /**
  * AnnotationIntrospector
@@ -35,7 +38,7 @@ public class AnnotationIntrospector
      */
     public interface IntrospectableAnnotationHandler
     {
-        public void handle(Class clazz);
+        public void handle(Class<?> clazz);
     }
     
     
@@ -50,7 +53,7 @@ public class AnnotationIntrospector
     {
         private boolean _introspectAncestors;
         
-        public abstract void doHandle(Class clazz);
+        public abstract void doHandle(Class<?> clazz);
         
         
         public AbstractIntrospectableAnnotationHandler(boolean introspectAncestors)
@@ -58,9 +61,9 @@ public class AnnotationIntrospector
             _introspectAncestors = introspectAncestors;
         }
         
-        public void handle(Class clazz)
+        public void handle(Class<?> clazz)
         {
-            Class c = clazz;
+            Class<?> c = clazz;
             
             //process the whole inheritance hierarchy for the class
             while (c!=null && (!c.equals(Object.class)))
@@ -79,7 +82,7 @@ public class AnnotationIntrospector
         _handlers.add(handler);
     }
     
-    public void introspect (Class clazz)
+    public void introspect (Class<?> clazz)
     {
         if (_handlers == null)
             return;

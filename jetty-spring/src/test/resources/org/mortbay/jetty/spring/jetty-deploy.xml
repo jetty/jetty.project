@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>
+  <bean id="Server" name="Main" class="org.mortbay.jetty.spring.Server">
+ 
+   <!-- 
+    <property name="beans">
+      <list>
+        <bean id="ContextDeployer" class="org.mortbay.jetty.spring.ContextDeployer">
+          <property name="contexts" ref="contexts"/>
+          <property name="contextsDir" value="contexts"/>
+          <property name="scanInterval" value="5"/>
+        </bean>
+ 
+        <bean id="WebAppDeployer" class="org.eclipse.jetty.deploy.WebAppDeployer">
+          <property name="contexts" ref="contexts"/>
+          <property name="webAppDir" value="webapps"/>
+          <property name="extract" value="true"/>
+          <property name="defaultsDescriptor" value="etc/webdefault.xml"/>
+        </bean>
+ 
+        <bean class="org.eclipse.jetty.security.HashLoginService">
+          <property name="name" value="Test Realm"/>
+          <property name="config" value="etc/realm.properties"/>
+          <property name="refreshInterval" value="0"/>
+        </bean>
+ 
+      </list>
+    </property>
+     -->
+     
+  </bean>
+</beans>
+
+

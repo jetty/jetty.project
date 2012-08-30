@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
@@ -7,7 +25,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.Socket;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 import javax.servlet.ServletException;
@@ -18,7 +35,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
-import org.junit.AfterClass;
+import org.junit.After;
+import org.junit.Before;
 
 
 public class HttpServerTestFixture
@@ -26,9 +44,9 @@ public class HttpServerTestFixture
     protected static final long PAUSE=10L;
     protected static final int LOOPS=Stress.isEnabled()?250:50;
     protected static final String HOST="localhost";
-    
-    protected static Server _server;
-    protected static Connector.NetConnector _connector;
+
+    protected Server _server;
+    protected NetworkConnector _connector;
     protected String _scheme="http";
 
     protected Socket newSocket(String host,int port) throws Exception
@@ -39,21 +57,27 @@ public class HttpServerTestFixture
         socket.setSoLinger(false,0);
         return socket;
     }
-    
-    protected static void startServer(Connector.NetConnector connector) throws Exception
+
+    @Before
+    public void before()
     {
         _server = new Server();
+    }
+
+    protected void startServer(NetworkConnector connector) throws Exception
+    {
         _connector = connector;
         _server.addConnector(_connector);
         _server.setHandler(new HandlerWrapper());
         _server.start();
     }
 
-    @AfterClass
-    public static void stopServer() throws Exception
+    @After
+    public void stopServer() throws Exception
     {
         _server.stop();
         _server.join();
+        _server.setConnectors(new Connector[]{});
     }
 
     protected void configureServer(Handler handler) throws Exception
@@ -63,20 +87,20 @@ public class HttpServerTestFixture
         current.setHandler(handler);
         current.start();
     }
-    
+
 
     protected static class EchoHandler extends AbstractHandler
     {
         boolean musthavecontent=true;
-        
+
         public EchoHandler()
         {}
-        
+
         public EchoHandler(boolean content)
         {
             musthavecontent=false;
         }
-        
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
@@ -93,7 +117,7 @@ public class HttpServerTestFixture
 
             int count=0;
             BufferedReader reader=request.getReader();
-                        
+
             if (request.getContentLength()!=0)
             {
                 String line=reader.readLine();
@@ -105,7 +129,7 @@ public class HttpServerTestFixture
                     line=reader.readLine();
                 }
             }
-            
+
             if (count==0)
             {
                 if (musthavecontent)
@@ -113,7 +137,7 @@ public class HttpServerTestFixture
 
                 writer.println("No content");
             }
-            
+
             // just to be difficult
             reader.close();
             writer.close();
@@ -135,6 +159,7 @@ public class HttpServerTestFixture
 
     protected static class DataHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -153,7 +178,7 @@ public class HttpServerTestFixture
             String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             while (data.length()<block)
                 data+=data;
-            
+
             String chunk = (input+data).substring(0,block);
             response.setContentType("text/plain");
             if (encoding==null)
@@ -188,7 +213,7 @@ public class HttpServerTestFixture
         }
     }
 
-    
+
     public final static HostnameVerifier __hostnameverifier = new HostnameVerifier()
     {
         public boolean verify(String hostname, SSLSession session)

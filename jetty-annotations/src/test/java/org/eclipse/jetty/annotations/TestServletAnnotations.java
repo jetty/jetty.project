@@ -1,22 +1,22 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.annotations;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +28,11 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * TestServletAnnotations
@@ -43,10 +48,10 @@ public class TestServletAnnotations
         classes.add("org.eclipse.jetty.annotations.ServletC");
         AnnotationParser parser = new AnnotationParser();
 
-        WebAppContext wac = new WebAppContext();       
+        WebAppContext wac = new WebAppContext();
         WebServletAnnotationHandler handler = new WebServletAnnotationHandler(wac);
         parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", handler);
-       
+
         parser.parse(classes, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)
@@ -59,12 +64,12 @@ public class TestServletAnnotations
                 return false;
             }
         });
-        
+
         assertEquals(1, handler.getAnnotationList().size());
         assertTrue(handler.getAnnotationList().get(0) instanceof WebServletAnnotation);
-        
+
         handler.getAnnotationList().get(0).apply();
-       
+
         ServletHolder[] holders = wac.getServletHandler().getServlets();
         assertNotNull(holders);
         assertEquals(1, holders.length);
@@ -79,10 +84,10 @@ public class TestServletAnnotations
         assertEquals(2,holders[0].getInitOrder());
         assertFalse(holders[0].isAsyncSupported());
     }
-    
+
     public void testDeclareRoles ()
     throws Exception
-    { 
+    {
         WebAppContext wac = new WebAppContext();
         ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
         wac.setSecurityHandler(sh);

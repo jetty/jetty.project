@@ -1,22 +1,22 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -24,11 +24,15 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class HttpURITest
 {
@@ -182,10 +186,11 @@ public class HttpURITest
 
     private final String[][] encoding_tests=
     {
-       /* 0*/ {"/path/info","/path/info"},
-       /* 1*/ {"/path/%69nfo","/path/info"},
-       /* 2*/ {"http://host/path/%69nfo","/path/info"},
-       /* 3*/ {"http://host/path/%69nf%c2%a4","/path/inf\u00a4"},
+       /* 0*/ {"/path/info","/path/info", "UTF-8"},
+       /* 1*/ {"/path/%69nfo","/path/info", "UTF-8"},
+       /* 2*/ {"http://host/path/%69nfo","/path/info", "UTF-8"},
+       /* 3*/ {"http://host/path/%69nf%c2%a4","/path/inf\u00a4", "UTF-8"},
+       /* 4*/ {"http://host/path/%E5", "/path/\u00e5", "ISO-8859-1"}
     };
 
     @Test
@@ -196,7 +201,7 @@ public class HttpURITest
         for (int t=0;t<encoding_tests.length;t++)
         {
             uri.parse(encoding_tests[t][0]);
-            assertEquals(""+t,encoding_tests[t][1],uri.getDecodedPath());
+            assertEquals(""+t,encoding_tests[t][1],uri.getDecodedPath(encoding_tests[t][2]));
 
         }
     }
@@ -217,7 +222,7 @@ public class HttpURITest
         try
         {
             HttpURI huri=new HttpURI(uri);
-            MultiMap<String> params = new MultiMap<String>();
+            MultiMap<String> params = new MultiMap<>();
             huri.decodeQueryTo(params);
             System.err.println(params);
             Assert.assertTrue(false);
@@ -225,19 +230,19 @@ public class HttpURITest
         catch (IllegalArgumentException e)
         {
         }
-        
+
         try
         {
             HttpURI huri=new HttpURI(uri);
-            MultiMap<String> params = new MultiMap<String>();
+            MultiMap<String> params = new MultiMap<>();
             huri.decodeQueryTo(params,"UTF-8");
             System.err.println(params);
             Assert.assertTrue(false);
         }
         catch (IllegalArgumentException e)
         {
-        }        
-        
+        }
+
     }
 
     @Test
@@ -246,14 +251,14 @@ public class HttpURITest
         for (String value: new String[]{"a","abcdABCD","\u00C0","\u697C","\uD869\uDED5","\uD840\uDC08"} )
         {
             HttpURI uri = new HttpURI("/path?value="+URLEncoder.encode(value,"UTF-8"));
-            
-            MultiMap<String> parameters = new MultiMap<String>();
+
+            MultiMap<String> parameters = new MultiMap<>();
             uri.decodeQueryTo(parameters,"UTF-8");
-            assertEquals(value,parameters.get("value"));
+            assertEquals(value,parameters.getString("value"));
         }
     }
-    
-    
+
+
     private final String[][] connect_tests=
     {
        /* 0*/ {"  localhost:8080  ","localhost","8080"},
@@ -272,7 +277,7 @@ public class HttpURITest
             try
             {
                 byte[] buf = connect_tests[i][0].getBytes(StringUtil.__UTF8);
-                
+
                 uri.parseConnect(buf,2,buf.length-4);
                 assertEquals("path"+i,connect_tests[i][1]+":"+connect_tests[i][2],uri.getPath());
                 assertEquals("host"+i,connect_tests[i][1],uri.getHost());
@@ -284,7 +289,7 @@ public class HttpURITest
             }
         }
     }
-    
+
     @Test
     public void testNonURIAscii() throws Exception
     {

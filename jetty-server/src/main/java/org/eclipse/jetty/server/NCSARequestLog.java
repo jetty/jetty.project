@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1997-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -19,7 +24,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Locale;
 import java.util.TimeZone;
-
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -27,6 +31,8 @@ import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -39,12 +45,12 @@ import org.eclipse.jetty.util.log.Logger;
  * servers, and almost all web log analysis software can understand these
  * formats.
  *
- * @org.apache.xbean.XBean element="ncsaLog"
  */
 
 /* ------------------------------------------------------------ */
 /**
  */
+@ManagedObject("NCSA standard format request log")
 public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 {
     private static final Logger LOG = Log.getLogger(NCSARequestLog.class);
@@ -85,7 +91,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Create request log object with specified output file name.
-     * 
+     *
      * @param filename the file name for the request log.
      *                 This may be in the format expected
      *                 by {@link RolloverFileOutputStream}
@@ -103,9 +109,9 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * Set the output file name of the request log.
      * The file name may be in the format expected by
      * {@link RolloverFileOutputStream}.
-     * 
+     *
      * @param filename file name of the request log
-     *                
+     *
      */
     public void setFilename(String filename)
     {
@@ -121,9 +127,10 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the output file name of the request log.
-     * 
+     *
      * @return file name of the request log
      */
+    @ManagedAttribute("file of log")
     public String getFilename()
     {
         return _filename;
@@ -134,7 +141,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * Retrieve the file name of the request log with the expanded
      * date wildcard if the output is written to the disk using
      * {@link RolloverFileOutputStream}.
-     * 
+     *
      * @return file name of the request log, or null if not applicable
      */
     public String getDatedFilename()
@@ -148,8 +155,8 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /**
      * Set the timestamp format for request log entries in the file.
      * If this is not set, the pre-formated request timestamp is used.
-     * 
-     * @param format timestamp format string 
+     *
+     * @param format timestamp format string
      */
     public void setLogDateFormat(String format)
     {
@@ -159,7 +166,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the timestamp format string for request log entries.
-     * 
+     *
      * @return timestamp format string.
      */
     public String getLogDateFormat()
@@ -170,7 +177,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Set the locale of the request log.
-     * 
+     *
      * @param logLocale locale object
      */
     public void setLogLocale(Locale logLocale)
@@ -181,7 +188,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the locale of the request log.
-     * 
+     *
      * @return locale object
      */
     public Locale getLogLocale()
@@ -192,7 +199,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Set the timezone of the request log.
-     * 
+     *
      * @param tz timezone string
      */
     public void setLogTimeZone(String tz)
@@ -203,9 +210,10 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the timezone of the request log.
-     * 
+     *
      * @return timezone string
      */
+    @ManagedAttribute("the timezone")
     public String getLogTimeZone()
     {
         return _logTimeZone;
@@ -214,7 +222,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Set the number of days before rotated log files are deleted.
-     * 
+     *
      * @param retainDays number of days to keep a log file
      */
     public void setRetainDays(int retainDays)
@@ -225,9 +233,10 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the number of days before rotated log files are deleted.
-     * 
+     *
      * @return number of days to keep a log file
      */
+    @ManagedAttribute("number of days that log files are kept")
     public int getRetainDays()
     {
         return _retainDays;
@@ -236,7 +245,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Set the extended request log format flag.
-     * 
+     *
      * @param extended true - log the extended request information,
      *                 false - do not log the extended request information
      */
@@ -248,9 +257,10 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the extended request log format flag.
-     * 
+     *
      * @return value of the flag
      */
+    @ManagedAttribute("use extended NCSA format")
     public boolean isExtended()
     {
         return _extended;
@@ -259,7 +269,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Set append to log flag.
-     * 
+     *
      * @param append true - request log file will be appended after restart,
      *               false - request log file will be overwritten after restart
      */
@@ -271,9 +281,10 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve append to log flag.
-     * 
+     *
      * @return value of the flag
      */
+    @ManagedAttribute("existing log files are appends to the new one")
     public boolean isAppend()
     {
         return _append;
@@ -282,7 +293,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Set request paths that will not be logged.
-     * 
+     *
      * @param ignorePaths array of request paths
      */
     public void setIgnorePaths(String[] ignorePaths)
@@ -293,7 +304,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the request paths that will not be logged.
-     * 
+     *
      * @return array of request paths
      */
     public String[] getIgnorePaths()
@@ -304,7 +315,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Controls logging of the request cookies.
-     * 
+     *
      * @param logCookies true - values of request cookies will be logged,
      *                   false - values of request cookies will not be logged
      */
@@ -316,7 +327,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve log cookies flag
-     * 
+     *
      * @return value of the flag
      */
     public boolean getLogCookies()
@@ -327,7 +338,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Controls logging of the request hostname.
-     * 
+     *
      * @param logServer true - request hostname will be logged,
      *                  false - request hostname will not be logged
      */
@@ -339,7 +350,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve log hostname flag.
-     * 
+     *
      * @return value of the flag
      */
     public boolean getLogServer()
@@ -350,7 +361,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Controls logging of request processing time.
-     * 
+     *
      * @param logLatency true - request processing time will be logged
      *                   false - request processing time will not be logged
      */
@@ -362,7 +373,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve log request processing time flag.
-     * 
+     *
      * @return value of the flag
      */
     public boolean getLogLatency()
@@ -374,7 +385,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /**
      * Controls whether the actual IP address of the connection or
      * the IP address from the X-Forwarded-For header will be logged.
-     * 
+     *
      * @param preferProxiedForAddress true - IP address from header will be logged,
      *                                false - IP address from the connection will be logged
      */
@@ -382,11 +393,11 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     {
         _preferProxiedForAddress = preferProxiedForAddress;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Retrieved log X-Forwarded-For IP address flag.
-     * 
+     *
      * @return value of the flag
      */
     public boolean getPreferProxiedForAddress()
@@ -398,7 +409,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /**
      * Set the log file name date format.
      * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
-     * 
+     *
      * @param logFileDateFormat format string that is passed to {@link RolloverFileOutputStream}
      */
     public void setFilenameDateFormat(String logFileDateFormat)
@@ -409,7 +420,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the file name date format string.
-     * 
+     *
      * @return the log File Date Format
      */
     public String getFilenameDateFormat()
@@ -418,9 +429,9 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Controls logging of the request dispatch time
-     * 
+     *
      * @param value true - request dispatch time will be logged
      *              false - request dispatch time will not be logged
      */
@@ -432,7 +443,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Retrieve request dispatch time logging flag
-     * 
+     *
      * @return value of the flag
      */
     public boolean isLogDispatch()
@@ -443,7 +454,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Writes the request and response information to the output stream.
-     * 
+     *
      * @see org.eclipse.jetty.server.RequestLog#log(org.eclipse.jetty.server.Request, org.eclipse.jetty.server.Response)
      */
     public void log(Request request, Response response)
@@ -529,7 +540,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             else
                 buf.append(" - ");
 
-            
+
             if (_extended)
                 logExtended(request, response, buf);
 
@@ -558,7 +569,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                 long now = System.currentTimeMillis();
 
                 if (_logDispatch)
-                {   
+                {
                     long d = request.getDispatchTime();
                     buf.append(' ');
                     buf.append(now - (d==0 ? request.getTimeStamp():d));
@@ -591,7 +602,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Writes extended request and response information to the output stream.
-     * 
+     *
      * @param request request object
      * @param response response object
      * @param b StringBuilder to write to
@@ -625,7 +636,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Set up request logging and open log file.
-     * 
+     *
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
     @Override
@@ -664,7 +675,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Close the log file and perform cleanup.
-     * 
+     *
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
     @Override

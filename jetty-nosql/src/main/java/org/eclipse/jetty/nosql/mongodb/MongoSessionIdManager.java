@@ -1,16 +1,22 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.nosql.mongodb;
-//========================================================================
-//Copyright (c) 2011 Intalio, Inc.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 
 import java.net.UnknownHostException;
@@ -61,7 +67,9 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     final static DBObject __version_1 = new BasicDBObject(MongoSessionManager.__VERSION,1);
     final static DBObject __valid_false = new BasicDBObject(MongoSessionManager.__VALID,false);
+    final static DBObject __valid_true = new BasicDBObject(MongoSessionManager.__VALID,true);
 
+    
     final DBCollection _sessions;
     protected Server _server;
     private Timer _scavengeTimer;
@@ -155,7 +163,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             DBCursor checkSessions = _sessions.find(query, new BasicDBObject(MongoSessionManager.__ID, 1));
                         
             for ( DBObject session : checkSessions )
-            {             	                    
+            {             
+                __log.debug("SessionIdManager:scavenge: invalidating " + (String)session.get(MongoSessionManager.__ID));
                 invalidateAll((String)session.get(MongoSessionManager.__ID));
             }
         } 
@@ -429,16 +438,15 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /**
      * is the session id known to mongo, and is it valid
      */
-    @Override
     public boolean idInUse(String sessionId)
     {        
         /*
          * optimize this query to only return the valid variable
          */
-        DBObject o = _sessions.findOne(new BasicDBObject("id",sessionId), __valid_false);
+        DBObject o = _sessions.findOne(new BasicDBObject("id",sessionId), __valid_true);
         
         if ( o != null )
-        {
+        {                    
             Boolean valid = (Boolean)o.get(MongoSessionManager.__VALID);
             
             if ( valid == null )
@@ -453,7 +461,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void addSession(HttpSession session)
     {
         if (session == null)
@@ -475,7 +482,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void removeSession(HttpSession session)
     {
         if (session == null)
@@ -490,7 +496,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void invalidateAll(String sessionId)
     {
         synchronized (_sessionsIds)
@@ -519,7 +524,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     // TODO not sure if this is correct
-    @Override
     public String getClusterId(String nodeId)
     {
         int dot=nodeId.lastIndexOf('.');
@@ -528,7 +532,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     // TODO not sure if this is correct
-    @Override
     public String getNodeId(String clusterId, HttpServletRequest request)
     {
         if (_workerName!=null)

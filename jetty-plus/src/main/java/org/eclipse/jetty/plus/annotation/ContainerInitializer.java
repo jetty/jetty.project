@@ -1,22 +1,26 @@
-// ========================================================================
-// Copyright (c) 2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.plus.annotation;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -28,12 +32,12 @@ public class ContainerInitializer
     protected Set<String> _applicableTypeNames;
     protected Set<String> _annotatedTypeNames;
 
-    
+
     public void setTarget (ServletContainerInitializer target)
     {
         _target = target;
     }
-    
+
     public ServletContainerInitializer getTarget ()
     {
         return _target;
@@ -43,14 +47,14 @@ public class ContainerInitializer
     {
         return _interestedTypes;
     }
-    
+
     public void setInterestedTypes (Class[] interestedTypes)
     {
         _interestedTypes = interestedTypes;
     }
-    
+
     /**
-     * A class has been found that has an annotation of interest 
+     * A class has been found that has an annotation of interest
      * to this initializer.
      * @param className
      */
@@ -60,32 +64,32 @@ public class ContainerInitializer
             _annotatedTypeNames = new HashSet<String>();
         _annotatedTypeNames.add(className);
     }
-    
+
     public Set<String> getAnnotatedTypeNames ()
     {
         return _annotatedTypeNames;
     }
-    
+
     public void addApplicableTypeName (String className)
     {
         if (_applicableTypeNames == null)
             _applicableTypeNames = new HashSet<String>();
         _applicableTypeNames.add(className);
     }
-    
+
     public Set<String> getApplicableTypeNames ()
     {
         return _applicableTypeNames;
     }
-    
-    
+
+
     public void callStartup(WebAppContext context)
     throws Exception
     {
         if (_target != null)
         {
             Set<Class<?>> classes = new HashSet<Class<?>>();
-          
+
             ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(context.getClassLoader());
 

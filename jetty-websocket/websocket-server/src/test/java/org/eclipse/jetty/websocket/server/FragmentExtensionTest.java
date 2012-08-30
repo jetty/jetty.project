@@ -1,32 +1,36 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
-
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.WebSocketServletRFCTest.RFCServlet;
 import org.eclipse.jetty.websocket.server.blockhead.BlockheadClient;
+import org.eclipse.jetty.websocket.server.helper.EchoServlet;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 public class FragmentExtensionTest
 {
@@ -35,7 +39,7 @@ public class FragmentExtensionTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new SimpleServletServer(new RFCServlet());
+        server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
 
@@ -45,13 +49,28 @@ public class FragmentExtensionTest
         server.stop();
     }
 
+    private String[] split(String str, int partSize)
+    {
+        int strLength = str.length();
+        int count = (int)Math.ceil((double)str.length() / partSize);
+        String ret[] = new String[count];
+        int idx;
+        for (int i = 0; i < count; i++)
+        {
+            idx = (i * partSize);
+            ret[i] = str.substring(idx,Math.min(idx + partSize,strLength));
+        }
+        return ret;
+    }
+
     @Test
     public void testFragmentExtension() throws Exception
     {
+        int fragSize = 4;
 
         BlockheadClient client = new BlockheadClient(server.getServerUri());
         client.clearExtensions();
-        client.addExtensions("fragment;maxLength=4;minFragments=7");
+        client.addExtensions("fragment;maxLength=" + fragSize);
         client.setProtocols("onConnect");
 
         try
@@ -67,11 +86,13 @@ public class FragmentExtensionTest
             String msg = "Sent as a long message that should be split";
             client.write(WebSocketFrame.text(msg));
 
-            // TODO: use socket that captures frame counts to verify fragmentation
-
-            Queue<WebSocketFrame> frames = client.readFrames(1,TimeUnit.MILLISECONDS,1000);
-            WebSocketFrame frame = frames.remove();
-            Assert.assertThat("TEXT.payload",frame.getPayloadAsUTF8(),is(msg));
+            String parts[] = split(msg,fragSize);
+            IncomingFramesCapture capture = client.readFrames(parts.length,TimeUnit.MILLISECONDS,1000);
+            for (int i = 0; i < parts.length; i++)
+            {
+                WebSocketFrame frame = capture.getFrames().get(i);
+                Assert.assertThat("text[" + i + "].payload",frame.getPayloadAsUTF8(),is(parts[i]));
+            }
         }
         finally
         {

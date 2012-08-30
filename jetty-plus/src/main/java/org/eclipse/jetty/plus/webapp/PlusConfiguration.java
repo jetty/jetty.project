@@ -1,20 +1,24 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.plus.webapp;
 
 import java.util.Random;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
@@ -38,18 +42,18 @@ public class PlusConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(PlusConfiguration.class);
 
     private Integer _key;
-    
+
     @Override
     public void preConfigure (WebAppContext context)
     throws Exception
-    {      
-        context.addDecorator(new PlusDecorator(context));  
+    {
+        context.addDecorator(new PlusDecorator(context));
     }
- 
+
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        context.addDecorator(new PlusDecorator(context));  
+        context.addDecorator(new PlusDecorator(context));
     }
 
     @Override
@@ -57,7 +61,7 @@ public class PlusConfiguration extends AbstractConfiguration
     throws Exception
     {
         bindUserTransaction(context);
-        
+
         context.getMetaData().addDescriptorProcessor(new PlusDescriptorProcessor());
     }
 
@@ -77,7 +81,7 @@ public class PlusConfiguration extends AbstractConfiguration
         context.setAttribute(InjectionCollection.INJECTION_COLLECTION,null);
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION,null);
     }
-    
+
     public void bindUserTransaction (WebAppContext context)
     throws Exception
     {
@@ -90,9 +94,9 @@ public class PlusConfiguration extends AbstractConfiguration
             LOG.info("No Transaction manager found - if your webapp requires one, please configure one.");
         }
     }
-    
- 
-  
+
+
+
     protected void lockCompEnv (WebAppContext wac)
     throws Exception
     {
@@ -111,7 +115,7 @@ public class PlusConfiguration extends AbstractConfiguration
             Thread.currentThread().setContextClassLoader(old_loader);
         }
     }
-    
+
     protected void unlockCompEnv (WebAppContext wac)
     throws Exception
     {
@@ -124,7 +128,7 @@ public class PlusConfiguration extends AbstractConfiguration
             {
                 Context context = new InitialContext();
                 Context compCtx = (Context)context.lookup("java:comp");
-                compCtx.addToEnvironment("org.eclipse.jndi.unlock", _key); 
+                compCtx.addToEnvironment("org.eclipse.jndi.unlock", _key);
             }
             finally
             {

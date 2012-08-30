@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.security;
 
@@ -20,20 +25,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,11 +54,11 @@ import org.eclipse.jetty.util.log.Logger;
  * or will be create during {@link #start()} with a call to
  * either the default or set AuthenticatorFactory.
  * <p>
- * SecurityHandler has a set of initparameters that are used by the 
+ * SecurityHandler has a set of initparameters that are used by the
  * Authentication.Configuration. At startup, any context init parameters
- * that start with "org.eclipse.jetty.security." that do not have 
- * values in the SecurityHandler init parameters, are copied.  
- * 
+ * that start with "org.eclipse.jetty.security." that do not have
+ * values in the SecurityHandler init parameters, are copied.
+ *
  */
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
@@ -62,7 +70,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private Authenticator.Factory _authenticatorFactory=new DefaultAuthenticatorFactory();
     private String _realmName;
     private String _authMethod;
-    private final Map<String,String> _initParameters=new HashMap<String,String>();
+    private final Map<String,String> _initParameters=new HashMap<>();
     private LoginService _loginService;
     private boolean _loginServiceShared;
     private IdentityService _identityService;
@@ -72,7 +80,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     protected SecurityHandler()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the identityService.
      * @return the identityService
@@ -195,7 +203,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             throw new IllegalStateException("running");
         _authMethod = authMethod;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if forwards to welcome files are authenticated
@@ -223,13 +231,13 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         return _initParameters.get(key);
     }
-    
+
     /* ------------------------------------------------------------ */
     public Set<String> getInitParameterNames()
     {
         return _initParameters.keySet();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Set an initialization parameter.
      * @param key
@@ -243,12 +251,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             throw new IllegalStateException("running");
         return _initParameters.put(key,value);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected LoginService findLoginService()
     {
         List<LoginService> list = getServer().getBeans(LoginService.class);
-        
+
         String realm=getRealmName();
         if (realm!=null)
         {
@@ -260,15 +268,15 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             return list.get(0);
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected IdentityService findIdentityService()
     {
         return getServer().getBean(IdentityService.class);
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      */
     @Override
     protected void doStart()
@@ -286,18 +294,45 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                         getInitParameter(name)==null)
                     setInitParameter(name,context.getInitParameter(name));
             }
+            
+            //register a session listener to handle securing sessions when authentication is performed
+            context.getContextHandler().addEventListener(new HttpSessionListener()
+            {
+                
+                public void sessionDestroyed(HttpSessionEvent se)
+                {
+                   
+                }
+                
+                public void sessionCreated(HttpSessionEvent se)
+                {                    
+                    //if current request is authenticated, then as we have just created the session, mark it as secure, as it has not yet been returned to a user
+                    HttpChannel channel = HttpChannel.getCurrentHttpChannel();              
+                    
+                    if (channel == null)
+                        return;
+                    Request request = channel.getRequest();
+                    if (request == null)
+                        return;
+                    
+                    if (request.isSecure())
+                    {
+                        se.getSession().setAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
+                    }
+                }
+            });
         }
-        
+
         // complicated resolution of login and identity service to handle
         // many different ways these can be constructed and injected.
-        
+
         if (_loginService==null)
         {
             _loginService=findLoginService();
             if (_loginService!=null)
                 _loginServiceShared=true;
         }
-        
+
         if (_identityService==null)
         {
             if (_loginService!=null)
@@ -305,11 +340,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
             if (_identityService==null)
                 _identityService=findIdentityService();
-            
+
             if (_identityService==null && _realmName!=null)
                 _identityService=new DefaultIdentityService();
         }
-        
+
         if (_loginService!=null)
         {
             if (_loginService.getIdentityService()==null)
@@ -319,11 +354,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         }
 
         if (!_loginServiceShared && _loginService instanceof LifeCycle)
-            ((LifeCycle)_loginService).start();        
-        
-        if (_authenticator==null && _authenticatorFactory!=null && _identityService!=null)
+            ((LifeCycle)_loginService).start();
+
+        Authenticator.Factory authenticatorFactory = getAuthenticatorFactory();
+        if (_authenticator==null && authenticatorFactory!=null && _identityService!=null)
         {
-            _authenticator=_authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this, _identityService, _loginService);
+            _authenticator=authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this, _identityService, _loginService);
             if (_authenticator!=null)
                 _authMethod=_authenticator.getAuthMethod();
         }
@@ -354,10 +390,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     protected void doStop() throws Exception
     {
         super.doStop();
-        
+
         if (!_loginServiceShared && _loginService instanceof LifeCycle)
             ((LifeCycle)_loginService).stop();
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -369,7 +405,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             case ASYNC:
                 return true;
             case FORWARD:
-                if (_checkWelcomeFiles && request.getAttribute("org.eclipse.jetty.server.welcome") != null)
+                if (isCheckWelcomeFiles() && request.getAttribute("org.eclipse.jetty.server.welcome") != null)
                 {
                     request.removeAttribute("org.eclipse.jetty.server.welcome");
                     return true;
@@ -379,7 +415,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 return false;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
@@ -388,7 +424,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         return _renewSession;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Set renew the session on Authentication.
      * <p>
@@ -399,7 +435,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         _renewSession=renew;
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.Handler#handle(java.lang.String,
@@ -411,18 +447,18 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         final Response base_response = baseRequest.getResponse();
         final Handler handler=getHandler();
-        
+
         if (handler==null)
             return;
 
         final Authenticator authenticator = _authenticator;
-        
+
         if (checkSecurity(baseRequest))
         {
-            Object constraintInfo = prepareConstraintInfo(pathInContext, baseRequest);
-            
+            RoleInfo roleInfo = prepareConstraintInfo(pathInContext, baseRequest);
+
             // Check data constraints
-            if (!checkUserDataPermissions(pathInContext, baseRequest, base_response, constraintInfo))
+            if (!checkUserDataPermissions(pathInContext, baseRequest, base_response, roleInfo))
             {
                 if (!baseRequest.isHandled())
                 {
@@ -433,12 +469,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
 
             // is Auth mandatory?
-            boolean isAuthMandatory = 
-                isAuthMandatory(baseRequest, base_response, constraintInfo);
+            boolean isAuthMandatory =
+                isAuthMandatory(baseRequest, base_response, roleInfo);
 
             if (isAuthMandatory && authenticator==null)
             {
-                LOG.warn("No authenticator for: "+constraintInfo);
+                LOG.warn("No authenticator for: "+roleInfo);
                 if (!baseRequest.isHandled())
                 {
                     response.sendError(Response.SC_FORBIDDEN);
@@ -446,7 +482,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 }
                 return;
             }
-            
+
             // check authentication
             Object previousIdentity = null;
             try
@@ -474,7 +510,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
                     if (isAuthMandatory)
                     {
-                        boolean authorized=checkWebResourcePermissions(pathInContext, baseRequest, base_response, constraintInfo, userAuth.getUserIdentity());
+                        boolean authorized=checkWebResourcePermissions(pathInContext, baseRequest, base_response, roleInfo, userAuth.getUserIdentity());
                         if (!authorized)
                         {
                             response.sendError(Response.SC_FORBIDDEN, "!role");
@@ -482,7 +518,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                             return;
                         }
                     }
-                         
+
                     handler.handle(pathInContext, baseRequest, request, response);
                     if (authenticator!=null)
                         authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
@@ -503,15 +539,18 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                         previousIdentity = deferred.getPreviousAssociation();
                         deferred.setIdentityService(null);
                     }
-                   
-                    Authentication auth=baseRequest.getAuthentication();
-                    if (auth instanceof Authentication.User)
+
+                    if (authenticator!=null)
                     {
-                        Authentication.User userAuth = (Authentication.User)auth;
-                        authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
+                        Authentication auth=baseRequest.getAuthentication();
+                        if (auth instanceof Authentication.User)
+                        {
+                            Authentication.User userAuth = (Authentication.User)auth;
+                            authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
+                        }
+                        else
+                            authenticator.secureResponse(request, response, isAuthMandatory, null);
                     }
-                    else
-                        authenticator.secureResponse(request, response, isAuthMandatory, null);
                 }
                 else
                 {
@@ -546,9 +585,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         Context context = ContextHandler.getCurrentContext();
         if (context==null)
             return null;
-        
-        SecurityHandler security = context.getContextHandler().getChildHandlerByClass(SecurityHandler.class);
-        return security;
+
+        return context.getContextHandler().getChildHandlerByClass(SecurityHandler.class);
     }
 
     /* ------------------------------------------------------------ */
@@ -560,7 +598,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         {
             login_service.logout(user.getUserIdentity());
         }
-        
+
         IdentityService identity_service=getIdentityService();
         if (identity_service!=null)
         {
@@ -569,12 +607,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             identity_service.disassociate(previous);
         }
     }
-    
-    /* ------------------------------------------------------------ */
-    protected abstract Object prepareConstraintInfo(String pathInContext, Request request);
 
     /* ------------------------------------------------------------ */
-    protected abstract boolean checkUserDataPermissions(String pathInContext, Request request, Response response, Object constraintInfo) throws IOException;
+    protected abstract RoleInfo prepareConstraintInfo(String pathInContext, Request request);
+
+    /* ------------------------------------------------------------ */
+    protected abstract boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo constraintInfo) throws IOException;
 
     /* ------------------------------------------------------------ */
     protected abstract boolean isAuthMandatory(Request baseRequest, Response base_response, Object constraintInfo);
@@ -583,7 +621,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     protected abstract boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo,
                                                            UserIdentity userIdentity) throws IOException;
 
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public class NotChecked implements Principal
@@ -605,7 +643,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         }
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public static Principal __NO_USER = new Principal()
@@ -621,7 +659,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             return "No User";
         }
     };
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**

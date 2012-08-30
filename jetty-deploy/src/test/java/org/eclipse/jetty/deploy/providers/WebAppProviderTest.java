@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
@@ -51,7 +69,7 @@ public class WebAppProviderTest
         File workDir = jetty.getJettyDir("workish");
 
         System.err.println("workDir="+workDir);
-        
+
         // Test for regressions
         assertDirNotExists("root of work directory",workDir,"webinf");
         assertDirNotExists("root of work directory",workDir,"jsp");
@@ -62,16 +80,19 @@ public class WebAppProviderTest
 
     private static boolean hasJettyGeneratedPath(File basedir, String expectedWarFilename)
     {
-        for (File path : basedir.listFiles())
+        File[] paths = basedir.listFiles();
+        if (paths != null)
         {
-            if (path.exists() && path.isDirectory() && path.getName().startsWith("jetty-") && path.getName().contains(expectedWarFilename))
+            for (File path : paths)
             {
-                System.out.println("Found expected generated directory: " + path);
-                return true;
+                if (path.exists() && path.isDirectory() && path.getName().startsWith("jetty-") && path.getName().contains(expectedWarFilename))
+                {
+                    System.err.println("Found expected generated directory: " + path);
+                    return true;
+                }
             }
+            System.err.println("did not find "+expectedWarFilename+" in "+Arrays.asList(paths));
         }
-
-        System.err.println("did not find "+expectedWarFilename+" in "+Arrays.asList(basedir.listFiles()));
         return false;
     }
 

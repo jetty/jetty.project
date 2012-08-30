@@ -1,20 +1,24 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.plus.webapp;
 
 import java.util.EventListener;
-
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -52,7 +56,7 @@ public class PlusDecorator implements Decorator
     public void decorateFilterHolder(FilterHolder filter) throws ServletException
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterInstance(javax.servlet.Filter)
@@ -81,7 +85,7 @@ public class PlusDecorator implements Decorator
     {
         decorate(holder);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletInstance(javax.servlet.Servlet)
@@ -111,7 +115,7 @@ public class PlusDecorator implements Decorator
         destroy(s);
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyListenerInstance(java.util.EventListener)
      */
     public void destroyListenerInstance(EventListener l)
@@ -120,14 +124,14 @@ public class PlusDecorator implements Decorator
     }
 
 
-    protected void decorate (Object o) 
+    protected void decorate (Object o)
     throws ServletException
-    {       
+    {
 
         RunAsCollection runAses = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
         if (runAses != null)
             runAses.setRunAs(o);
-        
+
         InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         if (injections != null)
             injections.inject(o);
@@ -144,11 +148,11 @@ public class PlusDecorator implements Decorator
                 throw new ServletException(e);
             }
         }
-    } 
-    
+    }
+
     protected void destroy (Object o)
     {
-        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION); 
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
         if (callbacks != null)
         {
             try

@@ -1,21 +1,23 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.driver;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -23,21 +25,21 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.CloseException;
-import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
-import org.eclipse.jetty.websocket.io.MessageInputStream;
-import org.eclipse.jetty.websocket.io.MessageReader;
-import org.eclipse.jetty.websocket.io.StreamAppender;
 import org.eclipse.jetty.websocket.io.WebSocketSession;
+import org.eclipse.jetty.websocket.io.message.MessageAppender;
+import org.eclipse.jetty.websocket.io.message.MessageInputStream;
+import org.eclipse.jetty.websocket.io.message.MessageReader;
+import org.eclipse.jetty.websocket.io.message.SimpleBinaryMessage;
+import org.eclipse.jetty.websocket.io.message.SimpleTextMessage;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
 import org.eclipse.jetty.websocket.protocol.Frame;
 import org.eclipse.jetty.websocket.protocol.OpCode;
@@ -54,13 +56,13 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public class WebSocketEventDriver implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketEventDriver.class);
+    private final Logger socketLog;
     private final Object websocket;
     private final WebSocketPolicy policy;
     private final EventMethods events;
     private final ByteBufferPool bufferPool;
-    private WebSocketSession connection;
-    private ByteBuffer activeMessage;
-    private StreamAppender activeStream;
+    private WebSocketSession session;
+    private MessageAppender activeMessage;
 
     /**
      * Establish the driver for the Websocket POJO
@@ -74,24 +76,29 @@ public class WebSocketEventDriver implements IncomingFrames
         this.events = methodsCache.getMethods(websocket.getClass());
         this.bufferPool = bufferPool;
 
+        this.socketLog = Log.getLogger(websocket.getClass());
+
         if (events.isAnnotated())
         {
             WebSocket anno = websocket.getClass().getAnnotation(WebSocket.class);
             // Setup the policy
-            policy.setBufferSize(anno.maxBufferSize());
-            policy.setMaxBinaryMessageSize(anno.maxBinarySize());
-            policy.setMaxTextMessageSize(anno.maxTextSize());
-            policy.setMaxIdleTime(anno.maxIdleTime());
+            if (anno.maxBufferSize() > 0)
+            {
+                this.policy.setBufferSize(anno.maxBufferSize());
+            }
+            if (anno.maxBinarySize() > 0)
+            {
+                this.policy.setMaxBinaryMessageSize(anno.maxBinarySize());
+            }
+            if (anno.maxTextSize() > 0)
+            {
+                this.policy.setMaxTextMessageSize(anno.maxTextSize());
+            }
+            if (anno.maxIdleTime() > 0)
+            {
+                this.policy.setIdleTimeout(anno.maxIdleTime());
+            }
         }
-    }
-
-    private void appendBuffer(ByteBuffer msgBuf, ByteBuffer byteBuffer)
-    {
-        if (msgBuf.remaining() < byteBuffer.remaining())
-        {
-            throw new MessageTooLargeException("Message exceeded maximum buffer");
-        }
-        msgBuf.put(byteBuffer);
     }
 
     public WebSocketPolicy getPolicy()
@@ -125,7 +132,7 @@ public class WebSocketEventDriver implements IncomingFrames
 
         if (events.onException != null)
         {
-            events.onException.call(websocket,connection,e);
+            events.onException.call(websocket,session,e);
         }
     }
 
@@ -146,7 +153,7 @@ public class WebSocketEventDriver implements IncomingFrames
         // Generic Read-Only Frame version
         if ((frame instanceof Frame) && (events.onFrame != null))
         {
-            events.onFrame.call(websocket,connection,frame);
+            events.onFrame.call(websocket,session,frame);
             // DO NOT return; - as this is just a read-only notification.
         }
 
@@ -154,16 +161,17 @@ public class WebSocketEventDriver implements IncomingFrames
         {
             switch (frame.getOpCode())
             {
-                case CLOSE:
+                case OpCode.CLOSE:
                 {
-                    CloseInfo close = new CloseInfo(frame);
+                    boolean validate = true;
+                    CloseInfo close = new CloseInfo(frame,validate);
                     if (events.onClose != null)
                     {
-                        events.onClose.call(websocket,connection,close.getStatusCode(),close.getReason());
+                        events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());
                     }
                     throw new CloseException(close.getStatusCode(),close.getReason());
                 }
-                case PING:
+                case OpCode.PING:
                 {
                     WebSocketFrame pong = new WebSocketFrame(OpCode.PONG);
                     if (frame.getPayloadLength() > 0)
@@ -174,150 +182,69 @@ public class WebSocketEventDriver implements IncomingFrames
                         BufferUtil.put(frame.getPayload(),pongBuf);
                         BufferUtil.flipToFlush(pongBuf,0);
                         pong.setPayload(pongBuf);
+                        if (LOG.isDebugEnabled())
+                        {
+                            LOG.debug("Pong with {}",BufferUtil.toDetailString(pongBuf));
+                        }
                     }
-                    connection.output("pong",new FutureCallback<String>(),pong);
+                    session.output("pong",new FutureCallback<String>(),pong);
                     break;
                 }
-                case BINARY:
+                case OpCode.BINARY:
                 {
                     if (events.onBinary == null)
                     {
                         // not interested in binary events
                         return;
                     }
-                    if (events.onBinary.isStreaming())
+
+                    if (activeMessage == null)
                     {
-                        boolean needsNotification = false;
-
-                        // Streaming Approach
-                        if (activeStream == null)
+                        if (events.onBinary.isStreaming())
                         {
-                            // Allocate directly, not via ByteBufferPool, as this buffer
-                            // is ultimately controlled by the end user, and we can't know
-                            // when they are done using the stream in order to release any
-                            // buffer allocated from the ByteBufferPool.
-                            ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
-                            this.activeStream = new MessageInputStream(buf);
-                            needsNotification = true;
+                            activeMessage = new MessageInputStream(websocket,events.onBinary,session,bufferPool,policy);
                         }
-
-                        activeStream.appendBuffer(frame.getPayload());
-
-                        if (needsNotification)
+                        else
                         {
-                            events.onBinary.call(websocket,connection,activeStream);
-                        }
-
-                        if (frame.isFin())
-                        {
-                            // close the stream.
-                            activeStream.bufferComplete();
-                            activeStream = null; // work with a new one
+                            activeMessage = new SimpleBinaryMessage(websocket,events.onBinary,session,bufferPool,policy);
                         }
                     }
-                    else
+
+                    activeMessage.appendMessage(frame.getPayload());
+
+                    if (frame.isFin())
                     {
-                        if (activeMessage == null)
-                        {
-                            // Acquire from ByteBufferPool is safe here, as the return
-                            // from the notification is a good place to release the
-                            // buffer.
-                            activeMessage = bufferPool.acquire(policy.getBufferSize(),false);
-                            BufferUtil.clearToFill(activeMessage);
-                        }
-
-                        appendBuffer(activeMessage,frame.getPayload());
-
-                        // normal case
-                        if (frame.isFin())
-                        {
-                            // Notify using simple message approach.
-                            try
-                            {
-                                BufferUtil.flipToFlush(activeMessage,0);
-                                byte buf[] = BufferUtil.toArray(activeMessage);
-                                events.onBinary.call(websocket,connection,buf,0,buf.length);
-                            }
-                            finally
-                            {
-                                bufferPool.release(activeMessage);
-                                activeMessage = null;
-                            }
-                        }
-
+                        activeMessage.messageComplete();
+                        activeMessage = null;
                     }
                     return;
                 }
-                case TEXT:
+                case OpCode.TEXT:
                 {
                     if (events.onText == null)
                     {
                         // not interested in text events
                         return;
                     }
-                    if (events.onText.isStreaming())
+
+                    if (activeMessage == null)
                     {
-                        boolean needsNotification = false;
-
-                        // Streaming Approach
-                        if (activeStream == null)
+                        if (events.onText.isStreaming())
                         {
-                            // Allocate directly, not via ByteBufferPool, as this buffer
-                            // is ultimately controlled by the end user, and we can't know
-                            // when they are done using the stream in order to release any
-                            // buffer allocated from the ByteBufferPool.
-                            ByteBuffer buf = ByteBuffer.allocate(policy.getBufferSize());
-                            this.activeStream = new MessageReader(buf);
-                            needsNotification = true;
+                            activeMessage = new MessageReader(websocket,events.onBinary,session,policy);
                         }
-
-                        activeStream.appendBuffer(frame.getPayload());
-
-                        if (needsNotification)
+                        else
                         {
-                            events.onText.call(websocket,connection,activeStream);
-                        }
-
-                        if (frame.isFin())
-                        {
-                            // close the stream.
-                            activeStream.bufferComplete();
-                            activeStream = null; // work with a new one
+                            activeMessage = new SimpleTextMessage(websocket,events.onText,session,policy);
                         }
                     }
-                    else
+
+                    activeMessage.appendMessage(frame.getPayload());
+
+                    if (frame.isFin())
                     {
-                        if (activeMessage == null)
-                        {
-                            // Acquire from ByteBufferPool is safe here, as the return
-                            // from the notification is a good place to release the
-                            // buffer.
-                            activeMessage = bufferPool.acquire(policy.getBufferSize(),false);
-                            BufferUtil.clearToFill(activeMessage);
-                        }
-
-                        appendBuffer(activeMessage,frame.getPayload());
-
-                        // normal case
-                        if (frame.isFin())
-                        {
-                            // Notify using simple message approach.
-                            try
-                            {
-                                BufferUtil.flipToFlush(activeMessage,0);
-                                byte data[] = BufferUtil.toArray(activeMessage);
-                                Utf8StringBuilder utf = new Utf8StringBuilder();
-                                // TODO: FIX EVIL COPY
-                                utf.append(data,0,data.length);
-
-                                events.onText.call(websocket,connection,utf.toString());
-                            }
-                            finally
-                            {
-                                bufferPool.release(activeMessage);
-                                activeMessage = null;
-                            }
-                        }
+                        activeMessage.messageComplete();
+                        activeMessage = null;
                     }
                     return;
                 }
@@ -346,7 +273,7 @@ public class WebSocketEventDriver implements IncomingFrames
         {
             LOG.debug("{}.onConnect()",websocket.getClass().getSimpleName());
         }
-        events.onConnect.call(websocket,connection);
+        events.onConnect.call(websocket,session);
     }
 
     /**
@@ -355,36 +282,35 @@ public class WebSocketEventDriver implements IncomingFrames
      * @param conn
      *            the connection
      */
-    public void setConnection(WebSocketSession conn)
+    public void setSession(WebSocketSession conn)
     {
-        this.connection = conn;
+        this.session = conn;
     }
 
     private void terminateConnection(int statusCode, String rawreason)
     {
-        try
+        String reason = rawreason;
+        if (StringUtil.isNotBlank(reason))
         {
-            String reason = rawreason;
-            if (StringUtil.isNotBlank(reason))
+            // Trim big exception messages here.
+            if (reason.length() > (WebSocketFrame.MAX_CONTROL_PAYLOAD - 2))
             {
-                // Trim big exception messages here.
-                if (reason.length() > (WebSocketFrame.MAX_CONTROL_PAYLOAD - 2))
-                {
-                    reason = reason.substring(0,WebSocketFrame.MAX_CONTROL_PAYLOAD - 2);
-                }
+                reason = reason.substring(0,WebSocketFrame.MAX_CONTROL_PAYLOAD - 2);
             }
-            LOG.debug("terminateConnection({},{})",statusCode,rawreason);
-            connection.close(statusCode,reason);
         }
-        catch (IOException e)
-        {
-            LOG.debug(e);
-        }
+        LOG.debug("terminateConnection({},{})",statusCode,rawreason);
+        session.close(statusCode,reason);
+    }
+
+    @Override
+    public String toString()
+    {
+        return websocket.getClass().getName();
     }
 
     private void unhandled(Throwable t)
     {
-        LOG.warn("Unhandled Error (closing connection)",t);
+        socketLog.warn("Unhandled Error (closing connection)",t);
 
         // Unhandled Error, close the connection.
         switch (policy.getBehavior())

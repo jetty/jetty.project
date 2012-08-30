@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
@@ -7,6 +25,7 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -15,6 +34,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * replacement for the old (and deprecated) <code>org.eclipse.jetty.deploy.ContextDeployer</code> and it will scan a directory
  * only for context.xml files.
  */
+@ManagedObject("Provider for starting webapps originating from context.xml files")
 public class ContextProvider extends ScanningAppProvider
 {
     private ConfigurationManager _configurationManager;
@@ -28,6 +48,9 @@ public class ContextProvider extends ScanningAppProvider
                 if (!dir.exists())
                     return false;
                 String lowername = name.toLowerCase();
+                if (lowername.startsWith("."))
+                    return false;
+                
                 return  (lowername.endsWith(".xml") && !new File(dir,name).isDirectory());
             }
         });

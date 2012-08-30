@@ -1,30 +1,28 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.continuation.test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -34,12 +32,18 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 
 public abstract class ContinuationBase
 {
     protected SuspendServlet _servlet=new SuspendServlet();
     protected int _port;
-    
+
     protected void doNormal(String type) throws Exception
     {
         String response=process(null,null);
@@ -76,6 +80,7 @@ public abstract class ContinuationBase
     protected void doSuspendResume() throws Exception
     {
         String response=process("suspend=200&resume=0",null);
+        System.err.println(response);
         assertContains("RESUMED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
@@ -110,7 +115,7 @@ public abstract class ContinuationBase
         assertEquals(1,count(response,"history: onComplete"));
         assertContains("RESUMED",response);
     }
-    
+
     protected void doSuspendWaitResumeSuspendComplete() throws Exception
     {
         String response=process("suspend=1000&resume=10&suspend2=1000&complete2=10",null);
@@ -193,7 +198,7 @@ public abstract class ContinuationBase
         assertContains("history: onComplete",response);
     }
 
-    
+
     private int count(String responses,String substring)
     {
         int count=0;
@@ -203,26 +208,26 @@ public abstract class ContinuationBase
             count++;
             i=responses.indexOf(substring,i+substring.length());
         }
-        
+
         return count;
     }
-    
+
     protected void assertContains(String content,String response)
     {
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
         assertThat(response,containsString(content));
     }
-    
+
     protected void assertNotContains(String content,String response)
     {
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
         assertThat(response,not(containsString(content)));
     }
-    
+
     public synchronized String process(String query,String content) throws Exception
     {
         String request = "GET /";
-        
+
         if (query!=null)
             request+="?"+query;
         request+=" HTTP/1.1\r\n"+
@@ -235,7 +240,7 @@ public abstract class ContinuationBase
             request+="Content-Length: "+content.length()+"\r\n";
             request+="\r\n" + content;
         }
-        
+
         int port=_port;
         String response=null;
         try
@@ -243,6 +248,7 @@ public abstract class ContinuationBase
             Socket socket = new Socket("localhost",port);
             socket.setSoTimeout(10000);
             socket.getOutputStream().write(request.getBytes("UTF-8"));
+            socket.getOutputStream().flush();
 
             response = toString(socket.getInputStream());
         }
@@ -254,25 +260,25 @@ public abstract class ContinuationBase
         }
         return response;
     }
-    
-    
+
+
     protected abstract String toString(InputStream in) throws IOException;
-    
-    
+
+
     private static class SuspendServlet extends HttpServlet
     {
         private Timer _timer=new Timer();
-        
+
         public SuspendServlet()
         {}
-        
+
         /* ------------------------------------------------------------ */
         protected void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
             final Continuation continuation = ContinuationSupport.getContinuation(request);
 
             response.addHeader("history",continuation.getClass().toString());
-            
+
             int read_before=0;
             long sleep_for=-1;
             long suspend_for=-1;
@@ -282,7 +288,7 @@ public abstract class ContinuationBase
             long complete_after=-1;
             long complete2_after=-1;
             boolean undispatch=false;
-            
+
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
             if (request.getParameter("sleep")!=null)
@@ -301,7 +307,7 @@ public abstract class ContinuationBase
                 complete2_after=Integer.parseInt(request.getParameter("complete2"));
             if (request.getParameter("undispatch")!=null)
                 undispatch=Boolean.parseBoolean(request.getParameter("undispatch"));
-            
+
             if (continuation.isInitial())
             {
                 ((HttpServletResponse)response).addHeader("history","initial");
@@ -325,7 +331,7 @@ public abstract class ContinuationBase
                     continuation.addContinuationListener(__listener);
                     ((HttpServletResponse)response).addHeader("history","suspend");
                     continuation.suspend(response);
-                    
+
                     if (complete_after>0)
                     {
                         TimerTask complete = new TimerTask()
@@ -377,7 +383,7 @@ public abstract class ContinuationBase
                         ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
                         continuation.resume();
                     }
-                    
+
                     if (undispatch)
                         continuation.undispatch();
                 }
@@ -400,7 +406,7 @@ public abstract class ContinuationBase
                     response.getOutputStream().println("NORMAL\n");
                 }
             }
-            else    
+            else
             {
                 ((HttpServletResponse)response).addHeader("history","!initial");
                 if (suspend2_for>=0 && request.getAttribute("2nd")==null)
@@ -478,7 +484,7 @@ public abstract class ContinuationBase
                     response.setStatus(200);
                     response.getOutputStream().println("RESUMED\n");
                 }
-                else 
+                else
                 {
                     response.setStatus(200);
                     response.getOutputStream().println("unknown???\n");
@@ -486,20 +492,22 @@ public abstract class ContinuationBase
             }
         }
     }
-    
-    
+
+
     private static ContinuationListener __listener = new ContinuationListener()
     {
+        @Override
         public void onComplete(Continuation continuation)
         {
             ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onComplete");
         }
 
+        @Override
         public void onTimeout(Continuation continuation)
         {
             ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onTimeout");
             continuation.resume();
         }
-        
+
     };
 }

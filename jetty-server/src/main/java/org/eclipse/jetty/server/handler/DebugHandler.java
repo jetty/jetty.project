@@ -1,24 +1,27 @@
-//========================================================================
-//Copyright 2009 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//Licensed under the Apache License, Version 2.0 (the "License");
-//you may not use this file except in compliance with the License.
-//You may obtain a copy of the License at
-//http://www.apache.org/licenses/LICENSE-2.0
-//Unless required by applicable law or agreed to in writing, software
-//distributed under the License is distributed on an "AS IS" BASIS,
-//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//See the License for the specific language governing permissions and
-//limitations under the License.
-//========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-package org.eclipse.jetty.server.handler; 
+package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,7 +32,7 @@ import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 
 
-/** 
+/**
  * Debug Handler.
  * A lightweight debug handler that can be used in production code.
  * Details of the request and response are written to an output stream
@@ -41,9 +44,9 @@ public class DebugHandler extends HandlerWrapper
     private DateCache _date=new DateCache("HH:mm:ss", Locale.US);
     private OutputStream _out;
     private PrintStream _print;
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
@@ -61,20 +64,20 @@ public class DebugHandler extends HandlerWrapper
             name=old_name+":"+baseRequest.getScheme()+"://"+baseRequest.getLocalAddr()+":"+baseRequest.getLocalPort()+baseRequest.getUri();
         else
             retry=true;
-        
+
         String ex=null;
         try
         {
             long now=System.currentTimeMillis();
             final String d=_date.format(now);
             final int ms=(int)(now%1000);
-            
+
             if (retry)
                 _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" RETRY");
             else
                 _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" "+baseRequest.getRemoteAddr()+" "+request.getMethod()+" "+baseRequest.getHeader("Cookie")+"; "+baseRequest.getHeader("User-Agent"));
             thread.setName(name);
-            
+
             getHandler().handle(target,baseRequest,request,response);
         }
         catch(IOException ioe)

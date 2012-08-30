@@ -1,31 +1,37 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.server;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
-public class ServletWebSocketRequest extends HttpServletRequestWrapper implements WebSocketRequest
+public class ServletWebSocketRequest extends HttpServletRequestWrapper implements UpgradeRequest
 {
     private List<String> subProtocols = new ArrayList<>();
     private List<ExtensionConfig> extensions;
@@ -55,6 +61,17 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
                 extensions.add(ExtensionConfig.parse(tok.nextToken()));
             }
         }
+    }
+
+    @Override
+    public Map<String, String> getCookieMap()
+    {
+        Map<String, String> ret = new HashMap<String, String>();
+        for (Cookie cookie : super.getCookies())
+        {
+            ret.put(cookie.getName(),cookie.getValue());
+        }
+        return ret;
     }
 
     @Override
@@ -129,4 +146,14 @@ public class ServletWebSocketRequest extends HttpServletRequestWrapper implement
         return protocols;
     }
 
+    /**
+     * Not implemented (not relevant) on server side.
+     *
+     * @see org.eclipse.jetty.websocket.api.UpgradeRequest#setSubProtocols(java.lang.String)
+     */
+    @Override
+    public void setSubProtocols(String protocol)
+    {
+        /* not relevant for server side/servlet work */
+    }
 }

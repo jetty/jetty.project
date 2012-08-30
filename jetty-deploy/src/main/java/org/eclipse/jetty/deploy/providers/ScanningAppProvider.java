@@ -1,18 +1,21 @@
-// ========================================================================
-// Copyright (c) Webtide LLC
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-// The Apache License v2.0 is available at
-// http://www.apache.org/licenses/LICENSE-2.0.txt
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
@@ -25,6 +28,8 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,6 +37,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  */
+@ManagedObject("Abstract Provider for loading webapps")
 public abstract class ScanningAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(ScanningAppProvider.class);
@@ -196,12 +202,14 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("scanning interval to detect changes which need reloaded")
     public int getScanInterval()
     {
         return _scanInterval;
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("recursive scanning supported")
     public boolean isRecursive()
     {
         return _recursive;

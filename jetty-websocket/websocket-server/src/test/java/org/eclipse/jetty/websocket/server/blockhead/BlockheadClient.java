@@ -1,22 +1,22 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
-package org.eclipse.jetty.websocket.server.blockhead;
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+package org.eclipse.jetty.websocket.server.blockhead;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
@@ -31,32 +31,45 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.io.OutgoingFrames;
 import org.eclipse.jetty.websocket.protocol.CloseInfo;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.protocol.Generator;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
-import org.eclipse.jetty.websocket.server.UnitGenerator;
+import org.eclipse.jetty.websocket.server.helper.IncomingFramesCapture;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 
 /**
  * A simple websocket client for performing unit tests with.
@@ -65,8 +78,12 @@ import org.junit.Assert;
  * <p>
  * This client is <u>NOT</u> intended to be performant or follow the websocket spec religiously. In fact, being able to deviate from the websocket spec at will
  * is desired for this client to operate properly for the unit testing within this module.
+ * <p>
+ * The BlockheadClient should never validate frames or bytes being sent for validity, against any sort of spec, or even sanity. It should, however be honest
+ * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
+ * scope.
  */
-public class BlockheadClient implements IncomingFrames
+public class BlockheadClient implements IncomingFrames, OutgoingFrames
 {
     private static final Logger LOG = Log.getLogger(BlockheadClient.class);
     /** Set to true to disable timeouts (for debugging reasons) */
@@ -77,7 +94,8 @@ public class BlockheadClient implements IncomingFrames
     private final WebSocketPolicy policy;
     private final Generator generator;
     private final Parser parser;
-    private final LinkedBlockingDeque<WebSocketFrame> incomingFrameQueue;
+    private final IncomingFramesCapture incomingFrames;
+    private final WebSocketExtensionRegistry extensionRegistry;
 
     private Socket socket;
     private OutputStream out;
@@ -88,8 +106,16 @@ public class BlockheadClient implements IncomingFrames
     private byte[] clientmask = new byte[]
     { (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF };
     private int timeout = 1000;
+    private AtomicInteger parseCount;
+    private IncomingFrames incoming = this;
+    private OutgoingFrames outgoing = this;
 
     public BlockheadClient(URI destWebsocketURI) throws URISyntaxException
+    {
+        this(WebSocketPolicy.newClientPolicy(),destWebsocketURI);
+    }
+
+    public BlockheadClient(WebSocketPolicy policy, URI destWebsocketURI) throws URISyntaxException
     {
         Assert.assertThat("Websocket URI scheme",destWebsocketURI.getScheme(),anyOf(is("ws"),is("wss")));
         this.destWebsocketURI = destWebsocketURI;
@@ -100,13 +126,15 @@ public class BlockheadClient implements IncomingFrames
         }
         this.destHttpURI = new URI(scheme,destWebsocketURI.getSchemeSpecificPart(),destWebsocketURI.getFragment());
 
-        policy = WebSocketPolicy.newClientPolicy();
-        bufferPool = new StandardByteBufferPool(policy.getBufferSize());
-        generator = new UnitGenerator();
-        parser = new Parser(policy);
-        parser.setIncomingFramesHandler(this);
+        this.policy = policy;
+        this.bufferPool = new MappedByteBufferPool(policy.getBufferSize());
+        this.generator = new Generator(policy,bufferPool);
+        this.parser = new Parser(policy);
+        this.parseCount = new AtomicInteger(0);
 
-        incomingFrameQueue = new LinkedBlockingDeque<>();
+        this.incomingFrames = new IncomingFramesCapture();
+
+        this.extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
     }
 
     public void addExtensions(String xtension)
@@ -156,27 +184,111 @@ public class BlockheadClient implements IncomingFrames
         LOG.debug("disconnect");
         IO.close(in);
         IO.close(out);
-        try
+        if (socket != null)
         {
-            socket.close();
-        }
-        catch (IOException ignore)
-        {
-            /* ignore */
+            try
+            {
+                socket.close();
+            }
+            catch (IOException ignore)
+            {
+                /* ignore */
+            }
         }
     }
 
     public String expectUpgradeResponse() throws IOException
     {
         String respHeader = readResponseHeader();
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Response Header: {}{}",'\n',respHeader);
+        }
+
         Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
         Assert.assertThat("Response Header Upgrade",respHeader,containsString("Upgrade: WebSocket\r\n"));
         Assert.assertThat("Response Header Connection",respHeader,containsString("Connection: Upgrade\r\n"));
+
+        // collect extensions configured in response header
+        List<Extension> extensions = getExtensions(respHeader);
+
+        // Start with default routing
+        incoming = this;
+        outgoing = this;
+
+        // Connect extensions
+        if (extensions != null)
+        {
+            Iterator<Extension> extIter;
+            // Connect outgoings
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextOutgoingFrames(outgoing);
+                outgoing = ext;
+
+                // Handle RSV reservations
+                if (ext.useRsv1())
+                {
+                    generator.setRsv1InUse(true);
+                }
+                if (ext.useRsv2())
+                {
+                    generator.setRsv2InUse(true);
+                }
+                if (ext.useRsv3())
+                {
+                    generator.setRsv3InUse(true);
+                }
+            }
+
+            // Connect incomings
+            Collections.reverse(extensions);
+            extIter = extensions.iterator();
+            while (extIter.hasNext())
+            {
+                Extension ext = extIter.next();
+                ext.setNextIncomingFrames(incoming);
+                incoming = ext;
+            }
+        }
+
+        // configure parser
+        parser.setIncomingFramesHandler(incoming);
+
         return respHeader;
+    }
+
+    public void flush() throws IOException
+    {
+        out.flush();
     }
 
     public List<String> getExtensions()
     {
+        return extensions;
+    }
+
+    private List<Extension> getExtensions(String respHeader)
+    {
+        List<Extension> extensions = new ArrayList<>();
+
+        Pattern expat = Pattern.compile("Sec-WebSocket-Extensions: (.*)\r",Pattern.CASE_INSENSITIVE);
+        Matcher mat = expat.matcher(respHeader);
+        int offset = 0;
+        while (mat.find(offset))
+        {
+            String econf = mat.group(1);
+            LOG.debug("Found Extension Response: {}",econf);
+
+            ExtensionConfig config = ExtensionConfig.parse(econf);
+            Extension ext = extensionRegistry.newInstance(config);
+            extensions.add(ext);
+
+            offset = mat.end(1);
+        }
         return extensions;
     }
 
@@ -203,18 +315,25 @@ public class BlockheadClient implements IncomingFrames
     @Override
     public void incoming(WebSocketException e)
     {
-        LOG.warn(e);
+        incomingFrames.incoming(e);
     }
 
     @Override
     public void incoming(WebSocketFrame frame)
     {
         LOG.debug("incoming({})",frame);
-        WebSocketFrame copy = new WebSocketFrame(frame); // make a copy
-        if (!incomingFrameQueue.offerLast(copy))
+        int count = parseCount.incrementAndGet();
+        if ((count % 10) == 0)
         {
-            throw new RuntimeException("Unable to queue incoming frame: " + copy);
+            LOG.info("Client parsed {} frames",count);
         }
+        WebSocketFrame copy = new WebSocketFrame(frame);
+        incomingFrames.incoming(copy);
+    }
+
+    public boolean isConnected()
+    {
+        return (socket != null) && (socket.isConnected());
     }
 
     public void lookFor(String string) throws IOException
@@ -246,6 +365,23 @@ public class BlockheadClient implements IncomingFrames
         }
     }
 
+    @Override
+    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame) throws IOException
+    {
+        ByteBuffer buf = generator.generate(frame);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
+        }
+        BufferUtil.writeTo(buf,out);
+        out.flush();
+
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            disconnect();
+        }
+    }
+
     public int read(ByteBuffer buf) throws IOException
     {
         int len = 0;
@@ -257,10 +393,10 @@ public class BlockheadClient implements IncomingFrames
         return len;
     }
 
-    public Queue<WebSocketFrame> readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
+    public IncomingFramesCapture readFrames(int expectedCount, TimeUnit timeoutUnit, int timeoutDuration) throws IOException, TimeoutException
     {
         LOG.debug("Read: waiting for {} frame(s) from server",expectedCount);
-        int startCount = incomingFrameQueue.size();
+        int startCount = incomingFrames.size();
 
         ByteBuffer buf = bufferPool.acquire(policy.getBufferSize(),false);
         BufferUtil.clearToFill(buf);
@@ -272,8 +408,9 @@ public class BlockheadClient implements IncomingFrames
             LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
 
             int len = 0;
-            while (incomingFrameQueue.size() < (startCount + expectedCount))
+            while (incomingFrames.size() < (startCount + expectedCount))
             {
+                BufferUtil.clearToFill(buf);
                 len = read(buf);
                 if (len > 0)
                 {
@@ -291,7 +428,9 @@ public class BlockheadClient implements IncomingFrames
                 }
                 if (!debug && (System.currentTimeMillis() > expireOn))
                 {
-                    throw new TimeoutException("Timeout reading all of the desired frames");
+                    incomingFrames.dump();
+                    throw new TimeoutException(String.format("Timeout reading all %d expected frames. (managed to only read %d frame(s))",expectedCount,
+                            incomingFrames.size()));
                 }
             }
         }
@@ -300,7 +439,7 @@ public class BlockheadClient implements IncomingFrames
             bufferPool.release(buf);
         }
 
-        return incomingFrameQueue;
+        return incomingFrames;
     }
 
     public String readResponseHeader() throws IOException
@@ -408,33 +547,38 @@ public class BlockheadClient implements IncomingFrames
 
     public void write(WebSocketFrame frame) throws IOException
     {
-        LOG.debug("write(Frame->{})",frame);
+        LOG.debug("write(Frame->{}) to {}",frame,outgoing);
         frame.setMask(clientmask);
         // frame.setMask(new byte[] { 0x00, 0x00, 0x00, 0x00 });
-        ByteBuffer buf = generator.generate(frame);
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("writing out: {}",BufferUtil.toDetailString(buf));
-        }
-        BufferUtil.writeTo(buf,out);
-        out.flush();
-
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            // FIXME terminate the connection?
-            disconnect();
-        }
+        outgoing.output(null,null,frame);
     }
 
     public void writeRaw(ByteBuffer buf) throws IOException
     {
-        LOG.debug("write(ByteBuffer->{})",BufferUtil.toDetailString(buf));
+        LOG.debug("write(ByteBuffer) {}",BufferUtil.toDetailString(buf));
         BufferUtil.writeTo(buf,out);
+    }
+
+    public void writeRaw(ByteBuffer buf, int numBytes) throws IOException
+    {
+        int len = Math.min(numBytes,buf.remaining());
+        byte arr[] = new byte[len];
+        buf.get(arr,0,len);
+        out.write(arr);
     }
 
     public void writeRaw(String str) throws IOException
     {
-        LOG.debug("write(String->{})",str);
+        LOG.debug("write((String)[{}]){}{})",str.length(),'\n',str);
         out.write(StringUtil.getBytes(str,StringUtil.__ISO_8859_1));
+    }
+
+    public void writeRawSlowly(ByteBuffer buf, int segmentSize) throws IOException
+    {
+        while (buf.remaining() > 0)
+        {
+            writeRaw(buf,segmentSize);
+            flush();
+        }
     }
 }

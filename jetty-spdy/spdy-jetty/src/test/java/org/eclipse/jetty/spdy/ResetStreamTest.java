@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.spdy;
 
 import java.util.concurrent.CountDownLatch;
@@ -28,7 +46,7 @@ public class ResetStreamTest extends AbstractTest
     @Test
     public void testResetStreamIsRemoved() throws Exception
     {
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()),null);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()/*TODO, true*/),null);
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
         session.rst(new RstInfo(stream.getId(),StreamStatus.CANCEL_STREAM)).get(5,TimeUnit.SECONDS);
@@ -116,7 +134,7 @@ public class ResetStreamTest extends AbstractTest
         });
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
-        stream.data(new StringDataInfo("data",true),5,TimeUnit.SECONDS,new Callback.Adapter<Void>()
+        stream.data(new StringDataInfo("data",true),5,TimeUnit.SECONDS,new Callback.Empty<Void>()
         {
             @Override
             public void completed(Void context)
@@ -166,10 +184,10 @@ public class ResetStreamTest extends AbstractTest
         assertThat("syn is received by server", synLatch.await(5,TimeUnit.SECONDS),is(true));
         stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,null);
         assertThat("stream is reset",rstLatch.await(5,TimeUnit.SECONDS),is(true));
-        stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Callback.Adapter<Void>()
+        stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Callback.Empty<Void>()
         {
             @Override
-            public void failed(Throwable x)
+            public void failed(Void context, Throwable x)
             {
                 failLatch.countDown();
             }

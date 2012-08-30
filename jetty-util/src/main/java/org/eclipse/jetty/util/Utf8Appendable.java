@@ -1,18 +1,25 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /* ------------------------------------------------------------ */
 /**
@@ -91,6 +98,21 @@ public abstract class Utf8Appendable
         try
         {
             appendByte(b);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    public void append(ByteBuffer buf)
+    {
+        try
+        {
+            while (buf.remaining() > 0)
+            {
+                appendByte(buf.get());
+            }
         }
         catch (IOException e)
         {
@@ -179,6 +201,7 @@ public abstract class Utf8Appendable
         return _state == UTF8_ACCEPT;
     }
 
+    @SuppressWarnings("serial")
     public static class NotUtf8Exception extends IllegalArgumentException
     {
         public NotUtf8Exception(String reason)

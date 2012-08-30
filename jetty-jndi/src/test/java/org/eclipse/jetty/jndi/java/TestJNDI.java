@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.jndi.java;
 
@@ -17,8 +22,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Hashtable;
-
-import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
@@ -33,7 +36,6 @@ import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.jndi.NamingContext;
-import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -52,9 +54,9 @@ public class TestJNDI
 
     static
     {
-        // NamingUtil.__log.setDebugEnabled(true);    
+        // NamingUtil.__log.setDebugEnabled(true);
     }
-    
+
     public static class MyObjectFactory implements ObjectFactory
     {
         public static String myString = "xxx";
@@ -63,7 +65,7 @@ public class TestJNDI
         {
             return myString;
         }
-        
+
     }
 
     @Test
@@ -84,21 +86,21 @@ public class TestJNDI
                 {
                     System.err.println("java unbind "+binding+" from "+ctx.getName());
                 }
-                
+
                 public Binding bind(NamingContext ctx, Binding binding)
                 {
                     System.err.println("java bind "+binding+" to "+ctx.getName());
                     return binding;
                 }
             });
-            
+
             localContextRoot.getRoot().addListener(new NamingContext.Listener()
             {
                 public void unbind(NamingContext ctx, Binding binding)
                 {
                     System.err.println("local unbind "+binding+" from "+ctx.getName());
                 }
-                
+
                 public Binding bind(NamingContext ctx, Binding binding)
                 {
                     System.err.println("local bind "+binding+" to "+ctx.getName());
@@ -106,8 +108,8 @@ public class TestJNDI
                 }
             });
             */
-            
-            
+
+
             //set the current thread's classloader
             currentThread.setContextClassLoader(childLoader1);
 
@@ -285,7 +287,7 @@ public class TestJNDI
 
             System.err.println("java:"+javaRootURLContext.getRoot().dump());
             System.err.println("local:"+localContextRoot.getRoot().dump());
-            
+
             //test what happens when you close an initial context that was used
             initCtx.close();
         }

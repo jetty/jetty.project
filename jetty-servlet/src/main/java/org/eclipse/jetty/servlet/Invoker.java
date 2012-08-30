@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlet;
 
@@ -17,7 +22,6 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
@@ -32,32 +36,32 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
-/**  Dynamic Servlet Invoker.  
- * This servlet invokes anonymous servlets that have not been defined   
- * in the web.xml or by other means. The first element of the pathInfo  
- * of a request passed to the envoker is treated as a servlet name for  
- * an existing servlet, or as a class name of a new servlet.            
- * This servlet is normally mapped to /servlet/*                        
- * This servlet support the following initParams:                       
- * <PRE>                                                                     
- *  nonContextServlets       If false, the invoker can only load        
- *                           servlets from the contexts classloader.    
- *                           This is false by default and setting this  
- *                           to true may have security implications.    
- *                                                                      
- *  verbose                  If true, log dynamic loads                 
- *                                                                      
- *  *                        All other parameters are copied to the     
- *                           each dynamic servlet as init parameters    
+/**  Dynamic Servlet Invoker.
+ * This servlet invokes anonymous servlets that have not been defined
+ * in the web.xml or by other means. The first element of the pathInfo
+ * of a request passed to the envoker is treated as a servlet name for
+ * an existing servlet, or as a class name of a new servlet.
+ * This servlet is normally mapped to /servlet/*
+ * This servlet support the following initParams:
+ * <PRE>
+ *  nonContextServlets       If false, the invoker can only load
+ *                           servlets from the contexts classloader.
+ *                           This is false by default and setting this
+ *                           to true may have security implications.
+ *
+ *  verbose                  If true, log dynamic loads
+ *
+ *  *                        All other parameters are copied to the
+ *                           each dynamic servlet as init parameters
  * </PRE>
  * @version $Id: Invoker.java 4780 2009-03-17 15:36:08Z jesse $
- * 
+ *
  */
 public class Invoker extends HttpServlet
 {
@@ -70,7 +74,7 @@ public class Invoker extends HttpServlet
     private Map _parameters;
     private boolean _nonContextServlets;
     private boolean _verbose;
-        
+
     /* ------------------------------------------------------------ */
     public void init()
     {
@@ -103,7 +107,7 @@ public class Invoker extends HttpServlet
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void service(HttpServletRequest request, HttpServletResponse response)
 	throws ServletException, IOException
@@ -118,7 +122,7 @@ public class Invoker extends HttpServlet
         String path_info = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
         if (path_info==null)
             path_info=request.getPathInfo();
-        
+
         // Get the servlet class
         String servlet = path_info;
         if (servlet==null || servlet.length()<=1 )
@@ -126,8 +130,8 @@ public class Invoker extends HttpServlet
             response.sendError(404);
             return;
         }
-        
-        
+
+
         int i0=servlet.charAt(0)=='/'?1:0;
         int i1=servlet.indexOf('/',i0);
         servlet=i1<0?servlet.substring(i0):servlet.substring(i0,i1);
@@ -135,7 +139,7 @@ public class Invoker extends HttpServlet
         // look for a named holder
         ServletHolder[] holders = _servletHandler.getServlets();
         ServletHolder holder = getHolder (holders, servlet);
-       
+
         if (holder!=null)
         {
             // Found a named servlet (from a user's web.xml file) so
@@ -145,7 +149,7 @@ public class Invoker extends HttpServlet
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet);
             mapping.setPathSpec(URIUtil.addPaths(servlet_path,servlet)+"/*");
-            _servletHandler.setServletMappings((ServletMapping[])LazyList.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
+            _servletHandler.setServletMappings((ServletMapping[])ArrayUtil.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
         }
         else
         {
@@ -156,17 +160,17 @@ public class Invoker extends HttpServlet
             {
                 response.sendError(404);
                 return;
-            }   
-        
+            }
+
             synchronized(_servletHandler)
             {
                 // find the entry for the invoker (me)
                  _invokerEntry=_servletHandler.getHolderEntry(servlet_path);
-            
+
                 // Check for existing mapping (avoid threaded race).
                 String path=URIUtil.addPaths(servlet_path,servlet);
                 Map.Entry entry = _servletHandler.getHolderEntry(path);
-               
+
                 if (entry!=null && !entry.equals(_invokerEntry))
                 {
                     // Use the holder
@@ -178,34 +182,34 @@ public class Invoker extends HttpServlet
                     if (LOG.isDebugEnabled())
                         LOG.debug("Making new servlet="+servlet+" with path="+path+"/*");
                     holder=_servletHandler.addServletWithMapping(servlet, path+"/*");
-                    
+
                     if (_parameters!=null)
                         holder.setInitParameters(_parameters);
-                    
+
                     try {holder.start();}
                     catch (Exception e)
                     {
                         LOG.debug(e);
                         throw new UnavailableException(e.toString());
                     }
-                    
+
                     // Check it is from an allowable classloader
                     if (!_nonContextServlets)
                     {
                         Object s=holder.getServlet();
-                        
+
                         if (_contextHandler.getClassLoader()!=
                             s.getClass().getClassLoader())
                         {
-                            try 
+                            try
                             {
                                 holder.stop();
-                            } 
-                            catch (Exception e) 
+                            }
+                            catch (Exception e)
                             {
                                 LOG.ignore(e);
                             }
-                            
+
                             LOG.warn("Dynamic servlet "+s+
                                          " not loaded from context "+
                                          request.getContextPath());
@@ -218,7 +222,7 @@ public class Invoker extends HttpServlet
                 }
             }
         }
-        
+
         if (holder!=null)
         {
             final Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
@@ -231,8 +235,8 @@ public class Invoker extends HttpServlet
             LOG.info("Can't find holder for servlet: "+servlet);
             response.sendError(404);
         }
-            
-        
+
+
     }
 
     /* ------------------------------------------------------------ */
@@ -241,7 +245,7 @@ public class Invoker extends HttpServlet
         String _servletPath;
         String _pathInfo;
         boolean _included;
-        
+
         /* ------------------------------------------------------------ */
         InvokedRequest(HttpServletRequest request,
                 boolean included,
@@ -256,7 +260,7 @@ public class Invoker extends HttpServlet
             if (_pathInfo.length()==0)
                 _pathInfo=null;
         }
-        
+
         /* ------------------------------------------------------------ */
         public String getServletPath()
         {
@@ -264,7 +268,7 @@ public class Invoker extends HttpServlet
                 return super.getServletPath();
             return _servletPath;
         }
-        
+
         /* ------------------------------------------------------------ */
         public String getPathInfo()
         {
@@ -272,7 +276,7 @@ public class Invoker extends HttpServlet
                 return super.getPathInfo();
             return _pathInfo;
         }
-        
+
         /* ------------------------------------------------------------ */
         public Object getAttribute(String name)
         {
@@ -288,13 +292,13 @@ public class Invoker extends HttpServlet
             return super.getAttribute(name);
         }
     }
-    
-    
+
+
     private ServletHolder getHolder(ServletHolder[] holders, String servlet)
     {
         if (holders == null)
             return null;
-       
+
         ServletHolder holder = null;
         for (int i=0; holder==null && i<holders.length; i++)
         {

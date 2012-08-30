@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2003-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.plus.jaas;
 
@@ -20,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -31,9 +35,12 @@ import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.plus.jaas.callback.ObjectCallback;
+import org.eclipse.jetty.plus.jaas.callback.RequestParameterCallback;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -42,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ---------------------------------------------------- */
 /** JAASLoginService
- * 
+ *
  * @org.apache.xbean.XBean element="jaasUserRealm" description="Creates a UserRealm suitable for use with JAAS"
  */
 public class JAASLoginService extends AbstractLifeCycle implements LoginService
@@ -51,14 +58,14 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
 
     public static String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.plus.jaas.JAASRole";
     public static String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
-	
+
     protected String[] _roleClassNames = DEFAULT_ROLE_CLASS_NAMES;
     protected String _callbackHandlerClass;
     protected String _realmName;
     protected String _loginModuleName;
     protected JAASUserPrincipal _defaultUser = new JAASUserPrincipal(null, null, null);
     protected IdentityService _identityService;
- 
+
     /* ---------------------------------------------------- */
     /**
      * Constructor.
@@ -67,7 +74,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     public JAASLoginService()
     {
     }
-    
+
 
     /* ---------------------------------------------------- */
     /**
@@ -146,10 +153,10 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     public void setRoleClassNames (String[] classnames)
     {
         ArrayList<String> tmp = new ArrayList<String>();
-        
+
         if (classnames != null)
             tmp.addAll(Arrays.asList(classnames));
-         
+
         if (!tmp.contains(DEFAULT_ROLE_CLASS_NAME))
             tmp.add(DEFAULT_ROLE_CLASS_NAME);
         _roleClassNames = tmp.toArray(new String[tmp.size()]);
@@ -178,8 +185,8 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         try
         {
             CallbackHandler callbackHandler = null;
-            
-            
+
+
             if (_callbackHandlerClass == null)
             {
                 callbackHandler = new CallbackHandler()
@@ -200,6 +207,22 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             {
                                 ((ObjectCallback)callback).setObject(credentials);
                             }
+                            else if (callback instanceof RequestParameterCallback)
+                            {
+                            	HttpChannel channel = HttpChannel.getCurrentHttpChannel();
+
+                                if (channel == null)
+                                    return;
+                                Request request = channel.getRequest();
+
+                                if (request != null)
+                                {
+                                    RequestParameterCallback rpc = (RequestParameterCallback)callback;
+                                    rpc.setParameterValues(Arrays.asList(request.getParameterValues(rpc.getParameterName())));
+                                }
+                            }
+                            else
+                                throw new UnsupportedCallbackException(callback);
                         }
                     }
                 };
@@ -219,7 +242,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             //login success
             JAASUserPrincipal userPrincipal = new JAASUserPrincipal(getUserName(callbackHandler), subject, loginContext);
             subject.getPrincipals().add(userPrincipal);
-            
+
             return _identityService.newUserIdentity(subject,userPrincipal,getGroups(subject));
         }
         catch (LoginException e)
@@ -298,7 +321,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                     groups.add(principal.getName());
                 }
             }
-            
+
             return groups.toArray(new String[groups.size()]);
         }
         catch (ClassNotFoundException e)

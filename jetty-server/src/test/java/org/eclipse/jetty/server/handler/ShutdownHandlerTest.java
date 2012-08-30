@@ -1,25 +1,25 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.handler;
-
-//========================================================================
-//Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,6 +30,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
 public class ShutdownHandlerTest
 {
@@ -55,7 +59,7 @@ public class ShutdownHandlerTest
     {
         setDefaultExpectations();
         final CountDownLatch countDown = new CountDownLatch(1);
-        server.addLifeCycleListener(new AbstractLifeCycle.Listener () 
+        server.addLifeCycleListener(new AbstractLifeCycle.Listener ()
         {
 
             public void lifeCycleStarting(LifeCycle event)
@@ -67,23 +71,23 @@ public class ShutdownHandlerTest
             }
 
             public void lifeCycleFailure(LifeCycle event, Throwable cause)
-            {  
+            {
             }
 
             public void lifeCycleStopping(LifeCycle event)
-            {  
+            {
             }
 
             public void lifeCycleStopped(LifeCycle event)
             {
                 countDown.countDown();
             }
-            
+
         });
         shutdownHandler.handle("/shutdown",null,request,response);
         boolean stopped = countDown.await(1000, TimeUnit.MILLISECONDS); //wait up to 1 sec to stop
         assertTrue("Server lifecycle stop listener called", stopped);
-        assertEquals("Server should be stopped","STOPPED",server.getState());  
+        assertEquals("Server should be stopped","STOPPED",server.getState());
     }
 
     @Test

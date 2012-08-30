@@ -1,21 +1,22 @@
-// ========================================================================
-// Copyright (c) Webtide LLC
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-// The Apache License v2.0 is available at
-// http://www.apache.org/licenses/LICENSE-2.0.txt
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
-package org.eclipse.jetty.deploy.bindings;
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.hamcrest.Matchers.*;
+package org.eclipse.jetty.deploy.bindings;
 
 import java.io.File;
 import java.util.List;
@@ -32,6 +33,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.Matchers.not;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
@@ -65,9 +71,9 @@ public class GlobalWebappConfigBindingTest
     public void testServerAndSystemClassesOverride() throws Exception
     {
         File srcXml = MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml");
-        File destXml = new File(jetty.getJettyHome(),"context-binding-test-1.xml"); 
+        File destXml = new File(jetty.getJettyHome(),"context-binding-test-1.xml");
         IO.copy(srcXml,destXml);
-        
+
         PathAssert.assertFileExists("Context Binding XML",destXml);
 
         jetty.addConfiguration("binding-test-contexts-1.xml");
@@ -76,7 +82,7 @@ public class GlobalWebappConfigBindingTest
 
         List<WebAppContext> contexts = jetty.getWebAppContexts();
         Assert.assertThat("List of Contexts", contexts, hasSize(greaterThan(0)));
-        
+
         WebAppContext context = contexts.get(0);
 
         Assert.assertNotNull("Context should not be null",context);
@@ -98,7 +104,7 @@ public class GlobalWebappConfigBindingTest
         //                jndiPackage = true;
         //            }
         //        }
-        //        
+        //
         //        Assert.assertFalse(jndiPackage);
     }
 }

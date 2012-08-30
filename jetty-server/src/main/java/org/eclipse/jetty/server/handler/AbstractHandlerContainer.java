@@ -1,24 +1,31 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.TypeUtil;
 
 
@@ -33,64 +40,66 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     public AbstractHandlerContainer()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
+    @Override
     public Handler[] getChildHandlers()
     {
-        Object list = expandChildren(null,null);
-        return (Handler[])LazyList.toArray(list, Handler.class);
+        List<Handler> list=new ArrayList<>();
+        expandChildren(list,null);
+        return list.toArray(new Handler[list.size()]);
     }
-        
+
     /* ------------------------------------------------------------ */
+    @Override
     public Handler[] getChildHandlersByClass(Class<?> byclass)
     {
-        Object list = expandChildren(null,byclass);
-        return (Handler[])LazyList.toArray(list, byclass);
+        List<Handler> list=new ArrayList<>();
+        expandChildren(list,byclass);
+        return list.toArray(new Handler[list.size()]);
     }
-    
+
     /* ------------------------------------------------------------ */
+    @Override
     public <T extends Handler> T getChildHandlerByClass(Class<T> byclass)
     {
-        // TODO this can be more efficient?
-        Object list = expandChildren(null,byclass);
-        if (list==null)
+        List<Handler> list=new ArrayList<>();
+        expandChildren(list,byclass);
+        if (list.isEmpty())
             return null;
-        return (T)LazyList.get(list, 0);
-    }
-    
-    /* ------------------------------------------------------------ */
-    protected Object expandChildren(Object list, Class<?> byClass)
-    {
-        return list;
+        return (T)list.get(0);
     }
 
     /* ------------------------------------------------------------ */
-    protected Object expandHandler(Handler handler, Object list, Class<Handler> byClass)
+    protected void expandChildren(List<Handler> list, Class<?> byClass)
+    {
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void expandHandler(Handler handler, List<Handler> list, Class<?> byClass)
     {
         if (handler==null)
-            return list;
-        
+            return;
+
         if (byClass==null || byClass.isAssignableFrom(handler.getClass()))
-            list=LazyList.add(list, handler);
+            list.add(handler);
 
         if (handler instanceof AbstractHandlerContainer)
-            list=((AbstractHandlerContainer)handler).expandChildren(list, byClass);
+            ((AbstractHandlerContainer)handler).expandChildren(list, byClass);
         else if (handler instanceof HandlerContainer)
         {
             HandlerContainer container = (HandlerContainer)handler;
             Handler[] handlers=byClass==null?container.getChildHandlers():container.getChildHandlersByClass(byClass);
-            list=LazyList.addArray(list, handlers);
+            list.addAll(Arrays.asList(handlers));
         }
-        
-        return list;
     }
-    
+
     /* ------------------------------------------------------------ */
     public static <T extends HandlerContainer> T findContainerOf(HandlerContainer root,Class<T>type, Handler handler)
     {
         if (root==null || handler==null)
             return null;
-        
+
         Handler[] branches=root.getChildHandlersByClass(type);
         if (branches!=null)
         {
@@ -108,8 +117,9 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         }
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
+    @Override
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpThis(out);

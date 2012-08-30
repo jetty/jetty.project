@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>19</version>
+    <version>20-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-project</artifactId>
   <version>9.0.0-SNAPSHOT</version>
@@ -51,7 +51,7 @@
             </goals>
             <configuration>
               <resourceBundles>
-                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.1</resourceBundle>
               </resourceBundles>
             </configuration>
           </execution>
@@ -281,9 +281,20 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
             <docfilessubdirs>true</docfilessubdirs>
-            <detectLinks>true</detectLinks>
+            <detectLinks>false</detectLinks>
             <detectJavaApiLink>true</detectJavaApiLink>
-          </configuration>
+            <excludePackageNames>org.slf4j.*;org.mortbay.*</excludePackageNames>
+            <links>
+              <link>http://download.eclipse.org/jetty/stable-7/apidocs/</link>
+            </links>
+            <tags>
+              <tag>
+                <name>org.apache.xbean.XBean</name>
+                <placement>a</placement>
+                <head>Apache XBean:</head>
+              </tag>
+            </tags>
+            </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -329,7 +340,6 @@
       </plugin>
     </plugins>
   </reporting>
-<!--
   <repositories>
     <repository>
       <snapshots>
@@ -340,8 +350,8 @@
       <url>http://oss.sonatype.org/content/groups/jetty</url>
     </repository>
   </repositories>
--->
   <modules>
+    <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
@@ -352,34 +362,39 @@
     <module>jetty-security</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
-    <module>jetty-deploy</module>
-
+    <module>jetty-spdy</module>
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
-
-    <module>jetty-client-new</module>
-
+    <module>jetty-util-ajax</module>
     <module>test-continuation</module>
     <module>test-jetty-webapp</module>
     <module>example-jetty-embedded</module>
-    <!--
+    <module>jetty-maven-plugin</module>
+    <module>jetty-jspc-maven-plugin</module>
+    <module>jetty-deploy</module>
+    <module>jetty-start</module>
+    <module>jetty-plugins</module>
+    <module>jetty-plus</module>
+    <module>jetty-annotations</module>
+    <module>jetty-jndi</module>
+    <module>jetty-jsp</module>
+    <module>jetty-spring</module>
+    <module>jetty-client-new</module>
+
+    <!-- modules that need fixed and added back, or simply dropped and not maintained
+
+    <module>jetty-runner</module>
+    <module>jetty-rhttp</module>
     <module>jetty-jaspi</module>
     <module>jetty-client</module>
-    <module>jetty-ajp</module>
-    <module>jetty-jndi</module>
-    <module>jetty-annotations</module>
-    <module>jetty-plus</module>
+    <module>jetty-proxy</module>
     <module>jetty-rewrite</module>
     <module>jetty-policy</module>
     <module>jetty-monitor</module>
-    <module>jetty-start</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
-    <module>jetty-osgi</module>
     <module>jetty-nosql</module>
     <module>jetty-http-spi</module>
-    <module>jetty-jsp</module>
-    <module>jetty-distribution</module>
     <module>test-jetty-nested</module>
     <module>test-jetty-servlet</module>
     <module>example-async-rest</module>
@@ -471,7 +486,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>1.6.1</version>
+        <version>1.8</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -494,9 +509,9 @@
         <version>4.8.1</version>
       </dependency>
       <dependency>
-      	<groupId>org.hamcrest</groupId>
-      	<artifactId>hamcrest-all</artifactId>
-      	<version>1.1</version>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-all</artifactId>
+        <version>1.1</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
@@ -508,83 +523,22 @@
   <!--
     Usage:
     configure settings.xml for jetty.eclipse.website server entry
-    > mvn -Paggregate-site javadoc:aggregate jxr:jxr
     > mvn -N site:deploy
     or
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
     <profile>
-      <!-- Modules that are only for JDK7+ builds -->
-      <id>JDK7-plus-modules</id>
-      <activation>
-        <jdk>[1.7,)</jdk>
-      </activation>
+      <id>release</id>
       <modules>
-        <module>jetty-spdy</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>eclipse-release</id>
-   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>enforce-java</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireJavaVersion>
-                  <version>[1.7,)</version>
-                </requireJavaVersion>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-    </profile>
-    <profile>
-      <!--
-        Moves the jetty-aggregate build tree to a profile called 'aggregates'.
-        It is active by default, but being in a profile allows it to be
-        disabled via the "-P-aggregates" command line on maven.
-        (Useful for running site plugin with deep reporting and avoiding
-         duplicate hits on aggregated classes) -->
-      <id>aggregates</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-	<!--
-        <file>
-          <exists>${basedir}/pom.xml</exists>
-        </file>
-	-->
-      </activation>
-      <modules>
+        <!--
         <module>jetty-aggregate</module>
+         -->
+        <module>jetty-distribution</module>
       </modules>
     </profile>
     <profile>
-      <!--
-        Moves the jetty-osgi build tree to a profile called 'osgi'.
-        It is active by default, but being in a profile allows it to be
-        disabled via the "-P-osgi" command line on maven (if need be).
-        -->
       <id>osgi</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-	<!--
-        <file>
-          <exists>${basedir}/pom.xml</exists>
-        </file>
-	-->
-      </activation>
       <modules>
         <module>jetty-osgi</module>
       </modules>
@@ -613,63 +567,6 @@
             </executions>
           </plugin>
         </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>cobertura</id>
-      <reporting>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>cobertura-maven-plugin</artifactId>
-            <configuration>
-              <maxmem>512m</maxmem>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <reportSets>
-              <reportSet>
-                <id>just-javadoc-no-aggregate</id>
-                <reports>
-                  <report>javadoc</report>
-                </reports>
-                <inherited>true</inherited>
-                <configuration>
-                  <minmemory>256m</minmemory>
-                  <maxmemory>1g</maxmemory>
-                  <excludePackageNames>com.acme</excludePackageNames>
-                  <links>
-                    <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
-                    <link>http://java.sun.com/javaee/5/docs/api</link>
-                    <link>http://junit.sourceforge.net/javadoc/</link>
-                  </links>
-                  <tags>
-                    <tag>
-                      <name>org.apache.xbean.XBean</name>
-                      <placement>X</placement>
-                      <head />
-                    </tag>
-                  </tags>
-                </configuration>
-              </reportSet>
-            </reportSets>
-          </plugin>
-         </plugins>
-      </reporting>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <testFailureIgnore>true</testFailureIgnore>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
       </build>
     </profile>
     <profile>
@@ -726,6 +623,49 @@
               </tags>
             </configuration>
           </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>license-check</id>
+      <build>
+        <plugins>
+          <plugin>
+          <inherited>false</inherited>
+          <groupId>com.mycila.maven-license-plugin</groupId>
+          <artifactId>maven-license-plugin</artifactId>
+          <version>1.10.b1</version>
+          <configuration>
+            <header>header-template.txt</header>
+            <failIfMissing>true</failIfMissing>
+            <aggregate>true</aggregate>
+            <strictCheck>true</strictCheck>
+            <properties>
+               <copyright-range>${project.inceptionYear}-2012</copyright-range>
+            </properties>
+            <mapping>
+              <java>DOUBLESLASH_STYLE</java>
+            </mapping>
+            <includes>
+              <include>**/*.java</include>
+            </includes>
+            <excludes>
+              <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
+              <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
+              <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
+              <exlcude>jetty-ant/**</exlcude> <!-- short term, need to add support to accept additional copyrights -->
+            </excludes>
+          </configuration>
+          <executions>
+            <execution>
+              <id>check-headers</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
         </plugins>
       </build>
     </profile>

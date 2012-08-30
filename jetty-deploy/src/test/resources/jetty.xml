@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
@@ -14,21 +14,20 @@
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
-    <Set name="ThreadPool">
-      <!-- Default queued blocking threadpool 
-      -->
+    <Arg name="threadPool">
+      <!-- Default queued blocking threadpool -->
       <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
         <Set name="maxThreads">200</Set>
         <Set name="minThreads">10</Set>
       </New>
 
-      <!-- Optional Java 5 bounded threadpool with job queue 
+      <!-- Optional Java 5 bounded threadpool with job queue
       <New class="org.eclipse.thread.concurrent.ThreadPool">
         <Set name="corePoolSize">50</Set>
         <Set name="maximumPoolSize">50</Set>
       </New>
       -->
-    </Set>
+    </Arg>
 
     <!-- =========================================================== -->
     <!-- Set connectors                                              -->
@@ -36,11 +35,11 @@
 
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+          <New class="org.eclipse.jetty.server.SelectChannelConnector">
+            <Arg><Ref id="Server" /></Arg>
             <Set name="host"></Set>
             <Set name="port">0</Set>
-            <Set name="maxIdleTime">300000</Set>
-            <Set name="confidentialPort">8443</Set>
+            <Set name="idleTimeout">300000</Set>
           </New>
       </Arg>
     </Call>
@@ -50,13 +49,7 @@
     <!-- mixin jetty-ssl.xml:                                            -->
     <!--   java -jar start.jar etc/jetty-ssl.xml                         -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- To add a HTTP blocking connector                                -->
-    <!-- mixin jetty-bio.xml:                                            -->
-    <!--   java -jar start.jar etc/jetty-bio.xml                         -->
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    
+
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
     <!-- To allow Jetty to be started from xinetd                        -->
     <!-- mixin jetty-xinetd.xml:                                         -->
@@ -66,7 +59,7 @@
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
     <!-- =========================================================== -->
-    <!-- Set handler Collection Structure                            --> 
+    <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
       <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
@@ -85,7 +78,7 @@
         </Set>
       </New>
     </Set>
-    
+
     <!-- =========================================================== -->
     <!-- Configure Authentication Login Service                      -->
     <!-- Realms may be configured for the entire server here, or     -->
@@ -130,6 +123,6 @@
     <Set name="stopAtShutdown">true</Set>
     <Set name="sendServerVersion">true</Set>
     <Set name="sendDateHeader">true</Set>
-    <Set name="gracefulShutdown">1000</Set>
+    <Set name="stopTimeout">1000</Set>
 
 </Configure>

@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util;
 
@@ -18,7 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
@@ -44,9 +49,10 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * @see java.net.URLEncoder
  */
-public class UrlEncoded extends MultiMap implements Cloneable
+@SuppressWarnings("serial")
+public class UrlEncoded extends MultiMap<String> implements Cloneable
 {
-    private static final Logger LOG = Log.getLogger(UrlEncoded.class);
+    static final Logger LOG = Log.getLogger(UrlEncoded.class);
 
     public static final String ENCODING = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset",StringUtil.__UTF8);
 
@@ -59,20 +65,19 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /* ----------------------------------------------------------------- */
     public UrlEncoded()
     {
-        super(6);
     }
     
     /* ----------------------------------------------------------------- */
     public UrlEncoded(String s)
     {
-        super(6);
+        this();
         decode(s,ENCODING);
     }
     
     /* ----------------------------------------------------------------- */
     public UrlEncoded(String s, String charset)
     {
-        super(6);
+        this();
         decode(s,charset);
     }
     
@@ -119,21 +124,24 @@ public class UrlEncoded extends MultiMap implements Cloneable
      * @param equalsForNullValue if True, then an '=' is always used, even
      * for parameters without a value. e.g. "blah?a=&b=&c=".
      */
-    public static String encode(MultiMap map, String charset, boolean equalsForNullValue)
+    public static String encode(MultiMap<String> map, String charset, boolean equalsForNullValue)
     {
         if (charset==null)
             charset=ENCODING;
 
         StringBuilder result = new StringBuilder(128);
 
-        Iterator iter = map.entrySet().iterator();
-        while(iter.hasNext())
+        boolean delim = false;
+        for(Map.Entry<String, List<String>> entry: map.entrySet())
         {
-            Map.Entry entry = (Map.Entry)iter.next();
-
             String key = entry.getKey().toString();
-            Object list = entry.getValue();
-            int s=LazyList.size(list);
+            List<String> list = entry.getValue();
+            int s=list.size();
+            
+            if (delim)
+            {
+                result.append('&');
+            }
 
             if (s==0)
             {
@@ -147,7 +155,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                 {
                     if (i>0)
                         result.append('&');
-                    Object val=LazyList.get(list,i);
+                    String val=list.get(i);
                     result.append(encodeString(key,charset));
 
                     if (val!=null)
@@ -165,8 +173,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
                         result.append('=');
                 }
             }
-            if (iter.hasNext())
-                result.append('&');
+            delim = true;
         }
         return result.toString();
     }
@@ -177,7 +184,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param content the string containing the encoded parameters
      */
-    public static void decodeTo(String content, MultiMap map, String charset)
+    public static void decodeTo(String content, MultiMap<String> map, String charset)
     {
         decodeTo(content,map,charset,-1);
     }
@@ -186,7 +193,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param content the string containing the encoded parameters
      */
-    public static void decodeTo(String content, MultiMap map, String charset, int maxKeys)
+    public static void decodeTo(String content, MultiMap<String> map, String charset, int maxKeys)
     {
         if (charset==null)
             charset=ENCODING;
@@ -267,7 +274,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
      * @param map the {@link MultiMap} to populate
      * @param buffer the buffer to decode into
      */
-    public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap map)
+    public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap<String> map)
     {
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         synchronized(map)
@@ -275,7 +282,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
             String key = null;
             String value = null;
 
-            // TODO cache of parameter names ???
             int end=offset+length;
             for (int i=offset;i<end;i++)
             {
@@ -347,10 +353,9 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of content to read or -1 for no limit
      * @param maxLength maximum number of keys to read or -1 for no limit
      */
-    public static void decode88591To(InputStream in, MultiMap map, int maxLength, int maxKeys)
+    public static void decode88591To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
     throws IOException
     {
         synchronized(map)
@@ -361,7 +366,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
             
             int b;
 
-            // TODO cache of parameter names ???
             int totalLength=0;
             while ((b=in.read())>=0)
             {
@@ -433,10 +437,9 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of content to read or -1 for no limit
      * @param maxLength maximum number of keys to read or -1 for no limit
      */
-    public static void decodeUtf8To(InputStream in, MultiMap map, int maxLength, int maxKeys)
+    public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
     throws IOException
     {
         synchronized(map)
@@ -447,7 +450,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
             
             int b;
             
-            // TODO cache of parameter names ???
             int totalLength=0;
             while ((b=in.read())>=0)
             {
@@ -524,7 +526,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
     }
     
     /* -------------------------------------------------------------- */
-    public static void decodeUtf16To(InputStream in, MultiMap map, int maxLength, int maxKeys) throws IOException
+    public static void decodeUtf16To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys) throws IOException
     {
         InputStreamReader input = new InputStreamReader(in,StringUtil.__UTF16);
         StringWriter buf = new StringWriter(8192);
@@ -537,7 +539,7 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param in the stream containing the encoded parameters
      */
-    public static void decodeTo(InputStream in, MultiMap map, String charset, int maxLength, int maxKeys)
+    public static void decodeTo(InputStream in, MultiMap<String> map, String charset, int maxLength, int maxKeys)
     throws IOException
     {
         //no charset present, use the configured default
@@ -760,14 +762,15 @@ public class UrlEncoded extends MultiMap implements Cloneable
                                 {
                                     try
                                     {
-                                        ba[n++]=(byte)TypeUtil.parseInt(encoded,offset+i+1,2,16);
+                                        ba[n]=(byte)TypeUtil.parseInt(encoded,offset+i+1,2,16);
+                                        n++;
                                         i+=3;
                                     }
                                     catch(NumberFormatException nfe)
-                                    {                                        
-                                        ba[n-1] = (byte)'%';                                    
-                                        for(char next; ((next=encoded.charAt(++i+offset))!='%');)
-                                            ba[n++] = (byte)(next=='+' ? ' ' : next);
+                                    {   
+                                        LOG.ignore(nfe);
+                                        ba[n++] = (byte)'%';
+                                        i++;         
                                     }
                                 }
                                 else

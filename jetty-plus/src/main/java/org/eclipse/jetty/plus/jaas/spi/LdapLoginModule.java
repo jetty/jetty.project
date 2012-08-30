@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 2007-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.plus.jaas.spi;
 
 import java.io.IOException;
@@ -18,7 +24,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -35,10 +40,10 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginException;
 
-import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.plus.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.security.Credential;
 
 /**
  * A LdapLoginModule for use with JAAS setups
@@ -75,9 +80,9 @@ import org.eclipse.jetty.util.log.Logger;
  *    };
  *  </pre>
  *
- * 
- * 
- * 
+ *
+ *
+ *
  */
 public class LdapLoginModule extends AbstractLoginModule
 {
@@ -168,7 +173,7 @@ public class LdapLoginModule extends AbstractLoginModule
      * login checks, set this to true
      */
     private boolean _forceBindingLogin = false;
-    
+
     /**
      * When true changes the protocol to ldaps
      */
@@ -327,6 +332,7 @@ public class LdapLoginModule extends AbstractLoginModule
         SearchControls ctls = new SearchControls();
         ctls.setDerefLinkFlag(true);
         ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        ctls.setReturningAttributes(new String[]{_roleNameAttribute});
 
         String filter = "(&(objectClass={0})({1}={2}))";
         Object[] filterArguments = {_roleObjectClass, _roleMemberAttribute, userDn};
@@ -545,12 +551,12 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             _forceBindingLogin = Boolean.parseBoolean((String) options.get("forceBindingLogin"));
         }
-        
+
         if (options.containsKey("useLdaps"))
         {
             _useLdaps = Boolean.parseBoolean((String) options.get("useLdaps"));
-        }     
-        
+        }
+
         _userObjectClass = getOption(options, "userObjectClass", _userObjectClass);
         _userRdnAttribute = getOption(options, "userRdnAttribute", _userRdnAttribute);
         _userIdAttribute = getOption(options, "userIdAttribute", _userIdAttribute);
@@ -570,13 +576,13 @@ public class LdapLoginModule extends AbstractLoginModule
         }
     }
 
-    public boolean commit() throws LoginException 
+    public boolean commit() throws LoginException
     {
-        try 
+        try
         {
             _rootContext.close();
-        } 
-        catch (NamingException e) 
+        }
+        catch (NamingException e)
         {
             throw new LoginException( "error closing root context: " + e.getMessage() );
         }
@@ -584,13 +590,13 @@ public class LdapLoginModule extends AbstractLoginModule
         return super.commit();
     }
 
-    public boolean abort() throws LoginException 
+    public boolean abort() throws LoginException
     {
-        try 
+        try
         {
             _rootContext.close();
-        } 
-        catch (NamingException e) 
+        }
+        catch (NamingException e)
         {
             throw new LoginException( "error closing root context: " + e.getMessage() );
         }

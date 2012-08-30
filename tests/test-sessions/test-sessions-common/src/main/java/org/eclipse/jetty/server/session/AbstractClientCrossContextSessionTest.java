@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright 2004-2010 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
@@ -26,6 +32,7 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -46,10 +53,14 @@ public abstract class AbstractClientCrossContextSessionTest
         String contextB = "/contextB";
         String servletMapping = "/server";
         AbstractTestServer server = createServer(0);
+        TestServletA servletA = new TestServletA();
+        ServletHolder holderA = new ServletHolder(servletA);
         ServletContextHandler ctxA = server.addContext(contextA);
-        ctxA.addServlet(TestServletA.class, servletMapping);
+        ctxA.addServlet(holderA, servletMapping);
         ServletContextHandler ctxB = server.addContext(contextB);
-        ctxB.addServlet(TestServletB.class, servletMapping);
+        TestServletB servletB = new TestServletB();
+        ServletHolder holderB = new ServletHolder(servletB);
+        ctxB.addServlet(holderB, servletMapping);
         server.start();
         int port = server.getPort();
         
@@ -76,10 +87,12 @@ public abstract class AbstractClientCrossContextSessionTest
                 ContentExchange exchangeB = new ContentExchange(true);
                 exchangeB.setMethod(HttpMethods.GET);
                 exchangeB.setURL("http://localhost:" + port + contextB + servletMapping);
-                exchangeB.getRequestFields().add("Cookie", sessionCookie);
+                System.err.println("Cookie = "+sessionCookie);
+                exchangeB.getRequestFields().add("Cookie", sessionCookie);  
                 client.send(exchangeB);
                 exchangeB.waitForDone();
                 assertEquals(HttpServletResponse.SC_OK,exchangeB.getResponseStatus());
+                assertEquals(servletA.sessionId, servletB.sessionId);
             }
             finally
             {
@@ -94,11 +107,17 @@ public abstract class AbstractClientCrossContextSessionTest
 
     public static class TestServletA extends HttpServlet
     {
+        public String sessionId;
+        
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             HttpSession session = request.getSession(false);
-            if (session == null) session = request.getSession(true);
+            if (session == null)
+            {
+                session = request.getSession(true);
+                sessionId = session.getId();
+            }
 
             // Add something to the session
             session.setAttribute("A", "A");
@@ -106,17 +125,23 @@ public abstract class AbstractClientCrossContextSessionTest
             // Check that we don't see things put in session by contextB
             Object objectB = session.getAttribute("B");
             assertTrue(objectB == null);
-            System.out.println("A: session.getAttributeNames() = " + Collections.list(session.getAttributeNames()));
         }
     }
 
     public static class TestServletB extends HttpServlet
     {
+        public String sessionId;
+        
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {
             HttpSession session = request.getSession(false);
-            if (session == null) session = request.getSession(true);
+            if (session == null)
+                session = request.getSession(true);
+
+            sessionId = session.getId();
+
+
 
             // Add something to the session
             session.setAttribute("B", "B");
@@ -124,7 +149,6 @@ public abstract class AbstractClientCrossContextSessionTest
             // Check that we don't see things put in session by contextA
             Object objectA = session.getAttribute("A");
             assertTrue(objectA == null);
-            System.out.println("B: session.getAttributeNames() = " + Collections.list(session.getAttributeNames()));
         }
     }
 }

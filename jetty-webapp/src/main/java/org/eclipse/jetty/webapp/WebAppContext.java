@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.webapp;
 
@@ -24,7 +29,6 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -41,11 +45,12 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -64,6 +69,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * @org.apache.xbean.XBean description="Creates a servlet web application at a given context from a resource base"
  *
  */
+@ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
 {
     private static final Logger LOG = Log.getLogger(WebAppContext.class);
@@ -75,6 +81,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public final static String SERVER_CONFIG = "org.eclipse.jetty.webapp.configuration";
     public final static String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public final static String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
+
+    private String[] __dftProtectedTargets = {"/web-inf", "/meta-inf"};
 
     private static String[] __dftConfigurationClasses =
     {
@@ -131,7 +139,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _distributable=false;
     private boolean _extractWAR=true;
     private boolean _copyDir=false;
-    private boolean _copyWebInf=true; // TODO change to false?
+    private boolean _copyWebInf=false; // TODO change to true?
     private boolean _logUrlOnStart =false;
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
@@ -150,6 +158,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationsSet=false;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
+
+
 
     private MetaData _metadata=new MetaData();
 
@@ -171,6 +181,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(SESSIONS|SECURITY);
         _scontext=new Context();
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -185,6 +196,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setContextPath(contextPath);
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -199,6 +211,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _scontext=new Context();
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -215,6 +228,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(null, sessionHandler, securityHandler, servletHandler, errorHandler);
         _scontext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
+        setProtectedTargets(__dftProtectedTargets);
     }
 
     /* ------------------------------------------------------------ */
@@ -270,11 +284,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    public String getResourceAlias(String alias)
+    public String getResourceAlias(String path)
     {
         if (_resourceAliases == null)
             return null;
-        return _resourceAliases.get(alias);
+        String alias = _resourceAliases.get(path);
+
+        int slash=path.length();
+        while (alias==null)
+        {
+            slash=path.lastIndexOf("/",slash-1);
+            if (slash<0)
+                break;
+            String match=_resourceAliases.get(path.substring(0,slash+1));
+            if (match!=null)
+                alias=match+path.substring(slash+1);
+        }
+        return alias;
     }
 
     /* ------------------------------------------------------------ */
@@ -545,6 +571,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @return Returns the configurations.
      */
+    @ManagedAttribute(value="configuration classes used to configure webapp", readonly=true)
     public String[] getConfigurationClasses()
     {
         return _configurationClasses;
@@ -564,6 +591,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * The default descriptor is a web.xml format file that is applied to the context before the standard WEB-INF/web.xml
      * @return Returns the defaultsDescriptor.
      */
+    @ManagedAttribute(value="default web.xml deascriptor applied before standard web.xml", readonly=true)
     public String getDefaultsDescriptor()
     {
         return _defaultsDescriptor;
@@ -575,6 +603,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @return Returns the Override Descriptor.
      * @deprecated use {@link #getOverrideDescriptors()}
      */
+    @Deprecated
     public String getOverrideDescriptor()
     {
         if (_overrideDescriptors.size()!=1)
@@ -587,6 +616,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * An override descriptor is a web.xml format file that is applied to the context after the standard WEB-INF/web.xml
      * @return Returns the Override Descriptor list
      */
+    @ManagedAttribute(value="web.xml deascriptors applied after standard web.xml", readonly=true)
     public List<String> getOverrideDescriptors()
     {
         return Collections.unmodifiableList(_overrideDescriptors);
@@ -606,6 +636,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @see #setServerClasses(String[])
      * @return Returns the serverClasses.
      */
+    @ManagedAttribute(value="classes and packages hidden by the context classloader", readonly=true)
     public String[] getServerClasses()
     {
         if (_serverClasses == null)
@@ -627,6 +658,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @see #setSystemClasses(String[])
      * @return Returns the systemClasses.
      */
+    @ManagedAttribute("classes and packages given priority by context classloader")
     public String[] getSystemClasses()
     {
         if (_systemClasses == null)
@@ -686,26 +718,33 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private void loadServerClasses()
     {
         if (_serverClasses != null)
+        {
             return;
+        }
 
-        //look for a Server attribute with the list of Server classes
-        //to apply to every web application. If not present, use our defaults.
+        // look for a Server attribute with the list of Server classes
+        // to apply to every web application. If not present, use our defaults.
         Server server = getServer();
         if (server != null)
         {
             Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
-            if (serverClasses != null || serverClasses instanceof String[])
+            if (serverClasses != null && serverClasses instanceof String[])
+            {
                 _serverClasses = new ClasspathPattern((String[])serverClasses);
+            }
         }
 
         if (_serverClasses == null)
+        {
             _serverClasses = new ClasspathPattern(__dftServerClasses);
+        }
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the war as a file or URL string (Resource)
      */
+    @ManagedAttribute(value="war file location", readonly=true)
     public String getWar()
     {
         if (_war==null)
@@ -731,6 +770,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @return Returns the distributable.
      */
+    @ManagedAttribute("web application distributable")
     public boolean isDistributable()
     {
         return _distributable;
@@ -740,6 +780,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @return Returns the extractWAR.
      */
+    @ManagedAttribute(value="extract war", readonly=true)
     public boolean isExtractWAR()
     {
         return _extractWAR;
@@ -749,6 +790,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @return True if the webdir is copied (to allow hot replacement of jars on windows)
      */
+    @ManagedAttribute(value="webdir copied on deploy (allows hot replacement on windows)", readonly=true)
     public boolean isCopyWebDir()
     {
         return _copyDir;
@@ -770,6 +812,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet
      * spec recommendation).
      */
+    @ManagedAttribute(value="parent classloader given priority", readonly=true)
     public boolean isParentLoaderPriority()
     {
         return _parentLoaderPriority;
@@ -813,15 +856,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    protected boolean isProtectedTarget(String target)
-    {
-        while (target.startsWith("//"))
-            target=URIUtil.compactPath(target);
-
-        return StringUtil.startsWithIgnoreCase(target, "/web-inf") || StringUtil.startsWithIgnoreCase(target, "/meta-inf");
-    }
 
 
     /* ------------------------------------------------------------ */
@@ -873,6 +907,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param overrideDescriptor The overrideDescritpor to set.
      * @deprecated use {@link #setOverrideDescriptors(List)}
      */
+    @Deprecated
     public void setOverrideDescriptor(String overrideDescriptor)
     {
         _overrideDescriptors.clear();
@@ -904,6 +939,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @return the web.xml descriptor to use. If set to null, WEB-INF/web.xml is used if it exists.
      */
+    @ManagedAttribute(value="standard web.xml descriptor", readonly=true)
     public String getDescriptor()
     {
         return _descriptor;
@@ -960,7 +996,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public void addEventListener(EventListener listener)
     {
-        setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(), listener, EventListener.class));
+        setEventListeners(ArrayUtil.addToArray(getEventListeners(), listener, EventListener.class));
     }
 
 
@@ -1103,6 +1139,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute(value="temporary directory location", readonly=true)
     public File getTempDirectory ()
     {
         return _tmpDir;
@@ -1123,6 +1160,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * pointing to directories or jar files. Directories should end
      * with '/'.
      */
+    @ManagedAttribute(value="extra classpath for context classloader", readonly=true)
     public String getExtraClasspath()
     {
         return _extraClasspath;
@@ -1217,6 +1255,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public class Context extends ServletContextHandler.Context
     {
         /* ------------------------------------------------------------ */
+        @Override
         public URL getResource(String path) throws MalformedURLException
         {
             Resource resource=WebAppContext.this.getResource(path);

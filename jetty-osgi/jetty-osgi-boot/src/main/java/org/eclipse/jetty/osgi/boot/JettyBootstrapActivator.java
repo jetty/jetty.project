@@ -1,17 +1,21 @@
-// ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// Contributors:
-//    Hugues Malphettes - initial API and implementation
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.osgi.boot;
 
 import java.util.Dictionary;
@@ -35,22 +39,17 @@ import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
 
 /**
- * Experiment: bootstrap jetty's complete distrib from an OSGi bundle. Progress:
+ * Bootstrap jetty and publish a default Server instance as an OSGi service.
+ * 
+ * Listen for other Server instances to be published as services and support them as deployment targets.
+ * 
+ * Listen for Bundles to be activated, and deploy those that represent webapps to one of the known Server instances.
+ * 
  * <ol>
  * <li>basic servlet [ok]</li>
  * <li>basic jetty.xml [ok]</li>
  * <li>basic jetty.xml and jetty-plus.xml [ok]</li>
- * <li>basic jsp [ok with modifications]
- * <ul>
- * <li>Needed to modify the headers of jdt.core-3.1.1 so that its dependency on
- * eclipse.runtime, eclipse.resources and eclipse.text are optional. Also we
- * should depend on the latest jdt.core from eclipse-3.5 not from eclipse-3.1.1
- * although that will require actual changes to jasper as some internal APIs of
- * jdt.core have changed.</li>
- * <li>Modifications to org.mortbay.jetty.jsp-2.1-glassfish: made all imports to
- * ant, xalan and sun packages optional.</li>
- * </ul>
- * </li>
+ * <li>basic jsp [ok]</li>
  * <li>jsp with tag-libs [ok]</li>
  * <li>test-jndi with atomikos and derby inside ${jetty.home}/lib/ext [ok]</li>
  * </ul>
@@ -66,15 +65,18 @@ public class JettyBootstrapActivator implements BundleActivator
     }
 
     private ServiceRegistration _registeredServer;
+
     private Server _server;
+
     private JettyContextHandlerServiceTracker _jettyContextHandlerTracker;
+
     private PackageAdminServiceTracker _packageAdminServiceTracker;
+
     private BundleTracker _webBundleTracker;
+
     private BundleContext _bundleContext;
-    
-//    private ServiceRegistration _jettyServerFactoryService;
+
     private JettyServerServiceTracker _jettyServerServiceTracker;
-    
 
     /**
      * Setup a new jetty Server, registers it as a service. Setup the Service
@@ -93,34 +95,24 @@ public class JettyBootstrapActivator implements BundleActivator
         // should activate.
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
-    	_jettyServerServiceTracker = new JettyServerServiceTracker();
-        context.addServiceListener(_jettyServerServiceTracker,"(objectclass=" + Server.class.getName() + ")");
+        // track Server instances that we should support as deployment targets
+        _jettyServerServiceTracker = new JettyServerServiceTracker();
+        context.addServiceListener(_jettyServerServiceTracker, "(objectclass=" + Server.class.getName() + ")");
 
-        //Register the Jetty Server Factory as a ManagedServiceFactory:
-//          Properties jettyServerMgdFactoryServiceProps = new Properties(); 
-//          jettyServerMgdFactoryServiceProps.put("pid", OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID);
-//          _jettyServerFactoryService = context.registerService(
-//          		ManagedServiceFactory.class.getName(),  new JettyServersManagedFactory(),
-//          		jettyServerMgdFactoryServiceProps);
-    
+        // track ContextHandler class instances and deploy them to one of the known Servers
         _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(_jettyServerServiceTracker);
+        context.addServiceListener(_jettyContextHandlerTracker, "(objectclass=" + ContextHandler.class.getName() + ")");
 
-        // the tracker in charge of the actual deployment
-        // and that will configure and start the jetty server.
-        context.addServiceListener(_jettyContextHandlerTracker,"(objectclass=" + ContextHandler.class.getName() + ")");
-
-        //see if we shoult start a default jetty instance right now.
+        // Create a default jetty instance right now.
         DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
-        
-        // now ready to support the Extender pattern:        
-        _webBundleTracker = new BundleTracker(context,
-        		Bundle.ACTIVE | Bundle.STOPPING, new WebBundleTrackerCustomizer());
+
+        // track Bundles and deploy those that represent webapps to one of the known Servers
+        _webBundleTracker = new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, new WebBundleTrackerCustomizer());
         _webBundleTracker.open();
-        
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Stop the activator.
      * 
      * @see
      * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
@@ -129,12 +121,12 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         try
         {
-        	
-        	if (_webBundleTracker != null)
-        	{
-        		_webBundleTracker.close();
-        		_webBundleTracker = null;
-        	}
+
+            if (_webBundleTracker != null)
+            {
+                _webBundleTracker.close();
+                _webBundleTracker = null;
+            }
             if (_jettyContextHandlerTracker != null)
             {
                 _jettyContextHandlerTracker.stop();
@@ -143,7 +135,7 @@ public class JettyBootstrapActivator implements BundleActivator
             }
             if (_jettyServerServiceTracker != null)
             {
-            	_jettyServerServiceTracker.stop();
+                _jettyServerServiceTracker.stop();
                 context.removeServiceListener(_jettyServerServiceTracker);
                 _jettyServerServiceTracker = null;
             }
@@ -165,31 +157,15 @@ public class JettyBootstrapActivator implements BundleActivator
                 }
                 finally
                 {
-                	_registeredServer = null;
+                    _registeredServer = null;
                 }
             }
-//        	if (_jettyServerFactoryService != null)
-//        	{
-//                try
-//                {
-//                	_jettyServerFactoryService.unregister();
-//                }
-//                catch (IllegalArgumentException ill)
-//                {
-//                    // already unregistered.
-//                }
-//                finally
-//                {
-//                	_jettyServerFactoryService = null;
-//                }
-//        	}
-
         }
         finally
         {
             if (_server != null)
             {
-            	_server.stop();
+                _server.stop();
             }
             INSTANCE = null;
         }
@@ -200,27 +176,25 @@ public class JettyBootstrapActivator implements BundleActivator
      * registers it as an OSGi service. The tracker
      * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
-     * @param contributor
-     *            The bundle
-     * @param webappFolderPath
-     *            The path to the root of the webapp. Must be a path relative to
-     *            bundle; either an absolute path.
-     * @param contextPath
-     *            The context path. Must start with "/"
+     * @param contributor The bundle
+     * @param webappFolderPath The path to the root of the webapp. Must be a
+     *            path relative to bundle; either an absolute path.
+     * @param contextPath The context path. Must start with "/"
      * @throws Exception
      */
     public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath) throws Exception
     {
-    	checkBundleActivated();
-    	WebAppContext contextHandler = new WebAppContext();
-        Dictionary dic = new Hashtable();
-        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR,webappFolderPath);
-        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
-        String requireTldBundle = (String)contributor.getHeaders().get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
-        if (requireTldBundle != null) {
-        	dic.put(OSGiWebappConstants.SERVICE_PROP_REQUIRE_TLD_BUNDLE, requireTldBundle);
+        checkBundleActivated();
+        WebAppContext contextHandler = new WebAppContext();
+        Dictionary<String,String> dic = new Hashtable<String,String>();
+        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR, webappFolderPath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH, contextPath);
+        String requireTldBundle = (String) contributor.getHeaders().get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
+        if (requireTldBundle != null)
+        {
+            dic.put(OSGiWebappConstants.SERVICE_PROP_REQUIRE_TLD_BUNDLE, requireTldBundle);
         }
-        contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
+        contributor.getBundleContext().registerService(ContextHandler.class.getName(), contextHandler, dic);
     }
 
     /**
@@ -228,24 +202,20 @@ public class JettyBootstrapActivator implements BundleActivator
      * registers it as an OSGi service. The tracker
      * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
-     * @param contributor
-     *            The bundle
-     * @param webappFolderPath
-     *            The path to the root of the webapp. Must be a path relative to
-     *            bundle; either an absolute path.
-     * @param contextPath
-     *            The context path. Must start with "/"
-     * @param dic
-     *        TODO: parameter description
+     * @param contributor The bundle
+     * @param webappFolderPath The path to the root of the webapp. Must be a
+     *            path relative to bundle; either an absolute path.
+     * @param contextPath The context path. Must start with "/"
+     * @param dic TODO: parameter description
      * @throws Exception
      */
     public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath, Dictionary<String, String> dic) throws Exception
     {
-    	checkBundleActivated();
+        checkBundleActivated();
         WebAppContext contextHandler = new WebAppContext();
-        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR,webappFolderPath);
-        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
-        contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR, webappFolderPath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH, contextPath);
+        contributor.getBundleContext().registerService(ContextHandler.class.getName(), contextHandler, dic);
     }
 
     /**
@@ -253,16 +223,14 @@ public class JettyBootstrapActivator implements BundleActivator
      * registers it as an OSGi service. The tracker
      * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
-     * @param contributor
-     *            The bundle that registers a new context
-     * @param contextFilePath
-     *            The path to the file inside the bundle that defines the
-     *            context.
+     * @param contributor The bundle that registers a new context
+     * @param contextFilePath The path to the file inside the bundle that
+     *            defines the context.
      * @throws Exception
      */
     public static void registerContext(Bundle contributor, String contextFilePath) throws Exception
     {
-        registerContext(contributor,contextFilePath,new Hashtable<String, String>());
+        registerContext(contributor, contextFilePath, new Hashtable<String, String>());
     }
 
     /**
@@ -270,33 +238,30 @@ public class JettyBootstrapActivator implements BundleActivator
      * registers it as an OSGi service. The tracker
      * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
-     * @param contributor
-     *            The bundle that registers a new context
-     * @param contextFilePath
-     *            The path to the file inside the bundle that defines the
-     *            context.
-     * @param dic
-     *          TODO: parameter description
+     * @param contributor The bundle that registers a new context
+     * @param contextFilePath The path to the file inside the bundle that
+     *            defines the context.
+     * @param dic TODO: parameter description
      * @throws Exception
      */
     public static void registerContext(Bundle contributor, String contextFilePath, Dictionary<String, String> dic) throws Exception
     {
-    	checkBundleActivated();
+        checkBundleActivated();
         ContextHandler contextHandler = new ContextHandler();
-        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH,contextFilePath);
-        dic.put(IWebBundleDeployerHelper.INTERNAL_SERVICE_PROP_UNKNOWN_CONTEXT_HANDLER_TYPE,Boolean.TRUE.toString());
-        contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH, contextFilePath);
+        dic.put(IWebBundleDeployerHelper.INTERNAL_SERVICE_PROP_UNKNOWN_CONTEXT_HANDLER_TYPE, Boolean.TRUE.toString());
+        contributor.getBundleContext().registerService(ContextHandler.class.getName(), contextHandler, dic);
     }
 
     public static void unregister(String contextPath)
     {
         // todo
     }
-    
+
     /**
      * Since org.eclipse.jetty.osgi.boot does not have a lazy activation policy
-     * when one fo the static methods to register a webapp is called we should make sure that
-     * the bundle is started.
+     * when one of the static methods to register a webapp is called we should
+     * make sure that the bundle is started.
      */
     private static void checkBundleActivated()
     {
@@ -313,7 +278,7 @@ public class JettyBootstrapActivator implements BundleActivator
             }
         }
     }
-    
+
     /**
      * @return The bundle context for this bundle.
      */
@@ -322,6 +287,5 @@ public class JettyBootstrapActivator implements BundleActivator
         checkBundleActivated();
         return INSTANCE._bundleContext;
     }
-    
 
 }

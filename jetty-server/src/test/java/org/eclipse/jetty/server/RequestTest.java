@@ -1,24 +1,22 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,11 +28,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Map;
-
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -42,31 +41,41 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- *
- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class RequestTest
 {
+    private static final Logger LOG = Log.getLogger(RequestTest.class);
     private Server _server;
-    private LocalHttpConnector _connector;
+    private LocalConnector _connector;
     private RequestHandler _handler;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-        _connector = new LocalHttpConnector();
-        _connector.setRequestHeaderSize(512);
-        _connector.setRequestBufferSize(1024);
-        _connector.setResponseHeaderSize(512);
-        _connector.setResponseBufferSize(2048);
-        _connector.setForwarded(true);
+        _connector = new LocalConnector(_server);
+        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
+        httpConfiguration.setRequestHeaderSize(512);
+        httpConfiguration.setRequestBufferSize(1024);
+        httpConfiguration.setResponseHeaderSize(512);
+        httpConfiguration.setResponseBufferSize(2048);
+        httpConfiguration.setForwarded(true);
+        HttpServerConnectionFactory defaultConnectionFactory = new HttpServerConnectionFactory(_connector, httpConfiguration);
+        _connector.setDefaultConnectionFactory(defaultConnectionFactory);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
         _server.setHandler(_handler);
@@ -85,6 +94,7 @@ public class RequestTest
     {
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 Map map = null;
@@ -115,6 +125,7 @@ public class RequestTest
         String request="GET /?param=%ZZaaa HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
@@ -123,10 +134,58 @@ public class RequestTest
     }
 
     @Test
+    public void testMultiPart() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                try
+                {
+                    Part foo = request.getPart("stuff");
+                    assertNotNull(foo);
+                    String value = request.getParameter("stuff");
+                    byte[] expected = "000000000000000000000000000000000000000000000000000".getBytes("ISO-8859-1");
+                    return value.equals(new String(expected, "ISO-8859-1"));
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+        };
+
+        String multipart =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"field1\"\r\n"+
+        "\r\n"+
+        "Joe Blow\r\n"+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"\r\n"+
+        "Content-Type: text/plain;charset=ISO-8859-1\r\n"+
+        "\r\n"+
+        "000000000000000000000000000000000000000000000000000\r\n"+
+        "--AaB03x--\r\n";
+
+        String request="GET / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
+        "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        multipart;
+
+        String responses=_connector.getResponses(request);
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
     public void testBadUtf8ParamExtraction() throws Exception
     {
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 String value=request.getParameter("param");
@@ -139,8 +198,10 @@ public class RequestTest
         String request="GET /?param=aaa%E7bbb HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
+        LOG.info("Expecting NotUtf8Exception byte 62 in state 3...");
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
@@ -149,23 +210,23 @@ public class RequestTest
     public void testInvalidHostHeader() throws Exception
     {
         // Use a contextHandler with vhosts to force call to Request.getServerName()
-        ContextHandler handler = new ContextHandler();
-        handler.addVirtualHosts(new String[1]);
+        ContextHandler context = new ContextHandler();
+        context.addVirtualHosts(new String[]{"something"});
         _server.stop();
-        _server.setHandler(handler);
+        _server.setHandler(context);
         _server.start();
 
+
         // Request with illegal Host header
-        String request="GET / HTTP/1.1\r\n"+
-        "Host: whatever.com:\r\n"+
+        String request="GET / HTTP/1.1\n"+
+        "Host: whatever.com:xxxx\n"+
         "Content-Type: text/html;charset=utf8\n"+
+        "Connection: close\n"+
         "\n";
 
         String responses=_connector.getResponses(request);
-        assertTrue("400 Bad Request response expected",responses.startsWith("HTTP/1.1 400"));
+        assertThat(responses,Matchers.startsWith("HTTP/1.1 400"));
     }
-
-
 
     @Test
     public void testContentTypeEncoding() throws Exception
@@ -173,6 +234,7 @@ public class RequestTest
         final ArrayList<String> results = new ArrayList<String>();
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 results.add(request.getContentType());
@@ -200,6 +262,7 @@ public class RequestTest
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Content-Type: text/html; other=foo ; blah=\"charset=wrong;\" ; charset =   \" x=z; \"   ; more=values \n"+
+                "Connection: close\n"+
                 "\n"
                 );
 
@@ -219,10 +282,11 @@ public class RequestTest
 
     @Test
     public void testHostPort() throws Exception
-    {        
+    {
         final ArrayList<String> results = new ArrayList<String>();
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 results.add(request.getRemoteAddr());
@@ -265,11 +329,12 @@ public class RequestTest
 
                 "GET / HTTP/1.1\n"+
                 "Host: [::1]:8888\n"+
+                "Connection: close\n"+
                 "x-forwarded-for: remote\n"+
                 "x-forwarded-proto: https\n"+
-                "\n"
-                );
-        
+                "\n",10,TimeUnit.SECONDS);
+
+
         int i=0;
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -305,6 +370,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 //assertEquals(request.getContentLength(), ((Request)request).getContentRead());
@@ -312,6 +378,7 @@ public class RequestTest
                 return true;
             }
         };
+
 
         String content="";
 
@@ -324,7 +391,9 @@ public class RequestTest
             "Connection: close\r\n"+
             "\r\n"+
             content;
+            Log.getRootLogger().debug("test l={}",l);
             String response = _connector.getResponses(request);
+            Log.getRootLogger().debug(response);
             assertEquals(l,length[0]);
             if (l>0)
                 assertEquals(l,_handler._content.length());
@@ -337,6 +406,7 @@ public class RequestTest
     {
         Handler handler = new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                     ServletException
             {
@@ -382,6 +452,7 @@ public class RequestTest
     {
         Handler handler = new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
             ServletException
             {
@@ -466,6 +537,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().println("Hello World");
@@ -533,6 +605,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 response.setHeader("Connection","TE");
@@ -569,6 +642,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
                 javax.servlet.http.Cookie[] ca = request.getCookies();
@@ -585,6 +659,7 @@ public class RequestTest
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
+                    "Connection: close\n"+
                     "\n"
                     );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -596,6 +671,7 @@ public class RequestTest
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
                     "Cookie: name=quoted=\\\"value\\\"\n" +
+                    "Connection: close\n"+
                     "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -608,6 +684,7 @@ public class RequestTest
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Cookie: name=value; other=\"quoted=;value\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -629,6 +706,7 @@ public class RequestTest
                 "Host: whatever\n"+
                 "Other: header\n"+
                 "Cookie: name=value; other=\"quoted=;value\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -652,6 +730,7 @@ public class RequestTest
                 "Host: whatever\n"+
                 "Other: header\n"+
                 "Cookie: name=value; other=\"othervalue\"\n" +
+                "Connection: close\n"+
                 "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -671,7 +750,7 @@ public class RequestTest
                 "POST / HTTP/1.1\r\n"+
                 "Host: whatever\r\n"+
                 "Cookie: name0=value0; name1 = value1 ; \"name2\"  =  \"\\\"value2\\\"\"  \n" +
-                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080, name4=; name5 =  ; name6\n" +
+                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080; name4=; name5 =  ; name6\n" +
                 "Cookie: name7=value7;\n" +
                 "Connection: close\r\n"+
         "\r\n");
@@ -696,6 +775,21 @@ public class RequestTest
         assertEquals("", cookies.get(6).getValue());
         assertEquals("name7", cookies.get(7).getName());
         assertEquals("value7", cookies.get(7).getValue());
+
+        cookies.clear();
+        response=_connector.getResponses(
+                "GET /other HTTP/1.1\n"+
+                        "Host: whatever\n"+
+                        "Other: header\n"+
+                        "Cookie: __utmz=14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html\n"+
+                        "Connection: close\n"+
+                        "\n"
+                );
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(1,cookies.size());
+        assertEquals("__utmz", cookies.get(0).getName());
+        assertEquals("14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html", cookies.get(0).getValue());
+
     }
 
     @Test
@@ -705,6 +799,7 @@ public class RequestTest
 
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 for (int i=0;i<cookie.length; i++)
@@ -773,30 +868,36 @@ public class RequestTest
     @Test
     public void testHashDOS() throws Exception
     {
+        LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
 
-        // This file is not distributed - as it is dangerous
-        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
-        if (!evil_keys.exists())
-        {
-            Log.info("testHashDOS skipped");
-            return;
-        }
 
-        BufferedReader in = new BufferedReader(new FileReader(evil_keys));
         StringBuilder buf = new StringBuilder(4000000);
-
-        String key=null;
         buf.append("a=b");
-        while((key=in.readLine())!=null)
+
+        // The evil keys file is not distributed - as it is dangerous
+        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
+        if (evil_keys.exists())
         {
-            buf.append("&").append(key).append("=").append("x");
+            LOG.info("Using real evil keys!");
+            BufferedReader in = new BufferedReader(new FileReader(evil_keys));
+            String key=null;
+            while((key=in.readLine())!=null)
+                buf.append("&").append(key).append("=").append("x");
+        }
+        else
+        {
+            // we will just create a lot of keys and make sure the limit is applied
+            for (int i=0;i<2000;i++)
+                buf.append("&").append("K").append(i).append("=").append("x");
         }
         buf.append("&c=d");
 
+
         _handler._checker = new RequestTester()
         {
+            @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
@@ -829,11 +930,14 @@ public class RequestTest
         private RequestTester _checker;
         private String _content;
 
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);
 
-            if (request.getContentLength()>0 && !MimeTypes.Type.FORM_ENCODED.asString().equals(request.getContentType()))
+            if (request.getContentLength()>0
+                    && !MimeTypes.Type.FORM_ENCODED.asString().equals(request.getContentType())
+                    && !request.getContentType().startsWith("multipart/form-data"))
                 _content=IO.toString(request.getInputStream());
 
             if (_checker!=null && _checker.check(request,response))

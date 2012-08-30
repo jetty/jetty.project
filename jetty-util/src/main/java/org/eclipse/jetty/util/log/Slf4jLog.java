@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util.log;
 
@@ -29,17 +34,7 @@ public class Slf4jLog extends AbstractLogger
 
     public Slf4jLog(String name)
     {
-        // This checks to make sure that an slf4j implementation is present.
-        // It is needed because slf4j-api 1.6.x defaults to using NOPLogger.
-        try
-        {
-            Class.forName("org.slf4j.impl.StaticLoggerBinder");
-        }
-        catch (ClassNotFoundException ex)
-        {
-            throw new NoClassDefFoundError("org.slf4j.impl.StaticLoggerBinder");
-        }
-
+        //NOTE: if only an slf4j-api jar is on the classpath, slf4j will use a NOPLogger
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger( name );
         
         // Fix LocationAwareLogger use to indicate FQCN of this class - 

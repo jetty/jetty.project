@@ -1,20 +1,25 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.plus.jaas.spi;
+
 import java.sql.Connection;
 import java.util.Map;
-
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.security.auth.Subject;
@@ -26,7 +31,7 @@ import javax.sql.DataSource;
  *
  * A LoginModule that uses a DataSource to retrieve user authentication
  * and authorisation information.
- * 
+ *
  * @see JDBCLoginModule
  */
 public class DataSourceLoginModule extends AbstractDatabaseLoginModule
@@ -34,14 +39,14 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
 
     private String dbJNDIName;
     private DataSource dataSource;
-    
+
     /* ------------------------------------------------ */
     /** Init LoginModule.
      * Called once by JAAS after new instance created.
-     * @param subject 
-     * @param callbackHandler 
-     * @param sharedState 
-     * @param options 
+     * @param subject
+     * @param callbackHandler
+     * @param sharedState
+     * @param options
      */
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,
@@ -51,10 +56,10 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
         try
         {
             super.initialize(subject, callbackHandler, sharedState, options);
-            
+
             //get the datasource jndi name
             dbJNDIName = (String)options.get("dbJNDIName");
-            
+
             InitialContext ic = new InitialContext();
             dataSource = (DataSource)ic.lookup("java:comp/env/"+dbJNDIName);
         }
@@ -65,10 +70,10 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
     }
 
 
-    /** 
+    /**
      * Get a connection from the DataSource
      * @see AbstractDatabaseLoginModule#getConnection()
-     * @return the connection for the datasource 
+     * @return the connection for the datasource
      * @throws Exception
      */
     public Connection getConnection ()
@@ -78,7 +83,7 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
     }
 
 
-    
-  
+
+
 
 }

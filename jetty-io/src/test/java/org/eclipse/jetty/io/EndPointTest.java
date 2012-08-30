@@ -1,13 +1,31 @@
-package org.eclipse.jetty.io;
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public abstract class EndPointTest<T extends EndPoint>
 {
@@ -16,19 +34,19 @@ public abstract class EndPointTest<T extends EndPoint>
         public T client;
         public T server;
     }
-    
+
     protected abstract EndPointPair<T> newConnection() throws Exception;
-   
+
 
     @Test
     public void testClientServerExchange() throws Exception
     {
         EndPointPair<T> c = newConnection();
         ByteBuffer buffer = BufferUtil.allocate(4096);
-        
+
         // Client sends a request
         c.client.flush(BufferUtil.toBuffer("request"));
-        
+
         // Server receives the request
         int len = c.server.fill(buffer);
         assertEquals(7,len);
@@ -39,17 +57,17 @@ public abstract class EndPointTest<T extends EndPoint>
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
         assertFalse(c.server.isOutputShutdown());
-        
+
         // Server sends response and closes output
         c.server.flush(BufferUtil.toBuffer("response"));
         c.server.shutdownOutput();
-        
+
         // client server are open, server is oshut
         assertTrue(c.client.isOpen());
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
         assertTrue(c.server.isOutputShutdown());
-        
+
         // Client reads response
         BufferUtil.clear(buffer);
         len = c.client.fill(buffer);
@@ -61,7 +79,7 @@ public abstract class EndPointTest<T extends EndPoint>
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
         assertTrue(c.server.isOutputShutdown());
-        
+
         // Client reads -1
         BufferUtil.clear(buffer);
         len = c.client.fill(buffer);
@@ -72,7 +90,7 @@ public abstract class EndPointTest<T extends EndPoint>
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
         assertTrue(c.server.isOutputShutdown());
-        
+
         // Client shutsdown output, which is a close because already ishut
         c.client.shutdownOutput();
 
@@ -92,9 +110,9 @@ public abstract class EndPointTest<T extends EndPoint>
         assertTrue(c.client.isOutputShutdown());
         assertFalse(c.server.isOpen());
         assertTrue(c.server.isOutputShutdown());
-        
+
     }
-    
+
 
 
     @Test
@@ -102,7 +120,7 @@ public abstract class EndPointTest<T extends EndPoint>
     {
         EndPointPair<T> c = newConnection();
         ByteBuffer buffer = BufferUtil.allocate(4096);
-        
+
         c.client.flush(BufferUtil.toBuffer("request"));
         int len = c.server.fill(buffer);
         assertEquals(7,len);
@@ -111,29 +129,29 @@ public abstract class EndPointTest<T extends EndPoint>
         assertTrue(c.client.isOpen());
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isOutputShutdown());        
-        
+        assertFalse(c.server.isOutputShutdown());
+
         c.client.close();
 
         assertFalse(c.client.isOpen());
         assertTrue(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isOutputShutdown());  
-        
+        assertFalse(c.server.isOutputShutdown());
+
         len = c.server.fill(buffer);
         assertEquals(-1,len);
 
         assertFalse(c.client.isOpen());
         assertTrue(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isOutputShutdown());  
-        
+        assertFalse(c.server.isOutputShutdown());
+
         c.server.shutdownOutput();
 
         assertFalse(c.client.isOpen());
         assertTrue(c.client.isOutputShutdown());
         assertFalse(c.server.isOpen());
-        assertTrue(c.server.isOutputShutdown());  
-    }   
-    
+        assertTrue(c.server.isOutputShutdown());
+    }
+
 }

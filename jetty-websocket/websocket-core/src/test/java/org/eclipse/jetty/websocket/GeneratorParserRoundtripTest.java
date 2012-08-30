@@ -1,36 +1,40 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
-package org.eclipse.jetty.websocket;
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.hamcrest.Matchers.*;
+package org.eclipse.jetty.websocket;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.masks.FixedMasker;
 import org.eclipse.jetty.websocket.masks.RandomMasker;
-import org.eclipse.jetty.websocket.protocol.FrameParseCapture;
 import org.eclipse.jetty.websocket.protocol.Generator;
+import org.eclipse.jetty.websocket.protocol.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class GeneratorParserRoundtripTest
 {
@@ -38,10 +42,10 @@ public class GeneratorParserRoundtripTest
     public void testParserAndGenerator() throws Exception
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        StandardByteBufferPool bufferPool = new StandardByteBufferPool();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy);
-        FrameParseCapture capture = new FrameParseCapture();
+        IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
@@ -76,10 +80,10 @@ public class GeneratorParserRoundtripTest
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         policy.setMasker(new RandomMasker());
 
-        StandardByteBufferPool bufferPool = new StandardByteBufferPool();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
         Generator gen = new Generator(policy,bufferPool);
         Parser parser = new Parser(policy);
-        FrameParseCapture capture = new FrameParseCapture();
+        IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";

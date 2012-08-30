@@ -1,34 +1,38 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -36,13 +40,11 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.nio.BlockingChannelConnector;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Ignore;
@@ -55,57 +57,42 @@ public class TestServer
     public static void main(String[] args) throws Exception
     {
         ((StdErrLog)Log.getLog()).setSource(false);
-        
+
         String jetty_root = "..";
 
-        Server server = new Server();
+        // Setup Threadpool
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setMaxThreads(100);
+
+        // Setup server
+        Server server = new Server(threadPool);
+        server.manage(threadPool);
         server.setSendDateHeader(true);
-        
+
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
         mbContainer.addBean(Log.getLog());
-        
-        // Setup Threadpool
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(100);
-        server.setThreadPool(threadPool);
 
         // Setup Connectors
-        SelectChannelConnector connector0 = new SelectChannelConnector();
+        SelectChannelConnector connector0 = new SelectChannelConnector(server);
         connector0.setPort(8080);
-        connector0.setMaxIdleTime(30000);
-        connector0.setConfidentialPort(8443);
-        connector0.setUseDirectBuffers(true);
+        connector0.setIdleTimeout(30000);
+        ((HttpServerConnectionFactory)connector0.getDefaultConnectionFactory()).getHttpConfiguration().setConfidentialPort(8443);
         server.addConnector(connector0);
-        
-        // Setup Connectors
-        SelectChannelConnector connector1 = new SelectChannelConnector();
-        connector1.setPort(8081);
-        connector1.setMaxIdleTime(30000);
-        connector1.setConfidentialPort(8443);
-        connector1.setUseDirectBuffers(false);
-        server.addConnector(connector1);
-        
-        // Setup Connectors
-        SocketConnector connector2 = new SocketConnector();
-        connector2.setPort(8082);
-        connector2.setMaxIdleTime(30000);
-        connector2.setConfidentialPort(8443);
-        server.addConnector(connector2);
-        
-        // Setup Connectors
-        BlockingChannelConnector connector3 = new BlockingChannelConnector();
-        connector3.setPort(8083);
-        connector3.setMaxIdleTime(30000);
-        connector3.setConfidentialPort(8443);
-        server.addConnector(connector3);
 
-        SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
+        // Setup Connectors
+        SelectChannelConnector connector1 = new SelectChannelConnector(server);
+        connector1.setPort(8081);
+        connector0.setIdleTimeout(30000);
+        ((HttpServerConnectionFactory)connector0.getDefaultConnectionFactory()).getHttpConfiguration().setConfidentialPort(8443);
+        server.addConnector(connector1);
+
+        SelectChannelConnector ssl_connector = new SelectChannelConnector(server,new SslContextFactory());
         ssl_connector.setPort(8443);
         SslContextFactory cf = ssl_connector.getSslContextFactory();
-        cf.setKeyStore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
+        cf.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         cf.setTrustStore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
@@ -117,14 +104,14 @@ public class TestServer
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         handlers.setHandlers(new Handler[]
         { contexts, new DefaultHandler(), requestLogHandler });
-        
+
         // Add restart handler to test the ability to save sessions and restart
         RestartHandler restart = new RestartHandler();
         restart.setHandler(handlers);
-        
+
         server.setHandler(restart);
 
-        
+
         // Setup deployers
 
         HashLoginService login = new HashLoginService();
@@ -139,7 +126,7 @@ public class TestServer
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
-        
+
         WebAppContext webapp = new WebAppContext();
         webapp.setParentLoaderPriority(true);
         webapp.setResourceBase("./src/main/webapp");
@@ -151,19 +138,19 @@ public class TestServer
         sessiondir.deleteOnExit();
         ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setStoreDirectory(sessiondir);
         ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
-        
+
         contexts.addHandler(webapp);
-        
+
         ContextHandler srcroot = new ContextHandler();
         srcroot.setResourceBase(".");
         srcroot.setHandler(new ResourceHandler());
         srcroot.setContextPath("/src");
         contexts.addHandler(srcroot);
-        
+
         server.start();
         server.join();
     }
-    
+
     private static class RestartHandler extends HandlerWrapper
     {
 
@@ -178,7 +165,7 @@ public class TestServer
             if (Boolean.valueOf(request.getParameter("restart")))
             {
                 final Server server=getServer();
-                
+
                 new Thread()
                 {
                     public void run()
@@ -198,7 +185,7 @@ public class TestServer
                 }.start();
             }
         }
-        
+
     }
 
 }

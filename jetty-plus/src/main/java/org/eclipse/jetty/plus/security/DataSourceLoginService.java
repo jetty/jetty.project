@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 
 package org.eclipse.jetty.plus.security;
@@ -21,7 +26,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
@@ -71,13 +75,13 @@ public class DataSourceLoginService extends MappedLoginService
     public DataSourceLoginService()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     public DataSourceLoginService(String name)
     {
         setName(name);
     }
-    
+
     /* ------------------------------------------------------------ */
     public DataSourceLoginService(String name, IdentityService identityService)
     {
@@ -278,7 +282,7 @@ public class DataSourceLoginService extends MappedLoginService
 
     /* ------------------------------------------------------------ */
     /** Load user's info from database.
-     * 
+     *
      * @param userName
      */
     @Override
@@ -286,27 +290,27 @@ public class DataSourceLoginService extends MappedLoginService
     {
         Connection connection = null;
         try
-        {        
+        {
             initDb();
             connection = getConnection();
-            
+
             PreparedStatement statement = connection.prepareStatement(_userSql);
             statement.setObject(1, userName);
             ResultSet rs = statement.executeQuery();
-    
+
             if (rs.next())
             {
                 int key = rs.getInt(_userTableKey);
-                String credentials = rs.getString(_userTablePasswordField); 
+                String credentials = rs.getString(_userTablePasswordField);
                 statement.close();
-                
+
                 statement = connection.prepareStatement(_roleSql);
                 statement.setInt(1, key);
                 rs = statement.executeQuery();
                 List<String> roles = new ArrayList<String>();
                 while (rs.next())
-                    roles.add(rs.getString(_roleTableRoleField));    
-                statement.close(); 
+                    roles.add(rs.getString(_roleTableRoleField));
+                statement.close();
                 return putUser(userName,new Password(credentials), roles.toArray(new String[roles.size()]));
             }
         }
@@ -338,25 +342,26 @@ public class DataSourceLoginService extends MappedLoginService
         }
         return null;
     }
-   
+
     /* ------------------------------------------------------------ */
     /**
      * Lookup the datasource for the jndiName and formulate the
      * necessary sql query strings based on the configured table
      * and column names.
-     * 
+     *
      * @throws NamingException
      */
     public void initDb() throws NamingException, SQLException
     {
         if (_datasource != null)
             return;
-        
+
         @SuppressWarnings("unused")
         InitialContext ic = new InitialContext();
-        
+        assert ic!=null;
+
         //TODO webapp scope?
-        
+
         //try finding the datasource in the Server scope
         if (_server != null)
         {
@@ -369,7 +374,7 @@ public class DataSourceLoginService extends MappedLoginService
                 //next try the jvm scope
             }
         }
-        
+
 
         //try finding the datasource in the jvm scope
         if (_datasource==null)
@@ -378,26 +383,26 @@ public class DataSourceLoginService extends MappedLoginService
         }
 
         // set up the select statements based on the table and column names configured
-        _userSql = "select " + _userTableKey + "," + _userTablePasswordField 
-                  + " from " + _userTableName 
+        _userSql = "select " + _userTableKey + "," + _userTablePasswordField
+                  + " from " + _userTableName
                   + " where "+ _userTableUserField + " = ?";
-        
+
         _roleSql = "select r." + _roleTableRoleField
-                  + " from " + _roleTableName + " r, " + _userRoleTableName 
+                  + " from " + _roleTableName + " r, " + _userRoleTableName
                   + " u where u."+ _userRoleTableUserKey + " = ?"
                   + " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
-        
+
         prepareTables();
     }
-    
-    
-    
+
+
+
     private void prepareTables()
     throws NamingException, SQLException
     {
         Connection connection = null;
-        boolean autocommit = true; 
-        
+        boolean autocommit = true;
+
         if (_createTables)
         {
             try
@@ -406,12 +411,12 @@ public class DataSourceLoginService extends MappedLoginService
                 autocommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 DatabaseMetaData metaData = connection.getMetaData();
-                
+
                 //check if tables exist
                 String tableName = (metaData.storesLowerCaseIdentifiers()? _userTableName.toLowerCase(): (metaData.storesUpperCaseIdentifiers()?_userTableName.toUpperCase(): _userTableName));
                 ResultSet result = metaData.getTables(null, null, tableName, null);
                 if (!result.next())
-                {                
+                {
                     //user table default
                     /*
                      * create table _userTableName (_userTableKey integer,
@@ -423,7 +428,7 @@ public class DataSourceLoginService extends MappedLoginService
                             _userTablePasswordField+" varchar(20) not null, primary key("+_userTableKey+"))");
                     if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userTableName);
                 }
-                
+
                 result.close();
 
                 tableName = (metaData.storesLowerCaseIdentifiers()? _roleTableName.toLowerCase(): (metaData.storesUpperCaseIdentifiers()?_roleTableName.toUpperCase(): _roleTableName));
@@ -440,7 +445,7 @@ public class DataSourceLoginService extends MappedLoginService
                     connection.createStatement().executeUpdate(str);
                     if (LOG.isDebugEnabled()) LOG.debug("Created table "+_roleTableName);
                 }
-                
+
                 result.close();
 
                 tableName = (metaData.storesLowerCaseIdentifiers()? _userRoleTableName.toLowerCase(): (metaData.storesUpperCaseIdentifiers()?_userRoleTableName.toUpperCase(): _userRoleTableName));
@@ -452,17 +457,17 @@ public class DataSourceLoginService extends MappedLoginService
                      * create table _userRoleTableName (_userRoleTableUserKey integer,
                      * _userRoleTableRoleKey integer,
                      * primary key (_userRoleTableUserKey, _userRoleTableRoleKey));
-                     * 
+                     *
                      * create index idx_user_role on _userRoleTableName (_userRoleTableUserKey);
                      */
                     connection.createStatement().executeUpdate("create table "+_userRoleTableName+" ("+_userRoleTableUserKey+" integer, "+
                             _userRoleTableRoleKey+" integer, "+
-                            "primary key ("+_userRoleTableUserKey+", "+_userRoleTableRoleKey+"))");                   
+                            "primary key ("+_userRoleTableUserKey+", "+_userRoleTableRoleKey+"))");
                     connection.createStatement().executeUpdate("create index indx_user_role on "+_userRoleTableName+"("+_userRoleTableUserKey+")");
                     if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userRoleTableName +" and index");
                 }
-                
-                result.close();   
+
+                result.close();
                 connection.commit();
             }
             finally
@@ -490,9 +495,9 @@ public class DataSourceLoginService extends MappedLoginService
             LOG.debug("createTables false");
         }
     }
-    
-    
-    private Connection getConnection () 
+
+
+    private Connection getConnection ()
     throws NamingException, SQLException
     {
         initDb();

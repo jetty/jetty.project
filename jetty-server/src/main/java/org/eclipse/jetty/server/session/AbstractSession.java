@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.session;
 
 import java.util.ArrayList;
@@ -9,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionActivationListener;
@@ -25,13 +42,13 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Implements {@link javax.servlet.http.HttpSession} from the <code>javax.servlet</code> package.
  * </p>
- * 
+ *
  */
 @SuppressWarnings("deprecation")
 public abstract class AbstractSession implements AbstractSessionManager.SessionIf
 {
     final static Logger LOG = SessionHandler.LOG;
-    
+
     private final AbstractSessionManager _manager;
     private final String _clusterId; // ID unique within cluster
     private final String _nodeId;    // ID unique within node
@@ -49,12 +66,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
 
     // TODO remove this.
     protected final Map<String,Object> _jdbcAttributes=_attributes;
-    
+
     /* ------------------------------------------------------------- */
     protected AbstractSession(AbstractSessionManager abstractSessionManager, HttpServletRequest request)
     {
         _manager = abstractSessionManager;
-        
+
         _newSession=true;
         _created=System.currentTimeMillis();
         _clusterId=_manager._sessionIdManager.newSessionId(request,_created);
@@ -77,10 +94,11 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _accessed=accessed;
         _lastAccessed=accessed;
         _requests=1;
+        _maxIdleMs=_manager._dftMaxIdleSecs>0?_manager._dftMaxIdleSecs*1000L:-1;
         if (LOG.isDebugEnabled())
             LOG.debug("new session "+_nodeId+" "+_clusterId);
     }
-    
+
     /* ------------------------------------------------------------- */
     /**
      * asserts that the session is valid
@@ -90,8 +108,9 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         if (_invalid)
             throw new IllegalStateException();
     }
-    
+
     /* ------------------------------------------------------------- */
+    @Override
     public AbstractSession getSession()
     {
         return this;
@@ -105,8 +124,15 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             return _accessed;
         }
     }
-    
+
+    /* ------------------------------------------------------------- */
+    public Map<String,Object> getAttributeMap()
+    {
+        return _attributes;
+    }
+
     /* ------------------------------------------------------------ */
+    @Override
     public Object getAttribute(String name)
     {
         synchronized (this)
@@ -115,7 +141,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             return _attributes.get(name);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public int getAttributes()
     {
@@ -128,6 +154,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
 
     /* ------------------------------------------------------------ */
     @SuppressWarnings({ "unchecked" })
+    @Override
     public Enumeration<String> getAttributeNames()
     {
         synchronized (this)
@@ -137,12 +164,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             return Collections.enumeration(names);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public Set<String> getNames()
     {
         synchronized (this)
-        { 
+        {
             return new HashSet<String>(_attributes.keySet());
         }
     }
@@ -154,12 +181,14 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
+    @Override
     public long getCreationTime() throws IllegalStateException
     {
         return _created;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getId() throws IllegalStateException
     {
         return _manager._nodeIdInSessionId?_nodeId:_clusterId;
@@ -178,6 +207,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
+    @Override
     public long getLastAccessedTime() throws IllegalStateException
     {
         checkValid();
@@ -185,6 +215,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
+    @Override
     public int getMaxInactiveInterval()
     {
         checkValid();
@@ -195,6 +226,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     /*
      * @see javax.servlet.http.HttpSession#getServletContext()
      */
+    @Override
     public ServletContext getServletContext()
     {
         return _manager._context;
@@ -202,6 +234,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
 
     /* ------------------------------------------------------------- */
     @Deprecated
+    @Override
     public HttpSessionContext getSessionContext() throws IllegalStateException
     {
         checkValid();
@@ -214,6 +247,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
      *             {@link #getAttribute}
      */
     @Deprecated
+    @Override
     public Object getValue(String name) throws IllegalStateException
     {
         return getAttribute(name);
@@ -225,6 +259,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
      *             {@link #getAttributeNames}
      */
     @Deprecated
+    @Override
     public String[] getValueNames() throws IllegalStateException
     {
         synchronized(this)
@@ -248,7 +283,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             _lastAccessed=_accessed;
             _accessed=time;
 
-            if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time) 
+            if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time)
             {
                 invalidate();
                 return false;
@@ -290,6 +325,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
+    @Override
     public void invalidate() throws IllegalStateException
     {
         // remove session from context and invalidate other sessions with same ID.
@@ -317,7 +353,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    public void clearAttributes() 
+    public void clearAttributes()
     {
         while (_attributes!=null && _attributes.size()>0)
         {
@@ -341,11 +377,11 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
 
                 _manager.doSessionAttributeListeners(this,key,value,null);
             }
-        } 
+        }
         if (_attributes!=null)
             _attributes.clear();
     }
-    
+
     /* ------------------------------------------------------------- */
     public boolean isIdChanged()
     {
@@ -353,6 +389,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
+    @Override
     public boolean isNew() throws IllegalStateException
     {
         checkValid();
@@ -365,12 +402,14 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
      *             {@link #setAttribute}
      */
     @Deprecated
+    @Override
     public void putValue(java.lang.String name, java.lang.Object value) throws IllegalStateException
     {
         setAttribute(name,value);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void removeAttribute(String name)
     {
         setAttribute(name,null);
@@ -382,6 +421,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
      *             {@link #removeAttribute}
      */
     @Deprecated
+    @Override
     public void removeValue(java.lang.String name) throws IllegalStateException
     {
         removeAttribute(name);
@@ -398,8 +438,9 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     {
         return _attributes.get(name);
     }
-    
+
     /* ------------------------------------------------------------ */
+    @Override
     public void setAttribute(String name, Object value)
     {
         Object old=null;
@@ -408,7 +449,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             checkValid();
             old=doPutOrRemove(name,value);
         }
-        
+
         if (value==null || !value.equals(old))
         {
             if (old!=null)
@@ -417,7 +458,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
                 bindValue(name,value);
 
             _manager.doSessionAttributeListeners(this,name,old,value);
-            
+
         }
     }
 
@@ -428,6 +469,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
+    @Override
     public void setMaxInactiveInterval(int secs)
     {
         _maxIdleMs=(long)secs*1000L;
@@ -480,7 +522,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             _requests=requests;
         }
     }
-    
+
     /* ------------------------------------------------------------- */
     /** If value implements HttpSessionBindingListener, call valueUnbound() */
     public void unbindValue(java.lang.String name, Object value)
@@ -524,6 +566,6 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             }
         }
     }
-    
-    
+
+
 }

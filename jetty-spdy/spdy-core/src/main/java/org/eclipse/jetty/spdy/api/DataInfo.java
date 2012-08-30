@@ -1,18 +1,20 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.spdy.api;
 
@@ -152,12 +154,25 @@ public abstract class DataInfo
      * then after the read {@link #available()} will return a positive value, and further content
      * may be retrieved by invoking again this method with a new output buffer.</p>
      *
-     * @param output the {@link ByteBuffer} to copy to bytes into
+     * @param output the {@link ByteBuffer} to copy the bytes into
      * @return the number of bytes copied
      * @see #available()
      * @see #consumeInto(ByteBuffer)
      */
     public abstract int readInto(ByteBuffer output);
+
+    /**
+     * <p>Copies the content bytes of this {@link DataInfo} into the given byte array.</p>
+     * <p>If the given byte array cannot contain the whole content of this {@link DataInfo}
+     * then after the read {@link #available()} will return a positive value, and further content
+     * may be retrieved by invoking again this method with a new byte array.</p>
+     *
+     * @param bytes the byte array to copy the bytes into
+     * @param offset the index of the byte array to start copying
+     * @param length the number of bytes to copy
+     * @return the number of bytes copied
+     */
+    public abstract int readInto(byte[] bytes, int offset, int length);
 
     /**
      * <p>Reads and consumes the content bytes of this {@link DataInfo} into the given {@link ByteBuffer}.</p>
@@ -169,6 +184,22 @@ public abstract class DataInfo
     public int consumeInto(ByteBuffer output)
     {
         int read = readInto(output);
+        consume(read);
+        return read;
+    }
+
+    /**
+     * <p>Reads and consumes the content bytes of this {@link DataInfo} into the given byte array,
+     * starting from index {@code offset} for {@code length} bytes.</p>
+     *
+     * @param bytes the byte array to copy the bytes into
+     * @param offset the offset of the byte array to start copying
+     * @param length the number of bytes to copy
+     * @return the number of bytes copied
+     */
+    public int consumeInto(byte[] bytes, int offset, int length)
+    {
+        int read = readInto(bytes, offset, length);
         consume(read);
         return read;
     }

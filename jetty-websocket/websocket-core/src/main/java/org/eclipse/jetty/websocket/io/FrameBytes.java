@@ -1,25 +1,28 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.io;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.concurrent.ScheduledFuture;
 
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -28,14 +31,14 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public abstract class FrameBytes<C> implements Callback<C>, Runnable
 {
     private final static Logger LOG = Log.getLogger(FrameBytes.class);
-    protected final WebSocketAsyncConnection connection;
+    protected final AbstractWebSocketConnection connection;
     protected final Callback<C> callback;
     protected final C context;
     protected final WebSocketFrame frame;
     // Task used to timeout the bytes
     protected volatile ScheduledFuture<?> task;
 
-    protected FrameBytes(WebSocketAsyncConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
+    protected FrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
     {
         this.connection = connection;
         this.callback = callback;
@@ -57,7 +60,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("completed({})",context);
+            LOG.debug("completed({}) - {}",context,this.getClass().getName());
         }
         cancelTask();
         connection.complete(this);
@@ -67,9 +70,14 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     @Override
     public void failed(C context, Throwable x)
     {
-        if (LOG.isDebugEnabled())
+        if (x instanceof EofException)
         {
-            LOG.debug("failed({},{})",context,x);
+            // Abbreviate the EofException
+            LOG.warn("failed(" + context + ") - " + EofException.class);
+        }
+        else
+        {
+            LOG.warn("failed(" + context + ")",x);
         }
         cancelTask();
         callback.failed(context,x);
@@ -81,14 +89,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     public void run()
     {
         // If this occurs we had a timeout!
-        try
-        {
-            connection.close();
-        }
-        catch (IOException e)
-        {
-            WebSocketAsyncConnection.LOG.ignore(e);
-        }
+        connection.close();
         failed(context, new InterruptedByTimeoutException());
     }
 

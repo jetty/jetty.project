@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 // JettyTest.java --
 //
@@ -17,11 +22,6 @@
 //
 
 package org.eclipse.jetty.server.ssl;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,7 +33,6 @@ import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -43,16 +42,24 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -81,26 +88,27 @@ public class SSLEngineTest
     private static final int BODY_SIZE=300;
 
     private Server server;
-    private SslSelectChannelConnector connector;
+    private SelectChannelConnector connector;
 
-    
+
     @Before
     public void startServer() throws Exception
     {
-        server=new Server();
-        connector=new SslSelectChannelConnector();
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
 
+        server=new Server();
+        connector=new SelectChannelConnector(server, sslContextFactory);
         connector.setPort(0);
-        SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStorePath(keystore);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-        connector.setRequestBufferSize(512);
-        connector.setRequestHeaderSize(512);
+        HttpConfiguration httpConfiguration = new HttpConfiguration(sslContextFactory, true);
+        httpConfiguration.setRequestBufferSize(512);
+        httpConfiguration.setRequestHeaderSize(512);
+        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector, httpConfiguration));
 
-        server.setConnectors(new Connector[]{connector });
-        server.setHandler(new HelloWorldHandler());
+        server.addConnector(connector);
     }
 
     @After
@@ -111,10 +119,41 @@ public class SSLEngineTest
     }
 
     @Test
+    public void testHelloWorld() throws Exception
+    {
+        server.setHandler(new HelloWorldHandler());
+        server.start();
+        server.dumpStdErr();
+
+        SSLContext ctx=SSLContext.getInstance("TLS");
+        ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
+
+        int port=connector.getLocalPort();
+
+        Socket client=ctx.getSocketFactory().createSocket("localhost",port);
+        OutputStream os=client.getOutputStream();
+
+        String request =
+            "GET / HTTP/1.1\r\n"+
+            "Host: localhost:"+port+"\r\n"+
+            "Connection: close\r\n"+
+            "\r\n";
+
+        os.write(request.getBytes());
+        os.flush();
+
+        String response = IO.toString(client.getInputStream());
+
+        assertThat(response,Matchers.containsString("200 OK"));
+        assertThat(response,Matchers.containsString(HELLO_WORLD));
+    }
+
+    @Test
     public void testBigResponse() throws Exception
     {
+        server.setHandler(new HelloWorldHandler());
         server.start();
-        
+
         SSLContext ctx=SSLContext.getInstance("TLS");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
@@ -125,7 +164,7 @@ public class SSLEngineTest
 
         String request =
             "GET /?dump=102400 HTTP/1.1\r\n"+
-            "Host: localhost:8080\r\n"+
+            "Host: localhost:"+port+"\r\n"+
             "Connection: close\r\n"+
             "\r\n";
 
@@ -140,8 +179,9 @@ public class SSLEngineTest
     @Test
     public void testRequestJettyHttps() throws Exception
     {
+        server.setHandler(new HelloWorldHandler());
         server.start();
-        
+
         final int loops=20;
         final int numConns=20;
 
@@ -156,7 +196,7 @@ public class SSLEngineTest
         {
             for (int l=0;l<loops;l++)
             {
-                System.err.print('.');
+                // System.err.print('.');
                 try
                 {
                     for (int i=0; i<numConns; ++i)
@@ -201,14 +241,13 @@ public class SSLEngineTest
         }
         finally
         {
-            System.err.println();
+            // System.err.println();
         }
     }
 
     @Test
     public void testURLConnectionChunkedPost() throws Exception
     {
-
         StreamHandler handler = new StreamHandler();
         server.setHandler(handler);
         server.start();
@@ -311,6 +350,7 @@ public class SSLEngineTest
             {
                 ServletOutputStream out=response.getOutputStream();
                 byte[] buf = new byte[Integer.valueOf(request.getParameter("dump"))];
+                // System.err.println("DUMP "+buf.length);
                 for (int i=0;i<buf.length;i++)
                     buf[i]=(byte)('0'+(i%10));
                 out.write(buf);
@@ -350,5 +390,5 @@ public class SSLEngineTest
             response.flushBuffer();
         }
     }
-    
+
 }

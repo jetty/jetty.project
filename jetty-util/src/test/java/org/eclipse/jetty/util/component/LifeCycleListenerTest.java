@@ -1,25 +1,30 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util.component;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class LifeCycleListenerTest
@@ -38,7 +43,7 @@ public class LifeCycleListenerTest
 
         try
         {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+            StdErrLog.getLogger(AbstractLifeCycle.class).setHideStacks(true);
             lifecycle.start();
             assertTrue(false);
         }
@@ -49,11 +54,9 @@ public class LifeCycleListenerTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(false);
+            StdErrLog.getLogger(AbstractLifeCycle.class).setHideStacks(false);
         }
         lifecycle.setCause(null);
-        ((StdErrLog)Log.getLog()).setHideStacks(false);
-
 
         lifecycle.start();
 
@@ -68,7 +71,7 @@ public class LifeCycleListenerTest
 
         // check that the lifecycle's state is started
         assertTrue("The lifecycle state is not started",lifecycle.isStarted());
-        
+
     }
 
     @Test
@@ -78,14 +81,14 @@ public class LifeCycleListenerTest
         TestListener listener = new TestListener();
         lifecycle.addLifeCycleListener(listener);
 
-        
+
         // need to set the state to something other than stopped or stopping or
         // else
         // stop() will return without doing anything
 
         lifecycle.start();
         lifecycle.setCause(cause);
-        
+
         try
         {
             ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
@@ -103,7 +106,7 @@ public class LifeCycleListenerTest
         }
 
         lifecycle.setCause(null);
-        
+
         lifecycle.stop();
 
         // check that the stopping event has been thrown
@@ -120,7 +123,7 @@ public class LifeCycleListenerTest
         assertTrue("The lifecycle state is not stooped",lifecycle.isStopped());
     }
 
-    
+
     @Test
     public void testRemoveLifecycleListener ()
     throws Exception
@@ -138,11 +141,11 @@ public class LifeCycleListenerTest
     private static class TestLifeCycle extends AbstractLifeCycle
     {
         Exception cause;
-        
+
         private TestLifeCycle()
         {
         }
-        
+
         @Override
         protected void doStart() throws Exception
         {
@@ -150,7 +153,7 @@ public class LifeCycleListenerTest
                 throw cause;
             super.doStart();
         }
-        
+
         @Override
         protected void doStop() throws Exception
         {
@@ -158,14 +161,14 @@ public class LifeCycleListenerTest
                 throw cause;
             super.doStop();
         }
-        
+
         public void setCause(Exception e)
         {
             cause=e;
         }
     }
-    
-   
+
+
 
     private class TestListener extends AbstractLifeCycle.AbstractLifeCycleListener
     {

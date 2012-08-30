@@ -1,22 +1,25 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.driver;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.examples.AdapterConnectCloseSocket;
@@ -47,7 +50,7 @@ public class WebSocketEventDriverTest
         EventMethodsCache methodsCache = new EventMethodsCache();
         methodsCache.register(websocket.getClass());
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ByteBufferPool bufferPool = new StandardByteBufferPool();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
         return new WebSocketEventDriver(websocket,methodsCache,policy,bufferPool);
     }
 
@@ -58,7 +61,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
 
@@ -74,7 +77,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(makeBinaryFrame("Hello World",true));
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -92,7 +95,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(new WebSocketFrame(OpCode.PING).setPayload("PING"));
         driver.incoming(WebSocketFrame.text("Text Me"));
@@ -115,7 +118,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(makeBinaryFrame("Hello World",true));
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -133,7 +136,7 @@ public class WebSocketEventDriverTest
         WebSocketEventDriver driver = newDriver(socket);
 
         LocalWebSocketSession conn = new LocalWebSocketSession(testname);
-        driver.setConnection(conn);
+        driver.setSession(conn);
         driver.onConnect();
         driver.incoming(WebSocketFrame.text("Hello World"));
         driver.incoming(new CloseInfo(StatusCode.NORMAL).asFrame());

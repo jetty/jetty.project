@@ -1,21 +1,25 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.jndi.java;
 
 
 import java.util.Hashtable;
-
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NameParser;
@@ -46,13 +50,13 @@ import org.eclipse.jetty.util.log.Logger;
 *
 * @see
 *
-* 
+*
 * @version 1.0
 */
 public class javaRootURLContext implements Context
 {
     private static Logger __log = NamingUtil.__log;
-    
+
     public static final String URL_PREFIX = "java:";
 
     protected Hashtable _env;
@@ -61,16 +65,16 @@ public class javaRootURLContext implements Context
 
     protected static NameParser __javaNameParser;
 
-    
-    static 
-    {   
+
+    static
+    {
         try
         {
-            __javaNameParser = new javaNameParser();       
+            __javaNameParser = new javaNameParser();
             __nameRoot = new NamingContext(null,null,null,__javaNameParser);
-          
+
             StringRefAddr parserAddr = new StringRefAddr("parser", __javaNameParser.getClass().getName());
-            
+
             Reference ref = new Reference ("javax.naming.Context",
                                            parserAddr,
                                            ContextFactory.class.getName(),
@@ -93,34 +97,34 @@ public class javaRootURLContext implements Context
      *
      * @param env a <code>Hashtable</code> value
      */
-    public javaRootURLContext(Hashtable env) 
+    public javaRootURLContext(Hashtable env)
     {
         _env = env;
-    } 
-    
+    }
 
-    public Object lookup(Name name) 
+
+    public Object lookup(Name name)
         throws NamingException
     {
         return getRoot().lookup(stripProtocol(name));
     }
 
 
-    public Object lookup(String name) 
+    public Object lookup(String name)
         throws NamingException
     {
         return getRoot().lookup(stripProtocol(name));
     }
 
-    public void bind(Name name, Object obj) 
+    public void bind(Name name, Object obj)
         throws NamingException
     {
         getRoot().bind(stripProtocol(name), obj);
     }
 
-    public void bind(String name, Object obj) 
+    public void bind(String name, Object obj)
         throws NamingException
-    { 
+    {
         getRoot().bind(stripProtocol(name), obj);
     }
 
@@ -129,7 +133,7 @@ public class javaRootURLContext implements Context
     {
         getRoot().unbind(stripProtocol(name));
     }
-    
+
     public void unbind (Name name)
         throws NamingException
     {
@@ -172,7 +176,7 @@ public class javaRootURLContext implements Context
     {
         return getRoot().lookupLink(stripProtocol(name));
     }
-   
+
 
     public Context createSubcontext (Name name)
         throws NamingException
@@ -188,7 +192,7 @@ public class javaRootURLContext implements Context
 
 
     public void destroySubcontext (Name name)
-        throws NamingException    
+        throws NamingException
     {
         getRoot().destroySubcontext(stripProtocol(name));
     }
@@ -225,7 +229,7 @@ public class javaRootURLContext implements Context
         return getRoot().listBindings(stripProtocol(name));
     }
 
-    
+
     public Name composeName (Name name,
                              Name prefix)
         throws NamingException
@@ -241,7 +245,7 @@ public class javaRootURLContext implements Context
     }
 
 
-    public void close ()       
+    public void close ()
         throws NamingException
     {
     }
@@ -257,8 +261,8 @@ public class javaRootURLContext implements Context
     {
         return __javaNameParser;
     }
-    
-    public NameParser getNameParser (String name) 
+
+    public NameParser getNameParser (String name)
         throws NamingException
     {
         return __javaNameParser;
@@ -295,7 +299,7 @@ public class javaRootURLContext implements Context
         if ((name != null) && (name.size() > 0))
         {
             String head = name.get(0);
-            
+
             if(__log.isDebugEnabled())__log.debug("Head element of name is: "+head);
 
             if (head.startsWith(URL_PREFIX))
@@ -308,7 +312,7 @@ public class javaRootURLContext implements Context
                 if(__log.isDebugEnabled())__log.debug("name modified to "+name.toString());
             }
         }
-        
+
         return name;
     }
 
@@ -323,8 +327,8 @@ public class javaRootURLContext implements Context
             if (name.startsWith(URL_PREFIX))
                newName = name.substring(URL_PREFIX.length());
         }
-        
+
         return newName;
     }
 
-} 
+}

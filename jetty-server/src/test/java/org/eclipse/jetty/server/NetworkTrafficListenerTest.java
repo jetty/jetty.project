@@ -1,20 +1,22 @@
-// ========================================================================
-// Copyright (c) 2011 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -39,6 +40,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Ignore
 public class NetworkTrafficListenerTest
@@ -54,7 +58,7 @@ public class NetworkTrafficListenerTest
         server.setSendDateHeader(false);
         server.setSendServerVersion(false);
 
-        connector = new NetworkTrafficSelectChannelConnector();
+        connector = new NetworkTrafficSelectChannelConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -100,7 +104,7 @@ public class NetworkTrafficListenerTest
         // Connect to the server
         Socket socket = new Socket("localhost", port);
         assertTrue(openedLatch.await(10, TimeUnit.SECONDS));
-        
+
         socket.close();
         assertTrue(closedLatch.await(10, TimeUnit.SECONDS));
     }

@@ -1,38 +1,44 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.nio.channels.CancelledKeyException;
-import java.nio.channels.Channel;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.Name;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -40,45 +46,37 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * The Selector Manager manages and number of SelectSets to allow
- * NIO scheduling to scale to large numbers of connections.
- * <p>
+ * <p>{@link SelectorManager} manages a number of {@link ManagedSelector}s that
+ * simplify the non-blocking primitives provided by the JVM via the {@code java.nio} package.</p>
+ * <p>{@link SelectorManager} subclasses implement methods to return protocol-specific
+ * {@link EndPoint}s and {@link Connection}s.</p>
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
-    public static final Logger LOG = Log.getLogger(SelectorManager.class);
+    protected static final Logger LOG = Log.getLogger(SelectorManager.class);
 
     private final ManagedSelector[] _selectors;
-    private long _selectorIndex;
-    private volatile long _maxIdleTime;
+    private volatile long _selectorIndex;
 
     protected SelectorManager()
     {
-        this((Runtime.getRuntime().availableProcessors()+1)/2);
+        this((Runtime.getRuntime().availableProcessors() + 1) / 2);
     }
 
-    protected SelectorManager(@Name("selectors") int selectors)
+    protected SelectorManager(@Name(value="selectors") int selectors)
     {
-        this._selectors = new ManagedSelector[selectors];
+        _selectors = new ManagedSelector[selectors];
     }
 
     /**
-     * @return the max idle time
+     * Executes the given task in a different thread.
+     *
+     * @param task the task to execute
      */
-    protected long getMaxIdleTime()
-    {
-        return _maxIdleTime;
-    }
-
-    public void setMaxIdleTime(long maxIdleTime)
-    {
-        _maxIdleTime = maxIdleTime;
-    }
-
     protected abstract void execute(Runnable task);
 
     /**
-     * @return the number of select sets in use
+     * @return the number of selectors in use
      */
     public int getSelectorCount()
     {
@@ -87,18 +85,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     private ManagedSelector chooseSelector()
     {
-        // The ++ increment here is not atomic, but it does not matter.
+        // The ++ increment here is not atomic, but it does not matter,
         // so long as the value changes sometimes, then connections will
-        // be distributed over the available sets.
+        // be distributed over the available selectors.
         long s = _selectorIndex++;
         int index = (int)(s % getSelectorCount());
         return _selectors[index];
     }
 
     /**
-     * Registers a channel
-     * @param channel the channel to register
-     * @param attachment Attached Object
+     * <p>Registers a channel to perform a non-blocking connect.</p>
+     * <p>The channel must be set in non-blocking mode, and {@link SocketChannel#connect(SocketAddress)}
+     * must be called prior to calling this method.</p>
+     *
+     * @param channel    the channel to register
+     * @param attachment the attachment object
      */
     public void connect(SocketChannel channel, Object attachment)
     {
@@ -107,29 +108,37 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
-     * Registers a channel
+     * <p>Registers a channel to perform non-blocking read/write operations.</p>
+     * <p>This method is called just after a channel has been accepted by {@link ServerSocketChannel#accept()},
+     * or just after having performed a blocking connect via {@link Socket#connect(SocketAddress, int)}.</p>
+     *
      * @param channel the channel to register
      */
     public void accept(final SocketChannel channel)
     {
-        final ManagedSelector set = chooseSelector();
-        set.submit(set.new Accept(channel));
+        final ManagedSelector selector = chooseSelector();
+        selector.submit(selector.new Accept(channel));
     }
 
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
-        for (int i=0;i< _selectors.length;i++)
+        for (int i = 0; i < _selectors.length; i++)
         {
-            ManagedSelector selectSet = newSelector(i);
-            _selectors[i] = selectSet;
-            selectSet.start();
-            execute(selectSet);
-            execute(new Expirer());
+            ManagedSelector selector = newSelector(i);
+            _selectors[i] = selector;
+            selector.start();
+            execute(selector);
         }
     }
 
+    /**
+     * <p>Factory method for {@link ManagedSelector}.</p>
+     *
+     * @param id an identifier for the {@link ManagedSelector to create}
+     * @return a new {@link ManagedSelector}
+     */
     protected ManagedSelector newSelector(int id)
     {
         return new ManagedSelector(id);
@@ -138,110 +147,133 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     @Override
     protected void doStop() throws Exception
     {
-        for (ManagedSelector set : _selectors)
-            set.stop();
+        for (ManagedSelector selector : _selectors)
+            selector.stop();
         super.doStop();
     }
 
     /**
-     * @param endpoint the endPoint being opened
+     * <p>Callback method invoked when an endpoint is opened.</p>
+     *
+     * @param endpoint the endpoint being opened
      */
-    protected void endPointOpened(AsyncEndPoint endpoint)
+    protected void endPointOpened(EndPoint endpoint)
     {
         endpoint.onOpen();
-        endpoint.getAsyncConnection().onOpen();
     }
 
     /**
-     * @param endpoint the endPoint being closed
+     * <p>Callback method invoked when an endpoint is closed.</p>
+     *
+     * @param endpoint the endpoint being closed
      */
-    protected void endPointClosed(AsyncEndPoint endpoint)
+    protected void endPointClosed(EndPoint endpoint)
     {
-        endpoint.getAsyncConnection().onClose();
         endpoint.onClose();
     }
 
     /**
-     * @param endpoint the endPoint being upgraded
-     * @param oldConnection the previous connection
+     * <p>Callback method invoked when a connection is opened.</p>
+     *
+     * @param connection the connection just opened
      */
-    protected void endPointUpgraded(AsyncEndPoint endpoint, AsyncConnection oldConnection)
+    public void connectionOpened(Connection connection)
     {
+        connection.onOpen();
     }
 
     /**
-     * @param channel the socket channel
-     * @param endpoint the endPoint
-     * @param attachment the attachment
-     * @return a new connection
+     * <p>Callback method invoked when a connection is closed.</p>
+     *
+     * @param connection the connection just closed
      */
-    public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment);
+    public void connectionClosed(Connection connection)
+    {
+        connection.onClose();
+    }
 
     /**
-     * Create a new end point
-     * @param channel the socket channel
-     * @param selectSet the select set the channel is registered to
-     * @param sKey the selection key
-     * @return the new endpoint {@link SelectChannelEndPoint}
-     * @throws IOException if the endPoint cannot be created
+     * <p>Callback method invoked when a connection is upgraded.</p>
+     *
+     * @param endpoint      the endpoint holding the new connection
+     * @param oldConnection the previous connection
      */
-    protected abstract Selectable newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey sKey) throws IOException;
+    public void connectionUpgraded(EndPoint endpoint, Connection oldConnection)
+    {
+        connectionClosed(oldConnection);
+        connectionOpened(endpoint.getConnection());
+    }
 
+    /**
+     * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
+     * <p>By default it just logs with level warning.</p>
+     *
+     * @param channel the channel that attempted the connect
+     * @param ex the exception that caused the connect to fail
+     * @param attachment the attachment object associated at registration
+     */
     protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
     {
         LOG.warn(String.format("%s - %s", channel, attachment), ex);
     }
 
+    /**
+     * <p>Factory method to create {@link EndPoint}.</p>
+     * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SocketChannel, Object)}
+     * or {@link #accept(SocketChannel)}.</p>
+     *
+     * @param channel   the channel associated to the endpoint
+     * @param selector the selector the channel is registered to
+     * @param selectionKey      the selection key
+     * @return a new endpoint
+     * @throws IOException if the endPoint cannot be created
+     * @see #newConnection(SocketChannel, EndPoint, Object)
+     */
+    protected abstract EndPoint newEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selector, SelectionKey selectionKey) throws IOException;
+
+    /**
+     * <p>Factory method to create {@link Connection}.</p>
+     *
+     * @param channel    the channel associated to the connection
+     * @param endpoint   the endpoint
+     * @param attachment the attachment
+     * @return a new connection
+     * @throws IOException
+     * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
+     */
+    public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException;
+
+    @Override
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
     }
 
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        AggregateLifeCycle.dumpObject(out,this);
+        AggregateLifeCycle.dumpObject(out, this);
         AggregateLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
 
-    private class Expirer implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            while (isRunning())
-            {
-                for (ManagedSelector selector : _selectors)
-                    if (selector!=null)
-                        selector.timeoutCheck();
-                sleep(1000);
-            }
-        }
-
-        private void sleep(long delay)
-        {
-            try
-            {
-                Thread.sleep(delay);
-            }
-            catch (InterruptedException x)
-            {
-                LOG.ignore(x);
-            }
-        }
-    }
-
+    /**
+     * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
+     * <p>{@link ManagedSelector} runs the select loop, which waits on {@link Selector#select()} until events
+     * happen for registered channels. When events happen, it notifies the {@link EndPoint} associated
+     * with the channel.</p>
+     */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
-        private final ConcurrentLinkedQueue<Runnable> _changes = new ConcurrentLinkedQueue<>();
-        private ConcurrentMap<Selectable,Object> _endPoints = new ConcurrentHashMap<>();
+        private final Queue<Runnable> _changes = new ConcurrentLinkedQueue<>();
         private final int _id;
         private Selector _selector;
         private Thread _thread;
-        private boolean needsWakeup = true;
+        private boolean _needsWakeup = true;
 
-        protected ManagedSelector(int id)
+        public ManagedSelector(int id)
         {
             _id = id;
+            setStopTimeout(5000);
         }
 
         @Override
@@ -254,27 +286,34 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         @Override
         protected void doStop() throws Exception
         {
-            Stop task = new Stop();
-            submit(task);
-            task.await(getStopTimeout(), TimeUnit.MILLISECONDS);
+            Stop stop = new Stop();
+            submit(stop);
+            stop.await(getStopTimeout());
         }
 
+        /**
+         * <p>Submits a change to be executed in the selector thread.</p>
+         * <p>Changes may be submitted from any thread, and if they are submitted from a thread different
+         * from the selector thread, they are queued for execution, and the selector thread woken up
+         * (if necessary) to execute the change.</p>
+         *
+         * @param change the change to submit
+         * @return true if the change has been executed, false if it has been queued for later execution
+         */
         public boolean submit(Runnable change)
         {
             if (Thread.currentThread() != _thread)
             {
-                _changes.add(change);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Queued change {}", change);
-                boolean wakeup = needsWakeup;
+                _changes.offer(change);
+                LOG.debug("Queued change {}", change);
+                boolean wakeup = _needsWakeup;
                 if (wakeup)
                     wakeup();
                 return false;
             }
             else
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Submitted change {}", change);
+                LOG.debug("Submitted change {}", change);
                 runChanges();
                 runChange(change);
                 return true;
@@ -285,9 +324,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             Runnable change;
             while ((change = _changes.poll()) != null)
-            {
                 runChange(change);
-            }
         }
 
         protected void runChange(Runnable change)
@@ -303,19 +340,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             String name = _thread.getName();
             try
             {
-                _thread.setName(name + " Selector" + _id);
+                _thread.setName(name + "-selector-" + _id);
                 LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
-                {
-                    try
-                    {
-                        doSelect();
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.warn(e);
-                    }
-                }
+                    select();
                 processChanges();
             }
             finally
@@ -326,11 +354,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
 
         /**
-         * Select and execute tasks found from changes and the selector.
+         * <p>Process changes and waits on {@link Selector#select()}.</p>
          *
-         * @throws IOException
+         * @see #submit(Runnable)
          */
-        public void doSelect() throws IOException
+        public void select()
         {
             boolean debug = LOG.isDebugEnabled();
             try
@@ -343,37 +371,27 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (debug)
                     LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
 
-                needsWakeup = false;
+                _needsWakeup = false;
 
                 Set<SelectionKey> selectedKeys = _selector.selectedKeys();
-                for (SelectionKey key: selectedKeys)
+                for (SelectionKey key : selectedKeys)
                 {
-                    try
+                    if (key.isValid())
                     {
-                        if (!key.isValid())
-                        {
-                            if (debug)
-                                LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
-                            continue;
-                        }
-
                         processKey(key);
                     }
-                    catch (Exception x)
+                    else
                     {
-                        if (isRunning())
-                            LOG.warn(x);
-                        else
-                            LOG.debug(x);
-
-                        execute(new Close(key));
+                        if (debug)
+                            LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
+                        Object attachment = key.attachment();
+                        if (attachment instanceof EndPoint)
+                            ((EndPoint)attachment).close();
                     }
                 }
-
-                // Everything always handled
                 selectedKeys.clear();
             }
-            catch (ClosedSelectorException x)
+            catch (Exception x)
             {
                 if (isRunning())
                     LOG.warn(x);
@@ -389,22 +407,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             // If tasks are submitted between these 2 statements, they will not
             // wakeup the selector, therefore below we run again the tasks
 
-            needsWakeup = true;
+            _needsWakeup = true;
 
             // Run again the tasks to avoid the race condition where a task is
             // submitted but will not wake up the selector
             runChanges();
         }
 
-        private void processKey(SelectionKey key) throws IOException
+        private void processKey(SelectionKey key)
         {
+            Object attachment = key.attachment();
             try
             {
-                Object att = key.attachment();
-                if (att instanceof Selectable)
+                if (attachment instanceof SelectableEndPoint)
                 {
-                    if (key.isReadable() || key.isWritable())
-                        ((Selectable)att).onSelected();
+                    ((SelectableEndPoint)attachment).onSelected();
                 }
                 else if (key.isConnectable())
                 {
@@ -415,7 +432,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         boolean connected = channel.finishConnect();
                         if (connected)
                         {
-                            AsyncEndPoint endpoint = createEndPoint(channel, key);
+                            key.interestOps(0);
+                            EndPoint endpoint = createEndPoint(channel, key);
                             key.attach(endpoint);
                         }
                         else
@@ -425,8 +443,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     }
                     catch (Exception x)
                     {
-                        connectionFailed(channel, x, att);
-                        key.cancel();
+                        connectionFailed(channel, x, attachment);
+                        closeNoExceptions(channel);
                     }
                 }
                 else
@@ -436,11 +454,31 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
             catch (CancelledKeyException x)
             {
-                LOG.debug("Ignoring cancelled key for channel", key.channel());
+                LOG.debug("Ignoring cancelled key for channel {}", key.channel());
+                if (attachment instanceof EndPoint)
+                    ((EndPoint)attachment).close();
+            }
+            catch (Exception x)
+            {
+                LOG.warn("Could not process key for channel " + key.channel(), x);
+                if (attachment instanceof EndPoint)
+                    ((EndPoint)attachment).close();
             }
         }
 
-        public SelectorManager getManager()
+        private void closeNoExceptions(Closeable closeable)
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch (IOException x)
+            {
+                LOG.ignore(x);
+            }
+        }
+
+        public SelectorManager getSelectorManager()
         {
             return SelectorManager.this;
         }
@@ -450,35 +488,33 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             _selector.wakeup();
         }
 
-        private AsyncEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
+        private EndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
         {
-            Selectable asyncEndPoint = newEndPoint(channel, this, sKey);
-            asyncEndPoint.setAsyncConnection(newConnection(channel, asyncEndPoint, sKey.attachment()));
-            _endPoints.put(asyncEndPoint, this);
-            LOG.debug("Created {}", asyncEndPoint);
-            endPointOpened(asyncEndPoint);
-            return asyncEndPoint;
+            EndPoint endPoint = newEndPoint(channel, this, selectionKey);
+            endPointOpened(endPoint);
+            Connection connection = newConnection(channel, endPoint, selectionKey.attachment());
+            endPoint.setConnection(connection);
+            connectionOpened(connection);
+            LOG.debug("Created {}", endPoint);
+            return endPoint;
         }
 
-        public void destroyEndPoint(Selectable endp)
+        public void destroyEndPoint(EndPoint endPoint)
         {
-            LOG.debug("Destroyed {}", endp);
-            _endPoints.remove(endp);
-            endPointClosed(endp);
+            LOG.debug("Destroyed {}", endPoint);
+            Connection connection = endPoint.getConnection();
+            if (connection != null)
+                connectionClosed(connection);
+            endPointClosed(endPoint);
         }
 
-        // TODO: remove
-        Selector getSelector()
-        {
-            return _selector;
-        }
-
+        @Override
         public String dump()
         {
             return AggregateLifeCycle.dump(this);
         }
 
-
+        @Override
         public void dump(Appendable out, String indent) throws IOException
         {
             out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_id)).append("\n");
@@ -486,60 +522,53 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             Thread selecting = _thread;
 
             Object where = "not selecting";
-            StackTraceElement[] trace =selecting==null?null:selecting.getStackTrace();
-            if (trace!=null)
+            StackTraceElement[] trace = selecting == null ? null : selecting.getStackTrace();
+            if (trace != null)
             {
-                for (StackTraceElement t:trace)
+                for (StackTraceElement t : trace)
                     if (t.getClassName().startsWith("org.eclipse.jetty."))
                     {
-                        where=t;
+                        where = t;
                         break;
                     }
             }
 
-            Selector selector=_selector;
-            if (selector!=null)
+            Selector selector = _selector;
+            if (selector != null)
             {
-                final ArrayList<Object> dump = new ArrayList<>(selector.keys().size()*2);
+                final ArrayList<Object> dump = new ArrayList<>(selector.keys().size() * 2);
                 dump.add(where);
 
                 DumpKeys dumpKeys = new DumpKeys(dump);
                 submit(dumpKeys);
                 dumpKeys.await(5, TimeUnit.SECONDS);
 
-                AggregateLifeCycle.dump(out,indent,dump);
+                AggregateLifeCycle.dump(out, indent, dump);
             }
         }
 
-
-        public void dumpKeysState(List<Object> dumpto)
+        public void dumpKeysState(List<Object> dumps)
         {
-            Selector selector=_selector;
+            Selector selector = _selector;
             Set<SelectionKey> keys = selector.keys();
-            dumpto.add(selector + " keys=" + keys.size());
-            for (SelectionKey key: keys)
+            dumps.add(selector + " keys=" + keys.size());
+            for (SelectionKey key : keys)
             {
                 if (key.isValid())
-                    dumpto.add(key.attachment()+" iOps="+key.interestOps()+" rOps="+key.readyOps());
+                    dumps.add(key.attachment() + " iOps=" + key.interestOps() + " rOps=" + key.readyOps());
                 else
-                    dumpto.add(key.attachment()+" iOps=-1 rOps=-1");
+                    dumps.add(key.attachment() + " iOps=-1 rOps=-1");
             }
         }
 
+        @Override
         public String toString()
         {
-            Selector selector=_selector;
+            Selector selector = _selector;
             return String.format("%s keys=%d selected=%d",
                     super.toString(),
                     selector != null && selector.isOpen() ? selector.keys().size() : -1,
                     selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
-        }
-
-        private void timeoutCheck()
-        {
-            long now = System.currentTimeMillis();
-            for (Selectable endPoint : _endPoints.keySet())
-                endPoint.checkReadWriteTimeout(now);
         }
 
         private class DumpKeys implements Runnable
@@ -587,7 +616,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 try
                 {
                     SelectionKey key = _channel.register(_selector, 0, null);
-                    AsyncEndPoint endpoint = createEndPoint(_channel, key);
+                    EndPoint endpoint = createEndPoint(_channel, key);
                     key.attach(endpoint);
                 }
                 catch (IOException x)
@@ -622,29 +651,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
 
-        private class Close implements Runnable
-        {
-            private final SelectionKey key;
-
-            private Close(SelectionKey key)
-            {
-                this.key = key;
-            }
-
-            @Override
-            public void run()
-            {
-                try
-                {
-                    key.channel().close();
-                }
-                catch (IOException x)
-                {
-                    LOG.ignore(x);
-                }
-            }
-        }
-
         private class Stop implements Runnable
         {
             private final CountDownLatch latch = new CountDownLatch(1);
@@ -659,16 +665,17 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         Object attachment = key.attachment();
                         if (attachment instanceof EndPoint)
                         {
-                            EndPoint endpoint = (EndPoint)attachment;
-                            endpoint.close();
+                            EndPointCloser closer = new EndPointCloser((EndPoint)attachment);
+                            execute(closer);
+                            // We are closing the SelectorManager, so we want to block the
+                            // selector thread here until we have closed all EndPoints.
+                            // This is different than calling close() directly, because close()
+                            // can wait forever, while here we are limited by the stop timeout.
+                            closer.await(getStopTimeout());
                         }
                     }
 
-                    _selector.close();
-                }
-                catch (IOException x)
-                {
-                    LOG.ignore(x);
+                    closeNoExceptions(_selector);
                 }
                 finally
                 {
@@ -676,11 +683,47 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
             }
 
-            public boolean await(long timeout, TimeUnit unit)
+            public boolean await(long timeout)
             {
                 try
                 {
-                    return latch.await(timeout, unit);
+                    return latch.await(timeout, TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException x)
+                {
+                    return false;
+                }
+            }
+        }
+
+        private class EndPointCloser implements Runnable
+        {
+            private final CountDownLatch latch = new CountDownLatch(1);
+            private final EndPoint endPoint;
+
+            private EndPointCloser(EndPoint endPoint)
+            {
+                this.endPoint = endPoint;
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    endPoint.getConnection().close();
+                }
+                finally
+                {
+                    latch.countDown();
+                }
+            }
+
+            private boolean await(long timeout)
+            {
+                try
+                {
+                    return latch.await(timeout, TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException x)
                 {
@@ -690,17 +733,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
     }
 
-
-    // TODO review this interface
-    public interface Selectable extends AsyncEndPoint
+    /**
+     * A {@link SelectableEndPoint} is an {@link EndPoint} that wish to be notified of
+     * non-blocking events by the {@link ManagedSelector}.
+     */
+    public interface SelectableEndPoint extends EndPoint
     {
+        /**
+         * <p>Callback method invoked when a read or write events has been detected by the {@link ManagedSelector}
+         * for this endpoint.</p>
+         */
         void onSelected();
-
-        Channel getChannel();
-
-        void doUpdateKey();
-
-        void checkReadWriteTimeout(long idle_now);
     }
-
 }

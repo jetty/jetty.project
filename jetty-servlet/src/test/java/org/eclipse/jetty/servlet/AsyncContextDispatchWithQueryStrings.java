@@ -1,10 +1,24 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -15,7 +29,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -23,22 +37,25 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 /**
  * This tests verifies that merging of queryStrings works when dispatching
  * Requests via {@link Continuation} multiple times.
- * 
+ *
  * @author tbecker
- * 
+ *
  */
 public class AsyncContextDispatchWithQueryStrings {
 
 	private Server _server = new Server();
 	private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-	private LocalHttpConnector _connector = new LocalHttpConnector();
+	private LocalConnector _connector = new LocalConnector(_server);
 
 	@Before
 	public void setUp() throws Exception {
-		_connector.setMaxIdleTime(30000);
+		_connector.setIdleTimeout(30000);
 		_server.setConnectors(new Connector[] { _connector });
 
 		_contextHandler.setContextPath("/");

@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.ssl;
 
@@ -20,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -33,7 +39,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -41,11 +46,11 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -72,7 +77,6 @@ public class SslBytesServerTest extends SslBytesTest
     private int serverPort;
     private SSLContext sslContext;
     private SimpleProxy proxy;
-    private Runnable idleHook;
 
     @Before
     public void init() throws Exception
@@ -80,82 +84,30 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
-        SslSelectChannelConnector connector = new SslSelectChannelConnector()
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        SelectChannelConnector connector = new SelectChannelConnector(server, sslContextFactory)
         {
             @Override
-            protected SslConnection newSslConnection(AsyncEndPoint endPoint, SSLEngine engine)
+            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                serverEndPoint.set(endPoint);
-                return super.newSslConnection(endPoint, engine);
-                //                return new SslConnection(engine, endPoint)
-                //                {
-                //                    @Override
-                //                    public Connection handle() throws IOException
-                //                    {
-                //                        sslHandles.incrementAndGet();
-                //                        return super.handle();
-                //                    }
-                //
-                //                    @Override
-                //                    protected SslEndPoint newSslEndPoint()
-                //                    {
-                //                        return new SslEndPoint()
-                //                        {
-                //                            @Override
-                //                            public int flush(ByteBuffer buffer) throws IOException
-                //                            {
-                //                                sslFlushes.incrementAndGet();
-                //                                return super.flush(buffer);
-                //                            }
-                //                        };
-                //                    }
-                //
-                //                    @Override
-                //                    public void onIdleExpired(long idleForMs)
-                //                    {
-                //                        final Runnable idleHook = SslBytesServerTest.this.idleHook;
-                //                        if (idleHook != null)
-                //                            idleHook.run();
-                //                        super.onIdleExpired(idleForMs);
-                //                    }
-                //                };
+                SelectChannelEndPoint endp = super.newEndPoint(channel,selectSet,key);
+                serverEndPoint.set(endp);
+                return endp;
             }
 
-            @Override
-            protected AsyncConnection newPlainConnection(SocketChannel channel, AsyncEndPoint endPoint)
-            {
-                return super.newPlainConnection(channel, endPoint);
-                //                return new HttpConnection(this, endPoint, getServer())
-                //                {
-                //                    @Override
-                //                    protected HttpParser newHttpParser(Buffers requestBuffers, EndPoint endPoint, HttpParser.EventHandler requestHandler)
-                //                    {
-                //                        return new HttpParser(requestBuffers, endPoint, requestHandler)
-                //                        {
-                //                            @Override
-                //                            public int parseNext() throws IOException
-                //                            {
-                //                                httpParses.incrementAndGet();
-                //                                return super.parseNext();
-                //                            }
-                //                        };
-                //                    }
-                //                };
-            }
         };
-        connector.setMaxIdleTime(idleTimeout);
-
-        //        connector.setPort(5870);
+        connector.setIdleTimeout(idleTimeout);
+//        connector.setPort(5870);
         connector.setPort(0);
 
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStorePath(keyStore.getAbsolutePath());
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
         server.addConnector(connector);
         server.setHandler(new AbstractHandler()
         {
+            @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
             {
                 try
@@ -189,7 +141,7 @@ public class SslBytesServerTest extends SslBytesTest
         server.start();
         serverPort = connector.getLocalPort();
 
-        sslContext = cf.getSslContext();
+        sslContext = sslContextFactory.getSslContext();
 
         proxy = new SimpleProxy(threadPool, "localhost", serverPort);
         proxy.start();
@@ -214,6 +166,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> handshake = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -274,6 +227,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> handshake = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -375,6 +329,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -407,6 +362,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -461,6 +417,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -502,6 +459,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -550,6 +508,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> handshake = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -593,6 +552,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -668,6 +628,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -742,6 +703,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -811,6 +773,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -865,6 +828,7 @@ public class SslBytesServerTest extends SslBytesTest
         final String content = new String(data, "UTF-8");
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -922,6 +886,7 @@ public class SslBytesServerTest extends SslBytesTest
         final String content = new String(data, "UTF-8");
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -957,8 +922,6 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(50));
 
-//        Thread.sleep(100000);
-
         client.close();
     }
 
@@ -987,6 +950,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -1066,6 +1030,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -1131,6 +1096,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 OutputStream clientOutput = client.getOutputStream();
@@ -1226,6 +1192,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Renegotiate
         Future<Object> renegotiation = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -1280,6 +1247,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Write the rest of the request
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 clientOutput.write(content2.getBytes("UTF-8"));
@@ -1358,6 +1326,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Renegotiate
         Future<Object> renegotiation = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -1430,6 +1399,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Write the rest of the request
         Future<Object> request = threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 clientOutput.write(content2.getBytes("UTF-8"));
@@ -1544,6 +1514,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         threadPool.submit(new Callable<Object>()
         {
+            @Override
             public Object call() throws Exception
             {
                 client.startHandshake();
@@ -1572,32 +1543,7 @@ public class SslBytesServerTest extends SslBytesTest
     public void testRequestConcurrentWithIdleExpiration() throws Exception
     {
         final SSLSocket client = newClient();
-        final OutputStream clientOutput = client.getOutputStream();
         final CountDownLatch latch = new CountDownLatch(1);
-
-        idleHook = new Runnable()
-        {
-            public void run()
-            {
-                if (latch.getCount() == 0)
-                    return;
-                try
-                {
-                    // Send request
-                    clientOutput.write(("" +
-                            "GET / HTTP/1.1\r\n" +
-                            "Host: localhost\r\n" +
-                            "\r\n").getBytes("UTF-8"));
-                    clientOutput.flush();
-                    latch.countDown();
-                }
-                catch (Exception x)
-                {
-                    // Latch won't trigger and test will fail
-                    x.printStackTrace();
-                }
-            }
-        };
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
         client.startHandshake();

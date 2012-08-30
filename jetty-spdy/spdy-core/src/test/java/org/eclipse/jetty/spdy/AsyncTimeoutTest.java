@@ -1,18 +1,20 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.spdy;
 
@@ -24,7 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
@@ -32,23 +34,28 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.generator.Generator;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class AsyncTimeoutTest
 {
+    @Slow
     @Test
     public void testAsyncTimeoutInControlFrames() throws Exception
     {
         final long timeout = 1000;
         final TimeUnit unit = TimeUnit.MILLISECONDS;
 
-        ByteBufferPool bufferPool = new StandardByteBufferPool();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
             public void flush()
@@ -74,7 +81,7 @@ public class AsyncTimeoutTest
             }
 
             @Override
-            public void failed(Stream context, Throwable x)
+            public void failed(Stream stream, Throwable x)
             {
                 failedLatch.countDown();
             }
@@ -83,27 +90,28 @@ public class AsyncTimeoutTest
         Assert.assertTrue(failedLatch.await(2 * timeout, unit));
     }
 
+    @Slow
     @Test
     public void testAsyncTimeoutInDataFrames() throws Exception
     {
         final long timeout = 1000;
         final TimeUnit unit = TimeUnit.MILLISECONDS;
 
-        ByteBufferPool bufferPool = new StandardByteBufferPool();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
         {
             @Override
-            protected void write(ByteBuffer buffer, Callback<FrameBytes> handler, FrameBytes frameBytes)
+            protected void write(ByteBuffer buffer, Callback<FrameBytes> callback, FrameBytes frameBytes)
             {
                 try
                 {
                     // Wait if we're writing the data frame (control frame's first byte is 0x80)
                     if (buffer.get(0) == 0)
                         unit.sleep(2 * timeout);
-                    super.write(buffer, handler, frameBytes);
+                    super.write(buffer, callback, frameBytes);
                 }
                 catch (InterruptedException x)
                 {
@@ -114,13 +122,8 @@ public class AsyncTimeoutTest
 
         Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.data(new StringDataInfo("data", true), timeout, unit, new Callback<Void>()
+        stream.data(new StringDataInfo("data", true), timeout, unit, new Callback.Empty<Void>()
         {
-            @Override
-            public void completed(Void context)
-            {
-            }
-
             @Override
             public void failed(Void context, Throwable x)
             {

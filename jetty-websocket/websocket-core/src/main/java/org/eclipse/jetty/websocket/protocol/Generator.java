@@ -1,18 +1,21 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
@@ -56,10 +59,16 @@ public class Generator
      */
     public static final int OVERHEAD = 28;
 
-    @SuppressWarnings("unused")
-    private final WebSocketPolicy policy; // TODO: remove as unused?
+    private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private boolean validating;
+
+    /** Is there an extension using RSV1 */
+    private boolean rsv1InUse = false;
+    /** Is there an extension using RSV2 */
+    private boolean rsv2InUse = false;
+    /** Is there an extension using RSV3 */
+    private boolean rsv3InUse = false;
 
     /**
      * Construct Generator with provided policy and bufferPool
@@ -104,25 +113,22 @@ public class Generator
          * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
          * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
          */
-        if (frame.isRsv1())
+        if (!rsv1InUse && frame.isRsv1())
         {
-            // TODO: extensions can negotiate this (somehow)
             throw new ProtocolException("RSV1 not allowed to be set");
         }
 
-        if (frame.isRsv2())
+        if (!rsv2InUse && frame.isRsv2())
         {
-            // TODO: extensions can negotiate this (somehow)
             throw new ProtocolException("RSV2 not allowed to be set");
         }
 
-        if (frame.isRsv3())
+        if (!rsv3InUse && frame.isRsv3())
         {
-            // TODO: extensions can negotiate this (somehow)
             throw new ProtocolException("RSV3 not allowed to be set");
         }
 
-        if (frame.getOpCode().isControlFrame())
+        if (frame.isControlFrame())
         {
             /*
              * RFC 6455 Section 5.5
@@ -157,28 +163,45 @@ public class Generator
 
     }
 
-    /*
-     * The generate method needs to perform two functions.
-     * 
-     * 1 - on the initial call for a given frame it needs to generate the framing bytecode and as much of the payload as will fit in the given buffer size
-     * 
-     * 2 - on subsequent calls it needs to return as much of the payload as will fit in the given buffer size
+    /**
+     * Generate, into a ByteBuffer, no more than bufferSize of contents from the frame. If the frame exceeds the bufferSize, then multiple calls to
+     * {@link #generate(int, WebSocketFrame)} are required to obtain each window of ByteBuffer to complete the frame.
      */
-    public ByteBuffer generate(int bufferSize, WebSocketFrame frame)
+    public ByteBuffer generate(int windowSize, WebSocketFrame frame)
     {
+        if (windowSize < OVERHEAD)
+        {
+            throw new IllegalArgumentException("Cannot have windowSize less than " + OVERHEAD);
+        }
+
         if (LOG.isDebugEnabled())
         {
-            LOG.debug(String.format(
-                    "Generate.Frame[opcode=%s,fin=%b,cont=%b,rsv1=%b,rsv2=%b,rsv3=%b,mask=%b,plength=%d,payloadStart=%s,remaining=%d,position=%s]",frame
-                    .getOpCode().toString(),frame.isFin(),frame.isContinuation(),frame.isRsv1(),frame.isRsv2(),frame.isRsv3(),frame.isMasked(),frame
-                    .getPayloadLength(),frame.getPayloadStart(),frame.remaining(),frame.position()));
+            StringBuilder dbg = new StringBuilder();
+            dbg.append(policy.getBehavior());
+            dbg.append(" Generate.Frame[");
+            dbg.append("opcode=").append(frame.getOpCode());
+            dbg.append(",fin=").append(frame.isFin());
+            dbg.append(",cont=").append(frame.isContinuation());
+            dbg.append(",rsv1=").append(frame.isRsv1());
+            dbg.append(",rsv2=").append(frame.isRsv2());
+            dbg.append(",rsv3=").append(frame.isRsv3());
+            dbg.append(",mask=").append(frame.isMasked());
+            dbg.append(",payloadLength=").append(frame.getPayloadLength());
+            dbg.append(",payloadStart=").append(frame.getPayloadStart());
+            dbg.append(",remaining=").append(frame.remaining());
+            dbg.append(",position=").append(frame.position());
+            dbg.append(']');
+            LOG.debug(dbg.toString());
         }
 
         /*
          * prepare the byte buffer to put frame into
          */
-        ByteBuffer buffer = bufferPool.acquire(bufferSize,true);
+        ByteBuffer buffer = bufferPool.acquire(windowSize,true);
         BufferUtil.clearToFill(buffer);
+        // since the buffer from the pool can exceed the window size, artificially
+        // limit the buffer to the window size.
+        buffer.limit(buffer.position() + windowSize);
 
         if (frame.remaining() == frame.getPayloadLength())
         {
@@ -209,12 +232,12 @@ public class Generator
                 b |= 0x10;
             }
 
-            byte opcode = frame.getOpCode().getCode();
+            byte opcode = frame.getOpCode();
 
             if (frame.isContinuation())
             {
                 // Continuations are not the same OPCODE
-                opcode = OpCode.CONTINUATION.getCode();
+                opcode = OpCode.CONTINUATION;
             }
 
             b |= opcode & 0x0F;
@@ -326,14 +349,62 @@ public class Generator
     public ByteBuffer generate(WebSocketFrame frame)
     {
         int bufferSize = frame.getPayloadLength() + OVERHEAD;
-
         return generate(bufferSize,frame);
+    }
+
+    public boolean isRsv1InUse()
+    {
+        return rsv1InUse;
+    }
+
+    public boolean isRsv2InUse()
+    {
+        return rsv2InUse;
+    }
+
+    public boolean isRsv3InUse()
+    {
+        return rsv3InUse;
+    }
+
+    public void setRsv1InUse(boolean rsv1InUse)
+    {
+        this.rsv1InUse = rsv1InUse;
+    }
+
+    public void setRsv2InUse(boolean rsv2InUse)
+    {
+        this.rsv2InUse = rsv2InUse;
+    }
+
+    public void setRsv3InUse(boolean rsv3InUse)
+    {
+        this.rsv3InUse = rsv3InUse;
     }
 
     @Override
     public String toString()
     {
-        return String.format("Generator [basic=%s]",this.getClass().getSimpleName());
+        StringBuilder builder = new StringBuilder();
+        builder.append("Generator[");
+        builder.append(policy.getBehavior());
+        if (validating)
+        {
+            builder.append(",validating");
+        }
+        if (rsv1InUse)
+        {
+            builder.append(",+rsv1");
+        }
+        if (rsv2InUse)
+        {
+            builder.append(",+rsv2");
+        }
+        if (rsv3InUse)
+        {
+            builder.append(",+rsv3");
+        }
+        builder.append("]");
+        return builder.toString();
     }
-
 }

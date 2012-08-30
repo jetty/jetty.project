@@ -1,20 +1,27 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util.component;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -23,9 +30,11 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *
  */
+@ManagedObject("Abstract Implementation of LifeCycle")
 public abstract class AbstractLifeCycle implements LifeCycle
 {
     private static final Logger LOG = Log.getLogger(AbstractLifeCycle.class);
+
     public static final String STOPPED="STOPPED";
     public static final String FAILED="FAILED";
     public static final String STARTING="STARTING";
@@ -37,7 +46,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private final Object _lock = new Object();
     private final int __FAILED = -1, __STOPPED = 0, __STARTING = 1, __STARTED = 2, __STOPPING = 3;
     private volatile int _state = __STOPPED;
-    private long _stopTimeout = 10000;
+    private long _stopTimeout = 30000;
 
     protected void doStart() throws Exception
     {
@@ -129,6 +138,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         _listeners.remove(listener);
     }
 
+    @ManagedAttribute(value="Lifecycle State for this instance", readonly=true)
     public String getState()
     {
         switch(_state)
@@ -191,6 +201,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
             listener.lifeCycleFailure(this,th);
     }
 
+    @ManagedAttribute(value="The stop timeout in milliseconds")
     public long getStopTimeout()
     {
         return _stopTimeout;

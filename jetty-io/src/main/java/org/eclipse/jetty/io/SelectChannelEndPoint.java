@@ -1,381 +1,213 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
  * An ChannelEndpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, SelectorManager.Selectable
+public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorManager.SelectableEndPoint
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
-    private final SelectorManager.ManagedSelector _selector;
-    private final SelectorManager _manager;
-
-    private SelectionKey _key;
-
-    private boolean _selected;
-    private boolean _changing;
-
-    /** The desired value for {@link SelectionKey#interestOps()} */
-    private int _interestOps;
-
-    /** true if {@link ManagedSelector#destroyEndPoint(SelectorManager.Selectable)} has not been called */
-    private boolean _open;
-
-    private volatile AsyncConnection _connection;
-
-    /* ------------------------------------------------------------ */
-    private final ReadInterest _readInterest = new ReadInterest()
+    private final Runnable _updateTask = new Runnable()
     {
         @Override
-        protected boolean needsFill()
+        public void run()
         {
-            _interestOps=_interestOps | SelectionKey.OP_READ;
-            updateKey();
-            return false;
+            try
+            {
+                if (getChannel().isOpen())
+                {
+                    int oldInterestOps = _key.interestOps();
+                    int newInterestOps = _interestOps;
+                    if (newInterestOps != oldInterestOps)
+                        setKeyInterests(oldInterestOps, newInterestOps);
+                }
+            }
+            catch (CancelledKeyException x)
+            {
+                LOG.debug("Ignoring key update for concurrently closed channel {}", this);
+                close();
+            }
+            catch (Exception x)
+            {
+                LOG.warn("Ignoring key update for " + this, x);
+                close();
+            }
         }
     };
 
-    /* ------------------------------------------------------------ */
-    private final WriteFlusher _writeFlusher = new WriteFlusher(this)
-    {
-        @Override
-        protected void onIncompleteFlushed()
-        {
-            _interestOps = _interestOps | SelectionKey.OP_WRITE;
-            updateKey();
-        }
-    };
-
-    /* ------------------------------------------------------------ */
-    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, long maxIdleTime) throws IOException
-    {
-        super(channel);
-        _manager = selectSet.getManager();
-        _selector = selectSet;
-        _open = true;
-        _key = key;
-
-        setMaxIdleTime(maxIdleTime);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public <C> void fillInterested(C context, Callback<C> callback) throws IllegalStateException
-    {
-        _readInterest.register(context,callback);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public <C> void write(C context, Callback<C> callback, ByteBuffer... buffers) throws IllegalStateException
-    {
-        _writeFlusher.write(context,callback,buffers);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public AsyncConnection getAsyncConnection()
-    {
-        return _connection;
-    }
-
-    /* ------------------------------------------------------------ */
-    public SelectionKey getSelectionKey()
-    {
-        synchronized (this)
-        {
-            return _key;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public SelectorManager getSelectorManager()
-    {
-        return _manager;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setAsyncConnection(AsyncConnection connection)
-    {
-        AsyncConnection old = getAsyncConnection();
-        _connection = connection;
-        if (old != null && old != connection)
-            _manager.endPointUpgraded(this,old);
-    }
-
-    /* ------------------------------------------------------------ */
     /**
-     * Called by selectSet to schedule handling
-     *
+     * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
+    private final AtomicBoolean _open = new AtomicBoolean();
+    private final SelectorManager.ManagedSelector _selector;
+    private final SelectionKey _key;
+    /**
+     * The desired value for {@link SelectionKey#interestOps()}
+     */
+    private volatile int _interestOps;
+
+    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, ScheduledExecutorService scheduler, long idleTimeout) throws IOException
+    {
+        super(scheduler,channel);
+        _selector = selector;
+        _key = key;
+        setIdleTimeout(idleTimeout);
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        super.setIdleTimeout(idleTimeout);
+        scheduleIdleTimeout(idleTimeout);
+    }
+
+    @Override
+    protected boolean needsFill()
+    {
+        updateLocalInterests(SelectionKey.OP_READ, true);
+        return false;
+    }
+
+    @Override
+    protected void onIncompleteFlush()
+    {
+        updateLocalInterests(SelectionKey.OP_WRITE, true);
+    }
+
+    @Override
+    public void setConnection(Connection connection)
+    {
+        // TODO should this be on AbstractEndPoint?
+        Connection old = getConnection();
+        super.setConnection(connection);
+        if (old != null && old != connection)
+            _selector.getSelectorManager().connectionUpgraded(this, old);
+    }
+
     @Override
     public void onSelected()
     {
-        boolean can_read;
-        boolean can_write;
-
-        synchronized (this)
-        {
-            _selected = true;
-            try
-            {
-                // If there is no key, then do nothing
-                if (_key == null || !_key.isValid())
-                    return;
-
-                can_read = (_key.isReadable() && (_key.interestOps() & SelectionKey.OP_READ) == SelectionKey.OP_READ);
-                can_write = (_key.isWritable() && (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE);
-                _interestOps = 0;
-            }
-            finally
-            {
-                _selector.submit(this);
-                _selected = false;
-            }
-        }
-        if (can_read)
-            _readInterest.readable();
-        if (can_write)
-            _writeFlusher.completeWrite();
+        int oldInterestOps = _key.interestOps();
+        int readyOps = _key.readyOps();
+        int newInterestOps = oldInterestOps & ~readyOps;
+        setKeyInterests(oldInterestOps, newInterestOps);
+        updateLocalInterests(readyOps, false);
+        if (_key.isReadable())
+            getFillInterest().fillable();
+        if (_key.isWritable())
+            getWriteFlusher().completeWrite();
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public void checkReadWriteTimeout(long now)
+
+    private void updateLocalInterests(int operation, boolean add)
     {
-        synchronized (this)
+        int oldInterestOps = _interestOps;
+        int newInterestOps;
+        if (add)
+            newInterestOps = oldInterestOps | operation;
+        else
+            newInterestOps = oldInterestOps & ~operation;
+
+        if (isInputShutdown())
+            newInterestOps &= ~SelectionKey.OP_READ;
+        if (isOutputShutdown())
+            newInterestOps &= ~SelectionKey.OP_WRITE;
+
+        if (newInterestOps != oldInterestOps)
         {
-            if (isOutputShutdown() || _readInterest.isInterested() || _writeFlusher.isWriting())
-            {
-                long idleTimestamp = getIdleTimestamp();
-                long max_idle_time = getMaxIdleTime();
-
-                if (idleTimestamp != 0 && max_idle_time > 0)
-                {
-                    long idleForMs = now - idleTimestamp;
-
-                    if (idleForMs > max_idle_time)
-                    {
-                        if (isOutputShutdown())
-                            close();
-                        notIdle();
-
-                        TimeoutException timeout = new TimeoutException("idle "+idleForMs+"ms");
-                        _readInterest.failed(timeout);
-                        _writeFlusher.failed(timeout);
-                    }
-                }
-            }
+            _interestOps = newInterestOps;
+            LOG.debug("Local interests updated {} -> {} for {}", oldInterestOps, newInterestOps, this);
+            _selector.submit(_updateTask);
+        }
+        else
+        {
+            LOG.debug("Ignoring local interests update {} -> {} for {}", oldInterestOps, newInterestOps, this);
         }
     }
 
 
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void shutdownInput()
+    private void setKeyInterests(int oldInterestOps, int newInterestOps)
     {
-        super.shutdownInput();
-        updateKey();
+        LOG.debug("Key interests updated {} -> {}", oldInterestOps, newInterestOps);
+        _key.interestOps(newInterestOps);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Updates selection key. This method schedules a call to doUpdateKey to do the keyChange
-     */
-    private void updateKey()
-    {
-        synchronized (this)
-        {
-            if (!_selected)
-            {
-                int current_ops = -1;
-                if (getChannel().isOpen())
-                {
-                    try
-                    {
-                        current_ops = ((_key != null && _key.isValid())?_key.interestOps():-1);
-                    }
-                    catch (Exception e)
-                    {
-                        _key = null;
-                        LOG.ignore(e);
-                    }
-                }
-                if (_interestOps != current_ops && !_changing)
-                {
-                    _changing = true;
-                    _selector.submit(this);
-                }
-            }
-        }
-    }
-
-    @Override
-    public void run()
-    {
-        doUpdateKey();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Synchronize the interestOps with the actual key. Call is scheduled by a call to updateKey
-     */
-    @Override
-    public void doUpdateKey()
-    {
-        synchronized (this)
-        {
-            _changing = false;
-            if (getChannel().isOpen())
-            {
-                if (_interestOps > 0)
-                {
-                    if (_key == null || !_key.isValid())
-                    {
-                        SelectableChannel sc = (SelectableChannel)getChannel();
-                        if (sc.isRegistered())
-                        {
-                            updateKey();
-                        }
-                        else
-                        {
-                            try
-                            {
-                                _key = ((SelectableChannel)getChannel()).register(_selector.getSelector(),_interestOps,this);
-                            }
-                            catch (Exception e)
-                            {
-                                LOG.ignore(e);
-                                if (_key != null && _key.isValid())
-                                {
-                                    _key.cancel();
-                                }
-
-                                if (_open)
-                                {
-                                    _selector.destroyEndPoint(this);
-                                }
-                                _open = false;
-                                _key = null;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        _key.interestOps(_interestOps);
-                    }
-                }
-                else
-                {
-                    if (_key != null && _key.isValid())
-                        _key.interestOps(0);
-                    else
-                        _key = null;
-                }
-            }
-            else
-            {
-                if (_key != null && _key.isValid())
-                    _key.cancel();
-
-                if (_open)
-                {
-                    _open = false;
-                    _selector.destroyEndPoint(this);
-                }
-                _key = null;
-            }
-
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.nio.ChannelEndPoint#close()
-     */
     @Override
     public void close()
     {
-        super.close();
-        updateKey();
+        if (_open.compareAndSet(true, false))
+        {
+            super.close();
+            _selector.destroyEndPoint(this);
+        }
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        // We cannot rely on super.isOpen(), because there is a race between calls to close() and isOpen():
+        // a thread may call close(), which flips the boolean but has not yet called super.close(), and
+        // another thread calls isOpen() which would return true - wrong - if based on super.isOpen().
+        return _open.get();
     }
 
     @Override
     public void onOpen()
     {
+        if (_open.compareAndSet(false, true))
+        {
+            super.onOpen();
+            scheduleIdleTimeout(getIdleTimeout());
+        }
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onClose()
-    {
-        _writeFlusher.close();
-        _readInterest.close();
-    }
-
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         // Do NOT use synchronized (this)
         // because it's very easy to deadlock when debugging is enabled.
         // We do a best effort to print the right toString() and that's it.
-        SelectionKey key = _key;
         String keyString = "";
-        if (key != null)
+        if (_key.isValid())
         {
-            if (key.isValid())
-            {
-                if (key.isReadable())
-                    keyString += "r";
-                if (key.isWritable())
-                    keyString += "w";
-            }
-            else
-            {
-                keyString += "!";
-            }
+            if (_key.isReadable())
+                keyString += "r";
+            if (_key.isWritable())
+                keyString += "w";
         }
         else
         {
-            keyString += "-";
+            keyString += "!";
         }
-
-        return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",hashCode(),getRemoteAddress(),getLocalAddress(),isOpen(),
-                isInputShutdown(),isOutputShutdown(),_interestOps,keyString,_readInterest,_writeFlusher,getAsyncConnection());
+        return String.format("%s{io=%d,k=%s}",super.toString(), _interestOps, keyString);
     }
-
-    /* ------------------------------------------------------------ */
-    public ManagedSelector getSelectSet()
-    {
-        return _selector;
-    }
-
 }

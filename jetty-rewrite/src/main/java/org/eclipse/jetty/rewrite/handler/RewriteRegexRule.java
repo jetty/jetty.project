@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
@@ -18,18 +24,22 @@ import java.util.regex.Matcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 
 /**
  * Rewrite the URI by matching with a regular expression. 
  * The replacement string may use $n" to replace the nth capture group.
  * If the replacement string contains ? character, then it is split into a path
- * and query string component.  The returned target contains only the path.
+ * and query string component.  The replacement query string may also contain $Q, which 
+ * is replaced with the original query string. 
+ * The returned target contains only the path.
  */
 public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
 {
     private String _replacement;
     private String _query;
+    private boolean _queryGroup;
 
     /* ------------------------------------------------------------ */
     public RewriteRegexRule()
@@ -49,6 +59,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         String[] split=replacement.split("\\?",2);
         _replacement = split[0];
         _query=split.length==2?split[1]:null;
+        _queryGroup=_query!=null && _query.contains("$Q");
     }
 
 
@@ -73,21 +84,32 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         }
 
         if (query!=null)
+        {
+            if (_queryGroup)
+                query=query.replace("$Q",request.getQueryString()==null?"":request.getQueryString());
             request.setAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q",query);
+        }
+        
         return target;
     }
 
     /* ------------------------------------------------------------ */
     public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
     {
-        request.setRequestURI(newTarget);
-        if (_query!=null)
+        if (_query==null)
+        {
+            request.setRequestURI(newTarget);
+        }
+        else
         {
             String query=(String)request.getAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q");
-            if (request.getQueryString()==null)
-                request.setQueryString(query);
-            else
-                request.setQueryString(request.getQueryString()+"&"+query);
+            
+            if (!_queryGroup && request.getQueryString()!=null)
+                query=request.getQueryString()+"&"+query;
+            HttpURI uri=new HttpURI(newTarget+"?"+query);
+            request.setUri(uri);
+            request.setRequestURI(newTarget);
+            request.setQueryString(query);
         }
     }
 

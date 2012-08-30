@@ -1,18 +1,20 @@
-//========================================================================
-//Copyright (c) Webtide LLC
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
 //
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//The Apache License v2.0 is available at
-//http://www.apache.org/licenses/LICENSE-2.0.txt
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util.ssl;
 
@@ -20,7 +22,6 @@ import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.X509KeyManager;
 
 
@@ -62,7 +63,7 @@ public class AliasedX509KeyManager implements X509KeyManager
      * @see javax.net.ssl.X509KeyManager#chooseServerAlias(java.lang.String, java.security.Principal[], java.net.Socket)
      */
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
-    {   
+    {
         return _keyAlias == null ?_keyManager.chooseServerAlias(keyType, issuers, socket) : _keyAlias;
     }
 

@@ -1,26 +1,32 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 
@@ -71,13 +77,26 @@ public class CloseInfo
                 // Reason
                 try
                 {
-                    reason = BufferUtil.toUTF8String(data);
+                    Utf8StringBuilder utf = new Utf8StringBuilder();
+                    utf.append(data);
+                    reason = utf.toString();
+                }
+                catch (NotUtf8Exception e)
+                {
+                    if (validate)
+                    {
+                        throw new BadPayloadException("Invalid Close Reason",e);
+                    }
+                    else
+                    {
+                        LOG.warn(e);
+                    }
                 }
                 catch (RuntimeException e)
                 {
                     if (validate)
                     {
-                        throw new ProtocolException("Invalid Close Reason:",e);
+                        throw new ProtocolException("Invalid Close Reason",e);
                     }
                     else
                     {
@@ -102,6 +121,11 @@ public class CloseInfo
     public CloseInfo(WebSocketFrame frame)
     {
         this(frame.getPayload(),false);
+    }
+
+    public CloseInfo(WebSocketFrame frame, boolean validate)
+    {
+        this(frame.getPayload(),validate);
     }
 
     public ByteBuffer asByteBuffer()

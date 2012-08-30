@@ -26,22 +26,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>process-resources</phase>
-            <configuration>
-              <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 8.0.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
-              </tasks>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
@@ -65,6 +49,28 @@
         </configuration>
       </plugin>
       <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <executions>
+              <execution>
+                  <id>bundle-manifest</id>
+                  <phase>process-classes</phase>
+                  <goals>
+                      <goal>manifest</goal> 
+                  </goals>
+              </execution>
+          </executions>
+          <configuration>
+              <instructions>
+                  <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot.warurl;singleton:=true</Bundle-SymbolicName>
+                  <Bundle-Name>RFC66 War URL</Bundle-Name>
+                  <Bundle-Activator>org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator</Bundle-Activator>
+                  <_nouses>true</_nouses>
+              </instructions>
+          </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
         <configuration>
@@ -73,6 +79,4 @@
       </plugin>
     </plugins>
   </build>
-
-
 </project>

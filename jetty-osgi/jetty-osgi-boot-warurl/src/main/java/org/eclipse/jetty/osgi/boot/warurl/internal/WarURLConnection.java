@@ -1,17 +1,21 @@
-// ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// Contributors:
-//    Hugues Malphettes - initial API and implementation
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.osgi.boot.warurl.internal;
 
 import java.io.IOException;
@@ -31,6 +35,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Facade for a URLConnection that will read a jar and substitute its
@@ -106,6 +111,7 @@ public class WarURLConnection extends URLConnection
     {
         super(url);
         _conn = url.openConnection();
+        _conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
         _mf = mf;
     }
     @Override

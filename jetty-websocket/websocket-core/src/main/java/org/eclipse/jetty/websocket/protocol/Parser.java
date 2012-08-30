@@ -1,18 +1,21 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.protocol;
 
 import java.nio.ByteBuffer;
@@ -25,6 +28,11 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
+import org.eclipse.jetty.websocket.io.payload.BinaryValidator;
+import org.eclipse.jetty.websocket.io.payload.CloseReasonValidator;
+import org.eclipse.jetty.websocket.io.payload.DeMaskProcessor;
+import org.eclipse.jetty.websocket.io.payload.PayloadProcessor;
+import org.eclipse.jetty.websocket.io.payload.UTF8Validator;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -42,15 +50,27 @@ public class Parser
         PAYLOAD
     }
 
+    private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
+
     // State specific
     private State state = State.START;
     private int cursor = 0;
     // Frame
     private WebSocketFrame frame;
-    private OpCode lastDataOpcode;
+    private WebSocketFrame priorDataFrame;
+    private byte lastDataOpcode;
     // payload specific
     private ByteBuffer payload;
     private int payloadLength;
+    private PayloadProcessor maskProcessor = new DeMaskProcessor();
+    private PayloadProcessor strictnessProcessor;
+
+    /** Is there an extension using RSV1 */
+    private boolean rsv1InUse = false;
+    /** Is there an extension using RSV2 */
+    private boolean rsv2InUse = false;
+    /** Is there an extension using RSV3 */
+    private boolean rsv3InUse = false;
 
     private static final Logger LOG = Log.getLogger(Parser.class);
     private IncomingFrames incomingFramesHandler;
@@ -58,10 +78,6 @@ public class Parser
 
     public Parser(WebSocketPolicy wspolicy)
     {
-        /*
-         * TODO: Investigate addition of decompression factory similar to SPDY work in situation of negotiated deflate extension?
-         */
-
         this.policy = wspolicy;
     }
 
@@ -78,14 +94,14 @@ public class Parser
 
         switch (frame.getOpCode())
         {
-            case CLOSE:
+            case OpCode.CLOSE:
                 if (len == 1)
                 {
                     throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
                 }
                 // fall thru
-            case PING:
-            case PONG:
+            case OpCode.PING:
+            case OpCode.PONG:
                 if (len > WebSocketFrame.MAX_CONTROL_PAYLOAD)
                 {
                     throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
@@ -93,41 +109,6 @@ public class Parser
                 }
                 break;
         }
-    }
-
-    /**
-     * Copy the bytes from one buffer to the other, demasking the content if necessary.
-     * 
-     * @param src
-     *            the source {@link ByteBuffer}
-     * @param dest
-     *            the destination {@link ByteBuffer}
-     * @param length
-     *            the length of bytes to worry about
-     * @return the number of bytes copied
-     */
-    protected int copyBuffer(ByteBuffer src, ByteBuffer dest, int length)
-    {
-        int amt = Math.min(length,src.remaining());
-        if (frame.isMasked())
-        {
-            // Demask the content 1 byte at a time
-            // FIXME: on partially parsed frames this needs an offset from prior parse
-            byte mask[] = frame.getMask();
-            for (int i = 0; i < amt; i++)
-            {
-                dest.put((byte)(src.get() ^ mask[i % 4]));
-            }
-        }
-        else
-        {
-            // Copy the content as-is
-            // TODO: Look into having a BufferUtil.put(from,to,len) method
-            byte b[] = new byte[amt];
-            src.get(b,0,amt);
-            dest.put(b,0,amt);
-        }
-        return amt;
     }
 
     public IncomingFrames getIncomingFramesHandler()
@@ -140,9 +121,31 @@ public class Parser
         return policy;
     }
 
+    public boolean isRsv1InUse()
+    {
+        return rsv1InUse;
+    }
+
+    public boolean isRsv2InUse()
+    {
+        return rsv2InUse;
+    }
+
+    public boolean isRsv3InUse()
+    {
+        return rsv3InUse;
+    }
+
     protected void notifyFrame(final WebSocketFrame f)
     {
-        LOG.debug("Notify Frame: {}",f);
+        if (LOG_FRAMES.isDebugEnabled())
+        {
+            LOG_FRAMES.debug("{} Read Frame: {}",policy.getBehavior(),f);
+        }
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{} Notify {}",policy.getBehavior(),incomingFramesHandler);
+        }
         if (incomingFramesHandler == null)
         {
             return;
@@ -172,7 +175,7 @@ public class Parser
         incomingFramesHandler.incoming(e);
     }
 
-    public void parse(ByteBuffer buffer)
+    public synchronized void parse(ByteBuffer buffer)
     {
         if (buffer.remaining() <= 0)
         {
@@ -180,15 +183,20 @@ public class Parser
         }
         try
         {
-            LOG.debug("Parsing {} bytes",buffer.remaining());
-
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {
-                LOG.debug("Parsed Frame: " + frame);
+                LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
                 notifyFrame(frame);
+                if (frame.isDataFrame() && frame.isFin())
+                {
+                    priorDataFrame = null;
+                }
+                else
+                {
+                    priorDataFrame = frame;
+                }
             }
-
         }
         catch (WebSocketException e)
         {
@@ -223,7 +231,7 @@ public class Parser
             return false;
         }
 
-        LOG.debug("Parsing {} bytes",buffer.remaining());
+        LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
         while (buffer.hasRemaining())
         {
             switch (state)
@@ -247,28 +255,77 @@ public class Parser
                     boolean rsv2 = ((b & 0x20) != 0);
                     boolean rsv3 = ((b & 0x10) != 0);
                     byte opc = (byte)(b & 0x0F);
-                    OpCode opcode = OpCode.from(opc);
+                    byte opcode = opc;
 
-                    if (opcode == null)
+                    if (!OpCode.isKnown(opcode))
                     {
-                        throw new WebSocketException("Unknown opcode: " + opc);
+                        throw new ProtocolException("Unknown opcode: " + opc);
                     }
 
-                    LOG.debug("OpCode {}, fin={}",opcode.name(),fin);
+                    LOG.debug("OpCode {}, fin={}",OpCode.name(opcode),fin);
 
-                    if (opcode.isControlFrame() && !fin)
+                    /*
+                     * RFC 6455 Section 5.2
+                     * 
+                     * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the
+                     * negotiated extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+                     */
+                    if (!rsv1InUse && rsv1)
                     {
-                        throw new ProtocolException("Fragmented Control Frame [" + opcode.name() + "]");
+                        throw new ProtocolException("RSV1 not allowed to be set");
                     }
 
-                    if (opcode == OpCode.CONTINUATION)
+                    if (!rsv2InUse && rsv2)
                     {
-                        if (frame == null)
+                        throw new ProtocolException("RSV2 not allowed to be set");
+                    }
+
+                    if (!rsv3InUse && rsv3)
+                    {
+                        throw new ProtocolException("RSV3 not allowed to be set");
+                    }
+
+                    boolean isContinuation = false;
+
+                    switch (opcode)
+                    {
+                        case OpCode.TEXT:
+                            strictnessProcessor = new UTF8Validator();
+                            break;
+                        case OpCode.CLOSE:
+                            strictnessProcessor = new CloseReasonValidator();
+                            break;
+                        default:
+                            strictnessProcessor = BinaryValidator.INSTANCE;
+                            break;
+                    }
+
+                    if (OpCode.isControlFrame(opcode))
+                    {
+                        // control frame validation
+                        if (!fin)
                         {
-                            throw new ProtocolException("Fragment continuation frame without prior !FIN");
+                            throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
+                        }
+                    }
+                    else if (opcode == OpCode.CONTINUATION)
+                    {
+                        isContinuation = true;
+                        // continuation validation
+                        if (priorDataFrame == null)
+                        {
+                            throw new ProtocolException("CONTINUATION frame without prior !FIN");
                         }
                         // Be careful to use the original opcode
                         opcode = lastDataOpcode;
+                    }
+                    else if (OpCode.isDataFrame(opcode))
+                    {
+                        // data validation
+                        if ((priorDataFrame != null) && (!priorDataFrame.isFin()))
+                        {
+                            throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
+                        }
                     }
 
                     // base framing flags
@@ -278,8 +335,9 @@ public class Parser
                     frame.setRsv2(rsv2);
                     frame.setRsv3(rsv3);
                     frame.setOpCode(opcode);
+                    frame.setContinuation(isContinuation);
 
-                    if (opcode.isDataFrame())
+                    if (frame.isDataFrame())
                     {
                         lastDataOpcode = opcode;
                     }
@@ -324,6 +382,7 @@ public class Parser
                             return true;
                         }
 
+                        maskProcessor.reset(frame);
                         state = State.PAYLOAD;
                     }
 
@@ -350,6 +409,7 @@ public class Parser
                                 return true;
                             }
 
+                            maskProcessor.reset(frame);
                             state = State.PAYLOAD;
                         }
                     }
@@ -369,6 +429,7 @@ public class Parser
                             return true;
                         }
 
+                        maskProcessor.reset(frame);
                         state = State.PAYLOAD;
                     }
                     else
@@ -381,8 +442,8 @@ public class Parser
                 case MASK_BYTES:
                 {
                     byte b = buffer.get();
+                    frame.getMask()[4 - cursor] = b;
                     --cursor;
-                    frame.getMask()[cursor] = b;
                     if (cursor == 0)
                     {
                         // special case for empty payloads (no more bytes left in buffer)
@@ -392,6 +453,7 @@ public class Parser
                             return true;
                         }
 
+                        maskProcessor.reset(frame);
                         state = State.PAYLOAD;
                     }
                     break;
@@ -424,7 +486,7 @@ public class Parser
      *            the payload buffer
      * @return true if payload is done reading, false if incomplete
      */
-    public boolean parsePayload(ByteBuffer buffer)
+    private boolean parsePayload(ByteBuffer buffer)
     {
         if (payloadLength == 0)
         {
@@ -438,9 +500,28 @@ public class Parser
                 getPolicy().assertValidPayloadLength(payloadLength);
                 frame.assertValid();
                 payload = ByteBuffer.allocate(payloadLength);
+                BufferUtil.clearToFill(payload);
             }
 
-            copyBuffer(buffer,payload,payload.remaining());
+            // Create a small window of the incoming buffer to work with.
+            // this should only show the payload itself, and not any more
+            // bytes that could belong to the start of the next frame.
+            ByteBuffer window = buffer.slice();
+            int bytesExpected = payloadLength - payload.position();
+            int bytesAvailable = buffer.remaining();
+            int windowBytes = Math.min(bytesAvailable,bytesExpected);
+            window.limit(window.position() + windowBytes);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Window: {}",BufferUtil.toDetailString(window));
+            }
+
+            maskProcessor.process(window);
+            strictnessProcessor.process(window);
+            int len = BufferUtil.put(window,payload);
+
+            buffer.position(buffer.position() + len); // update incoming buffer position
 
             if (payload.position() >= payloadLength)
             {
@@ -456,6 +537,21 @@ public class Parser
     public void setIncomingFramesHandler(IncomingFrames incoming)
     {
         this.incomingFramesHandler = incoming;
+    }
+
+    public void setRsv1InUse(boolean rsv1InUse)
+    {
+        this.rsv1InUse = rsv1InUse;
+    }
+
+    public void setRsv2InUse(boolean rsv2InUse)
+    {
+        this.rsv2InUse = rsv2InUse;
+    }
+
+    public void setRsv3InUse(boolean rsv3InUse)
+    {
+        this.rsv3InUse = rsv3InUse;
     }
 
     @Override

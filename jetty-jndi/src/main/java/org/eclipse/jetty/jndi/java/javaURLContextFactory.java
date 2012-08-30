@@ -1,20 +1,24 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.jndi.java;
 
 import java.util.Hashtable;
-
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NamingException;
@@ -33,10 +37,10 @@ import org.eclipse.jetty.util.log.Logger;
  * <p><h4>Usage</h4>
  * <pre>
  */
-public class javaURLContextFactory implements ObjectFactory 
+public class javaURLContextFactory implements ObjectFactory
 {
     private static final Logger LOG = Log.getLogger(javaURLContextFactory.class);
-        
+
     /**
      * Either return a new context or the resolution of a url.
      *
@@ -48,7 +52,7 @@ public class javaURLContextFactory implements ObjectFactory
      * @exception Exception if an error occurs
      */
     public Object getObjectInstance(Object url, Name name, Context ctx, Hashtable env)
-        throws Exception 
+        throws Exception
     {
         // null object means return a root context for doing resolutions
         if (url == null)
@@ -56,7 +60,7 @@ public class javaURLContextFactory implements ObjectFactory
             if(LOG.isDebugEnabled())LOG.debug(">>> new root context requested ");
             return new javaRootURLContext(env);
         }
-        
+
         // return the resolution of the url
         if (url instanceof String)
         {
@@ -69,7 +73,7 @@ public class javaURLContextFactory implements ObjectFactory
         if (url instanceof String[])
         {
             if(LOG.isDebugEnabled())LOG.debug(">>> resolution of array of urls requested");
-            String[] urls = (String[])url; 
+            String[] urls = (String[])url;
             Context rootctx = new javaRootURLContext (env);
             Object object = null;
             NamingException e = null;

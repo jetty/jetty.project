@@ -1,23 +1,20 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.spdy;
 
@@ -29,26 +26,23 @@ import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
-import org.eclipse.jetty.io.AsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.StandardByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -59,16 +53,18 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class SPDYClient
 {
-    private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
+    private final ConnectionFactory connectionFactory = new ClientSPDYConnectionFactory();
     private final short version;
     private final Factory factory;
-    private SocketAddress bindAddress;
-    private long maxIdleTime;
+    private volatile SocketAddress bindAddress;
+    private volatile long idleTimeout = -1;
+    private volatile int initialWindowSize;
 
     protected SPDYClient(short version, Factory factory)
     {
         this.version = version;
         this.factory = factory;
+        setInitialWindowSize(65536);
     }
 
     /**
@@ -100,7 +96,7 @@ public class SPDYClient
         channel.socket().setTcpNoDelay(true);
         channel.configureBlocking(false);
 
-        SessionPromise result = new SessionPromise(this, listener);
+        SessionPromise result = new SessionPromise(channel, this, listener);
 
         channel.connect(address);
         factory.selector.connect(channel, result);
@@ -108,79 +104,72 @@ public class SPDYClient
         return result;
     }
 
-    public long getMaxIdleTime()
+    public long getIdleTimeout()
     {
-        return maxIdleTime;
+        return idleTimeout;
     }
 
-    public void setMaxIdleTime(long maxIdleTime)
+    public void setIdleTimeout(long idleTimeout)
     {
-        this.maxIdleTime = maxIdleTime;
+        this.idleTimeout = idleTimeout;
+    }
+
+    public int getInitialWindowSize()
+    {
+        return initialWindowSize;
+    }
+
+    public void setInitialWindowSize(int initialWindowSize)
+    {
+        this.initialWindowSize = initialWindowSize;
     }
 
     protected String selectProtocol(List<String> serverProtocols)
     {
-        if (serverProtocols == null)
-            return "spdy/2";
-
+        String protocol = "spdy/" + version;
         for (String serverProtocol : serverProtocols)
         {
-            for (String protocol : factories.keySet())
-            {
-                if (serverProtocol.equals(protocol))
-                    return protocol;
-            }
-            String protocol = factory.selectProtocol(serverProtocols);
-            if (protocol != null)
+            if (serverProtocol.equals(protocol))
                 return protocol;
         }
-
         return null;
     }
 
-    public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
+    public ConnectionFactory getConnectionFactory()
     {
-        for (Map.Entry<String, AsyncConnectionFactory> entry : factories.entrySet())
-        {
-            if (protocol.equals(entry.getKey()))
-                return entry.getValue();
-        }
-        for (Map.Entry<String, AsyncConnectionFactory> entry : factory.factories.entrySet())
-        {
-            if (protocol.equals(entry.getKey()))
-                return entry.getValue();
-        }
-        return null;
-    }
-
-    public void putAsyncConnectionFactory(String protocol, AsyncConnectionFactory factory)
-    {
-        factories.put(protocol, factory);
-    }
-
-    public AsyncConnectionFactory removeAsyncConnectionFactory(String protocol)
-    {
-        return factories.remove(protocol);
+        return connectionFactory;
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
         String peerHost = channel.socket().getInetAddress().getHostAddress();
         int peerPort = channel.socket().getPort();
-        SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
+        SSLEngine engine = sslContextFactory.newSSLEngine(peerHost, peerPort);
         engine.setUseClientMode(true);
         return engine;
     }
 
+    protected FlowControlStrategy newFlowControlStrategy()
+    {
+        return FlowControlStrategyFactory.newFlowControlStrategy(version);
+    }
+
+    public void replaceConnection(EndPoint endPoint, Connection connection)
+    {
+        Connection oldConnection = endPoint.getConnection();
+        endPoint.setConnection(connection);
+        factory.selector.connectionUpgraded(endPoint, oldConnection);
+    }
+
     public static class Factory extends AggregateLifeCycle
     {
-        private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-        private final ByteBufferPool bufferPool = new StandardByteBufferPool();
+        private final ByteBufferPool bufferPool = new MappedByteBufferPool();
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        private final Executor threadPool;
+        private final Executor executor;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
+        private final long idleTimeout;
 
         public Factory()
         {
@@ -192,26 +181,30 @@ public class SPDYClient
             this(null, sslContextFactory);
         }
 
-        public Factory(Executor threadPool)
+        public Factory(Executor executor)
         {
-            this(threadPool, null);
+            this(executor, null);
         }
 
-        public Factory(Executor threadPool, SslContextFactory sslContextFactory)
+        public Factory(Executor executor, SslContextFactory sslContextFactory)
         {
-            if (threadPool == null)
-                threadPool = new QueuedThreadPool();
-            this.threadPool = threadPool;
-            addBean(threadPool);
+            this(executor, sslContextFactory, 30000);
+        }
+
+        public Factory(Executor executor, SslContextFactory sslContextFactory, long idleTimeout)
+        {
+            this.idleTimeout = idleTimeout;
+            if (executor == null)
+                executor = new QueuedThreadPool();
+            this.executor = executor;
+            addBean(executor);
 
             this.sslContextFactory = sslContextFactory;
             if (sslContextFactory != null)
                 addBean(sslContextFactory);
 
-            selector = new ClientSelectorManager(threadPool);
+            selector = new ClientSelectorManager();
             addBean(selector);
-
-            factories.put("spdy/2", new ClientSPDYAsyncConnectionFactory());
         }
 
         public SPDYClient newSPDYClient(short version)
@@ -224,19 +217,6 @@ public class SPDYClient
         {
             closeConnections();
             super.doStop();
-        }
-
-        protected String selectProtocol(List<String> serverProtocols)
-        {
-            for (String serverProtocol : serverProtocols)
-            {
-                for (String protocol : factories.keySet())
-                {
-                    if (serverProtocol.equals(protocol))
-                        return protocol;
-                }
-            }
-            return null;
         }
 
         private boolean sessionOpened(Session session)
@@ -266,25 +246,26 @@ public class SPDYClient
 
         private class ClientSelectorManager extends SelectorManager
         {
-            private ClientSelectorManager(Executor executor)
-            {
-                super(executor);
-            }
-
             @Override
-            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+            protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
                 SessionPromise attachment = (SessionPromise)key.attachment();
 
-                long maxIdleTime = attachment.client.getMaxIdleTime();
-                if (maxIdleTime < 0)
-                    maxIdleTime = getMaxIdleTime();
+                long clientIdleTimeout = attachment.client.getIdleTimeout();
+                if (clientIdleTimeout < 0)
+                    clientIdleTimeout = idleTimeout;
 
-                return new SelectChannelEndPoint(channel, selectSet, key, maxIdleTime);
+                return new SelectChannelEndPoint(channel, selectSet, key, scheduler, clientIdleTimeout);
             }
 
             @Override
-            public AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+            protected void execute(Runnable task)
+            {
+                executor.execute(task);
+            }
+
+            @Override
+            public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment)
             {
                 SessionPromise sessionPromise = (SessionPromise)attachment;
                 final SPDYClient client = sessionPromise.client;
@@ -293,95 +274,36 @@ public class SPDYClient
                 {
                     if (sslContextFactory != null)
                     {
-                        final AtomicReference<AsyncEndPoint> sslEndPointRef = new AtomicReference<>();
-                        final AtomicReference<Object> attachmentRef = new AtomicReference<>(attachment);
-                        SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
-                        SslConnection sslConnection = new SslConnection(bufferPool, threadPool, endPoint, engine)
+                        final SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
+                        SslConnection sslConnection = new SslConnection(bufferPool, executor, endPoint, engine)
                         {
                             @Override
                             public void onClose()
                             {
-                                sslEndPointRef.set(null);
-                                attachmentRef.set(null);
+                                NextProtoNego.remove(engine);
                                 super.onClose();
                             }
                         };
-                        endPoint.setAsyncConnection(sslConnection);
-                        AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-                        sslEndPointRef.set(sslEndPoint);
 
-                        // Instances of the ClientProvider inner class strong reference the
-                        // SslEndPoint (via lexical scoping), which strong references the SSLEngine.
-                        // Since NextProtoNego stores in a WeakHashMap the SSLEngine as key
-                        // and this instance as value, we are in the situation where the value
-                        // of a WeakHashMap refers indirectly to the key, which is bad because
-                        // the entry will never be removed from the WeakHashMap.
-                        // We use AtomicReferences to be captured via lexical scoping,
-                        // and we null them out above when the connection is closed.
-                        NextProtoNego.put(engine, new NextProtoNego.ClientProvider()
-                        {
-                            @Override
-                            public boolean supports()
-                            {
-                                return true;
-                            }
+                        EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();
+                        NextProtoNegoClientConnection connection = new NextProtoNegoClientConnection(channel, sslEndPoint, attachment, client.factory.executor, client);
+                        sslEndPoint.setConnection(connection);
+                        connectionOpened(connection);
 
-                            @Override
-                            public void unsupported()
-                            {
-                                // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
-                                ClientSPDYAsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
-                                AsyncEndPoint sslEndPoint = sslEndPointRef.get();
-                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachmentRef.get());
-                                sslEndPoint.setAsyncConnection(connection);
-                            }
-
-                            @Override
-                            public String selectProtocol(List<String> protocols)
-                            {
-                                String protocol = client.selectProtocol(protocols);
-                                if (protocol == null)
-                                    return null;
-
-                                AsyncConnectionFactory connectionFactory = client.getAsyncConnectionFactory(protocol);
-                                AsyncEndPoint sslEndPoint = sslEndPointRef.get();
-                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachmentRef.get());
-                                sslEndPoint.setAsyncConnection(connection);
-                                return protocol;
-                            }
-                        });
-
-                        AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
-                        sslEndPoint.setAsyncConnection(connection);
-
-                        startHandshake(engine);
+                        NextProtoNego.put(engine, connection);
 
                         return sslConnection;
                     }
                     else
                     {
-                        AsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
-                        AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
-                        endPoint.setAsyncConnection(connection);
-                        return connection;
+                        ConnectionFactory connectionFactory = new ClientSPDYConnectionFactory();
+                        return connectionFactory.newConnection(channel, endPoint, attachment);
                     }
                 }
                 catch (RuntimeException x)
                 {
-                    sessionPromise.failed(null, x);
+                    sessionPromise.failed(null,x);
                     throw x;
-                }
-            }
-
-            private void startHandshake(SSLEngine engine)
-            {
-                try
-                {
-                    engine.beginHandshake();
-                }
-                catch (SSLException x)
-                {
-                    throw new RuntimeException(x);
                 }
             }
         }
@@ -389,32 +311,52 @@ public class SPDYClient
 
     private static class SessionPromise extends Promise<Session>
     {
+        private final SocketChannel channel;
         private final SPDYClient client;
         private final SessionFrameListener listener;
 
-        private SessionPromise(SPDYClient client, SessionFrameListener listener)
+        private SessionPromise(SocketChannel channel, SPDYClient client, SessionFrameListener listener)
         {
+            this.channel = channel;
             this.client = client;
             this.listener = listener;
         }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning)
+        {
+            try
+            {
+                super.cancel(mayInterruptIfRunning);
+                channel.close();
+                return true;
+            }
+            catch (IOException x)
+            {
+                return true;
+            }
+        }
     }
 
-    private static class ClientSPDYAsyncConnectionFactory implements AsyncConnectionFactory
+    private static class ClientSPDYConnectionFactory implements ConnectionFactory
     {
         @Override
-        public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+        public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
         {
             SessionPromise sessionPromise = (SessionPromise)attachment;
-            Factory factory = sessionPromise.client.factory;
+            SPDYClient client = sessionPromise.client;
+            Factory factory = client.factory;
 
             CompressionFactory compressionFactory = new StandardCompressionFactory();
             Parser parser = new Parser(compressionFactory.newDecompressor());
             Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
 
-            SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, factory.bufferPool, parser, factory);
-            endPoint.setAsyncConnection(connection);
+            SPDYConnection connection = new ClientSPDYConnection(endPoint, factory.bufferPool, parser, factory);
 
-            StandardSession session = new StandardSession(sessionPromise.client.version, factory.bufferPool, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator);
+            FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
+
+            StandardSession session = new StandardSession(client.version, factory.bufferPool, factory.executor, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator, flowControlStrategy);
+            session.setWindowSize(client.getInitialWindowSize());
             parser.addListener(session);
             sessionPromise.completed(session);
             connection.setSession(session);
@@ -424,13 +366,13 @@ public class SPDYClient
             return connection;
         }
 
-        private class ClientSPDYAsyncConnection extends SPDYAsyncConnection
+        private class ClientSPDYConnection extends SPDYConnection
         {
             private final Factory factory;
 
-            public ClientSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
+            public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
             {
-                super(endPoint, bufferPool, parser);
+                super(endPoint, bufferPool, parser, factory.executor);
                 this.factory = factory;
             }
 

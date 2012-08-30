@@ -1,20 +1,24 @@
-// ========================================================================
-// Copyright (c) 2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.annotations;
 
 import java.util.List;
-
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
@@ -41,12 +45,12 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         super(false);
         _context = wac;
     }
-    
+
     public void doHandle (Class clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
-        
+
         javax.annotation.security.RunAs runAs = (javax.annotation.security.RunAs)clazz.getAnnotation(javax.annotation.security.RunAs.class);
         if (runAs != null)
         {
@@ -58,7 +62,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                 {
                     MetaData metaData = _context.getMetaData();
                     Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.run-as");
-                    //if a descriptor has already set the value for run-as, do not 
+                    //if a descriptor has already set the value for run-as, do not
                     //let the annotation override it
                     if (d == null)
                     {
@@ -102,7 +106,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         {
             for (ServletHolder h : holders)
             {
-                if (h.getClassName().equals(clazz.getName()))
+                if (h.getClassName() != null && h.getClassName().equals(clazz.getName()))
                 {
                     holder = h;
                 }

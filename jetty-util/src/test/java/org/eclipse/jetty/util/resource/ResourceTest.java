@@ -1,22 +1,22 @@
-// ========================================================================
-// Copyright (c) 1997-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util.resource;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.FilePermission;
@@ -27,11 +27,18 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.zip.ZipFile;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 
 public class ResourceTest
@@ -43,7 +50,7 @@ public class ResourceTest
 
     private static final boolean DIR=true;
     private static final boolean EXISTS=true;
-    
+
     static class Data
     {
         Resource resource;
@@ -51,7 +58,7 @@ public class ResourceTest
         boolean exists;
         boolean dir;
         String content;
-        
+
         Data(Data data,String path,boolean exists, boolean dir)
             throws Exception
         {
@@ -60,7 +67,7 @@ public class ResourceTest
             this.exists=exists;
             this.dir=dir;
         }
-        
+
         Data(Data data,String path,boolean exists, boolean dir, String content)
             throws Exception
         {
@@ -70,7 +77,7 @@ public class ResourceTest
             this.dir=dir;
             this.content=content;
         }
-        
+
         Data(URL url,boolean exists, boolean dir)
             throws Exception
         {
@@ -79,7 +86,7 @@ public class ResourceTest
             this.dir=dir;
             resource=Resource.newResource(url);
         }
-        
+
         Data(String url,boolean exists, boolean dir)
             throws Exception
         {
@@ -88,7 +95,7 @@ public class ResourceTest
             this.dir=dir;
             resource=Resource.newResource(url);
         }
-        
+
         Data(String url,boolean exists, boolean dir, String content)
             throws Exception
         {
@@ -115,44 +122,40 @@ public class ResourceTest
         URI uri = file.toURI();
         __userURL=uri.toURL();
 
-        __userURL = new URL(__userURL.toString() + "src/test/java/org/eclipse/jetty/util/resource/");
+        __userURL = new URL(__userURL.toString() + "src/test/resources/org/eclipse/jetty/util/resource/");
         FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
         __userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
-        __relDir = "src/test/java/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);  
-
-        System.err.println("User Dir="+__userDir);
-        System.err.println("Rel  Dir="+__relDir);
-        System.err.println("User URL="+__userURL);
+        __relDir = "src/test/resources/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);
 
         tmpFile=File.createTempFile("test",null).getCanonicalFile();
         tmpFile.deleteOnExit();
-        
+
         data = new Data[50];
         int i=0;
 
         data[i++]=new Data(tmpFile.toString(),EXISTS,!DIR);
-        
+
         int rt=i;
         data[i++]=new Data(__userURL,EXISTS,DIR);
         data[i++]=new Data(__userDir,EXISTS,DIR);
         data[i++]=new Data(__relDir,EXISTS,DIR);
-        data[i++]=new Data(__userURL+"ResourceTest.java",EXISTS,!DIR);
-        data[i++]=new Data(__userDir+"ResourceTest.java",EXISTS,!DIR);
-        data[i++]=new Data(__relDir+"ResourceTest.java",EXISTS,!DIR);
+        data[i++]=new Data(__userURL+"resource.txt",EXISTS,!DIR);
+        data[i++]=new Data(__userDir+"resource.txt",EXISTS,!DIR);
+        data[i++]=new Data(__relDir+"resource.txt",EXISTS,!DIR);
         data[i++]=new Data(__userURL+"NoName.txt",!EXISTS,!DIR);
         data[i++]=new Data(__userDir+"NoName.txt",!EXISTS,!DIR);
         data[i++]=new Data(__relDir+"NoName.txt",!EXISTS,!DIR);
 
-        data[i++]=new Data(data[rt],"ResourceTest.java",EXISTS,!DIR);
-        data[i++]=new Data(data[rt],"/ResourceTest.java",EXISTS,!DIR);
+        data[i++]=new Data(data[rt],"resource.txt",EXISTS,!DIR);
+        data[i++]=new Data(data[rt],"/resource.txt",EXISTS,!DIR);
         data[i++]=new Data(data[rt],"NoName.txt",!EXISTS,!DIR);
         data[i++]=new Data(data[rt],"/NoName.txt",!EXISTS,!DIR);
-        
+
         int td=i;
         data[i++]=new Data(data[rt],"TestData",EXISTS,DIR);
         data[i++]=new Data(data[rt],"TestData/",EXISTS,DIR);
         data[i++]=new Data(data[td],"alphabet.txt",EXISTS,!DIR,"ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-        
+
         data[i++]=new Data("jar:file:/somejar.jar!/content/",!EXISTS,DIR);
         data[i++]=new Data("jar:file:/somejar.jar!/",!EXISTS,DIR);
 
@@ -160,14 +163,14 @@ public class ResourceTest
         data[i++]=new Data("jar:"+__userURL+"TestData/test.zip!/",EXISTS,DIR);
         data[i++]=new Data(data[tj],"Unkown",!EXISTS,!DIR);
         data[i++]=new Data(data[tj],"/Unkown/",!EXISTS,DIR);
-        
+
         data[i++]=new Data(data[tj],"subdir",EXISTS,DIR);
         data[i++]=new Data(data[tj],"/subdir/",EXISTS,DIR);
         data[i++]=new Data(data[tj],"alphabet",EXISTS,!DIR,
                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
         data[i++]=new Data(data[tj],"/subdir/alphabet",EXISTS,!DIR,
                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-        
+
         Resource base = Resource.newResource(__userDir);
         Resource dir0 = base.addPath("TestData");
         assertTrue(dir0.isDirectory());
@@ -177,8 +180,8 @@ public class ResourceTest
         assertTrue(dir1.isDirectory());
         assertTrue(dir1.toString().endsWith("/"));
         assertTrue(dir1.getAlias()==null);
-        
-        
+
+
     }
 
     /* ------------------------------------------------------------ */
@@ -193,7 +196,7 @@ public class ResourceTest
             assertEquals(""+i+":"+data[i].test,data[i].exists,data[i].resource.exists());
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Test
     public void testResourceDir()
@@ -206,7 +209,7 @@ public class ResourceTest
             assertEquals(""+i+":"+data[i].test,data[i].dir,data[i].resource.isDirectory());
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Test
     public void testResourceContent()
@@ -216,7 +219,7 @@ public class ResourceTest
         {
             if (data[i]==null || data[i].content==null)
                 continue;
-          
+
             InputStream in = data[i].resource.getInputStream();
             String c=IO.toString(in);
             assertTrue(""+i+":"+data[i].test,c.startsWith(data[i].content));
@@ -241,8 +244,8 @@ public class ResourceTest
     {
         String s = "jar:"+__userURL+"TestData/test.zip!/subdir/";
         Resource r = Resource.newResource(s);
-        
-        Set entries = new HashSet(Arrays.asList(r.list()));
+
+        Set<String> entries = new HashSet<>(Arrays.asList(r.list()));
         assertEquals(3,entries.size());
         assertTrue(entries.contains("alphabet"));
         assertTrue(entries.contains("numbers"));
@@ -255,10 +258,10 @@ public class ResourceTest
         extract.deleteOnExit();
 
         r.copyTo(extract);
-        
+
         Resource e = Resource.newResource(extract.getAbsolutePath());
-        
-        entries = new HashSet(Arrays.asList(e.list()));
+
+        entries = new HashSet<>(Arrays.asList(e.list()));
         assertEquals(3,entries.size());
         assertTrue(entries.contains("alphabet"));
         assertTrue(entries.contains("numbers"));
@@ -267,8 +270,8 @@ public class ResourceTest
 
         s = "jar:"+__userURL+"TestData/test.zip!/subdir/subsubdir/";
         r = Resource.newResource(s);
-        
-        entries = new HashSet(Arrays.asList(r.list()));
+
+        entries = new HashSet<>(Arrays.asList(r.list()));
         assertEquals(2,entries.size());
         assertTrue(entries.contains("alphabet"));
         assertTrue(entries.contains("numbers"));
@@ -280,19 +283,19 @@ public class ResourceTest
         extract.deleteOnExit();
 
         r.copyTo(extract);
-        
+
         e = Resource.newResource(extract.getAbsolutePath());
-        
-        entries = new HashSet(Arrays.asList(e.list()));
+
+        entries = new HashSet<>(Arrays.asList(e.list()));
         assertEquals(2,entries.size());
         assertTrue(entries.contains("alphabet"));
         assertTrue(entries.contains("numbers"));
         IO.delete(extract);
-        
-        
-        
+
+
+
     }
-    
+
     @Test
     public void testJarFileIsContainedIn ()
     throws Exception
@@ -300,14 +303,28 @@ public class ResourceTest
         String s = "jar:"+__userURL+"TestData/test.zip!/subdir/";
         Resource r = Resource.newResource(s);
         Resource container = Resource.newResource(__userURL+"TestData/test.zip");
-        
+
         assertTrue(r instanceof JarFileResource);
         JarFileResource jarFileResource = (JarFileResource)r;
-        
+
         assertTrue(jarFileResource.isContainedIn(container));
-        
+
         container = Resource.newResource(__userURL+"TestData");
         assertFalse(jarFileResource.isContainedIn(container));
+    }
+
+    /* ------------------------------------------------------------ */
+    @Test
+    public void testJarFileLastModified ()
+    throws Exception
+    {
+        String s = "jar:"+__userURL+"TestData/test.zip!/subdir/numbers";
+        ZipFile zf = new ZipFile(MavenTestingUtils.getProjectFile("src/test/resources/org/eclipse/jetty/util/resource/TestData/test.zip"));
+
+        long last = zf.getEntry("subdir/numbers").getTime();
+
+        Resource r = Resource.newResource(s);
+        assertEquals(last,r.lastModified());
     }
 
     /* ------------------------------------------------------------ */
@@ -325,7 +342,7 @@ public class ResourceTest
             destParent.delete();
         destParent.mkdir();
         destParent.deleteOnExit();
-        
+
         File dest = new File(destParent.getCanonicalPath()+"/extract");
         if(dest.exists())
             dest.delete();
@@ -343,7 +360,7 @@ public class ResourceTest
             {
                 return name.equals("dotdot.txt");
             }
-        };        
+        };
         assertEquals(0, dest.listFiles(dotdotFilenameFilter).length);
         assertEquals(0, dest.getParentFile().listFiles(dotdotFilenameFilter).length);
 
@@ -364,11 +381,11 @@ public class ResourceTest
         };
         assertEquals(1, dest.listFiles(currentDirectoryFilenameFilter).length);
         assertEquals(0, dest.getParentFile().listFiles(currentDirectoryFilenameFilter).length);
-        
+
         IO.delete(dest);
         assertFalse(dest.exists());
     }
-    
+
     /**
      * Test a class path resource for existence.
      */
@@ -417,9 +434,9 @@ public class ResourceTest
 
         Resource resource=Resource.newClassPathResource(classPathName);
 
-        
+
         assertTrue(resource!=null);
-        
+
         // A class path must be a directory
         assertTrue("Class path must be a directory.",resource.isDirectory());
 
@@ -442,12 +459,12 @@ public class ResourceTest
         Resource resource=Resource.newClassPathResource(classPathName);
 
         assertTrue(resource!=null);
-        
+
         // A class path cannot be a directory
         assertFalse("Class path must be a directory.",resource.isDirectory());
 
         assertTrue(resource!=null);
-        
+
         File file=resource.getFile();
 
         assertTrue("File returned from class path should not be null.",file!=null);
@@ -457,29 +474,29 @@ public class ResourceTest
         // A class path must exist
         assertTrue("Class path resource does not exist.",resource.exists());
     }
-    
+
     @Test
     public void testUncPathResourceFile() throws Exception
     {
         // This test is intended to run only on Windows platform
         assumeTrue(OS.IS_WINDOWS);
-        
+
         String path = __userURL.toURI().getPath().replace('/','\\')+"ResourceTest.java";
         System.err.println(path);
-        
+
         Resource resource = Resource.newResource(path, false);
         System.err.println(resource);
-        assertTrue(resource.exists());      
-        
+        assertTrue(resource.exists());
+
         /*
-        
+
         String uncPath = "\\\\127.0.0.1"+__userURL.toURI().getPath().replace('/','\\').replace(':','$')+"ResourceTest.java";
         System.err.println(uncPath);
-        
+
         Resource uncResource = Resource.newResource(uncPath, false);
         System.err.println(uncResource);
         assertTrue(uncResource.exists());
-        
+
         */
     }
 }

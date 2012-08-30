@@ -1,26 +1,32 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.spdy;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -34,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
@@ -50,6 +57,7 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
+import org.eclipse.jetty.spdy.frames.CredentialFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
@@ -61,11 +69,15 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.Atomics;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class StandardSession implements ISession, Parser.Listener, Callback<StandardSession.FrameBytes>
+public class StandardSession implements ISession, Parser.Listener, Callback<StandardSession.FrameBytes>, Dumpable
 {
     private static final Logger logger = Log.getLogger(Session.class);
     private static final ThreadLocal<Integer> handlerInvocations = new ThreadLocal<Integer>()
@@ -77,6 +89,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
     };
 
+    private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final LinkedList<FrameBytes> queue = new LinkedList<>();
@@ -93,11 +106,13 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     private final AtomicBoolean goAwaySent = new AtomicBoolean();
     private final AtomicBoolean goAwayReceived = new AtomicBoolean();
     private final AtomicInteger lastStreamId = new AtomicInteger();
+    private final FlowControlStrategy flowControlStrategy;
     private boolean flushing;
-    private volatile int windowSize = 65536;
+    private Throwable failure;
 
     public StandardSession(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler,
-            Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener, Generator generator)
+            Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener,
+            Generator generator, FlowControlStrategy flowControlStrategy)
     {
         this.version = version;
         this.bufferPool = bufferPool;
@@ -109,6 +124,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         this.pingIds = new AtomicInteger(initialStreamId);
         this.listener = listener;
         this.generator = generator;
+        this.flowControlStrategy = flowControlStrategy;
     }
 
     @Override
@@ -153,10 +169,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         synchronized (this)
         {
             int streamId = streamIds.getAndAdd(2);
-            SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), synInfo.getHeaders());
+            // TODO: for SPDYv3 we need to support the "slot" argument
+            SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, associatedStreamId, synInfo.getPriority(), (short)0, synInfo.getHeaders());
             IStream stream = createStream(synStream, listener, true);
-            control(stream, synStream, timeout, unit, callback, stream);
+            generateAndEnqueueControlFrame(stream, synStream, timeout, unit, callback, stream);
         }
+        flush();
     }
 
     @Override
@@ -180,7 +198,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
             int streamId = rstInfo.getStreamId();
             IStream stream = streams.get(streamId);
             RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
-            control(stream,frame,timeout,unit, callback,null);
+            control(stream,frame,timeout,unit,callback,null);
             if (stream != null)
             {
                 stream.process(frame);
@@ -201,7 +219,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Callback<Void> callback)
     {
         SettingsFrame frame = new SettingsFrame(version,settingsInfo.getFlags(),settingsInfo.getSettings());
-        control(null,frame,timeout,unit, callback,null);
+        control(null, frame, timeout, unit, callback, null);
     }
 
     @Override
@@ -218,7 +236,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         int pingId = pingIds.getAndAdd(2);
         PingInfo pingInfo = new PingInfo(pingId);
         PingFrame frame = new PingFrame(version,pingId);
-        control(null,frame,timeout,unit, callback,pingInfo);
+        control(null,frame,timeout,unit,callback,pingInfo);
     }
 
     @Override
@@ -237,7 +255,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     @Override
     public void goAway(long timeout, TimeUnit unit, Callback<Void> callback)
     {
-        goAway(SessionStatus.OK,timeout,unit, callback);
+        goAway(SessionStatus.OK, timeout, unit, callback);
     }
 
     private void goAway(SessionStatus sessionStatus, long timeout, TimeUnit unit, Callback<Void> callback)
@@ -247,7 +265,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
             if (!goAwayReceived.get())
             {
                 GoAwayFrame frame = new GoAwayFrame(version,lastStreamId.get(),sessionStatus.getCode());
-                control(null,frame,timeout,unit, callback,null);
+                control(null,frame,timeout,unit,callback,null);
                 return;
             }
         }
@@ -263,16 +281,40 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     }
 
     @Override
+    public IStream getStream(int streamId)
+    {
+        return streams.get(streamId);
+    }
+
+    @Override
+    public Object getAttribute(String key)
+    {
+        return attributes.get(key);
+    }
+
+    @Override
+    public void setAttribute(String key, Object value)
+    {
+        attributes.put(key, value);
+    }
+
+    @Override
+    public Object removeAttribute(String key)
+    {
+        return attributes.remove(key);
+    }
+
+    @Override
     public void onControlFrame(ControlFrame frame)
     {
-        notifyIdle(idleListener,false);
+        notifyIdle(idleListener, false);
         try
         {
-            logger.debug("Processing {}",frame);
+            logger.debug("Processing {}", frame);
 
             if (goAwaySent.get())
             {
-                logger.debug("Skipped processing of {}",frame);
+                logger.debug("Skipped processing of {}", frame);
                 return;
             }
 
@@ -323,6 +365,11 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
                     onWindowUpdate((WindowUpdateFrame)frame);
                     break;
                 }
+                case CREDENTIAL:
+                {
+                    onCredential((CredentialFrame)frame);
+                    break;
+                }
                 default:
                 {
                     throw new IllegalStateException();
@@ -331,7 +378,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         finally
         {
-            notifyIdle(idleListener,true);
+            notifyIdle(idleListener, true);
         }
     }
 
@@ -341,11 +388,11 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         notifyIdle(idleListener, false);
         try
         {
-            logger.debug("Processing {}, {} data bytes",frame,data.remaining());
+            logger.debug("Processing {}, {} data bytes", frame, data.remaining());
 
             if (goAwaySent.get())
             {
-                logger.debug("Skipped processing of {}",frame);
+                logger.debug("Skipped processing of {}", frame);
                 return;
             }
 
@@ -353,18 +400,18 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
             IStream stream = streams.get(streamId);
             if (stream == null)
             {
-                RstInfo rstInfo = new RstInfo(streamId,StreamStatus.INVALID_STREAM);
-                logger.debug("Unknown stream {}",rstInfo);
+                RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
+                logger.debug("Unknown stream {}", rstInfo);
                 rst(rstInfo);
             }
             else
             {
-                processData(stream,frame,data);
+                processData(stream, frame, data);
             }
         }
         finally
         {
-            notifyIdle(idleListener,true);
+            notifyIdle(idleListener, true);
         }
     }
 
@@ -374,10 +421,19 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
             listener.onIdle(idle);
     }
 
-    private void processData(IStream stream, DataFrame frame, ByteBuffer data)
+    private void processData(final IStream stream, DataFrame frame, ByteBuffer data)
     {
-        stream.process(frame,data);
-        updateLastStreamId(stream);
+        ByteBufferDataInfo dataInfo = new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress())
+        {
+            @Override
+            public void consume(int delta)
+            {
+                super.consume(delta);
+                flowControlStrategy.onDataConsumed(StandardSession.this, stream, this, delta);
+            }
+        };
+        flowControlStrategy.onDataReceived(this, stream, dataInfo);
+        stream.process(dataInfo);
         if (stream.isClosed())
             removeStream(stream);
     }
@@ -407,6 +463,8 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     private void processSyn(SessionFrameListener listener, IStream stream, SynStreamFrame frame)
     {
         stream.process(frame);
+        // Update the last stream id before calling the application (which may send a GO_AWAY)
+        updateLastStreamId(stream);
         SynInfo synInfo = new SynInfo(frame.getHeaders(),frame.isClose(),frame.getPriority());
         StreamFrameListener streamListener = notifyOnSyn(listener,stream,synInfo);
         stream.setStreamFrameListener(streamListener);
@@ -452,7 +510,9 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     private IStream newStream(SynStreamFrame frame)
     {
         IStream associatedStream = streams.get(frame.getAssociatedStreamId());
-        return new StandardStream(frame, this, windowSize, associatedStream);
+        IStream stream = new StandardStream(frame.getStreamId(), frame.getPriority(), this, associatedStream);
+        flowControlStrategy.onNewStream(this, stream);
+        return stream;
     }
 
     private void notifyStreamCreated(IStream stream)
@@ -467,7 +527,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
                 }
                 catch (Exception x)
                 {
-                    logger.info("Exception while notifying listener " + listener,x);
+                    logger.info("Exception while notifying listener " + listener, x);
+                }
+                catch (Error x)
+                {
+                    logger.info("Exception while notifying listener " + listener, x);
+                    throw x;
                 }
             }
         }
@@ -498,7 +563,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
                 }
                 catch (Exception x)
                 {
-                    logger.info("Exception while notifying listener " + listener,x);
+                    logger.info("Exception while notifying listener " + listener, x);
+                }
+                catch (Error x)
+                {
+                    logger.info("Exception while notifying listener " + listener, x);
+                    throw x;
                 }
             }
         }
@@ -547,15 +617,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         Settings.Setting windowSizeSetting = frame.getSettings().get(Settings.ID.INITIAL_WINDOW_SIZE);
         if (windowSizeSetting != null)
         {
-            int prevWindowSize = windowSize;
-            windowSize = windowSizeSetting.value();
-            for (IStream stream : streams.values())
-                stream.updateWindowSize(windowSize - prevWindowSize);
-            logger.debug("Updated window size to {}",windowSize);
+            int windowSize = windowSizeSetting.value();
+            setWindowSize(windowSize);
+            logger.debug("Updated session window size to {}", windowSize);
         }
-
-        SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(),frame.isClearPersisted());
-        notifyOnSettings(listener,settingsInfo);
+        SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
+        notifyOnSettings(listener, settingsInfo);
         flush();
     }
 
@@ -582,9 +649,8 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
             notifyOnGoAway(listener,goAwayInfo);
             flush();
             // SPDY does not require to send back a response to a GO_AWAY.
-            // We notified the application of the last good stream id,
-            // tried our best to flush remaining data, and close.
-            close();
+            // We notified the application of the last good stream id and
+            // tried our best to flush remaining data.
         }
     }
 
@@ -615,8 +681,14 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     {
         int streamId = frame.getStreamId();
         IStream stream = streams.get(streamId);
-        if (stream != null)
-            stream.process(frame);
+        flowControlStrategy.onWindowUpdate(this, stream, frame.getWindowDelta());
+        flush();
+    }
+
+    private void onCredential(CredentialFrame frame)
+    {
+        logger.warn("{} frame not yet supported", ControlFrameType.CREDENTIAL);
+        flush();
     }
 
     protected void close()
@@ -638,7 +710,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         catch (Exception xx)
         {
-            logger.info("Exception while notifying listener " + listener,xx);
+            logger.info("Exception while notifying listener " + listener, xx);
+        }
+        catch (Error xx)
+        {
+            logger.info("Exception while notifying listener " + listener, xx);
+            throw xx;
         }
     }
 
@@ -646,17 +723,21 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     {
         try
         {
-            if (listener != null)
-            {
-                logger.debug("Invoking callback with {} on listener {}",synInfo,listener);
-                return listener.onSyn(stream,synInfo);
-            }
+            if (listener == null)
+                return null;
+            logger.debug("Invoking callback with {} on listener {}",synInfo,listener);
+            return listener.onSyn(stream,synInfo);
         }
         catch (Exception x)
         {
             logger.info("Exception while notifying listener " + listener,x);
+            return null;
         }
-        return null;
+        catch (Error x)
+        {
+            logger.info("Exception while notifying listener " + listener, x);
+            throw x;
+        }
     }
 
     private void notifyOnRst(SessionFrameListener listener, RstInfo rstInfo)
@@ -671,7 +752,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener,x);
+            logger.info("Exception while notifying listener " + listener, x);
+        }
+        catch (Error x)
+        {
+            logger.info("Exception while notifying listener " + listener, x);
+            throw x;
         }
     }
 
@@ -687,7 +773,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener,x);
+            logger.info("Exception while notifying listener " + listener, x);
+        }
+        catch (Error x)
+        {
+            logger.info("Exception while notifying listener " + listener, x);
+            throw x;
         }
     }
 
@@ -703,7 +794,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener,x);
+            logger.info("Exception while notifying listener " + listener, x);
+        }
+        catch (Error x)
+        {
+            logger.info("Exception while notifying listener " + listener, x);
+            throw x;
         }
     }
 
@@ -719,32 +815,37 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + listener,x);
+            logger.info("Exception while notifying listener " + listener, x);
+        }
+        catch (Error x)
+        {
+            logger.info("Exception while notifying listener " + listener, x);
+            throw x;
         }
     }
+
 
     @Override
     public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback<C> callback, C context)
     {
+        generateAndEnqueueControlFrame(stream,frame,timeout,unit,callback,context);
+        flush();
+    }
+
+    private <C> void generateAndEnqueueControlFrame(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Callback<C> callback, C context)
+    {
         try
         {
-            if (stream != null)
-            {
-                updateLastStreamId(stream);
-                if (stream.isClosed())
-                    removeStream(stream);
-            }
-
             // Synchronization is necessary, since we may have concurrent replies
             // and those needs to be generated and enqueued atomically in order
             // to maintain a correct compression context
             synchronized (this)
             {
                 ByteBuffer buffer = generator.control(frame);
-                logger.debug("Queuing {} on {}",frame,stream);
-                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream, callback,context,frame,buffer);
+                logger.debug("Queuing {} on {}", frame, stream);
+                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream, callback, context, frame, buffer);
                 if (timeout > 0)
-                    frameBytes.task = scheduler.schedule(frameBytes,timeout,unit);
+                    frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
 
                 // Special handling for PING frames, they must be sent as soon as possible
                 if (ControlFrameType.PING == frame.getType())
@@ -752,40 +853,35 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
                 else
                     append(frameBytes);
             }
-
-            flush();
         }
-        catch (Throwable x)
+        catch (Exception x)
         {
-            notifyHandlerFailed(callback, context, x);
+            notifyCallbackFailed(callback, context, x);
         }
     }
 
     private void updateLastStreamId(IStream stream)
     {
         int streamId = stream.getId();
-        if (stream.isClosed() && streamId % 2 != streamIds.get() % 2)
-        {
-            // Non-blocking atomic update
-            int oldValue = lastStreamId.get();
-            while (streamId > oldValue)
-            {
-                if (lastStreamId.compareAndSet(oldValue,streamId))
-                    break;
-                oldValue = lastStreamId.get();
-            }
-        }
+        if (streamId % 2 != streamIds.get() % 2)
+            Atomics.updateMax(lastStreamId, streamId);
     }
 
     @Override
     public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Callback<C> callback, C context)
     {
         logger.debug("Queuing {} on {}",dataInfo,stream);
-        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(stream, callback,context,dataInfo);
+        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(stream,callback,context,dataInfo);
         if (timeout > 0)
-        {
             frameBytes.task = scheduler.schedule(frameBytes,timeout,unit);
-        }
+        append(frameBytes);
+        flush();
+    }
+
+    @Override
+    public void shutdown()
+    {
+        FrameBytes frameBytes = new CloseFrameBytes();
         append(frameBytes);
         flush();
     }
@@ -818,9 +914,11 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
                 if (buffer != null)
                 {
                     queue.remove(i);
-                    // TODO: stream.isUniDirectional() check here is only needed for pushStreams which send a syn with close=true --> find a better solution
-                    if (stream != null && !streams.containsValue(stream) && !stream.isUnidirectional())
+                    if (stream != null && stream.isReset())
+                    {
                         frameBytes.fail(new StreamException(stream.getId(),StreamStatus.INVALID_STREAM));
+                        return;
+                    }
                     break;
                 }
 
@@ -843,34 +941,50 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
 
     private void append(FrameBytes frameBytes)
     {
+        Throwable failure;
         synchronized (queue)
         {
-            int index = queue.size();
-            while (index > 0)
+            failure = this.failure;
+            if (failure == null)
             {
-                FrameBytes element = queue.get(index - 1);
-                if (element.compareTo(frameBytes) >= 0)
-                    break;
-                --index;
+                int index = queue.size();
+                while (index > 0)
+                {
+                    FrameBytes element = queue.get(index - 1);
+                    if (element.compareTo(frameBytes) >= 0)
+                        break;
+                    --index;
+                }
+                queue.add(index,frameBytes);
             }
-            queue.add(index,frameBytes);
         }
+
+        if (failure != null)
+            frameBytes.fail(new SPDYException(failure));
     }
 
     private void prepend(FrameBytes frameBytes)
     {
+        Throwable failure;
         synchronized (queue)
         {
-            int index = 0;
-            while (index < queue.size())
+            failure = this.failure;
+            if (failure == null)
             {
-                FrameBytes element = queue.get(index);
-                if (element.compareTo(frameBytes) <= 0)
-                    break;
-                ++index;
+                int index = 0;
+                while (index < queue.size())
+                {
+                    FrameBytes element = queue.get(index);
+                    if (element.compareTo(frameBytes) <= 0)
+                        break;
+                    ++index;
+                }
+                queue.add(index,frameBytes);
             }
-            queue.add(index,frameBytes);
         }
+
+        if (failure != null)
+            frameBytes.fail(new SPDYException(failure));
     }
 
     @Override
@@ -885,9 +999,23 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     }
 
     @Override
-    public void failed(FrameBytes context, Throwable x)
+    public void failed(FrameBytes frameBytes, Throwable x)
     {
-        throw new SPDYException(x);
+        List<FrameBytes> frameBytesToFail = new ArrayList<>();
+        frameBytesToFail.add(frameBytes);
+
+        synchronized (queue)
+        {
+            failure = x;
+            String logMessage = String.format("Failed write of %s, failing all %d frame(s) in queue",frameBytes,queue.size());
+            logger.debug(logMessage,x);
+            frameBytesToFail.addAll(queue);
+            queue.clear();
+            flushing = false;
+        }
+
+        for (FrameBytes fb : frameBytesToFail)
+            fb.fail(x);
     }
 
     protected void write(ByteBuffer buffer, Callback<FrameBytes> callback, FrameBytes frameBytes)
@@ -895,14 +1023,14 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         if (controller != null)
         {
             logger.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
-            controller.write(buffer, callback,frameBytes);
+            controller.write(buffer,callback,frameBytes);
         }
     }
 
     private <C> void complete(final Callback<C> callback, final C context)
     {
         // Applications may send and queue up a lot of frames and
-        // if we call Handler.completed() only synchronously we risk
+        // if we call Callback.completed() only synchronously we risk
         // starvation (for the last frames sent) and stack overflow.
         // Therefore every some invocation, we dispatch to a new thread
         Integer invocations = handlerInvocations.get();
@@ -914,7 +1042,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
                 public void run()
                 {
                     if (callback != null)
-                        notifyHandlerCompleted(callback,context);
+                        notifyCallbackCompleted(callback, context);
                     flush();
                 }
             });
@@ -925,7 +1053,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
             try
             {
                 if (callback != null)
-                    notifyHandlerCompleted(callback,context);
+                    notifyCallbackCompleted(callback, context);
                 flush();
             }
             finally
@@ -935,7 +1063,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
     }
 
-    private <C> void notifyHandlerCompleted(Callback<C> callback, C context)
+    private <C> void notifyCallbackCompleted(Callback<C> callback, C context)
     {
         try
         {
@@ -943,11 +1071,16 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying callback " + callback,x);
+            logger.info("Exception while notifying callback " + callback, x);
+        }
+        catch (Error x)
+        {
+            logger.info("Exception while notifying callback " + callback, x);
+            throw x;
         }
     }
 
-    private <C> void notifyHandlerFailed(Callback<C> callback, C context, Throwable x)
+    private <C> void notifyCallbackFailed(Callback<C> callback, C context, Throwable x)
     {
         try
         {
@@ -956,9 +1089,45 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         }
         catch (Exception xx)
         {
-            logger.info("Exception while notifying callback " + callback,xx);
+            logger.info("Exception while notifying callback " + callback, xx);
+        }
+        catch (Error xx)
+        {
+            logger.info("Exception while notifying callback " + callback, xx);
+            throw xx;
         }
     }
+
+    public int getWindowSize()
+    {
+        return flowControlStrategy.getWindowSize(this);
+    }
+
+    public void setWindowSize(int initialWindowSize)
+    {
+        flowControlStrategy.setWindowSize(this, initialWindowSize);
+    }
+
+    public String toString()
+    {
+        return String.format("%s@%x{v%d,queuSize=%d,windowSize=%d,streams=%d}", getClass().getSimpleName(), hashCode(), version, queue.size(), getWindowSize(), streams.size());
+    }
+
+
+    @Override
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        AggregateLifeCycle.dumpObject(out,this);
+        AggregateLifeCycle.dump(out,indent,Collections.singletonList(controller),streams.values());
+    }
+
+
 
     public interface FrameBytes extends Comparable<FrameBytes>
     {
@@ -994,8 +1163,16 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         @Override
         public int compareTo(FrameBytes that)
         {
-            // If this.stream.priority > that.stream.priority => -1 (this.stream has less priority than that.stream)
-            return that.getStream().getPriority() - getStream().getPriority();
+            // FrameBytes may have or not have a related stream (for example, PING do not have a related stream)
+            // FrameBytes without related streams have higher priority
+            IStream thisStream = getStream();
+            IStream thatStream = that.getStream();
+            if (thisStream == null)
+                return thatStream == null ? 0 : -1;
+            if (thatStream == null)
+                return 1;
+            // If this.stream.priority > that.stream.priority => this.stream has less priority than that.stream
+            return thatStream.getPriority() - thisStream.getPriority();
         }
 
         @Override
@@ -1009,7 +1186,8 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         public void fail(Throwable x)
         {
             cancelTask();
-            notifyHandlerFailed(callback, context, x);
+            notifyCallbackFailed(callback, context, x);
+            StandardSession.this.flush();
         }
 
         private void cancelTask()
@@ -1034,7 +1212,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
 
         private ControlFrameBytes(IStream stream, Callback<C> callback, C context, ControlFrame frame, ByteBuffer buffer)
         {
-            super(stream, callback,context);
+            super(stream,callback,context);
             this.frame = frame;
             this.buffer = buffer;
         }
@@ -1058,6 +1236,9 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
                 // Recipients will know the last good stream id and act accordingly.
                 close();
             }
+            IStream stream = getStream();
+            if (stream != null && stream.isClosed())
+                removeStream(stream);
         }
 
         @Override
@@ -1073,9 +1254,9 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         private int size;
         private volatile ByteBuffer buffer;
 
-        private DataFrameBytes(IStream stream, Callback<C> callback, C context, DataInfo dataInfo)
+        private DataFrameBytes(IStream stream, Callback<C> handler, C context, DataInfo dataInfo)
         {
-            super(stream, callback,context);
+            super(stream,handler,context);
             this.dataInfo = dataInfo;
         }
 
@@ -1108,14 +1289,14 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         {
             bufferPool.release(buffer);
             IStream stream = getStream();
-            stream.updateWindowSize(-size);
-
+            flowControlStrategy.updateWindow(StandardSession.this, stream, -size);
             if (dataInfo.available() > 0)
             {
                 // We have written a frame out of this DataInfo, but there is more to write.
                 // We need to keep the correct ordering of frames, to avoid that another
                 // DataInfo for the same stream is written before this one is finished.
                 prepend(this);
+                flush();
             }
             else
             {
@@ -1129,7 +1310,28 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         @Override
         public String toString()
         {
-            return String.format("DATA bytes @%x available=%d consumed=%d on %s",dataInfo.hashCode(),dataInfo.available(),dataInfo.consumed(),getStream());
+            return String.format("DATA bytes @%x available=%d consumed=%d on %s", dataInfo.hashCode(), dataInfo.available(), dataInfo.consumed(), getStream());
+        }
+    }
+
+    private class CloseFrameBytes extends AbstractFrameBytes<Void>
+    {
+        private CloseFrameBytes()
+        {
+            super(null, new Empty<Void>(), null);
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
+
+        @Override
+        public void complete()
+        {
+            super.complete();
+            close();
         }
     }
 }

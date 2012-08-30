@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 
 package org.eclipse.jetty.server.session;
@@ -30,7 +35,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
@@ -68,15 +72,8 @@ public class JDBCSessionManager extends AbstractSessionManager
 {
     private static final Logger LOG = Log.getLogger(JDBCSessionManager.class);
 
-    protected  String __insertSession;
-    protected  String __deleteSession;
-    protected  String __selectSession;
-    protected  String __updateSession;
-    protected  String __updateSessionNode;
-    protected  String __updateSessionAccessTime;
-    protected  String __sessionTableRowId;
-
     private ConcurrentHashMap<String, AbstractSession> _sessions;
+    protected JDBCSessionIdManager _jdbcSessionIdMgr = null;
     protected long _saveIntervalSec = 60; //only persist changes to session access times every 60 secs
 
     /**
@@ -603,7 +600,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         if (_sessionIdManager==null)
             throw new IllegalStateException("No session id manager defined");
 
-        prepareTables();
+        _jdbcSessionIdMgr = (JDBCSessionIdManager)_sessionIdManager;
 
         _sessions = new ConcurrentHashMap<String, AbstractSession>();
         super.doStart();
@@ -816,30 +813,6 @@ public class JDBCSessionManager extends AbstractSessionManager
     }
 
 
-    protected void prepareTables ()
-    {
-        __sessionTableRowId = ((JDBCSessionIdManager)_sessionIdManager)._sessionTableRowId;
-
-        __insertSession = "insert into "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " ("+__sessionTableRowId+", sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, map) "+
-                          " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        __deleteSession = "delete from "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " where "+__sessionTableRowId+" = ?";
-
-        __selectSession = "select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " where sessionId = ? and contextPath = ? and virtualHost = ?";
-
-        __updateSession = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where "+__sessionTableRowId+" = ?";
-
-        __updateSessionNode = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                              " set lastNode = ? where "+__sessionTableRowId+" = ?";
-
-        __updateSessionAccessTime = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                                    " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ? where "+__sessionTableRowId+" = ?";
-    }
-
     /**
      * Load a session from the database
      * @param id
@@ -862,15 +835,12 @@ public class JDBCSessionManager extends AbstractSessionManager
                 try
                 {
                     connection = getConnection();
-                    statement = connection.prepareStatement(__selectSession);
-                    statement.setString(1, id);
-                    statement.setString(2, canonicalContextPath);
-                    statement.setString(3, vhost);
+                    statement = _jdbcSessionIdMgr._dbAdaptor.getLoadStatement(connection, id, canonicalContextPath, vhost);
                     ResultSet result = statement.executeQuery();
                     if (result.next())
                     {
                         data = new SessionData(id);
-                        data.setRowId(result.getString(__sessionTableRowId));
+                        data.setRowId(result.getString(_jdbcSessionIdMgr._sessionTableRowId));
                         data.setCookieSet(result.getLong("cookieTime"));
                         data.setLastAccessed(result.getLong("lastAccessTime"));
                         data.setAccessed (result.getLong("accessTime"));
@@ -939,7 +909,7 @@ public class JDBCSessionManager extends AbstractSessionManager
 
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(__insertSession);
+            statement = connection.prepareStatement(_jdbcSessionIdMgr._insertSession);
             statement.setString(1, rowId); //rowId
             statement.setString(2, data.getId()); //session id
             statement.setString(3, data.getCanonicalContext()); //context path
@@ -994,7 +964,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         {
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(__updateSession);
+            statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSession);
             statement.setString(1, getSessionIdManager().getWorkerName());//my node id
             statement.setLong(2, data.getAccessed());//accessTime
             statement.setLong(3, data.getLastAccessed()); //lastAccessTime
@@ -1038,7 +1008,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         try
         {
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(__updateSessionNode);
+            statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSessionNode);
             statement.setString(1, nodeId);
             statement.setString(2, data.getRowId());
             statement.executeUpdate();
@@ -1068,7 +1038,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         {
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(__updateSessionAccessTime);
+            statement = connection.prepareStatement(_jdbcSessionIdMgr._updateSessionAccessTime);
             statement.setString(1, getSessionIdManager().getWorkerName());
             statement.setLong(2, data.getAccessed());
             statement.setLong(3, data.getLastAccessed());
@@ -1106,7 +1076,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         try
         {
             connection.setAutoCommit(true);
-            statement = connection.prepareStatement(__deleteSession);
+            statement = connection.prepareStatement(_jdbcSessionIdMgr._deleteSession);
             statement.setString(1, data.getRowId());
             statement.executeUpdate();
             if (LOG.isDebugEnabled())

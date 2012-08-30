@@ -1,21 +1,25 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.annotation.HttpConstraint;
 import javax.servlet.annotation.HttpMethodConstraint;
 import javax.servlet.annotation.ServletSecurity;
@@ -27,7 +31,6 @@ import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
@@ -38,7 +41,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  * Inspect a class to see if it has an @ServletSecurity annotation on it,
  * setting up the <security-constraint>s.
- * 
+ *
  * A servlet can be defined in:
  * <ul>
  * <li>web.xml
@@ -46,7 +49,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * <li>@WebServlet annotation discovered
  * <li>ServletContext.createServlet
  * </ul>
- * 
+ *
  * The ServletSecurity annotation for a servlet should only be processed
  * iff metadata-complete == false.
  */
@@ -55,14 +58,14 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     private static final Logger LOG = Log.getLogger(ServletSecurityAnnotationHandler.class);
 
     private WebAppContext _context;
-    
+
     public ServletSecurityAnnotationHandler(WebAppContext wac)
     {
         super(false);
         _context = wac;
     }
-    
-    /** 
+
+    /**
      * @see org.eclipse.jetty.annotations.AnnotationIntrospector.IntrospectableAnnotationHandler#handle(java.lang.Class)
      */
     public void doHandle(Class clazz)
@@ -72,17 +75,17 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             LOG.warn("SecurityHandler not ConstraintAware, skipping security annotation processing");
             return;
         }
-        
+
        ServletSecurity servletSecurity = (ServletSecurity)clazz.getAnnotation(ServletSecurity.class);
        if (servletSecurity == null)
            return;
-       
-       //If there are already constraints defined (ie from web.xml or programmatically(?)) that match any 
+
+       //If there are already constraints defined (ie from web.xml or programmatically(?)) that match any
        //of the url patterns defined for this servlet, then skip the security annotation.
-      
+
        List<ServletMapping> servletMappings = getServletMappings(clazz.getCanonicalName());
        List<ConstraintMapping> constraintMappings =  ((ConstraintAware)_context.getSecurityHandler()).getConstraintMappings();
-     
+
        if (constraintsExist(servletMappings, constraintMappings))
        {
            LOG.warn("Constraints already defined for "+clazz.getName()+", skipping ServletSecurity annotation");
@@ -91,30 +94,30 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 
        //Make a fresh list
        constraintMappings = new ArrayList<ConstraintMapping>();
-       
+
        //Get the values that form the constraints that will apply unless there are HttpMethodConstraints to augment them
        HttpConstraint defaults = servletSecurity.value();
 
        //Make a Constraint for the <auth-constraint> and <user-data-constraint> specified by the HttpConstraint
-       Constraint defaultConstraint = makeConstraint (clazz, 
-                                                      defaults.rolesAllowed(), 
-                                                      defaults.value(), 
+       Constraint defaultConstraint = makeConstraint (clazz,
+                                                      defaults.rolesAllowed(),
+                                                      defaults.value(),
                                                       defaults.transportGuarantee());
 
-       constraintMappings.addAll(makeMethodMappings(clazz, 
-                                                    defaultConstraint, 
-                                                    servletMappings, 
+       constraintMappings.addAll(makeMethodMappings(clazz,
+                                                    defaultConstraint,
+                                                    servletMappings,
                                                     servletSecurity.httpMethodConstraints()));
 
        //set up the security constraints produced by the annotation
        ConstraintAware securityHandler = (ConstraintAware)_context.getSecurityHandler();
 
        for (ConstraintMapping m:constraintMappings)
-           securityHandler.addConstraintMapping(m); 
+           securityHandler.addConstraintMapping(m);
     }
-    
- 
-    
+
+
+
     /**
      * Make a jetty Constraint object, which represents the <auth-constraint> and
      * <user-data-constraint> elements, based on the security annotation.
@@ -125,10 +128,10 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      * @return
      */
     protected Constraint makeConstraint (Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
-    {  
+    {
         Constraint constraint = new Constraint();
         if (rolesAllowed == null || rolesAllowed.length==0)
-        {           
+        {
            if (permitOrDeny.equals(EmptyRoleSemantic.DENY))
            {
                //Equivalent to <auth-constraint> with no roles
@@ -147,15 +150,15 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             //Equivalent to <auth-constraint> with list of <security-role-name>s
             constraint.setAuthenticate(true);
             constraint.setRoles(rolesAllowed);
-            constraint.setName(servlet.getName()+"-RolesAllowed");           
-        } 
-        
+            constraint.setName(servlet.getName()+"-RolesAllowed");
+        }
+
       //Equivalent to //<user-data-constraint><transport-guarantee>CONFIDENTIAL</transport-guarantee></user-data-constraint>
       constraint.setDataConstraint((transport.equals(TransportGuarantee.CONFIDENTIAL)?Constraint.DC_CONFIDENTIAL:Constraint.DC_NONE));
       return constraint;
     }
-    
-    
+
+
     /**
      * Make a ConstraintMapping which captures the <http-method> or <http-method-omission> elements for a particular url pattern,
      * and relates it to a Constraint object (<auth-constraint> and <user-data-constraint>).
@@ -176,7 +179,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             mapping.setMethodOmissions(omissions);
         return mapping;
     }
-  
+
     /**
      * Make the Jetty Constraints and ConstraintMapping objects that correspond to the HttpMethodConstraint
      * annotations for each url pattern for the servlet.
@@ -189,7 +192,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     protected List<ConstraintMapping> makeMethodMappings (Class servlet, Constraint defaultConstraint, List<ServletMapping> servletMappings, HttpMethodConstraint[] annotations)
     {
         List<ConstraintMapping> mappings = new ArrayList<ConstraintMapping>();
-        
+
         //for each url-pattern existing for the servlet make a ConstraintMapping for the HttpConstraint, and ConstraintMappings for
         //each HttpMethodConstraint
         for (ServletMapping sm : servletMappings)
@@ -198,40 +201,40 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             {
                 //Make a ConstraintMapping that matches the defaultConstraint
                 ConstraintMapping defaultMapping = makeConstraintMapping(defaultConstraint, url, null, null);
-                
+
                 //If there are HttpMethodConstraint annotations, make a Constraint and a ConstraintMapping for it
                 if (annotations != null && annotations.length>0)
-                {    
+                {
                     List<String> omissions = new ArrayList<String>();
-                    
+
                     //for each HttpMethodConstraint annotation, make a new Constraint and ConstraintMappings for this url
                     for (int i=0;  i < annotations.length;i++)
                     {
                         //Make a Constraint that captures the <auth-constraint> and <user-data-constraint> elements
-                        Constraint methodConstraint = makeConstraint(servlet, 
-                                                                     annotations[i].rolesAllowed(), 
+                        Constraint methodConstraint = makeConstraint(servlet,
+                                                                     annotations[i].rolesAllowed(),
                                                                      annotations[i].emptyRoleSemantic(),
                                                                      annotations[i].transportGuarantee());
 
-                        //Make ConstraintMapping that captures the <http-method> elements                        
+                        //Make ConstraintMapping that captures the <http-method> elements
                         ConstraintMapping methodConstraintMapping = makeConstraintMapping (methodConstraint,
-                                                                                           url,annotations[i].value(), 
+                                                                                           url,annotations[i].value(),
                                                                                            null);
                         mappings.add(methodConstraintMapping);
-                        omissions.add(annotations[i].value()); 
-                    }   
+                        omissions.add(annotations[i].value());
+                    }
                     defaultMapping.setMethodOmissions(omissions.toArray(new String[0]));
                 }
 
                 //add the constraint mapping containing the http-method-omissions, if there are any
                 mappings.add(defaultMapping);
             }
-        }             
+        }
         return mappings;
     }
-    
-   
-    
+
+
+
     /**
      * Get the ServletMappings for the servlet's class.
      * @param className
@@ -245,14 +248,14 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         {
             //Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to find it's class
             ServletHolder holder = _context.getServletHandler().getServlet(mapping.getServletName());
-            if (holder.getClassName().equals(className))
+            if (holder.getClassName() != null && holder.getClassName().equals(className))
               results.add(mapping);
         }
         return results;
     }
-    
-    
-    
+
+
+
     /**
      * Check if there are already <security-constraint> elements defined that match the url-patterns for
      * the servlet.
@@ -266,7 +269,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         //Check to see if the path spec on each constraint mapping matches a pathSpec in the servlet mappings.
         //If it does, then we should ignore the security annotations.
         for (ServletMapping mapping : servletMappings)
-        {  
+        {
             //Get its url mappings
             String[] pathSpecs = mapping.getPathSpecs();
             if (pathSpecs == null)
@@ -286,7 +289,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
                    }
                }
            }
-        }      
+        }
         return exists;
     }
 

@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlet;
 
@@ -19,19 +24,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -58,11 +60,14 @@ import org.eclipse.jetty.server.ServletResponseHttpWrapper;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -78,13 +83,14 @@ import org.eclipse.jetty.util.log.Logger;
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().
  */
+@ManagedObject("Servlet Handler")
 public class ServletHandler extends ScopedHandler
 {
     private static final Logger LOG = Log.getLogger(ServletHandler.class);
 
     /* ------------------------------------------------------------ */
     public static final String __DEFAULT_SERVLET="default";
-        
+
     /* ------------------------------------------------------------ */
     private ServletContextHandler _contextHandler;
     private ContextHandler.Context _servletContext;
@@ -94,30 +100,30 @@ public class ServletHandler extends ScopedHandler
     private int _maxFilterChainsCacheSize=512;
     private boolean _startWithUnavailable=true;
     private IdentityService _identityService;
-    
+
     private ServletHolder[] _servlets=new ServletHolder[0];
     private ServletMapping[] _servletMappings;
-    
-    private final Map<String,FilterHolder> _filterNameMap= new HashMap<String,FilterHolder>();
+
+    private final Map<String,FilterHolder> _filterNameMap= new HashMap<>();
     private List<FilterMapping> _filterPathMappings;
-    private MultiMap<String> _filterNameMappings;
-    
-    private final Map<String,ServletHolder> _servletNameMap=new HashMap<String,ServletHolder>();
+    private MultiMap<FilterMapping> _filterNameMappings;
+
+    private final Map<String,ServletHolder> _servletNameMap=new HashMap<>();
     private PathMap _servletPathMap;
-    
-    protected final ConcurrentMap<String,FilterChain> _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
-    protected final Queue<String>[] _chainLRU = new Queue[FilterMapping.ALL];
+
+    protected final ConcurrentMap _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
+    protected final Queue[] _chainLRU = new Queue[FilterMapping.ALL];
 
 
     /* ------------------------------------------------------------ */
-    /** Constructor. 
+    /** Constructor.
      */
     public ServletHandler()
     {
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.handler.AbstractHandler#setServer(org.eclipse.jetty.server.Server)
      */
     public void setServer(Server server)
@@ -132,7 +138,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         super.setServer(server);
-        
+
         if (server!=null && old!=server)
         {
             server.getContainer().update(this, null, _filters, "filter",true);
@@ -152,14 +158,14 @@ public class ServletHandler extends ScopedHandler
 
         if (_contextHandler!=null)
         {
-            SecurityHandler security_handler = (SecurityHandler)_contextHandler.getChildHandlerByClass(SecurityHandler.class);
+            SecurityHandler security_handler = _contextHandler.getChildHandlerByClass(SecurityHandler.class);
             if (security_handler!=null)
                 _identityService=security_handler.getIdentityService();
         }
-        
+
         updateNameMappings();
         updateMappings();
-        
+
         if(_filterChainsCached)
         {
             _chainCache[FilterMapping.REQUEST]=new ConcurrentHashMap<String,FilterChain>();
@@ -167,7 +173,7 @@ public class ServletHandler extends ScopedHandler
             _chainCache[FilterMapping.INCLUDE]=new ConcurrentHashMap<String,FilterChain>();
             _chainCache[FilterMapping.ERROR]=new ConcurrentHashMap<String,FilterChain>();
             _chainCache[FilterMapping.ASYNC]=new ConcurrentHashMap<String,FilterChain>();
-            
+
             _chainLRU[FilterMapping.REQUEST]=new ConcurrentLinkedQueue<String>();
             _chainLRU[FilterMapping.FORWARD]=new ConcurrentLinkedQueue<String>();
             _chainLRU[FilterMapping.INCLUDE]=new ConcurrentLinkedQueue<String>();
@@ -176,18 +182,18 @@ public class ServletHandler extends ScopedHandler
         }
 
         super.doStart();
-        
-        if (_contextHandler==null || !(_contextHandler instanceof ServletContextHandler))
+
+        if (_contextHandler==null)
             initialize();
-    }   
-    
+    }
+
     /* ----------------------------------------------------------------- */
     @Override
     protected synchronized void doStop()
         throws Exception
     {
         super.doStop();
-        
+
         // Stop filters
         if (_filters!=null)
         {
@@ -196,7 +202,7 @@ public class ServletHandler extends ScopedHandler
                 try { _filters[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
             }
         }
-        
+
         // Stop servlets
         if (_servlets!=null)
         {
@@ -208,7 +214,7 @@ public class ServletHandler extends ScopedHandler
 
         _filterPathMappings=null;
         _filterNameMappings=null;
-        
+
         _servletPathMap=null;
     }
 
@@ -217,7 +223,7 @@ public class ServletHandler extends ScopedHandler
     {
         return _identityService;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the contextLog.
@@ -226,25 +232,27 @@ public class ServletHandler extends ScopedHandler
     {
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the filterMappings.
      */
+    @ManagedAttribute(value="filters", readonly=true)
     public FilterMapping[] getFilterMappings()
     {
         return _filterMappings;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get Filters.
      * @return Array of defined servlets
      */
+    @ManagedAttribute(value="filters", readonly=true)
     public FilterHolder[] getFilters()
     {
         return _filters;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** ServletHolder matching path.
      * @param pathInContext Path within _context.
@@ -258,63 +266,28 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param uriInContext uri to get dispatcher for
-     * @return A {@link RequestDispatcher dispatcher} wrapping the resource at <code>uriInContext</code>,
-     *  or <code>null</code> if the specified uri cannot be dispatched to.
-     */
-    public RequestDispatcher getRequestDispatcher(String uriInContext)
-    {
-        if (uriInContext == null || _contextHandler==null)
-            return null;
-
-        if (!uriInContext.startsWith("/"))
-            return null;
-        
-        try
-        {
-            String query=null;
-            int q;
-            if ((q=uriInContext.indexOf('?'))>0)
-            {
-                query=uriInContext.substring(q+1);
-                uriInContext=uriInContext.substring(0,q);
-            }
-            if ((q=uriInContext.indexOf(';'))>0)
-                uriInContext=uriInContext.substring(0,q);
-
-            String pathInContext=URIUtil.canonicalPath(URIUtil.decodePath(uriInContext));
-            String uri=URIUtil.addPaths(_contextHandler.getContextPath(), uriInContext);
-            return new Dispatcher(_contextHandler, uri, pathInContext, query);
-        }
-        catch(Exception e)
-        {
-            LOG.ignore(e);
-        }
-        return null;
-    }
-
-    /* ------------------------------------------------------------ */
     public ServletContext getServletContext()
     {
         return _servletContext;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the servletMappings.
      */
+    @ManagedAttribute(value="mappings of servlets", readonly=true)
     public ServletMapping[] getServletMappings()
     {
         return _servletMappings;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the servletMappings.
      */
     public ServletMapping getServletMapping(String pattern)
     {
+        ServletMapping theMapping = null;
         if (_servletMappings!=null)
         {
             for (ServletMapping m:_servletMappings)
@@ -325,18 +298,19 @@ public class ServletHandler extends ScopedHandler
                     for (String path:paths)
                     {
                         if (pattern.equals(path))
-                            return m;
+                            theMapping = m;
                     }
                 }
             }
         }
-        return null;
+        return theMapping;
     }
-        
+
     /* ------------------------------------------------------------ */
     /** Get Servlets.
      * @return Array of defined servlets
      */
+    @ManagedAttribute(value="servlets", readonly=true)
     public ServletHolder[] getServlets()
     {
         return _servlets;
@@ -345,7 +319,7 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     public ServletHolder getServlet(String name)
     {
-        return (ServletHolder)_servletNameMap.get(name);
+        return _servletNameMap.get(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -357,7 +331,7 @@ public class ServletHandler extends ScopedHandler
         final String old_path_info=baseRequest.getPathInfo();
 
         DispatcherType type = baseRequest.getDispatcherType();
-       
+
         ServletHolder servlet_holder=null;
         UserIdentity.Scope old_scope=null;
 
@@ -370,10 +344,10 @@ public class ServletHandler extends ScopedHandler
             {
                 servlet_holder=(ServletHolder)entry.getValue();
 
-                String servlet_path_spec=(String)entry.getKey(); 
+                String servlet_path_spec= entry.getKey();
                 String servlet_path=entry.getMapped()!=null?entry.getMapped():PathMap.pathMatch(servlet_path_spec,target);
-                String path_info=PathMap.pathInfo(servlet_path_spec,target); 
-                
+                String path_info=PathMap.pathInfo(servlet_path_spec,target);
+
                 if (DispatcherType.INCLUDE.equals(type))
                 {
                     baseRequest.setAttribute(Dispatcher.INCLUDE_SERVLET_PATH,servlet_path);
@@ -384,14 +358,14 @@ public class ServletHandler extends ScopedHandler
                     baseRequest.setServletPath(servlet_path);
                     baseRequest.setPathInfo(path_info);
                 }
-            }      
+            }
         }
         else
         {
             // look for a servlet by name!
-            servlet_holder=(ServletHolder)_servletNameMap.get(target);
+            servlet_holder= _servletNameMap.get(target);
         }
-       
+
         if (LOG.isDebugEnabled())
             LOG.debug("servlet {}|{}|{} -> {}",baseRequest.getContextPath(),baseRequest.getServletPath(),baseRequest.getPathInfo(),servlet_holder);
 
@@ -408,7 +382,7 @@ public class ServletHandler extends ScopedHandler
                 _nextScope.doScope(target,baseRequest,request, response);
             else if (_outerScope!=null)
                 _outerScope.doHandle(target,baseRequest,request, response);
-            else 
+            else
                 doHandle(target,baseRequest,request, response);
             // end manual inline (pathentic attempt to reduce stack depth)
         }
@@ -420,13 +394,13 @@ public class ServletHandler extends ScopedHandler
             if (!(DispatcherType.INCLUDE.equals(type)))
             {
                 baseRequest.setServletPath(old_servlet_path);
-                baseRequest.setPathInfo(old_path_info); 
+                baseRequest.setPathInfo(old_path_info);
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
@@ -434,7 +408,7 @@ public class ServletHandler extends ScopedHandler
         throws IOException, ServletException
     {
         DispatcherType type = baseRequest.getDispatcherType();
-        
+
         ServletHolder servlet_holder=(ServletHolder) baseRequest.getUserIdentityScope();
         FilterChain chain=null;
 
@@ -456,7 +430,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         LOG.debug("chain={}",chain);
-        
+
         try
         {
             if (servlet_holder==null)
@@ -479,7 +453,7 @@ public class ServletHandler extends ScopedHandler
                 // Do the filter/handling thang
                 if (chain!=null)
                     chain.doFilter(req, res);
-                else 
+                else
                     servlet_holder.handle(baseRequest,req,res);
             }
         }
@@ -492,7 +466,7 @@ public class ServletHandler extends ScopedHandler
             throw e;
         }
         catch(ContinuationThrowable e)
-        {   
+        {
             throw e;
         }
         catch(Exception e)
@@ -511,7 +485,7 @@ public class ServletHandler extends ScopedHandler
             Throwable th=e;
             if (th instanceof UnavailableException)
             {
-                LOG.debug(th); 
+                LOG.debug(th);
             }
             else if (th instanceof ServletException)
             {
@@ -523,7 +497,7 @@ public class ServletHandler extends ScopedHandler
             else if (th instanceof RuntimeIOException)
             {
                 LOG.debug(th);
-                Throwable cause=(IOException)((RuntimeIOException)th).getCause();
+                Throwable cause= th.getCause();
                 if (cause!=null)
                     th=cause;
             }
@@ -536,8 +510,8 @@ public class ServletHandler extends ScopedHandler
 
             else if (LOG.isDebugEnabled())
             {
-                LOG.warn(request.getRequestURI(), th); 
-                LOG.debug(request.toString()); 
+                LOG.warn(request.getRequestURI(), th);
+                LOG.debug(request.toString());
             }
             else if (th instanceof IOException || th instanceof UnavailableException)
             {
@@ -567,7 +541,7 @@ public class ServletHandler extends ScopedHandler
                 LOG.debug("Response already committed for handling "+th);
         }
         catch(Error e)
-        {   
+        {
             if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
                 throw e;
             LOG.warn("Error for "+request.getRequestURI(),e);
@@ -585,33 +559,34 @@ public class ServletHandler extends ScopedHandler
         }
         finally
         {
-            baseRequest.setHandled(true);
+            if (servlet_holder!=null)
+                baseRequest.setHandled(true);
         }
     }
 
     /* ------------------------------------------------------------ */
-    private FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder) 
+    private FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
     {
         String key=pathInContext==null?servletHolder.getName():pathInContext;
         int dispatch = FilterMapping.dispatch(baseRequest.getDispatcherType());
-        
+
         if (_filterChainsCached && _chainCache!=null)
         {
             FilterChain chain = (FilterChain)_chainCache[dispatch].get(key);
             if (chain!=null)
                 return chain;
         }
-        
-        // Build list of filters
-        Object filters= null;
+
+        // Build list of filters (list of FilterHolder objects)
+        List<FilterHolder> filters = new ArrayList<>();
+
         // Path filters
         if (pathInContext!=null && _filterPathMappings!=null)
         {
-            for (int i= 0; i < _filterPathMappings.size(); i++)
+            for (FilterMapping filterPathMapping : _filterPathMappings)
             {
-                FilterMapping mapping = (FilterMapping)_filterPathMappings.get(i);
-                if (mapping.appliesTo(pathInContext, dispatch))
-                    filters= LazyList.add(filters, mapping.getFilterHolder());
+                if (filterPathMapping.appliesTo(pathInContext, dispatch))
+                    filters.add(filterPathMapping.getFilterHolder());
             }
         }
 
@@ -622,31 +597,32 @@ public class ServletHandler extends ScopedHandler
             if (_filterNameMappings.size() > 0)
             {
                 Object o= _filterNameMappings.get(servletHolder.getName());
+
                 for (int i=0; i<LazyList.size(o);i++)
                 {
                     FilterMapping mapping = (FilterMapping)LazyList.get(o,i);
                     if (mapping.appliesTo(dispatch))
-                        filters=LazyList.add(filters,mapping.getFilterHolder());
+                        filters.add(mapping.getFilterHolder());
                 }
-                
+
                 o= _filterNameMappings.get("*");
                 for (int i=0; i<LazyList.size(o);i++)
                 {
                     FilterMapping mapping = (FilterMapping)LazyList.get(o,i);
                     if (mapping.appliesTo(dispatch))
-                        filters=LazyList.add(filters,mapping.getFilterHolder());
+                        filters.add(mapping.getFilterHolder());
                 }
             }
         }
-        
-        if (filters==null)
+
+        if (filters.isEmpty())
             return null;
-        
-        
+
+
         FilterChain chain = null;
         if (_filterChainsCached)
         {
-            if (LazyList.size(filters) > 0)
+            if (filters.size() > 0)
                 chain= new CachedChain(filters, servletHolder);
 
             final Map<String,FilterChain> cache=_chainCache[dispatch];
@@ -655,7 +631,7 @@ public class ServletHandler extends ScopedHandler
         	// Do we have too many cached chains?
         	while (_maxFilterChainsCacheSize>0 && cache.size()>=_maxFilterChainsCacheSize)
         	{
-        	    // The LRU list is not atomic with the cache map, so be prepared to invalidate if 
+        	    // The LRU list is not atomic with the cache map, so be prepared to invalidate if
         	    // a key is not found to delete.
         	    // Delete by LRU (where U==created)
         	    String k=lru.poll();
@@ -666,16 +642,16 @@ public class ServletHandler extends ScopedHandler
         	    }
         	    cache.remove(k);
         	}
-        	
+
         	cache.put(key,chain);
         	lru.add(key);
         }
-        else if (LazyList.size(filters) > 0)
+        else if (filters.size() > 0)
             chain = new Chain(baseRequest,filters, servletHolder);
-    
+
         return chain;
     }
-    
+
     /* ------------------------------------------------------------ */
     private void invalidateChainsCache()
     {
@@ -697,22 +673,21 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * @return true if the handler is started and there are no unavailable servlets 
+     * @return true if the handler is started and there are no unavailable servlets
      */
     public boolean isAvailable()
     {
         if (!isStarted())
             return false;
         ServletHolder[] holders = getServlets();
-        for (int i=0;i<holders.length;i++)
+        for (ServletHolder holder : holders)
         {
-            ServletHolder holder = holders[i];
-            if (holder!=null && !holder.isAvailable())
+            if (holder != null && !holder.isAvailable())
                 return false;
         }
         return true;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param start True if this handler will start with unavailable servlets
@@ -721,7 +696,7 @@ public class ServletHandler extends ScopedHandler
     {
         _startWithUnavailable=start;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if this handler will start with unavailable servlets
@@ -730,9 +705,9 @@ public class ServletHandler extends ScopedHandler
     {
         return _startWithUnavailable;
     }
-    
-    
-    
+
+
+
     /* ------------------------------------------------------------ */
     /** Initialize filters and load-on-startup servlets.
      * Called automatically from start if autoInitializeServlet is true.
@@ -745,42 +720,42 @@ public class ServletHandler extends ScopedHandler
         // Start filters
         if (_filters!=null)
         {
-            for (int i=0;i<_filters.length; i++)
-                _filters[i].start();
+            for (FilterHolder filter : _filters)
+                filter.start();
         }
-        
+
         if (_servlets!=null)
         {
             // Sort and Initialize servlets
-            ServletHolder[] servlets = (ServletHolder[])_servlets.clone();
+            ServletHolder[] servlets = _servlets.clone();
             Arrays.sort(servlets);
-            for (int i=0; i<servlets.length; i++)
+            for (ServletHolder servlet : servlets)
             {
                 try
                 {
-                    if (servlets[i].getClassName()==null && servlets[i].getForcedPath()!=null)
+                    if (servlet.getClassName() == null && servlet.getForcedPath() != null)
                     {
-                        ServletHolder forced_holder = (ServletHolder)_servletPathMap.match(servlets[i].getForcedPath());
-                        if (forced_holder==null || forced_holder.getClassName()==null)
-                        {    
-                            mx.add(new IllegalStateException("No forced path servlet for "+servlets[i].getForcedPath()));
+                        ServletHolder forced_holder = (ServletHolder)_servletPathMap.match(servlet.getForcedPath());
+                        if (forced_holder == null || forced_holder.getClassName() == null)
+                        {
+                            mx.add(new IllegalStateException("No forced path servlet for " + servlet.getForcedPath()));
                             continue;
                         }
-                        servlets[i].setClassName(forced_holder.getClassName());
+                        servlet.setClassName(forced_holder.getClassName());
                     }
-                    
-                    servlets[i].start();
+
+                    servlet.start();
                 }
-                catch(Throwable e)
+                catch (Throwable e)
                 {
-                    LOG.debug(Log.EXCEPTION,e);
+                    LOG.debug(Log.EXCEPTION, e);
                     mx.add(e);
                 }
-            } 
-            mx.ifExceptionThrow();  
+            }
+            mx.ifExceptionThrow();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the filterChainsCached.
@@ -798,14 +773,14 @@ public class ServletHandler extends ScopedHandler
     {
         return new ServletHolder(source);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a servlet Holder.
     public ServletHolder newServletHolder(Class<? extends Servlet> servlet)
     {
         return new ServletHolder(servlet);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a servlet.
      * @return The servlet holder.
@@ -813,12 +788,12 @@ public class ServletHandler extends ScopedHandler
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
         ServletHolder holder = newServletHolder(null);
-        holder.setName(className+"-"+LazyList.size(_servlets));
+        holder.setName(className+"-"+_servlets.length);
         holder.setClassName(className);
         addServletWithMapping(holder,pathSpec);
         return holder;
-    }   
-    
+    }
+
     /* ------------------------------------------------------------ */
     /** conveniance method to add a servlet.
      * @return The servlet holder.
@@ -827,12 +802,12 @@ public class ServletHandler extends ScopedHandler
     {
         ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(servlet);
-        setServlets((ServletHolder[])LazyList.addToArray(getServlets(), holder, ServletHolder.class));
+        setServlets(ArrayUtil.addToArray(getServlets(), holder, ServletHolder.class));
         addServletWithMapping(holder,pathSpec);
-        
+
         return holder;
-    }   
-    
+    }
+
     /* ------------------------------------------------------------ */
     /** conveniance method to add a servlet.
      * @param servlet servlet holder to add
@@ -843,15 +818,15 @@ public class ServletHandler extends ScopedHandler
         ServletHolder[] holders=getServlets();
         if (holders!=null)
             holders = holders.clone();
-        
+
         try
         {
-            setServlets((ServletHolder[])LazyList.addToArray(holders, servlet, ServletHolder.class));
-            
+            setServlets(ArrayUtil.addToArray(holders, servlet, ServletHolder.class));
+
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet.getName());
             mapping.setPathSpec(pathSpec);
-            setServletMappings((ServletMapping[])LazyList.addToArray(getServletMappings(), mapping, ServletMapping.class));
+            setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
         }
         catch (Exception e)
         {
@@ -862,23 +837,23 @@ public class ServletHandler extends ScopedHandler
         }
     }
 
-    
-    /* ------------------------------------------------------------ */    
+
+    /* ------------------------------------------------------------ */
     /**Convenience method to add a pre-constructed ServletHolder.
      * @param holder
      */
     public void addServlet(ServletHolder holder)
     {
-        setServlets((ServletHolder[])LazyList.addToArray(getServlets(), holder, ServletHolder.class));
+        setServlets(ArrayUtil.addToArray(getServlets(), holder, ServletHolder.class));
     }
-    
-    /* ------------------------------------------------------------ */    
+
+    /* ------------------------------------------------------------ */
     /** Convenience method to add a pre-constructed ServletMapping.
      * @param mapping
      */
     public void addServletMapping (ServletMapping mapping)
     {
-        setServletMappings((ServletMapping[])LazyList.addToArray(getServletMappings(), mapping, ServletMapping.class));
+        setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
     }
 
     public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) {
@@ -889,9 +864,6 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** 
-     * @see #newFilterHolder(Class)
-     */
     public FilterHolder newFilterHolder(Holder.Source source)
     {
         return new FilterHolder(source);
@@ -900,10 +872,10 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     public FilterHolder getFilter(String name)
     {
-        return (FilterHolder)_filterNameMap.get(name);
+        return _filterNameMap.get(name);
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter.
      * @param filter  class of filter to create
@@ -916,10 +888,10 @@ public class ServletHandler extends ScopedHandler
         FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
-        
+
         return holder;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter.
      * @param className of filter
@@ -932,11 +904,11 @@ public class ServletHandler extends ScopedHandler
         FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
-        
+
         addFilterWithMapping(holder,pathSpec,dispatches);
         return holder;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter.
      * @param holder filter holder to add
@@ -947,17 +919,17 @@ public class ServletHandler extends ScopedHandler
     {
         FilterHolder[] holders = getFilters();
         if (holders!=null)
-            holders = (FilterHolder[])holders.clone();
-        
+            holders = holders.clone();
+
         try
         {
-            setFilters((FilterHolder[])LazyList.addToArray(holders, holder, FilterHolder.class));
-            
+            setFilters(ArrayUtil.addToArray(holders, holder, FilterHolder.class));
+
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
             mapping.setPathSpec(pathSpec);
             mapping.setDispatcherTypes(dispatches);
-            setFilterMappings((FilterMapping[])LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
+            setFilterMappings(ArrayUtil.addToArray(getFilterMappings(), mapping, FilterMapping.class));
         }
         catch (RuntimeException e)
         {
@@ -969,9 +941,9 @@ public class ServletHandler extends ScopedHandler
             setFilters(holders);
             throw e;
         }
-            
+
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter.
      * @param filter  class of filter to create
@@ -984,10 +956,10 @@ public class ServletHandler extends ScopedHandler
         FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
-        
+
         return holder;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter.
      * @param className of filter
@@ -1000,11 +972,11 @@ public class ServletHandler extends ScopedHandler
         FilterHolder holder = newFilterHolder(null);
         holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
-        
+
         addFilterWithMapping(holder,pathSpec,dispatches);
         return holder;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter.
      * @param holder filter holder to add
@@ -1015,17 +987,17 @@ public class ServletHandler extends ScopedHandler
     {
         FilterHolder[] holders = getFilters();
         if (holders!=null)
-            holders = (FilterHolder[])holders.clone();
-        
+            holders = holders.clone();
+
         try
         {
-            setFilters((FilterHolder[])LazyList.addToArray(holders, holder, FilterHolder.class));
-            
+            setFilters(ArrayUtil.addToArray(holders, holder, FilterHolder.class));
+
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
             mapping.setPathSpec(pathSpec);
             mapping.setDispatches(dispatches);
-            setFilterMappings((FilterMapping[])LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
+            setFilterMappings(ArrayUtil.addToArray(getFilterMappings(), mapping, FilterMapping.class));
         }
         catch (RuntimeException e)
         {
@@ -1037,22 +1009,22 @@ public class ServletHandler extends ScopedHandler
             setFilters(holders);
             throw e;
         }
-            
+
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter with a mapping
      * @param className
      * @param pathSpec
      * @param dispatches
      * @return the filter holder created
-     * @deprecated use {@link #addFilterWithMapping(Class, String, EnumSet<DispatcherType>)} instead
+     * @deprecated use {@link #addFilterWithMapping(Class, String, EnumSet)} instead
      */
     public FilterHolder addFilter (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         return addFilterWithMapping(className, pathSpec, dispatches);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * convenience method to add a filter and mapping
@@ -1062,21 +1034,21 @@ public class ServletHandler extends ScopedHandler
     public void addFilter (FilterHolder filter, FilterMapping filterMapping)
     {
         if (filter != null)
-            setFilters((FilterHolder[])LazyList.addToArray(getFilters(), filter, FilterHolder.class));
+            setFilters(ArrayUtil.addToArray(getFilters(), filter, FilterHolder.class));
         if (filterMapping != null)
-            setFilterMappings((FilterMapping[])LazyList.addToArray(getFilterMappings(), filterMapping, FilterMapping.class));
+            setFilterMappings(ArrayUtil.addToArray(getFilterMappings(), filterMapping, FilterMapping.class));
     }
-    
-    /* ------------------------------------------------------------ */  
+
+    /* ------------------------------------------------------------ */
     /** Convenience method to add a preconstructed FilterHolder
      * @param filter
      */
     public void addFilter (FilterHolder filter)
     {
         if (filter != null)
-            setFilters((FilterHolder[])LazyList.addToArray(getFilters(), filter, FilterHolder.class));
+            setFilters(ArrayUtil.addToArray(getFilters(), filter, FilterHolder.class));
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a preconstructed FilterMapping
      * @param mapping
@@ -1084,9 +1056,9 @@ public class ServletHandler extends ScopedHandler
     public void addFilterMapping (FilterMapping mapping)
     {
         if (mapping != null)
-            setFilterMappings((FilterMapping[])LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
+            setFilterMappings(ArrayUtil.addToArray(getFilterMappings(), mapping, FilterMapping.class));
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience method to add a preconstructed FilterMapping
      * @param mapping
@@ -1111,60 +1083,60 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     protected synchronized void updateNameMappings()
-    {   
+    {
         // update filter name map
         _filterNameMap.clear();
         if (_filters!=null)
-        {   
-            for (int i=0;i<_filters.length;i++)
+        {
+            for (FilterHolder filter : _filters)
             {
-                _filterNameMap.put(_filters[i].getName(),_filters[i]);
-                _filters[i].setServletHandler(this);
+                _filterNameMap.put(filter.getName(), filter);
+                filter.setServletHandler(this);
             }
         }
 
         // Map servlet names to holders
         _servletNameMap.clear();
         if (_servlets!=null)
-        {   
+        {
             // update the maps
-            for (int i=0;i<_servlets.length;i++)
+            for (ServletHolder servlet : _servlets)
             {
-                _servletNameMap.put(_servlets[i].getName(),_servlets[i]);
-                _servlets[i].setServletHandler(this);
+                _servletNameMap.put(servlet.getName(), servlet);
+                servlet.setServletHandler(this);
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     protected synchronized void updateMappings()
-    {   
+    {
         // update filter mappings
         if (_filterMappings==null)
         {
             _filterPathMappings=null;
             _filterNameMappings=null;
         }
-        else 
+        else
         {
-            _filterPathMappings=new ArrayList();
-            _filterNameMappings=new MultiMap();
-            for (int i=0;i<_filterMappings.length;i++)
+            _filterPathMappings=new ArrayList<>();
+            _filterNameMappings=new MultiMap<FilterMapping>();
+            for (FilterMapping filtermapping : _filterMappings)
             {
-                FilterHolder filter_holder = (FilterHolder)_filterNameMap.get(_filterMappings[i].getFilterName());
-                if (filter_holder==null)
-                    throw new IllegalStateException("No filter named "+_filterMappings[i].getFilterName());
-                _filterMappings[i].setFilterHolder(filter_holder);    
-                if (_filterMappings[i].getPathSpecs()!=null)
-                    _filterPathMappings.add(_filterMappings[i]);
-                
-                if (_filterMappings[i].getServletNames()!=null)
+                FilterHolder filter_holder = _filterNameMap.get(filtermapping.getFilterName());
+                if (filter_holder == null)
+                    throw new IllegalStateException("No filter named " + filtermapping.getFilterName());
+                filtermapping.setFilterHolder(filter_holder);
+                if (filtermapping.getPathSpecs() != null)
+                    _filterPathMappings.add(filtermapping);
+
+                if (filtermapping.getServletNames() != null)
                 {
-                    String[] names=_filterMappings[i].getServletNames();
-                    for (int j=0;j<names.length;j++)
+                    String[] names = filtermapping.getServletNames();
+                    for (String name : names)
                     {
-                        if (names[j]!=null)
-                            _filterNameMappings.add(names[j], _filterMappings[i]);  
+                        if (name != null)
+                            _filterNameMappings.add(name, filtermapping);
                     }
                 }
             }
@@ -1177,26 +1149,26 @@ public class ServletHandler extends ScopedHandler
         }
         else
         {
-            PathMap pm = new PathMap();
-            
+            PathMap<ServletHolder> pm = new PathMap<>();
+
             // update the maps
-            for (int i=0;i<_servletMappings.length;i++)
+            for (ServletMapping servletmapping : _servletMappings)
             {
-                ServletHolder servlet_holder = (ServletHolder)_servletNameMap.get(_servletMappings[i].getServletName());
-                if (servlet_holder==null)
-                    throw new IllegalStateException("No such servlet: "+_servletMappings[i].getServletName());
-                else if (servlet_holder.isEnabled() && _servletMappings[i].getPathSpecs()!=null)
+                ServletHolder servlet_holder = _servletNameMap.get(servletmapping.getServletName());
+                if (servlet_holder == null)
+                    throw new IllegalStateException("No such servlet: " + servletmapping.getServletName());
+                else if (servlet_holder.isEnabled() && servletmapping.getPathSpecs() != null)
                 {
-                    String[] pathSpecs = _servletMappings[i].getPathSpecs();
-                    for (int j=0;j<pathSpecs.length;j++)
-                        if (pathSpecs[j]!=null)
-                            pm.put(pathSpecs[j],servlet_holder);
+                    String[] pathSpecs = servletmapping.getPathSpecs();
+                    for (String pathSpec : pathSpecs)
+                        if (pathSpec != null)
+                            pm.put(pathSpec, servlet_holder);
                 }
             }
-            
+
             _servletPathMap=pm;
         }
-        
+
         // flush filter chain cache
         if (_chainCache!=null)
         {
@@ -1207,7 +1179,7 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        if (LOG.isDebugEnabled()) 
+        if (LOG.isDebugEnabled())
         {
             LOG.debug("filterNameMap="+_filterNameMap);
             LOG.debug("pathFilters="+_filterPathMappings);
@@ -1215,10 +1187,10 @@ public class ServletHandler extends ScopedHandler
             LOG.debug("servletPathMap="+_servletPathMap);
             LOG.debug("servletNameMap="+_servletNameMap);
         }
-        
+
         try
         {
-            if (isStarted())
+            if (_contextHandler!=null && _contextHandler.isStarted() || _contextHandler==null && isStarted())
                 initialize();
         }
         catch (Exception e)
@@ -1228,15 +1200,13 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    protected void notFound(HttpServletRequest request,
-                  HttpServletResponse response)
-        throws IOException
+    protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         if(LOG.isDebugEnabled())
             LOG.debug("Not Found "+request.getRequestURI());
-        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        //Override to send an error back, eg with: response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param filterChainsCached The filterChainsCached to set.
@@ -1245,7 +1215,7 @@ public class ServletHandler extends ScopedHandler
     {
         _filterChainsCached = filterChainsCached;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param filterMappings The filterMappings to set.
@@ -1258,7 +1228,7 @@ public class ServletHandler extends ScopedHandler
         updateMappings();
         invalidateChainsCache();
     }
-    
+
     /* ------------------------------------------------------------ */
     public synchronized void setFilters(FilterHolder[] holders)
     {
@@ -1268,7 +1238,7 @@ public class ServletHandler extends ScopedHandler
         updateNameMappings();
         invalidateChainsCache();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param servletMappings The servletMappings to set.
@@ -1281,7 +1251,7 @@ public class ServletHandler extends ScopedHandler
         updateMappings();
         invalidateChainsCache();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Set Servlets.
      * @param holders Array of servletsto define
@@ -1304,12 +1274,16 @@ public class ServletHandler extends ScopedHandler
         ServletHolder _servletHolder;
 
         /* ------------------------------------------------------------ */
-        CachedChain(Object filters, ServletHolder servletHolder)
+        /**
+         * @param filters list of {@link FilterHolder} objects
+         * @param servletHolder
+         */
+        CachedChain(List<FilterHolder> filters, ServletHolder servletHolder)
         {
-            if (LazyList.size(filters)>0)
+            if (filters.size()>0)
             {
-                _filterHolder=(FilterHolder)LazyList.get(filters, 0);
-                filters=LazyList.remove(filters,0);
+                _filterHolder=filters.get(0);
+                filters.remove(0);
                 _next=new CachedChain(filters,servletHolder);
             }
             else
@@ -1317,9 +1291,9 @@ public class ServletHandler extends ScopedHandler
         }
 
         /* ------------------------------------------------------------ */
-        public void doFilter(ServletRequest request, ServletResponse response) 
+        public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
-        {                   
+        {
             final Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
 
             // pass to next filter
@@ -1352,7 +1326,7 @@ public class ServletHandler extends ScopedHandler
             }
 
             // Call servlet
-            
+
             HttpServletRequest srequest = (HttpServletRequest)request;
             if (_servletHolder != null)
             {
@@ -1365,9 +1339,9 @@ public class ServletHandler extends ScopedHandler
             else
                 nextHandle(URIUtil.addPaths(srequest.getServletPath(),srequest.getPathInfo()),
                            baseRequest,srequest,(HttpServletResponse)response);
-            
+
         }
-        
+
         public String toString()
         {
             if (_filterHolder!=null)
@@ -1376,19 +1350,19 @@ public class ServletHandler extends ScopedHandler
                 return _servletHolder.toString();
             return "null";
         }
-    }  
-    
+    }
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class Chain implements FilterChain
     {
         final Request _baseRequest;
-        final Object _chain;
+        final List<FilterHolder> _chain;
         final ServletHolder _servletHolder;
         int _filter= 0;
 
         /* ------------------------------------------------------------ */
-        Chain(Request baseRequest, Object filters, ServletHolder servletHolder)
+        Chain(Request baseRequest, List<FilterHolder> filters, ServletHolder servletHolder)
         {
             _baseRequest=baseRequest;
             _chain= filters;
@@ -1399,17 +1373,17 @@ public class ServletHandler extends ScopedHandler
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("doFilter " + _filter);
 
             // pass to next filter
-            if (_filter < LazyList.size(_chain))
+            if (_filter < _chain.size())
             {
-                FilterHolder holder= (FilterHolder)LazyList.get(_chain, _filter++);
-                if (LOG.isDebugEnabled()) 
+                FilterHolder holder= _chain.get(_filter++);
+                if (LOG.isDebugEnabled())
                     LOG.debug("call filter " + holder);
                 Filter filter= holder.getFilter();
-                
+
                 if (holder.isAsyncSupported() || !_baseRequest.isAsyncSupported())
                 {
                     filter.doFilter(request, response, this);
@@ -1426,7 +1400,7 @@ public class ServletHandler extends ScopedHandler
                         _baseRequest.setAsyncSupported(true);
                     }
                 }
-                    
+
                 return;
             }
 
@@ -1434,14 +1408,14 @@ public class ServletHandler extends ScopedHandler
             HttpServletRequest srequest = (HttpServletRequest)request;
             if (_servletHolder != null)
             {
-                if (LOG.isDebugEnabled()) 
+                if (LOG.isDebugEnabled())
                     LOG.debug("call servlet " + _servletHolder);
                 _servletHolder.handle(_baseRequest,request, response);
             }
             else if (getHandler()==null)
                 notFound(srequest, (HttpServletResponse)response);
             else
-            {            
+            {
                 Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
                 nextHandle(URIUtil.addPaths(srequest.getServletPath(),srequest.getPathInfo()),
                            baseRequest,srequest,(HttpServletResponse)response);
@@ -1452,10 +1426,9 @@ public class ServletHandler extends ScopedHandler
         public String toString()
         {
             StringBuilder b = new StringBuilder();
-            for (int i=0; i<LazyList.size(_chain);i++)
+            for(FilterHolder f: _chain)
             {
-                Object o=LazyList.get(_chain, i);
-                b.append(o.toString());
+                b.append(f.toString());
                 b.append("->");
             }
             b.append(_servletHolder);
@@ -1476,14 +1449,14 @@ public class ServletHandler extends ScopedHandler
     /** Set the maximum filter chain cache size.
      * Filter chains are cached if {@link #isFilterChainsCached()} is true. If the max cache size
      * is greater than zero, then the cache is flushed whenever it grows to be this size.
-     * 
+     *
      * @param maxFilterChainsCacheSize  the maximum number of entries in a filter chain cache.
      */
     public void setMaxFilterChainsCacheSize(int maxFilterChainsCacheSize)
     {
         _maxFilterChainsCacheSize = maxFilterChainsCacheSize;
     }
-    
+
     /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
@@ -1497,7 +1470,7 @@ public class ServletHandler extends ScopedHandler
         if (_contextHandler!=null)
             _contextHandler.destroyFilter(filter);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void dump(Appendable out,String indent) throws IOException

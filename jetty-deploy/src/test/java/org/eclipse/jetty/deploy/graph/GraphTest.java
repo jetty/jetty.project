@@ -1,7 +1,24 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.deploy.graph;
 
 import junit.framework.Assert;
-
 import org.junit.Test;
 
 
@@ -17,22 +34,22 @@ public class GraphTest
     @Test
     public void testPath()
     {
-        
+
         Path path = new Path();
-        
+
         Assert.assertEquals(0,path.nodes());
         Assert.assertEquals(null,path.firstNode());
         Assert.assertEquals(null,path.lastNode());
-        
+
         path.add(new Edge(nodeA ,nodeB));
         Assert.assertEquals(2,path.nodes());
         Assert.assertEquals(nodeA,path.firstNode());
         Assert.assertEquals(nodeB,path.lastNode());
-        
+
         path.add(new Edge(nodeB ,nodeC));
         Assert.assertEquals(3,path.nodes());
         Assert.assertEquals(nodeA,path.firstNode());
-        Assert.assertEquals(nodeC,path.lastNode());       
+        Assert.assertEquals(nodeC,path.lastNode());
     }
 
     @Test
@@ -72,7 +89,7 @@ public class GraphTest
         Assert.assertEquals(2,path.nodes());
         path = graph.getPath(nodeB,nodeC);
         Assert.assertEquals(2,path.nodes());
-    
+
     }
 
     @Test
@@ -87,12 +104,12 @@ public class GraphTest
         Assert.assertEquals(4,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeC);
         Assert.assertEquals(3,path.nodes());
-        
+
         path = graph.getPath(nodeC,nodeA);
         Assert.assertEquals(null,path);
-        
+
     }
-    
+
     @Test
     public void testSquareCyclic()
     {
@@ -105,16 +122,16 @@ public class GraphTest
         Assert.assertEquals(4,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeB);
         Assert.assertEquals(2,path.nodes());
-        
+
         path = graph.getPath(nodeA,nodeC);
         Assert.assertEquals(3,path.nodes());
         path = graph.getPath(nodeA,nodeD);
         Assert.assertEquals(4,path.nodes());
-        
+
         graph.addNode(nodeE);
         path = graph.getPath(nodeA,nodeE);
         Assert.assertEquals(null,path);
     }
-    
-    
+
+
 }

@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.io;
 
 import java.io.BufferedInputStream;
@@ -13,6 +31,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -32,9 +52,11 @@ import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
-    protected volatile AsyncEndPoint _lastEndp;
+    protected CountDownLatch _lastEndPointLatch;
+    protected volatile EndPoint _lastEndPoint;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
+    protected ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
     protected SelectorManager _manager = new SelectorManager()
     {
         @Override
@@ -44,32 +66,31 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
-            return SelectChannelEndPointTest.this.newConnection(channel,endpoint);
+            return SelectChannelEndPointTest.this.newConnection(channel, endpoint);
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,getMaxIdleTime());
-            _lastEndp=endp;
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey, _scheduler, 60000);
+            _lastEndPoint = endp;
+            _lastEndPointLatch.countDown();
             return endp;
         }
     };
-    {
-        _manager.setMaxIdleTime(600000); // TODO: use smaller value
-    }
 
     // Must be volatile or the test may fail spuriously
-    protected volatile int _blockAt=0;
-    private volatile int _writeCount=1;
+    protected volatile int _blockAt = 0;
+    private volatile int _writeCount = 1;
 
     @Before
     public void startManager() throws Exception
     {
-        _writeCount=1;
-        _lastEndp=null;
+        _writeCount = 1;
+        _lastEndPoint = null;
+        _lastEndPointLatch = new CountDownLatch(1);
         _connector = ServerSocketChannel.open();
         _connector.socket().bind(null);
         _threadPool.start();
@@ -86,76 +107,77 @@ public class SelectChannelEndPointTest
 
     protected Socket newClient() throws IOException
     {
-        return new Socket(_connector.socket().getInetAddress(),_connector.socket().getLocalPort());
+        return new Socket(_connector.socket().getInetAddress(), _connector.socket().getLocalPort());
     }
 
-    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
 
-    public class TestConnection extends AbstractAsyncConnection
+    public class TestConnection extends AbstractConnection
     {
-        ByteBuffer _in = BufferUtil.allocate(32*1024);
-        ByteBuffer _out = BufferUtil.allocate(32*1024);
-        long _last=-1;
+        ByteBuffer _in = BufferUtil.allocate(32 * 1024);
+        ByteBuffer _out = BufferUtil.allocate(32 * 1024);
+        long _last = -1;
 
-        public TestConnection(AsyncEndPoint endp)
+        public TestConnection(EndPoint endp)
         {
-            super(endp,_threadPool);
+            super(endp, _threadPool);
         }
 
         @Override
         public void onOpen()
         {
+            super.onOpen();
             fillInterested();
         }
 
         @Override
         public synchronized void onFillable()
         {
-            AsyncEndPoint _endp = getEndPoint();
+            EndPoint _endp = getEndPoint();
             try
             {
-                _last=System.currentTimeMillis();
-                boolean progress=true;
-                while(progress)
+                _last = System.currentTimeMillis();
+                boolean progress = true;
+                while (progress)
                 {
-                    progress=false;
+                    progress = false;
 
                     // Fill the input buffer with everything available
                     if (BufferUtil.isFull(_in))
-                        throw new IllegalStateException("FULL "+BufferUtil.toDetailString(_in));
-                    int filled=_endp.fill(_in);
-                    if (filled>0)
-                        progress=true;
+                        throw new IllegalStateException("FULL " + BufferUtil.toDetailString(_in));
+                    int filled = _endp.fill(_in);
+                    if (filled > 0)
+                        progress = true;
 
                     // If the tests wants to block, then block
-                    while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
+                    while (_blockAt > 0 && _endp.isOpen() && _in.remaining() < _blockAt)
                     {
-                        FutureCallback<Void> blockingRead= new FutureCallback<>();
-                        _endp.fillInterested(null,blockingRead);
+                        FutureCallback<Void> blockingRead = new FutureCallback<>();
+                        _endp.fillInterested(null, blockingRead);
                         blockingRead.get();
-                        filled=_endp.fill(_in);
-                        progress|=filled>0;
+                        filled = _endp.fill(_in);
+                        progress |= filled > 0;
                     }
 
                     // Copy to the out buffer
-                    if (BufferUtil.hasContent(_in) && BufferUtil.append(_in,_out)>0)
-                        progress=true;
+                    if (BufferUtil.hasContent(_in) && BufferUtil.flipPutFlip(_in, _out) > 0)
+                        progress = true;
 
                     // Blocking writes
                     if (BufferUtil.hasContent(_out))
                     {
-                        ByteBuffer out=_out.duplicate();
+                        ByteBuffer out = _out.duplicate();
                         BufferUtil.clear(_out);
-                        for (int i=0;i<_writeCount;i++)
+                        for (int i = 0; i < _writeCount; i++)
                         {
-                            FutureCallback<Void> blockingWrite= new FutureCallback<>();
-                            _endp.write(null,blockingWrite,out.asReadOnlyBuffer());
+                            FutureCallback<Void> blockingWrite = new FutureCallback<>();
+                            _endp.write(null, blockingWrite, out.asReadOnlyBuffer());
                             blockingWrite.get();
                         }
-                        progress=true;
+                        progress = true;
                     }
 
                     // are we done?
@@ -163,26 +185,26 @@ public class SelectChannelEndPointTest
                         _endp.shutdownOutput();
                 }
             }
-            catch(ExecutionException e)
+            catch (ExecutionException e)
             {
                 // Timeout does not close, so echo exception then shutdown
                 try
                 {
-                    FutureCallback<Void> blockingWrite= new FutureCallback<>();
-                    _endp.write(null,blockingWrite,BufferUtil.toBuffer("EE: "+BufferUtil.toString(_in)));
+                    FutureCallback<Void> blockingWrite = new FutureCallback<>();
+                    _endp.write(null, blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
                     blockingWrite.get();
                     _endp.shutdownOutput();
                 }
-                catch(Exception e2)
+                catch (Exception e2)
                 {
                     // e2.printStackTrace();
                 }
             }
-            catch(InterruptedException|EofException e)
+            catch (InterruptedException | EofException e)
             {
                 SelectChannelEndPoint.LOG.ignore(e);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 SelectChannelEndPoint.LOG.warn(e);
             }
@@ -192,9 +214,7 @@ public class SelectChannelEndPointTest
                     fillInterested();
             }
         }
-
     }
-
 
     @Test
     public void testEcho() throws Exception
@@ -215,21 +235,21 @@ public class SelectChannelEndPointTest
         for (char c : "HelloWorld".toCharArray())
         {
             int b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            assertTrue(b > 0);
+            assertEquals(c, (char)b);
         }
 
         // wait for read timeout
         client.setSoTimeout(500);
-        long start=System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try
         {
             client.getInputStream().read();
             Assert.fail();
         }
-        catch(SocketTimeoutException e)
+        catch (SocketTimeoutException e)
         {
-            long duration = System.currentTimeMillis()-start;
+            long duration = System.currentTimeMillis() - start;
             Assert.assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
         }
 
@@ -241,17 +261,18 @@ public class SelectChannelEndPointTest
         {
             int b = client.getInputStream().read();
             Assert.assertThat("expect valid char integer", b, greaterThan(0));
-            assertEquals("expect characters to be same", c,(char)b);
+            assertEquals("expect characters to be same", c, (char)b);
         }
         client.close();
 
-        int i=0;
-        while (server.isOpen())
+        for (int i = 0; i < 10; ++i)
         {
-            Thread.sleep(10);
-            if (++i == 10)
-                Assert.fail();
+            if (server.isOpen())
+                Thread.sleep(10);
+            else
+                break;
         }
+        assertFalse(server.isOpen());
     }
 
     @Test
@@ -273,44 +294,40 @@ public class SelectChannelEndPointTest
         for (char c : "HelloWorld".toCharArray())
         {
             int b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            assertTrue(b > 0);
+            assertEquals(c, (char)b);
         }
 
         // wait for read timeout
-        long start=System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try
         {
             client.getInputStream().read();
             Assert.fail();
         }
-        catch(SocketTimeoutException e)
+        catch (SocketTimeoutException e)
         {
-            assertTrue(System.currentTimeMillis()-start>=400);
+            assertTrue(System.currentTimeMillis() - start >= 400);
         }
 
         // write then shutdown
         client.getOutputStream().write("Goodbye Cruel TLS".getBytes("UTF-8"));
         client.shutdownOutput();
 
-
         // Verify echo server to client
         for (char c : "Goodbye Cruel TLS".toCharArray())
         {
             int b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            assertTrue(b > 0);
+            assertEquals(c, (char)b);
         }
 
         // Read close
-        assertEquals(-1,client.getInputStream().read());
-
+        assertEquals(-1, client.getInputStream().read());
     }
 
-
-
     @Test
-    public void testBlockRead() throws Exception
+    public void testReadBlocked() throws Exception
     {
         Socket client = newClient();
 
@@ -326,25 +343,24 @@ public class SelectChannelEndPointTest
         client.setSoTimeout(specifiedTimeout);
 
         // Write 8 and cause block waiting for 10
-        _blockAt=10;
+        _blockAt = 10;
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
 
-        while(_lastEndp==null);
+        Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+        _lastEndPoint.setIdleTimeout(10 * specifiedTimeout);
+        Thread.sleep((11 * specifiedTimeout) / 10);
 
-        _lastEndp.setMaxIdleTime(10*specifiedTimeout);
-        Thread.sleep((11*specifiedTimeout)/10);
-
-        long start=System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try
         {
             int b = clientInputStream.read();
-            Assert.fail("Should have timed out waiting for a response, but read "+b);
+            Assert.fail("Should have timed out waiting for a response, but read " + b);
         }
-        catch(SocketTimeoutException e)
+        catch (SocketTimeoutException e)
         {
             int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
-            Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3*specifiedTimeout/4));
+            Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
         }
 
         // write remaining characters
@@ -355,8 +371,8 @@ public class SelectChannelEndPointTest
         for (char c : "1234567890ABCDEF".toCharArray())
         {
             int b = clientInputStream.read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            assertTrue(b > 0);
+            assertEquals(c, (char)b);
         }
     }
 
@@ -379,29 +395,32 @@ public class SelectChannelEndPointTest
         for (char c : "HelloWorld".toCharArray())
         {
             int b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            assertTrue(b > 0);
+            assertEquals(c, (char)b);
         }
 
-        // Set Max idle
-        _lastEndp.setMaxIdleTime(500);
+        Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+        int idleTimeout = 500;
+        _lastEndPoint.setIdleTimeout(idleTimeout);
 
         // read until idle shutdown received
-        long start=System.currentTimeMillis();
-        int b=client.getInputStream().read();
-        assertEquals(-1,b);
-        long idle=System.currentTimeMillis()-start;
-        assertTrue(idle>400);
-        assertTrue(idle<2000);
+        long start = System.currentTimeMillis();
+        int b = client.getInputStream().read();
+        assertEquals(-1, b);
+        long idle = System.currentTimeMillis() - start;
+        assertTrue(idle > idleTimeout / 2);
+        assertTrue(idle < idleTimeout * 2);
 
         // But endpoint may still be open for a little bit.
-        if (_lastEndp.isOpen());
-            Thread.sleep(2000);
-
-        // endpoint is closed.
-        assertFalse(_lastEndp.isOpen());
+        for (int i = 0; i < 10; ++i)
+        {
+            if (_lastEndPoint.isOpen())
+                Thread.sleep(2 * idleTimeout / 10);
+            else
+                break;
+        }
+        assertFalse(_lastEndPoint.isOpen());
     }
-
 
     @Test
     public void testBlockedReadIdle() throws Exception
@@ -423,43 +442,42 @@ public class SelectChannelEndPointTest
         for (char c : "HelloWorld".toCharArray())
         {
             int b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            assertTrue(b > 0);
+            assertEquals(c, (char)b);
         }
 
-        // Set Max idle
-        _lastEndp.setMaxIdleTime(500);
+        Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+        int idleTimeout = 500;
+        _lastEndPoint.setIdleTimeout(idleTimeout);
 
         // Write 8 and cause block waiting for 10
-        _blockAt=10;
+        _blockAt = 10;
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
 
         // read until idle shutdown received
-        long start=System.currentTimeMillis();
-        int b=client.getInputStream().read();
-        assertEquals('E',b);
-        long idle=System.currentTimeMillis()-start;
-        assertTrue(idle>400);
-        assertTrue(idle<2000);
+        long start = System.currentTimeMillis();
+        int b = client.getInputStream().read();
+        assertEquals('E', b);
+        long idle = System.currentTimeMillis() - start;
+        assertTrue(idle > idleTimeout / 2);
+        assertTrue(idle < idleTimeout * 2);
 
         for (char c : "E: 12345678".toCharArray())
         {
             b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            assertTrue(b > 0);
+            assertEquals(c, (char)b);
         }
 
         // But endpoint is still open.
-        assertTrue(_lastEndp.isOpen());
+        if(_lastEndPoint.isOpen())
+            // Wait for another idle callback
+            Thread.sleep(idleTimeout * 2);
 
-        // Wait for another idle callback
-        Thread.sleep(2000);
         // endpoint is closed.
-
-        assertFalse(_lastEndp.isOpen());
+        assertFalse(_lastEndPoint.isOpen());
     }
-
 
     @Test
     public void testStress() throws Exception
@@ -473,8 +491,8 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
         final int writes = 200000;
 
-        final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
-        byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);
+        final byte[] bytes = "HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
+        byte[] count = "0\n".getBytes(StringUtil.__UTF8_CHARSET);
         BufferedOutputStream out = new BufferedOutputStream(client.getOutputStream());
         final CountDownLatch latch = new CountDownLatch(writes);
         final InputStream in = new BufferedInputStream(client.getInputStream());
@@ -483,37 +501,37 @@ public class SelectChannelEndPointTest
         out.write(count);
         out.flush();
 
-        while (_lastEndp==null)
-            Thread.sleep(10);
-        _lastEndp.setMaxIdleTime(5000);
+        Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+        _lastEndPoint.setIdleTimeout(5000);
 
         new Thread()
         {
+            @Override
             public void run()
             {
                 Thread.currentThread().setPriority(MAX_PRIORITY);
-                long last=-1;
-                int count=-1;
+                long last = -1;
+                int count = -1;
                 try
                 {
-                    while (latch.getCount()>0)
+                    while (latch.getCount() > 0)
                     {
                         // Verify echo server to client
                         for (byte b0 : bytes)
                         {
                             int b = in.read();
-                            Assert.assertThat(b,greaterThan(0));
-                            assertEquals(0xff&b0,b);
+                            Assert.assertThat(b, greaterThan(0));
+                            assertEquals(0xff & b0, b);
                         }
 
-                        count=0;
-                        int b=in.read();
-                        while(b>0 && b!='\n')
+                        count = 0;
+                        int b = in.read();
+                        while (b > 0 && b != '\n')
                         {
-                            count=count*10+(b-'0');
-                            b=in.read();
+                            count = count * 10 + (b - '0');
+                            b = in.read();
                         }
-                        last=System.currentTimeMillis();
+                        last = System.currentTimeMillis();
 
                         //if (latch.getCount()%1000==0)
                         //    System.out.println(writes-latch.getCount());
@@ -521,16 +539,16 @@ public class SelectChannelEndPointTest
                         latch.countDown();
                     }
                 }
-                catch(Throwable e)
+                catch (Throwable e)
                 {
 
                     long now = System.currentTimeMillis();
-                    System.err.println("count="+count);
-                    System.err.println("latch="+latch.getCount());
-                    System.err.println("time="+(now-start));
-                    System.err.println("last="+(now-last));
-                    System.err.println("endp="+_lastEndp);
-                    System.err.println("conn="+_lastEndp.getAsyncConnection());
+                    System.err.println("count=" + count);
+                    System.err.println("latch=" + latch.getCount());
+                    System.err.println("time=" + (now - start));
+                    System.err.println("last=" + (now - last));
+                    System.err.println("endp=" + _lastEndPoint);
+                    System.err.println("conn=" + _lastEndPoint.getConnection());
 
                     e.printStackTrace();
                 }
@@ -538,12 +556,12 @@ public class SelectChannelEndPointTest
         }.start();
 
         // Write client to server
-        for (int i=1;i<writes;i++)
+        for (int i = 1; i < writes; i++)
         {
             out.write(bytes);
             out.write(Integer.toString(i).getBytes(StringUtil.__ISO_8859_1_CHARSET));
             out.write('\n');
-            if (i%1000==0)
+            if (i % 1000 == 0)
             {
                 //System.err.println(i+"/"+writes);
                 out.flush();
@@ -552,21 +570,20 @@ public class SelectChannelEndPointTest
         }
         out.flush();
 
-        long last=latch.getCount();
-        while(!latch.await(5,TimeUnit.SECONDS))
+        long last = latch.getCount();
+        while (!latch.await(5, TimeUnit.SECONDS))
         {
             //System.err.println(latch.getCount());
-            if (latch.getCount()==last)
+            if (latch.getCount() == last)
                 Assert.fail();
-            last=latch.getCount();
+            last = latch.getCount();
         }
 
-        assertEquals(0,latch.getCount());
+        assertEquals(0, latch.getCount());
     }
 
-
     @Test
-    public void testWriteBlock() throws Exception
+    public void testWriteBlocked() throws Exception
     {
         Socket client = newClient();
 
@@ -578,40 +595,38 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
 
         // Write client to server
-        _writeCount=10000;
-        String data="Now is the time for all good men to come to the aid of the party";
+        _writeCount = 10000;
+        String data = "Now is the time for all good men to come to the aid of the party";
         client.getOutputStream().write(data.getBytes("UTF-8"));
         BufferedInputStream in = new BufferedInputStream(client.getInputStream());
 
-        for (int i=0;i<_writeCount;i++)
+        for (int i = 0; i < _writeCount; i++)
         {
-            if (i%1000==0)
-            {
-                //System.out.println(i);
+            if (i % 1000 == 0)
                 TimeUnit.MILLISECONDS.sleep(200);
-            }
-            // Verify echo server to client
-            for (int j=0;j<data.length();j++)
-            {
-                char c=data.charAt(j);
-                int b = in.read();
-                assertTrue(b>0);
-                assertEquals("test-"+i+"/"+j,c,(char)b);
-            }
-            if (i==0)
-                _lastEndp.setMaxIdleTime(60000);
-        }
 
+            // Verify echo server to client
+            for (int j = 0; j < data.length(); j++)
+            {
+                char c = data.charAt(j);
+                int b = in.read();
+                assertTrue(b > 0);
+                assertEquals("test-" + i + "/" + j, c, (char)b);
+            }
+
+            if (i == 0)
+                _lastEndPoint.setIdleTimeout(60000);
+        }
 
         client.close();
 
-        int i=0;
-        while (server.isOpen())
+        for (int i = 0; i < 10; ++i)
         {
-            assert(i++<10);
-            Thread.sleep(10);
+            if (server.isOpen())
+                Thread.sleep(10);
+            else
+                break;
         }
-
+        assertFalse(server.isOpen());
     }
-
 }

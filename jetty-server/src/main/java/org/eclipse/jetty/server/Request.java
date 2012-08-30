@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -21,7 +26,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -30,12 +34,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -68,7 +69,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.StringUtil;
@@ -98,7 +98,7 @@ import org.eclipse.jetty.util.log.Logger;
  * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPath(String)} called as a result.</li>
  * </ul>
  *
- * A request instance is created for each {@link AbstractHttpConnection} accepted by the server and recycled for each HTTP request received via that connection.
+ * A request instance is created for each connection accepted by the server and recycled for each HTTP request received via that connection.
  * An effort is made to avoid reparsing headers and cookies that are likely to be the same for requests from the same connection.
  *
  * <p>
@@ -112,14 +112,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
-    private static final Logger LOG = Log.getLogger(Request.class);
 
+    private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
     private final HttpChannel _channel;
-    private HttpFields _fields;
-    private final HttpChannelState _state;
+    private final HttpFields _fields=new HttpFields();
+    private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
+    private final HttpInput _input;
 
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
@@ -135,7 +136,7 @@ public class Request implements HttpServletRequest
     private boolean _handled = false;
     private int _inputState = __NONE;
     private HttpMethod _httpMethod;
-    private String _method;
+    private String _httpMethodString;
     private MultiMap<String> _parameters;
     private boolean _paramsExtracted;
     private String _pathInfo;
@@ -146,7 +147,6 @@ public class Request implements HttpServletRequest
     private BufferedReader _reader;
     private String _readerEncoding;
     private InetSocketAddress _remote;
-    private Object _requestAttributeListeners;
     private String _requestedSessionId;
     private boolean _requestedSessionIdFromCookie = false;
     private String _requestURI;
@@ -159,25 +159,33 @@ public class Request implements HttpServletRequest
     private SessionManager _sessionManager;
     private long _timeStamp;
     private long _dispatchTime;
-
     private HttpURI _uri;
-
     private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
 
-
     /* ------------------------------------------------------------ */
-    public Request(HttpChannel channel)
+    public Request(HttpChannel channel, HttpInput input)
     {
         _channel = channel;
-        _state=channel.getState();
-        _fields=_channel.getRequestFields();
+        _input = input;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    public HttpFields getHttpFields()
+    {
+        return _fields;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpInput getHttpInput()
+    {
+        return _input;
+    }
+
     /* ------------------------------------------------------------ */
     public void addEventListener(final EventListener listener)
     {
         if (listener instanceof ServletRequestAttributeListener)
-            _requestAttributeListeners = LazyList.add(_requestAttributeListeners,listener);
+            _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
         if (listener instanceof ContinuationListener)
             throw new IllegalArgumentException(listener.getClass().toString());
         if (listener instanceof AsyncListener)
@@ -191,7 +199,7 @@ public class Request implements HttpServletRequest
     public void extractParameters()
     {
         if (_baseParameters == null)
-            _baseParameters = new MultiMap<String>(16);
+            _baseParameters = new MultiMap<>();
 
         if (_paramsExtracted)
         {
@@ -282,15 +290,7 @@ public class Request implements HttpServletRequest
             else if (_parameters != _baseParameters)
             {
                 // Merge parameters (needed if parameters extracted after a forward).
-                Iterator<?> iter = _baseParameters.entrySet().iterator();
-                while (iter.hasNext())
-                {
-                    Map.Entry<?, ?> entry = (Map.Entry<?, ?>)iter.next();
-                    String name = (String)entry.getKey();
-                    Object values = entry.getValue();
-                    for (int i = 0; i < LazyList.size(values); i++)
-                        _parameters.add(name,LazyList.get(values,i));
-                }
+                _parameters.addAllValues(_baseParameters);
             }
         }
         finally
@@ -305,15 +305,16 @@ public class Request implements HttpServletRequest
     @Override
     public AsyncContext getAsyncContext()
     {
-        if (_state.isInitial() && !_state.isAsyncStarted())
-            throw new IllegalStateException(_state.getStatusString());
-        return _state;
+        HttpChannelState continuation = getAsyncContinuation();
+        if (continuation.isInitial() && !continuation.isAsyncStarted())
+            throw new IllegalStateException(continuation.getStatusString());
+        return continuation;
     }
 
     /* ------------------------------------------------------------ */
     public HttpChannelState getAsyncContinuation()
     {
-        return _state;
+        return _channel.getState();
     }
 
     /* ------------------------------------------------------------ */
@@ -325,7 +326,7 @@ public class Request implements HttpServletRequest
     {
         Object attr = (_attributes == null)?null:_attributes.getAttribute(name);
         if (attr == null && Continuation.ATTRIBUTE.equals(name))
-            return _state;
+            return getAsyncContinuation();
         return attr;
     }
 
@@ -334,10 +335,10 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.ServletRequest#getAttributeNames()
      */
     @Override
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         if (_attributes == null)
-            return Collections.enumeration(Collections.EMPTY_LIST);
+            return Collections.enumeration(Collections.<String>emptyList());
 
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
@@ -498,7 +499,7 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.http.HttpServletRequest#getHeaderNames()
      */
     @Override
-    public Enumeration getHeaderNames()
+    public Enumeration<String> getHeaderNames()
     {
         return _fields.getFieldNames();
     }
@@ -508,11 +509,11 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.http.HttpServletRequest#getHeaders(java.lang.String)
      */
     @Override
-    public Enumeration getHeaders(String name)
+    public Enumeration<String> getHeaders(String name)
     {
-        Enumeration<?> e = _fields.getValues(name);
+        Enumeration<String> e = _fields.getValues(name);
         if (e == null)
-            return Collections.enumeration(Collections.EMPTY_LIST);
+            return Collections.enumeration(Collections.<String>emptyList());
         return e;
     }
 
@@ -535,7 +536,11 @@ public class Request implements HttpServletRequest
         if (_inputState != __NONE && _inputState != _STREAM)
             throw new IllegalStateException("READER");
         _inputState = _STREAM;
-        return _channel.getInputStream();
+
+        if (_channel.isExpecting100Continue())
+            _channel.continue100(_input.available());
+
+        return _input;
     }
 
     /* ------------------------------------------------------------ */
@@ -606,25 +611,24 @@ public class Request implements HttpServletRequest
         if (acceptLanguage.size() == 0)
             return Collections.enumeration(__defaultLocale);
 
-        List<Locale> langs = new ArrayList<Locale>();
+        List<Locale> langs = new ArrayList<>();
         int size = acceptLanguage.size();
 
         // convert to locals
-        for (int i = 0; i < size; i++)
+        for (String language : acceptLanguage)
         {
-            String language = acceptLanguage.get(i);
-            language = HttpFields.valueParameters(language,null);
+            language = HttpFields.valueParameters(language, null);
             String country = "";
             int dash = language.indexOf('-');
             if (dash > -1)
             {
                 country = language.substring(dash + 1).trim();
-                language = language.substring(0,dash).trim();
+                language = language.substring(0, dash).trim();
             }
-            langs.add(new Locale(language,country));
+            langs.add(new Locale(language, country));
         }
 
-        if (LazyList.size(langs) == 0)
+        if (langs.size() == 0)
             return Collections.enumeration(__defaultLocale);
 
         return Collections.enumeration(langs);
@@ -670,7 +674,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        return _method;
+        return _httpMethodString;
     }
 
     /* ------------------------------------------------------------ */
@@ -682,7 +686,7 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted)
             extractParameters();
-        return (String)_parameters.getValue(name,0);
+        return _parameters.getValue(name,0);
     }
 
     /* ------------------------------------------------------------ */
@@ -690,7 +694,7 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.ServletRequest#getParameterMap()
      */
     @Override
-    public Map getParameterMap()
+    public Map<String, String[]> getParameterMap()
     {
         if (!_paramsExtracted)
             extractParameters();
@@ -728,7 +732,7 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted)
             extractParameters();
-        List<Object> vals = _parameters.getValues(name);
+        List<String> vals = _parameters.getValues(name);
         if (vals == null)
             return null;
         return vals.toArray(new String[vals.size()]);
@@ -854,7 +858,7 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote=_remote;
         if (remote==null)
             remote=_channel.getRemoteAddress();
-        
+
         return remote==null?"":remote.getHostString();
     }
 
@@ -952,23 +956,20 @@ public class Request implements HttpServletRequest
     public StringBuffer getRequestURL()
     {
         final StringBuffer url = new StringBuffer(48);
-        synchronized (url)
+        String scheme = getScheme();
+        int port = getServerPort();
+
+        url.append(scheme);
+        url.append("://");
+        url.append(getServerName());
+        if (_port > 0 && ((scheme.equalsIgnoreCase(URIUtil.HTTP) && port != 80) || (scheme.equalsIgnoreCase(URIUtil.HTTPS) && port != 443)))
         {
-            String scheme = getScheme();
-            int port = getServerPort();
-
-            url.append(scheme);
-            url.append("://");
-            url.append(getServerName());
-            if (_port > 0 && ((scheme.equalsIgnoreCase(URIUtil.HTTP) && port != 80) || (scheme.equalsIgnoreCase(URIUtil.HTTPS) && port != 443)))
-            {
-                url.append(':');
-                url.append(_port);
-            }
-
-            url.append(getRequestURI());
-            return url;
+            url.append(':');
+            url.append(_port);
         }
+
+        url.append(getRequestURI());
+        return url;
     }
 
     /* ------------------------------------------------------------ */
@@ -1056,8 +1057,7 @@ public class Request implements HttpServletRequest
                         }
                         catch (NumberFormatException e)
                         {
-                            if (_channel != null)
-                                _channel.commitError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null);
+                            LOG.warn(e);
                         }
                         return _serverName;
                 }
@@ -1296,7 +1296,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isAsyncStarted()
     {
-       return _state.isAsyncStarted();
+       return getAsyncContinuation().isAsyncStarted();
     }
 
 
@@ -1358,7 +1358,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isSecure()
     {
-        return _channel.getHttpConnector().isConfidential(this);
+        return _channel.getHttpConfiguration().isConfidential(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -1403,7 +1403,7 @@ public class Request implements HttpServletRequest
         }
 
         setAuthentication(Authentication.NOT_CHECKED);
-        _state.recycle();
+        getAsyncContinuation().recycle();
         _asyncSupported = true;
         _handled = false;
         if (_context != null)
@@ -1411,12 +1411,13 @@ public class Request implements HttpServletRequest
         if (_attributes != null)
             _attributes.clearAttributes();
         _characterEncoding = null;
+        _contextPath = null;
         if (_cookies != null)
             _cookies.reset();
         _cookiesExtracted = false;
         _context = null;
         _serverName = null;
-        _method = null;
+        _httpMethodString = null;
         _pathInfo = null;
         _port = 0;
         _httpVersion = HttpVersion.HTTP_1_1;
@@ -1443,6 +1444,8 @@ public class Request implements HttpServletRequest
         _savedNewSessions=null;
         _multiPartInputStream = null;
         _remote=null;
+        _fields.clear();
+        _input.recycle();
     }
 
     /* ------------------------------------------------------------ */
@@ -1457,36 +1460,25 @@ public class Request implements HttpServletRequest
         if (_attributes != null)
             _attributes.removeAttribute(name);
 
-        if (old_value != null)
+        if (old_value != null && !_requestAttributeListeners.isEmpty())
         {
-            if (_requestAttributeListeners != null)
-            {
-                final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context,this,name,old_value);
-                final int size = LazyList.size(_requestAttributeListeners);
-                for (int i = 0; i < size; i++)
-                {
-                    final EventListener listener = (ServletRequestAttributeListener)LazyList.get(_requestAttributeListeners,i);
-                    if (listener instanceof ServletRequestAttributeListener)
-                    {
-                        final ServletRequestAttributeListener l = (ServletRequestAttributeListener)listener;
-                        l.attributeRemoved(event);
-                    }
-                }
-            }
+            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context,this,name,old_value);
+            for (ServletRequestAttributeListener listener : _requestAttributeListeners)
+                listener.attributeRemoved(event);
         }
     }
 
     /* ------------------------------------------------------------ */
     public void removeEventListener(final EventListener listener)
     {
-        _requestAttributeListeners = LazyList.remove(_requestAttributeListeners,listener);
+        _requestAttributeListeners.remove(listener);
     }
 
     /* ------------------------------------------------------------ */
     public void saveNewSession(Object key, HttpSession session)
     {
         if (_savedNewSessions == null)
-            _savedNewSessions = new HashMap<Object, HttpSession>();
+            _savedNewSessions = new HashMap<>();
         _savedNewSessions.put(key,session);
     }
 
@@ -1501,7 +1493,7 @@ public class Request implements HttpServletRequest
      * Set a request attribute. if the attribute name is "org.eclipse.jetty.server.server.Request.queryEncoding" then the value is also passed in a call to
      * {@link #setQueryEncoding}. <p> if the attribute name is "org.eclipse.jetty.server.server.ResponseBuffer", then the response buffer is flushed with @{link
      * #flushResponseBuffer} <p> if the attribute name is "org.eclipse.jetty.io.EndPoint.maxIdleTime", then the value is passed to the associated {@link
-     * EndPoint#setMaxIdleTime}.
+     * EndPoint#setIdleTimeout}.
      *
      * @see javax.servlet.ServletRequest#setAttribute(java.lang.String, java.lang.Object)
      */
@@ -1518,7 +1510,7 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    ((HttpChannel.Output)getServletResponse().getOutputStream()).sendContent(value);
+                    ((HttpOutput)getServletResponse().getOutputStream()).sendContent(value);
                 }
                 catch (IOException e)
                 {
@@ -1529,10 +1521,8 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    final ByteBuffer byteBuffer = (ByteBuffer)value;
                     throw new IOException("not implemented");
                     //((HttpChannel.Output)getServletResponse().getOutputStream()).sendResponse(byteBuffer);
-
                 }
                 catch (IOException e)
                 {
@@ -1545,24 +1535,17 @@ public class Request implements HttpServletRequest
             _attributes = new AttributesMap();
         _attributes.setAttribute(name,value);
 
-        if (_requestAttributeListeners != null)
+        if (!_requestAttributeListeners.isEmpty())
         {
             final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context,this,name,old_value == null?value:old_value);
-            final int size = LazyList.size(_requestAttributeListeners);
-            for (int i = 0; i < size; i++)
+            for (ServletRequestAttributeListener l : _requestAttributeListeners)
             {
-                final EventListener listener = (ServletRequestAttributeListener)LazyList.get(_requestAttributeListeners,i);
-                if (listener instanceof ServletRequestAttributeListener)
-                {
-                    final ServletRequestAttributeListener l = (ServletRequestAttributeListener)listener;
-
-                    if (old_value == null)
-                        l.attributeAdded(event);
-                    else if (value == null)
-                        l.attributeRemoved(event);
-                    else
-                        l.attributeReplaced(event);
-                }
+                if (old_value == null)
+                    l.attributeAdded(event);
+                else if (value == null)
+                    l.attributeRemoved(event);
+                else
+                    l.attributeReplaced(event);
             }
         }
     }
@@ -1693,7 +1676,7 @@ public class Request implements HttpServletRequest
     public void setMethod(HttpMethod httpMethod, String method)
     {
         _httpMethod=httpMethod;
-        _method = method;
+        _httpMethodString = method;
     }
 
     /* ------------------------------------------------------------ */
@@ -1899,8 +1882,9 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _state.suspend(_context,this,_channel.getResponse());
-        return _state;
+        HttpChannelState continuation = getAsyncContinuation();
+        continuation.suspend();
+        return continuation;
     }
 
     /* ------------------------------------------------------------ */
@@ -1909,8 +1893,9 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _state.suspend(_context,servletRequest,servletResponse);
-        return _state;
+        HttpChannelState continuation = getAsyncContinuation();
+        continuation.suspend(_context, servletRequest, servletResponse);
+        return continuation;
     }
 
     /* ------------------------------------------------------------ */
@@ -1938,13 +1923,29 @@ public class Request implements HttpServletRequest
     public Part getPart(String name) throws IOException, ServletException
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            return null;
+            throw new ServletException("Content-Type != multipart/form-data");
 
         if (_multiPartInputStream == null)
         {
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
+            for (Part p:parts)
+            {
+                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                {
+                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    String charset = null;
+                    if (mp.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
+
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
+                    getParameter(""); //cause params to be evaluated
+                    getParameters().add(mp.getName(), content);
+                }
+            }
         }
         return _multiPartInputStream.getPart(name);
     }
@@ -1954,13 +1955,29 @@ public class Request implements HttpServletRequest
     public Collection<Part> getParts() throws IOException, ServletException
     {
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
-            return Collections.emptyList();
+            throw new ServletException("Content-Type != multipart/form-data");
 
         if (_multiPartInputStream == null)
         {
             _multiPartInputStream = new MultiPartInputStream(getInputStream(),
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT),
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
+            for (Part p:parts)
+            {
+                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                {
+                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    String charset = null;
+                    if (mp.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
+
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
+                    getParameter(""); //cause params to be evaluated
+                    getParameters().add(mp.getName(), content);
+                }
+            }
         }
         return _multiPartInputStream.getParts();
     }
@@ -2001,7 +2018,7 @@ public class Request implements HttpServletRequest
     public void mergeQueryString(String query)
     {
         // extract parameters from dispatch query
-        MultiMap<String> parameters = new MultiMap<String>();
+        MultiMap<String> parameters = new MultiMap<>();
         UrlEncoded.decodeTo(query,parameters,getCharacterEncoding());
 
         boolean merge_old_query = false;
@@ -2014,21 +2031,7 @@ public class Request implements HttpServletRequest
         if (_parameters != null && _parameters.size() > 0)
         {
             // Merge parameters; new parameters of the same name take precedence.
-            Iterator<Entry<String, Object>> iter = _parameters.entrySet().iterator();
-            while (iter.hasNext())
-            {
-                Map.Entry<String, Object> entry = iter.next();
-                String name = entry.getKey();
-
-                // If the names match, we will need to remake the query string
-                if (parameters.containsKey(name))
-                    merge_old_query = true;
-
-                // Add the old values to the new parameter map
-                Object values = entry.getValue();
-                for (int i = 0; i < LazyList.size(values); i++)
-                    parameters.add(name,LazyList.get(values,i));
-            }
+            merge_old_query = parameters.addAllValues(_parameters);
         }
 
         if (_queryString != null && _queryString.length() > 0)
@@ -2036,23 +2039,20 @@ public class Request implements HttpServletRequest
             if (merge_old_query)
             {
                 StringBuilder overridden_query_string = new StringBuilder();
-                MultiMap<String> overridden_old_query = new MultiMap<String>();
+                MultiMap<String> overridden_old_query = new MultiMap<>();
                 UrlEncoded.decodeTo(_queryString,overridden_old_query,getCharacterEncoding());
 
-                MultiMap<String> overridden_new_query = new MultiMap<String>();
+                MultiMap<String> overridden_new_query = new MultiMap<>();
                 UrlEncoded.decodeTo(query,overridden_new_query,getCharacterEncoding());
 
-                Iterator<Entry<String, Object>> iter = overridden_old_query.entrySet().iterator();
-                while (iter.hasNext())
+                for(String name: overridden_old_query.keySet())
                 {
-                    Map.Entry<String, Object> entry = iter.next();
-                    String name = entry.getKey();
                     if (!overridden_new_query.containsKey(name))
                     {
-                        Object values = entry.getValue();
-                        for (int i = 0; i < LazyList.size(values); i++)
+                        List<String> values = overridden_old_query.get(name);
+                        for(String v: values)
                         {
-                            overridden_query_string.append("&").append(name).append("=").append(LazyList.get(values,i));
+                            overridden_query_string.append("&").append(name).append("=").append(v);
                         }
                     }
                 }

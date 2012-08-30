@@ -31,24 +31,22 @@
     <!--   NIOHttps.xml                                              -->
     <!-- =========================================================== -->
 
-    <!-- 
+    <!--
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+          <New class="org.eclipse.jetty.server.SelectChannelConnector">
             <Set name="host"><SystemProperty name="jetty.host" /></Set>
             <Set name="port"><SystemProperty name="jetty.port" default="0"/></Set>
-            <Set name="maxIdleTime">300000</Set>
+            <Set name="idleTimeout">300000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>
-	    <Set name="lowResourcesConnections">20000</Set>
-	    <Set name="lowResourcesMaxIdleTime">5000</Set>
           </New>
       </Arg>
-    </Call> 
+    </Call>
      -->
 
     <!-- =========================================================== -->
-    <!-- Set handler Collection Structure                            --> 
+    <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
       <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
@@ -59,52 +57,52 @@
            </Item>
            <Item>
              <New id="vcontexts" class="org.eclipse.jetty.server.handler.ContextHandler">
-		       <Set name="contextPath">/tests</Set>
-		       <Set name="VirtualHosts">
-		         <Array type="java.lang.String">
-		           <Item>VirtualHost</Item>
-		         </Array>
-		       </Set>
-		       <Set name="ResourceBase"><Property name="test.docroot.base"/>/virtualhost</Set>
-		       <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
-		       <Set name="DisplayName">virtual</Set>
+               <Set name="contextPath">/tests</Set>
+               <Set name="VirtualHosts">
+                 <Array type="java.lang.String">
+                   <Item>VirtualHost</Item>
+                 </Array>
+               </Set>
+               <Set name="ResourceBase"><Property name="test.docroot.base"/>/virtualhost</Set>
+               <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+               <Set name="DisplayName">virtual</Set>
              </New>
            </Item>
            <Item>
              <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/tests</Set>
                <Set name="ResourceBase"><Property name="test.docroot.base"/>/default</Set>
-		       <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
-		       <Set name="DisplayName">default</Set>
+               <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+               <Set name="DisplayName">default</Set>
              </New>
            </Item>
            <Item>
              <New id="echocontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/echo</Set>
-		       <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.test.support.EchoHandler"/></Set>
-		       <Set name="DisplayName">echo</Set>
+               <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.test.support.EchoHandler"/></Set>
+               <Set name="DisplayName">echo</Set>
              </New>
            </Item>
          </Array>
         </Set>
       </New>
     </Set>
-    
-    <Call name="addLifeCycle">
-	  <Arg>
-	    <New class="org.eclipse.jetty.deploy.ContextDeployer">
-	      <Set name="contexts"><Ref id="WebappContexts"/></Set>
-	      <Set name="configurationDir"><Property name="test.resourcesdir" default="src/test/resources"/>/webapp-contexts/RFC2616</Set>
-	      <Set name="scanInterval">0</Set>
-	      <Set name="configurationManager">
-	        <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
-	          <Set name="file"><Property name="test.targetdir" default="target"/>/testable-jetty-server-config.properties</Set>
-	        </New>
-	      </Set>
-	    </New>
-	  </Arg>
-	</Call>
-    
+
+    <Call name="addBean">
+      <Arg>
+        <New class="org.eclipse.jetty.deploy.ContextDeployer">
+          <Set name="contexts"><Ref id="WebappContexts"/></Set>
+          <Set name="configurationDir"><Property name="test.resourcesdir" default="src/test/resources"/>/webapp-contexts/RFC2616</Set>
+          <Set name="scanInterval">0</Set>
+          <Set name="configurationManager">
+            <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
+              <Set name="file"><Property name="test.targetdir" default="target"/>/testable-jetty-server-config.properties</Set>
+            </New>
+          </Set>
+        </New>
+      </Arg>
+    </Call>
+
     <!-- =========================================================== -->
     <!-- Configure the webapp deployer.                              -->
     <!-- A webapp  deployer will deploy standard webapps discovered  -->
@@ -118,15 +116,15 @@
     <!-- Normally only one type of deployer need be used.            -->
     <!--                                                             -->
     <!-- =========================================================== -->
-    <!-- 
+    <!--
     <Call name="addBean">
       <Arg>
         <New class="org.eclipse.jetty.deploy.WebAppDeployer">
           <Set name="contexts"><Ref id="WebappContexts"/></Set>
           <Set name="webAppDir"><Property name="test.targetdir" default="target"/>/webapps</Set>
-		  <Set name="parentLoaderPriority">false</Set>
-		  <Set name="extract">true</Set>
-		  <Set name="allowDuplicates">false</Set>
+          <Set name="parentLoaderPriority">false</Set>
+          <Set name="extract">true</Set>
+          <Set name="allowDuplicates">false</Set>
           <Set name="defaultsDescriptor"><Property name="test.resourcesdir" default="src/test/resources"/>/webdefault.xml</Set>
           <Call name="setAttribute">
             <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
@@ -136,13 +134,13 @@
       </Arg>
     </Call>
      -->
-    
+
     <!-- =========================================================== -->
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
     <Set name="sendServerVersion">true</Set>
     <Set name="sendDateHeader">true</Set>
-    <Set name="gracefulShutdown">1000</Set>
+    <Set name="stopTimeout">1000</Set>
 
 </Configure>

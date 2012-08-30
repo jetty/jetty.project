@@ -3,13 +3,13 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <Call name="addLifeCycle">
+  <Call name="addBean">
     <Arg>
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
           <Ref id="Contexts" />
         </Set>
-        
+
         <!-- Providers of Apps -->
         <Set name="appProviders">
           <Array type="org.eclipse.jetty.deploy.AppProvider">

@@ -1,22 +1,26 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,13 +30,17 @@ import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
+@ManagedObject("Request Statistics Gathering")
 public class StatisticsHandler extends HandlerWrapper
 {
     private final AtomicLong _statsStartedAt = new AtomicLong();
-    
+
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final CounterStatistic _dispatchedStats = new CounterStatistic();
@@ -41,7 +49,7 @@ public class StatisticsHandler extends HandlerWrapper
 
     private final AtomicInteger _resumes = new AtomicInteger();
     private final AtomicInteger _expires = new AtomicInteger();
-    
+
     private final AtomicInteger _responses1xx = new AtomicInteger();
     private final AtomicInteger _responses2xx = new AtomicInteger();
     private final AtomicInteger _responses3xx = new AtomicInteger();
@@ -55,12 +63,12 @@ public class StatisticsHandler extends HandlerWrapper
         {
             final Request request = ((HttpChannelState)continuation).getBaseRequest();
             final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
-            
+
             _requestStats.decrement();
             _requestTimeStats.set(elapsed);
-            
+
             updateResponse(request);
-            
+
             if (!continuation.isResumed())
                 _suspendStats.decrement();
         }
@@ -70,14 +78,15 @@ public class StatisticsHandler extends HandlerWrapper
             _expires.incrementAndGet();
         }
     };
-    
+
     /**
      * Resets the current request statistics.
      */
+    @ManagedOperation(value="resets statistics", impact="ACTION")
     public void statsReset()
     {
         _statsStartedAt.set(System.currentTimeMillis());
-        
+
         _requestStats.reset();
         _requestTimeStats.reset();
         _dispatchedStats.reset();
@@ -124,10 +133,10 @@ public class StatisticsHandler extends HandlerWrapper
         {
             final long now = System.currentTimeMillis();
             final long dispatched=now-start;
-            
+
             _dispatchedStats.decrement();
             _dispatchedTimeStats.set(dispatched);
-            
+
             if (continuation.isSuspended())
             {
                 if (continuation.isInitial())
@@ -149,7 +158,7 @@ public class StatisticsHandler extends HandlerWrapper
         Response response = request.getResponse();
         switch (response.getStatus() / 100)
         {
-            case 0: 
+            case 0:
                 if (request.isHandled())
                     _responses2xx.incrementAndGet();
                 else
@@ -189,6 +198,7 @@ public class StatisticsHandler extends HandlerWrapper
      * active requests
      * @see #getResumes()
      */
+    @ManagedAttribute("number of requests")
     public int getRequests()
     {
         return (int)_requestStats.getTotal();
@@ -198,6 +208,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of requests currently active.
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("number of requests currently active")
     public int getRequestsActive()
     {
         return (int)_requestStats.getCurrent();
@@ -207,6 +218,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the maximum number of active requests
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("maximum number of active requests")
     public int getRequestsActiveMax()
     {
         return (int)_requestStats.getMax();
@@ -216,6 +228,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the maximum time (in milliseconds) of request handling
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("maximum time spend handling requests (in ms)")
     public long getRequestTimeMax()
     {
         return _requestTimeStats.getMax();
@@ -225,6 +238,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the total time (in milliseconds) of requests handling
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("total time spend in all request handling (in ms)")
     public long getRequestTimeTotal()
     {
         return _requestTimeStats.getTotal();
@@ -236,6 +250,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @see #getRequestTimeTotal()
      * @see #getRequests()
      */
+    @ManagedAttribute("mean time spent handling requests (in ms)")
     public double getRequestTimeMean()
     {
         return _requestTimeStats.getMean();
@@ -247,6 +262,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @see #getRequestTimeTotal()
      * @see #getRequests()
      */
+    @ManagedAttribute("standard deviation for request handling (in ms)")
     public double getRequestTimeStdDev()
     {
         return _requestTimeStats.getStdDev();
@@ -257,6 +273,7 @@ public class StatisticsHandler extends HandlerWrapper
      * since {@link #statsReset()} was last called, excluding
      * active dispatches
      */
+    @ManagedAttribute("number of dispatches")
     public int getDispatched()
     {
         return (int)_dispatchedStats.getTotal();
@@ -267,6 +284,7 @@ public class StatisticsHandler extends HandlerWrapper
      * since {@link #statsReset()} was last called, including
      * resumed requests
      */
+    @ManagedAttribute("number of dispatches currently active")
     public int getDispatchedActive()
     {
         return (int)_dispatchedStats.getCurrent();
@@ -277,6 +295,7 @@ public class StatisticsHandler extends HandlerWrapper
      * since {@link #statsReset()} was last called, including
      * resumed requests
      */
+    @ManagedAttribute("maximum number of active dispatches being handled")
     public int getDispatchedActiveMax()
     {
         return (int)_dispatchedStats.getMax();
@@ -286,15 +305,17 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the maximum time (in milliseconds) of request dispatch
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("maximum time spend in dispatch handling")
     public long getDispatchedTimeMax()
     {
         return _dispatchedTimeStats.getMax();
     }
-    
+
     /**
      * @return the total time (in milliseconds) of requests handling
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("total time spent in dispatch handling (in ms)")
     public long getDispatchedTimeTotal()
     {
         return _dispatchedTimeStats.getTotal();
@@ -306,28 +327,31 @@ public class StatisticsHandler extends HandlerWrapper
      * @see #getRequestTimeTotal()
      * @see #getRequests()
      */
+    @ManagedAttribute("mean time spent in dispatch handling (in ms)")
     public double getDispatchedTimeMean()
     {
         return _dispatchedTimeStats.getMean();
     }
-    
+
     /**
      * @return the standard deviation of time (in milliseconds) of request handling
      * since {@link #statsReset()} was last called.
      * @see #getRequestTimeTotal()
      * @see #getRequests()
      */
+    @ManagedAttribute("standard deviation for dispatch handling (in ms)")
     public double getDispatchedTimeStdDev()
     {
         return _dispatchedTimeStats.getStdDev();
     }
-    
+
     /**
      * @return the number of requests handled by this handler
      * since {@link #statsReset()} was last called, including
      * resumed requests
      * @see #getResumes()
      */
+    @ManagedAttribute("number of requests suspended")
     public int getSuspends()
     {
         return (int)_suspendStats.getTotal();
@@ -337,6 +361,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of requests currently suspended.
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("number of currently suspended requests")
     public int getSuspendsActive()
     {
         return (int)_suspendStats.getCurrent();
@@ -346,15 +371,17 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the maximum number of current suspended requests
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("maximum number of suspended requests")
     public int getSuspendsActiveMax()
     {
         return (int)_suspendStats.getMax();
     }
-    
+
     /**
      * @return the number of requests that have been resumed
      * @see #getExpires()
      */
+    @ManagedAttribute("number of requested that have been resumed")
     public int getResumes()
     {
         return _resumes.get();
@@ -364,6 +391,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of requests that expired while suspended.
      * @see #getResumes()
      */
+    @ManagedAttribute("number of requests have have expired")
     public int getExpires()
     {
         return _expires.get();
@@ -373,6 +401,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of responses with a 1xx status returned by this context
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("number of requests with 1xx response status")
     public int getResponses1xx()
     {
         return _responses1xx.get();
@@ -382,6 +411,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of responses with a 2xx status returned by this context
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("number of requests with 2xx response status")
     public int getResponses2xx()
     {
         return _responses2xx.get();
@@ -391,6 +421,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of responses with a 3xx status returned by this context
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("number of requests with 3xx response status")
     public int getResponses3xx()
     {
         return _responses3xx.get();
@@ -400,6 +431,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of responses with a 4xx status returned by this context
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("number of requests with 4xx response status")
     public int getResponses4xx()
     {
         return _responses4xx.get();
@@ -409,6 +441,7 @@ public class StatisticsHandler extends HandlerWrapper
      * @return the number of responses with a 5xx status returned by this context
      * since {@link #statsReset()} was last called.
      */
+    @ManagedAttribute("number of requests with 5xx response status")
     public int getResponses5xx()
     {
         return _responses5xx.get();
@@ -417,21 +450,23 @@ public class StatisticsHandler extends HandlerWrapper
     /**
      * @return the milliseconds since the statistics were started with {@link #statsReset()}.
      */
+    @ManagedAttribute("time in milliseconds stats have been collected for")
     public long getStatsOnMs()
     {
         return System.currentTimeMillis() - _statsStartedAt.get();
     }
-    
+
     /**
      * @return the total bytes of content sent in responses
      */
+    @ManagedAttribute("total number of bytes across all responses")
     public long getResponsesBytesTotal()
     {
         return _responsesTotalBytes.get();
     }
-    
+
     public String toStatsHTML()
-    {   
+    {
         StringBuilder sb = new StringBuilder();
 
         sb.append("<h1>Statistics:</h1>\n");
@@ -445,7 +480,7 @@ public class StatisticsHandler extends HandlerWrapper
         sb.append("Mean request time: ").append(getRequestTimeMean()).append("<br />\n");
         sb.append("Max request time: ").append(getRequestTimeMax()).append("<br />\n");
         sb.append("Request time standard deviation: ").append(getRequestTimeStdDev()).append("<br />\n");
-        
+
 
         sb.append("<h2>Dispatches:</h2>\n");
         sb.append("Total dispatched: ").append(getDispatched()).append("<br />\n");
@@ -460,7 +495,7 @@ public class StatisticsHandler extends HandlerWrapper
         sb.append("Total requests suspended: ").append(getSuspends()).append("<br />\n");
         sb.append("Total requests expired: ").append(getExpires()).append("<br />\n");
         sb.append("Total requests resumed: ").append(getResumes()).append("<br />\n");
-        
+
         sb.append("<h2>Responses:</h2>\n");
         sb.append("1xx responses: ").append(getResponses1xx()).append("<br />\n");
         sb.append("2xx responses: ").append(getResponses2xx()).append("<br />\n");

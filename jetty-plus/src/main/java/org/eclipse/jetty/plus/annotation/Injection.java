@@ -1,22 +1,26 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.plus.annotation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -43,11 +47,11 @@ public class Injection
     private Class<?> _paramClass;
     private Class<?> _resourceClass;
 
-    
+
     public Injection ()
     {
     }
-    
+
 
     /**
      * @return the _className
@@ -61,22 +65,22 @@ public class Injection
     {
         return _paramClass;
     }
-   
+
     public Class<?> getResourceClass ()
     {
         return _resourceClass;
     }
-    
+
     public boolean isField ()
     {
         return (_target != null && _target instanceof Field);
     }
-    
+
     public boolean isMethod ()
     {
         return (_target != null && _target instanceof Method);
     }
-    
+
     /**
      * @return the jndiName
      */
@@ -105,7 +109,7 @@ public class Injection
     {
         this._mappingName = mappingName;
     }
-    
+
     /**
      * @return the target
      */
@@ -113,7 +117,7 @@ public class Injection
     {
         return _target;
     }
-    
+
 
     public void setTarget(Class<?> clazz, Field field, Class<?> resourceType)
     {
@@ -121,7 +125,7 @@ public class Injection
         _target = field;
         _resourceClass = resourceType;
     }
-    
+
     public void setTarget(Class<?> clazz, Method method, Class<?> arg, Class<?> resourceType)
     {
         _targetClass = clazz;
@@ -129,12 +133,12 @@ public class Injection
         _resourceClass = resourceType;
         _paramClass = arg;
     }
-   
+
     public void setTarget (Class<?> clazz, String target, Class<?> resourceType)
     {
         _targetClass = clazz;
         _resourceClass = resourceType;
-        
+
         //first look for a javabeans style setter matching the targetName
         String setter = "set"+target.substring(0,1).toUpperCase()+target.substring(1);
         try
@@ -159,13 +163,13 @@ public class Injection
         }
 
     }
-    
+
     /**
      * Inject a value for a Resource from JNDI into an object
      * @param injectable
      */
     public void inject (Object injectable)
-    { 
+    {
         if (_target != null)
         {
             if (_target instanceof Field)
@@ -177,7 +181,7 @@ public class Injection
             throw new IllegalStateException ("No method or field to inject with "+getJndiName());
     }
 
-    
+
     /**
      * The Resource must already exist in the ENC of this webapp.
      * @return the injected valud
@@ -189,7 +193,7 @@ public class Injection
         InitialContext context = new InitialContext();
         return context.lookup("java:comp/env/"+getJndiName());
     }
-    
+
 
 
     /**
@@ -198,7 +202,7 @@ public class Injection
      * @param injectable
      */
     protected void injectField (Field field, Object injectable)
-    {        
+    {
         try
         {
             boolean accessibility = field.isAccessible();
@@ -233,5 +237,5 @@ public class Injection
             throw new IllegalStateException("Inject failed for method "+method.getName());
         }
     }
-   
+
 }

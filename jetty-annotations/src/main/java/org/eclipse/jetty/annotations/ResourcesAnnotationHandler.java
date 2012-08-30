@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.annotations;
 
@@ -35,7 +40,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
         _wac = wac;
     }
     
-    public void doHandle (Class clazz)
+    public void doHandle (Class<?> clazz)
     {
         Resources resources = (Resources)clazz.getAnnotation(Resources.class);
         if (resources != null)
@@ -49,12 +54,8 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
 
             for (int j=0;j<resArray.length;j++)
             {
-
                 String name = resArray[j].name();
                 String mappedName = resArray[j].mappedName();
-                Resource.AuthenticationType auth = resArray[j].authenticationType();
-                Class type = resArray[j].type();
-                boolean shareable = resArray[j].shareable();
 
                 if (name==null || name.trim().equals(""))
                     throw new IllegalStateException ("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");

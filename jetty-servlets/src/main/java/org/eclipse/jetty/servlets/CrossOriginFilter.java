@@ -1,16 +1,20 @@
-/*
- * Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * and Apache License v2.0 which accompanies this distribution.
- * The Eclipse Public License is available at
- * http://www.eclipse.org/legal/epl-v10.html
- * The Apache License v2.0 is available at
- * http://www.opensource.org/licenses/apache2.0.php
- *
- * You may elect to redistribute this code under either of these licenses.
- */
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.servlets;
 
@@ -54,15 +58,21 @@ import org.eclipse.jetty.util.log.Logger;
  * and any 3 letter top-level domain (.com, .net, .org, etc.).</li>
  * <li><b>allowedMethods</b>, a comma separated list of HTTP methods that
  * are allowed to be used when accessing the resources. Default value is
- * <b>GET,POST</b></li>
+ * <b>GET,POST,HEAD</b></li>
  * <li><b>allowedHeaders</b>, a comma separated list of HTTP headers that
  * are allowed to be specified when accessing the resources. Default value
- * is <b>X-Requested-With</b></li>
+ * is <b>X-Requested-With,Content-Type,Accept,Origin</b></li>
  * <li><b>preflightMaxAge</b>, the number of seconds that preflight requests
  * can be cached by the client. Default value is <b>1800</b> seconds, or 30
  * minutes</li>
  * <li><b>allowCredentials</b>, a boolean indicating if the resource allows
  * requests with credentials. Default value is <b>false</b></li>
+ * <li><b>exposeHeaders</b>, a comma separated list of HTTP headers that
+ * are allowed to be exposed on the client. Default value is the
+ * <b>empty list</b></li>
+ * <li><b>chainPreflight</b>, if true preflight requests are chained to their
+ * target resource for normal handling (as an OPTION request).  Otherwise the
+ * filter will response to the preflight. Default is true.</li>
  * </ul></p>
  * <p>A typical configuration could be:
  * <pre>
@@ -79,8 +89,6 @@ import org.eclipse.jetty.util.log.Logger;
  *     ...
  * &lt;/web-app&gt;
  * </pre></p>
- *
- * @version $Revision$ $Date$
  */
 public class CrossOriginFilter implements Filter
 {
@@ -96,12 +104,16 @@ public class CrossOriginFilter implements Filter
     public static final String ACCESS_CONTROL_ALLOW_HEADERS_HEADER = "Access-Control-Allow-Headers";
     public static final String ACCESS_CONTROL_MAX_AGE_HEADER = "Access-Control-Max-Age";
     public static final String ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER = "Access-Control-Allow-Credentials";
+    public static final String ACCESS_CONTROL_EXPOSE_HEADERS_HEADER = "Access-Control-Expose-Headers";
     // Implementation constants
     public static final String ALLOWED_ORIGINS_PARAM = "allowedOrigins";
     public static final String ALLOWED_METHODS_PARAM = "allowedMethods";
     public static final String ALLOWED_HEADERS_PARAM = "allowedHeaders";
     public static final String PREFLIGHT_MAX_AGE_PARAM = "preflightMaxAge";
     public static final String ALLOW_CREDENTIALS_PARAM = "allowCredentials";
+    public static final String EXPOSED_HEADERS_PARAM = "exposedHeaders";
+    public static final String OLD_CHAIN_PREFLIGHT_PARAM = "forwardPreflight";
+    public static final String CHAIN_PREFLIGHT_PARAM = "chainPreflight";
     private static final String ANY_ORIGIN = "*";
     private static final List<String> SIMPLE_HTTP_METHODS = Arrays.asList("GET", "POST", "HEAD");
 
@@ -109,8 +121,10 @@ public class CrossOriginFilter implements Filter
     private List<String> allowedOrigins = new ArrayList<String>();
     private List<String> allowedMethods = new ArrayList<String>();
     private List<String> allowedHeaders = new ArrayList<String>();
-    private int preflightMaxAge = 0;
+    private List<String> exposedHeaders = new ArrayList<String>();
+    private int preflightMaxAge;
     private boolean allowCredentials;
+    private boolean chainPreflight;
 
     public void init(FilterConfig config) throws ServletException
     {
@@ -163,6 +177,20 @@ public class CrossOriginFilter implements Filter
             allowedCredentialsConfig = "true";
         allowCredentials = Boolean.parseBoolean(allowedCredentialsConfig);
 
+        String exposedHeadersConfig = config.getInitParameter(EXPOSED_HEADERS_PARAM);
+        if (exposedHeadersConfig == null)
+            exposedHeadersConfig = "";
+        exposedHeaders.addAll(Arrays.asList(exposedHeadersConfig.split(",")));
+
+        String chainPreflightConfig = config.getInitParameter(OLD_CHAIN_PREFLIGHT_PARAM);
+        if (chainPreflightConfig!=null) // TODO remove this
+            LOG.warn("DEPRECATED CONFIGURATION: Use "+CHAIN_PREFLIGHT_PARAM+ " instead of "+OLD_CHAIN_PREFLIGHT_PARAM);
+        else
+            chainPreflightConfig = config.getInitParameter(CHAIN_PREFLIGHT_PARAM);
+        if (chainPreflightConfig == null)
+            chainPreflightConfig = "true";
+        chainPreflight = Boolean.parseBoolean(chainPreflightConfig);
+
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Cross-origin filter configuration: " +
@@ -170,7 +198,10 @@ public class CrossOriginFilter implements Filter
                     ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
                     ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
                     PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
-                    ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig);
+                    ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
+                    EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
+                    CHAIN_PREFLIGHT_PARAM + " = " + chainPreflightConfig
+            );
         }
     }
 
@@ -196,6 +227,10 @@ public class CrossOriginFilter implements Filter
                 {
                     LOG.debug("Cross-origin request to {} is a preflight cross-origin request", request.getRequestURI());
                     handlePreflightResponse(request, response, origin);
+                    if (chainPreflight)
+                        LOG.debug("Preflight cross-origin request to {} forwarded to application", request.getRequestURI());
+                    else
+                        return;
                 }
                 else
                 {
@@ -305,6 +340,8 @@ public class CrossOriginFilter implements Filter
         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin);
         if (allowCredentials)
             response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
+        if (!exposedHeaders.isEmpty())
+            response.setHeader(ACCESS_CONTROL_EXPOSE_HEADERS_HEADER, commify(exposedHeaders));
     }
 
     private void handlePreflightResponse(HttpServletRequest request, HttpServletResponse response, String origin)

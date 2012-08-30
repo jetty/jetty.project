@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2010 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util;
 
@@ -17,10 +22,8 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -30,7 +33,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
@@ -48,24 +50,25 @@ public class MultiPartInputStream
     protected InputStream _in;
     protected MultipartConfigElement _config;
     protected String _contentType;
-    protected MultiMap<String> _parts;
+    protected MultiMap _parts;
     protected File _tmpDir;
     protected File _contextTmpDir;
- 
-    
-    
-    
+
+
+
+
     public class MultiPart implements Part
     {
         protected String _name;
         protected String _filename;
         protected File _file;
         protected OutputStream _out;
+        protected ByteArrayOutputStream2 _bout;
         protected String _contentType;
-        protected MultiMap<String> _headers;
+        protected MultiMap _headers;
         protected long _size = 0;
 
-        public MultiPart (String name, String filename) 
+        public MultiPart (String name, String filename)
         throws IOException
         {
             _name = name;
@@ -76,83 +79,84 @@ public class MultiPartInputStream
         {
             _contentType = contentType;
         }
-        
-        
-        protected void open() 
-        throws FileNotFoundException, IOException
+
+
+        protected void open()
+        throws IOException
         {
             //We will either be writing to a file, if it has a filename on the content-disposition
             //and otherwise a byte-array-input-stream, OR if we exceed the getFileSizeThreshold, we
-            //will need to change to write to a file.           
+            //will need to change to write to a file.
             if (_filename != null && _filename.trim().length() > 0)
             {
-                createFile();            
+                createFile();
             }
             else
             {
-                //Write to a buffer in memory until we discover we've exceed the 
+                //Write to a buffer in memory until we discover we've exceed the
                 //MultipartConfig fileSizeThreshold
-                _out = new ByteArrayOutputStream();
+                _out = _bout= new ByteArrayOutputStream2();
             }
         }
-        
-        protected void close() 
+
+        protected void close()
         throws IOException
         {
             _out.close();
         }
-        
-      
+
+
         protected void write (int b)
-        throws IOException, ServletException
-        {      
+        throws IOException
+        {
             if (MultiPartInputStream.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartInputStream.this._config.getMaxFileSize())
-                throw new ServletException ("Multipart Mime part "+_name+" exceeds max filesize");
-            
+                throw new IllegalStateException ("Multipart Mime part "+_name+" exceeds max filesize");
+
             if (MultiPartInputStream.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartInputStream.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
-            _out.write(b);   
+            _out.write(b);
             _size ++;
         }
-        
-        protected void write (byte[] bytes, int offset, int length) 
-        throws IOException, ServletException
-        { 
+
+        protected void write (byte[] bytes, int offset, int length)
+        throws IOException
+        {
             if (MultiPartInputStream.this._config.getMaxFileSize() > 0 && _size + length > MultiPartInputStream.this._config.getMaxFileSize())
-                throw new ServletException ("Multipart Mime part "+_name+" exceeds max filesize");
-            
+                throw new IllegalStateException ("Multipart Mime part "+_name+" exceeds max filesize");
+
             if (MultiPartInputStream.this._config.getFileSizeThreshold() > 0 && _size + length > MultiPartInputStream.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
-            
+
             _out.write(bytes, offset, length);
             _size += length;
         }
-        
+
         protected void createFile ()
         throws IOException
         {
             _file = File.createTempFile("MultiPart", "", MultiPartInputStream.this._tmpDir);
             FileOutputStream fos = new FileOutputStream(_file);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
-            
+
             if (_size > 0 && _out != null)
             {
                 //already written some bytes, so need to copy them into the file
                 _out.flush();
-                ((ByteArrayOutputStream)_out).writeTo(bos);
+                _bout.writeTo(bos);
                 _out.close();
+                _bout = null;
             }
             _out = bos;
         }
-        
 
-        
-        protected void setHeaders(MultiMap<String> headers)
+
+
+        protected void setHeaders(MultiMap headers)
         {
             _headers = headers;
         }
-        
-        /** 
+
+        /**
          * @see javax.servlet.http.Part#getContentType()
          */
         public String getContentType()
@@ -160,15 +164,17 @@ public class MultiPartInputStream
             return _contentType;
         }
 
-        /** 
+        /**
          * @see javax.servlet.http.Part#getHeader(java.lang.String)
          */
         public String getHeader(String name)
         {
-            return (String)_headers.getValue(name, 0);
+            if (name == null)
+                return null;
+            return (String)_headers.getValue(name.toLowerCase(), 0);
         }
 
-        /** 
+        /**
          * @see javax.servlet.http.Part#getHeaderNames()
          */
         public Collection<String> getHeaderNames()
@@ -176,7 +182,7 @@ public class MultiPartInputStream
             return _headers.keySet();
         }
 
-        /** 
+        /**
          * @see javax.servlet.http.Part#getHeaders(java.lang.String)
          */
         public Collection<String> getHeaders(String name)
@@ -184,7 +190,7 @@ public class MultiPartInputStream
            return _headers.getValues(name);
         }
 
-        /** 
+        /**
          * @see javax.servlet.http.Part#getInputStream()
          */
         public InputStream getInputStream() throws IOException
@@ -196,11 +202,18 @@ public class MultiPartInputStream
            else
            {
                //part content is in a ByteArrayOutputStream
-               return new ByteArrayInputStream(((ByteArrayOutputStream)_out).toByteArray());
+               return new ByteArrayInputStream(_bout.getBuf(),0,_bout.size());
            }
         }
 
-        /** 
+        public byte[] getBytes()
+        {
+            if (_bout!=null)
+                return _bout.toByteArray();
+            return null;
+        }
+
+        /**
          * @see javax.servlet.http.Part#getName()
          */
         public String getName()
@@ -208,7 +221,7 @@ public class MultiPartInputStream
            return _name;
         }
 
-        /** 
+        /**
          * @see javax.servlet.http.Part#getSize()
          */
         public long getSize()
@@ -216,7 +229,7 @@ public class MultiPartInputStream
             return _size;
         }
 
-        /** 
+        /**
          * @see javax.servlet.http.Part#write(java.lang.String)
          */
         public void write(String fileName) throws IOException
@@ -229,32 +242,35 @@ public class MultiPartInputStream
                 try
                 {
                     bos = new BufferedOutputStream(new FileOutputStream(_file));
-                    ((ByteArrayOutputStream)_out).writeTo(bos);
+                    _bout.writeTo(bos);
                     bos.flush();
                 }
                 finally
                 {
                     if (bos != null)
                         bos.close();
+                    _bout = null;
                 }
             }
             else
             {
                 //the part data is already written to a temporary file, just rename it
-                _file.renameTo(new File(_tmpDir, fileName));
+                File f = new File(_tmpDir, fileName);
+                if (_file.renameTo(f))
+                    _file = f;
             }
         }
-        
-        /** 
+
+        /**
          * @see javax.servlet.http.Part#delete()
          */
         public void delete() throws IOException
         {
             if (_file != null)
-                _file.delete();     
+                _file.delete();
         }
-        
-        
+
+
         /**
          * Get the file, if any, the data has been written to.
          * @return
@@ -262,9 +278,9 @@ public class MultiPartInputStream
         public File getFile ()
         {
             return _file;
-        }  
-        
-        
+        }
+
+
         /**
          * Get the filename from the content-disposition.
          * @return null or the filename
@@ -274,14 +290,14 @@ public class MultiPartInputStream
             return _filename;
         }
     }
-    
-    
-    
-    
+
+
+
+
     /**
-     * @param in Request input stream 
+     * @param in Request input stream
      * @param contentType Content-Type header
-     * @param config MultipartConfigElement 
+     * @param config MultipartConfigElement
      * @param contextTmpDir javax.servlet.context.tempdir
      */
     public MultiPartInputStream (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
@@ -296,8 +312,8 @@ public class MultiPartInputStream
            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
     }
 
-    
-   
+
+
     public Collection<Part> getParts()
     throws IOException, ServletException
     {
@@ -311,33 +327,33 @@ public class MultiPartInputStream
         }
         return parts;
     }
-    
-    
+
+
     public Part getPart(String name)
     throws IOException, ServletException
     {
         parse();
         return (Part)_parts.getValue(name, 0);
     }
-    
-    
+
+
     protected void parse ()
     throws IOException, ServletException
     {
         //have we already parsed the input?
         if (_parts != null)
             return;
-        
+
         //initialize
-        long total = 0; //keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize              
-        _parts = new MultiMap<String>();
+        long total = 0; //keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize
+        _parts = new MultiMap();
 
         //if its not a multipart request, don't parse it
         if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
             return;
- 
+
         //sort out the location to which to write the files
-        
+
         if (_config.getLocation() == null)
             _tmpDir = _contextTmpDir;
         else if ("".equals(_config.getLocation()))
@@ -350,11 +366,11 @@ public class MultiPartInputStream
             else
                 _tmpDir = new File (_contextTmpDir, _config.getLocation());
         }
-      
+
         if (!_tmpDir.exists())
             _tmpDir.mkdirs();
 
-        String boundary="--"+QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary="))).trim());
+        String boundary="--"+QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary=")), true).trim());
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
 
         // Get first boundary
@@ -372,7 +388,7 @@ public class MultiPartInputStream
         String contentTransferEncoding=null;
         outer:while(!lastPart)
         {
-            MultiMap<String> headers = new MultiMap<String>();
+            MultiMap headers = new MultiMap();
             while(true)
             {
                 bytes=TypeUtil.readLine(_in);
@@ -382,11 +398,11 @@ public class MultiPartInputStream
                 // If blank line, end of part headers
                 if(bytes.length==0)
                     break;
-                
+
                 total += bytes.length;
                 if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
-                    throw new ServletException ("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
-                
+                    throw new IllegalStateException ("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+
                 line=new String(bytes,"UTF-8");
 
                 //get content-disposition and content-type
@@ -423,9 +439,9 @@ public class MultiPartInputStream
                 if(t.startsWith("form-data"))
                     form_data=true;
                 else if(tl.startsWith("name="))
-                    name=value(t);
+                    name=value(t, true);
                 else if(tl.startsWith("filename="))
-                    filename=value(t);
+                    filename=value(t, false);
             }
 
             // Check disposition
@@ -471,8 +487,8 @@ public class MultiPartInputStream
                 };
             }
 
-            
-            
+
+
             //Have a new Part
             MultiPart part = new MultiPart(name, filename);
             part.setHeaders(headers);
@@ -482,7 +498,7 @@ public class MultiPartInputStream
             part.open();
 
             try
-            { 
+            {
                 int state=-2;
                 int c;
                 boolean cr=false;
@@ -496,8 +512,8 @@ public class MultiPartInputStream
                     {
                         total ++;
                         if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
-                            throw new ServletException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
-                        
+                            throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+
                         state=-2;
                         // look for CR and/or LF
                         if(c==13||c==10)
@@ -514,14 +530,14 @@ public class MultiPartInputStream
                             // this is not a boundary
                             if(cr)
                                 part.write(13);
-                    
+
                             if(lf)
-                                part.write(10); 
-                            
+                                part.write(10);
+
                             cr=lf=false;
                             if(b>0)
                                 part.write(byteBoundary,0,b);
-                              
+
                             b=-1;
                             part.write(c);
                         }
@@ -550,7 +566,7 @@ public class MultiPartInputStream
                     }
                     // handle CR LF
                     if(cr)
-                        part.write(13); 
+                        part.write(13);
 
                     if(lf)
                         part.write(10);
@@ -563,15 +579,15 @@ public class MultiPartInputStream
             }
             finally
             {
- 
+
                 part.close();
             }
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
-    private String value(String nameEqualsValue)
+    private String value(String nameEqualsValue, boolean splitAfterSpace)
     {
         String value=nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
         int i=value.indexOf(';');
@@ -581,7 +597,7 @@ public class MultiPartInputStream
         {
             value=value.substring(1,value.indexOf('"',1));
         }
-        else
+        else if (splitAfterSpace)
         {
             i=value.indexOf(' ');
             if(i>0)
@@ -589,7 +605,7 @@ public class MultiPartInputStream
         }
         return value;
     }
-    
+
     private static class Base64InputStream extends InputStream
     {
         BufferedReader _in;

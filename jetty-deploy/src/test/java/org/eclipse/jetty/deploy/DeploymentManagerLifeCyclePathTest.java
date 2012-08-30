@@ -1,24 +1,26 @@
-// ========================================================================
-// Copyright (c) Webtide LLC
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-// The Apache License v2.0 is available at
-// http://www.apache.org/licenses/LICENSE-2.0.txt
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.deploy;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
@@ -85,7 +87,7 @@ public class DeploymentManagerLifeCyclePathTest
 
         pathtracker.assertExpected("Test StateTransition / New only",expected);
     }
-    
+
     @Test
     public void testStateTransition_DeployedToUndeployed() throws Exception
     {
@@ -113,10 +115,10 @@ public class DeploymentManagerLifeCyclePathTest
 
         // Request Deploy of App
         depman.requestAppGoal(app,"deployed");
-        
+
         JmxServiceConnection jmxConnection = new JmxServiceConnection();
         jmxConnection.connect();
-        
+
         MBeanServerConnection mbsConnection = jmxConnection.getConnection();
         ObjectName dmObjName = new ObjectName("org.eclipse.jetty.deploy:type=deploymentmanager,id=0");
         String[] params = new String[] {"mock-foo-webapp-1.war", "undeployed"};
@@ -132,5 +134,5 @@ public class DeploymentManagerLifeCyclePathTest
         expected.add("undeployed");
 
         pathtracker.assertExpected("Test JMX StateTransition / Deployed -> Undeployed",expected);
-    }    
+    }
 }

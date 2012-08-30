@@ -1,33 +1,37 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.LocalHttpConnector;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ContextHandlerCollectionTest
 {
@@ -35,7 +39,7 @@ public class ContextHandlerCollectionTest
     public void testVirtualHostNormalization() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[]
         { connector });
 
@@ -93,7 +97,7 @@ public class ContextHandlerCollectionTest
     public void testVirtualHostWildcard() throws Exception
     {
         Server server = new Server();
-        LocalHttpConnector connector = new LocalHttpConnector();
+        LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[] { connector });
 
         ContextHandler context = new ContextHandler("/");
@@ -133,7 +137,7 @@ public class ContextHandlerCollectionTest
 
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
     {
-        LocalHttpConnector connector = (LocalHttpConnector)server.getConnectors()[0];
+        LocalConnector connector = (LocalConnector)server.getConnectors()[0];
         ContextHandlerCollection handlerCollection = (ContextHandlerCollection)server.getHandler();
         ContextHandler context = (ContextHandler)handlerCollection.getHandlers()[0];
         IsHandledHandler handler = (IsHandledHandler)context.getHandler();
@@ -144,7 +148,7 @@ public class ContextHandlerCollectionTest
 
         for(String host : requestHosts)
         {
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\n\n");
+            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\nConnection:close\n\n");
             if(succeed)
                 assertTrue("'"+host+"' should have been handled.",handler.isHandled());
             else
@@ -183,17 +187,17 @@ public class ContextHandlerCollectionTest
         HandlerWrapper wrapper = new HandlerWrapper();
         wrapper.setHandler(collection);
         server.setHandler(wrapper);
-        
+
         assertEquals(wrapper,AbstractHandlerContainer.findContainerOf(server,HandlerWrapper.class,handlerA));
         assertEquals(contextA,AbstractHandlerContainer.findContainerOf(server,ContextHandler.class,handlerA));
         assertEquals(contextB,AbstractHandlerContainer.findContainerOf(server,ContextHandler.class,handlerB));
         assertEquals(wrapper,AbstractHandlerContainer.findContainerOf(server,HandlerWrapper.class,handlerB));
         assertEquals(contextB,AbstractHandlerContainer.findContainerOf(collection,HandlerWrapper.class,handlerB));
         assertEquals(wrapperB,AbstractHandlerContainer.findContainerOf(contextB,HandlerWrapper.class,handlerB));
-        
+
     }
 
-    
+
     private static final class IsHandledHandler extends AbstractHandler
     {
         private boolean handled;

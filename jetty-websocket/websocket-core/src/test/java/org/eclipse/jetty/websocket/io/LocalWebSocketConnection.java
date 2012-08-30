@@ -1,27 +1,33 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.io;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketConnection implements RawConnection
+public class LocalWebSocketConnection implements WebSocketConnection
 {
     private final String id;
 
@@ -51,12 +57,19 @@ public class LocalWebSocketConnection implements RawConnection
     }
 
     @Override
-    public void disconnect(boolean onlyOutput)
+    public WebSocketPolicy getPolicy()
     {
+        return null;
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public String getSubProtocol()
     {
         return null;
     }
@@ -68,13 +81,44 @@ public class LocalWebSocketConnection implements RawConnection
     }
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    public boolean isReading()
     {
+        return false;
+    }
+
+    @Override
+    public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
+    {
+
+    }
+
+    @Override
+    public SuspendToken suspend()
+    {
+        return null;
     }
 
     @Override
     public String toString()
     {
         return String.format("%s[%s]",LocalWebSocketConnection.class.getSimpleName(),id);
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, byte[] buf, int offset, int len) throws IOException
+    {
+
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, ByteBuffer buffer) throws IOException
+    {
+
+    }
+
+    @Override
+    public <C> void write(C context, Callback<C> callback, String message) throws IOException
+    {
+
     }
 }

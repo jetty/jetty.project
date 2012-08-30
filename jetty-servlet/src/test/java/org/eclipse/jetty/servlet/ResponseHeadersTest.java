@@ -1,6 +1,22 @@
-package org.eclipse.jetty.servlet;
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import static org.hamcrest.Matchers.*;
+package org.eclipse.jetty.servlet;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,7 +27,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -25,6 +40,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+
 public class ResponseHeadersTest
 {
     /** Pretend to be a WebSocket Upgrade (not real) */
@@ -37,11 +55,11 @@ public class ResponseHeadersTest
             response.setHeader("Upgrade","WebSocket");
             response.addHeader("Connection","Upgrade");
             response.addHeader("Sec-WebSocket-Accept","123456789==");
-            
+
             response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         }
     }
-    
+
     private static Server server;
     private static SelectChannelConnector connector;
     private static URI serverUri;
@@ -51,7 +69,7 @@ public class ResponseHeadersTest
     {
         // Configure Server
         server = new Server();
-        connector = new SelectChannelConnector();
+        connector = new SelectChannelConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -113,7 +131,7 @@ public class ResponseHeadersTest
             // Read response
             String respHeader = readResponseHeader(in);
             System.out.println("RESPONSE: " + respHeader);
-            
+
             // Now test for properly formatted HTTP Response Headers.
 
             Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 101 Switching Protocols"));
@@ -127,7 +145,7 @@ public class ResponseHeadersTest
             socket.close();
         }
     }
-    
+
     private String readResponseHeader(InputStream in) throws IOException
     {
         InputStreamReader isr = new InputStreamReader(in);

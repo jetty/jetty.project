@@ -1,18 +1,21 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.client.examples;
 
 import java.net.InetSocketAddress;
@@ -67,7 +70,7 @@ public class TestClient
             }
         }
 
-        public void send(OpCode op, byte[] data, int maxFragmentLength)
+        public void send(byte op, byte[] data, int maxFragmentLength)
         {
             _starts.add(System.nanoTime());
 
@@ -215,7 +218,7 @@ public class TestClient
             {
                 long next = System.currentTimeMillis() + delay;
 
-                OpCode op = OpCode.TEXT;
+                byte op = OpCode.TEXT;
                 if (binary)
                 {
                     op = OpCode.BINARY;
@@ -225,7 +228,7 @@ public class TestClient
 
                 switch (op)
                 {
-                    case TEXT:
+                    case OpCode.TEXT:
                     {
                         StringBuilder b = new StringBuilder();
                         while (b.length() < size)
@@ -235,7 +238,7 @@ public class TestClient
                         data = b.toString().getBytes(StringUtil.__UTF8_CHARSET);
                         break;
                     }
-                    case BINARY:
+                    case OpCode.BINARY:
                     {
                         data = new byte[size];
                         __random.nextBytes(data);
@@ -320,15 +323,15 @@ public class TestClient
 
     private void open() throws Exception
     {
-        WebSocketClient client = factory.newWebSocketClient();
-        client.getPolicy().setMaxIdleTime(_timeout);
-        client.setProtocol(_protocol);
+        WebSocketClient client = factory.newWebSocketClient(socket);
+        client.getPolicy().setIdleTimeout(_timeout);
+        client.getUpgradeRequest().setSubProtocols(_protocol);
         socket = new TestSocket();
         URI wsUri = new URI("ws://" + _host + ":" + _port + "/");
-        client.connect(wsUri,socket).get(10,TimeUnit.SECONDS);
+        client.connect(wsUri).get(10,TimeUnit.SECONDS);
     }
 
-    private void send(OpCode op, byte[] data, int fragment)
+    private void send(byte op, byte[] data, int fragment)
     {
         socket.send(op,data,fragment);
     }

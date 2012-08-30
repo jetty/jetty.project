@@ -1,28 +1,32 @@
-// ========================================================================
-// Copyright (c) 2003-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.plus.jaas.callback;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
-import org.eclipse.jetty.util.security.Password;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.security.Password;
 
 
 
@@ -41,18 +45,18 @@ import org.eclipse.jetty.server.Request;
  *
  * @see
  * @version 1.0 Tue Apr 15 2003
- * 
+ *
  */
 public class DefaultCallbackHandler extends AbstractCallbackHandler
 {
-     
+
     private Request _request;
-    
+
     public void setRequest (Request request)
     {
         this._request = request;
     }
-    
+
     public void handle (Callback[] callbacks)
         throws IOException, UnsupportedCallbackException
     {
@@ -85,8 +89,8 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
             else
                 throw new UnsupportedCallbackException(callbacks[i]);
         }
-        
+
     }
-    
+
 }
-        
+

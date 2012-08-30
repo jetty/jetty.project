@@ -1,18 +1,21 @@
-// ========================================================================
-// Copyright (c) Webtide LLC
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-// The Apache License v2.0 is available at
-// http://www.apache.org/licenses/LICENSE-2.0.txt
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.deploy;
 
 import java.util.ArrayList;
@@ -35,6 +38,10 @@ import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -53,6 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * <img src="doc-files/DeploymentManager.png">
  */
+@ManagedObject("Deployment Manager")
 public class DeploymentManager extends AggregateLifeCycle
 {
     private static final Logger LOG = Log.getLogger(DeploymentManager.class);
@@ -157,6 +165,7 @@ public class DeploymentManager extends AggregateLifeCycle
                 addBean(provider);
     }
 
+    @ManagedAttribute("Application Providers")
     public Collection<AppProvider> getAppProviders()
     {
         return Collections.unmodifiableList(_providers);
@@ -279,6 +288,7 @@ public class DeploymentManager extends AggregateLifeCycle
         return _apps;
     }
 
+    @ManagedAttribute("Deployed Apps")
     public Collection<App> getApps()
     {
         List<App> ret = new ArrayList<App>();
@@ -357,6 +367,7 @@ public class DeploymentManager extends AggregateLifeCycle
         return _contextAttributes;
     }
 
+    @ManagedAttribute("Deployed Contexts")
     public ContextHandlerCollection getContexts()
     {
         return _contexts;
@@ -508,7 +519,8 @@ public class DeploymentManager extends AggregateLifeCycle
      * @param nodeName
      *            the name of the node to attain
      */
-    public void requestAppGoal(String appId, String nodeName)
+    @ManagedOperation(value="request the app to be moved to the specified lifecycle node", impact="ACTION")
+    public void requestAppGoal(@Name("appId") String appId, @Name("nodeName") String nodeName)
     {
         AppEntry appentry = findAppByOriginId(appId);
         if (appentry == null)
@@ -581,7 +593,8 @@ public class DeploymentManager extends AggregateLifeCycle
         return _lifecycle.getNodes();
     }
     
-    public Collection<App> getApps(String nodeName)
+    @ManagedOperation(value="list apps that are located at specified App LifeCycle nodes", impact="ACTION")
+    public Collection<App> getApps(@Name("nodeName") String nodeName)
     {
         return getApps(_lifecycle.getNodeByName(nodeName));
     }

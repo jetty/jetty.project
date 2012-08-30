@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.http;
 
@@ -450,7 +455,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
 
         return new Enumeration<String>()
-                {
+        {
             Field f = field;
 
             @Override
@@ -467,7 +472,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
                 f = f._next;
                 return n.getValue();
             }
-                };
+        };
     }
 
     /* -------------------------------------------------------------- */
@@ -1262,5 +1267,36 @@ public class HttpFields implements Iterable<HttpFields.Field>
         {
             return ("[" + getName() + "=" + _value + (_next == null ? "" : "->") + "]");
         }
+
+        /* ------------------------------------------------------------ */
+        public boolean contains(String value)
+        {
+            if (_value==null)
+                return false;
+            
+            if (value.equalsIgnoreCase(_value))
+                return true;
+            
+            String[] split = _value.split("\\s*,\\s*");
+            for (String s : split)
+            {
+                if (value.equalsIgnoreCase(s))
+                    return true;
+            }
+            
+            if (_next!=null)
+                return _next.contains(value);
+            
+            return false;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean contains(HttpHeader header, String value)
+    {
+        Field field = getField(header);
+        if (field==null)
+            return false;
+        return field.contains(value);
     }
 }

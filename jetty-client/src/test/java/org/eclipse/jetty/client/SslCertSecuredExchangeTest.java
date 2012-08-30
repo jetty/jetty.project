@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.client;
 
@@ -39,7 +44,7 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class SslCertSecuredExchangeTest extends ContentExchangeTest
+public class SslCertSecuredExchangeTest// extends ContentExchangeTest
 { 
     // certificate is valid until Jan 1, 2050
     private String _keypath = MavenTestingUtils.getTargetFile("test-policy/validation/jetty-valid.keystore").getAbsolutePath();
@@ -51,7 +56,7 @@ public class SslCertSecuredExchangeTest extends ContentExchangeTest
     protected void configureServer(Server server)
         throws Exception
     {
-        setProtocol("https");
+        //setProtocol("https");
                         
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         SslContextFactory cf = connector.getSslContextFactory();
@@ -139,31 +144,31 @@ public class SslCertSecuredExchangeTest extends ContentExchangeTest
         
         ServletContextHandler root = new ServletContextHandler();
         root.setContextPath("/");
-        root.setResourceBase(getBasePath());
+       // root.setResourceBase(getBasePath());
         ServletHolder servletHolder = new ServletHolder( new DefaultServlet() );
         servletHolder.setInitParameter( "gzip", "true" );
         root.addServlet( servletHolder, "/*" );    
 
-        Handler handler = new TestHandler(getBasePath());
+      //  Handler handler = new TestHandler(getBasePath());
         
         HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[]{handler, root});
+      //  handlers.setHandlers(new Handler[]{handler, root});
         security.setHandler(handlers);
     }
     
-    @Override
-    protected void configureClient(HttpClient client) throws Exception
-    {
-        SslContextFactory cf = client.getSslContextFactory();
-        cf.setValidateCerts(true);
-        cf.setCrlPath(_crlpath);
-        
-        cf.setCertAlias("client");
-        cf.setKeyStorePath(_clientpath);
-        cf.setKeyStorePassword(_password);
-        cf.setKeyManagerPassword(_password);
-        
-        cf.setTrustStore(_trustpath);
-        cf.setTrustStorePassword(_password);
-    }
+//    @Override
+//    protected void configureClient(HttpClient client) throws Exception
+//    {
+//        SslContextFactory cf = client.getSslContextFactory();
+//        cf.setValidateCerts(true);
+//        cf.setCrlPath(_crlpath);
+//        
+//        cf.setCertAlias("client");
+//        cf.setKeyStorePath(_clientpath);
+//        cf.setKeyStorePassword(_password);
+//        cf.setKeyManagerPassword(_password);
+//        
+//        cf.setTrustStore(_trustpath);
+//        cf.setTrustStorePassword(_password);
+//    }
 }

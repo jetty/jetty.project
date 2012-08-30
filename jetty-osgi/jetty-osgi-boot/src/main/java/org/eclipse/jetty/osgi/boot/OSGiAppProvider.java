@@ -1,18 +1,20 @@
-// ========================================================================
-// Copyright (c) 2009-2010 Mortbay, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// Contributors:
-//    Greg Wilkins - initial API and implementation
-// ========================================================================
-package org.eclipse.jetty.osgi.boot;
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -55,26 +57,31 @@ import org.osgi.framework.Constants;
  * <p>
  * When the parameter autoInstallOSGiBundles is set to true, OSGi bundles that
  * are located in the monitored directory are installed and started after the
- * framework as finished auto-starting all the other bundles.
- * Warning: only use this for development.
+ * framework as finished auto-starting all the other bundles. Warning: only use
+ * this for development.
  * </p>
  */
 public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(OSGiAppProvider.class);
 
-
     private boolean _extractWars = true;
+
     private boolean _parentLoaderPriority = false;
+
     private String _defaultsDescriptor;
+
     private String _tldBundles;
+
     private String[] _configurationClasses;
+
     private boolean _autoInstallOSGiBundles = true;
-    
-    //Keep track of the bundles that were installed and that are waiting for the
-    //framework to complete its initialization.
+
+    // Keep track of the bundles that were installed and that are waiting for
+    // the
+    // framework to complete its initialization.
     Set<Bundle> _pendingBundlesToStart = null;
-        
+
     /**
      * When a context file corresponds to a deployed bundle and is changed we
      * reload the corresponding bundle.
@@ -82,14 +89,11 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     private static class Filter implements FilenameFilter
     {
         OSGiAppProvider _enclosedInstance;
-        
+
         public boolean accept(File dir, String name)
         {
-            File file = new File(dir,name);
-            if (fileMightBeAnOSGiBundle(file))
-            {
-                return true;
-            }
+            File file = new File(dir, name);
+            if (fileMightBeAnOSGiBundle(file)) { return true; }
             if (!file.isDirectory())
             {
                 String contextName = getDeployedAppName(name);
@@ -104,8 +108,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     }
 
     /**
-     * @param contextFileName
-     *            for example myContext.xml
+     * @param contextFileName for example myContext.xml
      * @return The context, for example: myContext; null if this was not a
      *         suitable contextFileName.
      */
@@ -114,47 +117,52 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         String lowername = contextFileName.toLowerCase();
         if (lowername.endsWith(".xml"))
         {
-            String contextName = contextFileName.substring(0,lowername.length() - ".xml".length());
+            String contextName = contextFileName.substring(0, lowername.length() - ".xml".length());
             return contextName;
         }
         return null;
     }
 
     /**
-     * Reading the display name of a webapp is really not sufficient for indexing the various
-     * deployed ContextHandlers.
+     * Reading the display name of a webapp is really not sufficient for
+     * indexing the various deployed ContextHandlers.
      * 
      * @param context
      * @return
      */
-    private String getContextHandlerAppName(ContextHandler context) {
+    private String getContextHandlerAppName(ContextHandler context)
+    {
         String appName = context.getDisplayName();
-        if (appName == null || appName.length() == 0  || getDeployedApps().containsKey(appName)) {
-        	if (context instanceof WebAppContext)
-        	{
-        		appName = ((WebAppContext)context).getContextPath();
-        		if (getDeployedApps().containsKey(appName)) {
-            		appName = "noDisplayName"+context.getClass().getSimpleName()+context.hashCode();
-            	}
-        	} else {
-        		appName = "noDisplayName"+context.getClass().getSimpleName()+context.hashCode();
-        	}
+        if (appName == null || appName.length() == 0 || getDeployedApps().containsKey(appName))
+        {
+            if (context instanceof WebAppContext)
+            {
+                appName = ((WebAppContext) context).getContextPath();
+                if (getDeployedApps().containsKey(appName))
+                {
+                    appName = "noDisplayName" + context.getClass().getSimpleName() + context.hashCode();
+                }
+            }
+            else
+            {
+                appName = "noDisplayName" + context.getClass().getSimpleName() + context.hashCode();
+            }
         }
         return appName;
     }
-    
+
     /**
-     * Default OSGiAppProvider consutructed when none are defined in the
+     * Default OSGiAppProvider constructed when none are defined in the
      * jetty.xml configuration.
      */
     public OSGiAppProvider()
     {
         super(new Filter());
-        ((Filter)super._filenameFilter)._enclosedInstance = this;
+        ((Filter) super._filenameFilter)._enclosedInstance = this;
     }
 
     /**
-     * Default OSGiAppProvider consutructed when none are defined in the
+     * Default OSGiAppProvider constructed when none are defined in the
      * jetty.xml configuration.
      * 
      * @param contextsDir
@@ -164,7 +172,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         this();
         setMonitoredDirResource(Resource.newResource(contextsDir.toURI()));
     }
-    
+
     /**
      * Returns the ContextHandler that was created by WebappRegistractionHelper
      * 
@@ -180,12 +188,15 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             // we don't support this situation at this point.
             // once the WebAppRegistrationHelper is refactored, the code
             // that creates the ContextHandler will actually be here.
-            throw new IllegalStateException("The App must be passed the " + "instance of the ContextHandler when it is construsted");
+            throw new IllegalStateException("The App must be passed the " + "instance of the ContextHandler when it is constructed");
         }
-        if (_configurationClasses != null && wah instanceof WebAppContext) 
+        if (_configurationClasses != null && wah instanceof WebAppContext)
         {
-            ((WebAppContext)wah).setConfigurationClasses(_configurationClasses);
+            ((WebAppContext) wah).setConfigurationClasses(_configurationClasses);
         }
+
+        if (_defaultsDescriptor != null)
+            ((WebAppContext) wah).setDefaultsDescriptor(_defaultsDescriptor);
         return app.getContextHandler();
     }
 
@@ -195,24 +206,23 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
-        // _manager=deploymentManager;
         super.setDeploymentManager(deploymentManager);
     }
 
     private static String getOriginId(Bundle contributor, String pathInBundle)
     {
-    	return contributor.getSymbolicName() + "-" + contributor.getVersion().toString() +
-    		(pathInBundle.startsWith("/") ? pathInBundle : "/" + pathInBundle);
+        return contributor.getSymbolicName() + "-" + contributor.getVersion().toString() + (pathInBundle.startsWith("/") ? pathInBundle : "/" + pathInBundle);
     }
-    
+
     /**
      * @param context
      * @throws Exception
      */
     public void addContext(Bundle contributor, String pathInBundle, ContextHandler context) throws Exception
     {
-    	addContext(getOriginId(contributor, pathInBundle), context);
+        addContext(getOriginId(contributor, pathInBundle), context);
     }
+
     /**
      * @param context
      * @throws Exception
@@ -220,19 +230,17 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     public void addContext(String originId, ContextHandler context) throws Exception
     {
         // TODO apply configuration specific to this provider
-    	if (context instanceof WebAppContext)
-    	{
-           ((WebAppContext)context).setExtractWAR(isExtract());
-    	}
+        if (context instanceof WebAppContext)
+        {
+            ((WebAppContext) context).setExtractWAR(isExtract());
+        }
 
         // wrap context as an App
-        App app = new App(getDeploymentManager(),this,originId,context);
+        App app = new App(getDeploymentManager(), this, originId, context);
         String appName = getContextHandlerAppName(context);
-        getDeployedApps().put(appName,app);
+        getDeployedApps().put(appName, app);
         getDeploymentManager().addApp(app);
     }
-    
-    
 
     /**
      * Called by the scanner of the context files directory. If we find the
@@ -250,31 +258,32 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         // and reload the corresponding App.
         // see the 2 pass of the refactoring of the WebAppRegistrationHelper.
         String name = getDeployedAppName(filename);
-        if (name != null)
-        {
-            return getDeployedApps().get(name);
-        }
+        if (name != null) { return getDeployedApps().get(name); }
         return null;
     }
 
     public void removeContext(ContextHandler context) throws Exception
     {
-    	String appName = getContextHandlerAppName(context);
+        String appName = getContextHandlerAppName(context);
         App app = getDeployedApps().remove(context.getDisplayName());
-        if (app == null) {
-        	//try harder to undeploy this context handler.
-        	//see bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=330098
-        	appName = null;
-        	for (Entry<String,App> deployedApp : getDeployedApps().entrySet()) {
-        		if (deployedApp.getValue().getContextHandler() == context) {
-        			app = deployedApp.getValue();
-        			appName = deployedApp.getKey();
-        			break;
-        		}
-        	}
-        	if (appName != null) {
-        		getDeployedApps().remove(appName);
-        	}
+        if (app == null)
+        {
+            // try harder to undeploy this context handler.
+            // see bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=330098
+            appName = null;
+            for (Entry<String, App> deployedApp : getDeployedApps().entrySet())
+            {
+                if (deployedApp.getValue().getContextHandler() == context)
+                {
+                    app = deployedApp.getValue();
+                    appName = deployedApp.getKey();
+                    break;
+                }
+            }
+            if (appName != null)
+            {
+                getDeployedApps().remove(appName);
+            }
         }
         if (app != null)
         {
@@ -282,8 +291,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         }
     }
 
-    // //copied from WebAppProvider as the parameters are identical.
-    // //only removed the parameer related to extractWars.
+
     /* ------------------------------------------------------------ */
     /**
      * Get the parentLoaderPriority.
@@ -299,8 +307,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     /**
      * Set the parentLoaderPriority.
      * 
-     * @param parentLoaderPriority
-     *            the parentLoaderPriority to set
+     * @param parentLoaderPriority the parentLoaderPriority to set
      */
     public void setParentLoaderPriority(boolean parentLoaderPriority)
     {
@@ -322,8 +329,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     /**
      * Set the defaultsDescriptor.
      * 
-     * @param defaultsDescriptor
-     *            the defaultsDescriptor to set
+     * @param defaultsDescriptor the defaultsDescriptor to set
      */
     public void setDefaultsDescriptor(String defaultsDescriptor)
     {
@@ -339,13 +345,12 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         try
         {
             Resource monitoredDir = getMonitoredDirResource();
-            if (monitoredDir == null)
-                return null;
+            if (monitoredDir == null) return null;
             return monitoredDir.getFile();
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.warn(e);
             return null;
         }
     }
@@ -360,17 +365,16 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         try
         {
             Resource monitoredDir = getMonitoredDirResource();
-            if (monitoredDir == null)
-                return null;
+            if (monitoredDir == null) return null;
             return monitoredDir.getFile().toURI().toString();
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.warn(e);
             return null;
         }
     }
-    
+
     public boolean isExtract()
     {
         return _extractWars;
@@ -378,27 +382,28 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 
     public void setExtract(boolean extract)
     {
-        _extractWars=extract;
+        _extractWars = extract;
     }
 
     /**
      * @return true when this app provider locates osgi bundles and features in
-     * its monitored directory and installs them. By default true if there is a folder to monitor.
+     *         its monitored directory and installs them. By default true if
+     *         there is a folder to monitor.
      */
     public boolean isAutoInstallOSGiBundles()
     {
-    	return _autoInstallOSGiBundles;
+        return _autoInstallOSGiBundles;
     }
 
     /**
      * &lt;autoInstallOSGiBundles&gt;true&lt;/autoInstallOSGiBundles&gt;
+     * 
      * @param installingOSGiBundles
      */
     public void setAutoInstallOSGiBundles(boolean installingOSGiBundles)
     {
-        _autoInstallOSGiBundles=installingOSGiBundles;
+        _autoInstallOSGiBundles = installingOSGiBundles;
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -420,33 +425,33 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     {
         setMonitoredDirName(contextsDir);
     }
-    
+
     /**
      * @param tldBundles Comma separated list of bundles that contain tld jars
-     * that should be setup on the jetty instances created here.
+     *            that should be setup on the jetty instances created here.
      */
     public void setTldBundles(String tldBundles)
     {
-    	_tldBundles = tldBundles;
+        _tldBundles = tldBundles;
     }
-    
+
     /**
-     * @return The list of bundles that contain tld jars that should be setup
-     * on the jetty instances created here.
+     * @return The list of bundles that contain tld jars that should be setup on
+     *         the jetty instances created here.
      */
     public String getTldBundles()
     {
-    	return _tldBundles;
+        return _tldBundles;
     }
-    
+
     /**
      * @param configurations The configuration class names.
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _configurationClasses = configurations==null?null:(String[])configurations.clone();
-    }  
-    
+        _configurationClasses = configurations == null ? null : (String[]) configurations.clone();
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * 
@@ -464,41 +469,41 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     {
         if (isAutoInstallOSGiBundles())
         {
-        	if (getMonitoredDirResource()  == null)
-        	{
-        		setAutoInstallOSGiBundles(false);
-        		LOG.info("Disable autoInstallOSGiBundles as there is not contexts folder to monitor.");
-        	}
-	    	else
-        	{
-	    		File scandir = null;
-	    		try
-	    		{
-	                scandir = getMonitoredDirResource().getFile();
-	                if (!scandir.exists() || !scandir.isDirectory())
-	                {
-	                	setAutoInstallOSGiBundles(false);
-	            		LOG.warn("Disable autoInstallOSGiBundles as the contexts folder '" + scandir.getAbsolutePath() + " does not exist.");
-	            		scandir = null;
-	                }
-	    		}
-	    		catch (IOException ioe)
-	    		{
-                	setAutoInstallOSGiBundles(false);
-            		LOG.warn("Disable autoInstallOSGiBundles as the contexts folder '" + getMonitoredDirResource().getURI() + " does not exist.");
-            		scandir = null;
-	    		}
-	    		if (scandir != null)
-	    		{
-		            for (File file : scandir.listFiles())
-		            {
-		                if (fileMightBeAnOSGiBundle(file))
-		                {
-		                    installBundle(file, false);
-		                }
-		            }
-	    		}
-        	}
+            if (getMonitoredDirResource() == null)
+            {
+                setAutoInstallOSGiBundles(false);
+                LOG.info("Disable autoInstallOSGiBundles as there is not contexts folder to monitor.");
+            }
+            else
+            {
+                File scandir = null;
+                try
+                {
+                    scandir = getMonitoredDirResource().getFile();
+                    if (!scandir.exists() || !scandir.isDirectory())
+                    {
+                        setAutoInstallOSGiBundles(false);
+                        LOG.warn("Disable autoInstallOSGiBundles as the contexts folder '" + scandir.getAbsolutePath() + " does not exist.");
+                        scandir = null;
+                    }
+                }
+                catch (IOException ioe)
+                {
+                    setAutoInstallOSGiBundles(false);
+                    LOG.warn("Disable autoInstallOSGiBundles as the contexts folder '" + getMonitoredDirResource().getURI() + " does not exist.");
+                    scandir = null;
+                }
+                if (scandir != null)
+                {
+                    for (File file : scandir.listFiles())
+                    {
+                        if (fileMightBeAnOSGiBundle(file))
+                        {
+                            installBundle(file, false);
+                        }
+                    }
+                }
+            }
         }
         super.doStart();
         if (isAutoInstallOSGiBundles())
@@ -507,10 +512,10 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             super.addScannerListener(scanCycleListner);
         }
     }
-    
+
     /**
-     * When the file is a jar or a folder, we look if it looks like an OSGi bundle.
-     * In that case we install it and start it.
+     * When the file is a jar or a folder, we look if it looks like an OSGi
+     * bundle. In that case we install it and start it.
      * <p>
      * Really a simple trick to get going quickly with development.
      * </p>
@@ -528,7 +533,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             super.fileAdded(filename);
         }
     }
-    
+
     /**
      * @param file
      * @return
@@ -537,15 +542,9 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     {
         if (file.isDirectory())
         {
-            if (new File(file,"META-INF/MANIFEST.MF").exists())
-            {
-                return true;
-            }
+            if (new File(file, "META-INF/MANIFEST.MF").exists()) { return true; }
         }
-        else if (file.getName().endsWith(".jar"))
-        {
-            return true;
-        }
+        else if (file.getName().endsWith(".jar")) { return true; }
         return false;
     }
 
@@ -576,72 +575,73 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             super.fileRemoved(filename);
         }
     }
-    
+
     /**
-     * Returns a bundle according to its location.
-     * In the version 1.6 of org.osgi.framework, BundleContext.getBundle(String) is what we want.
-     * However to support older versions of OSGi. We use our own local refrence mechanism.
+     * Returns a bundle according to its location. In the version 1.6 of
+     * org.osgi.framework, BundleContext.getBundle(String) is what we want.
+     * However to support older versions of OSGi. We use our own local reference
+     * mechanism.
+     * 
      * @param location
      * @return
      */
     protected Bundle getBundle(BundleContext bc, String location)
     {
-    	//not available in older versions of OSGi:
-    	//return bc.getBundle(location);
-    	for (Bundle b : bc.getBundles())
-    	{
-    		if (b.getLocation().equals(location))
-    		{
-    			return b;
-    		}
-    	}
-    	return null;
+        // not available in older versions of OSGi:
+        // return bc.getBundle(location);
+        for (Bundle b : bc.getBundles())
+        {
+            if (b.getLocation().equals(location)) { return b; }
+        }
+        return null;
     }
 
     protected synchronized Bundle installBundle(File file, boolean start)
     {
-    	
+
         try
         {
             BundleContext bc = JettyBootstrapActivator.getBundleContext();
             String location = file.toURI().toString();
             Bundle b = getBundle(bc, location);
-            if (b == null) 
+            if (b == null)
             {
                 b = bc.installBundle(location);
             }
             if (b == null)
             {
-            	//not sure we will ever be here,
-            	//most likely a BundleException was thrown
-            	LOG.warn("The file " + location + " is not an OSGi bundle.");
-            	return null;
+                // not sure we will ever be here,
+                // most likely a BundleException was thrown
+                LOG.warn("The file " + location + " is not an OSGi bundle.");
+                return null;
             }
             if (start && b.getHeaders().get(Constants.FRAGMENT_HOST) == null)
-            {//not a fragment, try to start it. if the framework has finished auto-starting.
-            	if (!PackageAdminServiceTracker.INSTANCE.frameworkHasCompletedAutostarts())
-            	{
-            		if (_pendingBundlesToStart == null)
-            		{
-            			_pendingBundlesToStart = new HashSet<Bundle>();
-            		}
-            		_pendingBundlesToStart.add(b);
-            		return null;
-            	}
-            	else
-            	{
-            		b.start();
-            	}
+            {
+                // not a fragment, try to start it. if the framework has finished
+                // auto-starting.
+                if (!PackageAdminServiceTracker.INSTANCE.frameworkHasCompletedAutostarts())
+                {
+                    if (_pendingBundlesToStart == null)
+                    {
+                        _pendingBundlesToStart = new HashSet<Bundle>();
+                    }
+                    _pendingBundlesToStart.add(b);
+                    return null;
+                }
+                else
+                {
+                    b.start();
+                }
             }
             return b;
         }
         catch (BundleException e)
         {
-            LOG.warn("Unable to " + (start? "start":"install") + " the bundle " + file.getAbsolutePath(), e);
+            LOG.warn("Unable to " + (start ? "start" : "install") + " the bundle " + file.getAbsolutePath(), e);
         }
         return null;
     }
-    
+
     protected void uninstallBundle(File file)
     {
         try
@@ -655,7 +655,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             LOG.warn("Unable to uninstall the bundle " + file.getAbsolutePath(), e);
         }
     }
-    
+
     protected void updateBundle(File file)
     {
         try
@@ -679,53 +679,52 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             LOG.warn("Unable to update the bundle " + file.getAbsolutePath(), e);
         }
     }
-    
 
 }
+
 /**
- * At the end of each scan, if there are some bundles to be started,
- * look if the framework has completed its autostart. In that case start those bundles.
+ * At the end of each scan, if there are some bundles to be started, look if the
+ * framework has completed its autostart. In that case start those bundles.
  */
 class AutoStartWhenFrameworkHasCompleted implements Scanner.ScanCycleListener
 {
-        private static final Logger LOG = Log.getLogger(AutoStartWhenFrameworkHasCompleted.class);
-    
-	private final OSGiAppProvider _appProvider;
-	
-	AutoStartWhenFrameworkHasCompleted(OSGiAppProvider appProvider)
-	{
-		_appProvider = appProvider;
-	}
-	
-	public void scanStarted(int cycle) throws Exception
-	{
-	}
-	
-	public void scanEnded(int cycle) throws Exception
-	{
-		if (_appProvider._pendingBundlesToStart != null && PackageAdminServiceTracker.INSTANCE.frameworkHasCompletedAutostarts())
-		{
-			Iterator<Bundle> it = _appProvider._pendingBundlesToStart.iterator();
-			while (it.hasNext())
-			{
-				Bundle b = it.next();
-				if (b.getHeaders().get(Constants.FRAGMENT_HOST) != null)
-				{
-					continue;
-				}
-				try
-				{
-					b.start();
-				}
-		        catch (BundleException e)
-		        {
-		            LOG.warn("Unable to start the bundle " + b.getLocation(), e);
-		        }
+    private static final Logger LOG = Log.getLogger(AutoStartWhenFrameworkHasCompleted.class);
 
-			}
-			_appProvider._pendingBundlesToStart = null;
-		}
-	}
+    private final OSGiAppProvider _appProvider;
+
+    AutoStartWhenFrameworkHasCompleted(OSGiAppProvider appProvider)
+    {
+        _appProvider = appProvider;
+    }
+
+    public void scanStarted(int cycle) throws Exception
+    {
+    }
+
+    public void scanEnded(int cycle) throws Exception
+    {
+        if (_appProvider._pendingBundlesToStart != null && PackageAdminServiceTracker.INSTANCE.frameworkHasCompletedAutostarts())
+        {
+            Iterator<Bundle> it = _appProvider._pendingBundlesToStart.iterator();
+            while (it.hasNext())
+            {
+                Bundle b = it.next();
+                if (b.getHeaders().get(Constants.FRAGMENT_HOST) != null)
+                {
+                    continue;
+                }
+                try
+                {
+                    b.start();
+                }
+                catch (BundleException e)
+                {
+                    LOG.warn("Unable to start the bundle " + b.getLocation(), e);
+                }
+
+            }
+            _appProvider._pendingBundlesToStart = null;
+        }
+    }
 
 }
-

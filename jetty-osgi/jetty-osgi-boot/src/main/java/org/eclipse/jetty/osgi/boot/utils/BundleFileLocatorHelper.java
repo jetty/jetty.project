@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.osgi.boot.utils;
 
 import java.io.File;
@@ -34,7 +40,6 @@ public interface BundleFileLocatorHelper
     /** The default instance supports felix and equinox */
     public static BundleFileLocatorHelper DEFAULT = new DefaultFileLocatorHelper();
 
-
     /**
      * Works with equinox, felix, nuxeo and probably more. Not exactly in the
      * spirit of OSGi but quite necessary to support self-contained webapps and
@@ -43,8 +48,7 @@ public interface BundleFileLocatorHelper
      * Currently only works with bundles that are not jar.
      * </p>
      * 
-     * @param bundle
-     *            The bundle
+     * @param bundle The bundle
      * @return Its installation location as a file.
      * @throws Exception
      */
@@ -75,16 +79,15 @@ public interface BundleFileLocatorHelper
      *         embedded inside it.
      */
     public File[] locateJarsInsideBundle(Bundle bundle) throws Exception;
-    
-    
+
     /**
-	 * Helper method equivalent to Bundle#getEntry(String entryPath) except that
-	 * it searches for entries in the fragments by using the findEntries method.
-	 * 
-	 * @param bundle
-	 * @param entryPath
-	 * @return null or all the entries found for that path.
-	 */
-	public Enumeration<URL> findEntries(Bundle bundle, String entryPath);
+     * Helper method equivalent to Bundle#getEntry(String entryPath) except that
+     * it searches for entries in the fragments by using the findEntries method.
+     * 
+     * @param bundle
+     * @param entryPath
+     * @return null or all the entries found for that path.
+     */
+    public Enumeration<URL> findEntries(Bundle bundle, String entryPath);
 
 }

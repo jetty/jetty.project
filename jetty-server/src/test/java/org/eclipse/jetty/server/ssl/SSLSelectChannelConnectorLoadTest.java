@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.ssl;
 
 import java.io.BufferedReader;
@@ -14,7 +32,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
@@ -23,41 +40,41 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SSLSelectChannelConnectorLoadTest
 {
     private static Server server;
-    private static SslSelectChannelConnector connector;
+    private static SelectChannelConnector connector;
     private static SSLContext sslContext;
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new Server();
-        connector = new SslSelectChannelConnector();
-        server.addConnector(connector);
-
         String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
-        SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStorePath(keystorePath);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-        cf.setTrustStore(keystorePath);
-        cf.setTrustStorePassword("storepwd");
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keystorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        sslContextFactory.setTrustStore(keystorePath);
+        sslContextFactory.setTrustStorePassword("storepwd");
+
+        server = new Server();
+        connector = new SelectChannelConnector(server, sslContextFactory);
+        server.addConnector(connector);
 
         server.setHandler(new EmptyHandler());
 
         server.start();
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
+        keystore.load(new FileInputStream(keystorePath), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         sslContext = SSLContext.getInstance("SSL");
@@ -72,7 +89,6 @@ public class SSLSelectChannelConnectorLoadTest
     }
 
     @Test
-    @Ignore
     public void testLongLivedConnections() throws Exception
     {
         Worker.totalIterations.set(0);
@@ -98,13 +114,13 @@ public class SSLSelectChannelConnectorLoadTest
             boolean done = true;
             for (Future task : tasks)
                 done &= task.isDone();
-            System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
+            //System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
         }
         long end = System.currentTimeMillis();
-        System.err.println();
-        System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
+        //System.err.println();
+        //System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         for (Worker worker : workers)
             worker.close();
@@ -120,7 +136,6 @@ public class SSLSelectChannelConnectorLoadTest
     }
 
     @Test
-    @Ignore
     public void testShortLivedConnections() throws Exception
     {
         Worker.totalIterations.set(0);
@@ -145,13 +160,13 @@ public class SSLSelectChannelConnectorLoadTest
             boolean done = true;
             for (Future task : tasks)
                 done &= task.isDone();
-            System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
+            // System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
         }
         long end = System.currentTimeMillis();
-        System.err.println();
-        System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
+        // System.err.println();
+        // System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         threadPool.shutdown();
 

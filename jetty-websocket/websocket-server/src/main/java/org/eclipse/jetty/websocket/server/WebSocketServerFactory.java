@@ -1,18 +1,20 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.websocket.server;
 
@@ -28,14 +30,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -43,6 +44,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.driver.EventMethodsCache;
@@ -50,7 +53,6 @@ import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
 import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.io.IncomingFrames;
 import org.eclipse.jetty.websocket.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.io.WebSocketAsyncConnection;
 import org.eclipse.jetty.websocket.io.WebSocketSession;
 import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.handshake.HandshakeHixie76;
@@ -62,7 +64,6 @@ import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 public class WebSocketServerFactory extends AbstractLifeCycle implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
-    private final Queue<WebSocketAsyncConnection> connections = new ConcurrentLinkedQueue<WebSocketAsyncConnection>();
 
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     {
@@ -70,6 +71,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         handshakes.put(HandshakeHixie76.VERSION,new HandshakeHixie76());
     }
 
+    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
@@ -84,7 +86,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
     public WebSocketServerFactory(WebSocketPolicy policy)
     {
-        this(policy,new StandardByteBufferPool());
+        this(policy,new MappedByteBufferPool());
     }
 
     public WebSocketServerFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -142,21 +144,17 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         return upgrade(sockreq,sockresp,websocket);
     }
 
-    protected boolean addConnection(WebSocketAsyncConnection connection)
-    {
-        return isRunning() && connections.add(connection);
-    }
-
     protected void closeConnections()
     {
-        for (WebSocketAsyncConnection connection : connections)
+        for (WebSocketSession session : sessions)
         {
-            connection.getEndPoint().close();
+            session.close();
         }
+        sessions.clear();
     }
 
     @Override
-    public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
+    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
     {
         if (methodsCache.count() < 1)
         {
@@ -182,6 +180,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     protected void doStop() throws Exception
     {
         closeConnections();
+        super.doStop();
     }
 
     public WebSocketCreator getCreator()
@@ -198,7 +197,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
      * Get the base policy in use for WebSockets.
      * <p>
      * Note: individual WebSocket implementations can override some of the values in here by using the {@link WebSocket &#064;WebSocket} annotation.
-     * 
+     *
      * @return the base policy
      */
     public WebSocketPolicy getPolicy()
@@ -278,9 +277,25 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         methodsCache.register(websocketClass);
     }
 
-    protected boolean removeConnection(WebSocketAsyncConnection connection)
+    public boolean sessionClosed(WebSocketSession session)
     {
-        return connections.remove(connection);
+        return isRunning() && sessions.remove(session);
+    }
+
+    public boolean sessionOpened(WebSocketSession session)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Session Opened: {}",session);
+        }
+        if (!isRunning())
+        {
+            LOG.warn("Factory is not running");
+            return false;
+        }
+        boolean ret = sessions.offer(session);
+        session.onConnect();
+        return ret;
     }
 
     public void setCreator(WebSocketCreator creator)
@@ -293,7 +308,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
      * <p>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
-     * 
+     *
      * @param request
      *            The request to upgrade
      * @param response
@@ -334,18 +349,19 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
         // Create connection
         HttpConnection http = HttpConnection.getCurrentConnection();
-        AsyncEndPoint endp = http.getEndPoint();
-        Executor executor = http.getConnector().findExecutor();
+        EndPoint endp = http.getEndPoint();
+        Executor executor = http.getConnector().getExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
-        WebSocketAsyncConnection connection = new WebSocketAsyncConnection(endp,executor,scheduler,websocket.getPolicy(),bufferPool);
+        WebSocketServerConnection connection = new WebSocketServerConnection(endp,executor,scheduler,websocket.getPolicy(),bufferPool,this);
         // Tell jetty about the new connection
-        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTR,connection);
+        request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,connection);
 
         LOG.debug("HttpConnection: {}",http);
         LOG.debug("AsyncWebSocketConnection: {}",connection);
 
         // Initialize / Negotiate Extensions
         WebSocketSession session = new WebSocketSession(websocket,connection,getPolicy(),response.getAcceptedSubProtocol());
+        connection.setSession(session);
         List<Extension> extensions = initExtensions(request.getExtensions());
 
         // Start with default routing.
@@ -363,6 +379,23 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
                 Extension ext = extIter.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
+
+                // Handle RSV reservations
+                if (ext.useRsv1())
+                {
+                    connection.getGenerator().setRsv1InUse(true);
+                    connection.getParser().setRsv1InUse(true);
+                }
+                if (ext.useRsv2())
+                {
+                    connection.getGenerator().setRsv2InUse(true);
+                    connection.getParser().setRsv2InUse(true);
+                }
+                if (ext.useRsv3())
+                {
+                    connection.getGenerator().setRsv3InUse(true);
+                    connection.getParser().setRsv3InUse(true);
+                }
             }
 
             // Connect incomings
@@ -384,14 +417,6 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
         // Process (version specific) handshake response
         LOG.debug("Handshake Response: {}",handshaker);
         handshaker.doHandshakeResponse(request,response);
-
-        // Add connection
-        addConnection(connection);
-
-        // Notify POJO of connection
-        // TODO move to WebSocketAsyncConnection.onOpen
-        websocket.setConnection(session);
-        websocket.onConnect();
 
         LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),version,response.getAcceptedSubProtocol(),connection);
         return true;

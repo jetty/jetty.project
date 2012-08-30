@@ -1,19 +1,22 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
-
-import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,7 +25,6 @@ import java.net.Socket;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -42,17 +44,19 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class AsyncStressTest
 {
     private static final Logger LOG = Log.getLogger(AsyncStressTest.class);
 
-    protected Server _server = new Server();
+    protected QueuedThreadPool _threads=new QueuedThreadPool();
+    protected Server _server = new Server(_threads);
     protected SuspendHandler _handler = new SuspendHandler();
     protected SelectChannelConnector _connector;
     protected InetAddress _addr;
     protected int _port;
     protected Random _random = new Random();
-    protected QueuedThreadPool _threads=new QueuedThreadPool();
     private final static String[][] __paths =
     {
         {"/path","NORMAL"},
@@ -66,10 +70,10 @@ public class AsyncStressTest
     @Before
     public void init() throws Exception
     {
+        _server.manage(_threads);
         _threads.setMaxThreads(50);
-        _server.setThreadPool(_threads);
-        _connector = new SelectChannelConnector();
-        _connector.setMaxIdleTime(120000);
+        _connector = new SelectChannelConnector(_server);
+        _connector.setIdleTimeout(120000);
         _server.setConnectors(new Connector[]{ _connector });
         _server.setHandler(_handler);
         _server.start();
@@ -322,8 +326,8 @@ public class AsyncStressTest
             }
         }
     }
-    
-    
+
+
     private static AsyncListener __asyncListener = new AsyncListener()
     {
         @Override
@@ -341,7 +345,7 @@ public class AsyncStressTest
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            
+
         }
 
         @Override

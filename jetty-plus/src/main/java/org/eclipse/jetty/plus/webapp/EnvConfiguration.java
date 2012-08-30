@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.plus.webapp;
 
@@ -18,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -56,26 +60,26 @@ public class EnvConfiguration extends AbstractConfiguration
         this.jettyEnvXmlUrl = url;
     }
 
-    /** 
+    /**
      * @see Configuration#configure(WebAppContext)
      * @throws Exception
      */
     @Override
     public void preConfigure (WebAppContext context) throws Exception
-    {        
+    {
         //create a java:comp/env
         createEnvContext(context);
     }
 
-    /** 
+    /**
      * @throws Exception
      */
     @Override
     public void configure (WebAppContext context) throws Exception
-    {  
+    {
         if (LOG.isDebugEnabled())
             LOG.debug("Created java:comp/env for webapp "+context.getContextPath());
-        
+
         //check to see if an explicit file has been set, if not,
         //look in WEB-INF/jetty-env.xml
         if (jettyEnvXmlUrl == null)
@@ -92,7 +96,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 }
             }
         }
-        
+
         if (jettyEnvXmlUrl != null)
         {
             synchronized (localContextRoot.getRoot())
@@ -130,8 +134,8 @@ public class EnvConfiguration extends AbstractConfiguration
         bindEnvEntries(context);
     }
 
-    
-    /** 
+
+    /**
      * Remove jndi setup from start
      * @see Configuration#deconfigure(WebAppContext)
      * @throws Exception
@@ -169,8 +173,8 @@ public class EnvConfiguration extends AbstractConfiguration
         }
     }
 
-    
-    /** 
+
+    /**
      * Remove all jndi setup
      * @see Configuration#deconfigure(WebAppContext)
      * @throws Exception
@@ -179,7 +183,7 @@ public class EnvConfiguration extends AbstractConfiguration
     public void destroy (WebAppContext context) throws Exception
     {
         try
-        {            
+        {
             //unbind any NamingEntries that were configured in this webapp's name space
             NamingContext scopeContext = (NamingContext)NamingEntryUtil.getContextForScope(context);
             scopeContext.getParent().destroySubcontext(scopeContext.getName());
@@ -190,11 +194,11 @@ public class EnvConfiguration extends AbstractConfiguration
             LOG.debug("No naming entries configured in environment for webapp "+context);
         }
     }
-    
+
     /**
      * Bind all EnvEntries that have been declared, so that the processing of the
      * web.xml file can potentially override them.
-     * 
+     *
      * We first bind EnvEntries declared in Server scope, then WebAppContext scope.
      * @throws NamingException
      */
@@ -212,11 +216,11 @@ public class EnvConfiguration extends AbstractConfiguration
             EnvEntry ee = (EnvEntry)itor.next();
             ee.bindToENC(ee.getJndiName());
             Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
-            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later          
+            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
         }
-        
+
         LOG.debug("Binding env entries from the server scope");
-        
+
         scope = context.getServer();
         list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
         itor = list.iterator();
@@ -225,9 +229,9 @@ public class EnvConfiguration extends AbstractConfiguration
             EnvEntry ee = (EnvEntry)itor.next();
             ee.bindToENC(ee.getJndiName());
             Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
-            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later          
+            NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
         }
-        
+
         LOG.debug("Binding env entries from the context scope");
         scope = context;
         list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
@@ -239,8 +243,8 @@ public class EnvConfiguration extends AbstractConfiguration
             Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, ee);
             NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later
         }
-    }  
-    
+    }
+
     protected void createEnvContext (WebAppContext wac)
     throws NamingException
     {
@@ -252,12 +256,12 @@ public class EnvConfiguration extends AbstractConfiguration
             Context compCtx =  (Context)context.lookup ("java:comp");
             compCtx.createSubcontext("env");
         }
-        finally 
+        finally
         {
            Thread.currentThread().setContextClassLoader(old_loader);
        }
     }
-    
+
     private static class Bound
     {
         final NamingContext _context;

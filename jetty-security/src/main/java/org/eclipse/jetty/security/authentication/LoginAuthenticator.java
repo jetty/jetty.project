@@ -1,21 +1,22 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.security.authentication;
-
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,10 +25,14 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
-    public final static String SESSION_SECURED="org.eclipse.jetty.security.secured";
+    private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
+
     protected final DeferredAuthentication _deferred=new DeferredAuthentication(this);
     protected LoginService _loginService;
     protected IdentityService _identityService;
@@ -47,40 +52,40 @@ public abstract class LoginAuthenticator implements Authenticator
             throw new IllegalStateException("No IdentityService for "+this+" in "+configuration);
         _renewSession=configuration.isSessionRenewedOnAuthentication();
     }
-    
+
     public LoginService getLoginService()
     {
         return _loginService;
     }
-    
-    /* ------------------------------------------------------------ */
-    /** Change the session when the request is authenticated for the first time
+
+    /** Change the session id.
+     * The session is changed to a new instance with a new ID if and only if:<ul>
+     * <li>A session exists.
+     * <li>The {@link AuthConfiguration#isSessionRenewedOnAuthentication()} returns true.
+     * <li>The session ID has been given to unauthenticated responses
+     * </ul>
      * @param request
      * @param response
      * @return The new session.
      */
-    protected HttpSession renewSessionOnAuthentication(HttpServletRequest request, HttpServletResponse response)
+    protected HttpSession renewSession(HttpServletRequest request, HttpServletResponse response)
     {
         HttpSession httpSession = request.getSession(false);
-        if (_renewSession && httpSession!=null && httpSession.getAttribute(SESSION_SECURED)==null)
+
+        if (_renewSession && httpSession!=null)
         {
-            synchronized (this)
+            synchronized (httpSession)
             {
-                Map<String,Object> attributes = new HashMap<String, Object>();
-                for (Enumeration<String> e=httpSession.getAttributeNames();e.hasMoreElements();)
+                //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
+                //(indicated by SESSION_SECURED not being set on the session) then we should change id
+                if (httpSession.getAttribute(AbstractSessionManager.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
                 {
-                    String name=e.nextElement();
-                    attributes.put(name,httpSession.getAttribute(name));
-                    httpSession.removeAttribute(name);
+                    HttpSession newSession = AbstractSessionManager.renewSession(request, httpSession,true);
+                    LOG.debug("renew {}->{}",httpSession.getId(),newSession.getId());
+                    httpSession=newSession;
                 }
-                httpSession.invalidate();
-                httpSession = request.getSession(true);
-                httpSession.setAttribute(SESSION_SECURED,Boolean.TRUE);
-                for (Map.Entry<String, Object> entry: attributes.entrySet())
-                    httpSession.setAttribute(entry.getKey(),entry.getValue());
             }
         }
-        
         return httpSession;
     }
 }

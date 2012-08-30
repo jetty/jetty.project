@@ -104,9 +104,11 @@
                 </executions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot</Bundle-SymbolicName>
-                        <Export-Package>org.eclipse.jetty.osgi.boot;version="${parsedVersion.osgiVersion}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${parsedVersion.osgiVersion}"</Export-Package> 
+                        <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
+                        <Bundle-Name>Jetty OSGi Boot</Bundle-Name>
                         <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
+                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+                        <Export-Package>org.eclipse.jetty.osgi.boot;version="${parsedVersion.osgiVersion}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${parsedVersion.osgiVersion}"</Export-Package> 
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions
                         of the packages it uses; no need to reflect some tight dependency determined at
                         compilation time. --> 
@@ -120,8 +122,8 @@
  javax.servlet.http;version="2.6.0",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
- org.eclipse.jetty.nested;version="8.0.0";resolution:=optional,
- org.eclipse.jetty.annotations;version="8.0.0";resolution:=optional,
+ org.eclipse.jetty.nested;version="[8.1,9)";resolution:=optional,
+ org.eclipse.jetty.annotations;version="[8.1,9)";resolution:=optional,
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
@@ -135,7 +137,7 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[8.0.0,9.0.0)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[8.1,9)"</DynamicImport-Package>
                         <!--Require-Bundle/-->
                         <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment> 
                     </instructions>

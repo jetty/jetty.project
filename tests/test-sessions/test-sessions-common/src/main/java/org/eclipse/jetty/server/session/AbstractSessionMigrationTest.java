@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright 2004-2010 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.session;
 
@@ -111,11 +116,11 @@ public abstract class AbstractSessionMigrationTest
         protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             HttpSession session = request.getSession(false);
-            if (session == null) session = request.getSession(true);
 
             String action = request.getParameter("action");
             if ("set".equals(action))
             {
+                if (session == null) session = request.getSession(true);
                 int value = Integer.parseInt(request.getParameter("value"));
                 session.setAttribute("value", value);
                 PrintWriter writer = response.getWriter();
@@ -125,6 +130,8 @@ public abstract class AbstractSessionMigrationTest
             else if ("get".equals(action))
             {
                 int value = (Integer)session.getAttribute("value");
+                int x = ((AbstractSession)session).getMaxInactiveInterval();
+                assertTrue(x > 0);
                 PrintWriter writer = response.getWriter();
                 writer.println(value);
                 writer.flush();

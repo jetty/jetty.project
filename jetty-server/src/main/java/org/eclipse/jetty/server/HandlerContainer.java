@@ -1,18 +1,25 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
@@ -22,18 +29,21 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * or many (see {@link org.eclipse.jetty.server.handler.HandlerList} or {@link org.eclipse.jetty.server.handler.HandlerCollection}. 
  *
  */
+@ManagedObject("Handler of Multiple Handlers")
 public interface HandlerContainer extends LifeCycle
 {
     /* ------------------------------------------------------------ */
     /**
      * @return array of handlers directly contained by this handler.
      */
+    @ManagedAttribute("handlers in this container")
     public Handler[] getHandlers();
     
     /* ------------------------------------------------------------ */
     /**
      * @return array of all handlers contained by this handler and it's children
      */
+    @ManagedAttribute("all contained handlers")
     public Handler[] getChildHandlers();
     
     /* ------------------------------------------------------------ */

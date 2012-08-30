@@ -1,18 +1,21 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.server.examples.echo;
 
 import java.io.IOException;
@@ -25,6 +28,7 @@ import org.eclipse.jetty.websocket.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.protocol.Frame;
+import org.eclipse.jetty.websocket.protocol.OpCode;
 
 /**
  * Echo back the incoming text or binary as 2 frames of (roughly) equal size.
@@ -35,7 +39,7 @@ public class EchoFragmentSocket
     @OnWebSocketFrame
     public void onFrame(WebSocketConnection conn, Frame frame)
     {
-        if (!frame.getOpCode().isDataFrame())
+        if (!OpCode.isDataFrame(frame.getOpCode()))
         {
             return;
         }
@@ -55,11 +59,11 @@ public class EchoFragmentSocket
         {
             switch (frame.getOpCode())
             {
-                case BINARY:
+                case OpCode.BINARY:
                     conn.write(null,nop,buf1);
                     conn.write(null,nop,buf2);
                     break;
-                case TEXT:
+                case OpCode.TEXT:
                     // NOTE: This impl is not smart enough to split on a UTF8 boundary
                     conn.write(null,nop,BufferUtil.toUTF8String(buf1));
                     conn.write(null,nop,BufferUtil.toUTF8String(buf2));

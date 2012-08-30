@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright 2004-2010 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.session;
 
@@ -84,19 +89,7 @@ public abstract class AbstractOrphanedSessionTest
                     // must be removed by scavenging done in the other node.
                     Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + 2L * scavengePeriod));
 
-                    System.err.println("FINISHED waiting for session to expire");
                     // Perform one request to server2 to be sure that the session has been expired
-//                    
-
-                    // force invalidate to test
-//                    ContentExchange exchange3 = new ContentExchange(true);
-//                    exchange3.setMethod(HttpMethods.GET);
-//                    exchange3.setURL("http://localhost:" + port2 + contextPath + servletMapping + "?action=remove");
-//                    exchange3.getRequestFields().add("Cookie", sessionCookie);
-//                    client.send(exchange3);
-//                    exchange3.waitForDone();
-                    
-                    System.err.println("CHECKING NODE2");
                     ContentExchange exchange2 = new ContentExchange(true);
                     exchange2.setMethod(HttpMethods.GET);
                     exchange2.setURL("http://localhost:" + port2 + contextPath + servletMapping + "?action=check");

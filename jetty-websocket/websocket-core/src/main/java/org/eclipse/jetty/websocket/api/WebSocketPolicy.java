@@ -1,18 +1,21 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.api;
 
 import org.eclipse.jetty.websocket.masks.Masker;
@@ -75,7 +78,7 @@ public class WebSocketPolicy
      * <p>
      * Default: 300000 (ms)
      */
-    private int maxIdleTime = 300000;
+    private int idleTimeout = 300000;
 
     /**
      * The implementation for masking
@@ -128,10 +131,12 @@ public class WebSocketPolicy
     public WebSocketPolicy clonePolicy()
     {
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
-        clone.bufferSize = this.bufferSize;
+        clone.autoFragment = this.autoFragment;
         clone.masker = this.masker;
+        clone.idleTimeout = this.idleTimeout;
+        clone.bufferSize = this.bufferSize;
+        clone.maxPayloadSize = this.maxPayloadSize;
         clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
-        clone.maxIdleTime = this.maxIdleTime;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         return clone;
     }
@@ -146,6 +151,11 @@ public class WebSocketPolicy
         return bufferSize;
     }
 
+    public int getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
     public Masker getMasker()
     {
         return masker;
@@ -154,11 +164,6 @@ public class WebSocketPolicy
     public int getMaxBinaryMessageSize()
     {
         return maxBinaryMessageSize;
-    }
-
-    public int getMaxIdleTime()
-    {
-        return maxIdleTime;
     }
 
     public int getMaxPayloadSize()
@@ -186,6 +191,11 @@ public class WebSocketPolicy
         this.bufferSize = bufferSize;
     }
 
+    public void setIdleTimeout(int idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+    }
+
     public void setMasker(Masker masker)
     {
         this.masker = masker;
@@ -194,11 +204,6 @@ public class WebSocketPolicy
     public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
     {
         this.maxBinaryMessageSize = maxBinaryMessageSize;
-    }
-
-    public void setMaxIdleTime(int maxIdleTime)
-    {
-        this.maxIdleTime = maxIdleTime;
     }
 
     public void setMaxPayloadSize(int maxPayloadSize)

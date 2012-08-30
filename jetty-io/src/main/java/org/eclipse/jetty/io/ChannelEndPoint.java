@@ -1,25 +1,34 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -38,10 +47,11 @@ public class ChannelEndPoint extends AbstractEndPoint
     private volatile boolean _ishut;
     private volatile boolean _oshut;
 
-    public ChannelEndPoint(SocketChannel channel) throws IOException
+    public ChannelEndPoint(ScheduledExecutorService scheduler,SocketChannel channel) throws IOException
     {
-        super((InetSocketAddress)channel.socket().getLocalSocketAddress(),
-              (InetSocketAddress)channel.socket().getRemoteSocketAddress());
+        super(scheduler,
+            (InetSocketAddress)channel.socket().getLocalSocketAddress(),
+            (InetSocketAddress)channel.socket().getRemoteSocketAddress());
         _channel = channel;
         _socket=channel.socket();
     }
@@ -122,12 +132,13 @@ public class ChannelEndPoint extends AbstractEndPoint
         try
         {
             int filled = _channel.read(buffer);
+            LOG.debug("filled {} {}", filled, this);
 
             if (filled>0)
                 notIdle();
             else if (filled==-1)
                 shutdownInput();
-            
+
             return filled;
         }
         catch(IOException e)
@@ -146,26 +157,41 @@ public class ChannelEndPoint extends AbstractEndPoint
     public int flush(ByteBuffer... buffers) throws IOException
     {
         int flushed=0;
-        if (buffers.length==1)
-            flushed=_channel.write(buffers[0]);
-        else if (buffers.length>1 && _channel instanceof GatheringByteChannel)
-            flushed= (int)((GatheringByteChannel)_channel).write(buffers,0,buffers.length);
-        else
+        try
         {
-            for (ByteBuffer b : buffers)
+            if (buffers.length==1)
+                flushed=_channel.write(buffers[0]);
+            else if (buffers.length>1 && _channel instanceof GatheringByteChannel)
+                flushed= (int)((GatheringByteChannel)_channel).write(buffers,0,buffers.length);
+            else
             {
-                if (b.hasRemaining())
+                for (ByteBuffer b : buffers)
                 {
-                    int l=_channel.write(b);
-                    if (l>0)
-                        flushed+=l;
-                    else
-                        break;
+                    if (b.hasRemaining())
+                    {
+                        int l=_channel.write(b);
+                        if (l>0)
+                            flushed+=l;
+                        else
+                            break;
+                    }
                 }
             }
+            LOG.debug("flushed {} {}", flushed, this);
+        }
+        catch (ClosedChannelException | EOFException | SocketException e)
+        {
+            throw new EofException(e);
         }
         if (flushed>0)
+        {
             notIdle();
+            
+            // clear empty buffers to prevent position creeping up the buffer
+            for (ByteBuffer b : buffers)
+                if (BufferUtil.isEmpty(b))
+                    BufferUtil.clear(b);
+        }
         return flushed;
     }
 
@@ -183,5 +209,17 @@ public class ChannelEndPoint extends AbstractEndPoint
     public Socket getSocket()
     {
         return _socket;
+    }
+
+    @Override
+    protected void onIncompleteFlush()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected boolean needsFill() throws IOException
+    {
+        throw new UnsupportedOperationException();
     }
 }

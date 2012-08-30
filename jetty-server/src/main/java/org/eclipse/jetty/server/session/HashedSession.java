@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.session;
 
 import java.io.DataOutputStream;
@@ -9,7 +27,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.Enumeration;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.IO;
@@ -22,7 +39,7 @@ public class HashedSession extends AbstractSession
 
     private final HashSessionManager _hashSessionManager;
 
-    /** Whether the session has been saved because it has been deemed idle; 
+    /** Whether the session has been saved because it has been deemed idle;
      * in which case its attribute map will have been saved and cleared. */
     private transient boolean _idled = false;
 
@@ -54,7 +71,7 @@ public class HashedSession extends AbstractSession
             deIdle();
         super.checkValid();
     }
-    
+
     /* ------------------------------------------------------------- */
     @Override
     public void setMaxInactiveInterval(int secs)
@@ -70,7 +87,7 @@ public class HashedSession extends AbstractSession
     throws IllegalStateException
     {
         super.doInvalidate();
-        
+
         // Remove from the disk
         if (_hashSessionManager._storeDir!=null && getId()!=null)
         {
@@ -91,7 +108,7 @@ public class HashedSession extends AbstractSession
 
             File file = null;
             FileOutputStream fos = null;
-            
+
             try
             {
                 file = new File(_hashSessionManager._storeDir, super.getId());
@@ -125,16 +142,16 @@ public class HashedSession extends AbstractSession
         }
     }
     /* ------------------------------------------------------------ */
-    public synchronized void save(OutputStream os)  throws IOException 
+    public synchronized void save(OutputStream os)  throws IOException
     {
         DataOutputStream out = new DataOutputStream(os);
         out.writeUTF(getClusterId());
         out.writeUTF(getNodeId());
         out.writeLong(getCreationTime());
         out.writeLong(getAccessed());
-        
+
         /* Don't write these out, as they don't make sense to store because they
-         * either they cannot be true or their value will be restored in the 
+         * either they cannot be true or their value will be restored in the
          * Session constructor.
          */
         //out.writeBoolean(_invalid);
@@ -178,8 +195,8 @@ public class HashedSession extends AbstractSession
                 _hashSessionManager.restoreSession(fis, this);
 
                 didActivate();
-                
-                // If we are doing period saves, then there is no point deleting at this point 
+
+                // If we are doing period saves, then there is no point deleting at this point
                 if (_hashSessionManager._savePeriodMs == 0)
                     file.delete();
             }
@@ -192,19 +209,19 @@ public class HashedSession extends AbstractSession
         }
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Idle the session to reduce session memory footprint.
-     * 
-     * The session is idled by persisting it, then clearing the session values attribute map and finally setting 
-     * it to an idled state.  
+     *
+     * The session is idled by persisting it, then clearing the session values attribute map and finally setting
+     * it to an idled state.
      */
     public synchronized void idle()
     {
         save(false);
     }
-    
+
     /* ------------------------------------------------------------ */
     public synchronized boolean isIdled()
     {

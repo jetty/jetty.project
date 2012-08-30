@@ -1,20 +1,19 @@
-//========================================================================
-//Copyright 2004-2008 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//Licensed under the Apache License, Version 2.0 (the "License");
-//you may not use this file except in compliance with the License.
-//You may obtain a copy of the License at 
-//http://www.apache.org/licenses/LICENSE-2.0
-//Unless required by applicable law or agreed to in writing, software
-//distributed under the License is distributed on an "AS IS" BASIS,
-//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//See the License for the specific language governing permissions and
-//limitations under the License.
-//========================================================================
-
-// JettyTest.java --
 //
-// Junit test that shows the Jetty SSL bug.
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
 //
 
 package org.eclipse.jetty.server.ssl;
@@ -27,7 +26,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -36,37 +34,36 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * HttpServer Tester.
  */
 public class SSLCloseTest extends TestCase
 {
-    private static AsyncEndPoint __endp;
+    private static EndPoint __endp;
     private static class CredulousTM implements TrustManager, X509TrustManager
     {
         public X509Certificate[] getAcceptedIssuers()
         {
-            return null;
+            return new X509Certificate[]{};
         }
 
         public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
         {
-            return;
         }
 
         public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
         {
-            return;
         }
     }
-    
+
     private static final TrustManager[] s_dummyTrustManagers=new TrustManager[]  { new CredulousTM() };
 
     // ~ Methods
@@ -74,25 +71,25 @@ public class SSLCloseTest extends TestCase
 
     /**
      * Feed the server the entire request at once.
-     * 
+     *
      * @throws Exception
      */
     public void testClose() throws Exception
     {
-        Server server=new Server();
-        SslSelectChannelConnector connector=new SslSelectChannelConnector();
-
         String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
-        
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+
+        Server server=new Server();
+        SelectChannelConnector connector=new SelectChannelConnector(server, sslContextFactory);
         connector.setPort(0);
-        connector.getSslContextFactory().setKeyStorePath(keystore);
-        connector.getSslContextFactory().setKeyStorePassword("storepwd");
-        connector.getSslContextFactory().setKeyManagerPassword("keypwd");
 
         server.setConnectors(new Connector[]
         { connector });
         server.setHandler(new WriteHandler());
-        
+
         server.start();
 
 
@@ -101,29 +98,28 @@ public class SSLCloseTest extends TestCase
 
         int port=connector.getLocalPort();
 
-        // System.err.println("write:"+i);
         Socket socket=ctx.getSocketFactory().createSocket("localhost",port);
         OutputStream os=socket.getOutputStream();
 
-        os.write("GET /test HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n".getBytes());
+        os.write((
+            "GET /test HTTP/1.1\r\n"+
+            "Host:test\r\n"+
+            "Connection:close\r\n\r\n").getBytes());
         os.flush();
-        
+
         BufferedReader in =new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         String line;
         while ((line=in.readLine())!=null)
         {
-            System.err.println(line);
             if (line.trim().length()==0)
                 break;
         }
 
         Thread.sleep(2000);
-        System.err.println(__endp);
 
         while ((line=in.readLine())!=null)
-            System.err.println(line);
-        
+            Thread.yield();
     }
 
 
@@ -137,7 +133,7 @@ public class SSLCloseTest extends TestCase
                 response.setStatus(200);
                 response.setHeader("test","value");
                 __endp=baseRequest.getHttpChannel().getEndPoint();
-                
+
                 OutputStream out=response.getOutputStream();
 
                 String data = "Now is the time for all good men to come to the aid of the party.\n";
@@ -150,7 +146,7 @@ public class SSLCloseTest extends TestCase
 
                 for (int i=0;i<2;i++)
                 {
-                    System.err.println("Write "+i+" "+bytes.length);
+                    // System.err.println("Write "+i+" "+bytes.length);
                     out.write(bytes);
                 }
             }

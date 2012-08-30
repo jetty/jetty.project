@@ -1,23 +1,26 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.server.examples.echo;
 
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.server.WebSocketRequest;
-import org.eclipse.jetty.websocket.server.WebSocketResponse;
 
 /**
  * Example of setting up a creator to create appropriately via the proposed and negotiated protocols.
@@ -29,7 +32,7 @@ public class EchoCreator implements WebSocketCreator
     private LogSocket logSocket = new LogSocket();
 
     @Override
-    public Object createWebSocket(WebSocketRequest req, WebSocketResponse resp)
+    public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
     {
         for (String protocol : req.getSubProtocols())
         {

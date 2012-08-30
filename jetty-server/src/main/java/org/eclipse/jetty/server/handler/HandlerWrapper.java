@@ -1,20 +1,25 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -22,6 +27,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -29,6 +36,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * {@link LifeCycle life cycle} events to a delegate. This is primarily used to implement the <i>Decorator</i> pattern.
  *
  */
+@ManagedObject("Handler wrapping another Handler")
 public class HandlerWrapper extends AbstractHandlerContainer
 {
     protected Handler _handler;
@@ -45,6 +53,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
+    @ManagedAttribute(value="Wrapped Handler", readonly=true)
     public Handler getHandler()
     {
         return _handler;
@@ -54,6 +63,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /**
      * @return Returns the handlers.
      */
+    @Override
     public Handler[] getHandlers()
     {
         if (_handler==null)
@@ -74,7 +84,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         _handler = handler;
         if (handler!=null)
             handler.setServer(getServer());
-        
+
         if (getServer()!=null)
             getServer().getContainer().update(this, old_handler, handler, "handler");
     }
@@ -104,6 +114,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (_handler!=null && isStarted())
@@ -137,9 +148,9 @@ public class HandlerWrapper extends AbstractHandlerContainer
 
     /* ------------------------------------------------------------ */
     @Override
-    protected Object expandChildren(Object list, Class byClass)
+    protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
-        return expandHandler(_handler,list,byClass);
+        expandHandler(_handler,list,byClass);
     }
 
     /* ------------------------------------------------------------ */

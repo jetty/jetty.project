@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2003-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.start;
 import java.io.InputStreamReader;
@@ -62,7 +67,7 @@ public class Monitor extends Thread
         catch(Exception e)
         {
             Config.debug(e);
-            System.err.println(e.toString());
+            System.err.println("Error binding monitor port "+port+": "+e.toString());
         }
         finally
         {
@@ -99,7 +104,10 @@ public class Monitor extends Thread
                     new LineNumberReader(new InputStreamReader(socket.getInputStream()));
                 String key=lin.readLine();
                 if (!_key.equals(key))
+                {
+                    System.err.println("Ignoring command with incorrect key");
                     continue;
+                }
                 
                 String cmd=lin.readLine();
                 Config.debug("command=" + cmd);
@@ -108,7 +116,18 @@ public class Monitor extends Thread
                     try {socket.close();}catch(Exception e){e.printStackTrace();}
                     try {_socket.close();}catch(Exception e){e.printStackTrace();}
                     if (_process!=null)
+                    {
+                        //if we have a child process, wait for it to finish before we stop
+                        try
+                        {
                         _process.destroy();
+                        _process.waitFor();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            System.err.println("Interrupted waiting for child to terminate");
+                        }
+                    }
                     System.exit(0);
                 }
                 else if ("status".equals(cmd))

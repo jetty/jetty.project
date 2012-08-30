@@ -1,20 +1,24 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.extensions.fragment;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
@@ -26,70 +30,58 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public class FragmentExtension extends Extension
 {
     private int maxLength = -1;
-    private int minFragments = 1;
-
 
     @Override
-    public <C> void output(C context, Callback<C> callback, WebSocketFrame frame)
+    public <C> void output(C context, Callback<C> callback, final WebSocketFrame frame) throws IOException
     {
-        if (frame.getOpCode().isControlFrame())
+        if (frame.isControlFrame())
         {
             // Cannot fragment Control Frames
             nextOutput(context,callback,frame);
             return;
         }
 
-        int fragments = 1;
         int length = frame.getPayloadLength();
 
-        OpCode opcode = frame.getOpCode();
+        byte opcode = frame.getOpCode(); // original opcode
         ByteBuffer payload = frame.getPayload().slice();
         int originalLimit = payload.limit();
+        int currentPosition = payload.position();
+
+        if (maxLength <= 0)
+        {
+            // output original frame
+            nextOutput(context,callback,frame);
+            return;
+        }
+
+        boolean continuation = false;
 
         // break apart payload based on maxLength rules
-        if (maxLength > 0)
+        while (length > maxLength)
         {
-            while (length > maxLength)
-            {
-                fragments++;
+            WebSocketFrame frag = new WebSocketFrame(frame);
+            frag.setOpCode(opcode);
+            frag.setFin(false); // always false here
+            frag.setContinuation(continuation);
+            payload.position(currentPosition);
+            payload.limit(Math.min(payload.position() + maxLength,originalLimit));
+            frag.setPayload(payload);
 
-                WebSocketFrame frag = new WebSocketFrame(frame);
-                frag.setOpCode(opcode);
-                frag.setFin(false);
-                payload.limit(Math.min(payload.limit() + maxLength,originalLimit));
-                frag.setPayload(payload);
+            nextOutputNoCallback(frag);
 
-                nextOutputNoCallback(frag);
-
-                length -= maxLength;
-                opcode = OpCode.CONTINUATION;
-            }
+            length -= maxLength;
+            opcode = OpCode.CONTINUATION;
+            continuation = true;
+            currentPosition = payload.limit();
         }
 
-        // break apart payload based on minimum # of fragments
-        if (fragments < minFragments)
-        {
-            int fragmentsLeft = (minFragments - fragments);
-            int fragLength = length / fragmentsLeft; // equal sized fragments
-
-            while (fragments < minFragments)
-            {
-                fragments++;
-
-                WebSocketFrame frag = new WebSocketFrame(frame);
-                frag.setOpCode(opcode);
-                frag.setFin(false);
-                frag.setPayload(payload);
-
-                nextOutputNoCallback(frag);
-                length -= fragLength;
-                opcode = OpCode.CONTINUATION;
-            }
-        }
-
-        // output whatever is left
+        // write remaining
         WebSocketFrame frag = new WebSocketFrame(frame);
         frag.setOpCode(opcode);
+        frag.setFin(frame.isFin()); // use original fin
+        frag.setContinuation(continuation);
+        payload.position(currentPosition);
         payload.limit(originalLimit);
         frag.setPayload(payload);
 
@@ -102,6 +94,5 @@ public class FragmentExtension extends Extension
         super.setConfig(config);
 
         maxLength = config.getParameter("maxLength",maxLength);
-        minFragments = config.getParameter("minFragments",minFragments);
     }
 }

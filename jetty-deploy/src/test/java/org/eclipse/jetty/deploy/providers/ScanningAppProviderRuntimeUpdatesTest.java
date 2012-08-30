@@ -1,18 +1,21 @@
-// ========================================================================
-// Copyright (c) Webtide LLC
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-// The Apache License v2.0 is available at
-// http://www.apache.org/licenses/LICENSE-2.0.txt
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.IOException;
@@ -101,7 +104,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         }
         while(_scans.get()<scan);
     }
-    
+
     /**
      * Simple webapp deployment after startup of server.
      */
@@ -150,7 +153,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         Assume.assumeTrue(!OS.IS_WINDOWS);
         Assume.assumeTrue(!OS.IS_OSX); // build server has issues with finding itself apparently
 
-        
+
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");
 
@@ -163,7 +166,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.assertResponseContains("/foo/info","FooServlet-1");
 
         waitForDirectoryScan();
-        System.out.println("Updating war files");
+        System.err.println("Updating war files");
         jetty.copyContext("foo.xml","foo.xml"); // essentially "touch" the context xml
         jetty.copyWebapp("foo-webapp-2.war","foo.war");
 

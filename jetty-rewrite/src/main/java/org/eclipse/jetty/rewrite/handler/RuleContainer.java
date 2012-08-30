@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.rewrite.handler;
 
@@ -197,28 +202,25 @@ public class RuleContainer extends Rule
             if (applied!=null)
             {       
                 LOG.debug("applied {}",rule);
-                if (!target.equals(applied))
-                { 
-                    LOG.debug("rewrote {} to {}",target,applied);
-                    if (!original_set)
-                    {
-                        original_set=true;
-                        request.setAttribute(_originalPathAttribute, target);
-                    }     
+                LOG.debug("rewrote {} to {}",target,applied);
+                if (!original_set)
+                {
+                    original_set=true;
+                    request.setAttribute(_originalPathAttribute, target);
+                }     
 
-                    if (_rewriteRequestURI)
-                    {
-                        if (rule instanceof Rule.ApplyURI && !target.equals(request.getRequestURI()))
-                            ((Rule.ApplyURI)rule).applyURI((Request)request, target, applied);
-                        else
-                            ((Request)request).setRequestURI(applied);
-                    }
-
-                    if (_rewritePathInfo)
-                        ((Request)request).setPathInfo(applied);
-
-                    target=applied;
+                if (_rewriteRequestURI)
+                {
+                    if (rule instanceof Rule.ApplyURI)
+                        ((Rule.ApplyURI)rule).applyURI((Request)request, target, applied);
+                    else
+                        ((Request)request).setRequestURI(applied);
                 }
+
+                if (_rewritePathInfo)
+                    ((Request)request).setPathInfo(applied);
+
+                target=applied;
                 
                 if (rule.isHandling())
                 {

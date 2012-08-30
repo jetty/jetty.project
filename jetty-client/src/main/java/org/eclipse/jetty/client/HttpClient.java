@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.client;
 
@@ -171,7 +176,7 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
 
     /* ------------------------------------------------------------ */
     /** Set the ThreadPool.
-     * The threadpool passed is added via {@link #addBean(Object)} so that 
+     * The threadpool passed is added via {@link #addBean(Object)} so that
      * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
      * @param threadPool the threadPool to set
      */
@@ -878,7 +883,7 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     @Deprecated
     public void setProvider(String provider)
     {
-        setProvider(provider);
+        _sslContextFactory.setProvider(provider);
     }
 
     /* ------------------------------------------------------------ */

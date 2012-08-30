@@ -1,34 +1,37 @@
-// ========================================================================
-// Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.servlets;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -41,38 +44,35 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.Part;
 
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStream;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 
 /* ------------------------------------------------------------ */
 /**
  * Multipart Form Data Filter.
  * <p>
  * This class decodes the multipart/form-data stream sent by a HTML form that uses a file input
- * item.  Any files sent are stored to a temporary file and a File object added to the request 
+ * item.  Any files sent are stored to a temporary file and a File object added to the request
  * as an attribute.  All other values are made available via the normal getParameter API and
  * the setCharacterEncoding mechanism is respected when converting bytes to Strings.
  * <p>
  * If the init parameter "delete" is set to "true", any files created will be deleted when the
  * current request returns.
  * <p>
- * The init parameter maxFormKeys sets the maximum number of keys that may be present in a 
- * form (default set by system property org.eclipse.jetty.server.Request.maxFormKeys or 1000) to protect 
- * against DOS attacks by bad hash keys. 
+ * The init parameter maxFormKeys sets the maximum number of keys that may be present in a
+ * form (default set by system property org.eclipse.jetty.server.Request.maxFormKeys or 1000) to protect
+ * against DOS attacks by bad hash keys.
  * <p>
  * The init parameter deleteFiles controls if uploaded files are automatically deleted after the request
  * completes.
- * 
+ *
  * Use init parameter "maxFileSize" to set the max size file that can be uploaded.
- * 
+ *
  * Use init parameter "maxRequestSize" to limit the size of the multipart request.
- * 
+ *
  */
 public class MultiPartFilter implements Filter
 {
@@ -84,7 +84,7 @@ public class MultiPartFilter implements Filter
     private int _fileOutputBuffer = 0;
     private long _maxFileSize = -1L;
     private long _maxRequestSize = -1L;
-    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",1000).intValue();
+    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys", 1000);
 
     /* ------------------------------------------------------------------------------- */
     /**
@@ -103,7 +103,7 @@ public class MultiPartFilter implements Filter
         String maxRequestSize = filterConfig.getInitParameter("maxRequestSize");
         if (maxRequestSize != null)
             _maxRequestSize = Long.parseLong(maxRequestSize.trim());
-        
+
         _context=filterConfig.getServletContext();
         String mfks = filterConfig.getInitParameter("maxFormKeys");
         if (mfks!=null)
@@ -115,7 +115,7 @@ public class MultiPartFilter implements Filter
      * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest,
      *      javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
-    public void doFilter(ServletRequest request,ServletResponse response,FilterChain chain) 
+    public void doFilter(ServletRequest request,ServletResponse response,FilterChain chain)
         throws IOException, ServletException
     {
         HttpServletRequest srequest=(HttpServletRequest)request;
@@ -124,25 +124,23 @@ public class MultiPartFilter implements Filter
             chain.doFilter(request,response);
             return;
         }
-        
+
         InputStream in = new BufferedInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
-        
+
         //Get current parameters so we can merge into them
-        MultiMap<String> params = new MultiMap<String>();
-        for (Iterator<Map.Entry<String,String[]>> i = request.getParameterMap().entrySet().iterator();i.hasNext();)
+        MultiMap params = new MultiMap();
+        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet())
         {
-            Map.Entry<String,String[]> entry=i.next();
-            Object value=entry.getValue();
+            Object value = entry.getValue();
             if (value instanceof String[])
-                params.addValues(entry.getKey(),(String[])value);
+                params.addValues(entry.getKey(), (String[])value);
             else
-                params.add(entry.getKey(),value);
+                params.add(entry.getKey(), value);
         }
-        
+
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
         MultiPartInputStream mpis = new MultiPartInputStream(in, content_type, config, tempdir);
-        
 
         try
         {
@@ -158,15 +156,19 @@ public class MultiPartFilter implements Filter
                     {
                         request.setAttribute(mp.getName(),mp.getFile());
                         if (mp.getContentDispositionFilename() != null)
+                        {
                             params.add(mp.getName(), mp.getContentDispositionFilename());
+                            if (mp.getContentType() != null)
+                                params.add(mp.getName()+CONTENT_TYPE_SUFFIX, mp.getContentType());
+                        }
                         if (_deleteFiles)
                         {
                             mp.getFile().deleteOnExit();
 
-                            ArrayList files = (ArrayList)request.getAttribute(FILES);
+                            ArrayList<File> files = (ArrayList<File>)request.getAttribute(FILES);
                             if (files==null)
                             {
-                                files=new ArrayList();
+                                files=new ArrayList<>();
                                 request.setAttribute(FILES,files);
                             }
                             files.add(mp.getFile());
@@ -177,6 +179,8 @@ public class MultiPartFilter implements Filter
                         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                         IO.copy(p.getInputStream(), bytes);
                         params.add(p.getName(), bytes.toByteArray());
+                        if (p.getContentType() != null)
+                            params.add(p.getName()+CONTENT_TYPE_SUFFIX, p.getContentType());
                     }
                 }
             }
@@ -192,29 +196,21 @@ public class MultiPartFilter implements Filter
 
     private void deleteFiles(ServletRequest request)
     {
-        ArrayList files = (ArrayList)request.getAttribute(FILES);
+        ArrayList<File> files = (ArrayList<File>)request.getAttribute(FILES);
         if (files!=null)
         {
-            Iterator iter = files.iterator();
-            while (iter.hasNext())
+            for (File file : files)
             {
-                File file=(File)iter.next();
                 try
                 {
                     file.delete();
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    _context.log("failed to delete "+file,e);
+                    _context.log("failed to delete " + file, e);
                 }
             }
         }
-    }
-    
-    /* ------------------------------------------------------------ */
-    private String value(String nameEqualsValue)
-    {
-        return nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -230,8 +226,8 @@ public class MultiPartFilter implements Filter
     private static class Wrapper extends HttpServletRequestWrapper
     {
         String _encoding=StringUtil.__UTF8;
-        MultiMap _params;
-        
+        MultiMap<Object> _params;
+
         /* ------------------------------------------------------------------------------- */
         /** Constructor.
          * @param request
@@ -241,7 +237,7 @@ public class MultiPartFilter implements Filter
             super(request);
             this._params=map;
         }
-        
+
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#getContentLength()
@@ -251,7 +247,7 @@ public class MultiPartFilter implements Filter
         {
             return 0;
         }
-        
+
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#getParameter(java.lang.String)
@@ -262,13 +258,12 @@ public class MultiPartFilter implements Filter
             Object o=_params.get(name);
             if (!(o instanceof byte[]) && LazyList.size(o)>0)
                 o=LazyList.get(o,0);
-            
+
             if (o instanceof byte[])
             {
                 try
                 {
-                    String s=new String((byte[])o,_encoding);
-                    return s;
+                    return new String((byte[])o,_encoding);
                 }
                 catch(Exception e)
                 {
@@ -279,27 +274,34 @@ public class MultiPartFilter implements Filter
                 return String.valueOf(o);
             return null;
         }
-        
+
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#getParameterMap()
          */
         @Override
-        public Map getParameterMap()
+        public Map<String, String[]> getParameterMap()
         {
-            return Collections.unmodifiableMap(_params.toStringArrayMap());
+            Map<String, String[]> cmap = new HashMap<>();
+
+            for ( String key : _params.keySet() )
+            {
+                cmap.put(key,getParameterValues(key));
+            }
+
+            return Collections.unmodifiableMap(cmap);
         }
-        
+
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#getParameterNames()
          */
         @Override
-        public Enumeration getParameterNames()
+        public Enumeration<String> getParameterNames()
         {
             return Collections.enumeration(_params.keySet());
         }
-        
+
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#getParameterValues(java.lang.String)
@@ -322,7 +324,7 @@ public class MultiPartFilter implements Filter
                     }
                     catch(Exception e)
                     {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
                 }
                 else if (o instanceof String)
@@ -330,13 +332,13 @@ public class MultiPartFilter implements Filter
             }
             return v;
         }
-        
+
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#setCharacterEncoding(java.lang.String)
          */
         @Override
-        public void setCharacterEncoding(String enc) 
+        public void setCharacterEncoding(String enc)
             throws UnsupportedEncodingException
         {
             _encoding=enc;

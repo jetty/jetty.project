@@ -1,23 +1,26 @@
-// ========================================================================
-// Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
 //
-//     The Eclipse Public License is available at
-//     http://www.eclipse.org/legal/epl-v10.html
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-//     The Apache License v2.0 is available at
-//     http://www.opensource.org/licenses/apache2.0.php
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// You may elect to redistribute this code under either of these licenses.
-//========================================================================
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.client;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -25,45 +28,56 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.StandardByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.Extension;
+import org.eclipse.jetty.websocket.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.client.io.WebSocketClientSelectorManager;
+import org.eclipse.jetty.websocket.client.internal.ConnectionManager;
+import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
 import org.eclipse.jetty.websocket.driver.EventMethodsCache;
 import org.eclipse.jetty.websocket.driver.WebSocketEventDriver;
+import org.eclipse.jetty.websocket.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.io.WebSocketSession;
+import org.eclipse.jetty.websocket.protocol.ExtensionConfig;
 
 public class WebSocketClientFactory extends AggregateLifeCycle
 {
     private static final Logger LOG = Log.getLogger(WebSocketClientFactory.class);
-    /**
-     * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
-     */
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final Queue<WebSocketConnection> connections = new ConcurrentLinkedQueue<>();
-    private final ByteBufferPool bufferPool = new StandardByteBufferPool();
+
+    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
     private final Executor executor;
-    private final WebSocketClientSelectorManager selector;
+    private final ScheduledExecutorService scheduler;
     private final EventMethodsCache methodsCache;
     private final WebSocketPolicy policy;
+    private final WebSocketExtensionRegistry extensionRegistry;
+    private SocketAddress bindAddress;
+
+    private final Queue<WebSocketSession> sessions = new ConcurrentLinkedQueue<>();
+    private ConnectionManager connectionManager;
 
     public WebSocketClientFactory()
     {
-        this(new QueuedThreadPool(),null);
+        this(new QueuedThreadPool());
     }
 
     public WebSocketClientFactory(Executor threadPool)
     {
-        this(threadPool,null);
+        this(threadPool,Executors.newSingleThreadScheduledExecutor());
     }
 
-    public WebSocketClientFactory(Executor executor, SslContextFactory sslContextFactory)
+    public WebSocketClientFactory(Executor threadPool, ScheduledExecutorService scheduler)
     {
+        this(threadPool,scheduler,null);
+    }
+
+    public WebSocketClientFactory(Executor executor, ScheduledExecutorService scheduler, SslContextFactory sslContextFactory)
+    {
+        LOG.debug("new WebSocketClientFactory()");
         if (executor == null)
         {
             throw new IllegalArgumentException("Executor is required");
@@ -71,46 +85,54 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         this.executor = executor;
         addBean(executor);
 
+        if (scheduler == null)
+        {
+            throw new IllegalArgumentException("Scheduler is required");
+        }
+        this.scheduler = scheduler;
+
         if (sslContextFactory != null)
         {
             addBean(sslContextFactory);
         }
 
-        selector = new WebSocketClientSelectorManager(bufferPool,executor);
-        selector.setSslContextFactory(sslContextFactory);
-        addBean(selector);
+        this.policy = WebSocketPolicy.newClientPolicy();
+        this.extensionRegistry = new WebSocketExtensionRegistry(policy,bufferPool);
+
+        this.connectionManager = new ConnectionManager(bufferPool,executor,scheduler,sslContextFactory,policy);
+        addBean(this.connectionManager);
 
         this.methodsCache = new EventMethodsCache();
-
-        this.policy = WebSocketPolicy.newClientPolicy();
     }
 
     public WebSocketClientFactory(SslContextFactory sslContextFactory)
     {
-        this(null,sslContextFactory);
+        this(new QueuedThreadPool(),Executors.newSingleThreadScheduledExecutor(),sslContextFactory);
     }
 
-    private void closeConnections()
+    @Override
+    protected void doStart() throws Exception
     {
-        for (WebSocketConnection connection : connections)
-        {
-            try
-            {
-                connection.close();
-            }
-            catch (IOException e)
-            {
-                LOG.warn(e);
-            }
-        }
-        connections.clear();
+        super.doStart();
+        LOG.debug("doStart()");
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        closeConnections();
         super.doStop();
+        LOG.debug("doStop()");
+    }
+
+    /**
+     * The address to bind local physical (outgoing) TCP Sockets to.
+     *
+     * @return the address to bind the socket channel to
+     * @see #setBindAddress(SocketAddress)
+     */
+    public SocketAddress getBindAddress()
+    {
+        return bindAddress;
     }
 
     public ByteBufferPool getBufferPool()
@@ -118,14 +140,19 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         return bufferPool;
     }
 
-    protected Collection<WebSocketConnection> getConnections()
+    public ConnectionManager getConnectionManager()
     {
-        return Collections.unmodifiableCollection(connections);
+        return connectionManager;
     }
 
     public Executor getExecutor()
     {
         return executor;
+    }
+
+    public ExtensionRegistry getExtensionRegistry()
+    {
+        return extensionRegistry;
     }
 
     public WebSocketPolicy getPolicy()
@@ -138,18 +165,67 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         return scheduler;
     }
 
-    public SelectorManager getSelector()
+    public List<Extension> initExtensions(List<ExtensionConfig> requested)
     {
-        return selector;
+        List<Extension> extensions = new ArrayList<Extension>();
+
+        for (ExtensionConfig cfg : requested)
+        {
+            Extension extension = extensionRegistry.newInstance(cfg);
+
+            if (extension == null)
+            {
+                continue;
+            }
+
+            LOG.debug("added {}",extension);
+            extensions.add(extension);
+        }
+        LOG.debug("extensions={}",extensions);
+        return extensions;
     }
 
-    public WebSocketClient newWebSocketClient()
+    public WebSocketClient newWebSocketClient(Object websocketPojo)
     {
-        return new WebSocketClient(this);
+        LOG.debug("Creating new WebSocket for {}",websocketPojo);
+        WebSocketEventDriver websocket = new WebSocketEventDriver(websocketPojo,methodsCache,policy,getBufferPool());
+        return new IWebSocketClient(this,websocket);
     }
 
-    public WebSocketEventDriver newWebSocketDriver(Object websocketPojo)
+    public boolean sessionClosed(WebSocketSession session)
     {
-        return new WebSocketEventDriver(websocketPojo,methodsCache,policy,getBufferPool());
+        return isRunning() && sessions.remove(session);
+    }
+
+    public boolean sessionOpened(WebSocketSession session)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Session Opened: {}",session);
+        }
+        // FIXME: what is going on?
+        // if (!isRunning())
+        // {
+        // LOG.debug("Factory.isRunning: {}",this.isRunning());
+        // LOG.debug("Factory.isStarted: {}",this.isStarted());
+        // LOG.debug("Factory.isStarting: {}",this.isStarting());
+        // LOG.debug("Factory.isStopped: {}",this.isStopped());
+        // LOG.debug("Factory.isStopping: {}",this.isStopping());
+        // LOG.warn("Factory is not running");
+        // return false;
+        // }
+        boolean ret = sessions.offer(session);
+        session.onConnect();
+        return ret;
+    }
+
+    /**
+     * @param bindAddress
+     *            the address to bind the socket channel to
+     * @see #getBindAddress()
+     */
+    public void setBindAddress(SocketAddress bindAddress)
+    {
+        this.bindAddress = bindAddress;
     }
 }

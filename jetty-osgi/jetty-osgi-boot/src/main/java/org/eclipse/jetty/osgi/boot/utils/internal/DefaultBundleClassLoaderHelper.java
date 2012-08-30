@@ -1,21 +1,25 @@
-// ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.List;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
@@ -29,7 +33,9 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 {
 
     private static boolean identifiedOsgiImpl = false;
+
     private static boolean isEquinox = false;
+
     private static boolean isFelix = false;
 
     private static void init(Bundle bundle)
@@ -54,8 +60,6 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                 isFelix = false;
             }
         }
-        // System.err.println("isEquinox=" + isEquinox);
-        // System.err.println("isFelix=" + isFelix);
     }
 
     /**
@@ -66,10 +70,10 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
      */
     public ClassLoader getBundleClassLoader(Bundle bundle)
     {
-        String bundleActivator = (String)bundle.getHeaders().get("Bundle-Activator");
+        String bundleActivator = (String) bundle.getHeaders().get("Bundle-Activator");
         if (bundleActivator == null)
         {
-            bundleActivator = (String)bundle.getHeaders().get("Jetty-ClassInBundle");
+            bundleActivator = (String) bundle.getHeaders().get("Jetty-ClassInBundle");
         }
         if (bundleActivator != null)
         {
@@ -93,14 +97,12 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         {
             return internalGetEquinoxBundleClassLoader(bundle);
         }
-        else if (isFelix)
-        {
-            return internalGetFelixBundleClassLoader(bundle);
-        }
+        else if (isFelix) { return internalGetFelixBundleClassLoader(bundle); }
         return null;
     }
 
     private static Method Equinox_BundleHost_getBundleLoader_method;
+
     private static Method Equinox_BundleLoader_createClassLoader_method;
 
     private static ClassLoader internalGetEquinoxBundleClassLoader(Bundle bundle)
@@ -110,18 +112,18 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         {
             if (Equinox_BundleHost_getBundleLoader_method == null)
             {
-                Equinox_BundleHost_getBundleLoader_method = bundle.getClass().getClassLoader().loadClass("org.eclipse.osgi.framework.internal.core.BundleHost")
-                        .getDeclaredMethod("getBundleLoader",new Class[] {});
+                Equinox_BundleHost_getBundleLoader_method = 
+                    bundle.getClass().getClassLoader().loadClass("org.eclipse.osgi.framework.internal.core.BundleHost").getDeclaredMethod("getBundleLoader", new Class[] {});
                 Equinox_BundleHost_getBundleLoader_method.setAccessible(true);
             }
-            Object bundleLoader = Equinox_BundleHost_getBundleLoader_method.invoke(bundle,new Object[] {});
+            Object bundleLoader = Equinox_BundleHost_getBundleLoader_method.invoke(bundle, new Object[] {});
             if (Equinox_BundleLoader_createClassLoader_method == null && bundleLoader != null)
             {
-                Equinox_BundleLoader_createClassLoader_method = bundleLoader.getClass().getClassLoader().loadClass(
-                        "org.eclipse.osgi.internal.loader.BundleLoader").getDeclaredMethod("createClassLoader",new Class[] {});
+                Equinox_BundleLoader_createClassLoader_method = 
+                    bundleLoader.getClass().getClassLoader().loadClass("org.eclipse.osgi.internal.loader.BundleLoader").getDeclaredMethod("createClassLoader", new Class[] {});
                 Equinox_BundleLoader_createClassLoader_method.setAccessible(true);
             }
-            return (ClassLoader)Equinox_BundleLoader_createClassLoader_method.invoke(bundleLoader,new Object[] {});
+            return (ClassLoader) Equinox_BundleLoader_createClassLoader_method.invoke(bundleLoader, new Object[] {});
         }
         catch (Throwable t)
         {
@@ -131,6 +133,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
     }
 
     private static Field Felix_BundleImpl_m_modules_field;
+
     private static Field Felix_ModuleImpl_m_classLoader_field;
 
     private static ClassLoader internalGetFelixBundleClassLoader(Bundle bundle)
@@ -142,8 +145,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             // and return the private field m_classLoader of ModuleImpl
             if (Felix_BundleImpl_m_modules_field == null)
             {
-                Felix_BundleImpl_m_modules_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl").getDeclaredField(
-                        "m_modules");
+                Felix_BundleImpl_m_modules_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl").getDeclaredField("m_modules");
                 Felix_BundleImpl_m_modules_field.setAccessible(true);
             }
 
@@ -151,26 +153,25 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             Object currentModuleImpl;
             try
             {
-                Object[] moduleArray = (Object[])Felix_BundleImpl_m_modules_field.get(bundle);
+                Object[] moduleArray = (Object[]) Felix_BundleImpl_m_modules_field.get(bundle);
                 currentModuleImpl = moduleArray[moduleArray.length - 1];
             }
             catch (Throwable t2)
             {
                 @SuppressWarnings("unchecked")
-                List<Object> moduleArray = (List<Object>)Felix_BundleImpl_m_modules_field.get(bundle);
+                List<Object> moduleArray = (List<Object>) Felix_BundleImpl_m_modules_field.get(bundle);
                 currentModuleImpl = moduleArray.get(moduleArray.size() - 1);
             }
-            
+
             if (Felix_ModuleImpl_m_classLoader_field == null && currentModuleImpl != null)
             {
-                Felix_ModuleImpl_m_classLoader_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.ModuleImpl").getDeclaredField(
-                        "m_classLoader");
+                Felix_ModuleImpl_m_classLoader_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.ModuleImpl").getDeclaredField("m_classLoader");
                 Felix_ModuleImpl_m_classLoader_field.setAccessible(true);
             }
             // first make sure that the classloader is ready:
             // the m_classLoader field must be initialized by the
             // ModuleImpl.getClassLoader() private method.
-            ClassLoader cl = (ClassLoader)Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
+            ClassLoader cl = (ClassLoader) Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
             if (cl == null)
             {
                 // looks like it was not ready:
@@ -178,15 +179,11 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                 // ModuleImpl.getClassLoader() private method.
                 // this call will do that.
                 bundle.loadClass("java.lang.Object");
-                cl = (ClassLoader)Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
-                // System.err.println("Got the bundle class loader of felix_: "
-                // + cl);
+                cl = (ClassLoader) Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
                 return cl;
             }
             else
             {
-                // System.err.println("Got the bundle class loader of felix: " +
-                // cl);
                 return cl;
             }
         }

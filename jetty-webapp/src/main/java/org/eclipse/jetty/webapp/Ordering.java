@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.webapp;
 
 import java.util.ArrayList;
@@ -38,7 +44,7 @@ public interface Ordering
     /**
      * AbsoluteOrdering
      *
-     * An <absolute-order> element in web.xml
+     * An &lt;absolute-order&gt; element in web.xml
      */
     public static class AbsoluteOrdering implements Ordering
     {
@@ -123,7 +129,7 @@ public interface Ordering
     /**
      * RelativeOrdering
      *
-     * A set of <order> elements in web-fragment.xmls.
+     * A set of &lt;order&gt; elements in web-fragment.xmls.
      */
     public static class RelativeOrdering implements Ordering
     {
@@ -347,7 +353,7 @@ public interface Ordering
         * @param list
         * @param fragNameA
         * @param fragNameB
-        * @return true if frament name A is before fragment name B 
+        * @return true if fragment name A is before fragment name B 
         */
        protected boolean isBefore (List<Resource> list, String fragNameA, String fragNameB)
        {

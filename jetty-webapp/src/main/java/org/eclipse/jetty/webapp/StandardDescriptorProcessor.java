@@ -1,24 +1,25 @@
-// ========================================================================
-// Copyright (c) 2006-2010 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.webapp;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashSet;
@@ -26,15 +27,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
 import javax.servlet.SessionTrackingMode;
-import javax.servlet.descriptor.JspConfigDescriptor;
-import javax.servlet.descriptor.JspPropertyGroupDescriptor;
-import javax.servlet.descriptor.TaglibDescriptor;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -43,17 +39,15 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspPropertyGroup;
 import org.eclipse.jetty.servlet.ServletContextHandler.TagLib;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -67,12 +61,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     private static final Logger LOG = Log.getLogger(StandardDescriptorProcessor.class);
 
     public static final String STANDARD_PROCESSOR = "org.eclipse.jetty.standardDescriptorProcessor";
-    
-    
-    
+
+
+
     public StandardDescriptorProcessor ()
     {
- 
+
         try
         {
             registerVisitor("context-param", this.getClass().getDeclaredMethod("visitContextParam", __signature));
@@ -80,7 +74,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             registerVisitor("servlet", this.getClass().getDeclaredMethod("visitServlet",  __signature));
             registerVisitor("servlet-mapping", this.getClass().getDeclaredMethod("visitServletMapping",  __signature));
             registerVisitor("session-config", this.getClass().getDeclaredMethod("visitSessionConfig",  __signature));
-            registerVisitor("mime-mapping", this.getClass().getDeclaredMethod("visitMimeMapping",  __signature)); 
+            registerVisitor("mime-mapping", this.getClass().getDeclaredMethod("visitMimeMapping",  __signature));
             registerVisitor("welcome-file-list", this.getClass().getDeclaredMethod("visitWelcomeFileList",  __signature));
             registerVisitor("locale-encoding-mapping-list", this.getClass().getDeclaredMethod("visitLocaleEncodingList",  __signature));
             registerVisitor("error-page", this.getClass().getDeclaredMethod("visitErrorPage",  __signature));
@@ -100,24 +94,24 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    
-    
+
+
     /**
      * {@inheritDoc}
      */
     public void start(WebAppContext context, Descriptor descriptor)
-    { 
+    {
     }
-    
-    
-    
-    /** 
+
+
+
+    /**
      * {@inheritDoc}
      */
     public void end(WebAppContext context, Descriptor descriptor)
     {
     }
-    
+
     /**
      * @param context
      * @param descriptor
@@ -145,7 +139,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
                     context.getInitParams().put(name, value);
-                    context.getMetaData().setOrigin("context-param."+name, descriptor); 
+                    context.getMetaData().setOrigin("context-param."+name, descriptor);
                 }
                 break;
             }
@@ -160,11 +154,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
         }
-        if (LOG.isDebugEnabled()) 
+        if (LOG.isDebugEnabled())
             LOG.debug("ContextParam: " + name + "=" + value);
 
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -181,8 +175,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             context.getMetaData().setOrigin("display-name", descriptor);
         }
     }
-    
-    
+
+
     /**
      * @param context
      * @param descriptor
@@ -195,7 +189,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         // initialize holder
         String servlet_name = node.getString("servlet-name", false, true);
         ServletHolder holder = context.getServletHandler().getServlet(servlet_name);
-          
+
         /*
          * If servlet of that name does not already exist, create it.
          */
@@ -206,23 +200,23 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             context.getServletHandler().addServlet(holder);
         }
 
-        // init params  
+        // init params
         Iterator<?> iParamsIter = node.iterator("init-param");
         while (iParamsIter.hasNext())
         {
             XmlParser.Node paramNode = (XmlParser.Node) iParamsIter.next();
             String pname = paramNode.getString("param-name", false, true);
             String pvalue = paramNode.getString("param-value", false, true);
-            
+
             Origin origin = context.getMetaData().getOrigin(servlet_name+".servlet.init-param."+pname);
-            
+
             switch (origin)
             {
                 case NotSet:
                 {
                     //init-param not already set, so set it
-                    
-                    holder.setInitParameter(pname, pvalue); 
+
+                    holder.setInitParameter(pname, pvalue);
                     context.getMetaData().setOrigin(servlet_name+".servlet.init-param."+pname, descriptor);
                     break;
                 }
@@ -234,7 +228,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //otherwise just ignore it
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        holder.setInitParameter(pname, pvalue); 
+                        holder.setInitParameter(pname, pvalue);
                         context.getMetaData().setOrigin(servlet_name+".servlet.init-param."+pname, descriptor);
                     }
                     break;
@@ -246,57 +240,44 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Mismatching init-param "+pname+"="+pvalue+" in "+descriptor.getResource());
                     break;
                 }
-            }  
+            }
         }
 
         String servlet_class = node.getString("servlet-class", false, true);
 
         // Handle JSP
-        String jspServletName=null;
         String jspServletClass=null;;
-        boolean hasJSP=false;
+
+        //Handle the default jsp servlet instance
         if (id != null && id.equals("jsp"))
         {
-            jspServletName = servlet_name;
             jspServletClass = servlet_class;
             try
             {
                 Loader.loadClass(this.getClass(), servlet_class);
-                hasJSP = true;
+
+                //Ensure there is a scratch dir
+                if (holder.getInitParameter("scratchdir") == null)
+                {
+                    File tmp = context.getTempDirectory();
+                    File scratch = new File(tmp, "jsp");
+                    if (!scratch.exists()) scratch.mkdir();
+                    holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
+                }
             }
             catch (ClassNotFoundException e)
             {
                 LOG.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servlet_class);
                 jspServletClass = servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
             }
-            if (holder.getInitParameter("scratchdir") == null)
-            {
-                File tmp = context.getTempDirectory();
-                File scratch = new File(tmp, "jsp");
-                if (!scratch.exists()) scratch.mkdir();
-                holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
-
-                if ("?".equals(holder.getInitParameter("classpath")))
-                {
-                    String classpath = context.getClassPath();
-                    LOG.debug("classpath=" + classpath);
-                    if (classpath != null) 
-                        holder.setInitParameter("classpath", classpath);
-                }
-            }
-
-            /* Set the webapp's classpath for Jasper */
-            context.setAttribute("org.apache.catalina.jsp_classpath", context.getClassPath());
-
-            /* Set the system classpath for Jasper */
-            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
         }
-        
+
+
         //Set the servlet-class
-        if (servlet_class != null) 
+        if (servlet_class != null)
         {
             ((WebDescriptor)descriptor).addClassName(servlet_class);
-            
+
             Origin o = context.getMetaData().getOrigin(servlet_name+".servlet.servlet-class");
             switch (o)
             {
@@ -326,20 +307,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting servlet-class "+servlet_class+" in "+descriptor.getResource());
                     break;
                 }
-            }          
+            }
         }
 
-        // Handler JSP file
+        // Handle JSP file
         String jsp_file = node.getString("jsp-file", false, true);
         if (jsp_file != null)
         {
             holder.setForcedPath(jsp_file);
-            holder.setClassName(jspServletClass);
-            //set the system classpath explicitly for the holder that will represent the JspServlet instance
-            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
+            holder.setClassName(jspServletClass); //only use our default instance
         }
 
-        // handle load-on-startup 
+        // handle load-on-startup
         XmlParser.Node startup = node.get("load-on-startup");
         if (startup != null)
         {
@@ -348,7 +327,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (s.startsWith("t"))
             {
                 LOG.warn("Deprecated boolean load-on-startup.  Please use integer");
-                order = 1; 
+                order = 1;
             }
             else
             {
@@ -392,7 +371,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting load-on-startup value in "+descriptor.getResource());
                     break;
                 }
-            } 
+            }
         }
 
         Iterator sRefsIter = node.iterator("security-role-ref");
@@ -440,10 +419,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
         }
 
-        
+
         XmlParser.Node run_as = node.get("run-as");
         if (run_as != null)
-        { 
+        {
             String roleName = run_as.getString("role-name", false, true);
 
             if (roleName != null)
@@ -476,7 +455,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         if (!holder.getRunAsRole().equals(roleName))
                             throw new IllegalStateException("Conflicting run-as role "+roleName+" for servlet "+servlet_name+" in "+descriptor.getResource());
                         break;
-                    }    
+                    }
                 }
             }
         }
@@ -503,8 +482,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         holder.setAsyncSupported(val);
-                        context.getMetaData().setOrigin(servlet_name+".servlet.async-supported", descriptor);  
-                    }             
+                        context.getMetaData().setOrigin(servlet_name+".servlet.async-supported", descriptor);
+                    }
                     break;
                 }
                 case WebFragment:
@@ -520,13 +499,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String enabled = node.getString("enabled", false, true);
         if (enabled!=null)
         {
-            boolean is_enabled = enabled.length()==0||Boolean.valueOf(enabled);     
+            boolean is_enabled = enabled.length()==0||Boolean.valueOf(enabled);
             Origin o = context.getMetaData().getOrigin(servlet_name+".servlet.enabled");
             switch (o)
             {
                 case NotSet:
                 {
-                    //hasn't been set yet, so set it                
+                    //hasn't been set yet, so set it
                     holder.setEnabled(is_enabled);
                     context.getMetaData().setOrigin(servlet_name+".servlet.enabled", descriptor);
                     break;
@@ -538,7 +517,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //was set in a web xml descriptor, only allow override from another web xml descriptor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        holder.setEnabled(is_enabled);   
+                        holder.setEnabled(is_enabled);
                         context.getMetaData().setOrigin(servlet_name+".servlet.enabled", descriptor);
                     }
                     break;
@@ -552,7 +531,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
             }
         }
-        
+
         /*
          * If multipart config not set, then set it and record it was by the web.xml or fragment.
          * If it was set by web.xml then if this is a fragment, ignore the settings.
@@ -569,7 +548,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                                                                         (maxFile==null||"".equals(maxFile)?-1L:Long.parseLong(maxFile)),
                                                                         (maxRequest==null||"".equals(maxRequest)?-1L:Long.parseLong(maxRequest)),
                                                                         (threshold==null||"".equals(threshold)?0:Integer.parseInt(threshold)));
-            
+
             Origin o = context.getMetaData().getOrigin(servlet_name+".servlet.multipart-config");
             switch (o)
             {
@@ -588,7 +567,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         holder.getRegistration().setMultipartConfig(element);
-                        context.getMetaData().setOrigin(servlet_name+".servlet.multipart-config", descriptor);  
+                        context.getMetaData().setOrigin(servlet_name+".servlet.multipart-config", descriptor);
                     }
                     break;
                 }
@@ -596,7 +575,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     //another fragment set the value, this fragment's values must match exactly or it is an error
                     MultipartConfigElement cfg = ((ServletHolder.Registration)holder.getRegistration()).getMultipartConfig();
-                    
+
                     if (cfg.getMaxFileSize() != element.getMaxFileSize())
                         throw new IllegalStateException("Conflicting multipart-config max-file-size for servlet "+servlet_name+" in "+descriptor.getResource());
                     if (cfg.getMaxRequestSize() != element.getMaxRequestSize())
@@ -608,11 +587,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting multipart-config location for servlet "+servlet_name+" in "+descriptor.getResource());
                     break;
                 }
-            } 
+            }
         }
     }
-    
-    
+
+
 
     /**
      * @param context
@@ -624,19 +603,20 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //Servlet Spec 3.0, p74
         //servlet-mappings are always additive, whether from web xml descriptors (web.xml/web-default.xml/web-override.xml) or web-fragments.
         //Maintenance update 3.0a to spec:
-        //  Updated 8.2.3.g.v to say <servlet-mapping> elements are additive across web-fragments. 
+        //  Updated 8.2.3.g.v to say <servlet-mapping> elements are additive across web-fragments.
         //  <servlet-mapping> declared in web.xml overrides the mapping for the servlet specified in the web-fragment.xml
 
-        String servlet_name = node.getString("servlet-name", false, true); 
+        String servlet_name = node.getString("servlet-name", false, true);
         Origin origin = context.getMetaData().getOrigin(servlet_name+".servlet.mappings");
-        
+
         switch (origin)
         {
             case NotSet:
             {
                 //no servlet mappings
                 context.getMetaData().setOrigin(servlet_name+".servlet.mappings", descriptor);
-                addServletMapping(servlet_name, node, context);
+                ServletMapping mapping = addServletMapping(servlet_name, node, context);
+                mapping.setDefault(context.getMetaData().getOrigin(servlet_name+".servlet.mappings") == Origin.WebDefaults);
                 break;
             }
             case WebXml:
@@ -657,10 +637,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 addServletMapping(servlet_name, node, context);
                 break;
             }
-        }        
+        }
     }
-    
-    
+
+
     /**
      * @param context
      * @param descriptor
@@ -674,8 +654,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             int timeout = Integer.parseInt(tNode.toString(false, true));
             context.getSessionHandler().getSessionManager().setMaxInactiveInterval(timeout * 60);
         }
-        
-        //Servlet Spec 3.0 
+
+        //Servlet Spec 3.0
         // <tracking-mode>
         // this is additive across web-fragments
         Iterator iter = node.iterator("tracking-mode");
@@ -688,9 +668,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             modes.add(SessionTrackingMode.valueOf(trackMode));
         }
         context.getSessionHandler().getSessionManager().setSessionTrackingModes(modes);
-        
-        
-        //Servlet Spec 3.0 
+
+
+        //Servlet Spec 3.0
         //<cookie-config>
         XmlParser.Node cookieConfig = node.get("cookie-config");
         if (cookieConfig != null)
@@ -724,13 +704,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getName().equals(name))                  
+                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getName().equals(name))
                             throw new IllegalStateException("Conflicting cookie-config name "+name+" in "+descriptor.getResource());
                         break;
                     }
                 }
             }
-            
+
             //  <domain>
             String domain = cookieConfig.getString("domain", false, true);
             if (domain != null)
@@ -760,13 +740,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getDomain().equals(domain))                  
+                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getDomain().equals(domain))
                             throw new IllegalStateException("Conflicting cookie-config domain "+domain+" in "+descriptor.getResource());
                         break;
                     }
                 }
             }
-            
+
             //  <path>
             String path = cookieConfig.getString("path", false, true);
             if (path != null)
@@ -796,13 +776,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getPath().equals(path))                  
+                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getPath().equals(path))
                             throw new IllegalStateException("Conflicting cookie-config path "+path+" in "+descriptor.getResource());
                         break;
                     }
                 }
             }
-            
+
             //  <comment>
             String comment = cookieConfig.getString("comment", false, true);
             if (comment != null)
@@ -832,18 +812,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getComment().equals(comment))                  
+                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getComment().equals(comment))
                             throw new IllegalStateException("Conflicting cookie-config comment "+comment+" in "+descriptor.getResource());
                         break;
                     }
                 }
             }
-            
+
             //  <http-only>true/false
             tNode = cookieConfig.get("http-only");
             if (tNode != null)
             {
-                boolean httpOnly = Boolean.parseBoolean(tNode.toString(false,true));           
+                boolean httpOnly = Boolean.parseBoolean(tNode.toString(false,true));
                 Origin o = context.getMetaData().getOrigin("cookie-config.http-only");
                 switch (o)
                 {
@@ -869,13 +849,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().isHttpOnly() != httpOnly)       
+                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().isHttpOnly() != httpOnly)
                             throw new IllegalStateException("Conflicting cookie-config http-only "+httpOnly+" in "+descriptor.getResource());
                         break;
                     }
                 }
             }
-            
+
             //  <secure>true/false
             tNode = cookieConfig.get("secure");
             if (tNode != null)
@@ -890,7 +870,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         context.getSessionHandler().getSessionManager().getSessionCookieConfig().setSecure(secure);
                         context.getMetaData().setOrigin("cookie-config.secure", descriptor);
                         break;
-                    }                   
+                    }
                     case WebXml:
                     case WebDefaults:
                     case WebOverride:
@@ -906,13 +886,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().isSecure() != secure)       
+                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().isSecure() != secure)
                             throw new IllegalStateException("Conflicting cookie-config secure "+secure+" in "+descriptor.getResource());
                         break;
                     }
                 }
             }
-            
+
             //  <max-age>
             tNode = cookieConfig.get("max-age");
             if (tNode != null)
@@ -922,7 +902,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 switch (o)
                 {
                     case NotSet:
-                    { 
+                    {
                         //no <cookie-config><max-age> set yet, accept it
                         context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(maxAge);
                         context.getMetaData().setOrigin("cookie-config.max-age", descriptor);
@@ -931,7 +911,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebXml:
                     case WebDefaults:
                     case WebOverride:
-                    {   
+                    {
                         //<cookie-config><max-age> set in a web xml, only allow web-default/web-override to change
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
@@ -951,9 +931,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
         }
     }
-    
-    
-    
+
+
+
     /**
      * @param context
      * @param descriptor
@@ -962,7 +942,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     protected void visitMimeMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String extension = node.getString("extension", false, true);
-        if (extension != null && extension.startsWith(".")) 
+        if (extension != null && extension.startsWith("."))
             extension = extension.substring(1);
         String mimeType = node.getString("mime-type", false, true);
         if (extension != null)
@@ -999,7 +979,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
         }
     }
-    
+
     /**
      * @param context
      * @param descriptor
@@ -1041,13 +1021,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             {
-                //A web-fragment first set the welcome-file-list. Other descriptors just add. 
+                //A web-fragment first set the welcome-file-list. Other descriptors just add.
                 addWelcomeFiles(context,node);
                 break;
             }
         }
     }
-    
+
     /**
      * @param context
      * @param descriptor
@@ -1061,7 +1041,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             XmlParser.Node mapping = iter.next();
             String locale = mapping.getString("locale", false, true);
             String encoding = mapping.getString("encoding", false, true);
-            
+
             if (encoding != null)
             {
                 Origin o = context.getMetaData().getOrigin("locale-encoding."+locale);
@@ -1091,7 +1071,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //a value was set by a web-fragment, all fragments must have the same value
                         if (!encoding.equals(context.getLocaleEncoding(locale)))
                             throw new IllegalStateException("Conflicting loacle-encoding mapping for locale "+locale+" in "+descriptor.getResource());
-                        break;                    
+                        break;
                     }
                 }
             }
@@ -1107,16 +1087,16 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         String error = node.getString("error-code", false, true);
         int code=0;
-        if (error == null || error.length() == 0) 
+        if (error == null || error.length() == 0)
             error = node.getString("exception-type", false, true);
         else
             code=Integer.valueOf(error);
         String location = node.getString("location", false, true);
 
-        
+
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
-        
-        
+
+
         Origin o = context.getMetaData().getOrigin("error."+error);
         switch (o)
         {
@@ -1153,9 +1133,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
         }
-       
+
     }
-    
+
     /**
      * @param context
      * @param node
@@ -1167,23 +1147,23 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             XmlParser.Node indexNode = (XmlParser.Node) iter.next();
             String welcome = indexNode.toString(false, true);
-            
+
             //Servlet Spec 3.0 p. 74 welcome files are additive
-            context.setWelcomeFiles((String[])LazyList.addToArray(context.getWelcomeFiles(),welcome,String.class));
+            context.setWelcomeFiles((String[])ArrayUtil.addToArray(context.getWelcomeFiles(),welcome,String.class));
         }
     }
-    
-    
+
+
     /**
      * @param servletName
      * @param node
      * @param context
      */
-    protected void addServletMapping (String servletName, XmlParser.Node node, WebAppContext context)
+    protected ServletMapping addServletMapping (String servletName, XmlParser.Node node, WebAppContext context)
     {
         ServletMapping mapping = new ServletMapping();
         mapping.setServletName(servletName);
-        
+
         List<String> paths = new ArrayList<String>();
         Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
         while (iter.hasNext())
@@ -1194,8 +1174,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
         context.getServletHandler().addServletMapping(mapping);
+        return mapping;
     }
-    
+
     /**
      * @param filterName
      * @param node
@@ -1225,7 +1206,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         mapping.setServletNames((String[]) names.toArray(new String[names.size()]));
 
-        
+
         List<DispatcherType> dispatches = new ArrayList<DispatcherType>();
         iter=node.iterator("dispatcher");
         while(iter.hasNext())
@@ -1233,14 +1214,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String d=((XmlParser.Node)iter.next()).toString(false,true);
             dispatches.add(FilterMapping.dispatch(d));
         }
-        
+
         if (dispatches.size()>0)
             mapping.setDispatcherTypes(EnumSet.copyOf(dispatches));
 
         context.getServletHandler().addFilterMapping(mapping);
     }
-    
-    
+
+
     /**
      * @param context
      * @param descriptor
@@ -1253,27 +1234,27 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String location = node.getString("taglib-location", false, true);
 
         context.setResourceAlias(uri, location);
-        
+
         JspConfig config = (JspConfig)context.getServletContext().getJspConfigDescriptor();
         if (config == null)
         {
             config = new JspConfig();
             context.getServletContext().setJspConfigDescriptor(config);
         }
-        
+
         TagLib tl = new TagLib();
         tl.setTaglibLocation(location);
         tl.setTaglibURI(uri);
         config.addTaglibDescriptor(tl);
     }
-    
+
     /**
      * @param context
      * @param descriptor
      * @param node
      */
     protected void visitJspConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-    {   
+    {
         //Additive across web.xml and web-fragment.xml
         JspConfig config = (JspConfig)context.getServletContext().getJspConfigDescriptor();
         if (config == null)
@@ -1281,12 +1262,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
            config = new JspConfig();
            context.getServletContext().setJspConfigDescriptor(config);
         }
-        
-        
+
+
         for (int i = 0; i < node.size(); i++)
         {
             Object o = node.get(i);
-            if (o instanceof XmlParser.Node && "taglib".equals(((XmlParser.Node) o).getTag())) 
+            if (o instanceof XmlParser.Node && "taglib".equals(((XmlParser.Node) o).getTag()))
                 visitTagLib(context,descriptor, (XmlParser.Node) o);
         }
 
@@ -1299,7 +1280,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             JspPropertyGroup jpg = new JspPropertyGroup();
             config.addJspPropertyGroup(jpg);
             XmlParser.Node group = iter.next();
-            
+
             //url-patterns
             Iterator<XmlParser.Node> iter2 = group.iterator("url-pattern");
             while (iter2.hasNext())
@@ -1309,7 +1290,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 paths.add( url);
                 jpg.addUrlPattern(url);
             }
-            
+
             jpg.setElIgnored(group.getString("el-ignored", false, true));
             jpg.setPageEncoding(group.getString("page-encoding", false, true));
             jpg.setScriptingInvalid(group.getString("scripting-invalid", false, true));
@@ -1319,7 +1300,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             jpg.setDefaultContentType(group.getString("defaultContentType", false, true));
             jpg.setBuffer(group.getString("buffer", false, true));
             jpg.setErrorOnUndeclaredNamespace(group.getString("error-on-undeclared-namespace", false, true));
-            
+
             //preludes
             Iterator<XmlParser.Node> preludes = group.iterator("include-prelude");
             while (preludes.hasNext())
@@ -1334,7 +1315,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 String coda = codas.next().toString(false, true);
                 jpg.addIncludeCoda(coda);
             }
-            
+
             if (LOG.isDebugEnabled()) LOG.debug(config.toString());
         }
 
@@ -1347,7 +1328,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 ServletHolder holder = (ServletHolder) entry.getValue();
                 jspName = holder.getName();
             }
-            
+
             if (jspName != null)
             {
                 ServletMapping mapping = new ServletMapping();
@@ -1357,7 +1338,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
         }
     }
-    
+
     /**
      * @param context
      * @param descriptor
@@ -1367,7 +1348,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         Constraint scBase = new Constraint();
 
-        //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive 
+        //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive
         //across fragments
         try
         {
@@ -1428,7 +1409,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             mapping.setMethod(method);
                             mapping.setPathSpec(url);
                             mapping.setConstraint(sc);
-                                                        
+
                             ((ConstraintAware)context.getSecurityHandler()).addConstraintMapping(mapping);
                         }
                     }
@@ -1447,7 +1428,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             LOG.warn(e);
         }
     }
-    
+
     /**
      * @param context
      * @param descriptor
@@ -1492,8 +1473,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Conflicting auth-method value in "+descriptor.getResource());
                     break;
                 }
-            } 
-            
+            }
+
             //handle realm-name merge
             XmlParser.Node name = node.get("realm-name");
             String nameStr = (name == null ? "default" : name.toString(false, true));
@@ -1515,7 +1496,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         context.getSecurityHandler().setRealmName(nameStr);
-                        context.getMetaData().setOrigin("realm-name", descriptor); 
+                        context.getMetaData().setOrigin("realm-name", descriptor);
                     }
                     break;
                 }
@@ -1527,21 +1508,21 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
             }
- 
+
             if (Constraint.__FORM_AUTH.equals(context.getSecurityHandler().getAuthMethod()))
-            {  
+            {
                 XmlParser.Node formConfig = node.get("form-login-config");
                 if (formConfig != null)
                 {
                     String loginPageName = null;
                     XmlParser.Node loginPage = formConfig.get("form-login-page");
-                    if (loginPage != null) 
+                    if (loginPage != null)
                         loginPageName = loginPage.toString(false, true);
                     String errorPageName = null;
                     XmlParser.Node errorPage = formConfig.get("form-error-page");
-                    if (errorPage != null) 
+                    if (errorPage != null)
                         errorPageName = errorPage.toString(false, true);
-                    
+
                     //handle form-login-page
                     o = context.getMetaData().getOrigin("form-login-page");
                     switch (o)
@@ -1573,7 +1554,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             break;
                         }
                     }
-                    
+
                     //handle form-error-page
                     o = context.getMetaData().getOrigin("form-error-page");
                     switch (o)
@@ -1604,7 +1585,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                                 throw new IllegalStateException("Conflicting form-error-page value in "+descriptor.getResource());
                             break;
                         }
-                    }              
+                    }
                 }
                 else
                 {
@@ -1613,7 +1594,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
         }
     }
-    
+
     /**
      * @param context
      * @param descriptor
@@ -1626,8 +1607,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String role = roleNode.toString(false, true);
         ((ConstraintAware)context.getSecurityHandler()).addRole(role);
     }
-    
-    
+
+
     /**
      * @param context
      * @param descriptor
@@ -1645,10 +1626,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
 
         String filter_class = node.getString("filter-class", false, true);
-        if (filter_class != null) 
+        if (filter_class != null)
         {
             ((WebDescriptor)descriptor).addClassName(filter_class);
-            
+
             Origin o = context.getMetaData().getOrigin(name+".filter.filter-class");
             switch (o)
             {
@@ -1667,7 +1648,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         holder.setClassName(filter_class);
-                        context.getMetaData().setOrigin(name+".filter.filter-class", descriptor); 
+                        context.getMetaData().setOrigin(name+".filter.filter-class", descriptor);
                     }
                     break;
                 }
@@ -1679,7 +1660,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
             }
-           
+
         }
 
         Iterator<XmlParser.Node>  iter = node.iterator("init-param");
@@ -1688,14 +1669,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             XmlParser.Node paramNode = iter.next();
             String pname = paramNode.getString("param-name", false, true);
             String pvalue = paramNode.getString("param-value", false, true);
-            
+
             Origin origin = context.getMetaData().getOrigin(name+".filter.init-param."+pname);
             switch (origin)
             {
                 case NotSet:
                 {
                     //init-param not already set, so set it
-                    holder.setInitParameter(pname, pvalue); 
+                    holder.setInitParameter(pname, pvalue);
                     context.getMetaData().setOrigin(name+".filter.init-param."+pname, descriptor);
                     break;
                 }
@@ -1707,7 +1688,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //otherwise just ignore it
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        holder.setInitParameter(pname, pvalue); 
+                        holder.setInitParameter(pname, pvalue);
                         context.getMetaData().setOrigin(name+".filter.init-param."+pname, descriptor);
                     }
                     break;
@@ -1719,7 +1700,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         throw new IllegalStateException("Mismatching init-param "+pname+"="+pvalue+" in "+descriptor.getResource());
                     break;
                 }
-            }  
+            }
         }
 
         String async=node.getString("async-supported",false,true);
@@ -1746,8 +1727,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         holder.setAsyncSupported(val);
-                        context.getMetaData().setOrigin(name+".filter.async-supported", descriptor);  
-                    }             
+                        context.getMetaData().setOrigin(name+".filter.async-supported", descriptor);
+                    }
                     break;
                 }
                 case WebFragment:
@@ -1759,7 +1740,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
             }
         }
-        
+
     }
 
     /**
@@ -1772,13 +1753,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //Servlet Spec 3.0, p74
         //filter-mappings are always additive, whether from web xml descriptors (web.xml/web-default.xml/web-override.xml) or web-fragments.
         //Maintenance update 3.0a to spec:
-        //  Updated 8.2.3.g.v to say <servlet-mapping> elements are additive across web-fragments. 
-      
-        
+        //  Updated 8.2.3.g.v to say <servlet-mapping> elements are additive across web-fragments.
+
+
         String filter_name = node.getString("filter-name", false, true);
-        
+
         Origin origin = context.getMetaData().getOrigin(filter_name+".filter.mappings");
-        
+
         switch (origin)
         {
             case NotSet:
@@ -1808,7 +1789,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    
+
     /**
      * @param context
      * @param descriptor
@@ -1833,7 +1814,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             return;
                     }
                 }
-                
+
                 ((WebDescriptor)descriptor).addClassName(className);
 
                 Class<? extends EventListener> listenerClass = (Class<? extends EventListener>)context.loadClass(className);
@@ -1845,7 +1826,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 context.addEventListener(listener);
                 context.getMetaData().setOrigin(className+".listener", descriptor);
-                
+
             }
         }
         catch (Exception e)
@@ -1854,7 +1835,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             return;
         }
     }
-    
+
     /**
      * @param context
      * @param descriptor
@@ -1867,7 +1848,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //Servlet Spec 3.0 p.74  distributable only if all fragments are distributable
         ((WebDescriptor)descriptor).setDistributable(true);
     }
-    
+
     /**
      * @param context
      * @param clazz
@@ -1892,7 +1873,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             throw se;
         }
     }
-    
+
     /**
      * @param p
      * @return the normalized pattern
@@ -1903,46 +1884,5 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         return p;
     }
 
-    /**
-     * Generate the classpath (as a string) of all classloaders
-     * above the webapp's classloader.
-     * 
-     * This is primarily used for jasper.
-     * @return the system class path
-     */
-    protected String getSystemClassPath(WebAppContext context)
-    {
-        ClassLoader loader = context.getClassLoader();
-        if (loader.getParent() != null)
-            loader = loader.getParent();
 
-        StringBuilder classpath=new StringBuilder();
-        while (loader != null && (loader instanceof URLClassLoader))
-        {
-            URL[] urls = ((URLClassLoader)loader).getURLs();
-            if (urls != null)
-            {     
-                for (int i=0;i<urls.length;i++)
-                {
-                    try
-                    {
-                        Resource resource = context.newResource(urls[i]);
-                        File file=resource.getFile();
-                        if (file!=null && file.exists())
-                        {
-                            if (classpath.length()>0)
-                                classpath.append(File.pathSeparatorChar);
-                            classpath.append(file.getAbsolutePath());
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.debug(e);
-                    }
-                }
-            }
-            loader = loader.getParent();
-        }
-        return classpath.toString();
-    }
 }

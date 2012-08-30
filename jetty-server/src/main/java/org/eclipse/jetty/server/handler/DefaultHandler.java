@@ -1,22 +1,26 @@
-// ========================================================================
-// Copyright (c) 1999-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,14 +40,14 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /** Default Handler.
- * 
+ *
  * This handle will deal with unhandled requests in the server.
- * For requests for favicon.ico, the Jetty icon is served. 
+ * For requests for favicon.ico, the Jetty icon is served.
  * For reqests to '/' a 404 with a list of known contexts is served.
  * For all other requests a normal 404 is served.
  * TODO Implement OPTIONS and TRACE methods for the server.
- * 
- * 
+ *
+ *
  * @org.apache.xbean.XBean
  */
 public class DefaultHandler extends AbstractHandler
@@ -54,7 +58,7 @@ public class DefaultHandler extends AbstractHandler
     byte[] _favicon;
     boolean _serveIcon=true;
     boolean _showContexts=true;
-    
+
     public DefaultHandler()
     {
         try
@@ -71,19 +75,19 @@ public class DefaultHandler extends AbstractHandler
             LOG.warn(e);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {              
+    {
         if (response.isCommitted() || baseRequest.isHandled())
             return;
-        
+
         baseRequest.setHandled(true);
-        
+
         String method=request.getMethod();
 
         // little cheat for common request
@@ -102,19 +106,19 @@ public class DefaultHandler extends AbstractHandler
             }
             return;
         }
-        
-        
+
+
         if (!_showContexts || !HttpMethod.GET.is(method) || !request.getRequestURI().equals("/"))
         {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;   
+            return;
         }
 
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
-        
+
         ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);
-        
+
         writer.write("<HTML>\n<HEAD>\n<TITLE>Error 404 - Not Found");
         writer.write("</TITLE>\n<BODY>\n<H2>Error 404 - Not Found.</H2>\n");
         writer.write("No context on this server matched or handled this request.<BR>");
@@ -183,7 +187,7 @@ public class DefaultHandler extends AbstractHandler
     {
         _serveIcon = serveIcon;
     }
-    
+
     public boolean getShowContexts()
     {
         return _showContexts;

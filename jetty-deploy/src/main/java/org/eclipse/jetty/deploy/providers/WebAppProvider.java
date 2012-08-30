@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
@@ -9,6 +27,8 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -22,6 +42,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * If the name is in the format root-hostname, then the webapp is deployed
  * at / in the virtual host hostname.
  */
+@ManagedObject("Provider for start-up deployement of webapps based on presence in directory")
 public class WebAppProvider extends ScanningAppProvider
 {
     private boolean _extractWars = false;
@@ -50,12 +71,21 @@ public class WebAppProvider extends ScanningAppProvider
                 return false;
             }
             
-            // is it a directory for an existing war file?
-            if (file.isDirectory() && 
-                    (new File(dir,name+".war").exists() ||
-                     new File(dir,name+".WAR").exists()))
-            {
+            //ignore hidden files
+            if (lowername.startsWith("."))
                 return false;
+                   
+            if (file.isDirectory())
+            {
+                // is it a directory for an existing war file?
+                if (new File(dir,name+".war").exists() ||
+                    new File(dir,name+".WAR").exists())
+
+                    return false;
+ 
+                //is it a sccs dir?
+                if ("cvs".equals(lowername) || "cvsroot".equals(lowername))
+                    return false;
             }
             
             // is there a contexts config file
@@ -89,6 +119,7 @@ public class WebAppProvider extends ScanningAppProvider
     /** Get the extractWars.
      * @return the extractWars
      */
+    @ManagedAttribute("extract war files")
     public boolean isExtractWars()
     {
         return _extractWars;
@@ -107,6 +138,7 @@ public class WebAppProvider extends ScanningAppProvider
     /** Get the parentLoaderPriority.
      * @return the parentLoaderPriority
      */
+    @ManagedAttribute("parent classloader has priority")
     public boolean isParentLoaderPriority()
     {
         return _parentLoaderPriority;
@@ -125,6 +157,7 @@ public class WebAppProvider extends ScanningAppProvider
     /** Get the defaultsDescriptor.
      * @return the defaultsDescriptor
      */
+    @ManagedAttribute("default descriptor for webapps")
     public String getDefaultsDescriptor()
     {
         return _defaultsDescriptor;
@@ -140,6 +173,7 @@ public class WebAppProvider extends ScanningAppProvider
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("directory to scan for context.xml files")
     public String getContextXmlDir()
     {
         return _filter._contexts==null?null:_filter._contexts.toString();
@@ -186,6 +220,7 @@ public class WebAppProvider extends ScanningAppProvider
     /**
      * 
      */
+    @ManagedAttribute("configuration classes for webapps to be processed through")
     public String[] getConfigurationClasses()
     {
         return _configurationClasses;
@@ -208,6 +243,7 @@ public class WebAppProvider extends ScanningAppProvider
      * 
      * @return the user supplied work directory (null if user has not set Temp Directory yet)
      */
+    @ManagedAttribute("temp directory for use, null if no user set temp directory")
     public File getTempDir()
     {
         return _tempDirectory;

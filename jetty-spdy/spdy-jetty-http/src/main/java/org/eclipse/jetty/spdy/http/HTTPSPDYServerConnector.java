@@ -1,91 +1,71 @@
-/*
- * Copyright (c) 2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 
 package org.eclipse.jetty.spdy.http;
 
-import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
-import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.spdy.AsyncConnectionFactory;
+import org.eclipse.jetty.server.HttpServerConnectionFactory;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTPSPDYServerConnector extends SPDYServerConnector
 {
-    private final AsyncConnectionFactory defaultConnectionFactory;
-    private final PushStrategy pushStrategy = new PushStrategy.None();
-
-    public HTTPSPDYServerConnector()
+    public HTTPSPDYServerConnector(Server server)
     {
-        this(null);
+        this(server, Collections.<Short, PushStrategy>emptyMap());
     }
 
-    public HTTPSPDYServerConnector(SslContextFactory sslContextFactory)
+    public HTTPSPDYServerConnector(Server server, SslContextFactory sslContextFactory)
     {
-        super(null, sslContextFactory);
-        // Override the default connection factory for non-SSL connections
-        defaultConnectionFactory = new ServerHTTPAsyncConnectionFactory(this);
+        this(server, sslContextFactory, Collections.<Short, PushStrategy>emptyMap());
     }
 
-    @Override
-    protected void doStart() throws Exception
+    public HTTPSPDYServerConnector(Server server, Map<Short, PushStrategy> pushStrategies)
     {
-        super.doStart();
-        // Override the "spdy/2" protocol by handling HTTP over SPDY
-        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, pushStrategy));
-        // Add the "http/1.1" protocol for browsers that do not support NPN
-        putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
+        this(server, null, pushStrategies);
     }
 
-    @Override
-    protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+    public HTTPSPDYServerConnector(Server server, SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
     {
-        return defaultConnectionFactory;
+        // We pass a null ServerSessionFrameListener because for
+        // HTTP over SPDY we need one that references the endPoint
+        super(server, sslContextFactory, null);
+        clearConnectionFactories();
+        // The "spdy/3" protocol handles HTTP over SPDY
+        putConnectionFactory("spdy/3", new ServerHTTPSPDYConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V3, pushStrategies)));
+        // The "spdy/2" protocol handles HTTP over SPDY
+        putConnectionFactory("spdy/2", new ServerHTTPSPDYConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V2, pushStrategies)));
+        // The "http/1.1" protocol handles browsers that support NPN but not SPDY
+        putConnectionFactory("http/1.1", new HttpServerConnectionFactory(this));
+        // The default connection factory handles plain HTTP on non-SSL or non-NPN connections
+        setDefaultConnectionFactory(getConnectionFactory("http/1.1"));
     }
 
-    @Override
-    public void customize(EndPoint endPoint, Request request) throws IOException
+    private PushStrategy getPushStrategy(short version, Map<Short, PushStrategy> pushStrategies)
     {
-        super.customize(endPoint, request);
-        if (getSslContextFactory() != null)
-            request.setScheme(HttpSchemes.HTTPS);
-    }
-
-    @Override
-    public boolean isConfidential(Request request)
-    {
-        if (getSslContextFactory() != null)
-        {
-            int confidentialPort = getConfidentialPort();
-            return confidentialPort == 0 || confidentialPort == request.getServerPort();
-        }
-        return super.isConfidential(request);
-    }
-
-    @Override
-    public boolean isIntegral(Request request)
-    {
-        if (getSslContextFactory() != null)
-        {
-            int integralPort = getIntegralPort();
-            return integralPort == 0 || integralPort == request.getServerPort();
-        }
-        return super.isIntegral(request);
+        PushStrategy pushStrategy = pushStrategies.get(version);
+        if (pushStrategy == null)
+            pushStrategy = new PushStrategy.None();
+        return pushStrategy;
     }
 }

@@ -1,20 +1,22 @@
-// ========================================================================
-// Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server.handler;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
@@ -28,13 +30,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
@@ -45,25 +47,28 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 @RunWith(Parameterized.class)
 public class IPAccessHandlerTest
 {
     private static Server _server;
-    private static Connector.NetConnector _connector;
+    private static NetworkConnector _connector;
     private static IPAccessHandler _handler;
-    
+
     private String _white;
     private String _black;
     private String _host;
     private String _uri;
     private String _code;
-    
+
     @BeforeClass
     public static void setUp()
         throws Exception
     {
         _server = new Server();
-        _connector = new SelectChannelConnector();
+        _connector = new SelectChannelConnector(_server);
         _server.setConnectors(new Connector[] { _connector });
 
         _handler = new IPAccessHandler();
@@ -78,7 +83,7 @@ public class IPAccessHandlerTest
         _server.setHandler(_handler);
         _server.start();
     }
-    
+
     /* ------------------------------------------------------------ */
     @AfterClass
     public static void tearDown()
@@ -86,7 +91,7 @@ public class IPAccessHandlerTest
     {
         _server.stop();
     }
-    
+
     /* ------------------------------------------------------------ */
     public IPAccessHandlerTest(String white, String black, String host, String uri, String code)
     {
@@ -96,7 +101,7 @@ public class IPAccessHandlerTest
         _uri   = uri;
         _code  = code;
     }
-     
+
     /* ------------------------------------------------------------ */
     @Test
     public void testHandler()
@@ -104,7 +109,7 @@ public class IPAccessHandlerTest
     {
         _handler.setWhite(_white.split(";",-1));
         _handler.setBlack(_black.split(";",-1));
-        
+
         String request = "GET " + _uri + " HTTP/1.1\n" + "Host: "+ _host + "\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
@@ -231,7 +236,7 @@ public class IPAccessHandlerTest
             return builder.toString();
         }
     }
-    
+
    /* ------------------------------------------------------------ */
     @Parameters
     public static Collection<Object[]> data() {
@@ -239,20 +244,20 @@ public class IPAccessHandlerTest
             // Empty lists
             {"", "", "127.0.0.1", "/",          "200"},
             {"", "", "127.0.0.1", "/dump/info", "200"},
-            
-            // White list 
+
+            // White list
             {"127.0.0.1", "", "127.0.0.1", "/",          "200"},
             {"127.0.0.1", "", "127.0.0.1", "/dispatch",  "200"},
             {"127.0.0.1", "", "127.0.0.1", "/dump/info", "200"},
-            
+
             {"127.0.0.1|/", "", "127.0.0.1", "/",          "200"},
             {"127.0.0.1|/", "", "127.0.0.1", "/dispatch",  "403"},
             {"127.0.0.1|/", "", "127.0.0.1", "/dump/info", "403"},
-            
+
             {"127.0.0.1|/*", "", "127.0.0.1", "/",          "200"},
             {"127.0.0.1|/*", "", "127.0.0.1", "/dispatch",  "200"},
             {"127.0.0.1|/*", "", "127.0.0.1", "/dump/info", "200"},
-            
+
             {"127.0.0.1|/dump/*", "", "127.0.0.1", "/",          "403"},
             {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dispatch",  "403"},
             {"127.0.0.1|/dump/*", "", "127.0.0.1", "/dump/info", "200"},
@@ -268,7 +273,7 @@ public class IPAccessHandlerTest
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/info", "200"},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/test", "200"},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "", "127.0.0.1", "/dump/fail", "403"},
-            
+
             {"127.0.0.0-2|", "", "127.0.0.1", "/",          "200"},
             {"127.0.0.0-2|", "", "127.0.0.1", "/dump/info", "200"},
 
@@ -290,20 +295,20 @@ public class IPAccessHandlerTest
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/info", "200"},
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/test", "200"},
             {"127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "", "127.0.0.1", "/dump/fail", "403"},
-            
+
             // Black list
             {"", "127.0.0.1", "127.0.0.1", "/",          "403"},
             {"", "127.0.0.1", "127.0.0.1", "/dispatch",  "403"},
             {"", "127.0.0.1", "127.0.0.1", "/dump/info", "403"},
-            
+
             {"", "127.0.0.1|/", "127.0.0.1", "/",          "403"},
             {"", "127.0.0.1|/", "127.0.0.1", "/dispatch",  "200"},
             {"", "127.0.0.1|/", "127.0.0.1", "/dump/info", "200"},
-            
+
             {"", "127.0.0.1|/*", "127.0.0.1", "/",          "403"},
             {"", "127.0.0.1|/*", "127.0.0.1", "/dispatch",  "403"},
             {"", "127.0.0.1|/*", "127.0.0.1", "/dump/info", "403"},
-            
+
             {"", "127.0.0.1|/dump/*", "127.0.0.1", "/",          "200"},
             {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dispatch",  "200"},
             {"", "127.0.0.1|/dump/*", "127.0.0.1", "/dump/info", "403"},
@@ -319,7 +324,7 @@ public class IPAccessHandlerTest
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/info", "403"},
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/test", "403"},
             {"", "127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1", "/dump/fail", "200"},
-            
+
             {"", "127.0.0.0-2|", "127.0.0.1", "/",          "403"},
             {"", "127.0.0.0-2|", "127.0.0.1", "/dump/info", "403"},
 
@@ -341,7 +346,7 @@ public class IPAccessHandlerTest
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/info", "403"},
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/test", "403"},
             {"", "127.0.0.0-2|/dump/info;127.0.0.0-2|/dump/test", "127.0.0.1", "/dump/fail", "200"},
-                        
+
             // Both lists
             {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump",      "200"},
             {"127.0.0.1|/dump", "127.0.0.1|/dump/fail", "127.0.0.1", "/dump/info", "403"},
@@ -355,7 +360,7 @@ public class IPAccessHandlerTest
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/info", "200"},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/test", "403"},
             {"127.0.0.1|/dump/*", "127.0.0.1|/dump/test;127.0.0.1|/dump/fail", "127.0.0.1", "/dump/fail", "403"},
-            
+
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump",      "403"},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/info", "200"},
             {"127.0.0.1|/dump/info;127.0.0.1|/dump/test", "127.0.0.1|/dump/test", "127.0.0.1", "/dump/test", "403"},
@@ -381,7 +386,7 @@ public class IPAccessHandlerTest
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/info", "200"},
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/test", "403"},
             {"127.0.0.1|/dump/info;127.0.0.2|/dump/test", "", "127.0.0.1", "/dump/fail", "403"},
-            
+
             {"172.0.0.0-255", "", "127.0.0.1", "/",          "403"},
             {"172.0.0.0-255", "", "127.0.0.1", "/dump/info", "403"},
 
