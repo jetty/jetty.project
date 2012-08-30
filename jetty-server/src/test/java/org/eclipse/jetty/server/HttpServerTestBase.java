@@ -194,8 +194,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         String response = readResponse(client);
         client.close();
 
-//        assertThat("response contains 200 OK", response.contains(" 500 "), is(true)); //TODO: check with gregw,
-// currently returns 200
+//        assertThat("response contains 500 OK", response.contains(" 500 "), is(true)); //TODO: check with gregw,
         assertThat("The 4th byte (-1) has not been passed to the handler", fourBytesRead.get(), is(false));
         assertThat("EofException has been caught", earlyEOFException.get(), is(true));
     }
