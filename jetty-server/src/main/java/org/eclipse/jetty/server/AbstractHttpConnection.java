@@ -555,8 +555,9 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 {
                     if (error)
                     {
-                        _endp.shutdownOutput();
                         _generator.setPersistent(false);
+                        _generator.flushBuffer();
+                        _endp.shutdownOutput();
                         if (!_generator.isComplete())
                             _response.complete();
                     }

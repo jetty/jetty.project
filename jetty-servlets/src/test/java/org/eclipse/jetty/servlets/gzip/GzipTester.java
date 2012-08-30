@@ -102,9 +102,13 @@ public class GzipTester
 
         // Assert the response headers
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
-//        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
+        //        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
         Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
-        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),containsString(compressionType));
+        int qindex = compressionType.indexOf(";");
+        if (qindex < 0)
+            Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),containsString(compressionType));
+        else
+            Assert.assertThat("Response.header[Content-Encoding]", response.getHeader("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
 
         // Assert that the decompressed contents are what we expect.
         File serverFile = testdir.getFile(serverFilename);
@@ -117,11 +121,11 @@ public class GzipTester
         try
         {
             bais = new ByteArrayInputStream(response.getContentBytes());
-            if (compressionType.equals(GzipFilter.GZIP))
+            if (compressionType.startsWith(GzipFilter.GZIP))
             {
                 in = new GZIPInputStream(bais);
             }
-            else if (compressionType.equals(GzipFilter.DEFLATE))
+            else if (compressionType.startsWith(GzipFilter.DEFLATE))
             {
                 in = new InflaterInputStream(bais, new Inflater(true));
             }
@@ -257,6 +261,7 @@ public class GzipTester
             Assert.assertEquals("Expected response equals actual response",expectedResponse,actual);
         }
     }
+    
 
     /**
      * Asserts that the request results in a properly structured GzipFilter response, where the content is
