@@ -38,16 +38,16 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYConnectionFactory
+public class ServerHTTPSPDYConnectionFactory extends ServerSPDYConnectionFactory
 {
     private static final String CHANNEL_ATTRIBUTE = "org.eclipse.jetty.spdy.http.HTTPChannelOverSPDY";
-    private static final Logger logger = Log.getLogger(ServerHTTPSPDYAsyncConnectionFactory.class);
+    private static final Logger logger = Log.getLogger(ServerHTTPSPDYConnectionFactory.class);
 
     private final Connector connector;
     private final PushStrategy pushStrategy;
     private final HttpConfiguration configuration;
 
-    public ServerHTTPSPDYAsyncConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, Connector connector, PushStrategy pushStrategy)
+    public ServerHTTPSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, Connector connector, PushStrategy pushStrategy)
     {
         super(version, bufferPool, threadPool, scheduler);
         this.connector = connector;

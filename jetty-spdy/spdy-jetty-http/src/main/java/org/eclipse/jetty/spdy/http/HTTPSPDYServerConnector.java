@@ -52,9 +52,9 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
         super(server, sslContextFactory, null);
         clearConnectionFactories();
         // The "spdy/3" protocol handles HTTP over SPDY
-        putConnectionFactory("spdy/3", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V3, pushStrategies)));
+        putConnectionFactory("spdy/3", new ServerHTTPSPDYConnectionFactory(SPDY.V3, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V3, pushStrategies)));
         // The "spdy/2" protocol handles HTTP over SPDY
-        putConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V2, pushStrategies)));
+        putConnectionFactory("spdy/2", new ServerHTTPSPDYConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, getPushStrategy(SPDY.V2, pushStrategies)));
         // The "http/1.1" protocol handles browsers that support NPN but not SPDY
         putConnectionFactory("http/1.1", new HttpServerConnectionFactory(this));
         // The default connection factory handles plain HTTP on non-SSL or non-NPN connections

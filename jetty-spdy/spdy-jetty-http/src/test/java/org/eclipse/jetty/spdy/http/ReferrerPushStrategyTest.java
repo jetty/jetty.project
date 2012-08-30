@@ -57,7 +57,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
         SPDYServerConnector connector = super.newHTTPSPDYServerConnector(version);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
         connector.setDefaultConnectionFactory(defaultFactory);
         return connector;
     }
@@ -70,7 +70,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
         connector.setDefaultConnectionFactory(defaultFactory);
 
         Headers mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
@@ -92,7 +92,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version,
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version,
                 connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
         connector.setDefaultConnectionFactory(defaultFactory);
 
@@ -114,7 +114,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         pushStrategy.setMaxAssociatedResources(1);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version,
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version,
                 connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
         connector.setDefaultConnectionFactory(defaultFactory);
 

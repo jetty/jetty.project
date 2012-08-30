@@ -93,7 +93,7 @@ public abstract class AbstractHTTPSPDYTest
     {
         // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
         SPDYServerConnector connector = new HTTPSPDYServerConnector(server);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYAsyncConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new PushStrategy.None());
+        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new PushStrategy.None());
         connector.setDefaultConnectionFactory(defaultFactory);
         return connector;
     }
