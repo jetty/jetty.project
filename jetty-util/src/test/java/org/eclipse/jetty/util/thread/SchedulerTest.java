@@ -139,7 +139,7 @@ public class SchedulerTest
     public void testManySchedulesAndCancels() throws Exception
     {
         final Random random = new Random();
-        Thread[] test = new Thread[2000]; 
+        Thread[] test = new Thread[500]; 
         
         final AtomicInteger schedules = new AtomicInteger();
         final SampleStatistic executions = new SampleStatistic();
@@ -163,7 +163,7 @@ public class SchedulerTest
                             final int delay=random.nextInt((int)(end-now));
                             final long expected = now+delay;
                             
-                            int cancel=random.nextInt(100);
+                            int cancel=random.nextInt(200);
                             if (cancel==0)
                                 cancel=(int)(end-now)+1000;
                             else
