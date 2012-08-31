@@ -125,6 +125,12 @@ public class MultiPartOutputStream extends FilterOutputStream
         out.write(__CRLF);
     }
     
+    /* ------------------------------------------------------------ */
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException
+    {
+        out.write(b,off,len);
+    }
 }
 
 
