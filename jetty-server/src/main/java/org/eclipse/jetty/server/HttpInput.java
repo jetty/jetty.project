@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.io.EofException;

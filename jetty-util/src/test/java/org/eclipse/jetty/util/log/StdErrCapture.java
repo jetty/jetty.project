@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.util.log;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 
 public class StdErrCapture
 {

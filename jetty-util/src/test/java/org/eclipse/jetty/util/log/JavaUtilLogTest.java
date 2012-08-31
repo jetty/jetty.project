@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.util.log;
 
+import static org.hamcrest.Matchers.is;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.Handler;
@@ -28,8 +30,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class JavaUtilLogTest
 {

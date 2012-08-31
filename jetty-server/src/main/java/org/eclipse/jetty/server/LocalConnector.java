@@ -24,8 +24,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public class LocalConnector extends AbstractConnector
 {
@@ -51,7 +52,7 @@ public class LocalConnector extends AbstractConnector
         this(server, null, null, null, sslContextFactory, 0);
     }
 
-    public LocalConnector(Server server, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool,
+    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool,
                           SslContextFactory sslContextFactory, int acceptors)
     {
         super(server,executor,scheduler,pool, sslContextFactory, acceptors);

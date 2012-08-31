@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -76,6 +76,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public class StandardSession implements ISession, Parser.Listener, Callback<StandardSession.FrameBytes>, Dumpable
 {
@@ -95,7 +96,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     private final LinkedList<FrameBytes> queue = new LinkedList<>();
     private final ByteBufferPool bufferPool;
     private final Executor threadPool;
-    private final ScheduledExecutorService scheduler;
+    private final Scheduler scheduler;
     private final short version;
     private final Controller<FrameBytes> controller;
     private final IdleListener idleListener;
@@ -110,10 +111,12 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
     private boolean flushing;
     private Throwable failure;
 
-    public StandardSession(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler,
+    public StandardSession(short version, ByteBufferPool bufferPool, Executor threadPool, Scheduler scheduler,
             Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener,
             Generator generator, FlowControlStrategy flowControlStrategy)
     {
+        // TODO this should probably be an aggregate lifecycle
+        
         this.version = version;
         this.bufferPool = bufferPool;
         this.threadPool = threadPool;
@@ -1145,7 +1148,7 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
         private final IStream stream;
         private final Callback<C> callback;
         private final C context;
-        protected volatile ScheduledFuture<?> task;
+        protected volatile Scheduler.Task task;
 
         protected AbstractFrameBytes(IStream stream, Callback<C> callback, C context)
         {
@@ -1192,9 +1195,9 @@ public class StandardSession implements ISession, Parser.Listener, Callback<Stan
 
         private void cancelTask()
         {
-            ScheduledFuture<?> task = this.task;
+            Scheduler.Task task = this.task;
             if (task != null)
-                task.cancel(false);
+                task.cancel();
         }
 
         @Override

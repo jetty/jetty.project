@@ -21,8 +21,6 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public abstract class AbstractEndPoint implements EndPoint
 {
@@ -38,8 +37,8 @@ public abstract class AbstractEndPoint implements EndPoint
     private final InetSocketAddress _local;
     private final InetSocketAddress _remote;
 
-    private final ScheduledExecutorService _scheduler;
-    private final AtomicReference<Future<?>> _timeout = new AtomicReference<>();
+    private final Scheduler _scheduler;
+    private final AtomicReference<Scheduler.Task> _timeout = new AtomicReference<>();
     private final Runnable _idleTask = new Runnable()
     {
         @Override
@@ -73,7 +72,7 @@ public abstract class AbstractEndPoint implements EndPoint
         }
     };
 
-    protected AbstractEndPoint(ScheduledExecutorService scheduler,InetSocketAddress local,InetSocketAddress remote)
+    protected AbstractEndPoint(Scheduler scheduler,InetSocketAddress local,InetSocketAddress remote)
     {
         _local=local;
         _remote=remote;
@@ -176,12 +175,12 @@ public abstract class AbstractEndPoint implements EndPoint
 
     protected void scheduleIdleTimeout(long delay)
     {
-        Future<?> newTimeout = null;
+        Scheduler.Task newTimeout = null;
         if (isOpen() && delay > 0 && _scheduler!=null)
             newTimeout = _scheduler.schedule(_idleTask, delay, TimeUnit.MILLISECONDS);
-        Future<?> oldTimeout = _timeout.getAndSet(newTimeout);
+        Scheduler.Task oldTimeout = _timeout.getAndSet(newTimeout);
         if (oldTimeout != null)
-            oldTimeout.cancel(false);
+            oldTimeout.cancel();
     }
 
     protected long checkIdleTimeout()

@@ -29,7 +29,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * <p>Implementation of {@link NetworkConnector} based on NIO classes.</p>
@@ -77,7 +78,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     public SelectChannelConnector(
             @Name("server") Server server,
             @Name("executor") Executor executor,
-            @Name("scheduler") ScheduledExecutorService scheduler,
+            @Name("scheduler") Scheduler scheduler,
             @Name("bufferPool") ByteBufferPool pool,
             @Name("sslContextFactory") SslContextFactory sslContextFactory,
             @Name("acceptors") int acceptors,

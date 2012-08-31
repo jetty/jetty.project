@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import static junit.framework.Assert.assertTrue;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
@@ -29,11 +34,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static junit.framework.Assert.assertTrue;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 
 public class SslContextFactoryTest

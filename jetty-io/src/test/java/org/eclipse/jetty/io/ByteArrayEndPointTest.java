@@ -18,22 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
-
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.FutureCallback;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -43,21 +27,38 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 @RunWith(AdvancedRunner.class)
 public class ByteArrayEndPointTest
 {
-    private ScheduledExecutorService _scheduler;
+    private Scheduler _scheduler;
 
     @Before
-    public void before()
+    public void before() throws Exception
     {
-        _scheduler = Executors.newSingleThreadScheduledExecutor();
+        _scheduler = new SimpleScheduler();
+        _scheduler.start();
     }
 
     @After
-    public void after()
+    public void after() throws Exception
     {
-        _scheduler.shutdownNow();
+        _scheduler.stop();
     }
 
     @Test

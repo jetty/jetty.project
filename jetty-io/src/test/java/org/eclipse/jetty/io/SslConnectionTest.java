@@ -28,13 +28,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
 import junit.framework.Assert;
+
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -42,6 +42,8 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SimpleScheduler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -58,7 +60,7 @@ public class SslConnectionTest
     private volatile FutureCallback<Void> _writeCallback;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
-    protected ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
+    protected Scheduler _scheduler = new SimpleScheduler();
     protected SelectorManager _manager = new SelectorManager()
     {
         @Override
@@ -112,6 +114,7 @@ public class SslConnectionTest
         _connector = ServerSocketChannel.open();
         _connector.socket().bind(null);
         _threadPool.start();
+        _scheduler.start();
         _manager.start();
     }
 
@@ -121,6 +124,7 @@ public class SslConnectionTest
         if (_lastEndp.isOpen())
             _lastEndp.close();
         _manager.stop();
+        _scheduler.stop();
         _threadPool.stop();
         _connector.close();
     }

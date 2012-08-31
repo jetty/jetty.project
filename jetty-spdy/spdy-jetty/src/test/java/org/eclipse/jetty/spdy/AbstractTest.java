@@ -100,6 +100,7 @@ public abstract class AbstractTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
+        
         return clientFactory.newSPDYClient(version).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
     }
 

@@ -558,12 +558,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         Connector[] connectors = getServer().getConnectors();
         for (int i=0;i<connectors.length;i++)
         {
-            String connectorName = connectors[i].getName();
             String displayName = getDisplayName();
             if (displayName == null)
                 displayName = "WebApp@"+connectors.hashCode();
 
-            LOG.info(displayName + " at http://" + connectorName + getContextPath());
+            LOG.info(displayName + " at http://" + connectors[i].toString() + getContextPath());
         }
     }
 

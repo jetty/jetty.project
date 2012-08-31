@@ -23,12 +23,12 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 
 /* ------------------------------------------------------------ */
@@ -76,25 +76,25 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs)
+    public ByteArrayEndPoint(Scheduler scheduler, long idleTimeoutMs)
     {
-        this(timer,idleTimeoutMs,null,null);
+        this(scheduler,idleTimeoutMs,null,null);
     }
 
     /* ------------------------------------------------------------ */
-    public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, byte[] input, int outputSize)
-    {
-        this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
-    }
-
-    /* ------------------------------------------------------------ */
-    public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, String input, int outputSize)
+    public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, byte[] input, int outputSize)
     {
         this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
     }
 
     /* ------------------------------------------------------------ */
-    public ByteArrayEndPoint(ScheduledExecutorService timer, long idleTimeoutMs, ByteBuffer input, ByteBuffer output)
+    public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, String input, int outputSize)
+    {
+        this(timer,idleTimeoutMs,input!=null?BufferUtil.toBuffer(input):null,BufferUtil.allocate(outputSize));
+    }
+
+    /* ------------------------------------------------------------ */
+    public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, ByteBuffer input, ByteBuffer output)
     {
         super(timer,NOIP,NOIP);
         _in=input==null?BufferUtil.EMPTY_BUFFER:input;

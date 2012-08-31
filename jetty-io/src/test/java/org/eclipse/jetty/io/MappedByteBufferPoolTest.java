@@ -18,17 +18,17 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentMap;
-
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import java.nio.ByteBuffer;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentMap;
+
+import org.junit.Test;
 
 public class MappedByteBufferPoolTest
 {

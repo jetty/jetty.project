@@ -36,10 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -67,7 +64,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ArrayUtil;
@@ -151,7 +147,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private String[] _vhosts;
 
-    private Set<String> _connectors;
     private EventListener[] _eventListeners;
     private Logger _logger;
 
@@ -394,36 +389,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public String[] getVirtualHosts()
     {
         return _vhosts;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return an array of connector names that this context will accept a request from.
-     */
-    @ManagedAttribute("Names and ports of accepted connectors")
-    public String[] getConnectorNames()
-    {
-        if (_connectors == null || _connectors.size() == 0)
-            return null;
-
-        return _connectors.toArray(new String[_connectors.size()]);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the names of accepted connectors.
-     *
-     * Names are either "host:port" or a specific configured name for a connector.
-     *
-     * @param connectors
-     *            If non null, an array of connector names that this context will accept a request from.
-     */
-    public void setConnectorNames(String[] connectors)
-    {
-        if (connectors == null || connectors.length == 0)
-            _connectors = null;
-        else
-            _connectors = new HashSet<String>(Arrays.asList(connectors));
     }
 
     /* ------------------------------------------------------------ */
@@ -900,14 +865,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     match = contextVhost.equalsIgnoreCase(vhost);
             }
             if (!match)
-                return false;
-        }
-
-        // Check the connector
-        if (_connectors != null && _connectors.size() > 0)
-        {
-            String connector = HttpChannel.getCurrentHttpChannel().getConnector().getName();
-            if (connector == null || !_connectors.contains(connector))
                 return false;
         }
 

@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
-
-import org.hamcrest.Matchers;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import java.nio.ByteBuffer;
+
+import org.hamcrest.Matchers;
+import org.junit.Test;
 
 public class ArrayByteBufferPoolTest
 {

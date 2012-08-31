@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.EventListener;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;

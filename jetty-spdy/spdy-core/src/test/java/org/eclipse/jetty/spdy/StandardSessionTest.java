@@ -24,7 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -48,6 +48,9 @@ import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -76,7 +79,7 @@ public class StandardSessionTest
     private Executor threadPool;
     private StandardSession session;
     private Generator generator;
-    private ScheduledExecutorService scheduler;
+    private Scheduler scheduler;
     private Headers headers;
 
     @Before
@@ -84,10 +87,17 @@ public class StandardSessionTest
     {
         bufferPool = new MappedByteBufferPool();
         threadPool = Executors.newCachedThreadPool();
-        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler = new SimpleScheduler();
+        scheduler.start(); 
         generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
         session = new StandardSession(SPDY.V2,bufferPool,threadPool,scheduler,controller,null,1,null,generator,new FlowControlStrategy.None());
         headers = new Headers();
+    }
+    
+    @After
+    public void after() throws Exception
+    {
+        scheduler.stop();
     }
 
     @SuppressWarnings("unchecked")

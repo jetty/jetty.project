@@ -24,10 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -41,6 +38,8 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SimpleScheduler;
 
 /**
  * <p>Partial implementation of {@link Connector}</p>
@@ -55,11 +54,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     private final Server _server;
     private final SslContextFactory _sslContextFactory;
     private final Executor _executor;
-    private final ScheduledExecutorService _scheduler;
+    private final Scheduler _scheduler;
     private final ByteBufferPool _byteBufferPool;
     private final Thread[] _acceptors;
     private volatile CountDownLatch _stopping;
-    private volatile String _name;
     private volatile long _idleTimeout = 200000;
     private volatile ConnectionFactory defaultConnectionFactory;
 
@@ -74,30 +72,23 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     public AbstractConnector(
             Server server,
             Executor executor,
-            ScheduledExecutorService scheduler,
+            Scheduler scheduler,
             ByteBufferPool pool,
             SslContextFactory sslContextFactory,
             int acceptors)
     {
         _server=server;
         _executor=executor!=null?executor:_server.getThreadPool();
-        _scheduler=scheduler!=null?scheduler:Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
-        {
-            @Override
-            public Thread newThread(Runnable r)
-            {
-                return new Thread(r, "Scheduler-" + getName());
-            }
-        });
+        _scheduler=scheduler!=null?scheduler:new SimpleScheduler();
         _byteBufferPool = pool!=null?pool:new MappedByteBufferPool();
         _sslContextFactory = sslContextFactory;
 
         addBean(_server,false);
         addBean(_executor);
         if (executor==null)
-            unmanage(_executor);
-        addBean(_scheduler,scheduler==null);
-        addBean(_byteBufferPool,pool==null);
+            unmanage(_executor); // inherited from server
+        addBean(_scheduler);
+        addBean(_byteBufferPool);
         addBean(_sslContextFactory);
         addBean(_stats,true);
 
@@ -341,18 +332,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         }
     }
 
-    @Override
-    @ManagedAttribute("name of the connector")
-    public String getName()
-    {
-        return _name;
-    }
-
-    public void setName(String name)
-    {
-        _name = name;
-    }
-
     protected void connectionOpened(Connection connection)
     {
         _stats.connectionOpened();
@@ -373,7 +352,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _stats.connectionClosed(duration, requests, requests);
     }
 
-    public ScheduledExecutorService getScheduler()
+    @Override
+    public Scheduler getScheduler()
     {
         return _scheduler;
     }

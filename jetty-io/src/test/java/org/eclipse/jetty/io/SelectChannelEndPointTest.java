@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -31,24 +37,18 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SimpleScheduler;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
@@ -56,7 +56,7 @@ public class SelectChannelEndPointTest
     protected volatile EndPoint _lastEndPoint;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
-    protected ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
+    protected Scheduler _scheduler = new SimpleScheduler();
     protected SelectorManager _manager = new SelectorManager()
     {
         @Override
@@ -93,6 +93,7 @@ public class SelectChannelEndPointTest
         _lastEndPointLatch = new CountDownLatch(1);
         _connector = ServerSocketChannel.open();
         _connector.socket().bind(null);
+        _scheduler.start();
         _threadPool.start();
         _manager.start();
     }
@@ -100,6 +101,7 @@ public class SelectChannelEndPointTest
     @After
     public void stopManager() throws Exception
     {
+        _scheduler.stop();
         _manager.stop();
         _threadPool.stop();
         _connector.close();

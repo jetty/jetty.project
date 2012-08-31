@@ -28,8 +28,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,6 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SimpleScheduler;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,7 +45,7 @@ import org.junit.Test;
 public class SelectChannelEndPointInterestsTest
 {
     private QueuedThreadPool threadPool;
-    private ScheduledExecutorService scheduler;
+    private Scheduler scheduler;
     private ServerSocketChannel connector;
     private SelectorManager selectorManager;
 
@@ -54,7 +54,8 @@ public class SelectChannelEndPointInterestsTest
         threadPool = new QueuedThreadPool();
         threadPool.start();
 
-        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler = new SimpleScheduler();
+        scheduler.start();
 
         connector = ServerSocketChannel.open();
         connector.bind(new InetSocketAddress("localhost", 0));
@@ -107,12 +108,12 @@ public class SelectChannelEndPointInterestsTest
     @After
     public void destroy() throws Exception
     {
+        if (scheduler!=null)
+            scheduler.stop();
         if (selectorManager != null)
             selectorManager.stop();
         if (connector != null)
             connector.close();
-        if (scheduler != null)
-            scheduler.shutdownNow();
         if (threadPool != null)
             threadPool.stop();
     }

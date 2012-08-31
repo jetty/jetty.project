@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -50,6 +50,8 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SimpleScheduler;
 
 public class SPDYClient
 {
@@ -165,7 +167,7 @@ public class SPDYClient
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
         private final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        private final Scheduler scheduler = new SimpleScheduler();
         private final Executor executor;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
@@ -193,6 +195,9 @@ public class SPDYClient
 
         public Factory(Executor executor, SslContextFactory sslContextFactory, long idleTimeout)
         {
+            // TODO make this injectable
+            addBean(scheduler);
+            
             this.idleTimeout = idleTimeout;
             if (executor == null)
                 executor = new QueuedThreadPool();
@@ -205,6 +210,7 @@ public class SPDYClient
 
             selector = new ClientSelectorManager();
             addBean(selector);
+            
         }
 
         public SPDYClient newSPDYClient(short version)

@@ -21,10 +21,10 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * <p>Partial implementation of {@link NetworkConnector}.</p>
@@ -34,7 +34,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     private volatile String _host;
     private volatile int _port = 0;
 
-    public AbstractNetworkConnector(Server server, Executor executor, ScheduledExecutorService scheduler, ByteBufferPool pool, SslContextFactory sslContextFactory, int acceptors)
+    public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, SslContextFactory sslContextFactory, int acceptors)
     {
         super(server, executor, scheduler, pool, sslContextFactory, acceptors);
     }
@@ -70,13 +70,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     @Override
     protected void doStart() throws Exception
     {
-        if (getName() == null)
-            setName(getHost() == null ? "0.0.0.0" : getHost() + ":" + getPort());
-
         open();
-
-        setName(getName() + "/" + getLocalPort());
-
         super.doStart();
     }
 
@@ -84,12 +78,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     protected void doStop() throws Exception
     {
         close();
-
         super.doStop();
-
-        int i = getName().lastIndexOf("/");
-        if (i > 0)
-            setName(getName().substring(0, i));
     }
 
     @Override

@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,6 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BaseConnection;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -58,7 +58,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private static final Logger LOG_FRAMES = Log.getLogger("org.eclipse.jetty.websocket.io.Frames");
 
     private final ByteBufferPool bufferPool;
-    private final ScheduledExecutorService scheduler;
+    private final Scheduler scheduler;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketPolicy policy;
@@ -69,7 +69,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private boolean flushing;
     private boolean isFilling;
 
-    public AbstractWebSocketConnection(EndPoint endp, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor);
         this.policy = policy;
@@ -199,7 +199,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return getEndPoint().getRemoteAddress();
     }
 
-    public ScheduledExecutorService getScheduler()
+    public Scheduler getScheduler()
     {
         return scheduler;
     }

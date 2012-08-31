@@ -21,7 +21,6 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.BufferUtil;
 

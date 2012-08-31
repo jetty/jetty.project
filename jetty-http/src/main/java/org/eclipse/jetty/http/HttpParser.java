@@ -72,7 +72,7 @@ public class HttpParser
     private boolean _host;
 
     /* ------------------------------------------------------------------------------- */
-    private State _state=State.START;
+    private volatile State _state=State.START;
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
@@ -217,7 +217,7 @@ public class HttpParser
                 {
                     _methodString = _method.asString();
                     buffer.position(buffer.position()+_methodString.length()+1);
-                    _state=State.SPACE1;
+                    setState(State.SPACE1);
                     return;
                 }
             }
@@ -227,7 +227,7 @@ public class HttpParser
                 if (_version!=null)
                 {
                     buffer.position(buffer.position()+_version.asString().length()+1);
-                    _state=State.SPACE1;
+                    setState(State.SPACE1);
                     return;
                 }
             }
@@ -245,7 +245,7 @@ public class HttpParser
             {
                 _string.setLength(0);
                 _string.append((char)ch);
-                _state=_requestHandler!=null?State.METHOD:State.RESPONSE_VERSION;
+                setState(_requestHandler!=null?State.METHOD:State.RESPONSE_VERSION);
                 return;
             }
         }
@@ -314,7 +314,7 @@ public class HttpParser
                         HttpMethod method=HttpMethod.CACHE.get(_methodString);
                         if (method!=null)
                             _methodString=method.asString();
-                        _state=State.SPACE1;
+                        setState(State.SPACE1);
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
@@ -335,7 +335,7 @@ public class HttpParser
                             badMessage(buffer,HttpStatus.BAD_REQUEST_400,"Unknown Version");
                             return true;
                         }
-                        _state=State.SPACE1;
+                        setState(State.SPACE1);
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
@@ -351,12 +351,12 @@ public class HttpParser
                     {
                         if (_responseHandler!=null)
                         {
-                            _state=State.STATUS;
+                            setState(State.STATUS);
                             _responseStatus=ch-'0';
                         }
                         else
                         {
-                            _state=State.URI;
+                            setState(State.URI);
                             _utf8.reset();
                             _utf8.append(ch);
                         }
@@ -371,7 +371,7 @@ public class HttpParser
                 case STATUS:
                     if (ch == HttpTokens.SPACE)
                     {
-                        _state=State.SPACE2;
+                        setState(State.SPACE2);
                     }
                     else if (ch>='0' && ch<='9')
                     {
@@ -381,7 +381,7 @@ public class HttpParser
                     {
                         return_from_parse|=_responseHandler.startResponse(_version, _responseStatus, null);
                         _eol=ch;
-                        _state=State.HEADER;
+                        setState(State.HEADER);
                     }
                     else
                     {
@@ -394,7 +394,7 @@ public class HttpParser
                     {
                         _uri=_utf8.toString();
                         _utf8.reset();
-                        _state=State.SPACE2;
+                        setState(State.SPACE2);
                     }
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
@@ -402,7 +402,7 @@ public class HttpParser
                         _uri=_utf8.toString();
                         _utf8.reset();
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString,_uri,null);
-                        _state=State.END;
+                        setState(State.END);
                         BufferUtil.clear(buffer);
                         return_from_parse|=_handler.headerComplete();
                         return_from_parse|=_handler.messageComplete(_contentPosition);
@@ -419,11 +419,11 @@ public class HttpParser
                         if (_responseHandler!=null)
                         {
                             _length=1;
-                            _state=State.REASON;
+                            setState(State.REASON);
                         }
                         else
                         {
-                            _state=State.REQUEST_VERSION;
+                            setState(State.REQUEST_VERSION);
 
                             // try quick look ahead
                             if (buffer.position()>0 && buffer.hasArray())
@@ -434,7 +434,7 @@ public class HttpParser
                                     _string.setLength(0);
                                     buffer.position(buffer.position()+_version.asString().length()-1);
                                     _eol=buffer.get();
-                                    _state=State.HEADER;
+                                    setState(State.HEADER);
                                     return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
                                 }
                             }
@@ -446,13 +446,13 @@ public class HttpParser
                         {
                             return_from_parse|=_responseHandler.startResponse(_version, _responseStatus, null);
                             _eol=ch;
-                            _state=State.HEADER;
+                            setState(State.HEADER);
                         }
                         else
                         {
                             // HTTP/0.9
                             return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, null);
-                            _state=State.END;
+                            setState(State.END);
                             BufferUtil.clear(buffer);
                             return_from_parse|=_handler.headerComplete();
                             return_from_parse|=_handler.messageComplete(_contentPosition);
@@ -472,7 +472,7 @@ public class HttpParser
                         }
 
                         _eol=ch;
-                        _state=State.HEADER;
+                        setState(State.HEADER);
                         return_from_parse|=_requestHandler.startRequest(_method,_methodString, _uri, _version);
                         continue;
                     }
@@ -487,7 +487,7 @@ public class HttpParser
                         String reason=takeLengthString();
 
                         _eol=ch;
-                        _state=State.HEADER;
+                        setState(State.HEADER);
                         return_from_parse|=_responseHandler.startResponse(_version, _responseStatus, reason);
                         continue;
                     }
@@ -547,7 +547,7 @@ public class HttpParser
                             // header value without name - continuation?
                             _length=-1;
                             _string.setLength(0);
-                            _state=State.HEADER_VALUE;
+                            setState(State.HEADER_VALUE);
                             break;
                         }
 
@@ -673,23 +673,23 @@ public class HttpParser
                                 switch (_endOfContent)
                                 {
                                     case EOF_CONTENT:
-                                        _state=State.EOF_CONTENT;
+                                        setState(State.EOF_CONTENT);
                                         return_from_parse|=_handler.headerComplete();
                                         break;
 
                                     case CHUNKED_CONTENT:
-                                        _state=State.CHUNKED_CONTENT;
+                                        setState(State.CHUNKED_CONTENT);
                                         return_from_parse|=_handler.headerComplete();
                                         break;
 
                                     case NO_CONTENT:
                                         return_from_parse|=_handler.headerComplete();
-                                        _state=State.END;
+                                        setState(State.END);
                                         return_from_parse|=_handler.messageComplete(_contentPosition);
                                         break;
 
                                     default:
-                                        _state=State.CONTENT;
+                                        setState(State.CONTENT);
                                         return_from_parse|=_handler.headerComplete();
                                         break;
                                 }
@@ -705,13 +705,13 @@ public class HttpParser
                                     {
                                         _headerString=_header.asString();
                                         buffer.position(buffer.position()+_headerString.length());
-                                        _state=buffer.get(buffer.position()-1)==':'?State.HEADER_VALUE:State.HEADER_NAME;
+                                        setState(buffer.get(buffer.position()-1)==':'?State.HEADER_VALUE:State.HEADER_NAME);
                                         break;
                                     }
                                 }
 
                                 // New header
-                                _state=State.HEADER_NAME;
+                                setState(State.HEADER_NAME);
                                 _string.setLength(0);
                                 _string.append((char)ch);
                                 _length=1;
@@ -729,7 +729,7 @@ public class HttpParser
                             consumeCRLF(ch,buffer);
                             _headerString=takeLengthString();
                             _header=HttpHeader.CACHE.get(_headerString);
-                            _state=State.HEADER;
+                            setState(State.HEADER);
 
                             break;
 
@@ -739,7 +739,7 @@ public class HttpParser
                                 _headerString=takeLengthString();
                                 _header=HttpHeader.CACHE.get(_headerString);
                             }
-                            _state=State.HEADER_VALUE;
+                            setState(State.HEADER_VALUE);
                             break;
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
@@ -758,7 +758,7 @@ public class HttpParser
                             }
                             _string.append((char)ch);
                             _length=_string.length();
-                            _state=State.HEADER_IN_NAME;
+                            setState(State.HEADER_IN_NAME);
                         }
                     }
 
@@ -773,7 +773,7 @@ public class HttpParser
                             _headerString=takeString();
                             _length=-1;
                             _header=HttpHeader.CACHE.get(_headerString);
-                            _state=State.HEADER;
+                            setState(State.HEADER);
                             break;
 
                         case HttpTokens.COLON:
@@ -783,11 +783,11 @@ public class HttpParser
                                 _header=HttpHeader.CACHE.get(_headerString);
                             }
                             _length=-1;
-                            _state=State.HEADER_VALUE;
+                            setState(State.HEADER_VALUE);
                             break;
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
-                            _state=State.HEADER_NAME;
+                            setState(State.HEADER_NAME);
                             _string.append((char)ch);
                             break;
                         default:
@@ -821,7 +821,7 @@ public class HttpParser
                                     _valueString=takeLengthString();
                                 }
                             }
-                            _state=State.HEADER;
+                            setState(State.HEADER);
                             break;
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
@@ -830,7 +830,7 @@ public class HttpParser
                         {
                             _string.append((char)ch);
                             _length=_string.length();
-                            _state=State.HEADER_IN_VALUE;
+                            setState(State.HEADER_IN_VALUE);
                         }
                     }
                     break;
@@ -861,12 +861,12 @@ public class HttpParser
                                 }
                                 _length=-1;
                             }
-                            _state=State.HEADER;
+                            setState(State.HEADER);
                             break;
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
                             _string.append((char)ch);
-                            _state=State.HEADER_VALUE;
+                            setState(State.HEADER_VALUE);
                             break;
                         default:
                             _string.append((char)ch);
@@ -919,7 +919,7 @@ public class HttpParser
                 case CONTENT:
                     if (_contentPosition==_contentLength)
                     {
-                        _state=State.END;
+                        setState(State.END);
                         if(_handler.messageComplete(_contentPosition))
                             return true;
                     }
@@ -936,7 +936,7 @@ public class HttpParser
                         {
                             String chars = BufferUtil.toDetailString(buffer);
                             BufferUtil.clear(buffer);
-                            throw new IllegalStateException(this+" Extra data after oshut: "+chars);
+                            throw new IllegalStateException(this+" data when CLOSED: "+chars);
                         }
                         BufferUtil.clear(buffer);
                     }
@@ -955,7 +955,7 @@ public class HttpParser
             // Handle HEAD response
             if (_responseStatus>0 && _headResponse)
             {
-                _state=State.END;
+                setState(State.END);
                 if (_handler.messageComplete(_contentLength))
                     return true;
             }
@@ -987,7 +987,7 @@ public class HttpParser
                         long remaining=_contentLength - _contentPosition;
                         if (remaining == 0)
                         {
-                            _state=State.END;
+                            setState(State.END);
                             if (_handler.messageComplete(_contentPosition))
                                 return true;
                         }
@@ -1011,7 +1011,7 @@ public class HttpParser
 
                             if(_contentPosition == _contentLength)
                             {
-                                _state=State.END;
+                                setState(State.END);
                                 if (_handler.messageComplete(_contentPosition))
                                     return true;
                             }
@@ -1030,7 +1030,7 @@ public class HttpParser
                         {
                             _chunkLength=0;
                             _chunkPosition=0;
-                            _state=State.CHUNK_SIZE;
+                            setState(State.CHUNK_SIZE);
                         }
                         break;
                     }
@@ -1046,15 +1046,15 @@ public class HttpParser
                             {
                                 if (_eol==HttpTokens.CARRIAGE_RETURN && buffer.hasRemaining() && buffer.get(buffer.position())==HttpTokens.LINE_FEED)
                                     _eol=buffer.get();
-                                _state=State.END;
+                                setState(State.END);
                                 if (_handler.messageComplete(_contentPosition))
                                     return true;
                             }
                             else
-                                _state=State.CHUNK;
+                                setState(State.CHUNK);
                         }
                         else if (ch <= HttpTokens.SPACE || ch == HttpTokens.SEMI_COLON)
-                            _state=State.CHUNK_PARAMS;
+                            setState(State.CHUNK_PARAMS);
                         else if (ch >= '0' && ch <= '9')
                             _chunkLength=_chunkLength * 16 + (ch - '0');
                         else if (ch >= 'a' && ch <= 'f')
@@ -1076,12 +1076,12 @@ public class HttpParser
                             {
                                 if (_eol==HttpTokens.CARRIAGE_RETURN && buffer.hasRemaining() && buffer.get(buffer.position())==HttpTokens.LINE_FEED)
                                     _eol=buffer.get();
-                                _state=State.END;
+                                setState(State.END);
                                 if (_handler.messageComplete(_contentPosition))
                                     return true;
                             }
                             else
-                                _state=State.CHUNK;
+                                setState(State.CHUNK);
                         }
                         break;
                     }
@@ -1091,7 +1091,7 @@ public class HttpParser
                         int remaining=_chunkLength - _chunkPosition;
                         if (remaining == 0)
                         {
-                            _state=State.CHUNKED_CONTENT;
+                            setState(State.CHUNKED_CONTENT);
                         }
                         else
                         {
@@ -1136,7 +1136,7 @@ public class HttpParser
     private void badMessage(ByteBuffer buffer, int status, String reason)
     {
         BufferUtil.clear(buffer);
-        _state=State.CLOSED;
+        setState(State.CLOSED);
         _handler.badMessage(status, reason);
     }
 
@@ -1150,12 +1150,15 @@ public class HttpParser
                 break;
 
             case EOF_CONTENT:
-                _state=State.END;
+                setState(State.END);
                 _handler.messageComplete(_contentPosition);
                 break;
 
+            case CLOSED:
+                break;
+                
             default:
-                _state=State.END;
+                setState(State.END);
                 if (!_headResponse)
                     _handler.earlyEOF();
                 _handler.messageComplete(_contentPosition);
@@ -1176,7 +1179,7 @@ public class HttpParser
             default:
                 LOG.warn("Closing {}",this);
         }
-        _state=State.CLOSED;
+        setState(State.CLOSED);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentPosition=0;
         _responseStatus=0;
@@ -1188,7 +1191,7 @@ public class HttpParser
     public void reset()
     {
         // reset state
-        _state=State.START;
+        setState(State.START);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentPosition=0;
         _responseStatus=0;
@@ -1198,10 +1201,11 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public void setState(State state)
+    private void setState(State state)
     {
-        this._state=state;
-        _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+        if (_state==State.CLOSED && state==State.END)
+            new Throwable().printStackTrace();
+        _state=state;
     }
 
     /* ------------------------------------------------------------------------------- */

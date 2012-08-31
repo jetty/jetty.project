@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -27,6 +26,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * <p>A {@link Connector} accept connections and data from remote peers,
@@ -36,11 +36,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 @ManagedObject("Connector Interface")
 public interface Connector extends LifeCycle, Graceful
 {
-    /**
-     * @return the name of the connector, defaulting to host:port
-     */
-    public String getName();
-
     /**
      * @return the {@link Server} instance associated with this {@link Connector}
      */
@@ -52,9 +47,9 @@ public interface Connector extends LifeCycle, Graceful
     public Executor getExecutor();
 
     /**
-     * @return the {@link ScheduledExecutorService} used to schedule tasks
+     * @return the {@link Scheduler} used to schedule tasks
      */
-    public ScheduledExecutorService getScheduler();
+    public Scheduler getScheduler();
 
     /**
      * @return the {@link ByteBufferPool} to acquire buffers from and release buffers to

@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -26,8 +31,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -43,34 +47,31 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SimpleScheduler;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 public class ResponseTest
 {
     private Server _server;
     private HttpChannel _channel;
-    private ScheduledExecutorService _timer;
+    private Scheduler _scheduler;
 
     @Before
     public void init() throws Exception
     {
         _server = new Server();
-        _timer = new ScheduledThreadPoolExecutor(1);
-        LocalConnector connector = new LocalConnector(_server, null, _timer, null, null, 1);
+        _scheduler = new SimpleScheduler();
+        LocalConnector connector = new LocalConnector(_server, null, _scheduler, null, null, 1);
         _server.addConnector(connector);
         _server.setHandler(new DumpHandler());
         _server.start();
 
-        AbstractEndPoint endp = new ByteArrayEndPoint(_timer, 5000);
+        AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
         ByteBufferHttpInput input = new ByteBufferHttpInput();
         _channel = new HttpChannel(connector, new HttpConfiguration(null, false), endp, new HttpTransport()
         {
@@ -96,7 +97,6 @@ public class ResponseTest
     {
         _server.stop();
         _server.join();
-        _timer.shutdownNow();
     }
 
     @Test

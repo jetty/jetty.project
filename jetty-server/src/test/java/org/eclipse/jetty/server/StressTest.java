@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,11 +46,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-
-@Ignore("Ignore until other tests are working")
+@Ignore
 public class StressTest
 {
     private static final Logger LOG = Log.getLogger(StressTest.class);
@@ -119,6 +120,13 @@ public class StressTest
             q.clear();
     }
 
+
+    @Test
+    public void testMinNonPersistent() throws Throwable
+    {
+        doThreads(2,2,false);
+    }
+    
     @Test
     public void testNonPersistent() throws Throwable
     {

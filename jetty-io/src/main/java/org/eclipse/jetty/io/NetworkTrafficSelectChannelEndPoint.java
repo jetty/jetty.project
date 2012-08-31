@@ -23,10 +23,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
 {
@@ -34,7 +34,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
 
     private final List<NetworkTrafficListener> listeners;
 
-    public NetworkTrafficSelectChannelEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey key, ScheduledExecutorService scheduler, long idleTimeout, List<NetworkTrafficListener> listeners) throws IOException
+    public NetworkTrafficSelectChannelEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey key, Scheduler scheduler, long idleTimeout, List<NetworkTrafficListener> listeners) throws IOException
     {
         super(channel, selectSet, key, scheduler, idleTimeout);
         this.listeners = listeners;

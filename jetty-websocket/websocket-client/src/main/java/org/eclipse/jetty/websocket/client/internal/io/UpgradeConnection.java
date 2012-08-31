@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
+
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -82,7 +83,7 @@ public class UpgradeConnection extends AbstractConnection
 
     private static final Logger LOG = Log.getLogger(UpgradeConnection.class);
     private final ByteBufferPool bufferPool;
-    private final ScheduledExecutorService scheduler;
+    private final Scheduler scheduler;
     private final IWebSocketClient client;
     private final HttpResponseHeaderParser parser;
     private ClientUpgradeRequest request;

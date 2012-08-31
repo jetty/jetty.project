@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.util.EventListener;
 import java.util.Set;
+
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.Cookie;

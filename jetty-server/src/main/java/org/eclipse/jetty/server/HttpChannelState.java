@@ -20,9 +20,8 @@ package org.eclipse.jetty.server;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /* ------------------------------------------------------------ */
 /** Implementation of Continuation and AsyncContext interfaces
@@ -723,7 +723,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected void scheduleTimeout()
     {
-        ScheduledExecutorService scheduler = _channel.getScheduler();
+        Scheduler scheduler = _channel.getScheduler();
         if (scheduler!=null)
             _event._timeout=scheduler.schedule(new AsyncTimeout(),_timeoutMs,TimeUnit.MILLISECONDS);
     }
@@ -734,9 +734,9 @@ public class HttpChannelState implements AsyncContext, Continuation
         AsyncEventState event=_event;
         if (event!=null)
         {
-            Future<?> task=event._timeout;
+            Scheduler.Task task=event._timeout;
             if (task!=null)
-                task.cancel(false);
+                task.cancel();
         }
     }
 
@@ -1038,7 +1038,7 @@ public class HttpChannelState implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     public class AsyncEventState extends AsyncEvent
     {
-        private Future<?> _timeout;
+        private Scheduler.Task _timeout;
         private final ServletContext _suspendedContext;
         private ServletContext _dispatchContext;
         private String _pathInContext;
