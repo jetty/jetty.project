@@ -64,10 +64,16 @@ public class SSLEngineLeakTest extends AbstractTest
         Thread.sleep(1000);
 
         // Perform GC to be sure that the WeakHashMap is cleared
-        System.gc();
         Thread.sleep(1000);
+        System.gc();
 
         // Check that the WeakHashMap is empty
+        if (objects.size()!=initialSize)
+        {
+            System.err.println(objects);
+            server.dumpStdErr();
+        }
+        
         Assert.assertEquals(initialSize, objects.size());
     }
 
