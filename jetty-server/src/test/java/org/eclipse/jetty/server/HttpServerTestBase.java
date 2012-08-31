@@ -131,7 +131,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             byte[] buffer = new byte[64*1024];
             Arrays.fill(buffer,(byte)'A');
-            
+
             os.write(buffer);
             os.flush();
 
@@ -149,6 +149,32 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             client.close();
         }
+    }
+
+    @Test
+    public void testExceptionThrownInHandler() throws Exception
+    {
+        configureServer(new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                throw new ServletException("handler exception");
+            }
+        });
+
+        ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
+
+        StringBuffer request = new StringBuffer("GET / HTTP/1.0\r\n");
+        request.append("Host: localhost\r\n\r\n");
+
+        Socket client = newSocket(HOST, _connector.getLocalPort());
+        OutputStream os = client.getOutputStream();
+
+        os.write(request.toString().getBytes());
+        os.flush();
+
+        String response = readResponse(client);
+        assertThat("response code is 500", response.contains("500"), is(true));
     }
 
     @Test
@@ -194,7 +220,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         String response = readResponse(client);
         client.close();
 
-        assertThat("response contains 500", response, Matchers.containsString(" 500 ")); 
+        assertThat("response contains 500", response, Matchers.containsString(" 500 "));
         assertThat("The 4th byte (-1) has not been passed to the handler", fourBytesRead.get(), is(false));
         assertThat("EofException has been caught", earlyEOFException.get(), is(true));
     }
@@ -1144,8 +1170,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 buf+=(char)in.read();
                 avail=in.available();
             }
-            
-            
+
+
             out.println(avail);
             out.println(buf);
             out.close();
@@ -1346,9 +1372,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             }
         }.start();
-            
+
         String resps = readResponse(client);
-               
+
         int offset=0;
         for (int i=0;i<(REQS+1);i++)
         {
@@ -1369,7 +1395,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.setStatus(200);
         }
     }
-    
+
 
     @Test
     public void testSuspendedPipeline() throws Exception
