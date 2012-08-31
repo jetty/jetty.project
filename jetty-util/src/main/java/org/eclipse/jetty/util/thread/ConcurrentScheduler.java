@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.util.thread;
 
 import java.nio.channels.IllegalSelectorException;
@@ -15,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
 /*------------------------------------------------------------ */
 /**
  * This is an experimental no-lock scheduler. 
- * It is optimized on the assumption that most timers either get cancelled quickly or last to expiry, thus 
+ * It is optimised on the assumption that most timers either get cancelled quickly or last to expiry, thus 
  * events are initially queued in a constant time queue implemented with a no-lock FIFO.   Events
  * that are likely to be cancelled quickly will be removed from the delay list when they are cancelled.
  * The events that survive the delay list are then queued for executiong using a ConcurrentSkipListSet to 
@@ -43,7 +61,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
 
     public ConcurrentScheduler(Executor executor)
     {
-        this(executor,5000);
+        this(executor,8192);
     }
     
     public ConcurrentScheduler(Executor executor,int delayQms)
@@ -263,9 +281,22 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
     
     
     
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     *  A no lock FIFO queue used to provide a fixed delay for the handling
+     *  of scheduled events.   
+     */
     private static class Queue
     {
+       /*
+        * Roughly based on public domain lock free queue algorithm from: 
+        * http://www.java2s.com/Code/Java/Collections-Data-Structure/ConcurrentDoublyLinkedList.htm
+        * 
+        * Importantly this implementation supports pro active removal of nodes when cancel is called. 
+        * It does not use deletion markers as the intention is to allow the node to be rapidly garbage collected.
+        */
+        
         final int _delay;
         final QNode _head = new QNode(null,0,null,null);
         final QNode _tail = new QNode(null,0,null,null);
@@ -338,36 +369,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
      * http://www.java2s.com/Code/Java/Collections-Data-Structure/ConcurrentDoublyLinkedList.htm
      */
     private static class QNode 
-    {
-        /* These are invarients
-         * 
-         * (1) next references are the ground truth. 
-         * 
-         * (2) next references to dead nodes can be improved by
-         * swinging them further forward around the dead node.
-         * 
-         * (2.1) next references are still correct when pointing to dead nodes
-         * and next references from dead nodes are left as they were when the node 
-         * was deleted.
-         * 
-         * (2.2) multiple dead nodes may point forward to the same node. 
-         * 
-         * (3) backward pointers were correct when they were installed.
-         * 
-         * (3.1) backward pointers are correct when pointing to any node which 
-         * next reference points to them, but since more than one next reference 
-         * may point to them, the live one is best. 
-         * 
-         * (4) backward pointers that are out of date due to deletion
-         * point to a deleted node, and need to point further back until they point
-         * to the live node that points to their source. 
-         * 
-         * (5) backward pointers from a dead node cannot be "improved" since there may be no live node pointing
-         * forward to their origin. (However, it does no harm to try to improve them
-         * while racing with a deletion.)
-         * 
-         */
-        
+    {   
         final Event _event;
         final long _dequeueAt;
         final AtomicReference<QNode> _next=new AtomicReference<>();
@@ -380,7 +382,6 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
             _prev=prev;
             _next.set(next);
         }
-        
 
         /**
          * Returns the previous non-deleted event, patching up pointers as needed.

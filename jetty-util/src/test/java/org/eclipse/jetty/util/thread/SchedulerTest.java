@@ -1,8 +1,27 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.util.thread;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,12 +41,15 @@ import org.junit.runners.Parameterized;
 @RunWith(value = Parameterized.class)
 public class SchedulerTest
 {
+    public static Executor executor = Executors.newFixedThreadPool(256);
+    
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
         Object[][] data = new Object[][]{
-            {new SimpleScheduler()}, 
-            {new ConcurrentScheduler(Executors.newCachedThreadPool(),2000)}
+            {new SimpleScheduler()},
+            {new ConcurrentScheduler(executor,0)},
+            {new ConcurrentScheduler(executor,2000)}
         };
         return Arrays.asList(data);
     }
@@ -141,9 +163,11 @@ public class SchedulerTest
                             final int delay=random.nextInt((int)(end-now));
                             final long expected = now+delay;
                             
-                            int cancel=random.nextInt(50);
+                            int cancel=random.nextInt(100);
                             if (cancel==0)
                                 cancel=(int)(end-now)+1000;
+                            else
+                                cancel=cancel/4;
 
                             schedules.incrementAndGet();
                             Scheduler.Task task=_scheduler.schedule(new Runnable()
@@ -180,6 +204,10 @@ public class SchedulerTest
         
         for (Thread thread : test)
             thread.join();
+        
+        //System.err.println(schedules);
+        //System.err.println(executions);
+        //System.err.println(cancellations);
 
         // there were some executions and cancellations
         Assert.assertThat(executions.getCount(),Matchers.greaterThan(0L));
