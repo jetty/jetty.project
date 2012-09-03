@@ -111,11 +111,11 @@ public class SchedulerTest
             {
                 executed.set(System.currentTimeMillis());
             }
-        },3000,TimeUnit.MILLISECONDS);
+        },2000,TimeUnit.MILLISECONDS);
         
         Thread.sleep(100);
         Assert.assertTrue(task.cancel());
-        Thread.sleep(3500);
+        Thread.sleep(2500);
         Assert.assertEquals(0,executed.get());
     }
     
@@ -130,11 +130,11 @@ public class SchedulerTest
             {
                 executed.set(System.currentTimeMillis());
             }
-        },3000,TimeUnit.MILLISECONDS);
+        },2000,TimeUnit.MILLISECONDS);
         
-        Thread.sleep(2100);
+        Thread.sleep(1600);
         Assert.assertTrue(task.cancel());
-        Thread.sleep(1500);
+        Thread.sleep(1000);
         Assert.assertEquals(0,executed.get());
     }
 
@@ -142,7 +142,7 @@ public class SchedulerTest
     @Slow
     public void testManySchedulesAndCancels() throws Exception
     {
-        schedule(500,3000,1800,50);
+        schedule(100,3000,1800,50);
     }
     
     @Test

@@ -180,7 +180,9 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                                         event.execute();
                                 }
                                 else
+                                {
                                     _timerQ.add(event);
+                                }
                             }
                         }
                         else 
