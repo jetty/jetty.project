@@ -83,7 +83,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                         progress=true;
 
                     // Generate more output
-                    if (_generator.isCommitted() && !_generator.isComplete() && !_endp.isOutputShutdown())
+                    if (_generator.isCommitted() && !_generator.isComplete() && !_endp.isOutputShutdown() && !_request.getAsyncContinuation().isAsyncStarted())
                         if (_generator.flushBuffer()>0)
                             progress=true;
 
