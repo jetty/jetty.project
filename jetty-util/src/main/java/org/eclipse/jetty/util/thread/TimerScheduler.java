@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
-public class SimpleScheduler extends AbstractLifeCycle implements Scheduler
+public class TimerScheduler extends AbstractLifeCycle implements Scheduler
 {
     /* this class uses the Timer class rather than an ScheduledExecutionService because
      * it uses the same algorithm internally and the signature is cheaper to use as there are no
@@ -37,12 +37,12 @@ public class SimpleScheduler extends AbstractLifeCycle implements Scheduler
     Timer _timer;
     final String _name;
     
-    public SimpleScheduler()
+    public TimerScheduler()
     {
         this(null);
     }
     
-    public SimpleScheduler(String name)
+    public TimerScheduler(String name)
     {
         _name=name;
     }

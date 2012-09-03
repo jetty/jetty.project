@@ -38,7 +38,7 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,7 +55,7 @@ public class AsyncTimeoutTest
 
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Executor threadPool = Executors.newCachedThreadPool();
-        Scheduler scheduler = new SimpleScheduler();
+        Scheduler scheduler = new TimerScheduler();
         scheduler.start(); // TODO need to use jetty lifecycles better here 
         Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
         Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())
@@ -102,7 +102,7 @@ public class AsyncTimeoutTest
 
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         Executor threadPool = Executors.newCachedThreadPool();
-        Scheduler scheduler = new SimpleScheduler();
+        Scheduler scheduler = new TimerScheduler();
         scheduler.start();
         Generator generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
         Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator, new FlowControlStrategy.None())

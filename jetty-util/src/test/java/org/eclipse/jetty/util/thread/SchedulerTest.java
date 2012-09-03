@@ -28,11 +28,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BenchmarkHelper;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,15 +43,18 @@ import org.junit.runners.Parameterized;
 @RunWith(value = Parameterized.class)
 public class SchedulerTest
 {
-    public static Executor executor = Executors.newFixedThreadPool(256);
+    private static final BenchmarkHelper benchmark = new BenchmarkHelper();
+    private static final Executor executor = Executors.newFixedThreadPool(256);
     
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
         Object[][] data = new Object[][]{
-            {new SimpleScheduler()},
-            {new ConcurrentScheduler(executor,0)},
-            {new ConcurrentScheduler(executor,2000)}
+            {new TimerScheduler()},
+            {new ScheduledExecutionServiceScheduler()},
+            {new ConcurrentScheduler(0)},
+            {new ConcurrentScheduler(1500)},
+            {new ConcurrentScheduler(executor,1500)}
         };
         return Arrays.asList(data);
     }
@@ -132,14 +137,30 @@ public class SchedulerTest
         Thread.sleep(1500);
         Assert.assertEquals(0,executed.get());
     }
-    
-    
+
     @Test
     @Slow
     public void testManySchedulesAndCancels() throws Exception
     {
-        final Random random = new Random();
-        Thread[] test = new Thread[500]; 
+        schedule(500,5000,2000,50);
+    }
+    
+    @Test
+    @Slow
+    @Ignore
+    public void testBenchmark() throws Exception
+    {
+        schedule(2000,10000,2000,50);
+        benchmark.startStatistics();
+        System.err.println(_scheduler);
+        schedule(2000,30000,2000,50);
+        benchmark.stopStatistics();
+    }
+    
+    private void schedule(int threads,final int duration, final int delay, final int interval) throws Exception
+    {
+        final Random random = new Random(1);
+        Thread[] test = new Thread[threads]; 
         
         final AtomicInteger schedules = new AtomicInteger();
         final SampleStatistic executions = new SampleStatistic();
@@ -156,18 +177,18 @@ public class SchedulerTest
                     {
                         long now = System.currentTimeMillis();
                         long start=now;
-                        long end=start+5000;
+                        long end=start+duration;
                         
-                        while (now<end)
+                        while (now+interval<end)
                         {
-                            final int delay=random.nextInt((int)(end-now));
-                            final long expected = now+delay;
-                            
-                            int cancel=random.nextInt(200);
+                            final long expected=now+delay;
+                            int cancel=random.nextInt(interval);
+                            boolean expected_to_execute=false;
                             if (cancel==0)
-                                cancel=(int)(end-now)+1000;
-                            else
-                                cancel=cancel/4;
+                            {
+                                expected_to_execute=true;
+                                cancel=delay+1000;
+                            }
 
                             schedules.incrementAndGet();
                             Scheduler.Task task=_scheduler.schedule(new Runnable()
@@ -184,10 +205,17 @@ public class SchedulerTest
                             now = System.currentTimeMillis();
                             if (task.cancel())
                             {
-                                long lateness=now-expected;
-                                cancellations.set(lateness);
+                                if (expected_to_execute)
+                                    cancellations.set(now-expected);
+                                else
+                                    cancellations.set(0);
+                            }
+                            else if (!expected_to_execute)
+                            {
+                                cancellations.set(9999); // flags failure
                             }
 
+                            Thread.yield();
                         }
                     }
                     catch (InterruptedException e)
@@ -205,9 +233,9 @@ public class SchedulerTest
         for (Thread thread : test)
             thread.join();
         
-        //System.err.println(schedules);
-        //System.err.println(executions);
-        //System.err.println(cancellations);
+        // System.err.println(schedules);
+        // System.err.println(executions);
+        // System.err.println(cancellations);
 
         // there were some executions and cancellations
         Assert.assertThat(executions.getCount(),Matchers.greaterThan(0L));

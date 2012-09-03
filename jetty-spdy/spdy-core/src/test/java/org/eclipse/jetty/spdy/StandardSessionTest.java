@@ -49,7 +49,7 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -87,7 +87,7 @@ public class StandardSessionTest
     {
         bufferPool = new MappedByteBufferPool();
         threadPool = Executors.newCachedThreadPool();
-        scheduler = new SimpleScheduler();
+        scheduler = new TimerScheduler();
         scheduler.start(); 
         generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
         session = new StandardSession(SPDY.V2,bufferPool,threadPool,scheduler,controller,null,1,null,generator,new FlowControlStrategy.None());

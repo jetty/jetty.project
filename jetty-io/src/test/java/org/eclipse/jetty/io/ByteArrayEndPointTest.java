@@ -37,7 +37,7 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class ByteArrayEndPointTest
     @Before
     public void before() throws Exception
     {
-        _scheduler = new SimpleScheduler();
+        _scheduler = new TimerScheduler();
         _scheduler.start();
     }
 

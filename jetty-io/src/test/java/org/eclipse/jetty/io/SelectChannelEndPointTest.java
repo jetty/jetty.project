@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -56,7 +56,7 @@ public class SelectChannelEndPointTest
     protected volatile EndPoint _lastEndPoint;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
-    protected Scheduler _scheduler = new SimpleScheduler();
+    protected Scheduler _scheduler = new TimerScheduler();
     protected SelectorManager _manager = new SelectorManager()
     {
         @Override

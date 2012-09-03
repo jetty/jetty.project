@@ -48,7 +48,7 @@ import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.HashedSession;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -65,7 +65,7 @@ public class ResponseTest
     public void init() throws Exception
     {
         _server = new Server();
-        _scheduler = new SimpleScheduler();
+        _scheduler = new TimerScheduler();
         LocalConnector connector = new LocalConnector(_server, null, _scheduler, null, null, 1);
         _server.addConnector(connector);
         _server.setHandler(new DumpHandler());

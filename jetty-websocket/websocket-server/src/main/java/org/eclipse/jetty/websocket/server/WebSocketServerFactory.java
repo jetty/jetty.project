@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
@@ -78,7 +78,7 @@ public class WebSocketServerFactory extends AggregateLifeCycle implements WebSoc
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
-    private final Scheduler scheduler = new SimpleScheduler();
+    private final Scheduler scheduler = new TimerScheduler();
     private final String supportedVersions;
     private final WebSocketPolicy basePolicy;
     private final EventMethodsCache methodsCache;
