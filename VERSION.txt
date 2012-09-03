@@ -1,3 +1,5 @@
+jetty-7.6.7-SNAPSHOT
+
 jetty-7.6.6.v20120903 - 03 September 2012
  + 347130 Empty getResourcePaths due to ZipFileClosedException
  + 367591 Support Env variables in XmlConfiguration.
