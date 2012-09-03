@@ -142,7 +142,7 @@ public class SchedulerTest
     @Slow
     public void testManySchedulesAndCancels() throws Exception
     {
-        schedule(500,5000,2000,50);
+        schedule(500,3000,1800,50);
     }
     
     @Test
