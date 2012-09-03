@@ -101,6 +101,42 @@ public class SchedulerTest
     }
     
     @Test
+    public void testTwoExecution() throws Exception
+    {
+        final AtomicLong executed = new AtomicLong();
+        long expected=System.currentTimeMillis()+3000;
+        Scheduler.Task task=_scheduler.schedule(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                executed.set(System.currentTimeMillis());
+            }
+        },3000,TimeUnit.MILLISECONDS);
+        
+        Thread.sleep(4000);
+        Assert.assertFalse(task.cancel());
+        Assert.assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
+        Assert.assertThat(expected-executed.get(),Matchers.lessThan(1000L));
+        
+        final AtomicLong executed1 = new AtomicLong();
+        long expected1=System.currentTimeMillis()+3000;
+        Scheduler.Task task1=_scheduler.schedule(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                executed1.set(System.currentTimeMillis());
+            }
+        },3000,TimeUnit.MILLISECONDS);
+        
+        Thread.sleep(4000);
+        Assert.assertFalse(task1.cancel());
+        Assert.assertThat(executed1.get(),Matchers.greaterThanOrEqualTo(expected1));
+        Assert.assertThat(expected1-executed1.get(),Matchers.lessThan(1000L));
+    }
+    
+    @Test
     public void testQuickCancel() throws Exception
     {
         final AtomicLong executed = new AtomicLong();
@@ -142,7 +178,7 @@ public class SchedulerTest
     @Slow
     public void testManySchedulesAndCancels() throws Exception
     {
-        schedule(100,3000,1800,50);
+        schedule(100,10000,3800,200);
     }
     
     @Test
@@ -178,17 +214,21 @@ public class SchedulerTest
                         long now = System.currentTimeMillis();
                         long start=now;
                         long end=start+duration;
-                        
-                        while (now+interval<end)
+                        boolean last=false;
+                        while (!last)
                         {
                             final long expected=now+delay;
                             int cancel=random.nextInt(interval);
-                            boolean expected_to_execute=false;
-                            if (cancel==0)
+                            final boolean expected_to_execute;
+                            
+                            last=now+2*interval>end;
+                            if (cancel==0 || last)
                             {
                                 expected_to_execute=true;
                                 cancel=delay+1000;
                             }
+                            else
+                                expected_to_execute=false;
 
                             schedules.incrementAndGet();
                             Scheduler.Task task=_scheduler.schedule(new Runnable()
@@ -196,8 +236,12 @@ public class SchedulerTest
                                 @Override
                                 public void run()
                                 {
-                                    long lateness=System.currentTimeMillis()-expected;
-                                    executions.set(lateness);                                    
+                                    long lateness=System.currentTimeMillis()-expected;                                   
+                                    if (expected_to_execute)
+                                        executions.set(lateness);
+                                    else
+                                        executions.set(6666);
+                                        
                                 }
                             },delay,TimeUnit.MILLISECONDS);
                             
@@ -205,14 +249,18 @@ public class SchedulerTest
                             now = System.currentTimeMillis();
                             if (task.cancel())
                             {
+                                long lateness=now-expected;
                                 if (expected_to_execute)
-                                    cancellations.set(now-expected);
+                                    cancellations.set(lateness);
                                 else
                                     cancellations.set(0);
                             }
-                            else if (!expected_to_execute)
+                            else 
                             {
-                                cancellations.set(9999); // flags failure
+                                if (!expected_to_execute)
+                                {
+                                    cancellations.set(9999);
+                                }
                             }
 
                             Thread.yield();

@@ -157,6 +157,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
             _runner=Thread.currentThread();
             while(isRunning())
             {
+                
                 try
                 {
                     // Work out how long to sleep for and execute expired events
@@ -181,7 +182,10 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                                 }
                                 else
                                 {
+                                    long interval=event._executeAt-now;
                                     _timerQ.add(event);
+                                    if (interval<sleep)
+                                        sleep=interval;
                                 }
                             }
                         }
@@ -208,7 +212,6 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                         else if (event._executeAt<=now)
                         {
                             i.remove();
-                            event.execute();
                             if (event.compareAndSet(State.SCHEDULED,State.DONE))
                                 event.execute();
                         }
@@ -437,7 +440,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                 
                 // If the previous next is this (still linked normally)
                 QNode prev_next = prev.get();
-                if (prev_next==this)
+                if (prev_next==this && prev.isDelayed())
                     return prev;
                 
                 if (prev_next==null || prev_next.isDelayed())
