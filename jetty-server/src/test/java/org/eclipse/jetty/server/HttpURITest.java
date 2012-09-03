@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -181,10 +186,11 @@ public class HttpURITest
 
     private final String[][] encoding_tests=
     {
-       /* 0*/ {"/path/info","/path/info"},
-       /* 1*/ {"/path/%69nfo","/path/info"},
-       /* 2*/ {"http://host/path/%69nfo","/path/info"},
-       /* 3*/ {"http://host/path/%69nf%c2%a4","/path/inf\u00a4"},
+       /* 0*/ {"/path/info","/path/info", "UTF-8"},
+       /* 1*/ {"/path/%69nfo","/path/info", "UTF-8"},
+       /* 2*/ {"http://host/path/%69nfo","/path/info", "UTF-8"},
+       /* 3*/ {"http://host/path/%69nf%c2%a4","/path/inf\u00a4", "UTF-8"},
+       /* 4*/ {"http://host/path/%E5", "/path/\u00e5", "ISO-8859-1"}
     };
 
     @Test
@@ -195,7 +201,7 @@ public class HttpURITest
         for (int t=0;t<encoding_tests.length;t++)
         {
             uri.parse(encoding_tests[t][0]);
-            assertEquals(""+t,encoding_tests[t][1],uri.getDecodedPath());
+            assertEquals(""+t,encoding_tests[t][1],uri.getDecodedPath(encoding_tests[t][2]));
 
         }
     }

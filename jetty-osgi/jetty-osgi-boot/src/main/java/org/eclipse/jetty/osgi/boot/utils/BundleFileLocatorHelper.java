@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.osgi.boot.utils;
 
 import java.io.File;
@@ -83,5 +89,31 @@ public interface BundleFileLocatorHelper
      * @return null or all the entries found for that path.
      */
     public Enumeration<URL> findEntries(Bundle bundle, String entryPath);
+    
+    /**
+     * Only useful for equinox: on felix we get the file:// or jar:// url
+     * already. Other OSGi implementations have not been tested
+     * <p>
+     * Get a URL to the bundle entry that uses a common protocol (i.e. file:
+     * jar: or http: etc.).
+     * </p>
+     * 
+     * @return a URL to the bundle entry that uses a common protocol
+     */
+    public URL getLocalURL(URL url);
+    
+    /**
+     * Only useful for equinox: on felix we get the file:// url already. Other
+     * OSGi implementations have not been tested
+     * <p>
+     * Get a URL to the content of the bundle entry that uses the file:
+     * protocol. The content of the bundle entry may be downloaded or extracted
+     * to the local file system in order to create a file: URL.
+     * 
+     * @return a URL to the content of the bundle entry that uses the file:
+     *         protocol
+     *         </p>
+     */
+    public URL getFileURL(URL url);
 
 }

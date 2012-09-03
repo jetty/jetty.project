@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.io.File;
@@ -144,7 +150,6 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         {
             // observed this on felix-2.0.0
             String location = bundle.getLocation();
-            // System.err.println("location  " + location);
             if (location.startsWith("file:/"))
             {
                 URI uri = new URI(URIUtil.encodePath(location));
@@ -292,7 +297,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * 
      * @return a URL to the bundle entry that uses a common protocol
      */
-    public static URL getLocalURL(URL url)
+    public URL getLocalURL(URL url)
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {
@@ -328,7 +333,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      *         protocol
      *         </p>
      */
-    public static URL getFileURL(URL url)
+    public URL getFileURL(URL url)
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {

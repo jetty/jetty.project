@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -25,15 +30,16 @@ import java.net.SocketException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -45,10 +51,11 @@ import org.junit.Test;
 import org.junit.matchers.JUnitMatchers;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -124,7 +131,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             byte[] buffer = new byte[64*1024];
             Arrays.fill(buffer,(byte)'A');
-            
+
             os.write(buffer);
             os.flush();
 
@@ -143,8 +150,80 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             client.close();
         }
     }
-    
 
+    @Test
+    public void testExceptionThrownInHandler() throws Exception
+    {
+        configureServer(new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                throw new ServletException("handler exception");
+            }
+        });
+
+        ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
+
+        StringBuffer request = new StringBuffer("GET / HTTP/1.0\r\n");
+        request.append("Host: localhost\r\n\r\n");
+
+        Socket client = newSocket(HOST, _connector.getLocalPort());
+        OutputStream os = client.getOutputStream();
+
+        os.write(request.toString().getBytes());
+        os.flush();
+
+        String response = readResponse(client);
+        assertThat("response code is 500", response.contains("500"), is(true));
+    }
+
+    @Test
+    public void testInterruptedRequest() throws Exception
+    {
+        final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
+        final AtomicBoolean earlyEOFException = new AtomicBoolean(false);
+        configureServer(new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                int contentLength = request.getContentLength();
+                ServletInputStream inputStream = request.getInputStream();
+                for (int i = 0; i < contentLength; i++)
+                {
+                    try
+                    {
+                        inputStream.read();
+                    }
+                    catch (EofException e)
+                    {
+                        earlyEOFException.set(true);
+                        throw e;
+                    }
+                    if (i == 3)
+                        fourBytesRead.set(true);
+                }
+            }
+        });
+
+        StringBuffer request = new StringBuffer("GET / HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("Content-length: 6\n\n");
+        request.append("foo");
+
+        Socket client = newSocket(HOST, _connector.getLocalPort());
+        OutputStream os = client.getOutputStream();
+
+        os.write(request.toString().getBytes());
+        os.flush();
+        client.shutdownOutput();
+        String response = readResponse(client);
+        client.close();
+
+        assertThat("response contains 500", response, Matchers.containsString(" 500 "));
+        assertThat("The 4th byte (-1) has not been passed to the handler", fourBytesRead.get(), is(false));
+        assertThat("EofException has been caught", earlyEOFException.get(), is(true));
+    }
 
     /*
      * Feed the server the entire request at once.
@@ -1091,8 +1170,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 buf+=(char)in.read();
                 avail=in.available();
             }
-            
-            
+
+
             out.println(avail);
             out.println(buf);
             out.close();
@@ -1293,9 +1372,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             }
         }.start();
-            
+
         String resps = readResponse(client);
-               
+
         int offset=0;
         for (int i=0;i<(REQS+1);i++)
         {
@@ -1316,7 +1395,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.setStatus(200);
         }
     }
-    
+
 
     @Test
     public void testSuspendedPipeline() throws Exception

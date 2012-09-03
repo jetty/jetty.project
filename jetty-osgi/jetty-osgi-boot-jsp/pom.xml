@@ -94,7 +94,7 @@
  com.sun.el.parser;resolution:=optional,
  com.sun.el.util;resolution:=optional,
  javax.el;version="2.2.0";resolution:=optional,
- javax.servlet;version="2.5.0",
+ javax.servlet;version="2.6.0",
  javax.servlet.jsp;version="2.2.0",
  javax.servlet.jsp.el;version="2.2.0",
  javax.servlet.jsp.jstl.core;version="1.2.0";resolution:=optional,
@@ -139,10 +139,11 @@
  org.apache.taglibs.standard.tlv;version="1.2.0";resolution:=optional,
  !org.osgi.*,
  !org.xml.*,
- !org.eclipse.jetty.*
+ !org.eclipse.jetty.*,
+ *
                 </Import-Package>
                 <_nouses>true</_nouses>
-                <DynamicImport-Package>org.apache.jasper.*;version="2.2.2"</DynamicImport-Package>
+                <!-- DynamicImport-Package>org.apache.jasper.*;version="2.2.2"</DynamicImport-Package -->
               </instructions>
           </configuration>
       </plugin>

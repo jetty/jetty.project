@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 2009-2010 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.osgi.boot.jasper;
 
 import java.io.File;
@@ -25,10 +31,12 @@ import javax.servlet.jsp.JspFactory;
 import org.apache.jasper.Constants;
 import org.apache.jasper.compiler.Localizer;
 import org.apache.jasper.xmlparser.ParserUtils;
+import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
-import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.xml.sax.EntityResolver;
@@ -46,6 +54,8 @@ import org.xml.sax.SAXException;
  */
 public class WebappRegistrationCustomizerImpl implements WebappRegistrationCustomizer
 {
+    private static final Logger LOG = Log.getLogger(WebappRegistrationCustomizerImpl.class);
+    
 
     /**
      * Default name of a class that belongs to the jstl bundle. From that class
@@ -81,12 +91,10 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         {
             // sanity check:
             Class cl = getClass().getClassLoader().loadClass("org.apache.jasper.servlet.JspServlet");
-            // System.err.println("found the jsp servlet: " + cl.getName());
         }
         catch (Exception e)
         {
-            System.err.println("Unable to locate the JspServlet: jsp support unavailable.");
-            e.printStackTrace();
+            LOG.warn("Unable to locate the JspServlet: jsp support unavailable.", e);
             return;
         }
         try
@@ -106,8 +114,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         }
         catch (Exception e)
         {
-            System.err.println("Unable to set the JspFactory: jsp support incomplete.");
-            e.printStackTrace();
+            LOG.warn("Unable to set the JspFactory: jsp support incomplete.", e);
         }
     }
 
@@ -129,20 +136,26 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      * @return array of URLs
      * @throws Exception
      */
-    public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception
+    public URL[] getJarsWithTlds(DeploymentManager deployer, BundleFileLocatorHelper locatorHelper) throws Exception
     {
 
-    	HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
+        ArrayList<URL> urls = new ArrayList<URL>();
+        HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
 
         // Look for the jstl bundle
         // We assume the jstl's tlds are defined there.
         // We assume that the jstl bundle is imported by this bundle
         // So we can look for this class using this bundle's classloader:
-        Class<?> jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
+        try
+        {
+            Class<?> jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
 
-        classesToAddToTheTldBundles.add(jstlClass);
-
-        ArrayList<URL> urls = new ArrayList<URL>();
+            classesToAddToTheTldBundles.add(jstlClass);
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOG.info("jstl not on classpath", e);
+        }
         for (Class<?> cl : classesToAddToTheTldBundles)
         {
             Bundle tldBundle = FrameworkUtil.getBundle(cl);

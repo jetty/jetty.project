@@ -1,15 +1,21 @@
-// ========================================================================
-// Copyright (c) 2007-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
@@ -100,6 +106,7 @@ public class GzipFilter extends UserAgentFilter
     private static final Logger LOG = Log.getLogger(GzipFilter.class);
     public final static String GZIP="gzip";
     public final static String DEFLATE="deflate";
+    
 
     protected Set<String> _mimeTypes;
     protected int _bufferSize=8192;
@@ -110,6 +117,11 @@ public class GzipFilter extends UserAgentFilter
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
     protected Set<Pattern> _excludedPathPatterns;
+    
+    private static final int STATE_SEPARATOR = 0;
+    private static final int STATE_Q = 1;
+    private static final int STATE_QVALUE = 2;
+    private static final int STATE_DEFAULT = 3;
 
     
     /* ------------------------------------------------------------ */
@@ -257,15 +269,89 @@ public class GzipFilter extends UserAgentFilter
     {
         // TODO, this could be a little more robust.
         // prefer gzip over deflate
+        String compression = null;
         if (encodingHeader!=null)
         {
-            if (encodingHeader.toLowerCase().contains(GZIP))
-                return GZIP;
-            else if (encodingHeader.toLowerCase().contains(DEFLATE))
-                return DEFLATE;
+            
+            String[] encodings = getEncodings(encodingHeader);
+            if (encodings != null)
+            {
+                for (int i=0; i< encodings.length; i++)
+                {
+                    if (encodings[i].toLowerCase().contains(GZIP))
+                    {
+                        if (isEncodingAcceptable(encodings[i]))
+                        {
+                            compression = GZIP;
+                            break; //prefer Gzip over deflate
+                        }
+                    }
+
+                    if (encodings[i].toLowerCase().contains(DEFLATE))
+                    {
+                        if (isEncodingAcceptable(encodings[i]))
+                        {
+                            compression = DEFLATE; //Keep checking in case gzip is acceptable
+                        }
+                    }
+                }
+            }
         }
-        return null;
+        return compression;
     }
+    
+    
+    private String[] getEncodings (String encodingHeader)
+    {
+        if (encodingHeader == null)
+            return null;
+        return encodingHeader.split(",");
+    }
+    
+    private boolean isEncodingAcceptable(String encoding)
+    {    
+        int state = STATE_DEFAULT;
+        int qvalueIdx = -1;
+        for (int i=0;i<encoding.length();i++)
+        {
+            char c = encoding.charAt(i);
+            switch (state)
+            {
+                case STATE_DEFAULT:
+                {
+                    if (';' == c)
+                        state = STATE_SEPARATOR;
+                    break;
+                }
+                case STATE_SEPARATOR:
+                {
+                    if ('q' == c || 'Q' == c)
+                        state = STATE_Q;
+                    break;
+                }
+                case STATE_Q:
+                {
+                    if ('=' == c)
+                        state = STATE_QVALUE;
+                    break;
+                }
+                case STATE_QVALUE:
+                {
+                    if (qvalueIdx < 0 && '0' == c || '1' == c)
+                        qvalueIdx = i;
+                    break;
+                }
+            }
+        }
+        
+        if (qvalueIdx < 0)
+            return true;
+               
+        if ("0".equals(encoding.substring(qvalueIdx).trim()))
+            return false;
+        return true;
+    }
+    
     
     protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
     {

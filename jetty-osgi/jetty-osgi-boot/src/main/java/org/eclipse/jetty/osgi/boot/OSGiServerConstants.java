@@ -1,17 +1,21 @@
-// ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// Contributors:
-//    Hugues Malphettes - initial API and implementation
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.osgi.boot;
 
 /**
@@ -19,6 +23,38 @@ package org.eclipse.jetty.osgi.boot;
  */
 public class OSGiServerConstants
 {
+    /**
+     * Usual system property used as the hostname for a typical jetty
+     * configuration.
+     */
+    public static final String JETTY_HOME = "jetty.home";
+
+    /**
+     * System property to point to a bundle that embeds a jetty configuration
+     * and that jetty configuration should be the default jetty server. First we
+     * look for jetty.home. If we don't find it then we look for this property.
+     */
+    public static final String JETTY_HOME_BUNDLE = "jetty.home.bundle";
+
+    /**
+     * Usual system property used as the hostname for a typical jetty
+     * configuration.
+     */
+    public static final String JETTY_HOST = "jetty.host";
+
+    /**
+     * Usual system property used as the port for http for a typical jetty
+     * configuration.
+     */
+    public static final String JETTY_PORT = "jetty.port";
+
+    /**
+     * Usual system property used as the port for https for a typical jetty
+     * configuration.
+     */
+    public static final String JETTY_PORT_SSL = "jetty.port.ssl";
+    
+    
     //for managed jetty instances, name of the configuration parameters
     /**
      * PID of the jetty servers's ManagedFactory

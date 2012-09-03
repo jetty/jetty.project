@@ -1,23 +1,29 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.Enumeration;
 import java.util.Locale;
 
 import javax.servlet.ServletOutputStream;
@@ -72,6 +78,16 @@ public class Response implements HttpServletResponse
      * will be set as HTTP ONLY.
      */
     public final static String HTTP_ONLY_COMMENT="__HTTP_ONLY__";
+    
+    
+    /* ------------------------------------------------------------ */
+    public static Response getResponse(HttpServletResponse response)
+    {
+        if (response instanceof Response)
+            return (Response)response;
+
+        return AbstractHttpConnection.getCurrentConnection().getResponse();
+    }
     
     private final AbstractHttpConnection _connection;
     private int _status=SC_OK;
@@ -1074,6 +1090,29 @@ public class Response implements HttpServletResponse
             }
         }
     }
+    
+
+    public void reset(boolean preserveCookies)
+    { 
+        if (!preserveCookies)
+            reset();
+        else
+        {
+            HttpFields response_fields=_connection.getResponseFields();
+
+            ArrayList<String> cookieValues = new ArrayList<String>(5);
+            Enumeration<String> vals = response_fields.getValues(HttpHeaders.SET_COOKIE);
+            while (vals.hasMoreElements())
+                cookieValues.add((String)vals.nextElement());
+
+            reset();
+
+            for (String v:cookieValues)
+                response_fields.add(HttpHeaders.SET_COOKIE, v);
+        }
+    }
+    
+    
     
     /* ------------------------------------------------------------ */
     /*

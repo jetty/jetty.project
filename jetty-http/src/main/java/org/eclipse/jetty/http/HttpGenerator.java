@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.http;
 
@@ -253,49 +258,6 @@ public class HttpGenerator extends AbstractGenerator
         // TODO this is not exactly right, but should do.
         _contentLength =_contentWritten = response.length();
 
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Add content.
-     *
-     * @param b byte
-     * @return true if the buffers are full
-     * @throws IOException
-     */
-    public boolean addContent(byte b) throws IOException
-    {
-        if (_noContent)
-            throw new IllegalStateException("NO CONTENT");
-
-        if (_last || _state==STATE_END)
-        {
-            LOG.warn("Ignoring extra content {}",Byte.valueOf(b));
-            return false;
-        }
-
-        // Handle any unfinished business?
-        if (_content != null && _content.length()>0 || _bufferChunked)
-        {
-            flushBuffer();
-            if (_content != null && _content.length()>0 || _bufferChunked)
-                throw new IllegalStateException("FULL");
-        }
-
-        _contentWritten++;
-
-        // Handle the _content
-        if (_head)
-            return false;
-
-        // we better check we have a buffer
-        if (_buffer == null)
-            _buffer = _buffers.getBuffer();
-
-        // Copy _content to buffer;
-        _buffer.put(b);
-
-        return _buffer.space()<=(_contentLength == HttpTokens.CHUNKED_CONTENT?CHUNK_SPACE:0);
     }
 
     /* ------------------------------------------------------------ */
