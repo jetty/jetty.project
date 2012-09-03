@@ -245,7 +245,6 @@ public class Ajp13Generator extends AbstractGenerator
         // Handle the _content
         if (_head)
         {
-
             content.clear();
             _content = null;
         }
@@ -269,54 +268,6 @@ public class Ajp13Generator extends AbstractGenerator
             if (_content.length() == 0)
                 _content = null;
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Add content.
-     *
-     * @param b
-     *            byte
-     * @return true if the buffers are full
-     * @throws IOException
-     */
-    public boolean addContent(byte b) throws IOException
-    {
-
-        if (_noContent)
-            return false;
-
-        if (_last || _state == STATE_END)
-            throw new IllegalStateException("Closed");
-
-        if (!_endp.isOpen())
-        {
-            _state = STATE_END;
-            return false;
-        }
-
-        // Handle any unfinished business?
-        if (_content != null && _content.length() > 0)
-        {
-            flushBuffer();
-            if (_content != null && _content.length() > 0)
-                throw new IllegalStateException("FULL");
-        }
-
-        _contentWritten++;
-
-        // Handle the _content
-        if (_head)
-            return false;
-
-        // we better check we have a buffer
-        initContent();
-
-        // Copy _content to buffer;
-
-        _buffer.put(b);
-
-        return _buffer.space() <= 1;
     }
 
     /* ------------------------------------------------------------ */
