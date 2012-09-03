@@ -699,15 +699,6 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         }
 
         @Override
-        public boolean addContent(byte b) throws IOException
-        {
-            // In HttpGenerator, writing one byte only has a different path than
-            // writing a buffer. Here we normalize these path to keep it simpler.
-            addContent(new ByteArrayBuffer(new byte[]{b}), false);
-            return false;
-        }
-
-        @Override
         public void addContent(Buffer content, boolean last) throws IOException
         {
             // Keep the original behavior since adding content will

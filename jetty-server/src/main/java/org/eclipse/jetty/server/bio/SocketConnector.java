@@ -226,7 +226,12 @@ public class SocketConnector extends AbstractConnector
         {
             int l = super.fill(buffer);
             if (l<0)
-                close();
+            {
+                if (!isInputShutdown())
+                    shutdownInput();
+                if (isOutputShutdown())
+                    close();
+            }
             return l;
         }
 

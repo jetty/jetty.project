@@ -41,16 +41,6 @@ public interface Generator
      */
     void addContent(Buffer content, boolean last) throws IOException;
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Add content.
-     * 
-     * @param b byte
-     * @return true if the buffers are full
-     * @throws IOException
-     */
-    boolean addContent(byte b) throws IOException;
-
     void complete() throws IOException;
 
     void completeHeader(HttpFields responseFields, boolean last) throws IOException;

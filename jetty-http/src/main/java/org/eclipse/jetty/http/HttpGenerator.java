@@ -261,49 +261,6 @@ public class HttpGenerator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * Add content.
-     *
-     * @param b byte
-     * @return true if the buffers are full
-     * @throws IOException
-     */
-    public boolean addContent(byte b) throws IOException
-    {
-        if (_noContent)
-            throw new IllegalStateException("NO CONTENT");
-
-        if (_last || _state==STATE_END)
-        {
-            LOG.warn("Ignoring extra content {}",Byte.valueOf(b));
-            return false;
-        }
-
-        // Handle any unfinished business?
-        if (_content != null && _content.length()>0 || _bufferChunked)
-        {
-            flushBuffer();
-            if (_content != null && _content.length()>0 || _bufferChunked)
-                throw new IllegalStateException("FULL");
-        }
-
-        _contentWritten++;
-
-        // Handle the _content
-        if (_head)
-            return false;
-
-        // we better check we have a buffer
-        if (_buffer == null)
-            _buffer = _buffers.getBuffer();
-
-        // Copy _content to buffer;
-        _buffer.put(b);
-
-        return _buffer.space()<=(_contentLength == HttpTokens.CHUNKED_CONTENT?CHUNK_SPACE:0);
-    }
-
-    /* ------------------------------------------------------------ */
     /** Prepare buffer for unchecked writes.
      * Prepare the generator buffer to receive unchecked writes
      * @return the available space in the buffer.

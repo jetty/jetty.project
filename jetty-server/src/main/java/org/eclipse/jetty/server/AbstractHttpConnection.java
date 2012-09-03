@@ -500,6 +500,8 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     LOG.debug(e);
                     error=true;
                     _request.setHandled(true);
+                    if (!_response.isCommitted())
+                        _generator.sendError(500, null, null, true);
                 }
                 catch (RuntimeIOException e)
                 {
@@ -555,9 +557,8 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 {
                     if (error)
                     {
-                        _generator.setPersistent(false);
-                        _generator.flushBuffer();
                         _endp.shutdownOutput();
+                        _generator.setPersistent(false);
                         if (!_generator.isComplete())
                             _response.complete();
                     }

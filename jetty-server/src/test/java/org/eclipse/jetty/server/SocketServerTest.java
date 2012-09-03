@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * HttpServer Tester.
@@ -30,4 +32,5 @@ public class SocketServerTest extends HttpServerTestBase
     {
         startServer(new SocketConnector());
     }    
+    
 }
