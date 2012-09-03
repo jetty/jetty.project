@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.ajp;
 
@@ -240,7 +245,6 @@ public class Ajp13Generator extends AbstractGenerator
         // Handle the _content
         if (_head)
         {
-
             content.clear();
             _content = null;
         }
@@ -264,54 +268,6 @@ public class Ajp13Generator extends AbstractGenerator
             if (_content.length() == 0)
                 _content = null;
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Add content.
-     *
-     * @param b
-     *            byte
-     * @return true if the buffers are full
-     * @throws IOException
-     */
-    public boolean addContent(byte b) throws IOException
-    {
-
-        if (_noContent)
-            return false;
-
-        if (_last || _state == STATE_END)
-            throw new IllegalStateException("Closed");
-
-        if (!_endp.isOpen())
-        {
-            _state = STATE_END;
-            return false;
-        }
-
-        // Handle any unfinished business?
-        if (_content != null && _content.length() > 0)
-        {
-            flushBuffer();
-            if (_content != null && _content.length() > 0)
-                throw new IllegalStateException("FULL");
-        }
-
-        _contentWritten++;
-
-        // Handle the _content
-        if (_head)
-            return false;
-
-        // we better check we have a buffer
-        initContent();
-
-        // Copy _content to buffer;
-
-        _buffer.put(b);
-
-        return _buffer.space() <= 1;
     }
 
     /* ------------------------------------------------------------ */

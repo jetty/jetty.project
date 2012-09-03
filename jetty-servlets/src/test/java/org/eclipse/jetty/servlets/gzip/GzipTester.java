@@ -1,16 +1,22 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.servlets.gzip;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -94,9 +100,13 @@ public class GzipTester
 
         // Assert the response headers
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
-//        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
+        //        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
         Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
-        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),containsString(compressionType));
+        int qindex = compressionType.indexOf(";");
+        if (qindex < 0)
+            Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),containsString(compressionType));
+        else
+            Assert.assertThat("Response.header[Content-Encoding]", response.getHeader("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
 
         // Assert that the decompressed contents are what we expect.
         File serverFile = testdir.getFile(serverFilename);
@@ -109,11 +119,11 @@ public class GzipTester
         try
         {
             bais = new ByteArrayInputStream(response.getContentBytes());
-            if (compressionType.equals(GzipFilter.GZIP))
+            if (compressionType.startsWith(GzipFilter.GZIP))
             {
                 in = new GZIPInputStream(bais);
             }
-            else if (compressionType.equals(GzipFilter.DEFLATE))
+            else if (compressionType.startsWith(GzipFilter.DEFLATE))
             {
                 in = new InflaterInputStream(bais, new Inflater(true));
             }
@@ -249,6 +259,7 @@ public class GzipTester
             Assert.assertEquals("Expected response equals actual response",expectedResponse,actual);
         }
     }
+    
 
     /**
      * Asserts that the request results in a properly structured GzipFilter response, where the content is

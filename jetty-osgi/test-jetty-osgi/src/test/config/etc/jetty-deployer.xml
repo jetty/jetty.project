@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!-- =========================================================== -->
+    <!-- Configure the deployment manager                            -->
+    <!-- =========================================================== -->
+    <Call name="addBean">
+      <Arg>
+        <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+          <Set name="contexts">
+            <Ref id="Contexts" />
+          </Set>
+          <Call name="setContextAttribute">
+            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
+            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
+          </Call>
+          <!-- Providers of OSGi Apps -->
+          <!-- Call name="addAppProvider" -->
+            <!-- Arg -->
+              <!-- New class="org.eclipse.jetty.osgi.boot.OSGiAppProvider" -->
+              <!--
+                <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+              -->
+              <!--
+                <Set name="scanInterval">5</Set>
+                <Set name="contextXmlDir"><Property name="jetty.home" default="." />/contexts</Set>
+                -->
+                <!-- comma separated list of bundle symbolic names that contain custom tag libraries (*.tld files) -->
+                <!-- if those bundles don't exist or can't be loaded no errors or warning will be issued!          -->
+                <!-- This default value plugs in the tld files of the reference implementation of JSF              -->
+                <!-- 
+                 <Set name="tldBundles"><Property name="org.eclipse.jetty.osgi.tldbundles" default="javax.faces.jsf-impl" /></Set>
+              </New>
+            </Arg>
+          </Call>
+          -->
+        </New>
+      </Arg>
+    </Call>
+
+</Configure>

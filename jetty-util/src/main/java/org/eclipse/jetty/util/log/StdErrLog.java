@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.util.log;
 
@@ -331,8 +336,8 @@ public class StdErrLog extends AbstractLogger
             this._level = LEVEL_DEBUG;
 
             for (Logger log : Log.getLoggers().values())
-            {
-                if (log instanceof StdErrLog)
+            {                
+                if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
                     ((StdErrLog)log).setLevel(LEVEL_DEBUG);
             }
         }
@@ -342,7 +347,7 @@ public class StdErrLog extends AbstractLogger
             
             for (Logger log : Log.getLoggers().values())
             {
-                if (log instanceof StdErrLog)
+                if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
                     ((StdErrLog)log).setLevel(((StdErrLog)log)._configuredLevel);
             }
         }
@@ -572,6 +577,10 @@ public class StdErrLog extends AbstractLogger
         // Let Level come from configured Properties instead - sel.setLevel(_level);
         logger.setSource(_source);
         logger._stderr = this._stderr;
+        
+        // Force the child to have any programmatic configuration
+        if (_level!=_configuredLevel)
+            logger._level=_level;
 
         return logger;
     }

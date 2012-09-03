@@ -1,16 +1,22 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.servlets;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import java.io.File;
 import java.io.IOException;
@@ -59,6 +65,10 @@ public class GzipFilterDefaultNoRecompressTest
                 { "jetty_logo.tiff", "image/tiff", GzipFilter.GZIP },
                 { "jetty_logo.xcf", "image/xcf", GzipFilter.GZIP },
                 { "jetty_logo.jp2", "image/jpeg2000", GzipFilter.GZIP },
+                //qvalue disables compression
+                { "test_quotes.txt", "text/plain", GzipFilter.GZIP+";q=0"},
+                { "test_quotes.txt", "text/plain", GzipFilter.GZIP+"; q =    0 "},
+               
 
                 // Same tests again for deflate
                 // Some already compressed files

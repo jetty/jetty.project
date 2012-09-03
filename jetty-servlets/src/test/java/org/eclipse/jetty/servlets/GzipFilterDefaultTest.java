@@ -1,16 +1,22 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.servlets;
-//========================================================================
-//Copyright 2011-2012 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses.
-//========================================================================
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -118,6 +124,52 @@ public class GzipFilterDefaultTest
     }
     
     @Test
+    public void testIsGzipCompressedTinyWithQ() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType+";q=0.5");
+
+        // Test content that is smaller than the buffer.
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            tester.assertIsResponseGzipCompressed("file.txt");
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
+    public void testIsGzipCompressedTinyWithBadQ() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType+";q=");
+
+        // Test content that is smaller than the buffer.
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            tester.assertIsResponseGzipCompressed("file.txt");
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
     public void testIsGzipCompressedLarge() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
@@ -133,6 +185,28 @@ public class GzipFilterDefaultTest
         {
             tester.start();
             tester.assertIsResponseGzipCompressed("file.txt");
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
+    public void testIsNotGzipCompressedWithQ() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType+"; q = 0");
+        
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            tester.assertIsResponseNotGzipCompressed("file.txt", filesize, HttpStatus.OK_200);
         }
         finally
         {

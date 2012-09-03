@@ -1,15 +1,20 @@
-// ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
-// ========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
 package org.eclipse.jetty.server;
 
@@ -39,6 +44,7 @@ public class HttpOutput extends ServletOutputStream
     protected final AbstractHttpConnection _connection;
     protected final AbstractGenerator _generator;
     private boolean _closed;
+    private ByteArrayBuffer _onebyte;
     
     // These are held here for reuse by Writer
     String _characterEncoding;
@@ -111,6 +117,7 @@ public class HttpOutput extends ServletOutputStream
         write(new ByteArrayBuffer(b));
     }
 
+    
     /* ------------------------------------------------------------ */
     /*
      * @see java.io.OutputStream#write(int)
@@ -118,31 +125,12 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void write(int b) throws IOException
     {
-        if (_closed)
-            throw new IOException("Closed");
-        if (!_generator.isOpen())
-            throw new EofException();
-        
-        // Block until we can add _content.
-        while (_generator.isBufferFull())
-        {
-            _generator.blockForOutput(getMaxIdleTime());
-            if (_closed)
-                throw new IOException("Closed");
-            if (!_generator.isOpen())
-                throw new EofException();
-        }
-
-        // Add the _content
-        if (_generator.addContent((byte)b))
-            // Buffers are full so commit.
-            _connection.commitResponse(Generator.MORE);
-       
-        if (_generator.isAllContentWritten())
-        {
-            flush();
-            close();
-        }
+        if (_onebyte==null)
+            _onebyte=new ByteArrayBuffer(1);
+        else
+            _onebyte.clear();
+        _onebyte.put((byte)b);
+        write(_onebyte);
     }
 
     /* ------------------------------------------------------------ */
