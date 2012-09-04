@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.plugins.impl;
+package org.eclipse.jetty.plugins;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,27 +25,26 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
-import org.eclipse.jetty.plugins.MavenService;
-import org.eclipse.jetty.plugins.PluginManager;
 import org.eclipse.jetty.plugins.model.Plugin;
 
-public class PluginManagerImpl implements PluginManager
+public class DefaultPluginManager implements PluginManager
 {
     private String _jettyHome;
     private MavenService _mavenService;
 
     private static List<String> excludes = Arrays.asList("META-INF");
 
-    public PluginManagerImpl(MavenService mavenService, String jettyHome)
+    public DefaultPluginManager(MavenService mavenService, String jettyHome)
     {
         this._mavenService = mavenService;
         this._jettyHome = jettyHome;
     }
 
-    public List<String> listAvailablePlugins()
+    public Set<String> listAvailablePlugins()
     {
         return _mavenService.listAvailablePlugins();
     }
@@ -61,7 +60,7 @@ public class PluginManagerImpl implements PluginManager
     {
         try
         {
-            JarFile pluginJar = new JarFile(plugin.getPluginJar());
+            ZipFile pluginJar = new ZipFile(plugin.getPluginJar());
             extractJar(pluginJar);
         }
         catch (IOException e)
@@ -70,24 +69,24 @@ public class PluginManagerImpl implements PluginManager
         }
     }
 
-    private void extractJar(JarFile file)
+    private void extractJar(ZipFile file)
     {
-        Enumeration<JarEntry> entries = file.entries();
+        Enumeration<? extends ZipEntry> entries = file.entries();
         while (entries.hasMoreElements())
         {
             extractFileFromJar(file, entries.nextElement());
         }
     }
 
-    private void extractFileFromJar(JarFile jarFile, JarEntry jarEntry)
+    private void extractFileFromJar(ZipFile zipFile, ZipEntry zipEntry)
     {
         for (String exclude : excludes)
-            if (jarEntry.getName().startsWith(exclude))
+            if (zipEntry.getName().startsWith(exclude))
                 return;
 
-        System.out.println("Extracting: " + jarEntry.getName());
-        File f = new File(_jettyHome + File.separator + jarEntry.getName());
-        if (jarEntry.isDirectory())
+        System.out.println("Extracting: " + zipEntry.getName());
+        File f = new File(_jettyHome + File.separator + zipEntry.getName());
+        if (zipEntry.isDirectory())
         {
             // if its a directory, create it
             f.mkdir(); // TODO: check the result: what if the directory cannot be created ?
@@ -95,7 +94,7 @@ public class PluginManagerImpl implements PluginManager
         }
 
 
-        try (InputStream is = jarFile.getInputStream(jarEntry);
+        try (InputStream is = zipFile.getInputStream(zipEntry);
              FileOutputStream fos = new FileOutputStream(f))
         {
             while (is.available() > 0)
@@ -105,7 +104,7 @@ public class PluginManagerImpl implements PluginManager
         }
         catch (IOException e)
         {
-            throw new IllegalStateException("Could not extract plugin jar", e);
+            throw new IllegalStateException("Could not extract plugin zip", e);
         }
     }
 }

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.plugins.impl;
+package org.eclipse.jetty.plugins;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,26 +26,67 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import org.eclipse.jetty.plugins.MavenService;
 import org.eclipse.jetty.plugins.model.Plugin;
+import org.eclipse.jetty.plugins.util.MavenUtils;
 import org.eclipse.jetty.plugins.util.RepositoryParser;
 import org.eclipse.jetty.plugins.util.StreamUtils;
 
-public class HttpMavenServiceImpl implements MavenService
+public class HttpMavenService implements MavenService
 {
     private static final String REPOSITORY_URL = "http://repo2.maven.org/maven2/";
+    // autodetect...without maven deps
     private static final String GROUP_ID = "org/eclipse/jetty";
-    private static final String VERSION = "7.6.0.v20120127"; // TODO: should be automatically set
+    private static final String VERSION = "9.0.0-SNAPSHOT"; // TODO: should be automatically set
+    private boolean _searchRemoteRepository = true;
+    private boolean _searchLocalRepository = false;
+    private String _localRepository = MavenUtils.getLocalRepositoryLocation();
     private String _repositoryUrl = REPOSITORY_URL;
     private String _groupId = GROUP_ID;
     private String _version = VERSION;
 
-    public List<String> listAvailablePlugins()
+    public Set<String> listAvailablePlugins()
     {
-        List<String> availablePlugins = new ArrayList<>();
+        System.out.println("Using local repo: " + _searchLocalRepository + " remote repo: " + _searchRemoteRepository);
+        Set<String> availablePlugins = new HashSet<>();
+        if(_searchRemoteRepository)
+            availablePlugins.addAll(getListOfRemotePlugins());
+
+        if(_searchLocalRepository)
+            availablePlugins.addAll(getListOfLocalPlugins());
+
+        return availablePlugins;
+    }
+
+    private Set<String> getListOfLocalPlugins()
+    {
+        Set<String> availablePlugins = new HashSet<>();
+        File localMavenRepository = new File(_localRepository + _groupId);
+        if(!localMavenRepository.exists())
+        {
+            System.out.println("Can't find local repo: " + localMavenRepository);
+            return availablePlugins;
+        }
+
+        System.out.println("Using local repository: " + localMavenRepository);
+        String[] localMavenModuleList = localMavenRepository.list();
+
+        for (String potentialPlugin : localMavenModuleList)
+        {
+            File pluginFile = new File(_localRepository + getPluginPath(potentialPlugin));
+            if(pluginFile.exists())
+                availablePlugins.add(potentialPlugin);
+        }
+
+        return availablePlugins;
+    }
+
+    private Set<String> getListOfRemotePlugins()
+    {
+        Set<String> availablePlugins = new HashSet<>();
 
         String moduleListing = fetchDirectoryListingOfJettyModules();
         List<String> modules = RepositoryParser
@@ -59,7 +100,6 @@ public class HttpMavenServiceImpl implements MavenService
                 availablePlugins.add(module);
             }
         }
-
         return availablePlugins;
     }
 
@@ -82,7 +122,7 @@ public class HttpMavenServiceImpl implements MavenService
     {
         try
         {
-            URL configJar = new URL(getModuleDirectory(module));
+            URL configJar = new URL(getRemoteModuleDirectory(module));
             URLConnection connection = configJar.openConnection();
             InputStream inputStream = connection.getInputStream();
             return StreamUtils.inputStreamToString(inputStream);
@@ -104,19 +144,29 @@ public class HttpMavenServiceImpl implements MavenService
 
     public Plugin getPlugin(String pluginName)
     {
-        File configJar = getFile(getModulePrefix(pluginName) + "-plugin.jar");
+        File configJar = getFile(getRemotePluginLocation(pluginName));
         return new Plugin(pluginName, configJar);
     }
 
-    private String getModuleDirectory(String pluginName)
+    private String getRemoteModuleDirectory(String pluginName)
     {
-        return _repositoryUrl + _groupId + "/" + pluginName + "/" + _version
-                + "/";
+        return _repositoryUrl + getModulePath(pluginName);
     }
 
-    private String getModulePrefix(String pluginName)
+    private String getRemotePluginLocation(String pluginName)
     {
-        return getModuleDirectory(pluginName) + pluginName + "-" + _version;
+        return _repositoryUrl + getPluginPath(pluginName);
+    }
+
+    private String getPluginPath(String pluginName)
+    {
+        return getModulePath(pluginName) + pluginName + "-" +  _version + "-plugin.zip";
+    }
+
+    private String getModulePath(String pluginName)
+    {
+        return _groupId + "/" + pluginName + "/" + _version
+                + "/";
     }
 
     private File getFile(String urlString)
@@ -149,6 +199,11 @@ public class HttpMavenServiceImpl implements MavenService
         this._groupId = groupId.replace(".", "/");
     }
 
+    public void setLocalRepository(String localRepository)
+    {
+        this._localRepository = localRepository;
+    }
+
     public void setRepositoryUrl(String repositoryUrl)
     {
         this._repositoryUrl = repositoryUrl;
@@ -157,5 +212,15 @@ public class HttpMavenServiceImpl implements MavenService
     public void setVersion(String version)
     {
         this._version = version;
+    }
+
+    public void setSearchRemoteRepository(boolean searchRemoteRepository)
+    {
+        this._searchRemoteRepository = searchRemoteRepository;
+    }
+
+    public void setSearchLocalRepository(boolean searchLocalRepository)
+    {
+        this._searchLocalRepository = searchLocalRepository;
     }
 }

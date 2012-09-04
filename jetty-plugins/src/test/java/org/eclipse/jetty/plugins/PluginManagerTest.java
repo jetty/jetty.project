@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.plugins.impl;
+package org.eclipse.jetty.plugins;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,11 +24,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import junit.framework.Assert;
-import org.eclipse.jetty.plugins.MavenService;
 import org.eclipse.jetty.plugins.model.Plugin;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,8 +45,8 @@ public class PluginManagerTest
 {
     @Mock
     private MavenService _mavenService;
-    private PluginManagerImpl _pluginManager;
-    private List<String> availablePlugins = createAvailablePluginsTestData();
+    private DefaultPluginManager _Default_pluginManager;
+    private Set<String> availablePlugins = createAvailablePluginsTestData();
     private ClassLoader _classLoader = this.getClass().getClassLoader();
     private String _tmpDir;
     private File _javaTmpDir = new File(System.getProperty("java.io.tmpdir"));
@@ -57,14 +56,14 @@ public class PluginManagerTest
     {
         URL resource = this.getClass().getResource("/jetty_home");
         _tmpDir = resource.getFile();
-        _pluginManager = new PluginManagerImpl(_mavenService, _tmpDir);
+        _Default_pluginManager = new DefaultPluginManager(_mavenService, _tmpDir);
     }
 
     @Test
     public void testListAvailablePlugins()
     {
         when(_mavenService.listAvailablePlugins()).thenReturn(availablePlugins);
-        List<String> availablePlugins = _pluginManager.listAvailablePlugins();
+        Set<String> availablePlugins = _Default_pluginManager.listAvailablePlugins();
         assertThat("jetty-jmx not found",
                 availablePlugins.contains("jetty-jmx"), is(true));
         assertThat("jetty-jta not found",
@@ -74,16 +73,16 @@ public class PluginManagerTest
     @Test
     public void testInstallPluginJar()
     {
-        String pluginName = "jetty-plugin-with-plugin-jar";
-        URL resource = _classLoader.getResource("example-plugin.jar");
+        String pluginName = "jetty-plugin-with-plugin-zip";
+        URL resource = _classLoader.getResource("example-plugin.zip");
         Assert.assertNotNull(resource);
-        String pluginJar = resource.getFile();
-        File pluginJarFile = new File(pluginJar);
-        Plugin plugin = createTestPlugin(pluginName, pluginJarFile);
+        String pluginZip = resource.getFile();
+        File pluginZipFile = new File(pluginZip);
+        Plugin plugin = createTestPlugin(pluginName, pluginZipFile);
 
         when(_mavenService.getPlugin(pluginName)).thenReturn(plugin);
 
-        _pluginManager.installPlugin(pluginName);
+        _Default_pluginManager.installPlugin(pluginName);
 
         File someJar = new File(_tmpDir + File.separator + "lib" + File.separator + "somejar.jar");
         assertThat("someJar.jar does not exist", someJar.exists(), is(true));
@@ -97,30 +96,30 @@ public class PluginManagerTest
     public void testInstallPlugins() throws IOException
     {
         String pluginName = "jetty-jmx";
-        URL resource = _classLoader.getResource("jetty-jmx-7.6.0.v20120127-plugin.jar");
+        URL resource = _classLoader.getResource("jetty-jmx-version-plugin.zip");
         Assert.assertNotNull(resource);
-        String jmxPluginConfigJar = resource.getFile();
-        File jmxPluginConfigJarFile = new File(jmxPluginConfigJar);
+        String jmxPluginZip = resource.getFile();
+        File jmxPluginZipFile = new File(jmxPluginZip);
 
         // Need to copy it to a temp file since the implementation will move the
         // file and we need to keep the test files where they are.
-        File jmxPluginConfigTempCopy = copyToTempFile(jmxPluginConfigJarFile);
+        File jmxPluginConfigTempCopy = copyToTempFile(jmxPluginZipFile);
 
         Plugin plugin = new Plugin(pluginName, jmxPluginConfigTempCopy);
 
         when(_mavenService.getPlugin(pluginName)).thenReturn(plugin);
 
-        _pluginManager.installPlugin(pluginName);
+        _Default_pluginManager.installPlugin(pluginName);
 
         File metaInf = new File(_tmpDir + File.separator + "META-INF");
         File jettyXmlConfigFile = new File(_tmpDir + File.separator + "start.d"
                 + File.separator + "20-jetty-jmx.xml");
         File jettyJmxJarFile = new File(_tmpDir + File.separator + "lib"
-                + File.separator + "jetty-jmx-7.6.0.v20120127.jar");
+                + File.separator + "jetty-jmx-version.jar");
         assertThat("META-INF should be skipped", metaInf.exists(), not(true));
         assertThat("20-jetty-jmx.xml does not exist",
                 jettyXmlConfigFile.exists(), is(true));
-        assertThat("jetty-jmx-7.6.0.v20120127.jar does not exist",
+        assertThat("jetty-jmx-version.jar does not exist",
                 jettyJmxJarFile.exists(), is(true));
     }
 
@@ -135,9 +134,9 @@ public class PluginManagerTest
         return destFile;
     }
 
-    private List<String> createAvailablePluginsTestData()
+    private Set<String> createAvailablePluginsTestData()
     {
-        List<String> availablePlugins = new ArrayList<>();
+        Set<String> availablePlugins = new HashSet<>();
         availablePlugins.add("jetty-jmx");
         availablePlugins.add("jetty-jta");
         return availablePlugins;

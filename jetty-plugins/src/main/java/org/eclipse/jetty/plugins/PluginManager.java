@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.plugins;
 
-import java.util.List;
+import java.util.Set;
 
 public interface PluginManager
 {
-    public List<String> listAvailablePlugins();
+    public Set<String> listAvailablePlugins();
 
     public void installPlugin(String pluginName);
 }
