@@ -106,9 +106,9 @@ public class Main
             if (arg.startsWith("--version="))
                 _version = arg.substring(10);
             if (arg.startsWith("--useLocalRepo="))
-                _searchLocalRepository = new Boolean(arg.substring(15));
+                _searchLocalRepository = Boolean.valueOf(arg.substring(15));
             if (arg.startsWith("--useRemoteRepo="))
-                _searchRemoteRepository = new Boolean(arg.substring(15));
+                _searchRemoteRepository = Boolean.valueOf(arg.substring(15));
             if (arg.startsWith("install"))
                 _installPlugin = args[i];
             if ("list".equals(arg))

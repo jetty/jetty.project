@@ -34,9 +34,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
- * This is currently more an integration test downloading real stuff from real
- * maven repositories. Actually it's preferred to have a real unit test or at
- * least a local repository server. But since HttpClient.send(exchange) has an
+ * This is currently more an integration test downloading real stuff from real maven repositories. Actually it's
+ * preferred to have a real unit test or at least a local repository server. But since HttpClient.send(exchange) has an
  * api which is really hard to mock, I will leave that exercise for later.
  * <p/>
  * However this tests should be disabled for the general build and ci.
@@ -52,7 +51,7 @@ public class HttpMavenServiceIntegrationTest
     @Before
     public void setUp() throws Exception
     {
-        _mavenService.setRepositoryUrl(PRIVATE_NEXUS_REPOSITORY_URL);
+        _mavenService.setRepositoryUrls(new String[]{PRIVATE_NEXUS_REPOSITORY_URL});
     }
 
     @Test

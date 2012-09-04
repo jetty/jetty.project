@@ -26,7 +26,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
 
 public class MavenUtils
 {
-    private final static String DEFAULT_REPOSITORY_LOCATION = System.getProperty("user.home") + "/.m2/repository";
+    private final static String DEFAULT_REPOSITORY_LOCATION = System.getProperty("user.home") + "/.m2/repository/";
 
     /**
      * Looks for maven's settings.xml in $M2_HOME/conf/settings.xml
@@ -36,8 +36,7 @@ public class MavenUtils
     static File findGlobalSettingsXml()
     {
         String m2Home = System.getenv("M2_HOME");
-        File settingsXml = new File(m2Home + "/conf/settings.xml");
-        return settingsXml;
+        return new File(m2Home + "/conf/settings.xml");
     }
 
     /**
@@ -48,8 +47,7 @@ public class MavenUtils
     static File findUserSettingsXml()
     {
         String userHome = System.getProperty("user.home");
-        File settingsXml = new File(userHome + "/.m2/settings.xml");
-        return settingsXml;
+        return new File(userHome + "/.m2/settings.xml");
     }
 
     /**
@@ -146,7 +144,7 @@ public class MavenUtils
         }
 
         @Override
-        public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
         {
         }
 

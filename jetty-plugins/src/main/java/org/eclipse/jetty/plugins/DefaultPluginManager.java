@@ -89,7 +89,8 @@ public class DefaultPluginManager implements PluginManager
         if (zipEntry.isDirectory())
         {
             // if its a directory, create it
-            f.mkdir(); // TODO: check the result: what if the directory cannot be created ?
+            if(!f.mkdir()) // TODO: what if the directory cannot be created?
+                System.out.println("Can't create directory: " + f);
             return;
         }
 

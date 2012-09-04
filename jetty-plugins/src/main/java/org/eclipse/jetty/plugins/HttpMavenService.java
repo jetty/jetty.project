@@ -38,24 +38,23 @@ import org.eclipse.jetty.plugins.util.StreamUtils;
 public class HttpMavenService implements MavenService
 {
     private static final String REPOSITORY_URL = "http://repo2.maven.org/maven2/";
-    // autodetect...without maven deps
-    private static final String GROUP_ID = "org/eclipse/jetty";
+    private static final String[] GROUP_IDS = new String[]{"org/eclipse/jetty"};
     private static final String VERSION = "9.0.0-SNAPSHOT"; // TODO: should be automatically set
     private boolean _searchRemoteRepository = true;
     private boolean _searchLocalRepository = false;
     private String _localRepository = MavenUtils.getLocalRepositoryLocation();
     private String _repositoryUrl = REPOSITORY_URL;
-    private String _groupId = GROUP_ID;
+    private String[] _groupIds = GROUP_IDS;
     private String _version = VERSION;
 
     public Set<String> listAvailablePlugins()
     {
         System.out.println("Using local repo: " + _searchLocalRepository + " remote repo: " + _searchRemoteRepository);
         Set<String> availablePlugins = new HashSet<>();
-        if(_searchRemoteRepository)
+        if (_searchRemoteRepository)
             availablePlugins.addAll(getListOfRemotePlugins());
 
-        if(_searchLocalRepository)
+        if (_searchLocalRepository)
             availablePlugins.addAll(getListOfLocalPlugins());
 
         return availablePlugins;
@@ -64,21 +63,28 @@ public class HttpMavenService implements MavenService
     private Set<String> getListOfLocalPlugins()
     {
         Set<String> availablePlugins = new HashSet<>();
-        File localMavenRepository = new File(_localRepository + _groupId);
-        if(!localMavenRepository.exists())
+        File localMavenRepository = new File(_localRepository);
+        if (!localMavenRepository.exists())
         {
             System.out.println("Can't find local repo: " + localMavenRepository);
             return availablePlugins;
         }
 
         System.out.println("Using local repository: " + localMavenRepository);
-        String[] localMavenModuleList = localMavenRepository.list();
 
-        for (String potentialPlugin : localMavenModuleList)
+        for (String groupId : _groupIds)
         {
-            File pluginFile = new File(_localRepository + getPluginPath(potentialPlugin));
-            if(pluginFile.exists())
-                availablePlugins.add(potentialPlugin);
+            File file = new File(_localRepository + groupId);
+            if (!file.exists())
+                break;
+
+            String[] localMavenModuleList = file.list();
+            for (String potentialPlugin : localMavenModuleList)
+            {
+                File pluginFile = new File(_localRepository + getPluginPath(groupId,potentialPlugin));
+                if (pluginFile.exists())
+                    availablePlugins.add(potentialPlugin);
+            }
         }
 
         return availablePlugins;
@@ -107,10 +113,15 @@ public class HttpMavenService implements MavenService
     {
         try
         {
-            URL url = new URL(_repositoryUrl + _groupId);
-            URLConnection connection = url.openConnection();
-            InputStream inputStream = connection.getInputStream();
-            return StreamUtils.inputStreamToString(inputStream);
+            StringBuilder directoryListing = new StringBuilder();
+            for (String groupId : _groupIds)
+            {
+                URL url = new URL(_repositoryUrl + groupId);
+                URLConnection connection = url.openConnection();
+                InputStream inputStream = connection.getInputStream();
+                directoryListing.append(StreamUtils.inputStreamToString(inputStream));
+            }
+            return directoryListing.toString();
         }
         catch (IOException e)
         {
@@ -120,83 +131,99 @@ public class HttpMavenService implements MavenService
 
     private String fetchModuleDirectoryListing(String module)
     {
-        try
+        for (String groupId : _groupIds)
         {
-            URL configJar = new URL(getRemoteModuleDirectory(module));
-            URLConnection connection = configJar.openConnection();
-            InputStream inputStream = connection.getInputStream();
-            return StreamUtils.inputStreamToString(inputStream);
+            try
+            {
+                URL configJar = new URL(_repositoryUrl + getModulePath(groupId, module));
+                URLConnection connection = configJar.openConnection();
+                InputStream inputStream = connection.getInputStream();
+                return StreamUtils.inputStreamToString(inputStream);
+            }
+            catch (MalformedURLException e)
+            {
+                throw new IllegalStateException(e);
+            }
+            catch (IOException e)
+            {
+                // Honestly, I'm not a friend of ignoring exceptions as it might
+                // hide something important. In this case however it "usually"
+                // just means: THIS IS NOT A PLUGIN! However it still might hide
+                // things. If that'll be the case, I hope I'm not the one who
+                // has to debug my own code. ;)
+                System.out.println(e); //TODO:
+            }
         }
-        catch (MalformedURLException e)
-        {
-            throw new IllegalStateException(e);
-        }
-        catch (IOException e)
-        {
-            // Honestly, I'm not a friend of ignoring exceptions as it might
-            // hide something important. In this case however it "usually"
-            // just means: THIS IS NOT A PLUGIN! However it still might hide
-            // things. If that'll be the case, I hope I'm not the one who
-            // has to debug my own code. ;)
-            return "not a plugin";
-        }
+        return "not a plugin";
     }
 
     public Plugin getPlugin(String pluginName)
     {
-        File configJar = getFile(getRemotePluginLocation(pluginName));
-        return new Plugin(pluginName, configJar);
+        File pluginJar = getPluginFile(pluginName);
+        return new Plugin(pluginName, pluginJar);
     }
 
-    private String getRemoteModuleDirectory(String pluginName)
+    private String getPluginPath(String groupId, String pluginName)
     {
-        return _repositoryUrl + getModulePath(pluginName);
+        return getModulePath(groupId, pluginName) + pluginName + "-" + _version + "-plugin.zip";
     }
 
-    private String getRemotePluginLocation(String pluginName)
+    private String getModulePath(String groupId, String pluginName)
     {
-        return _repositoryUrl + getPluginPath(pluginName);
-    }
-
-    private String getPluginPath(String pluginName)
-    {
-        return getModulePath(pluginName) + pluginName + "-" +  _version + "-plugin.zip";
-    }
-
-    private String getModulePath(String pluginName)
-    {
-        return _groupId + "/" + pluginName + "/" + _version
+        return groupId + "/" + pluginName + "/" + _version
                 + "/";
     }
 
-    private File getFile(String urlString)
+    /**
+     * Tries to find the plugin in the local repo first and then tries the remote repositories in the order they're
+     * stored in _repositoryUrls
+     *
+     * @param pluginName the name of the plugin to get the plugin file for
+     * @return the plugin file
+     */
+    private File getPluginFile(String pluginName)
     {
-        String fileName = urlString.substring(urlString.lastIndexOf("/") + 1);
-        try
+        for (String groupId : _groupIds)
         {
-            URL url = new URL(urlString);
-            URLConnection connection = url.openConnection();
-            InputStream inputStream = connection.getInputStream();
-            File tempFile = new File(System.getProperty("java.io.tmpdir"),
-                    fileName);
-            OutputStream out = new FileOutputStream(tempFile);
-            byte buf[] = new byte[1024];
-            int len;
-            while ((len = inputStream.read(buf)) > 0)
-                out.write(buf, 0, len);
-            out.close();
-            inputStream.close();
-            return tempFile;
+            File pluginFile = new File(MavenUtils.getLocalRepositoryLocation() + getPluginPath(groupId, pluginName));
+            if (pluginFile.exists())
+                return pluginFile;
+
+            String urlString = _repositoryUrl + getPluginPath(groupId, pluginName);
+            String fileName = urlString.substring(urlString.lastIndexOf("/") + 1);
+            try
+            {
+                return getPluginFileFromRemoteLocation(urlString, fileName);
+            }
+            catch (IOException e)
+            {
+                System.out.println("Couldn't find plugin: " + pluginName + " at repo: " + _repositoryUrl + ". " +
+                        "Probably trying other repo. Reason: " + e.getMessage());
+            }
         }
-        catch (IOException e)
-        {
-            throw new IllegalStateException(e);
-        }
+        throw new IllegalStateException("Plugin: " + pluginName + "  not found at any configured repo.");
+    }
+
+    private File getPluginFileFromRemoteLocation(String urlString, String fileName) throws IOException
+    {
+        URL url = new URL(urlString);
+        URLConnection connection = url.openConnection();
+        InputStream inputStream = connection.getInputStream();
+        File tempFile = new File(System.getProperty("java.io.tmpdir"),
+                fileName);
+        OutputStream out = new FileOutputStream(tempFile);
+        byte buf[] = new byte[1024];
+        int len;
+        while ((len = inputStream.read(buf)) > 0)
+            out.write(buf, 0, len);
+        out.close();
+        inputStream.close();
+        return tempFile;
     }
 
     public void setGroupId(String groupId)
     {
-        this._groupId = groupId.replace(".", "/");
+        this._groupIds = new String[] { groupId.replace(".", "/") };
     }
 
     public void setLocalRepository(String localRepository)
