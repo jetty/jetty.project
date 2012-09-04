@@ -13,85 +13,63 @@
 
 package org.eclipse.jetty.client.api;
 
-import java.io.InputStream;
 import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpVersion;
 
 public interface Response
 {
-    int getStatus();
+    Request request();
 
-    Headers getHeaders();
+    Listener listener();
 
-    Request getRequest();
+    HttpVersion version();
 
-    ContentProvider content();
+    int status();
 
-    InputStream contentAsStream();
+    String reason();
+
+    HttpFields headers();
 
     void abort();
 
     public interface Listener
     {
-        public boolean onBegin(Response response, String version, int code, String message);
+        public void onBegin(Response response);
 
-        public boolean onHeader(Response response, String name, String value);
+        public void onHeaders(Response response);
 
-        public boolean onHeaders(Response response);
+        public void onContent(Response response, ByteBuffer content);
 
-        public boolean onContent(Response response, ByteBuffer content);
+        public void onSuccess(Response response);
 
-        public boolean onTrailer(Response response, String name, String value);
-
-        public void onComplete(Response response);
-
-        public void onException(Response response, Exception exception);
-
-        public void onEnd(Response response);
+        public void onFailure(Response response, Throwable failure);
 
         public static class Adapter implements Listener
         {
             @Override
-            public boolean onBegin(Response response, String version, int code, String message)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean onHeader(Response response, String name, String value)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean onHeaders(Response response)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean onContent(Response response, ByteBuffer content)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean onTrailer(Response response, String name, String value)
-            {
-                return false;
-            }
-
-            @Override
-            public void onComplete(Response response)
+            public void onBegin(Response response)
             {
             }
 
             @Override
-            public void onException(Response response, Exception exception)
+            public void onHeaders(Response response)
             {
             }
 
             @Override
-            public void onEnd(Response response)
+            public void onContent(Response response, ByteBuffer content)
+            {
+            }
+
+            @Override
+            public void onSuccess(Response response)
+            {
+            }
+
+            @Override
+            public void onFailure(Response response, Throwable failure)
             {
             }
         }

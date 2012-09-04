@@ -15,8 +15,10 @@ package org.eclipse.jetty.client.api;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class ApacheUsage
 {
     @Test

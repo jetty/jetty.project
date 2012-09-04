@@ -39,14 +39,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 {
     static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
     public final static InetSocketAddress NOIP=new InetSocketAddress(0);
-    
+
     protected ByteBuffer _in;
     protected ByteBuffer _out;
     protected boolean _ishut;
     protected boolean _oshut;
     protected boolean _closed;
     protected boolean _growOutput;
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -102,14 +102,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         setIdleTimeout(idleTimeoutMs);
     }
 
-    
-    
+
+
 
 
     /* ------------------------------------------------------------ */
     @Override
     protected void onIncompleteFlush()
-    {        
+    {
         // Don't need to do anything here as takeOutput does the signalling.
     }
 
@@ -177,7 +177,16 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public String getOutputString()
     {
-        return BufferUtil.toString(_out,StringUtil.__UTF8_CHARSET);
+        return getOutputString(StringUtil.__UTF8_CHARSET);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the out.
+     */
+    public String getOutputString(Charset charset)
+    {
+        return BufferUtil.toString(_out,charset);
     }
 
     /* ------------------------------------------------------------ */
@@ -198,17 +207,17 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public String takeOutputString()
     {
-        ByteBuffer buffer=takeOutput();
-        return BufferUtil.toString(buffer,StringUtil.__UTF8_CHARSET);
+        return takeOutputString(StringUtil.__UTF8_CHARSET);
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the out.
      */
-    public String getOutputString(Charset charset)
+    public String takeOutputString(Charset charset)
     {
-        return BufferUtil.toString(_out,charset);
+        ByteBuffer buffer=takeOutput();
+        return BufferUtil.toString(buffer,charset);
     }
 
     /* ------------------------------------------------------------ */
@@ -397,7 +406,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super.setIdleTimeout(idleTimeout);
         scheduleIdleTimeout(idleTimeout);
     }
-    
+
 
 
 }

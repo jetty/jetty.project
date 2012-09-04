@@ -302,7 +302,7 @@ abstract public class WriteFlusher
             // Are we complete?
             for (ByteBuffer b : buffers)
             {
-                if (b.hasRemaining())
+                if (BufferUtil.hasContent(b))
                 {
                     PendingState<?> pending=new PendingState<>(buffers, context, callback);
                     if (updateState(__WRITING,pending))
@@ -362,7 +362,7 @@ abstract public class WriteFlusher
             // Are we complete?
             for (ByteBuffer b : buffers)
             {
-                if (b.hasRemaining())
+                if (BufferUtil.hasContent(b))
                 {
                     if (updateState(__COMPLETING,pending))
                         onIncompleteFlushed();

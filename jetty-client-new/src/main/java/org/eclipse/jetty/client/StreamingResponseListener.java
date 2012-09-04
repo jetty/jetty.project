@@ -11,20 +11,27 @@
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-package org.eclipse.jetty.client.api;
+package org.eclipse.jetty.client;
 
-public class Headers
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.client.api.Response;
+
+public class StreamingResponseListener extends Response.Listener.Adapter
 {
-    public Header get(String name)
+    public Response get(long timeout, TimeUnit seconds)
     {
         return null;
     }
 
-    public static class Header
+    public InputStream getInputStream()
     {
-        public int valueAsInt()
-        {
-            return 0;
-        }
+        return null;
+    }
+
+    public void writeTo(OutputStream outputStream)
+    {
     }
 }

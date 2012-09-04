@@ -34,16 +34,16 @@ import java.nio.charset.Charset;
 /* ------------------------------------------------------------------------------- */
 /**
  * Buffer utility methods.
- * 
+ *
  * These utility methods facilitate the usage of NIO {@link ByteBuffer}'s in a more flexible way.
- * The standard {@link ByteBuffer#flip()} assumes that once flipped to flush a buffer, 
- * that it will be completely emptied before being cleared ready to be filled again.  
+ * The standard {@link ByteBuffer#flip()} assumes that once flipped to flush a buffer,
+ * that it will be completely emptied before being cleared ready to be filled again.
  * The {@link #flipToFill(ByteBuffer)} and {@link #flipToFlush(ByteBuffer, int)} methods provided here
  * do not assume that the buffer is empty and will preserve content when flipped.
  * <p>
- * ByteBuffers can be considered in one of two modes: Flush mode where valid content is contained between 
- * position and limit which is consumed by advancing the position; and Fill mode where empty space is between 
- * the position and limit, which is filled by advancing the position.   In fill mode, there may be valid data 
+ * ByteBuffers can be considered in one of two modes: Flush mode where valid content is contained between
+ * position and limit which is consumed by advancing the position; and Fill mode where empty space is between
+ * the position and limit, which is filled by advancing the position.   In fill mode, there may be valid data
  * in the buffer before the position and the start of this data is given by the return value of {@link #flipToFill(ByteBuffer)}
  * <p>
  * A typical pattern for using the buffers in this style is:
@@ -70,7 +70,7 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /** Allocate ByteBuffer in flush mode.
-     * The position and limit will both be zero, indicating that the buffer is 
+     * The position and limit will both be zero, indicating that the buffer is
      * empty and must be flipped before any data is put to it.
      * @param capacity
      * @return Buffer
@@ -84,7 +84,7 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /** Allocate ByteBuffer in flush mode.
-     * The position and limit will both be zero, indicating that the buffer is 
+     * The position and limit will both be zero, indicating that the buffer is
      * empty and must be flipped before any data is put to it.
      * @param capacity
      * @return Buffer
@@ -95,7 +95,7 @@ public class BufferUtil
         buf.limit(0);
         return buf;
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /** Clear the buffer to be empty in flush mode.
@@ -113,27 +113,30 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /** Clear the buffer to be empty in fill mode.
-     * The position is set to 0 and the limit is set to the capacity. 
+     * The position is set to 0 and the limit is set to the capacity.
      * @param buffer The buffer to clear.
      */
     public static void clearToFill(ByteBuffer buffer)
     {
-        buffer.position(0);
-        buffer.limit(buffer.capacity());
+        if (buffer!=null)
+        {
+            buffer.position(0);
+            buffer.limit(buffer.capacity());
+        }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Flip the buffer to fill mode.
-     * The position is set to the first unused position in the buffer 
+     * The position is set to the first unused position in the buffer
      * (the old limit) and the limit is set to the capacity.
      * If the buffer is empty, then this call is effectively {@link #clearToFill(ByteBuffer)}.
      * If there is no unused space to fill, a {@link ByteBuffer#compact()} is done to attempt
      * to create space.
      * <p>
      * This method is used as a replacement to {@link ByteBuffer#compact()}.
-     * 
+     *
      * @param buffer The buffer to flip
-     * @return The position of the valid data before the flipped position. This value should be 
+     * @return The position of the valid data before the flipped position. This value should be
      * passed to a subsequent call to {@link #flipToFlush(ByteBuffer, int)}
      */
     public static int flipToFill(ByteBuffer buffer)
@@ -155,7 +158,7 @@ public class BufferUtil
             buffer.limit(buffer.capacity());
             return 0;
         }
-        
+
         buffer.position(limit);
         buffer.limit(capacity);
         return position;
@@ -177,12 +180,12 @@ public class BufferUtil
         buffer.limit(buffer.position());
         buffer.position(position);
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** Convert a ByteBuffer to a byte array.
      * @param buffer The buffer to convert in flush mode. The buffer is not altered.
-     * @return An array of bytes duplicated from the buffer. 
+     * @return An array of bytes duplicated from the buffer.
      */
     public static byte[] toArray(ByteBuffer buffer)
     {
@@ -206,7 +209,7 @@ public class BufferUtil
     {
         return buf==null || buf.remaining()==0;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Check for a non null and non empty buffer.
      * @param buf the buffer to check
@@ -216,7 +219,7 @@ public class BufferUtil
     {
         return buf!=null && buf.remaining()>0;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Check for a non null and full buffer.
      * @param buf the buffer to check
@@ -226,7 +229,7 @@ public class BufferUtil
     {
         return buf!=null && buf.limit()==buf.capacity();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get remaining from null checked buffer
      * @param buffer The buffer to get the remaining from, in flush mode.
@@ -248,7 +251,7 @@ public class BufferUtil
             return 0;
         return buffer.capacity()-buffer.limit();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Compact the buffer
      * @param buffer
@@ -260,7 +263,7 @@ public class BufferUtil
         buffer.compact().flip();
         return full && buffer.limit()<buffer.capacity();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Put data from one buffer into another, avoiding over/under flows
@@ -274,7 +277,7 @@ public class BufferUtil
         int remaining=from.remaining();
         if (remaining>0)
         {
-            if (remaining<=to.remaining())  
+            if (remaining<=to.remaining())
             {
                 to.put(from);
                 put=remaining;
@@ -301,7 +304,7 @@ public class BufferUtil
 
         return put;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Put data from one buffer into another, avoiding over/under flows
@@ -337,7 +340,7 @@ public class BufferUtil
             flipToFlush(to,pos);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      */
@@ -347,14 +350,14 @@ public class BufferUtil
         to.limit(limit+1);
         to.put(limit,b);
     }
-    
+
     /* ------------------------------------------------------------ */
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
     {
         RandomAccessFile raf = new RandomAccessFile(file,"r");
         FileChannel channel = raf.getChannel();
         long needed=raf.length();
-        
+
         while (needed>0 && buffer.hasRemaining())
             needed=needed-channel.read(buffer);
     }
@@ -387,7 +390,7 @@ public class BufferUtil
                 out.write(buffer.get(i));
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convert the buffer to an ISO-8859-1 String
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
@@ -411,7 +414,7 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     /** Convert the buffer to an ISO-8859-1 String
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
-     * @param charset The {@link Charset} to use to convert the bytes 
+     * @param charset The {@link Charset} to use to convert the bytes
      * @return The buffer as a string.
      */
     public static String toString(ByteBuffer buffer, Charset charset)
@@ -431,7 +434,7 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     /** Convert a partial buffer to an ISO-8859-1 String
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
-     * @param charset The {@link Charset} to use to convert the bytes 
+     * @param charset The {@link Charset} to use to convert the bytes
      * @return The buffer as a string.
      */
     public static String toString(ByteBuffer buffer, int position, int length, Charset charset)
@@ -450,11 +453,11 @@ public class BufferUtil
         }
         return new String(array,buffer.arrayOffset()+position,length,charset);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
-     * 
+     *
      * @param buffer
      *            A buffer containing an integer in flush mode. The position is not changed.
      * @return an int
@@ -495,7 +498,7 @@ public class BufferUtil
 
     /**
      * Convert buffer to an long. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
-     * 
+     *
      * @param buffer
      *            A buffer containing an integer in flush mode. The position is not changed.
      * @return an int
@@ -579,7 +582,7 @@ public class BufferUtil
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public static void putDecInt(ByteBuffer buffer, int n)
     {
@@ -684,10 +687,10 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(s.getBytes(charset));
     }
-    
+
     /**
      * Create a new ByteBuffer using provided byte array.
-     * 
+     *
      * @param array
      *            the byte array to back buffer with.
      * @return ByteBuffer with provided byte array, in flush mode
@@ -696,10 +699,10 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(array);
     }
-    
+
     /**
      * Create a new ByteBuffer using the provided byte array.
-     * 
+     *
      * @param array
      *            the byte array to use.
      * @param offset
@@ -719,7 +722,7 @@ public class BufferUtil
         MappedByteBuffer buffer=raf.getChannel().map(MapMode.READ_ONLY,0,raf.length());
         return buffer;
     }
-    
+
     public static String toSummaryString(ByteBuffer buffer)
     {
         if (buffer==null)
@@ -749,19 +752,19 @@ public class BufferUtil
         builder.append(']');
         return builder.toString();
     }
-    
+
     public static String toDetailString(ByteBuffer buffer)
     {
         if (buffer==null)
             return "null";
-        
+
         StringBuilder buf = new StringBuilder();
         buf.append(buffer.getClass().getSimpleName());
         buf.append("@");
         if (buffer.hasArray())
             buf.append(Integer.toHexString(((Object)buffer.array()).hashCode()));
         else
-            buf.append("?");        
+            buf.append("?");
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");
@@ -771,7 +774,7 @@ public class BufferUtil
         buf.append(",r=");
         buf.append(buffer.remaining());
         buf.append("]={");
-        
+
         for (int i=0;i<buffer.position();i++)
         {
             char c=(char)buffer.get(i);
@@ -823,11 +826,11 @@ public class BufferUtil
         }
         buffer.limit(limit);
         buf.append("}");
-        
+
         return buf.toString();
     }
-    
-    
+
+
     private final static int[] decDivisors =
     { 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1 };
 
@@ -837,7 +840,7 @@ public class BufferUtil
     private final static long[] decDivisorsL =
     { 1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L, 1000000000000L, 100000000000L,
             10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L };
-    
+
     public static void putCRLF(ByteBuffer buffer)
     {
         buffer.put((byte)13);

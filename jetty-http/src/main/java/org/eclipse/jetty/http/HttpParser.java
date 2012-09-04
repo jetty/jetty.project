@@ -1141,7 +1141,7 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public void inputShutdown()
+    public void shutdownInput()
     {
         // was this unexpected?
         switch(_state)

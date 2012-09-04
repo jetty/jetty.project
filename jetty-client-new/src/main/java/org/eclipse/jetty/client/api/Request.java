@@ -13,53 +13,74 @@
 
 package org.eclipse.jetty.client.api;
 
-import java.io.File;
-import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.Future;
+
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 
 public interface Request
 {
+    long id();
+
+    String scheme();
+
+    Request scheme(String scheme);
+
+    String host();
+
+    int port();
+
+    HttpMethod method();
+
+    Request method(HttpMethod method);
+
+    String path();
+
+    Request path(String path);
+
+    HttpVersion version();
+
+    Request version(HttpVersion version);
+
+    Map<String, String> params();
+
+    Request param(String name, String value);
+
+    HttpFields headers();
+
+    Request header(String name, String value);
+
+    ContentProvider content();
+
+    Request content(ContentProvider buffer);
+
+    Request decoder(ContentDecoder decoder);
+
+    Request cookie(String key, String value);
+
+    String agent();
+
+    Request agent(String userAgent);
+
+    long idleTimeout();
+
+    Request idleTimeout(long timeout);
+
+    Request followRedirects(boolean follow);
+
+    Listener listener();
+
+    Request listener(Listener listener);
+
     Future<Response> send();
 
-    Future<Response> send(Response.Listener listener);
-
-    URI uri();
-
-    void abort();
-
-    /**
-     * <p>A builder for requests</p>.
-     */
-    public interface Builder
-    {
-        Builder method(String method);
-
-        Builder header(String name, String value);
-
-        Builder listener(Request.Listener listener);
-
-        Builder file(File file);
-
-        Builder content(ContentProvider buffer);
-
-        Builder decoder(ContentDecoder decoder);
-
-        Builder param(String name, String value);
-
-        Builder cookie(String key, String value);
-
-        Builder authentication(Authentication authentication);
-
-        Builder agent(String userAgent);
-
-        Builder followRedirects(boolean follow);
-
-        Request build();
-    }
+    void send(Response.Listener listener);
 
     public interface Listener
     {
-        public void onQueue(Request request);
+        public void onQueued(Request request);
 
         public void onBegin(Request request);
 
@@ -67,16 +88,14 @@ public interface Request
 
         public void onFlush(Request request, int bytes);
 
-        public void onComplete(Request request);
+        public void onSuccess(Request request);
 
-        public void onException(Request request, Exception exception);
-
-        public void onEnd(Request request);
+        public void onFailure(Request request, Throwable failure);
 
         public static class Adapter implements Listener
         {
             @Override
-            public void onQueue(Request request)
+            public void onQueued(Request request)
             {
             }
 
@@ -96,17 +115,12 @@ public interface Request
             }
 
             @Override
-            public void onComplete(Request request)
+            public void onSuccess(Request request)
             {
             }
 
             @Override
-            public void onException(Request request, Exception exception)
-            {
-            }
-
-            @Override
-            public void onEnd(Request request)
+            public void onFailure(Request request, Throwable failure)
             {
             }
         }

@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.client.api;
 
-public interface ContentProvider
+import java.nio.ByteBuffer;
+
+public interface ContentProvider extends Iterable<ByteBuffer>
 {
+    long length();
 }

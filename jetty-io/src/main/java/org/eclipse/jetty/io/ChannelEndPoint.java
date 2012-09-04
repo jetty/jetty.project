@@ -47,7 +47,7 @@ public class ChannelEndPoint extends AbstractEndPoint
     private volatile boolean _ishut;
     private volatile boolean _oshut;
 
-    public ChannelEndPoint(ScheduledExecutorService scheduler,SocketChannel channel) throws IOException
+    public ChannelEndPoint(ScheduledExecutorService scheduler,SocketChannel channel)
     {
         super(scheduler,
             (InetSocketAddress)channel.socket().getLocalSocketAddress(),
@@ -186,7 +186,7 @@ public class ChannelEndPoint extends AbstractEndPoint
         if (flushed>0)
         {
             notIdle();
-            
+
             // clear empty buffers to prevent position creeping up the buffer
             for (ByteBuffer b : buffers)
                 if (BufferUtil.isEmpty(b))

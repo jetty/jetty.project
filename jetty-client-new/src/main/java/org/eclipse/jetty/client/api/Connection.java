@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.client.api;
 
-import java.util.concurrent.Future;
-
 public interface Connection extends AutoCloseable
 {
-    Future<Response> send(Request request, Response.Listener listener);
+    void send(Request request, Response.Listener listener);
 }

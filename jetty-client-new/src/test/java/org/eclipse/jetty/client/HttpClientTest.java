@@ -21,43 +21,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SelectChannelConnector;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.After;
 import org.junit.Test;
 
-public class HTTPClientTest
+public class HttpClientTest extends AbstractHttpClientTest
 {
-    private Server server;
-    private HTTPClient client;
-    private Connector.NetConnector connector;
-
-    public void start(Handler handler) throws Exception
-    {
-        server = new Server();
-        connector = new SelectChannelConnector();
-        server.addConnector(connector);
-        server.setHandler(handler);
-        server.start();
-
-        client = new HTTPClient();
-        client.start();
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        client.stop();
-        client.join(5, TimeUnit.SECONDS);
-
-        server.stop();
-        server.join();
-    }
-
     @Test
     public void testGETNoResponseContent() throws Exception
     {
@@ -73,6 +42,6 @@ public class HTTPClientTest
         Response response = client.GET("http://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.status());
     }
 }

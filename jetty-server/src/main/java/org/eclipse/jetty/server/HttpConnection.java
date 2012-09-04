@@ -190,7 +190,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     else if (filled < 0)
                     {
-                        _parser.inputShutdown();
+                        _parser.shutdownInput();
                         // We were only filling if fully consumed, so if we have
                         // read -1 then we have nothing to parse and thus nothing that
                         // will generate a response.  If we had a suspended request pending
@@ -517,7 +517,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         // If no more input
                         if (getEndPoint().isInputShutdown())
                         {
-                            _parser.inputShutdown();
+                            _parser.shutdownInput();
                             return;
                         }
 
@@ -536,7 +536,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         LOG.debug("{} block filled {}",this,filled);
                         if (filled<0)
                         {
-                            _parser.inputShutdown();
+                            _parser.shutdownInput();
                             return;
                         }
                     }

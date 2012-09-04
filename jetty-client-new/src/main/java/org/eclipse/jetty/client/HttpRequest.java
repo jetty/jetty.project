@@ -1,0 +1,259 @@
+//========================================================================
+//Copyright 2012-2012 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
+package org.eclipse.jetty.client;
+
+import java.net.URI;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.eclipse.jetty.client.api.ContentDecoder;
+import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.FutureCallback;
+
+public class HttpRequest implements Request
+{
+    private static final AtomicLong ids = new AtomicLong();
+
+    private final HttpClient client;
+    private final long id;
+    private String scheme;
+    private final String host;
+    private final int port;
+    private String path;
+    private HttpMethod method;
+    private HttpVersion version;
+    private String agent;
+    private long idleTimeout;
+    private Response response;
+    private Listener listener;
+    private ContentProvider content;
+    private final HttpFields headers = new HttpFields();
+
+    public HttpRequest(HttpClient client, URI uri)
+    {
+        this(client, ids.incrementAndGet(), uri);
+    }
+
+    protected HttpRequest(HttpClient client, long id, URI uri)
+    {
+        this.client = client;
+        this.id = id;
+        scheme(uri.getScheme());
+        host = uri.getHost();
+        port = uri.getPort();
+        path(uri.getPath());
+        // TODO: query params
+    }
+
+    @Override
+    public long id()
+    {
+        return id;
+    }
+
+    @Override
+    public String scheme()
+    {
+        return scheme;
+    }
+
+    @Override
+    public Request scheme(String scheme)
+    {
+        this.scheme = scheme;
+        return this;
+    }
+
+    @Override
+    public String host()
+    {
+        return host;
+    }
+
+    @Override
+    public int port()
+    {
+        return port;
+    }
+
+    @Override
+    public HttpMethod method()
+    {
+        return method;
+    }
+
+    @Override
+    public Request method(HttpMethod method)
+    {
+        this.method = method;
+        return this;
+    }
+
+    @Override
+    public String path()
+    {
+        return path;
+    }
+
+    @Override
+    public Request path(String path)
+    {
+        this.path = path;
+        return this;
+    }
+
+    @Override
+    public HttpVersion version()
+    {
+        return version;
+    }
+
+    @Override
+    public Request version(HttpVersion version)
+    {
+        this.version = version;
+        return this;
+    }
+
+    @Override
+    public Request param(String name, String value)
+    {
+        return this;
+    }
+
+    @Override
+    public Map<String, String> params()
+    {
+        return null;
+    }
+
+    @Override
+    public String agent()
+    {
+        return agent;
+    }
+
+    @Override
+    public Request agent(String userAgent)
+    {
+        this.agent = userAgent;
+        return this;
+    }
+
+    @Override
+    public Request header(String name, String value)
+    {
+        headers.add(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpFields headers()
+    {
+        return headers;
+    }
+
+    @Override
+    public Listener listener()
+    {
+        return listener;
+    }
+
+    @Override
+    public Request listener(Request.Listener listener)
+    {
+        this.listener = listener;
+        return this;
+    }
+
+    @Override
+    public ContentProvider content()
+    {
+        return content;
+    }
+
+    @Override
+    public Request content(ContentProvider content)
+    {
+        this.content = content;
+        return this;
+    }
+
+    @Override
+    public Request decoder(ContentDecoder decoder)
+    {
+        return this;
+    }
+
+    @Override
+    public Request cookie(String key, String value)
+    {
+        return this;
+    }
+
+    @Override
+    public Request followRedirects(boolean follow)
+    {
+        return this;
+    }
+
+    @Override
+    public long idleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    @Override
+    public Request idleTimeout(long timeout)
+    {
+        this.idleTimeout = timeout;
+        return this;
+    }
+
+    @Override
+    public Future<Response> send()
+    {
+        final FutureCallback<Response> result = new FutureCallback<>();
+        BufferingResponseListener listener = new BufferingResponseListener()
+        {
+            @Override
+            public void onSuccess(Response response)
+            {
+                super.onSuccess(response);
+                result.completed(response);
+            }
+
+            @Override
+            public void onFailure(Response response, Throwable failure)
+            {
+                super.onFailure(response, failure);
+                result.failed(response, failure);
+            }
+        };
+        send(listener);
+        return result;
+    }
+
+    @Override
+    public void send(final Response.Listener listener)
+    {
+        client.send(this, listener);
+    }
+}

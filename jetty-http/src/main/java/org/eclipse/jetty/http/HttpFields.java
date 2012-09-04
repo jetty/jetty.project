@@ -49,10 +49,10 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
- * 
+ *
  * <p>This class is not synchronized as it is expected that modifications will only be performed by a
  * single thread.
- * 
+ *
  */
 public class HttpFields implements Iterable<HttpFields.Field>
 {
@@ -352,7 +352,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /**
      * Get a Field by index.
      * @return A Field value or null if the Field value has not been set
-     * 
+     *
      */
     public Field getField(int i)
     {
@@ -418,7 +418,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     /**
      * Get multi headers
-     * 
+     *
      * @return Enumeration of the values, or null if no such header.
      * @param name the case-insensitive field name
      */
@@ -441,7 +441,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     /**
      * Get multi headers
-     * 
+     *
      * @return Enumeration of the values
      * @param name the case-insensitive field name
      */
@@ -480,7 +480,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
      * Get multi field values with separator. The multiple values can be represented as separate
      * headers of the same name, or by a single header using the separator(s), or a combination of
      * both. Separators may be quoted.
-     * 
+     *
      * @param name the case-insensitive field name
      * @param separators String of separators.
      * @return Enumeration of the values, or null if no such header.
@@ -523,7 +523,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     /**
      * Set a field.
-     * 
+     *
      * @param name the name of the field
      * @param value the value of the field. If null the field is cleared.
      */
@@ -544,11 +544,11 @@ public class HttpFields implements Iterable<HttpFields.Field>
     {
         put(header,value.toString());
     }
-    
+
     /* -------------------------------------------------------------- */
     /**
      * Set a field.
-     * 
+     *
      * @param header the header name of the field
      * @param value the value of the field. If null the field is cleared.
      */
@@ -567,7 +567,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     /**
      * Set a field.
-     * 
+     *
      * @param name the name of the field
      * @param list the List value of the field. If null the field is cleared.
      */
@@ -583,7 +583,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /**
      * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
      * headers of the same name.
-     * 
+     *
      * @param name the name of the field
      * @param value the value of the field.
      * @exception IllegalArgumentException If the name is a single valued field and already has a
@@ -591,9 +591,9 @@ public class HttpFields implements Iterable<HttpFields.Field>
      */
     public void add(String name, String value) throws IllegalArgumentException
     {
-        if (value == null) 
+        if (value == null)
             return;
-        
+
         Field field = _names.get(name);
         Field last = null;
         while (field != null)
@@ -612,18 +612,18 @@ public class HttpFields implements Iterable<HttpFields.Field>
         else
             _names.put(name, field);
     }
-    
+
     /* -------------------------------------------------------------- */
     public void add(HttpHeader header, HttpHeaderValue value) throws IllegalArgumentException
     {
         add(header,value.toString());
     }
-    
+
     /* -------------------------------------------------------------- */
     /**
      * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
      * headers of the same name.
-     * 
+     *
      * @param name the name of the field
      * @param value the value of the field.
      * @exception IllegalArgumentException If the name is a single valued field and already has a
@@ -655,18 +655,18 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* ------------------------------------------------------------ */
     /**
      * Remove a field.
-     * 
+     *
      * @param name
      */
     public void remove(HttpHeader name)
     {
         remove(name.toString());
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Remove a field.
-     * 
+     *
      * @param name
      */
     public void remove(String name)
@@ -683,7 +683,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /**
      * Get a header as an long value. Returns the value of an integer field or -1 if not found. The
      * case of the field name is ignored.
-     * 
+     *
      * @param name the case-insensitive field name
      * @exception NumberFormatException If bad long found
      */
@@ -697,7 +697,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /**
      * Get a header as a date value. Returns the value of a date field, or -1 if not found. The case
      * of the field name is ignored.
-     * 
+     *
      * @param name the case-insensitive field name
      */
     public long getDateField(String name)
@@ -720,7 +720,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     /**
      * Sets the value of an long field.
-     * 
+     *
      * @param name the field name
      * @param value the field long value
      */
@@ -729,11 +729,11 @@ public class HttpFields implements Iterable<HttpFields.Field>
         String v = Long.toString(value);
         put(name, v);
     }
-    
+
     /* -------------------------------------------------------------- */
     /**
      * Sets the value of an long field.
-     * 
+     *
      * @param name the field name
      * @param value the field long value
      */
@@ -747,7 +747,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     /**
      * Sets the value of a date field.
-     * 
+     *
      * @param name the field name
      * @param date the field date value
      */
@@ -760,7 +760,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* -------------------------------------------------------------- */
     /**
      * Sets the value of a date field.
-     * 
+     *
      * @param name the field name
      * @param date the field date value
      */
@@ -769,11 +769,11 @@ public class HttpFields implements Iterable<HttpFields.Field>
         String d=formatDate(date);
         put(name, d);
     }
-    
+
     /* -------------------------------------------------------------- */
     /**
      * Sets the value of a date field.
-     * 
+     *
      * @param name the field name
      * @param date the field date value
      */
@@ -786,7 +786,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* ------------------------------------------------------------ */
     /**
      * Format a set cookie value
-     * 
+     *
      * @param cookie The cookie.
      */
     public void addSetCookie(HttpCookie cookie)
@@ -805,7 +805,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
 
     /**
      * Format a set cookie value
-     * 
+     *
      * @param name the name
      * @param value the value
      * @param domain the domain
@@ -842,7 +842,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         if (value != null && value.length() > 0)
             quoted|=QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);
 
-            
+
         if (path != null && path.length() > 0)
         {
             buf.append(";Path=");
@@ -921,7 +921,8 @@ public class HttpFields implements Iterable<HttpFields.Field>
 
     /* -------------------------------------------------------------- */
     @Override
-    public String toString()
+    public String
+    toString()
     {
         try
         {
@@ -963,7 +964,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /**
      * Add fields from another HttpFields instance. Single valued fields are replaced, while all
      * others are added.
-     * 
+     *
      * @param fields
      */
     public void add(HttpFields fields)
@@ -984,13 +985,13 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /**
      * Get field value parameters. Some field values can have parameters. This method separates the
      * value from the parameters and optionally populates a map with the parameters. For example:
-     * 
+     *
      * <PRE>
-     * 
+     *
      * FieldName : Value ; param1=val1 ; param2=val2
-     * 
+     *
      * </PRE>
-     * 
+     *
      * @param value The Field value, possibly with parameteres.
      * @param parameters A map to populate with the parameters, or null
      * @return The value.
@@ -1083,7 +1084,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* ------------------------------------------------------------ */
     /**
      * List values in quality order.
-     * 
+     *
      * @param e Enumeration of values with quality parameters
      * @return values in quality order.
      */
@@ -1153,7 +1154,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
             _value = value;
             _next = null;
         }
-        
+
         /* ------------------------------------------------------------ */
         private Field(String name, String value)
         {
@@ -1179,7 +1180,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
             }
             return bytes;
         }
-        
+
         /* ------------------------------------------------------------ */
         private byte[] toSanitisedValue(String s)
         {
@@ -1236,7 +1237,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         {
             return _header;
         }
-        
+
         /* ------------------------------------------------------------ */
         public String getName()
         {
@@ -1273,20 +1274,20 @@ public class HttpFields implements Iterable<HttpFields.Field>
         {
             if (_value==null)
                 return false;
-            
+
             if (value.equalsIgnoreCase(_value))
                 return true;
-            
+
             String[] split = _value.split("\\s*,\\s*");
             for (String s : split)
             {
                 if (value.equalsIgnoreCase(s))
                     return true;
             }
-            
+
             if (_next!=null)
                 return _next.contains(value);
-            
+
             return false;
         }
     }

@@ -14,13 +14,16 @@
 package org.eclipse.jetty.client.api;
 
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 public interface Destination
 {
-    Connection connect(long timeout, TimeUnit unit);
+    String scheme();
 
-    Future<Response> send(Request request, Response.Listener listener);
+    String host();
 
-    Address address();
+    int port();
+
+    Future<Connection> newConnection();
+
+    void send(Request request, Response.Listener listener);
 }

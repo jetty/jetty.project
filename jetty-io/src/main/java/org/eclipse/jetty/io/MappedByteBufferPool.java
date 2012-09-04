@@ -66,6 +66,9 @@ public class MappedByteBufferPool implements ByteBufferPool
 
     public void release(ByteBuffer buffer)
     {
+        if (buffer == null)
+            return;
+
         int bucket = bucketFor(buffer.capacity());
         ConcurrentMap<Integer, Queue<ByteBuffer>> buffers = buffersFor(buffer.isDirect());
 

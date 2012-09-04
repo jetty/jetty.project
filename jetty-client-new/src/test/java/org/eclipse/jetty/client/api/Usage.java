@@ -13,14 +13,21 @@
 
 package org.eclipse.jetty.client.api;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.file.Paths;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.HTTPClient;
-import org.eclipse.jetty.client.StreamResponseListener;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.PathContentProvider;
+import org.eclipse.jetty.client.StreamingResponseListener;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -28,122 +35,134 @@ import org.junit.Test;
 public class Usage
 {
     @Test
-    public void testSimpleBlockingGET() throws Exception
+    public void testGETBlocking_ShortAPI() throws Exception
     {
-        HTTPClient client = new HTTPClient();
+        HttpClient client = new HttpClient();
         Future<Response> responseFuture = client.GET("http://localhost:8080/foo");
         Response response = responseFuture.get();
-        response.getStatus(); // 200
+        Assert.assertEquals(200, response.status());
         // Headers abstraction needed for:
         // 1. case insensitivity
         // 2. multi values
         // 3. value conversion
         // Reuse SPDY's ?
-        response.getHeaders().get("Content-Length").valueAsInt();
+        response.headers().get("Content-Length");
     }
 
     @Test
-    public void testBlockingGET() throws Exception
+    public void testGETBlocking() throws Exception
     {
-        HTTPClient client = new HTTPClient();
+        HttpClient client = new HttpClient();
         // Address must be provided, it's the only thing non defaultable
-        Request.Builder builder = client.builder("localhost:8080");
-        Future<Response> responseFuture = builder.method("GET").path("/").header("Origin", "localhost").build().send();
-        responseFuture.get();
+        Request request = client.newRequest("localhost", 8080)
+                .scheme("https")
+                .method(HttpMethod.GET)
+                .path("/uri")
+                .version(HttpVersion.HTTP_1_1)
+                .param("a", "b")
+                .header("X-Header", "Y-value")
+                .agent("Jetty HTTP Client")
+                .cookie("cookie1", "value1")
+                .decoder(null)
+                .content(null)
+                .idleTimeout(5000L);
+        Future<Response> responseFuture = request.send();
+        Response response = responseFuture.get();
+        Assert.assertEquals(200, response.status());
     }
 
-
     @Test
-    public void testSimpleAsyncGET() throws Exception
+    public void testGETAsync() throws Exception
     {
-        HTTPClient client = new HTTPClient();
-        client.builder("localhost:8080").method("GET").path("/").header("Origin", "localhost").build().send(new Response.Listener.Adapter()
+        HttpClient client = new HttpClient();
+        final AtomicReference<Response> responseRef = new AtomicReference<>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", 8080).send(new Response.Listener.Adapter()
         {
             @Override
-            public void onEnd(Response response)
+            public void onSuccess(Response response)
             {
+                responseRef.set(response);
+                latch.countDown();
             }
         });
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Response response = responseRef.get();
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
     }
 
     @Test
     public void testRequestListener() throws Exception
     {
-        HTTPClient client = new HTTPClient();
-        Response response = client.builder("localhost:8080")
-                .method("GET")
-                .path("/")
+        HttpClient client = new HttpClient();
+        Response response = client.newRequest("localhost", 8080)
                 .listener(new Request.Listener.Adapter()
                 {
                     @Override
-                    public void onEnd(Request request)
+                    public void onSuccess(Request request)
                     {
                     }
-                })
-                .build().send(new Response.Listener.Adapter()
-        {
-            @Override
-            public void onEnd(Response response)
-            {
-            }
-        }).get();
-        response.getStatus();
+                }).send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
     }
 
     @Test
     public void testRequestWithExplicitConnectionControl() throws Exception
     {
-        HTTPClient client = new HTTPClient();
-        try (Connection connection = client.getDestination(Address.from("localhost:8080")).connect(5, TimeUnit.SECONDS))
+        HttpClient client = new HttpClient();
+        try (Connection connection = client.getDestination("http", "localhost", 8080).newConnection().get(5, TimeUnit.SECONDS))
         {
-            Request.Builder builder = client.builder("localhost:8080");
-            Request request = builder.method("GET").path("/").header("Origin", "localhost").build();
-
-            Future<Response> response = connection.send(request, new Response.Listener.Adapter());
-            response.get().getStatus();
+            Request request = client.newRequest("localhost", 8080);
+            BufferingResponseListener listener = new BufferingResponseListener();
+            connection.send(request, listener);
+            Response response = listener.await(5, TimeUnit.SECONDS);
+            Assert.assertNotNull(response);
+            Assert.assertEquals(200, response.status());
         }
     }
 
     @Test
     public void testFileUpload() throws Exception
     {
-        HTTPClient client = new HTTPClient();
-        Response response = client.builder("localhost:8080")
-                .method("GET").path("/").file(new File("")).build().send().get();
-        response.getStatus();
+        HttpClient client = new HttpClient();
+        Response response = client.newRequest("localhost", 8080)
+                .content(new PathContentProvider(Paths.get(""))).send().get();
+        Assert.assertEquals(200, response.status());
     }
 
     @Test
     public void testCookie() throws Exception
     {
-        HTTPClient client = new HTTPClient();
-        client.builder("localhost:8080").cookie("key", "value").build().send().get().getStatus(); // 200
+        HttpClient client = new HttpClient();
+        Response response = client.newRequest("localhost", 8080).cookie("key", "value").send().get();
+        Assert.assertEquals(200, response.status());
     }
 
-    @Test
-    public void testAuthentication() throws Exception
-    {
-        HTTPClient client = new HTTPClient();
-        client.builder("localhost:8080").authentication(new Authentication.Kerberos()).build().send().get().getStatus(); // 200
-    }
+//    @Test
+//    public void testAuthentication() throws Exception
+//    {
+//        HTTPClient client = new HTTPClient();
+//        client.newRequest("localhost", 8080).authentication(new Authentication.Kerberos()).build().send().get().status(); // 200
+//    }
 
     @Test
     public void testFollowRedirects() throws Exception
     {
-        HTTPClient client = new HTTPClient();
+        HttpClient client = new HttpClient();
         client.setFollowRedirects(false);
-        client.builder("localhost:8080").followRedirects(true).build().send().get().getStatus(); // 200
+        client.newRequest("localhost", 8080).followRedirects(true).send().get().status(); // 200
     }
 
     @Test
     public void testResponseStream() throws Exception
     {
-        HTTPClient client = new HTTPClient();
-        StreamResponseListener listener = new StreamResponseListener();
-        client.builder("localhost:8080").build().send(listener);
+        HttpClient client = new HttpClient();
+        StreamingResponseListener listener = new StreamingResponseListener();
+        client.newRequest("localhost", 8080).send(listener);
         // Call to get() blocks until the headers arrived
         Response response = listener.get(5, TimeUnit.SECONDS);
-        if (response.getStatus() == 200)
+        if (response.status() == 200)
         {
             // Solution 1: use input stream
             byte[] buffer = new byte[256];

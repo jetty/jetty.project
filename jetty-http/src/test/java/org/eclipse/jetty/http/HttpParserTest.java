@@ -324,7 +324,7 @@ public class HttpParserTest
         parser.reset();
         init();
         parser.parseNext(buffer);
-        parser.inputShutdown();
+        parser.shutdownInput();
         assertEquals("PUT", _methodOrVersion);
         assertEquals("/doodle", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -400,7 +400,7 @@ public class HttpParserTest
         init();
 
         parser.parseNext(buffer);
-        parser.inputShutdown();
+        parser.shutdownInput();
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
         assertEquals("Correct", _versionOrReason);

@@ -22,8 +22,10 @@ import com.ning.http.client.Cookie;
 import com.ning.http.client.Realm;
 import com.ning.http.client.Request;
 import com.ning.http.client.Response;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class NingUsage
 {
     @Test

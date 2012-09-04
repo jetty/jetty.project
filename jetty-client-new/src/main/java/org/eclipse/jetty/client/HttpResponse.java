@@ -13,58 +13,82 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.InputStream;
-
-import org.eclipse.jetty.client.api.ContentProvider;
-import org.eclipse.jetty.client.api.Headers;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.FutureCallback;
 
-public class StandardResponse extends FutureCallback<Response> implements Response
+public class HttpResponse extends FutureCallback<Response> implements Response
 {
+    private final HttpFields headers = new HttpFields();
     private final Request request;
     private final Listener listener;
+    private HttpVersion version;
+    private int status;
+    private String reason;
 
-    public StandardResponse(Request request, Response.Listener listener)
+    public HttpResponse(Request request, Response.Listener listener)
     {
         this.request = request;
         this.listener = listener;
     }
 
-    @Override
-    public int getStatus()
+    public HttpVersion version()
     {
-        return 0;
+        return version;
+    }
+
+    public HttpResponse version(HttpVersion version)
+    {
+        this.version = version;
+        return this;
     }
 
     @Override
-    public Headers getHeaders()
+    public int status()
     {
-        return null;
+        return status;
+    }
+
+    public HttpResponse status(int status)
+    {
+        this.status = status;
+        return this;
+    }
+
+    public String reason()
+    {
+        return reason;
+    }
+
+    public HttpResponse reason(String reason)
+    {
+        this.reason = reason;
+        return this;
     }
 
     @Override
-    public Request getRequest()
+    public HttpFields headers()
+    {
+        return headers;
+    }
+
+    @Override
+    public Request request()
     {
         return request;
     }
 
     @Override
-    public ContentProvider content()
+    public Listener listener()
     {
-        return null;
-    }
-
-    @Override
-    public InputStream contentAsStream()
-    {
-        return null;
+        return listener;
     }
 
     @Override
     public void abort()
     {
-        request.abort();
+//        request.abort();
     }
 }
