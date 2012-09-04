@@ -27,7 +27,7 @@ public class RedirectionTest extends AbstractHttpClientTest
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
                 .path("/303/done")
-                .send().get(5, TimeUnit.SECONDS);
+                .send().get(500, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
         Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));

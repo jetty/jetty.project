@@ -5,6 +5,7 @@ import org.eclipse.jetty.client.api.Response;
 
 public class HttpConversation
 {
+    private final Response.Listener applicationListener;
     private final HttpSender sender;
     private final HttpReceiver receiver;
     private HttpConnection connection;
@@ -12,10 +13,16 @@ public class HttpConversation
     private Response.Listener listener;
     private HttpResponse response;
 
-    public HttpConversation()
+    public HttpConversation(HttpClient client, Response.Listener listener)
     {
-        sender = new HttpSender();
+        applicationListener = listener;
+        sender = new HttpSender(client);
         receiver = new HttpReceiver();
+    }
+
+    public Response.Listener applicationListener()
+    {
+        return applicationListener;
     }
 
     public void prepare(HttpConnection connection, Request request, Response.Listener listener)
@@ -53,6 +60,11 @@ public class HttpConversation
     public Response.Listener listener()
     {
         return listener;
+    }
+
+    public void listener(Response.Listener listener)
+    {
+        this.listener = listener;
     }
 
     public HttpResponse response()

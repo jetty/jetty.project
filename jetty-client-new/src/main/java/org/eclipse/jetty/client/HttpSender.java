@@ -23,12 +23,18 @@ class HttpSender
     private static final Logger LOG = Log.getLogger(HttpSender.class);
 
     private final HttpGenerator generator = new HttpGenerator();
+    private final HttpClient client;
     private HttpConversation conversation;
     private long contentLength;
     private Iterator<ByteBuffer> contentChunks;
     private ByteBuffer header;
     private ByteBuffer chunk;
     private boolean requestHeadersComplete;
+
+    HttpSender(HttpClient client)
+    {
+        this.client = client;
+    }
 
     public void send(HttpConversation conversation)
     {
@@ -45,7 +51,6 @@ class HttpSender
         {
             HttpConnection connection = conversation.connection();
             EndPoint endPoint = connection.getEndPoint();
-            HttpClient client = connection.getHttpClient();
             ByteBufferPool byteBufferPool = client.getByteBufferPool();
             HttpGenerator.RequestInfo info = null;
             ByteBuffer content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
@@ -78,7 +83,7 @@ class HttpSender
                             @Override
                             protected void pendingCompleted()
                             {
-                                notifyRequestHeadersComplete();
+                                notifyRequestHeadersComplete(conversation.request());
                                 send();
                             }
 
@@ -103,7 +108,7 @@ class HttpSender
                             if (!requestHeadersComplete)
                             {
                                 requestHeadersComplete = true;
-                                notifyRequestHeadersComplete();
+                                notifyRequestHeadersComplete(conversation.request());
                             }
                             releaseBuffers();
                             content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
@@ -146,38 +151,43 @@ class HttpSender
 
     protected void success()
     {
-        notifyRequestSuccess();
+        Request request = conversation.request();
+        conversation = null;
+        generator.reset();
+        requestHeadersComplete = false;
+        // It is important to notify *after* we reset because
+        // the notification may trigger another request/response
+        notifyRequestSuccess(request);
     }
 
-    protected void fail(Throwable x)
+    protected void fail(Throwable failure)
     {
         BufferUtil.clear(header);
         BufferUtil.clear(chunk);
         releaseBuffers();
-        notifyRequestFailure(x);
-        notifyResponseFailure(x);
         conversation.connection().getEndPoint().shutdownOutput();
         generator.abort();
+        notifyRequestFailure(conversation.request(), failure);
+        notifyResponseFailure(conversation.listener(), failure);
     }
 
     private void releaseBuffers()
     {
-        ByteBufferPool byteBufferPool = conversation.connection().getHttpClient().getByteBufferPool();
+        ByteBufferPool bufferPool = client.getByteBufferPool();
         if (!BufferUtil.hasContent(header))
         {
-            byteBufferPool.release(header);
+            bufferPool.release(header);
             header = null;
         }
         if (!BufferUtil.hasContent(chunk))
         {
-            byteBufferPool.release(chunk);
+            bufferPool.release(chunk);
             chunk = null;
         }
     }
 
-    private void notifyRequestHeadersComplete()
+    private void notifyRequestHeadersComplete(Request request)
     {
-        Request request = conversation.request();
         Request.Listener listener = request.listener();
         try
         {
@@ -190,9 +200,8 @@ class HttpSender
         }
     }
 
-    private void notifyRequestSuccess()
+    private void notifyRequestSuccess(Request request)
     {
-        Request request = conversation.request();
         Request.Listener listener = request.listener();
         try
         {
@@ -205,33 +214,30 @@ class HttpSender
         }
     }
 
-    private void notifyRequestFailure(Throwable x)
+    private void notifyRequestFailure(Request request, Throwable failure)
     {
-        Request request = conversation.request();
         Request.Listener listener = request.listener();
         try
         {
             if (listener != null)
-                listener.onFailure(request, x);
+                listener.onFailure(request, failure);
         }
-        catch (Exception xx)
+        catch (Exception x)
         {
-            LOG.info("Exception while notifying listener " + listener, xx);
+            LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 
-    private void notifyResponseFailure(Throwable x)
+    private void notifyResponseFailure(Response.Listener listener, Throwable failure)
     {
-
-        Response.Listener listener = conversation.listener();
         try
         {
             if (listener != null)
-                listener.onFailure(null, x);
+                listener.onFailure(null, failure);
         }
-        catch (Exception xx)
+        catch (Exception x)
         {
-            LOG.info("Exception while notifying listener " + listener, xx);
+            LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 

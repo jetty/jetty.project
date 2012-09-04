@@ -65,15 +65,17 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     @Override
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
-        // Probe the protocol listeners
-//        HttpClient client = connection.getHttpClient();
-//        listener = client.find(status); // TODO
-//        listener = new RedirectionListener(connection);
-//        if (listener == null)
-//            listener = applicationListener;
-
         HttpResponse response = conversation.response();
         response.version(version).status(status).reason(reason);
+
+        // Probe the protocol listeners
+        HttpClient client = conversation.connection().getHttpClient();
+        Response.Listener listener = client.lookup(status);
+        if (listener != null)
+            conversation.listener(listener);
+        else
+            conversation.listener(conversation.applicationListener());
+
         notifyBegin(conversation.listener(), response);
         return false;
     }
@@ -108,6 +110,8 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
     protected void success()
     {
+        HttpConversation conversation = this.conversation;
+        this.conversation = null;
         Response.Listener listener = conversation.listener();
         Response response = conversation.response();
         conversation.done();
@@ -119,6 +123,7 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         Response.Listener listener = conversation.listener();
         Response response = conversation.response();
         conversation.done();
+        conversation = null;
         notifyFailure(listener, response, failure);
     }
 
@@ -136,7 +141,7 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         fail(new HttpResponseException());
     }
 
-    private void notifyBegin(Response.Listener listener, HttpResponse response)
+    private void notifyBegin(Response.Listener listener, Response response)
     {
         try
         {
@@ -149,7 +154,7 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
     }
 
-    private void notifyHeaders(Response.Listener listener, HttpResponse response)
+    private void notifyHeaders(Response.Listener listener, Response response)
     {
         try
         {
@@ -162,7 +167,7 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
     }
 
-    private void notifyContent(Response.Listener listener, HttpResponse response, ByteBuffer buffer)
+    private void notifyContent(Response.Listener listener, Response response, ByteBuffer buffer)
     {
         try
         {

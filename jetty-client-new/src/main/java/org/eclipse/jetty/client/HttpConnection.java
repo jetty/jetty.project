@@ -50,7 +50,7 @@ public class HttpConnection extends AbstractConnection implements Connection
     public void send(Request request, Response.Listener listener)
     {
         normalizeRequest(request);
-        HttpConversation conversation = client.conversationFor(request);
+        HttpConversation conversation = client.conversationFor(request, listener);
         this.conversation = conversation;
         conversation.prepare(this, request, listener);
         conversation.send();

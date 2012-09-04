@@ -7,11 +7,11 @@ import org.eclipse.jetty.client.api.Response;
 
 public class RedirectionListener extends Response.Listener.Adapter
 {
-    private final HttpConnection connection;
+    private final HttpClient client;
 
-    public RedirectionListener(HttpConnection connection)
+    public RedirectionListener(HttpClient client)
     {
-        this.connection = connection;
+        this.client = client;
     }
 
     @Override
@@ -27,8 +27,7 @@ public class RedirectionListener extends Response.Listener.Adapter
             case 303: // use GET for next request
             {
                 String location = response.headers().get("location");
-                HttpClient httpClient = connection.getHttpClient();
-                Request redirect = httpClient.newRequest(response.request().id(), URI.create(location));
+                Request redirect = client.newRequest(response.request().id(), URI.create(location));
                 redirect.send(this);
             }
         }

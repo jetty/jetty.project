@@ -179,14 +179,7 @@ public class HttpClient extends AggregateLifeCycle
 
     public Future<Response> GET(URI uri)
     {
-        // TODO: Add decoder, cookies, agent, default headers, etc.
-        return newRequest(uri)
-                .method(HttpMethod.GET)
-                .version(HttpVersion.HTTP_1_1)
-                .agent(getUserAgent())
-                .idleTimeout(getIdleTimeout())
-                .followRedirects(isFollowRedirects())
-                .send();
+        return newRequest(uri).send();
     }
 
     public Request newRequest(String host, int port)
@@ -196,12 +189,26 @@ public class HttpClient extends AggregateLifeCycle
 
     public Request newRequest(URI uri)
     {
-        return new HttpRequest(this, uri);
+        HttpRequest request = new HttpRequest(this, uri);
+        normalizeRequest(request);
+        return request;
     }
 
     protected Request newRequest(long id, URI uri)
     {
-        return new HttpRequest(this, id, uri);
+        HttpRequest request = new HttpRequest(this, id, uri);
+        normalizeRequest(request);
+        return request;
+    }
+
+    protected void normalizeRequest(Request request)
+    {
+        // TODO: Add decoder, cookies, agent, default headers, etc.
+        request.method(HttpMethod.GET)
+                .version(HttpVersion.HTTP_1_1)
+                .agent(getUserAgent())
+                .idleTimeout(getIdleTimeout())
+                .followRedirects(isFollowRedirects());
     }
 
     private String address(String scheme, String host, int port)
@@ -338,18 +345,30 @@ public class HttpClient extends AggregateLifeCycle
         }
     }
 
-    public HttpConversation conversationFor(Request request)
+    public HttpConversation conversationFor(Request request, Response.Listener listener)
     {
         long id = request.id();
         HttpConversation conversation = conversations.get(id);
         if (conversation == null)
         {
-            conversation = new HttpConversation();
+            conversation = new HttpConversation(this, listener);
             HttpConversation existing = conversations.putIfAbsent(id, conversation);
             if (existing != null)
                 conversation = existing;
         }
         return conversation;
+    }
+
+    public Response.Listener lookup(int status)
+    {
+        // TODO
+        switch (status)
+        {
+            case 303:
+                return new RedirectionListener(this);
+        }
+
+        return null;
     }
 
     protected class ClientSelectorManager extends SelectorManager
