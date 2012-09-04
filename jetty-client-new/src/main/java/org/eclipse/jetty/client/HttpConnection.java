@@ -1,5 +1,7 @@
 package org.eclipse.jetty.client;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
@@ -16,13 +18,17 @@ public class HttpConnection extends AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
+    private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
     private final HttpClient client;
-    private volatile HttpConversation conversation;
+    private final HttpSender sender;
+    private final HttpReceiver receiver;
 
     public HttpConnection(HttpClient client, EndPoint endPoint)
     {
         super(endPoint, client.getExecutor());
         this.client = client;
+        this.sender = new HttpSender(this);
+        this.receiver = new HttpReceiver(this);
     }
 
     public HttpClient getHttpClient()
@@ -40,9 +46,9 @@ public class HttpConnection extends AbstractConnection implements Connection
     @Override
     protected boolean onReadTimeout()
     {
-        HttpConversation conversation = this.conversation;
-        if (conversation != null)
-            conversation.idleTimeout();
+        HttpExchange exchange = this.exchange.get();
+        if (exchange != null)
+            exchange.idleTimeout();
         return true;
     }
 
@@ -50,10 +56,18 @@ public class HttpConnection extends AbstractConnection implements Connection
     public void send(Request request, Response.Listener listener)
     {
         normalizeRequest(request);
-        HttpConversation conversation = client.conversationFor(request, listener);
-        this.conversation = conversation;
-        conversation.prepare(this, request, listener);
-        conversation.send();
+        HttpConversation conversation = client.conversationFor(request);
+        HttpExchange exchange = new HttpExchange(conversation, sender, receiver, request, listener);
+        if (this.exchange.compareAndSet(null, exchange))
+        {
+            conversation.add(exchange);
+            LOG.debug("{}({})", request, conversation);
+            exchange.send();
+        }
+        else
+        {
+            throw new UnsupportedOperationException("Pipelined requests not supported");
+        }
     }
 
     private void normalizeRequest(Request request)
@@ -96,11 +110,10 @@ public class HttpConnection extends AbstractConnection implements Connection
     @Override
     public void onFillable()
     {
-        HttpConversation conversation = this.conversation;
-        if (conversation != null)
-            conversation.receive();
+        HttpExchange exchange = this.exchange.get();
+        if (exchange != null)
+            exchange.receive();
         else
-            // TODO test sending white space... we want to consume it but throw if it's not whitespace
-            LOG.warn("Ready to read response, but no receiver");
+            throw new IllegalStateException();
     }
 }

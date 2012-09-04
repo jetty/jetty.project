@@ -4,6 +4,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpHeader;
@@ -14,20 +15,24 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
+public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 {
     private static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
     private final HttpParser parser = new HttpParser(this);
-    private HttpConversation conversation;
+    private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
+    private final AtomicReference<Response.Listener> listener = new AtomicReference<>();
+    private final HttpConnection connection;
 
-    public void receive(HttpConversation conversation)
+    public HttpReceiver(HttpConnection connection)
     {
-        if (this.conversation != null)
-            throw new IllegalStateException();
-        this.conversation = conversation;
+        this.connection = connection;
+    }
 
-        HttpConnection connection = conversation.connection();
+    public void receive(HttpExchange exchange)
+    {
+        this.exchange.set(exchange);
+
         HttpClient client = connection.getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
         ByteBuffer buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
@@ -40,7 +45,6 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                 if (read > 0)
                 {
                     parser.parseNext(buffer);
-                    // TODO: response done, reset ?
                 }
                 else if (read == 0)
                 {
@@ -65,39 +69,44 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     @Override
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
-        HttpResponse response = conversation.response();
-        response.version(version).status(status).reason(reason);
+        HttpExchange exchange = this.exchange.get();
 
         // Probe the protocol listeners
-        HttpClient client = conversation.connection().getHttpClient();
+        HttpClient client = connection.getHttpClient();
+        HttpResponse response = exchange.response();
         Response.Listener listener = client.lookup(status);
-        if (listener != null)
-            conversation.listener(listener);
-        else
-            conversation.listener(conversation.applicationListener());
+        if (listener == null)
+            listener = exchange.conversation().first().listener();
+        this.listener.set(listener);
 
-        notifyBegin(conversation.listener(), response);
+        response.version(version).status(status).reason(reason);
+        LOG.debug("{}", response);
+
+        notifyBegin(listener, response);
         return false;
     }
 
     @Override
     public boolean parsedHeader(HttpHeader header, String name, String value)
     {
-        conversation.response().headers().put(name, value);
+        HttpExchange exchange = this.exchange.get();
+        exchange.response().headers().put(name, value);
         return false;
     }
 
     @Override
     public boolean headerComplete()
     {
-        notifyHeaders(conversation.listener(), conversation.response());
+        HttpExchange exchange = this.exchange.get();
+        notifyHeaders(listener.get(), exchange.response());
         return false;
     }
 
     @Override
     public boolean content(ByteBuffer buffer)
     {
-        notifyContent(conversation.listener(), conversation.response(), buffer);
+        HttpExchange exchange = this.exchange.get();
+        notifyContent(listener.get(), exchange.response(), buffer);
         return false;
     }
 
@@ -110,21 +119,16 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 
     protected void success()
     {
-        HttpConversation conversation = this.conversation;
-        this.conversation = null;
-        Response.Listener listener = conversation.listener();
-        Response response = conversation.response();
-        conversation.done();
-        notifySuccess(listener, response);
+        HttpExchange exchange = this.exchange.getAndSet(null);
+        exchange.responseDone();
+        notifySuccess(listener.get(), exchange.response());
     }
 
     protected void fail(Throwable failure)
     {
-        Response.Listener listener = conversation.listener();
-        Response response = conversation.response();
-        conversation.done();
-        conversation = null;
-        notifyFailure(listener, response, failure);
+        HttpExchange exchange = this.exchange.getAndSet(null);
+        exchange.responseDone();
+        notifyFailure(listener.get(), exchange.response(), failure);
     }
 
     @Override
@@ -137,7 +141,7 @@ class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     @Override
     public void badMessage(int status, String reason)
     {
-        conversation.response().status(status).reason(reason);
+        exchange.get().response().status(status).reason(reason);
         fail(new HttpResponseException());
     }
 

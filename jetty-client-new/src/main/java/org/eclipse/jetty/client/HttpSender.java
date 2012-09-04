@@ -18,40 +18,48 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-class HttpSender
+public class HttpSender
 {
     private static final Logger LOG = Log.getLogger(HttpSender.class);
 
     private final HttpGenerator generator = new HttpGenerator();
-    private final HttpClient client;
-    private HttpConversation conversation;
+    private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
+    private final HttpConnection connection;
+
     private long contentLength;
     private Iterator<ByteBuffer> contentChunks;
     private ByteBuffer header;
     private ByteBuffer chunk;
     private boolean requestHeadersComplete;
 
-    HttpSender(HttpClient client)
+    public HttpSender(HttpConnection connection)
     {
-        this.client = client;
+        this.connection = connection;
     }
 
-    public void send(HttpConversation conversation)
+    public void send(HttpExchange exchange)
     {
-        this.conversation = conversation;
-        ContentProvider content = conversation.request().content();
-        this.contentLength = content == null ? -1 : content.length();
-        this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
-        send();
+        if (this.exchange.compareAndSet(null, exchange))
+        {
+            ContentProvider content = exchange.request().content();
+            this.contentLength = content == null ? -1 : content.length();
+            this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
+            send();
+        }
+        else
+        {
+            throw new IllegalStateException();
+        }
     }
 
     private void send()
     {
         try
         {
-            HttpConnection connection = conversation.connection();
+            HttpClient client = connection.getHttpClient();
             EndPoint endPoint = connection.getEndPoint();
             ByteBufferPool byteBufferPool = client.getByteBufferPool();
+            final Request request = exchange.get().request();
             HttpGenerator.RequestInfo info = null;
             ByteBuffer content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
             boolean lastContent = !contentChunks.hasNext();
@@ -62,7 +70,6 @@ class HttpSender
                 {
                     case NEED_INFO:
                     {
-                        Request request = conversation.request();
                         info = new HttpGenerator.RequestInfo(request.version(), request.headers(), contentLength, request.method().asString(), request.path());
                         break;
                     }
@@ -83,7 +90,7 @@ class HttpSender
                             @Override
                             protected void pendingCompleted()
                             {
-                                notifyRequestHeadersComplete(conversation.request());
+                                notifyRequestHeadersComplete(request);
                                 send();
                             }
 
@@ -108,7 +115,7 @@ class HttpSender
                             if (!requestHeadersComplete)
                             {
                                 requestHeadersComplete = true;
-                                notifyRequestHeadersComplete(conversation.request());
+                                notifyRequestHeadersComplete(request);
                             }
                             releaseBuffers();
                             content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
@@ -151,13 +158,13 @@ class HttpSender
 
     protected void success()
     {
-        Request request = conversation.request();
-        conversation = null;
+        HttpExchange exchange = this.exchange.getAndSet(null);
+        exchange.requestDone();
         generator.reset();
         requestHeadersComplete = false;
         // It is important to notify *after* we reset because
         // the notification may trigger another request/response
-        notifyRequestSuccess(request);
+        notifyRequestSuccess(exchange.request());
     }
 
     protected void fail(Throwable failure)
@@ -165,15 +172,17 @@ class HttpSender
         BufferUtil.clear(header);
         BufferUtil.clear(chunk);
         releaseBuffers();
-        conversation.connection().getEndPoint().shutdownOutput();
+        connection.getEndPoint().shutdownOutput();
         generator.abort();
-        notifyRequestFailure(conversation.request(), failure);
-        notifyResponseFailure(conversation.listener(), failure);
+        HttpExchange exchange = this.exchange.getAndSet(null);
+        exchange.requestDone();
+        notifyRequestFailure(exchange.request(), failure);
+        notifyResponseFailure(exchange.listener(), failure);
     }
 
     private void releaseBuffers()
     {
-        ByteBufferPool bufferPool = client.getByteBufferPool();
+        ByteBufferPool bufferPool = connection.getHttpClient().getByteBufferPool();
         if (!BufferUtil.hasContent(header))
         {
             bufferPool.release(header);

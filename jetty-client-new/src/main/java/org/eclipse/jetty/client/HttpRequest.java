@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.ContentDecoder;
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
@@ -41,7 +42,6 @@ public class HttpRequest implements Request
     private HttpVersion version;
     private String agent;
     private long idleTimeout;
-    private Response response;
     private Listener listener;
     private ContentProvider content;
     private final HttpFields headers = new HttpFields();
@@ -228,23 +228,23 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Future<Response> send()
+    public Future<ContentResponse> send()
     {
-        final FutureCallback<Response> result = new FutureCallback<>();
+        final FutureCallback<ContentResponse> result = new FutureCallback<>();
         BufferingResponseListener listener = new BufferingResponseListener()
         {
             @Override
             public void onSuccess(Response response)
             {
                 super.onSuccess(response);
-                result.completed(response);
+                result.completed(new HttpContentResponse(response, this));
             }
 
             @Override
             public void onFailure(Response response, Throwable failure)
             {
                 super.onFailure(response, failure);
-                result.failed(response, failure);
+                result.failed(new HttpContentResponse(response, this), failure);
             }
         };
         send(listener);
@@ -255,5 +255,11 @@ public class HttpRequest implements Request
     public void send(final Response.Listener listener)
     {
         client.send(this, listener);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), method(), path(), version(), hashCode());
     }
 }

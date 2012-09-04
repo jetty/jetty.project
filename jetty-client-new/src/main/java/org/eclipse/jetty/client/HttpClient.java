@@ -20,7 +20,9 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -30,6 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -85,6 +88,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public class HttpClient extends AggregateLifeCycle
 {
     private static final Logger LOG = Log.getLogger(HttpClient.class);
+
     private final ConcurrentMap<String, Destination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
     private volatile Executor executor;
@@ -131,6 +135,8 @@ public class HttpClient extends AggregateLifeCycle
         addBean(selectorManager);
 
         super.doStart();
+
+        LOG.info("Started {}", this);
     }
 
     protected SelectorManager newSelectorManager()
@@ -172,12 +178,12 @@ public class HttpClient extends AggregateLifeCycle
         this.bindAddress = bindAddress;
     }
 
-    public Future<Response> GET(String uri)
+    public Future<ContentResponse> GET(String uri)
     {
         return GET(URI.create(uri));
     }
 
-    public Future<Response> GET(URI uri)
+    public Future<ContentResponse> GET(URI uri)
     {
         return newRequest(uri).send();
     }
@@ -226,8 +232,15 @@ public class HttpClient extends AggregateLifeCycle
             Destination existing = destinations.putIfAbsent(address, destination);
             if (existing != null)
                 destination = existing;
+            else
+                LOG.debug("Created {}", destination);
         }
         return destination;
+    }
+
+    public List<Destination> getDestinations()
+    {
+        return new ArrayList<>(destinations.values());
     }
 
     public String getUserAgent()
@@ -345,13 +358,13 @@ public class HttpClient extends AggregateLifeCycle
         }
     }
 
-    public HttpConversation conversationFor(Request request, Response.Listener listener)
+    public HttpConversation conversationFor(Request request)
     {
         long id = request.id();
         HttpConversation conversation = conversations.get(id);
         if (conversation == null)
         {
-            conversation = new HttpConversation(this, listener);
+            conversation = new HttpConversation(this, id);
             HttpConversation existing = conversations.putIfAbsent(id, conversation);
             if (existing != null)
                 conversation = existing;
@@ -364,6 +377,7 @@ public class HttpClient extends AggregateLifeCycle
         // TODO
         switch (status)
         {
+            case 302:
             case 303:
                 return new RedirectionListener(this);
         }

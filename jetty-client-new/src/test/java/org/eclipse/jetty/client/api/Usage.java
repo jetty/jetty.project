@@ -38,7 +38,7 @@ public class Usage
     public void testGETBlocking_ShortAPI() throws Exception
     {
         HttpClient client = new HttpClient();
-        Future<Response> responseFuture = client.GET("http://localhost:8080/foo");
+        Future<ContentResponse> responseFuture = client.GET("http://localhost:8080/foo");
         Response response = responseFuture.get();
         Assert.assertEquals(200, response.status());
         // Headers abstraction needed for:
@@ -66,7 +66,7 @@ public class Usage
                 .decoder(null)
                 .content(null)
                 .idleTimeout(5000L);
-        Future<Response> responseFuture = request.send();
+        Future<ContentResponse> responseFuture = request.send();
         Response response = responseFuture.get();
         Assert.assertEquals(200, response.status());
     }

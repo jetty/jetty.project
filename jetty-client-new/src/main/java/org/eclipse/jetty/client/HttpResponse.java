@@ -17,9 +17,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.FutureCallback;
 
-public class HttpResponse extends FutureCallback<Response> implements Response
+public class HttpResponse implements Response
 {
     private final HttpFields headers = new HttpFields();
     private final Request request;
@@ -90,5 +89,11 @@ public class HttpResponse extends FutureCallback<Response> implements Response
     public void abort()
     {
 //        request.abort();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s %d %s]", HttpResponse.class.getSimpleName(), version(), status(), reason());
     }
 }

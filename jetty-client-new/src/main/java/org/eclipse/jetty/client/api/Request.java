@@ -74,7 +74,7 @@ public interface Request
 
     Request listener(Listener listener);
 
-    Future<Response> send();
+    Future<ContentResponse> send();
 
     void send(Response.Listener listener);
 

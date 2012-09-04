@@ -23,11 +23,22 @@ public class RedirectionTest extends AbstractHttpClientTest
     }
 
     @Test
-    public void test303() throws Exception
+    public void test_303() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
                 .path("/303/done")
-                .send().get(500, TimeUnit.SECONDS);
+                .send().get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void test_303_302() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .path("/303/302/done")
+                .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
         Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));

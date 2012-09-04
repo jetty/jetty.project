@@ -25,15 +25,19 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpDestination implements Destination
 {
+    private static final Logger LOG = Log.getLogger(HttpDestination.class);
+
     private final AtomicInteger connectionCount = new AtomicInteger();
     private final HttpClient client;
     private final String scheme;
     private final String host;
     private final int port;
-    private final Queue<Response> requests;
+    private final Queue<RequestPair> requests;
     private final Queue<Connection> idleConnections;
     private final Queue<Connection> activeConnections;
 
@@ -76,27 +80,30 @@ public class HttpDestination implements Destination
         if (port != request.port())
             throw new IllegalArgumentException("Invalid request port " + request.port() + " for destination " + this);
 
-        HttpResponse response = new HttpResponse(request, listener);
-
+        RequestPair requestPair = new RequestPair(request, listener);
         if (client.isRunning())
         {
-            if (requests.offer(response))
+            if (requests.offer(requestPair))
             {
-                if (!client.isRunning() && requests.remove(response))
+                if (!client.isRunning() && requests.remove(requestPair))
                 {
-                    throw new RejectedExecutionException(HttpClient.class.getSimpleName() + " is shutting down");
+                    throw new RejectedExecutionException(HttpClient.class.getSimpleName() + " is stopping");
                 }
                 else
                 {
-                    Request.Listener requestListener = request.listener();
-                    notifyRequestQueued(requestListener, request);
-                    ensureConnection();
+                    LOG.debug("Queued {}", request);
+                    notifyRequestQueued(request.listener(), request);
+                    ensureConnection(); // TODO: improve and test this
                 }
             }
             else
             {
                 throw new RejectedExecutionException("Max requests per address " + client.getMaxQueueSizePerAddress() + " exceeded");
             }
+        }
+        else
+        {
+            throw new RejectedExecutionException(HttpClient.class.getSimpleName() + " is stopped");
         }
     }
 
@@ -109,28 +116,33 @@ public class HttpDestination implements Destination
         }
         catch (Exception x)
         {
-            // TODO: log or abort request send ?
+            LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 
     private void ensureConnection()
     {
-        int maxConnections = client.getMaxConnectionsPerAddress();
+        final int maxConnections = client.getMaxConnectionsPerAddress();
         while (true)
         {
-            int count = connectionCount.get();
+            int current = connectionCount.get();
+            final int next = current + 1;
 
-            if (count >= maxConnections)
+            if (next > maxConnections)
+            {
+                LOG.debug("Max connections reached {}: {}", this, current);
                 break;
+            }
 
-            if (connectionCount.compareAndSet(count, count + 1))
+            if (connectionCount.compareAndSet(current, next))
             {
                 newConnection(new Callback<Connection>()
                 {
                     @Override
                     public void completed(Connection connection)
                     {
-                        dispatch(connection);
+                        LOG.debug("Created connection {}/{} for {}", next, maxConnections, this);
+                        process(connection);
                     }
 
                     @Override
@@ -157,16 +169,18 @@ public class HttpDestination implements Destination
     }
 
     /**
-     * Responsibility of this method is to dequeue a request, associate it to the given {@code connection}
-     * and dispatch a thread to execute the request.
+     * <p>Processes a new connection making it idle or active depending on whether requests are waiting to be sent.</p>
+     * <p>A new connection is created when a request needs to be executed; it is possible that the request that
+     * triggered the request creation is executed by another connection that was just released, so the new connection
+     * may become idle.</p>
+     * <p>If a request is waiting to be executed, it will be dequeued and executed by the new connection.</p>
      *
-     * This can be done in several ways: one could be to
-     * @param connection
+     * @param connection the new connection
      */
-    protected void dispatch(final Connection connection)
+    protected void process(final Connection connection)
     {
-        final Response response = requests.poll();
-        if (response == null)
+        final RequestPair requestPair = requests.poll();
+        if (requestPair == null)
         {
             idleConnections.offer(connection);
         }
@@ -178,7 +192,7 @@ public class HttpDestination implements Destination
                 @Override
                 public void run()
                 {
-                    connection.send(response.request(), response.listener());
+                    connection.send(requestPair.request, requestPair.listener);
                 }
             });
         }
@@ -197,4 +211,23 @@ public class HttpDestination implements Destination
     // if I create manually the connection, then I call send(request, listener)
 
     // Other ways ?
+
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s(%s://%s:%d)", HttpDestination.class.getSimpleName(), scheme(), host(), port());
+    }
+
+    private static class RequestPair
+    {
+        private final Request request;
+        private final Response.Listener listener;
+
+        public RequestPair(Request request, Response.Listener listener)
+        {
+            this.request = request;
+            this.listener = listener;
+        }
+    }
 }

@@ -1,38 +1,25 @@
 package org.eclipse.jetty.client;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 
 public class HttpConversation
 {
-    private final Response.Listener applicationListener;
-    private final HttpSender sender;
-    private final HttpReceiver receiver;
+    private final List<HttpExchange> exchanges = new ArrayList<>();
+    private final HttpClient client;
+    private final long id;
+
     private HttpConnection connection;
     private Request request;
     private Response.Listener listener;
-    private HttpResponse response;
 
-    public HttpConversation(HttpClient client, Response.Listener listener)
+    public HttpConversation(HttpClient client, long id)
     {
-        applicationListener = listener;
-        sender = new HttpSender(client);
-        receiver = new HttpReceiver();
-    }
-
-    public Response.Listener applicationListener()
-    {
-        return applicationListener;
-    }
-
-    public void prepare(HttpConnection connection, Request request, Response.Listener listener)
-    {
-        if (this.connection != null)
-            throw new IllegalStateException();
-        this.connection = connection;
-        this.request = request;
-        this.listener = listener;
-        this.response = new HttpResponse(request, listener);
+        this.client = client;
+        this.id = id;
     }
 
     public void done()
@@ -67,23 +54,19 @@ public class HttpConversation
         this.listener = listener;
     }
 
-    public HttpResponse response()
+    public void add(HttpExchange exchange)
     {
-        return response;
+        exchanges.add(exchange);
     }
 
-    public void send()
+    public HttpExchange first()
     {
-        sender.send(this);
+        return exchanges.get(0);
     }
 
-    public void idleTimeout()
+    @Override
+    public String toString()
     {
-        receiver.idleTimeout();
-    }
-
-    public void receive()
-    {
-        receiver.receive(this);
+        return String.format("%s[%d]", HttpConversation.class.getSimpleName(), id);
     }
 }
