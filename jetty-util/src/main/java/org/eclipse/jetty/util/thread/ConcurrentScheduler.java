@@ -59,15 +59,26 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
     });
     private final Queue _delayQ;
 
+    public ConcurrentScheduler()
+    {
+        this(null,8192);
+    }
+    
     public ConcurrentScheduler(Executor executor)
     {
         this(executor,8192);
     }
     
+    public ConcurrentScheduler(int delayQms)
+    {
+        this(null,delayQms);
+    }
+    
     public ConcurrentScheduler(Executor executor,int delayQms)
     {
         _executor = executor;
-        addBean(_executor,false);
+        if (_executor!=null)
+            addBean(_executor,false);
         _delayQ=new Queue(delayQms);
     }
 
@@ -75,7 +86,10 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
     protected void doStart() throws Exception
     {
         super.doStart();
-        _executor.execute(this);
+        if (_executor==null)
+            new Thread(this).start();
+        else
+            _executor.execute(this);
     }
 
 
@@ -110,10 +124,9 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
             long interval=event._executeAt-now;
             
             // Should we execute this event?
-            if (interval<=0 && event._state.compareAndSet(State.NEW,State.DONE))
-            {
-                _executor.execute(event._task);
-            }
+            if (interval<=0 && event.compareAndSet(State.NEW,State.DONE))
+                event.execute();
+            
             // Should we delay this event
             else if (_delayQ._delay>0 && interval>_delayQ._delay)
             {
@@ -121,7 +134,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                 _delayQ.add(event,dequeue_at);
             }
             // else we schedule the event
-            else if (event._state.compareAndSet(State.NEW,State.SCHEDULED))
+            else if (event.compareAndSet(State.NEW,State.SCHEDULED))
             {
                 _timerQ.add(event);
                 if (interval<=MAX_SLEEP)
@@ -144,6 +157,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
             _runner=Thread.currentThread();
             while(isRunning())
             {
+                
                 try
                 {
                     // Work out how long to sleep for and execute expired events
@@ -160,7 +174,20 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                         {
                             Event event=next.dequeue();
                             if (event!=null)
-                                _timerQ.add(event);
+                            {
+                                if (event._executeAt<=now)
+                                {
+                                    if (event.compareAndSet(State.SCHEDULED,State.DONE))
+                                        event.execute();
+                                }
+                                else
+                                {
+                                    long interval=event._executeAt-now;
+                                    _timerQ.add(event);
+                                    if (interval<sleep)
+                                        sleep=interval;
+                                }
+                            }
                         }
                         else 
                         {
@@ -185,10 +212,8 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                         else if (event._executeAt<=now)
                         {
                             i.remove();
-                            if (event._state.compareAndSet(State.SCHEDULED,State.DONE))
-                            {
-                                _executor.execute(event._task);
-                            }
+                            if (event.compareAndSet(State.SCHEDULED,State.DONE))
+                                event.execute();
                         }
                         // else how long do we need to wait?
                         else
@@ -218,27 +243,33 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
         }
     }
 
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%d,%s}",this.getClass().getSimpleName(),hashCode(),_delayQ._delay,_executor);
+    }
     
     enum State { NEW, DELAYED, SCHEDULED, CANCELLED, DONE };
     
 
-    private class Event implements Scheduler.Task
+    private class Event extends AtomicReference<State> implements Scheduler.Task
     {
+        /* extends AtomicReference as a minor optimisation rather than holding a _state field */
         final Runnable _task;
         final long _executeAt;
-        final AtomicReference<State> _state=new AtomicReference<>(State.NEW);
         volatile QNode _node;
         
         public Event(Runnable task, long executeAt)
         {
-            super();
+            super(State.NEW);
             _task = task;
             _executeAt = executeAt;
         }
 
         public boolean isScheduled()
         {
-            return _state.get()==State.SCHEDULED;
+            return get()==State.SCHEDULED;
         }
 
         @Override
@@ -246,7 +277,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
         {
             while(true)
             {
-                switch(_state.get())
+                switch(get())
                 {
                     case NEW:
                         throw new IllegalStateException();
@@ -255,14 +286,14 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                     case CANCELLED:
                         return false;
                     case DELAYED:
-                        if (_state.compareAndSet(State.DELAYED,State.CANCELLED))
+                        if (compareAndSet(State.DELAYED,State.CANCELLED))
                         {
                             _node.cancel();
                             return true;
                         }
                         break;
                     case SCHEDULED:
-                        if (_state.compareAndSet(State.SCHEDULED,State.CANCELLED))
+                        if (compareAndSet(State.SCHEDULED,State.CANCELLED))
                         {
                             _timerQ.remove(this);
                             return true;
@@ -272,10 +303,18 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
             }
         }
         
+        public void execute()
+        {
+            if (_executor==null)
+                _task.run();
+            else
+                _executor.execute(_task);
+        }
+        
         @Override
         public String toString()
         {
-            return String.format("Event@%x{%s,%d,%s}",hashCode(),_state,_executeAt,_task);
+            return String.format("Event@%x{%s,%d,%s}",hashCode(),get(),_executeAt,_task);
         }
     }
     
@@ -304,19 +343,19 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
         Queue(int delay)
         {
             _delay=delay;
-            _head._next.set(_tail);
+            _head.set(_tail);
             _tail._prev=_head;
         }
         
         void clear()
         {
-            _head._next.set(_tail);
+            _head.set(_tail);
             _tail._prev=_head;
         }
         
         void add(Event event, long dequeue_at)
         {
-            if (event._state.compareAndSet(State.NEW,State.DELAYED))
+            if (event.compareAndSet(State.NEW,State.DELAYED))
             {
                 while (true) 
                 {
@@ -325,7 +364,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                     if (prev!=null)
                     {
                         QNode node = new QNode(event,dequeue_at,prev,_tail);
-                        if (prev._next.compareAndSet(_tail,node))
+                        if (prev.compareAndSet(_tail,node))
                         {
                             _tail._prev=node;
                             event._node=node;
@@ -368,19 +407,19 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
      * Roughly based on public domain lock free queue algorithm from: 
      * http://www.java2s.com/Code/Java/Collections-Data-Structure/ConcurrentDoublyLinkedList.htm
      */
-    private static class QNode 
+    private static class QNode extends AtomicReference<QNode>
     {   
+        /* extends AtomicReference as a minor optimisation rather than holding a _next field */
         final Event _event;
         final long _dequeueAt;
-        final AtomicReference<QNode> _next=new AtomicReference<>();
         volatile QNode _prev;
         
         QNode(Event event, long dequeue_at, QNode prev, QNode next)
         {
+            super(next);
             _event=event;
             _dequeueAt=dequeue_at;
             _prev=prev;
-            _next.set(next);
         }
 
         /**
@@ -400,8 +439,8 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                     return event.scanForPrevOf(this);
                 
                 // If the previous next is this (still linked normally)
-                QNode prev_next = prev._next.get();
-                if (prev_next==this)
+                QNode prev_next = prev.get();
+                if (prev_next==this && prev.isDelayed())
                     return prev;
                 
                 if (prev_next==null || prev_next.isDelayed())
@@ -448,7 +487,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
          */
         QNode next()
         {
-            QNode next = _next.get();
+            QNode next = get();
             while (true) 
             {
                 if (next == null)
@@ -459,21 +498,21 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
                         next._prev=this; 
                     return next;
                 }
-                QNode next_next = next._next.get();
-                _next.compareAndSet(next, next_next); 
+                QNode next_next = next.get();
+                compareAndSet(next, next_next); 
                 next = next_next;
             }
         }
         
         public boolean cancel()
         {
-            if (_event._state.compareAndSet(State.DELAYED,State.CANCELLED))
+            if (_event.compareAndSet(State.DELAYED,State.CANCELLED))
             {
                 QNode prev = _prev;
-                QNode next = _next.get();
+                QNode next = get();
                 if (prev != null && next != null && next.isDelayed())
                 {
-                    if (prev._next.compareAndSet(this, next))
+                    if (prev.compareAndSet(this, next))
                         next._prev=prev;
                 }
                 return true;
@@ -483,13 +522,13 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
         
         public Event dequeue()
         {
-            if (_event._state.compareAndSet(State.DELAYED,State.SCHEDULED))
+            if (_event.compareAndSet(State.DELAYED,State.SCHEDULED))
             {
                 QNode prev = _prev;
-                QNode next = _next.get();
+                QNode next = get();
                 if (prev != null && next != null && next.isDelayed())
                 {
-                    if (prev._next.compareAndSet(this, next))
+                    if (prev.compareAndSet(this, next))
                         next._prev=prev;
                 }
                 return _event;
@@ -499,12 +538,12 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
 
         public boolean isDelayed()
         {
-            return _event!=null && _event._state.get()==State.DELAYED;
+            return _event!=null && _event.get()==State.DELAYED;
         }
         
         public boolean isTail()
         {
-            return _event==null && _next.get()==null;
+            return _event==null && get()==null;
         }
         
 
@@ -512,7 +551,7 @@ public class ConcurrentScheduler extends AggregateLifeCycle implements Runnable,
         public String toString()
         {
             QNode p=_prev;
-            QNode n=_next.get();
+            QNode n=get();
             return String.format("QNode@%x{%x<-%s->%x}",hashCode(),p==null?0:p.hashCode(),_event,n==null?0:n.hashCode());
         }
     }

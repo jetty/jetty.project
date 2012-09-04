@@ -233,7 +233,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             {
                 try
                 {
-                    _request.setHandled(false); // TODO: is this right here ?
+                    _request.setHandled(false);
                     _response.getHttpOutput().reopen();
 
                     if (_state.isInitial())

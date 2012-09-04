@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -54,7 +54,7 @@ public class SelectChannelEndPointInterestsTest
         threadPool = new QueuedThreadPool();
         threadPool.start();
 
-        scheduler = new SimpleScheduler();
+        scheduler = new TimerScheduler();
         scheduler.start();
 
         connector = ServerSocketChannel.open();

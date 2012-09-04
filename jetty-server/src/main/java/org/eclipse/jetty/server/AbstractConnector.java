@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>Partial implementation of {@link Connector}</p>
@@ -79,7 +79,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
     {
         _server=server;
         _executor=executor!=null?executor:_server.getThreadPool();
-        _scheduler=scheduler!=null?scheduler:new SimpleScheduler();
+        _scheduler=scheduler!=null?scheduler:new TimerScheduler();
         _byteBufferPool = pool!=null?pool:new MappedByteBufferPool();
         _sslContextFactory = sslContextFactory;
 

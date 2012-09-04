@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 
 public class SPDYClient
 {
@@ -167,7 +167,7 @@ public class SPDYClient
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
         private final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        private final Scheduler scheduler = new SimpleScheduler();
+        private final Scheduler scheduler = new TimerScheduler();
         private final Executor executor;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;

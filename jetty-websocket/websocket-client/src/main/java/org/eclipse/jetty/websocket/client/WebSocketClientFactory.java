@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SimpleScheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -69,7 +69,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketClientFactory(Executor threadPool)
     {
-        this(threadPool,new SimpleScheduler());
+        this(threadPool,new TimerScheduler());
     }
 
     public WebSocketClientFactory(Executor threadPool, Scheduler scheduler)
@@ -110,7 +110,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketClientFactory(SslContextFactory sslContextFactory)
     {
-        this(new QueuedThreadPool(),new SimpleScheduler(),sslContextFactory);
+        this(new QueuedThreadPool(),new TimerScheduler(),sslContextFactory);
     }
 
     @Override

@@ -28,11 +28,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BenchmarkHelper;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,15 +43,18 @@ import org.junit.runners.Parameterized;
 @RunWith(value = Parameterized.class)
 public class SchedulerTest
 {
-    public static Executor executor = Executors.newFixedThreadPool(256);
+    private static final BenchmarkHelper benchmark = new BenchmarkHelper();
+    private static final Executor executor = Executors.newFixedThreadPool(256);
     
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
         Object[][] data = new Object[][]{
-            {new SimpleScheduler()},
-            {new ConcurrentScheduler(executor,0)},
-            {new ConcurrentScheduler(executor,2000)}
+            {new TimerScheduler()},
+            {new ScheduledExecutionServiceScheduler()},
+            {new ConcurrentScheduler(0)},
+            {new ConcurrentScheduler(1500)},
+            {new ConcurrentScheduler(executor,1500)}
         };
         return Arrays.asList(data);
     }
@@ -96,6 +101,42 @@ public class SchedulerTest
     }
     
     @Test
+    public void testTwoExecution() throws Exception
+    {
+        final AtomicLong executed = new AtomicLong();
+        long expected=System.currentTimeMillis()+3000;
+        Scheduler.Task task=_scheduler.schedule(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                executed.set(System.currentTimeMillis());
+            }
+        },3000,TimeUnit.MILLISECONDS);
+        
+        Thread.sleep(4000);
+        Assert.assertFalse(task.cancel());
+        Assert.assertThat(executed.get(),Matchers.greaterThanOrEqualTo(expected));
+        Assert.assertThat(expected-executed.get(),Matchers.lessThan(1000L));
+        
+        final AtomicLong executed1 = new AtomicLong();
+        long expected1=System.currentTimeMillis()+3000;
+        Scheduler.Task task1=_scheduler.schedule(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                executed1.set(System.currentTimeMillis());
+            }
+        },3000,TimeUnit.MILLISECONDS);
+        
+        Thread.sleep(4000);
+        Assert.assertFalse(task1.cancel());
+        Assert.assertThat(executed1.get(),Matchers.greaterThanOrEqualTo(expected1));
+        Assert.assertThat(expected1-executed1.get(),Matchers.lessThan(1000L));
+    }
+    
+    @Test
     public void testQuickCancel() throws Exception
     {
         final AtomicLong executed = new AtomicLong();
@@ -106,11 +147,11 @@ public class SchedulerTest
             {
                 executed.set(System.currentTimeMillis());
             }
-        },3000,TimeUnit.MILLISECONDS);
+        },2000,TimeUnit.MILLISECONDS);
         
         Thread.sleep(100);
         Assert.assertTrue(task.cancel());
-        Thread.sleep(3500);
+        Thread.sleep(2500);
         Assert.assertEquals(0,executed.get());
     }
     
@@ -125,21 +166,37 @@ public class SchedulerTest
             {
                 executed.set(System.currentTimeMillis());
             }
-        },3000,TimeUnit.MILLISECONDS);
+        },2000,TimeUnit.MILLISECONDS);
         
-        Thread.sleep(2100);
+        Thread.sleep(1600);
         Assert.assertTrue(task.cancel());
-        Thread.sleep(1500);
+        Thread.sleep(1000);
         Assert.assertEquals(0,executed.get());
     }
-    
-    
+
     @Test
     @Slow
     public void testManySchedulesAndCancels() throws Exception
     {
-        final Random random = new Random();
-        Thread[] test = new Thread[2000]; 
+        schedule(100,10000,3800,200);
+    }
+    
+    @Test
+    @Slow
+    @Ignore
+    public void testBenchmark() throws Exception
+    {
+        schedule(2000,10000,2000,50);
+        benchmark.startStatistics();
+        System.err.println(_scheduler);
+        schedule(2000,30000,2000,50);
+        benchmark.stopStatistics();
+    }
+    
+    private void schedule(int threads,final int duration, final int delay, final int interval) throws Exception
+    {
+        final Random random = new Random(1);
+        Thread[] test = new Thread[threads]; 
         
         final AtomicInteger schedules = new AtomicInteger();
         final SampleStatistic executions = new SampleStatistic();
@@ -156,18 +213,22 @@ public class SchedulerTest
                     {
                         long now = System.currentTimeMillis();
                         long start=now;
-                        long end=start+5000;
-                        
-                        while (now<end)
+                        long end=start+duration;
+                        boolean last=false;
+                        while (!last)
                         {
-                            final int delay=random.nextInt((int)(end-now));
-                            final long expected = now+delay;
+                            final long expected=now+delay;
+                            int cancel=random.nextInt(interval);
+                            final boolean expected_to_execute;
                             
-                            int cancel=random.nextInt(100);
-                            if (cancel==0)
-                                cancel=(int)(end-now)+1000;
+                            last=now+2*interval>end;
+                            if (cancel==0 || last)
+                            {
+                                expected_to_execute=true;
+                                cancel=delay+1000;
+                            }
                             else
-                                cancel=cancel/4;
+                                expected_to_execute=false;
 
                             schedules.incrementAndGet();
                             Scheduler.Task task=_scheduler.schedule(new Runnable()
@@ -175,8 +236,12 @@ public class SchedulerTest
                                 @Override
                                 public void run()
                                 {
-                                    long lateness=System.currentTimeMillis()-expected;
-                                    executions.set(lateness);                                    
+                                    long lateness=System.currentTimeMillis()-expected;                                   
+                                    if (expected_to_execute)
+                                        executions.set(lateness);
+                                    else
+                                        executions.set(6666);
+                                        
                                 }
                             },delay,TimeUnit.MILLISECONDS);
                             
@@ -185,9 +250,20 @@ public class SchedulerTest
                             if (task.cancel())
                             {
                                 long lateness=now-expected;
-                                cancellations.set(lateness);
+                                if (expected_to_execute)
+                                    cancellations.set(lateness);
+                                else
+                                    cancellations.set(0);
+                            }
+                            else 
+                            {
+                                if (!expected_to_execute)
+                                {
+                                    cancellations.set(9999);
+                                }
                             }
 
+                            Thread.yield();
                         }
                     }
                     catch (InterruptedException e)
@@ -205,9 +281,9 @@ public class SchedulerTest
         for (Thread thread : test)
             thread.join();
         
-        //System.err.println(schedules);
-        //System.err.println(executions);
-        //System.err.println(cancellations);
+        // System.err.println(schedules);
+        // System.err.println(executions);
+        // System.err.println(cancellations);
 
         // there were some executions and cancellations
         Assert.assertThat(executions.getCount(),Matchers.greaterThan(0L));
