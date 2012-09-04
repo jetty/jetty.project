@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.io;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
-import java.util.concurrent.ScheduledFuture;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
@@ -51,7 +50,9 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     {
         Scheduler.Task task = this.task;
         if (task != null)
+        {
             task.cancel();
+        }
     }
 
     @Override

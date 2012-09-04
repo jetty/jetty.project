@@ -68,6 +68,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private List<ExtensionConfig> extensions;
     private boolean flushing;
     private boolean isFilling;
+    private BaseConnection.State connectionState;
 
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -80,18 +81,19 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.extensions = new ArrayList<>();
         this.queue = new FrameQueue();
         this.suspendToken = new AtomicBoolean(false);
+        this.connectionState = BaseConnection.State.OPENING;
     }
 
     @Override
     public void close()
     {
-        terminateConnection(StatusCode.NORMAL,null);
+        close(StatusCode.NORMAL,null);
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-        terminateConnection(statusCode,reason);
+        enqueClose(statusCode,reason);
     }
 
     public <C> void complete(FrameBytes<C> frameBytes)
@@ -106,8 +108,15 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    @Override
+    public void disconnect()
+    {
+        disconnect(false);
+    }
+
     public void disconnect(boolean onlyOutput)
     {
+        connectionState = BaseConnection.State.CLOSED;
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
@@ -118,6 +127,24 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("Closing {}",endPoint);
             endPoint.close();
         }
+    }
+
+    /**
+     * Enqueue a close frame.
+     * 
+     * @param statusCode
+     *            the WebSocket status code.
+     * @param reason
+     *            the (optional) reason string. (null is allowed)
+     * @see StatusCode
+     */
+    private void enqueClose(int statusCode, String reason)
+    {
+        CloseInfo close = new CloseInfo(statusCode,reason);
+        FutureCallback<Void> nop = new FutureCallback<>();
+        ControlFrameBytes<Void> frameBytes = new ControlFrameBytes<Void>(this,nop,null,close.asFrame());
+        queue.append(frameBytes);
+        flush();
     }
 
     public void flush()
@@ -153,7 +180,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 LOG.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
             }
         }
-        write(buffer,frameBytes);
+
+        if (connectionState != BaseConnection.State.CLOSED)
+        {
+            write(buffer,frameBytes);
+        }
     }
 
     public ByteBufferPool getBufferPool()
@@ -210,15 +241,34 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    public State getState()
+    {
+        return connectionState;
+    }
+
+    @Override
     public boolean isOpen()
     {
-        return getEndPoint().isOpen();
+        return (getState() != BaseConnection.State.CLOSED) && getEndPoint().isOpen();
     }
 
     @Override
     public boolean isReading()
     {
         return isFilling;
+    }
+
+    @Override
+    public void notifyClosing()
+    {
+        this.connectionState = BaseConnection.State.CLOSING;
+    }
+
+    @Override
+    public void onClose()
+    {
+        super.onClose();
+        this.connectionState = BaseConnection.State.CLOSED;
     }
 
     @Override
@@ -252,6 +302,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public void onOpen()
     {
         super.onOpen();
+        this.connectionState = BaseConnection.State.OPENED;
         LOG.debug("fillInterested");
         fillInterested();
     }
@@ -327,13 +378,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         catch (IOException e)
         {
             LOG.warn(e);
-            terminateConnection(StatusCode.PROTOCOL,e.getMessage());
+            enqueClose(StatusCode.PROTOCOL,e.getMessage());
             return -1;
         }
         catch (CloseException e)
         {
             LOG.warn(e);
-            terminateConnection(e.getStatusCode(),e.getMessage());
+            enqueClose(e.getStatusCode(),e.getMessage());
             return -1;
         }
     }
@@ -341,7 +392,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void resume()
     {
-        if(suspendToken.getAndSet(false)) {
+        if (suspendToken.getAndSet(false))
+        {
             fillInterested();
         }
     }
@@ -379,24 +431,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return this;
     }
 
-    /**
-     * For terminating connections forcefully.
-     * 
-     * @param statusCode
-     *            the WebSocket status code.
-     * @param reason
-     *            the (optional) reason string. (null is allowed)
-     * @see StatusCode
-     */
-    private void terminateConnection(int statusCode, String reason)
-    {
-        CloseInfo close = new CloseInfo(statusCode,reason);
-        FutureCallback<Void> nop = new FutureCallback<>();
-        ControlFrameBytes<Void> frameBytes = new ControlFrameBytes<Void>(this,nop,null,close.asFrame());
-        queue.append(frameBytes);
-        flush();
-    }
-
     @Override
     public String toString()
     {
@@ -411,6 +445,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             LOG_FRAMES.debug("{} Writing {} frame bytes of {}",policy.getBehavior(),buffer.remaining(),frameBytes);
         }
+
+        if (connectionState == BaseConnection.State.CLOSED)
+        {
+            // connection is closed, STOP WRITING, geez.
+            return;
+        }
+
         try
         {
             endpoint.write(frameBytes.context,frameBytes,buffer);

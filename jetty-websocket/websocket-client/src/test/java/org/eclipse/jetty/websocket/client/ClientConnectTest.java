@@ -1,0 +1,201 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.websocket.client;
+
+import java.net.ConnectException;
+import java.net.URI;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.api.UpgradeException;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer;
+import org.eclipse.jetty.websocket.client.blockhead.BlockheadServer.ServerConnection;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+/**
+ * Various connect condition testing
+ */
+public class ClientConnectTest
+{
+    private BlockheadServer server;
+    private WebSocketClientFactory factory;
+
+    @Before
+    public void startFactory() throws Exception
+    {
+        factory = new WebSocketClientFactory();
+        factory.start();
+    }
+
+    @Before
+    public void startServer() throws Exception
+    {
+        server = new BlockheadServer();
+        server.start();
+    }
+
+    @After
+    public void stopFactory() throws Exception
+    {
+        factory.stop();
+    }
+
+    @After
+    public void stopServer() throws Exception
+    {
+        server.stop();
+    }
+
+    @Test(expected = UpgradeException.class)
+    public void testBadHandshake() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+        WebSocketClient client = factory.newWebSocketClient(wsocket);
+
+        URI wsUri = server.getWsUri();
+        FutureCallback<UpgradeResponse> future = client.connect(wsUri);
+
+        ServerConnection connection = server.accept();
+        connection.readRequest();
+        // no upgrade, just fail with a 404 error
+        connection.respond("HTTP/1.1 404 NOT FOUND\r\n\r\n");
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+
+    @Test(expected = UpgradeException.class)
+    public void testBadUpgrade() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+        WebSocketClient client = factory.newWebSocketClient(wsocket);
+
+        URI wsUri = server.getWsUri();
+        FutureCallback<UpgradeResponse> future = client.connect(wsUri);
+
+        ServerConnection connection = server.accept();
+        connection.readRequest();
+        // Upgrade badly
+        connection.respond("HTTP/1.1 101 Upgrade\r\n" + "Sec-WebSocket-Accept: rubbish\r\n" + "\r\n");
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> UpgradeException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+
+    @Test
+    public void testConnectionNotAccepted() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+        WebSocketClient client = factory.newWebSocketClient(wsocket);
+
+        URI wsUri = server.getWsUri();
+        Future<UpgradeResponse> future = client.connect(wsUri);
+
+        // Intentionally not accept incoming socket.
+        // server.accept();
+
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Should have Timed Out");
+        }
+        catch (TimeoutException e)
+        {
+            // Expected Path
+            wsocket.assertNotOpened();
+        }
+    }
+
+    @Test(expected = ConnectException.class)
+    @Ignore("Need to get information about connection issue out of SelectManager somehow")
+    public void testConnectionRefused() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+        WebSocketClient client = factory.newWebSocketClient(wsocket);
+
+        // Intentionally bad port
+        URI wsUri = new URI("ws://127.0.0.1:1");
+        Future<UpgradeResponse> future = client.connect(wsUri);
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(1000,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> ConnectException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+
+    @Test(expected = TimeoutException.class)
+    public void testConnectionTimeout() throws Exception
+    {
+        TrackingSocket wsocket = new TrackingSocket();
+        WebSocketClient client = factory.newWebSocketClient(wsocket);
+
+        URI wsUri = server.getWsUri();
+        Future<UpgradeResponse> future = client.connect(wsUri);
+
+        ServerConnection ssocket = server.accept();
+        Assert.assertNotNull(ssocket);
+        // Intentionally don't upgrade
+        // ssocket.upgrade();
+
+        // The attempt to get upgrade response future should throw error
+        try
+        {
+            future.get(500,TimeUnit.MILLISECONDS);
+            Assert.fail("Expected ExecutionException -> TimeoutException");
+        }
+        catch (ExecutionException e)
+        {
+            // Expected Path - throw underlying exception
+            FutureCallback.rethrow(e);
+        }
+    }
+}
