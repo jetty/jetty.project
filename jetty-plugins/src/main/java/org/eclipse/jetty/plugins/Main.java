@@ -127,7 +127,7 @@ public class Main
     private void printUsage(String errorMessage)
     {
         System.out.println(errorMessage);
-
+        System.exit(1);
         //TODO: print usage
     }
 }
