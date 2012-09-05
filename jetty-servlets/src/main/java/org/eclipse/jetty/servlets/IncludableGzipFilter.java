@@ -31,9 +31,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.gzip.AbstractCompressedStream;
-import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
+import org.eclipse.jetty.server.gzip.AbstractCompressedStream;
+import org.eclipse.jetty.server.gzip.CompressedResponseWrapper;
 
 /* ------------------------------------------------------------ */
 /** Includable GZip Filter.

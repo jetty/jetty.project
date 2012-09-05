@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http.gzip;
+package org.eclipse.jetty.server.gzip;
 
 import java.io.IOException;
 import java.io.OutputStream;

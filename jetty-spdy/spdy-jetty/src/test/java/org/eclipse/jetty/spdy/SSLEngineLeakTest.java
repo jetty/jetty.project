@@ -30,6 +30,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.Ignore;
 
 public class SSLEngineLeakTest extends AbstractTest
 {
@@ -48,6 +49,7 @@ public class SSLEngineLeakTest extends AbstractTest
     }
 
     @Test
+    @Ignore
     public void testSSLEngineLeak() throws Exception
     {
         System.gc();
