@@ -1,20 +1,17 @@
 package org.eclipse.jetty.client;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 
 public class HttpConversation
 {
-    private final List<HttpExchange> exchanges = new ArrayList<>();
+    private final Queue<HttpExchange> exchanges = new ConcurrentLinkedQueue<>();
+    private final AtomicReference<Response.Listener> listener = new AtomicReference<>();
     private final HttpClient client;
     private final long id;
-
-    private HttpConnection connection;
-    private Request request;
-    private Response.Listener listener;
 
     public HttpConversation(HttpClient client, long id)
     {
@@ -22,46 +19,35 @@ public class HttpConversation
         this.id = id;
     }
 
-    public void done()
+    public long id()
     {
-        reset();
-    }
-
-    private void reset()
-    {
-        connection = null;
-        request = null;
-        listener = null;
-    }
-
-    public HttpConnection connection()
-    {
-        return connection;
-    }
-
-    public Request request()
-    {
-        return request;
+        return id;
     }
 
     public Response.Listener listener()
     {
-        return listener;
+        return listener.get();
     }
 
     public void listener(Response.Listener listener)
     {
-        this.listener = listener;
+        this.listener.set(listener);
     }
 
     public void add(HttpExchange exchange)
     {
-        exchanges.add(exchange);
+        exchanges.offer(exchange);
     }
 
     public HttpExchange first()
     {
-        return exchanges.get(0);
+        return exchanges.peek();
+    }
+
+    public void complete()
+    {
+        listener.set(null);
+        client.removeConversation(this);
     }
 
     @Override

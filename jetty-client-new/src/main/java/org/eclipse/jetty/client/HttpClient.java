@@ -344,7 +344,7 @@ public class HttpClient extends AggregateLifeCycle
         }
     }
 
-    public HttpConversation conversationFor(Request request)
+    public HttpConversation getConversation(Request request)
     {
         long id = request.id();
         HttpConversation conversation = conversations.get(id);
@@ -354,8 +354,17 @@ public class HttpClient extends AggregateLifeCycle
             HttpConversation existing = conversations.putIfAbsent(id, conversation);
             if (existing != null)
                 conversation = existing;
+            else
+                LOG.debug("Created {}", conversation);
         }
         return conversation;
+    }
+
+    public void removeConversation(HttpConversation conversation)
+    {
+        conversations.remove(conversation.id());
+        LOG.debug("Removed {}", conversation);
+
     }
 
     public Response.Listener lookup(int status)

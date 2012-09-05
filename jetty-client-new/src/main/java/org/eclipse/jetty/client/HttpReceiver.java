@@ -4,7 +4,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpHeader;
@@ -19,10 +19,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 {
     private static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
+    private final AtomicBoolean complete = new AtomicBoolean();
     private final HttpParser parser = new HttpParser(this);
-    private final AtomicReference<Response.Listener> listener = new AtomicReference<>();
     private final HttpConnection connection;
-    private boolean failed;
+    private volatile boolean failed;
 
     public HttpReceiver(HttpConnection connection)
     {
@@ -72,14 +72,18 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
         HttpExchange exchange = connection.getExchange();
+        HttpConversation conversation = exchange.conversation();
 
         // Probe the protocol listeners
         HttpClient client = connection.getHttpClient();
         HttpResponse response = exchange.response();
         Response.Listener listener = client.lookup(status);
         if (listener == null)
-            listener = exchange.conversation().first().listener();
-        this.listener.set(listener);
+        {
+            listener = conversation.first().listener();
+            complete.set(true);
+        }
+        conversation.listener(listener);
 
         response.version(version).status(status).reason(reason);
         LOG.debug("Receiving {}", response);
@@ -100,9 +104,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     public boolean headerComplete()
     {
         HttpExchange exchange = connection.getExchange();
+        HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Headers {}", response);
-        notifyHeaders(listener.get(), response);
+        notifyHeaders(conversation.listener(), response);
         return false;
     }
 
@@ -110,9 +115,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     public boolean content(ByteBuffer buffer)
     {
         HttpExchange exchange = connection.getExchange();
+        HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Content {}: {} bytes", response, buffer.remaining());
-        notifyContent(listener.get(), response, buffer);
+        notifyContent(conversation.listener(), response, buffer);
         return false;
     }
 
@@ -127,13 +133,18 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     protected void success()
     {
         HttpExchange exchange = connection.getExchange();
+        HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Received {}", response);
 
         parser.reset();
+        failed = false;
+        boolean complete = this.complete.getAndSet(false);
 
-        exchange.responseDone(true);
-        notifySuccess(listener.get(), response);
+        exchange.responseComplete(true);
+        notifySuccess(conversation.listener(), response);
+        if (complete)
+            conversation.complete();
     }
 
     protected void fail(Throwable failure)
@@ -146,14 +157,17 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         if (exchange == null)
             return;
 
+        HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Failed {} {}", response, failure);
 
-        failed = true;
         parser.reset();
+        failed = true;
+        complete.set(false);
 
-        exchange.responseDone(false);
-        notifyFailure(listener.get(), response, failure);
+        exchange.responseComplete(false);
+        notifyFailure(conversation.listener(), response, failure);
+        conversation.complete();
     }
 
     @Override

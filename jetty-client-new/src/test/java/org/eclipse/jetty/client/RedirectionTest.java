@@ -26,7 +26,7 @@ public class RedirectionTest extends AbstractHttpClientServerTest
     public void test_303() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .path("/303/done")
+                .path("/localhost/303/localhost/done")
                 .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
@@ -37,8 +37,19 @@ public class RedirectionTest extends AbstractHttpClientServerTest
     public void test_303_302() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .path("/303/302/done")
-                .send().get(500, TimeUnit.SECONDS);
+                .path("/localhost/303/localhost/302/localhost/done")
+                .send().get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void test_303_302_OnDifferentDestinations() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .path("/127.0.0.1/303/localhost/302/localhost/done")
+                .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
         Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
@@ -51,10 +62,11 @@ public class RedirectionTest extends AbstractHttpClientServerTest
         {
             try
             {
-                String[] paths = target.split("/", 3);
-                int status = Integer.parseInt(paths[1]);
+                String[] paths = target.split("/", 4);
+                String host = paths[1];
+                int status = Integer.parseInt(paths[2]);
                 response.setStatus(status);
-                response.setHeader("Location", request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + "/" + paths[2]);
+                response.setHeader("Location", request.getScheme() + "://" + host + ":" + request.getServerPort() + "/" + paths[3]);
             }
             catch (NumberFormatException x)
             {

@@ -166,7 +166,7 @@ public class HttpSender
         // Notify after
         HttpExchange exchange = this.exchange.getAndSet(null);
         LOG.debug("Sent {}", exchange.request());
-        exchange.requestDone(true);
+        exchange.requestComplete(true);
 
         // It is important to notify *after* we reset because
         // the notification may trigger another request/response
@@ -186,7 +186,7 @@ public class HttpSender
         // Notify after
         HttpExchange exchange = this.exchange.getAndSet(null);
         LOG.debug("Failed {}", exchange.request());
-        exchange.requestDone(false);
+        exchange.requestComplete(false);
 
         notifyRequestFailure(exchange.request(), failure);
         notifyResponseFailure(exchange.listener(), failure);

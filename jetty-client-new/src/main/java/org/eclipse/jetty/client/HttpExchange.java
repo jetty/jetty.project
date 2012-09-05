@@ -52,12 +52,12 @@ public class HttpExchange
         connection.receive();
     }
 
-    public void requestDone(boolean success)
+    public void requestComplete(boolean success)
     {
         done(success, REQUEST_SUCCESS);
     }
 
-    public void responseDone(boolean success)
+    public void responseComplete(boolean success)
     {
         done(success, RESPONSE_SUCCESS);
     }
