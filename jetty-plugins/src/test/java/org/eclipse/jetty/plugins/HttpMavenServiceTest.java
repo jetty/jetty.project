@@ -38,7 +38,7 @@ public class HttpMavenServiceTest
     public void setUp() throws Exception
     {
         _mavenService.setLocalRepository(this.getClass().getClassLoader().getResource("maven_repo").getFile() + "/");
-        _mavenService.setRepositoryUrls(new String[]{MAVEN_CENTRAL_URL});
+        _mavenService.setRepositoryUrl(MAVEN_CENTRAL_URL);
         _mavenService.setVersion("version");
         _mavenService.setSearchRemoteRepository(false);
         _mavenService.setSearchLocalRepository(true);

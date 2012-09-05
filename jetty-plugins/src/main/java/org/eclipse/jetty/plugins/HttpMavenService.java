@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +39,7 @@ import org.eclipse.jetty.plugins.util.StreamUtils;
 public class HttpMavenService implements MavenService
 {
     private static final String REPOSITORY_URL = "http://repo2.maven.org/maven2/";
-    private static final String[] GROUP_IDS = new String[]{"org/eclipse/jetty"};
+    private static final String[] GROUP_IDS = new String[]{ "org/eclipse/jetty", "org/mortbay/jetty" };
     private static final String VERSION = "9.0.0-SNAPSHOT"; // TODO: should be automatically set
     private boolean _searchRemoteRepository = true;
     private boolean _searchLocalRepository = false;
@@ -79,6 +80,8 @@ public class HttpMavenService implements MavenService
                 break;
 
             String[] localMavenModuleList = file.list();
+
+            System.out.println("Trying the following modules: " + Arrays.toString(localMavenModuleList));
             for (String potentialPlugin : localMavenModuleList)
             {
                 File pluginFile = new File(_localRepository + getPluginPath(groupId,potentialPlugin));

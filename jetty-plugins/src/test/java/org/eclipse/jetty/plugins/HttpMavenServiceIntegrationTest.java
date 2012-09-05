@@ -51,7 +51,7 @@ public class HttpMavenServiceIntegrationTest
     @Before
     public void setUp() throws Exception
     {
-        _mavenService.setRepositoryUrls(new String[]{PRIVATE_NEXUS_REPOSITORY_URL});
+        _mavenService.setRepositoryUrl(PRIVATE_NEXUS_REPOSITORY_URL);
     }
 
     @Test
