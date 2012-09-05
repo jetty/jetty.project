@@ -22,12 +22,11 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
     {
         HttpDestination destination = new HttpDestination(client, "http", "localhost", connector.getLocalPort());
         Connection connection = destination.acquire();
-
-        // There are no available existing connections, so acquire() returns null
-        Assert.assertNull(connection);
-
-        // There are no queued requests, so the newly created connection will be idle
-        connection = destination.idleConnections().poll(5, TimeUnit.SECONDS);
+        if (connection == null)
+        {
+            // There are no queued requests, so the newly created connection will be idle
+            connection = destination.idleConnections().poll(5, TimeUnit.SECONDS);
+        }
         Assert.assertNotNull(connection);
     }
 
@@ -36,21 +35,20 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
     {
         HttpDestination destination = new HttpDestination(client, "http", "localhost", connector.getLocalPort());
         Connection connection1 = destination.acquire();
-
-        // There are no available existing connections, so acquire() returns null
-        Assert.assertNull(connection1);
-
-        // There are no queued requests, so the newly created connection will be idle
-        long start = System.nanoTime();
-        while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+        if (connection1 == null)
         {
-            connection1 = destination.idleConnections().peek();
-            TimeUnit.MILLISECONDS.sleep(50);
-        }
-        Assert.assertNotNull(connection1);
+            // There are no queued requests, so the newly created connection will be idle
+            long start = System.nanoTime();
+            while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+            {
+                connection1 = destination.idleConnections().peek();
+                TimeUnit.MILLISECONDS.sleep(50);
+            }
+            Assert.assertNotNull(connection1);
 
-        Connection connection2 = destination.acquire();
-        Assert.assertSame(connection1, connection2);
+            Connection connection2 = destination.acquire();
+            Assert.assertSame(connection1, connection2);
+        }
     }
 
     @Test
@@ -75,7 +73,8 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
         };
         Connection connection1 = destination.acquire();
 
-        // There are no available existing connections, so acquire() returns null
+        // There are no available existing connections, so acquire()
+        // returns null because we delayed process() above
         Assert.assertNull(connection1);
 
         Connection connection2 = destination.acquire();
@@ -95,17 +94,8 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
     {
         HttpDestination destination = new HttpDestination(client, "http", "localhost", connector.getLocalPort());
         Connection connection1 = destination.acquire();
-
-        // There are no available existing connections, so acquire() returns null
-        Assert.assertNull(connection1);
-
-        // There are no queued requests, so the newly created connection will be idle
-        long start = System.nanoTime();
-        while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
-        {
-            connection1 = destination.idleConnections().peek();
-            TimeUnit.MILLISECONDS.sleep(50);
-        }
+        if (connection1 == null)
+            connection1 = destination.idleConnections().poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection1);
 
         destination.release(connection1);

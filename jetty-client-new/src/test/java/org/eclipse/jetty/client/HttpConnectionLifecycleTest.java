@@ -30,25 +30,32 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
-        final CountDownLatch successLatch = new CountDownLatch(1);
-        client.newRequest(host, port).send(new Response.Listener.Adapter()
-        {
-            @Override
-            public void onHeaders(Response response)
-            {
-                Assert.assertEquals(0, idleConnections.size());
-                Assert.assertEquals(1, activeConnections.size());
-                headersLatch.countDown();
-            }
+        final CountDownLatch successLatch = new CountDownLatch(2);
+        client.newRequest(host, port)
+                .listener(new Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onSuccess(Request request)
+                    {
+                        successLatch.countDown();
+                    }
+                })
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onHeaders(Response response)
+                    {
+                        Assert.assertEquals(0, idleConnections.size());
+                        Assert.assertEquals(1, activeConnections.size());
+                        headersLatch.countDown();
+                    }
 
-            @Override
-            public void onSuccess(Response response)
-            {
-                Assert.assertEquals(1, idleConnections.size());
-                Assert.assertEquals(0, activeConnections.size());
-                successLatch.countDown();
-            }
-        });
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        successLatch.countDown();
+                    }
+                });
 
         Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
@@ -123,7 +130,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final BlockingQueue<Connection> activeConnections = destination.activeConnections();
         Assert.assertEquals(0, activeConnections.size());
 
-        final CountDownLatch successLatch = new CountDownLatch(1);
+        final CountDownLatch successLatch = new CountDownLatch(2);
         client.newRequest(host, port)
                 .listener(new Request.Listener.Adapter()
                 {
@@ -133,14 +140,18 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                         // Remove the host header, this will make the request invalid
                         request.header(HttpHeader.HOST.asString(), null);
                     }
+
+                    @Override
+                    public void onSuccess(Request request)
+                    {
+                        successLatch.countDown();
+                    }
                 })
                 .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Response response)
                     {
-                        Assert.assertEquals(1, idleConnections.size());
-                        Assert.assertEquals(0, activeConnections.size());
                         successLatch.countDown();
                     }
                 });
