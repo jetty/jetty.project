@@ -57,7 +57,7 @@ public class HttpExchange
         receiver.receive(this);
     }
 
-    public void requestDone()
+    public void requestDone(boolean success)
     {
         // TODO
     }

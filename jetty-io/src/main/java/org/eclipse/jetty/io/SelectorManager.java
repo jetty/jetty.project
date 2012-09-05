@@ -286,9 +286,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         @Override
         protected void doStop() throws Exception
         {
+            LOG.debug("Stopping {}", this);
             Stop stop = new Stop();
             submit(stop);
             stop.await(getStopTimeout());
+            LOG.debug("Stopped {}", this);
         }
 
         /**

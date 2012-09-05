@@ -36,8 +36,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -147,7 +145,9 @@ public class HttpClient extends AggregateLifeCycle
     @Override
     protected void doStop() throws Exception
     {
+        LOG.debug("Stopping {}", this);
         super.doStop();
+        LOG.info("Stopped {}", this);
     }
 
     public long getIdleTimeout()
@@ -195,26 +195,12 @@ public class HttpClient extends AggregateLifeCycle
 
     public Request newRequest(URI uri)
     {
-        HttpRequest request = new HttpRequest(this, uri);
-        normalizeRequest(request);
-        return request;
+        return new HttpRequest(this, uri);
     }
 
     protected Request newRequest(long id, URI uri)
     {
-        HttpRequest request = new HttpRequest(this, id, uri);
-        normalizeRequest(request);
-        return request;
-    }
-
-    protected void normalizeRequest(Request request)
-    {
-        // TODO: Add decoder, cookies, agent, default headers, etc.
-        request.method(HttpMethod.GET)
-                .version(HttpVersion.HTTP_1_1)
-                .agent(getUserAgent())
-                .idleTimeout(getIdleTimeout())
-                .followRedirects(isFollowRedirects());
+        return new HttpRequest(this, id, uri);
     }
 
     private String address(String scheme, String host, int port)
@@ -322,7 +308,7 @@ public class HttpClient extends AggregateLifeCycle
         this.responseBufferSize = responseBufferSize;
     }
 
-    protected void newConnection(Destination destination, Callback<Connection> callback)
+    protected void newConnection(HttpDestination destination, Callback<Connection> callback)
     {
         SocketChannel channel = null;
         try
@@ -407,7 +393,7 @@ public class HttpClient extends AggregateLifeCycle
         public org.eclipse.jetty.io.Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment) throws IOException
         {
             ConnectionCallback callback = (ConnectionCallback)attachment;
-            Destination destination = callback.destination;
+            HttpDestination destination = callback.destination;
 
             SslContextFactory sslContextFactory = getSslContextFactory();
             if ("https".equals(destination.scheme()))
@@ -426,7 +412,7 @@ public class HttpClient extends AggregateLifeCycle
                     SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
 
                     EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
-                    HttpConnection connection = new HttpConnection(HttpClient.this, appEndPoint);
+                    HttpConnection connection = new HttpConnection(HttpClient.this, appEndPoint, destination);
                     appEndPoint.setConnection(connection);
                     callback.callback.completed(connection);
                     connection.onOpen();
@@ -436,7 +422,7 @@ public class HttpClient extends AggregateLifeCycle
             }
             else
             {
-                HttpConnection connection = new HttpConnection(HttpClient.this, endPoint);
+                HttpConnection connection = new HttpConnection(HttpClient.this, endPoint, destination);
                 callback.callback.completed(connection);
                 return connection;
             }
@@ -451,10 +437,10 @@ public class HttpClient extends AggregateLifeCycle
 
     private class ConnectionCallback extends FutureCallback<Connection>
     {
-        private final Destination destination;
+        private final HttpDestination destination;
         private final Callback<Connection> callback;
 
-        private ConnectionCallback(Destination destination, Callback<Connection> callback)
+        private ConnectionCallback(HttpDestination destination, Callback<Connection> callback)
         {
             this.destination = destination;
             this.callback = callback;

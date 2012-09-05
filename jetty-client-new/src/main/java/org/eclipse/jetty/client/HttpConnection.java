@@ -8,6 +8,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
@@ -20,13 +21,15 @@ public class HttpConnection extends AbstractConnection implements Connection
 
     private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
     private final HttpClient client;
+    private final HttpDestination destination;
     private final HttpSender sender;
     private final HttpReceiver receiver;
 
-    public HttpConnection(HttpClient client, EndPoint endPoint)
+    public HttpConnection(HttpClient client, EndPoint endPoint, HttpDestination destination)
     {
         super(endPoint, client.getExecutor());
         this.client = client;
+        this.destination = destination;
         this.sender = new HttpSender(this);
         this.receiver = new HttpReceiver(this);
     }
@@ -49,6 +52,10 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange exchange = this.exchange.get();
         if (exchange != null)
             exchange.idleTimeout();
+
+        // We will be closing the connection, so remove it
+        destination.remove(this);
+
         return true;
     }
 
@@ -72,6 +79,21 @@ public class HttpConnection extends AbstractConnection implements Connection
 
     private void normalizeRequest(Request request)
     {
+        if (request.method() == null)
+            request.method(HttpMethod.GET);
+
+        if (request.version() == null)
+            request.version(HttpVersion.HTTP_1_1);
+
+        if (request.agent() == null)
+            request.agent(client.getUserAgent());
+
+        if (request.idleTimeout() <= 0)
+            request.idleTimeout(client.getIdleTimeout());
+
+        // TODO: follow redirects
+        // TODO: cookies
+
         HttpVersion version = request.version();
         HttpFields headers = request.headers();
         ContentProvider content = request.content();
@@ -103,7 +125,13 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (version.getVersion() > 10)
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
-                headers.put(HttpHeader.HOST, request.host() + ":" + request.port());
+            {
+                String value = request.host();
+                int port = request.port();
+                if (port > 0)
+                    value += ":" + port;
+                headers.put(HttpHeader.HOST, value);
+            }
         }
     }
 
@@ -115,5 +143,15 @@ public class HttpConnection extends AbstractConnection implements Connection
             exchange.receive();
         else
             throw new IllegalStateException();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(l:%s <-> r:%s)",
+                HttpConnection.class.getSimpleName(),
+                hashCode(),
+                getEndPoint().getLocalAddress(),
+                getEndPoint().getRemoteAddress());
     }
 }

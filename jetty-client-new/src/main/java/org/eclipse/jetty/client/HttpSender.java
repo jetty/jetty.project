@@ -30,7 +30,8 @@ public class HttpSender
     private Iterator<ByteBuffer> contentChunks;
     private ByteBuffer header;
     private ByteBuffer chunk;
-    private boolean requestHeadersComplete;
+    private boolean headersComplete;
+    private boolean failed;
 
     public HttpSender(HttpConnection connection)
     {
@@ -112,9 +113,9 @@ public class HttpSender
 
                         if (callback.completed())
                         {
-                            if (!requestHeadersComplete)
+                            if (!headersComplete)
                             {
-                                requestHeadersComplete = true;
+                                headersComplete = true;
                                 notifyRequestHeadersComplete(request);
                             }
                             releaseBuffers();
@@ -134,7 +135,7 @@ public class HttpSender
                     }
                     case DONE:
                     {
-                        if (generator.isEnd())
+                        if (generator.isEnd() && !failed)
                             success();
                         return;
                     }
@@ -158,10 +159,15 @@ public class HttpSender
 
     protected void success()
     {
-        HttpExchange exchange = this.exchange.getAndSet(null);
-        exchange.requestDone();
+        // Cleanup first
         generator.reset();
-        requestHeadersComplete = false;
+        headersComplete = false;
+
+        // Notify after
+        HttpExchange exchange = this.exchange.getAndSet(null);
+        LOG.debug("{} succeeded", exchange.request());
+        exchange.requestDone(true);
+
         // It is important to notify *after* we reset because
         // the notification may trigger another request/response
         notifyRequestSuccess(exchange.request());
@@ -169,13 +175,18 @@ public class HttpSender
 
     protected void fail(Throwable failure)
     {
+        // Cleanup first
         BufferUtil.clear(header);
         BufferUtil.clear(chunk);
         releaseBuffers();
         connection.getEndPoint().shutdownOutput();
         generator.abort();
+        failed = true;
+
+        // Notify after
         HttpExchange exchange = this.exchange.getAndSet(null);
-        exchange.requestDone();
+        exchange.requestDone(false);
+
         notifyRequestFailure(exchange.request(), failure);
         notifyResponseFailure(exchange.listener(), failure);
     }

@@ -6,7 +6,7 @@ import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 
-public class AbstractHttpClientTest
+public class AbstractHttpClientServerTest
 {
     protected Server server;
     protected HttpClient client;

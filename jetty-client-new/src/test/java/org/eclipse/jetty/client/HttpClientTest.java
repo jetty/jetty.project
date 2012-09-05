@@ -28,19 +28,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class HttpClientTest extends AbstractHttpClientTest
+public class HttpClientTest extends AbstractHttpClientServerTest
 {
     @Test
     public void test_GET_NoResponseContent() throws Exception
     {
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-            }
-        });
+        start(new EmptyHandler());
 
         Response response = client.GET("http://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
@@ -70,7 +63,12 @@ public class HttpClientTest extends AbstractHttpClientTest
         Assert.assertArrayEquals(data, content);
     }
 
+    @Test
+    public void test_DestinationCount() throws Exception
     {
+        start(new EmptyHandler());
+
+        client.GET("http://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
         List<Destination> destinations = client.getDestinations();
         Assert.assertNotNull(destinations);

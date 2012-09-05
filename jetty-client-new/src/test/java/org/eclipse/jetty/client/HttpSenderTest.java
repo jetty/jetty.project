@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,11 +35,11 @@ public class HttpSenderTest
     public void test_Send_NoRequestContent() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpConnection connection = new HttpConnection(client, endPoint);
-        Request httpRequest = new HttpRequest(client, URI.create("http://localhost/"));
+        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
-        httpRequest.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Adapter()
         {
             @Override
             public void onHeaders(Request request)
@@ -52,7 +53,7 @@ public class HttpSenderTest
                 successLatch.countDown();
             }
         });
-        connection.send(httpRequest, null);
+        connection.send(request, null);
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
@@ -61,31 +62,29 @@ public class HttpSenderTest
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @Slow
     @Test
     public void test_Send_NoRequestContent_IncompleteFlush() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
-        HttpConnection connection = new HttpConnection(client, endPoint);
-        Request httpRequest = new HttpRequest(client, URI.create("http://localhost/"));
-        final CountDownLatch headersLatch = new CountDownLatch(1);
-        httpRequest.listener(new Request.Listener.Adapter()
-        {
-            @Override
-            public void onHeaders(Request request)
-            {
-                headersLatch.countDown();
-            }
-        });
-        connection.send(httpRequest, null);
+        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        Request request = client.newRequest(URI.create("http://localhost/"));
+        connection.send(request, null);
 
         // This take will free space in the buffer and allow for the write to complete
-        StringBuilder request = new StringBuilder(endPoint.takeOutputString());
+        StringBuilder builder = new StringBuilder(endPoint.takeOutputString());
 
         // Wait for the write to complete
-        Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        request.append(endPoint.takeOutputString());
+        TimeUnit.SECONDS.sleep(1);
 
-        String requestString = request.toString();
+        String chunk = endPoint.takeOutputString();
+        while (chunk.length() > 0)
+        {
+            builder.append(chunk);
+            chunk = endPoint.takeOutputString();
+        }
+
+        String requestString = builder.toString();
         Assert.assertTrue(requestString.startsWith("GET "));
         Assert.assertTrue(requestString.endsWith("\r\n\r\n"));
     }
@@ -96,10 +95,10 @@ public class HttpSenderTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         // Shutdown output to trigger the exception on write
         endPoint.shutdownOutput();
-        HttpConnection connection = new HttpConnection(client, endPoint);
-        Request httpRequest = new HttpRequest(client, URI.create("http://localhost/"));
+        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        httpRequest.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Adapter()
         {
             @Override
             public void onFailure(Request request, Throwable x)
@@ -107,7 +106,7 @@ public class HttpSenderTest
                 failureLatch.countDown();
             }
         });
-        connection.send(httpRequest, new Response.Listener.Adapter()
+        connection.send(request, new Response.Listener.Adapter()
         {
             @Override
             public void onFailure(Response response, Throwable failure)
@@ -123,10 +122,10 @@ public class HttpSenderTest
     public void test_Send_NoRequestContent_IncompleteFlush_Exception() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
-        HttpConnection connection = new HttpConnection(client, endPoint);
-        Request httpRequest = new HttpRequest(client, URI.create("http://localhost/"));
+        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
-        httpRequest.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Adapter()
         {
             @Override
             public void onFailure(Request request, Throwable x)
@@ -134,7 +133,7 @@ public class HttpSenderTest
                 failureLatch.countDown();
             }
         });
-        connection.send(httpRequest, new Response.Listener.Adapter()
+        connection.send(request, new Response.Listener.Adapter()
         {
             @Override
             public void onFailure(Response response, Throwable failure)
@@ -156,13 +155,13 @@ public class HttpSenderTest
     public void test_Send_SmallRequestContent_InOneBuffer() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpConnection connection = new HttpConnection(client, endPoint);
-        Request httpRequest = new HttpRequest(client, URI.create("http://localhost/"));
+        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        Request request = client.newRequest(URI.create("http://localhost/"));
         String content = "abcdef";
-        httpRequest.content(new ByteBufferContentProvider(ByteBuffer.wrap(content.getBytes("UTF-8"))));
+        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content.getBytes("UTF-8"))));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
-        httpRequest.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Adapter()
         {
             @Override
             public void onHeaders(Request request)
@@ -176,7 +175,7 @@ public class HttpSenderTest
                 successLatch.countDown();
             }
         });
-        connection.send(httpRequest, null);
+        connection.send(request, null);
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
@@ -189,14 +188,14 @@ public class HttpSenderTest
     public void test_Send_SmallRequestContent_InTwoBuffers() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpConnection connection = new HttpConnection(client, endPoint);
-        Request httpRequest = new HttpRequest(client, URI.create("http://localhost/"));
+        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "abcdef";
-        httpRequest.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes("UTF-8")), ByteBuffer.wrap(content2.getBytes("UTF-8"))));
+        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes("UTF-8")), ByteBuffer.wrap(content2.getBytes("UTF-8"))));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
-        httpRequest.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Adapter()
         {
             @Override
             public void onHeaders(Request request)
@@ -210,7 +209,7 @@ public class HttpSenderTest
                 successLatch.countDown();
             }
         });
-        connection.send(httpRequest, null);
+        connection.send(request, null);
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
@@ -223,11 +222,11 @@ public class HttpSenderTest
     public void test_Send_SmallRequestContent_Chunked_InTwoChunks() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpConnection connection = new HttpConnection(client, endPoint);
-        Request httpRequest = new HttpRequest(client, URI.create("http://localhost/"));
+        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "ABCDEF";
-        httpRequest.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes("UTF-8")), ByteBuffer.wrap(content2.getBytes("UTF-8")))
+        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes("UTF-8")), ByteBuffer.wrap(content2.getBytes("UTF-8")))
         {
             @Override
             public long length()
@@ -237,7 +236,7 @@ public class HttpSenderTest
         });
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
-        httpRequest.listener(new Request.Listener.Adapter()
+        request.listener(new Request.Listener.Adapter()
         {
             @Override
             public void onHeaders(Request request)
@@ -251,7 +250,7 @@ public class HttpSenderTest
                 successLatch.countDown();
             }
         });
-        connection.send(httpRequest, null);
+        connection.send(request, null);
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
@@ -262,5 +261,4 @@ public class HttpSenderTest
         Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
-
 }

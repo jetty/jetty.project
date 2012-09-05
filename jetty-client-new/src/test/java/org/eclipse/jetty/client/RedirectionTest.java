@@ -14,7 +14,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class RedirectionTest extends AbstractHttpClientTest
+public class RedirectionTest extends AbstractHttpClientServerTest
 {
     @Before
     public void init() throws Exception

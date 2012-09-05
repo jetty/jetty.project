@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,8 +39,8 @@ public class HttpDestination implements Destination
     private final String host;
     private final int port;
     private final Queue<RequestPair> requests;
-    private final Queue<Connection> idleConnections;
-    private final Queue<Connection> activeConnections;
+    private final BlockingQueue<Connection> idleConnections;
+    private final BlockingQueue<Connection> activeConnections;
 
     public HttpDestination(HttpClient client, String scheme, String host, int port)
     {
@@ -50,6 +51,11 @@ public class HttpDestination implements Destination
         this.requests = new ArrayBlockingQueue<>(client.getMaxQueueSizePerAddress());
         this.idleConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
         this.activeConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
+    }
+
+    protected BlockingQueue<Connection> idleConnections()
+    {
+        return idleConnections;
     }
 
     @Override
@@ -93,7 +99,9 @@ public class HttpDestination implements Destination
                 {
                     LOG.debug("Queued {}", request);
                     notifyRequestQueued(request.listener(), request);
-                    ensureConnection(); // TODO: improve and test this
+                    Connection connection = acquire();
+                    if (connection != null)
+                        process(connection);
                 }
             }
             else
@@ -120,8 +128,24 @@ public class HttpDestination implements Destination
         }
     }
 
-    private void ensureConnection()
+    public Future<Connection> newConnection()
     {
+        FutureCallback<Connection> result = new FutureCallback<>();
+        newConnection(result);
+        return result;
+    }
+
+    protected void newConnection(Callback<Connection> callback)
+    {
+        client.newConnection(this, callback);
+    }
+
+    protected Connection acquire()
+    {
+        Connection result = idleConnections.poll();
+        if (result != null)
+            return result;
+
         final int maxConnections = client.getMaxConnectionsPerAddress();
         while (true)
         {
@@ -131,7 +155,8 @@ public class HttpDestination implements Destination
             if (next > maxConnections)
             {
                 LOG.debug("Max connections reached {}: {}", this, current);
-                break;
+                // Try again the idle connections
+                return idleConnections.poll();
             }
 
             if (connectionCount.compareAndSet(current, next))
@@ -141,7 +166,7 @@ public class HttpDestination implements Destination
                     @Override
                     public void completed(Connection connection)
                     {
-                        LOG.debug("Created connection {}/{} for {}", next, maxConnections, this);
+                        LOG.debug("Created connection {}/{} {} for {}", next, maxConnections, connection, this);
                         process(connection);
                     }
 
@@ -151,21 +176,10 @@ public class HttpDestination implements Destination
                         // TODO: what here ?
                     }
                 });
-                break;
+                // Try again the idle connections
+                return idleConnections.poll();
             }
         }
-    }
-
-    public Future<Connection> newConnection()
-    {
-        FutureCallback<Connection> result = new FutureCallback<>();
-        newConnection(result);
-        return result;
-    }
-
-    private void newConnection(Callback<Connection> callback)
-    {
-        client.newConnection(this, callback);
     }
 
     /**
@@ -182,6 +196,7 @@ public class HttpDestination implements Destination
         final RequestPair requestPair = requests.poll();
         if (requestPair == null)
         {
+            LOG.debug("Connection {} idle", connection);
             idleConnections.offer(connection);
         }
         else
@@ -198,20 +213,18 @@ public class HttpDestination implements Destination
         }
     }
 
-    // TODO: 1. We must do queuing of requests in any case, because we cannot do blocking connect
-    // TODO: 2. We must be non-blocking connect, therefore we need to queue
+    public void release(Connection connection)
+    {
+        activeConnections.remove(connection);
+        idleConnections.offer(connection);
+    }
 
-    // Connections should compete for the queue of requests in separate threads
-    // that poses a problem of thread pool size: if < maxConnections we're starving
-    //
-    // conn1 is executed, takes on the queue => I need at least one thread per destination
-
-    // we need to queue the request, pick an idle connection, then execute { conn.send(request, listener) }
-
-    // if I create manually the connection, then I call send(request, listener)
-
-    // Other ways ?
-
+    public void remove(Connection connection)
+    {
+        connectionCount.decrementAndGet();
+        activeConnections.remove(connection);
+        idleConnections.remove(connection);
+    }
 
     @Override
     public String toString()

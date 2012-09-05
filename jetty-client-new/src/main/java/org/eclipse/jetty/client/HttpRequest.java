@@ -24,6 +24,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.FutureCallback;
@@ -147,13 +148,13 @@ public class HttpRequest implements Request
     @Override
     public String agent()
     {
-        return agent;
+        return headers.get(HttpHeader.USER_AGENT);
     }
 
     @Override
     public Request agent(String userAgent)
     {
-        this.agent = userAgent;
+        headers.put(HttpHeader.USER_AGENT, userAgent);
         return this;
     }
 

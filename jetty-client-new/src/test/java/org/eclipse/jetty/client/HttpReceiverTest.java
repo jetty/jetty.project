@@ -28,7 +28,9 @@ public class HttpReceiverTest
 //                "\r\n");
 //        final AtomicReference<Response> responseRef = new AtomicReference<>();
 //        final CountDownLatch latch = new CountDownLatch(1);
-//        HttpReceiver receiver = new HttpReceiver(connection, null, new Response.Listener.Adapter()
+//        HttpReceiver receiver = new HttpReceiver(connection);
+//        HttpExchange exchange = new HttpExchange();
+//        , null, new Response.Listener.Adapter()
 //        {
 //            @Override
 //            public void onSuccess(Response response)
