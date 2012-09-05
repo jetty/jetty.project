@@ -62,7 +62,7 @@ public class HttpExchange
         // TODO
     }
 
-    public void responseDone()
+    public void responseDone(boolean success)
     {
         // TODO
     }

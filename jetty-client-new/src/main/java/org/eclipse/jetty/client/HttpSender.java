@@ -105,8 +105,6 @@ public class HttpSender
                             header = BufferUtil.EMPTY_BUFFER;
                         if (chunk == null)
                             chunk = BufferUtil.EMPTY_BUFFER;
-                        if (content == null)
-                            content = BufferUtil.EMPTY_BUFFER;
                         endPoint.write(null, callback, header, chunk, content);
                         if (callback.pending())
                             return;

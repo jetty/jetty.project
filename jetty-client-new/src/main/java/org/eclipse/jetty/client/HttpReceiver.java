@@ -23,6 +23,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
     private final AtomicReference<Response.Listener> listener = new AtomicReference<>();
     private final HttpConnection connection;
+    private boolean failed;
 
     public HttpReceiver(HttpConnection connection)
     {
@@ -113,21 +114,23 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     @Override
     public boolean messageComplete(long contentLength)
     {
-        success();
+        if (!failed)
+            success();
         return false;
     }
 
     protected void success()
     {
         HttpExchange exchange = this.exchange.getAndSet(null);
-        exchange.responseDone();
+        exchange.responseDone(true);
         notifySuccess(listener.get(), exchange.response());
     }
 
     protected void fail(Throwable failure)
     {
+        failed = true;
         HttpExchange exchange = this.exchange.getAndSet(null);
-        exchange.responseDone();
+        exchange.responseDone(false);
         notifyFailure(listener.get(), exchange.response(), failure);
     }
 
