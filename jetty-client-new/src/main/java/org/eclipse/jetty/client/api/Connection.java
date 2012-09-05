@@ -16,4 +16,7 @@ package org.eclipse.jetty.client.api;
 public interface Connection extends AutoCloseable
 {
     void send(Request request, Response.Listener listener);
+
+    @Override
+    void close();
 }

@@ -42,6 +42,8 @@ public class HttpSender
     {
         if (this.exchange.compareAndSet(null, exchange))
         {
+            LOG.debug("Sending {}", exchange.request());
+            notifyRequestBegin(exchange.request());
             ContentProvider content = exchange.request().content();
             this.contentLength = content == null ? -1 : content.length();
             this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
@@ -91,7 +93,7 @@ public class HttpSender
                             @Override
                             protected void pendingCompleted()
                             {
-                                notifyRequestHeadersComplete(request);
+                                notifyRequestHeaders(request);
                                 send();
                             }
 
@@ -114,7 +116,7 @@ public class HttpSender
                             if (!headersComplete)
                             {
                                 headersComplete = true;
-                                notifyRequestHeadersComplete(request);
+                                notifyRequestHeaders(request);
                             }
                             releaseBuffers();
                             content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
@@ -163,7 +165,7 @@ public class HttpSender
 
         // Notify after
         HttpExchange exchange = this.exchange.getAndSet(null);
-        LOG.debug("{} succeeded", exchange.request());
+        LOG.debug("Sent {}", exchange.request());
         exchange.requestDone(true);
 
         // It is important to notify *after* we reset because
@@ -183,6 +185,7 @@ public class HttpSender
 
         // Notify after
         HttpExchange exchange = this.exchange.getAndSet(null);
+        LOG.debug("Failed {}", exchange.request());
         exchange.requestDone(false);
 
         notifyRequestFailure(exchange.request(), failure);
@@ -204,7 +207,21 @@ public class HttpSender
         }
     }
 
-    private void notifyRequestHeadersComplete(Request request)
+    private void notifyRequestBegin(Request request)
+    {
+        Request.Listener listener = request.listener();
+        try
+        {
+            if (listener != null)
+                listener.onBegin(request);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    private void notifyRequestHeaders(Request request)
     {
         Request.Listener listener = request.listener();
         try

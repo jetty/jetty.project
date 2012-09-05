@@ -51,12 +51,18 @@ public class HttpConnection extends AbstractConnection implements Connection
     {
         HttpExchange exchange = this.exchange.get();
         if (exchange != null)
-            exchange.idleTimeout();
+            idleTimeout();
 
         // We will be closing the connection, so remove it
+        LOG.debug("Connection {} idle timeout", this);
         destination.remove(this);
 
         return true;
+    }
+
+    protected void idleTimeout()
+    {
+        receiver.idleTimeout();
     }
 
     @Override
@@ -64,17 +70,10 @@ public class HttpConnection extends AbstractConnection implements Connection
     {
         normalizeRequest(request);
         HttpConversation conversation = client.conversationFor(request);
-        HttpExchange exchange = new HttpExchange(conversation, sender, receiver, request, listener);
-        if (this.exchange.compareAndSet(null, exchange))
-        {
-            conversation.add(exchange);
-            LOG.debug("{}({})", request, conversation);
-            exchange.send();
-        }
-        else
-        {
-            throw new UnsupportedOperationException("Pipelined requests not supported");
-        }
+        HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
+        setExchange(exchange);
+        conversation.add(exchange);
+        sender.send(exchange);
     }
 
     private void normalizeRequest(Request request)
@@ -135,14 +134,55 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
+    public HttpExchange getExchange()
+    {
+        return exchange.get();
+    }
+
+    protected void setExchange(HttpExchange exchange)
+    {
+        if (!this.exchange.compareAndSet(null, exchange))
+            throw new UnsupportedOperationException("Pipelined requests not supported");
+        else
+            LOG.debug("{} associated to {}", exchange, this);
+    }
+
     @Override
     public void onFillable()
     {
-        HttpExchange exchange = this.exchange.get();
+        HttpExchange exchange = getExchange();
         if (exchange != null)
             exchange.receive();
         else
             throw new IllegalStateException();
+    }
+
+    protected void receive()
+    {
+        receiver.receive();
+    }
+
+    public void completed(HttpExchange exchange, boolean success)
+    {
+        if (this.exchange.compareAndSet(exchange, null))
+        {
+            LOG.debug("{} disassociated from {}", exchange, this);
+            if (success)
+            {
+                destination.release(this);
+            }
+            else
+            {
+                destination.remove(this);
+                close();
+            }
+        }
+        else
+        {
+            destination.remove(this);
+            close();
+            throw new IllegalStateException();
+        }
     }
 
     @Override

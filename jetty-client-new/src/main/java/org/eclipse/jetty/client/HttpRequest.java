@@ -161,7 +161,10 @@ public class HttpRequest implements Request
     @Override
     public Request header(String name, String value)
     {
-        headers.add(name, value);
+        if (value == null)
+            headers.remove(name);
+        else
+            headers.add(name, value);
         return this;
     }
 

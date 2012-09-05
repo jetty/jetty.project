@@ -58,6 +58,11 @@ public class HttpDestination implements Destination
         return idleConnections;
     }
 
+    protected BlockingQueue<Connection> activeConnections()
+    {
+        return activeConnections;
+    }
+
     @Override
     public String scheme()
     {
@@ -201,6 +206,7 @@ public class HttpDestination implements Destination
         }
         else
         {
+            LOG.debug("Connection {} active", connection);
             activeConnections.offer(connection);
             client.getExecutor().execute(new Runnable()
             {
@@ -215,12 +221,14 @@ public class HttpDestination implements Destination
 
     public void release(Connection connection)
     {
+        LOG.debug("Connection {} released", connection);
         activeConnections.remove(connection);
         idleConnections.offer(connection);
     }
 
     public void remove(Connection connection)
     {
+        LOG.debug("Connection {} removed", connection);
         connectionCount.decrementAndGet();
         activeConnections.remove(connection);
         idleConnections.remove(connection);

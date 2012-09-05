@@ -35,7 +35,8 @@ public class HttpSenderTest
     public void test_Send_NoRequestContent() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        HttpDestination destination = new HttpDestination(client, "http", "localhost", 8080);
+        HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
@@ -67,7 +68,8 @@ public class HttpSenderTest
     public void test_Send_NoRequestContent_IncompleteFlush() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
-        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        HttpDestination destination = new HttpDestination(client, "http", "localhost", 8080);
+        HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         connection.send(request, null);
 
@@ -95,7 +97,8 @@ public class HttpSenderTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         // Shutdown output to trigger the exception on write
         endPoint.shutdownOutput();
-        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        HttpDestination destination = new HttpDestination(client, "http", "localhost", 8080);
+        HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
         request.listener(new Request.Listener.Adapter()
@@ -122,7 +125,8 @@ public class HttpSenderTest
     public void test_Send_NoRequestContent_IncompleteFlush_Exception() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
-        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        HttpDestination destination = new HttpDestination(client, "http", "localhost", 8080);
+        HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
         request.listener(new Request.Listener.Adapter()
@@ -155,7 +159,8 @@ public class HttpSenderTest
     public void test_Send_SmallRequestContent_InOneBuffer() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        HttpDestination destination = new HttpDestination(client, "http", "localhost", 8080);
+        HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content = "abcdef";
         request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content.getBytes("UTF-8"))));
@@ -188,7 +193,8 @@ public class HttpSenderTest
     public void test_Send_SmallRequestContent_InTwoBuffers() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        HttpDestination destination = new HttpDestination(client, "http", "localhost", 8080);
+        HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "abcdef";
@@ -222,7 +228,8 @@ public class HttpSenderTest
     public void test_Send_SmallRequestContent_Chunked_InTwoChunks() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpConnection connection = new HttpConnection(client, endPoint, null);
+        HttpDestination destination = new HttpDestination(client, "http", "localhost", 8080);
+        HttpConnection connection = new HttpConnection(client, endPoint, destination);
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "ABCDEF";

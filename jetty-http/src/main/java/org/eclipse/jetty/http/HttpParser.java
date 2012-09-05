@@ -1146,6 +1146,7 @@ public class HttpParser
         // was this unexpected?
         switch(_state)
         {
+            case START:
             case END:
                 break;
 

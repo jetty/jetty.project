@@ -1,22 +1,27 @@
 package org.eclipse.jetty.client;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 
 public class HttpExchange
 {
+    private static final int REQUEST_SUCCESS = 1;
+    private static final int RESPONSE_SUCCESS = 2;
+    private static final int REQUEST_RESPONSE_SUCCESS = REQUEST_SUCCESS + RESPONSE_SUCCESS;
+
+    private final AtomicInteger done = new AtomicInteger();
     private final HttpConversation conversation;
-    private final HttpSender sender;
-    private final HttpReceiver receiver;
+    private final HttpConnection connection;
     private final Request request;
     private final Response.Listener listener;
     private final HttpResponse response;
 
-    public HttpExchange(HttpConversation conversation, HttpSender sender, HttpReceiver receiver, Request request, Response.Listener listener)
+    public HttpExchange(HttpConversation conversation, HttpConnection connection, Request request, Response.Listener listener)
     {
         this.conversation = conversation;
-        this.sender = sender;
-        this.receiver = receiver;
+        this.connection = connection;
         this.request = request;
         this.listener = listener;
         this.response = new HttpResponse(request, listener);
@@ -42,28 +47,39 @@ public class HttpExchange
         return response;
     }
 
-    public void send()
-    {
-        sender.send(this);
-    }
-
-    public void idleTimeout()
-    {
-        receiver.idleTimeout();
-    }
-
     public void receive()
     {
-        receiver.receive(this);
+        connection.receive();
     }
 
     public void requestDone(boolean success)
     {
-        // TODO
+        done(success, REQUEST_SUCCESS);
     }
 
     public void responseDone(boolean success)
     {
-        // TODO
+        done(success, RESPONSE_SUCCESS);
+    }
+
+    private void done(boolean success, int kind)
+    {
+        if (success)
+        {
+            if (done.addAndGet(kind) == REQUEST_RESPONSE_SUCCESS)
+            {
+                connection.completed(this, true);
+            }
+        }
+        else
+        {
+            connection.completed(this, false);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", HttpExchange.class.getSimpleName(), hashCode());
     }
 }

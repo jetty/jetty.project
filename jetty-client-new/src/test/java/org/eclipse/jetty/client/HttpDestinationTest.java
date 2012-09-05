@@ -139,5 +139,4 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
         connection1 = destination.idleConnections().poll();
         Assert.assertNull(connection1);
     }
-
 }

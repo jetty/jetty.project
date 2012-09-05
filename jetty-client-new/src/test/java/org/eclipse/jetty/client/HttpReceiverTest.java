@@ -23,8 +23,6 @@ public class HttpReceiverTest
     private HttpDestination destination;
     private ByteArrayEndPoint endPoint;
     private HttpConnection connection;
-    private HttpSender sender;
-    private HttpReceiver receiver;
     private HttpConversation conversation;
 
     @Before
@@ -35,8 +33,6 @@ public class HttpReceiverTest
         destination = new HttpDestination(client, "http", "localhost", 8080);
         endPoint = new ByteArrayEndPoint();
         connection = new HttpConnection(client, endPoint, destination);
-        sender = new HttpSender(connection);
-        receiver = new HttpReceiver(connection);
         conversation = new HttpConversation(client, 1);
     }
 
@@ -48,14 +44,19 @@ public class HttpReceiverTest
 
     protected HttpExchange newExchange(Response.Listener listener)
     {
-        HttpExchange exchange = new HttpExchange(conversation, sender, receiver, null, listener);
+        HttpExchange exchange = new HttpExchange(conversation, connection, null, listener);
         conversation.add(exchange);
+        connection.setExchange(exchange);
         return exchange;
     }
 
     @Test
     public void test_Receive_NoResponseContent() throws Exception
     {
+        endPoint.setInput("" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-length: 0\r\n" +
+                "\r\n");
         final AtomicReference<Response> responseRef = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         HttpExchange exchange = newExchange(new Response.Listener.Adapter()
@@ -67,12 +68,7 @@ public class HttpReceiverTest
                 latch.countDown();
             }
         });
-
-        endPoint.setInput("" +
-                "HTTP/1.1 200 OK\r\n" +
-                "Content-length: 0\r\n" +
-                "\r\n");
-        receiver.receive(exchange);
+        exchange.receive();
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Response response = responseRef.get();
@@ -97,7 +93,7 @@ public class HttpReceiverTest
                 content);
         BufferingResponseListener listener = new BufferingResponseListener();
         HttpExchange exchange = newExchange(listener);
-        receiver.receive(exchange);
+        exchange.receive();
 
         Response response = listener.await(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
@@ -124,9 +120,9 @@ public class HttpReceiverTest
                 content1);
         BufferingResponseListener listener = new BufferingResponseListener();
         HttpExchange exchange = newExchange(listener);
-        receiver.receive(exchange);
+        exchange.receive();
         endPoint.setInputEOF();
-        receiver.receive(exchange);
+        exchange.receive();
 
         try
         {
@@ -148,9 +144,9 @@ public class HttpReceiverTest
                 "\r\n");
         BufferingResponseListener listener = new BufferingResponseListener();
         HttpExchange exchange = newExchange(listener);
-        receiver.receive(exchange);
+        exchange.receive();
         // Simulate an idle timeout
-        receiver.idleTimeout();
+        connection.idleTimeout();
 
         try
         {
@@ -172,7 +168,7 @@ public class HttpReceiverTest
                 "\r\n");
         BufferingResponseListener listener = new BufferingResponseListener();
         HttpExchange exchange = newExchange(listener);
-        receiver.receive(exchange);
+        exchange.receive();
 
         try
         {
