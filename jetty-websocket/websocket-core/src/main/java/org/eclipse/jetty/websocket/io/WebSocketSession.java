@@ -37,6 +37,7 @@ import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 public class WebSocketSession implements WebSocketConnection, IncomingFrames, OutgoingFrames
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
+
     /**
      * The reference to the base connection.
      * <p>
@@ -69,6 +70,12 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
         baseConnection.close(statusCode,reason);
     }
 
+    @Override
+    public void disconnect()
+    {
+        baseConnection.disconnect();
+    }
+
     public IncomingFrames getIncoming()
     {
         return websocket;
@@ -89,6 +96,12 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     public InetSocketAddress getRemoteAddress()
     {
         return baseConnection.getRemoteAddress();
+    }
+
+    @Override
+    public BaseConnection.State getState()
+    {
+        return baseConnection.getState();
     }
 
     @Override
@@ -121,6 +134,12 @@ public class WebSocketSession implements WebSocketConnection, IncomingFrames, Ou
     public boolean isReading()
     {
         return baseConnection.isReading();
+    }
+
+    @Override
+    public void notifyClosing()
+    {
+        baseConnection.notifyClosing();
     }
 
     public void onConnect()

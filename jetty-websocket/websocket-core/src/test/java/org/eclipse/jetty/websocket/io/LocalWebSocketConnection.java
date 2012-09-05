@@ -57,6 +57,11 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
+    public void disconnect()
+    {
+    }
+
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return null;
@@ -64,6 +69,12 @@ public class LocalWebSocketConnection implements WebSocketConnection
 
     @Override
     public InetSocketAddress getRemoteAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public State getState()
     {
         return null;
     }
@@ -87,9 +98,13 @@ public class LocalWebSocketConnection implements WebSocketConnection
     }
 
     @Override
+    public void notifyClosing()
+    {
+    }
+
+    @Override
     public <C> void ping(C context, Callback<C> callback, byte[] payload) throws IOException
     {
-
     }
 
     @Override

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -30,9 +32,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Testing Socket used on client side WebSocket testing.
@@ -57,7 +56,7 @@ public class TrackingSocket extends WebSocketAdapter
 
     public void assertCloseCode(int expectedCode) throws InterruptedException
     {
-        Assert.assertThat("Was Closed",closeLatch.await(500,TimeUnit.MILLISECONDS),is(true));
+        Assert.assertThat("Was Closed",closeLatch.await(50,TimeUnit.MILLISECONDS),is(true));
         Assert.assertThat("Close Code",closeCode,is(expectedCode));
     }
 
@@ -163,7 +162,17 @@ public class TrackingSocket extends WebSocketAdapter
         }
     }
 
-    public void waitForMessage(TimeUnit timeoutUnit, int timeoutDuration) throws InterruptedException
+    public void waitForClose(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
+    {
+        Assert.assertThat("Client Socket Closed",closeLatch.await(timeoutDuration,timeoutUnit),is(true));
+    }
+
+    public void waitForConnected(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
+    {
+        Assert.assertThat("Client Socket Connected",openLatch.await(timeoutDuration,timeoutUnit),is(true));
+    }
+
+    public void waitForMessage(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
         Assert.assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
     }

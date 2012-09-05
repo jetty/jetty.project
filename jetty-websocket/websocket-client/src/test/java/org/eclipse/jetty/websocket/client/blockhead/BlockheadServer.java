@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client.blockhead;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,9 +63,6 @@ import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.Parser;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * A overly simplistic websocket server used during testing.
@@ -152,6 +151,16 @@ public class BlockheadServer
             getOutputStream().flush();
         }
 
+        public ByteBufferPool getBufferPool()
+        {
+            return bufferPool;
+        }
+
+        public IncomingFramesCapture getIncomingFrames()
+        {
+            return incomingFrames;
+        }
+
         public InputStream getInputStream() throws IOException
         {
             if (in == null)
@@ -168,6 +177,16 @@ public class BlockheadServer
                 out = socket.getOutputStream();
             }
             return out;
+        }
+
+        public Parser getParser()
+        {
+            return parser;
+        }
+
+        public WebSocketPolicy getPolicy()
+        {
+            return policy;
         }
 
         @Override
