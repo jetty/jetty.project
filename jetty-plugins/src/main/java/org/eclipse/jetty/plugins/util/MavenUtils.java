@@ -13,8 +13,9 @@
 //      http://www.opensource.org/licenses/apache2.0.php
 //
 //  You may elect to redistribute this code under either of these licenses.
-// ========================================================================
+//  ========================================================================
 //
+
 package org.eclipse.jetty.plugins.util;
 
 import java.io.File;
