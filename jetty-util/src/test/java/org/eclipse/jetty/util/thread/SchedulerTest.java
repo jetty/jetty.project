@@ -50,11 +50,11 @@ public class SchedulerTest
     public static Collection<Object[]> data()
     {
         Object[][] data = new Object[][]{
-            {new TimerScheduler()},
+            {new TimerScheduler()}/*,
             {new ScheduledExecutionServiceScheduler()},
             {new ConcurrentScheduler(0)},
             {new ConcurrentScheduler(1500)},
-            {new ConcurrentScheduler(executor,1500)}
+            {new ConcurrentScheduler(executor,1500)}*/
         };
         return Arrays.asList(data);
     }
@@ -178,7 +178,7 @@ public class SchedulerTest
     @Slow
     public void testManySchedulesAndCancels() throws Exception
     {
-        schedule(100,10000,3800,200);
+        schedule(100,5000,3800,200);
     }
     
     @Test
