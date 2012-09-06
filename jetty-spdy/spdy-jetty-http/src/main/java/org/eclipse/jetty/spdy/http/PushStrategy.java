@@ -22,8 +22,8 @@ package org.eclipse.jetty.spdy.http;
 import java.util.Collections;
 import java.util.Set;
 
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.util.Fields;
 
 /**
  * <p>{@link PushStrategy} encapsulates the decisions about performing
@@ -39,7 +39,7 @@ public interface PushStrategy
      * @param responseHeaders the primary resource response headers
      * @return a list of secondary resource URIs to push
      */
-    public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders);
+    public Set<String> apply(Stream stream, Fields requestHeaders, Fields responseHeaders);
 
     /**
      * An implementation that returns an empty list of secondary resources
@@ -47,7 +47,7 @@ public interface PushStrategy
     public static class None implements PushStrategy
     {
         @Override
-        public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
+        public Set<String> apply(Stream stream, Fields requestHeaders, Fields responseHeaders)
         {
             return Collections.emptySet();
         }

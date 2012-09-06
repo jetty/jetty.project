@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -43,6 +42,7 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -73,7 +73,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
         final int iterations = 500;
         final int count = 50;
 
-        final Headers headers = new Headers();
+        final Fields headers = new Fields();
         headers.put("method", "get");
         headers.put("url", "/");
         headers.put("version", "http/1.1");
@@ -142,7 +142,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
         threadPool.shutdown();
     }
 
-    private void synCompletedData(Session session, Headers headers, int iterations) throws Exception
+    private void synCompletedData(Session session, Fields headers, int iterations) throws Exception
     {
         final Map<Integer, Integer> counter = new ConcurrentHashMap<>(iterations);
         final CountDownLatch latch = new CountDownLatch(2 * iterations);
@@ -185,7 +185,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
         Assert.assertTrue(counter.toString(), counter.isEmpty());
     }
 
-    private void synGetDataGet(Session session, Headers headers, int iterations) throws Exception
+    private void synGetDataGet(Session session, Fields headers, int iterations) throws Exception
     {
         final Map<Integer, Integer> counter = new ConcurrentHashMap<>(iterations);
         final CountDownLatch latch = new CountDownLatch(2 * iterations);

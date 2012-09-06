@@ -30,7 +30,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.spdy.parser.Parser.Listener;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -85,7 +85,7 @@ public class ClosedStreamTest extends AbstractTest
 
         Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
 
-        ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
+        ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Fields()));
         channel.write(writeBuffer);
         Assert.assertThat(writeBuffer.hasRemaining(), is(false));
 
@@ -216,7 +216,7 @@ public class ClosedStreamTest extends AbstractTest
 
         final Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
         int streamId = 1;
-        ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE, streamId,0,(byte)0,(short)0,new Headers()));
+        ByteBuffer synData = generator.control(new SynStreamFrame(version,SynInfo.FLAG_CLOSE, streamId,0,(byte)0,(short)0,new Fields()));
 
         final SocketChannel socketChannel = SocketChannel.open(startServer);
         socketChannel.write(synData);

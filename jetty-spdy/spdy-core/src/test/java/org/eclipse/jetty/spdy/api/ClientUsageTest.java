@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -119,7 +120,7 @@ public class ClientUsageTest
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
                 // Do something with the response
-                Headers headers = replyInfo.getHeaders();
+                Fields headers = replyInfo.getHeaders();
                 int contentLength = headers.get("content-length").valueAsInt();
                 stream.setAttribute("content-length", contentLength);
                 if (!replyInfo.isClose())

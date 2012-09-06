@@ -46,7 +46,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
+// TODO: Make this class inherit from oej.util.Fields
+
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
  *
@@ -57,30 +58,24 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpFields implements Iterable<HttpFields.Field>
 {
     private static final Logger LOG = Log.getLogger(HttpFields.class);
-
-    /* ------------------------------------------------------------ */
     public static final String __COOKIE_DELIM="\"\\\n\r\t\f\b%+ ;=";
     public static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
     public static final DateCache __dateCache = new DateCache("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
 
-    /* -------------------------------------------------------------- */
     static
     {
         __GMT.setID("GMT");
         __dateCache.setTimeZone(__GMT);
     }
 
-    /* ------------------------------------------------------------ */
     public final static String __separators = ", \t";
 
-    /* ------------------------------------------------------------ */
     private static final String[] DAYS =
         { "Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
     private static final String[] MONTHS =
         { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"};
 
 
-    /* ------------------------------------------------------------ */
     private static class DateGenerator
     {
         private final StringBuilder buf = new StringBuilder(32);
@@ -126,7 +121,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
             return buf.toString();
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * Format "EEE, dd-MMM-yy HH:mm:ss 'GMT'" for cookies
          */
@@ -167,7 +161,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
     }
 
-    /* ------------------------------------------------------------ */
     private static final ThreadLocal<DateGenerator> __dateGenerator =new ThreadLocal<DateGenerator>()
     {
         @Override
@@ -177,7 +170,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
     };
 
-    /* ------------------------------------------------------------ */
     /**
      * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
      */
@@ -186,7 +178,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return __dateGenerator.get().formatDate(date);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
      */
@@ -195,7 +186,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         __dateGenerator.get().formatCookieDate(buf,date);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
      */
@@ -206,7 +196,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
     private final static String __dateReceiveFmt[] =
         {
         "EEE, dd MMM yyyy HH:mm:ss zzz",
@@ -222,7 +211,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         "EEE dd-MMM-yy HH:mm:ss zzz", "EEE dd-MMM-yy HH:mm:ss",
         };
 
-    /* ------------------------------------------------------------ */
     private static class DateParser
     {
         final SimpleDateFormat _dateReceive[]= new SimpleDateFormat[__dateReceiveFmt.length];
@@ -269,13 +257,11 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public static long parseDate(String date)
     {
         return __dateParser.get().parse(date);
     }
 
-    /* ------------------------------------------------------------ */
     private static final ThreadLocal<DateParser> __dateParser =new ThreadLocal<DateParser>()
     {
         @Override
@@ -285,16 +271,13 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
     };
 
-    /* -------------------------------------------------------------- */
     public final static String __01Jan1970=formatDate(0);
     public final static ByteBuffer __01Jan1970_BUFFER=BufferUtil.toBuffer(__01Jan1970);
     public final static String __01Jan1970_COOKIE = formatCookieDate(0).trim();
     private final static byte[] __colon_space = new byte[] {':',' '};
-    /* -------------------------------------------------------------- */
-    private final ArrayList<Field> _fields = new ArrayList<Field>(20);
-    private final StringMap<Field> _names = new StringMap<Field>(true);
+    private final ArrayList<Field> _fields = new ArrayList<>(20);
+    private final StringMap<Field> _names = new StringMap<>(true);
 
-    /* ------------------------------------------------------------ */
     /**
      * Constructor.
      */
@@ -303,13 +286,12 @@ public class HttpFields implements Iterable<HttpFields.Field>
     }
 
 
-    /* -------------------------------------------------------------- */
     /**
      * Get Collection of header names.
      */
     public Collection<String> getFieldNamesCollection()
     {
-        final List<String> list = new ArrayList<String>(_fields.size());
+        final List<String> list = new ArrayList<>(_fields.size());
         for (Field f : _fields)
         {
             if (f!=null)
@@ -318,7 +300,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return list;
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Get enumeration of header _names. Returns an enumeration of strings representing the header
      * _names for this request.
@@ -342,13 +323,11 @@ public class HttpFields implements Iterable<HttpFields.Field>
                 };
     }
 
-    /* ------------------------------------------------------------ */
     public int size()
     {
         return _fields.size();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Get a Field by index.
      * @return A Field value or null if the Field value has not been set
@@ -359,50 +338,42 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return _fields.get(i);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Iterator<Field> iterator()
     {
         return _fields.iterator();
     }
 
-    /* ------------------------------------------------------------ */
     public Field getField(HttpHeader header)
     {
         return _names.get(header.toString());
     }
 
-    /* ------------------------------------------------------------ */
     public Field getField(String name)
     {
         return _names.get(name);
     }
 
-    /* ------------------------------------------------------------ */
     public boolean containsKey(String name)
     {
         return _names.containsKey(name);
     }
 
-    /* -------------------------------------------------------------- */
     public String getStringField(HttpHeader header)
     {
         return getStringField(header.asString());
     }
 
-    /* -------------------------------------------------------------- */
     public String get(HttpHeader header)
     {
         return getStringField(header.asString());
     }
 
-    /* -------------------------------------------------------------- */
     public String get(String header)
     {
         return getStringField(header);
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * @return the value of a field, or null if not found. For multiple fields of the same name,
      *         only the first is returned.
@@ -415,7 +386,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
     }
 
 
-    /* -------------------------------------------------------------- */
     /**
      * Get multi headers
      *
@@ -428,7 +398,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         if (field==null)
             return null;
 
-        final List<String> list = new ArrayList<String>();
+        final List<String> list = new ArrayList<>();
 
         while(field!=null)
         {
@@ -438,7 +408,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return list;
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Get multi headers
      *
@@ -475,7 +444,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         };
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Get multi field values with separator. The multiple values can be represented as separate
      * headers of the same name, or by a single header using the separator(s), or a combination of
@@ -520,7 +488,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
     }
 
 
-    /* -------------------------------------------------------------- */
     /**
      * Set a field.
      *
@@ -539,13 +506,11 @@ public class HttpFields implements Iterable<HttpFields.Field>
         _names.put(name, field);
     }
 
-    /* -------------------------------------------------------------- */
     public void put(HttpHeader header, HttpHeaderValue value)
     {
         put(header,value.toString());
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Set a field.
      *
@@ -564,7 +529,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         _names.put(header.toString(), field);
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Set a field.
      *
@@ -579,7 +543,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
                 add(name,v);
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
      * headers of the same name.
@@ -613,18 +576,16 @@ public class HttpFields implements Iterable<HttpFields.Field>
             _names.put(name, field);
     }
 
-    /* -------------------------------------------------------------- */
     public void add(HttpHeader header, HttpHeaderValue value) throws IllegalArgumentException
     {
         add(header,value.toString());
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
      * headers of the same name.
      *
-     * @param name the name of the field
+     * @param header the header
      * @param value the value of the field.
      * @exception IllegalArgumentException If the name is a single valued field and already has a
      *                value.
@@ -652,22 +613,20 @@ public class HttpFields implements Iterable<HttpFields.Field>
             _names.put(header.toString(), field);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Remove a field.
      *
-     * @param name
+     * @param name the field to remove
      */
     public void remove(HttpHeader name)
     {
         remove(name.toString());
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Remove a field.
      *
-     * @param name
+     * @param name the field to remove
      */
     public void remove(String name)
     {
@@ -679,7 +638,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Get a header as an long value. Returns the value of an integer field or -1 if not found. The
      * case of the field name is ignored.
@@ -693,7 +651,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return field==null?-1L:field.getLongValue();
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Get a header as a date value. Returns the value of a date field, or -1 if not found. The case
      * of the field name is ignored.
@@ -717,7 +674,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
     }
 
 
-    /* -------------------------------------------------------------- */
     /**
      * Sets the value of an long field.
      *
@@ -730,7 +686,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         put(name, v);
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Sets the value of an long field.
      *
@@ -744,7 +699,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
     }
 
 
-    /* -------------------------------------------------------------- */
     /**
      * Sets the value of a date field.
      *
@@ -757,7 +711,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         put(name, d);
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Sets the value of a date field.
      *
@@ -770,7 +723,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         put(name, d);
     }
 
-    /* -------------------------------------------------------------- */
     /**
      * Sets the value of a date field.
      *
@@ -783,7 +735,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         add(name,d);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Format a set cookie value
      *
@@ -907,29 +858,25 @@ public class HttpFields implements Iterable<HttpFields.Field>
         put(HttpHeader.EXPIRES.toString(), __01Jan1970);
     }
 
-    /* -------------------------------------------------------------- */
     public void putTo(ByteBuffer bufferInFillMode) throws IOException
     {
-        for (int i = 0; i < _fields.size(); i++)
+        for (Field field : _fields)
         {
-            Field field = _fields.get(i);
             if (field != null)
                 field.putTo(bufferInFillMode);
         }
         BufferUtil.putCRLF(bufferInFillMode);
     }
 
-    /* -------------------------------------------------------------- */
     @Override
     public String
     toString()
     {
         try
         {
-            StringBuffer buffer = new StringBuffer();
-            for (int i = 0; i < _fields.size(); i++)
+            StringBuilder buffer = new StringBuilder();
+            for (Field field : _fields)
             {
-                Field field = _fields.get(i);
                 if (field != null)
                 {
                     String tmp = field.getName();
@@ -950,7 +897,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Clear the header.
      */
@@ -960,12 +906,11 @@ public class HttpFields implements Iterable<HttpFields.Field>
         _names.clear();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Add fields from another HttpFields instance. Single valued fields are replaced, while all
      * others are added.
      *
-     * @param fields
+     * @param fields the fields to add
      */
     public void add(HttpFields fields)
     {
@@ -981,7 +926,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Get field value parameters. Some field values can have parameters. This method separates the
      * value from the parameters and optionally populates a map with the parameters. For example:
@@ -1021,7 +965,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return value.substring(0, i).trim();
     }
 
-    /* ------------------------------------------------------------ */
     private static final Float __one = new Float("1.0");
     private static final Float __zero = new Float("0.0");
     private static final StringMap<Float> __qualities = new StringMap<>();
@@ -1045,7 +988,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         __qualities.put("0.0", __zero);
     }
 
-    /* ------------------------------------------------------------ */
     public static Float getQuality(String value)
     {
         if (value == null) return __zero;
@@ -1061,7 +1003,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
                 return q;
         }
 
-        Map<String,String> params = new HashMap<String,String>(4);
+        Map<String,String> params = new HashMap<>(4);
         valueParameters(value, params);
         String qs = params.get("q");
         if (qs==null)
@@ -1081,7 +1023,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return q;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * List values in quality order.
      *
@@ -1099,10 +1040,10 @@ public class HttpFields implements Iterable<HttpFields.Field>
         // Assume list will be well ordered and just add nonzero
         while (e.hasMoreElements())
         {
-            String v = e.nextElement().toString();
+            String v = e.nextElement();
             Float q = getQuality(v);
 
-            if (q.floatValue() >= 0.001)
+            if (q >= 0.001)
             {
                 list = LazyList.add(list, v);
                 qual = LazyList.add(qual, q);
@@ -1136,9 +1077,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         return vl;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     public static final class Field
     {
         private final HttpHeader _header;
@@ -1146,7 +1084,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         private final String _value;
         private Field _next;
 
-        /* ------------------------------------------------------------ */
         private Field(HttpHeader header, String value)
         {
             _header = header;
@@ -1155,7 +1092,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
             _next = null;
         }
 
-        /* ------------------------------------------------------------ */
         private Field(String name, String value)
         {
             _header = HttpHeader.CACHE.get(name);
@@ -1164,7 +1100,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
             _next = null;
         }
 
-        /* ------------------------------------------------------------ */
         private byte[] toSanitisedName(String s)
         {
             byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
@@ -1181,7 +1116,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
             return bytes;
         }
 
-        /* ------------------------------------------------------------ */
         private byte[] toSanitisedValue(String s)
         {
             byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
@@ -1197,7 +1131,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
             return bytes;
         }
 
-        /* ------------------------------------------------------------ */
         public void putTo(ByteBuffer bufferInFillMode)
         {
             HttpHeader header = HttpHeader.CACHE.get(_name);
@@ -1226,50 +1159,42 @@ public class HttpFields implements Iterable<HttpFields.Field>
             BufferUtil.putCRLF(bufferInFillMode);
         }
 
-        /* ------------------------------------------------------------ */
         public void putValueTo(ByteBuffer buffer)
         {
             buffer.put(toSanitisedValue(_value));
         }
 
-        /* ------------------------------------------------------------ */
         public HttpHeader getHeader()
         {
             return _header;
         }
 
-        /* ------------------------------------------------------------ */
         public String getName()
         {
             return _name;
         }
 
-        /* ------------------------------------------------------------ */
         public String getValue()
         {
             return _value;
         }
 
-        /* ------------------------------------------------------------ */
         public int getIntValue()
         {
             return StringUtil.toInt(_value);
         }
 
-        /* ------------------------------------------------------------ */
         public long getLongValue()
         {
             return StringUtil.toLong(_value);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
             return ("[" + getName() + "=" + _value + (_next == null ? "" : "->") + "]");
         }
 
-        /* ------------------------------------------------------------ */
         public boolean contains(String value)
         {
             if (_value==null)
@@ -1292,7 +1217,6 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public boolean contains(HttpHeader header, String value)
     {
         Field field = getField(header);

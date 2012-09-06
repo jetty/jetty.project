@@ -22,7 +22,6 @@ package org.eclipse.jetty.spdy;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -50,7 +50,7 @@ public class HeadersTest extends AbstractTest
                     public void onHeaders(Stream stream, HeadersInfo headersInfo)
                     {
                         Assert.assertTrue(stream.isHalfClosed());
-                        stream.headers(new HeadersInfo(new Headers(), true));
+                        stream.headers(new HeadersInfo(new Fields(), true));
                         Assert.assertTrue(stream.isClosed());
                     }
                 };
@@ -65,7 +65,7 @@ public class HeadersTest extends AbstractTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Headers headers = new Headers();
+                Fields headers = new Fields();
                 headers.put("foo", "bar");
                 headers.put("baz", "woo");
                 stream.headers(new HeadersInfo(headers, true));

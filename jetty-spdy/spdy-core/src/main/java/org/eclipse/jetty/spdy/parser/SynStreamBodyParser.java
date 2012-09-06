@@ -23,16 +23,16 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.PushSynInfo;
 import org.eclipse.jetty.spdy.StreamException;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
+import org.eclipse.jetty.util.Fields;
 
 public class SynStreamBodyParser extends ControlFrameBodyParser
 {
-    private final Headers headers = new Headers();
+    private final Fields headers = new Fields();
     private final ControlFrameParser controlFrameParser;
     private final HeadersBlockParser headersBlockParser;
     private State state = State.STREAM_ID;
@@ -139,7 +139,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                         if (flags > (SynInfo.FLAG_CLOSE | PushSynInfo.FLAG_UNIDIRECTIONAL))
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.SYN_STREAM);
 
-                        SynStreamFrame frame = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, slot, new Headers(headers, true));
+                        SynStreamFrame frame = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, slot, new Fields(headers, true));
                         controlFrameParser.onControlFrame(frame);
 
                         reset();

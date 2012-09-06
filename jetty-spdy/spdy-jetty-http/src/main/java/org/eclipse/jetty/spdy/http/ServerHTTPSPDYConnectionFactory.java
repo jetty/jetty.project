@@ -27,13 +27,13 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.spdy.ServerSPDYConnectionFactory;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -81,7 +81,7 @@ public class ServerHTTPSPDYConnectionFactory extends ServerSPDYConnectionFactory
 
             logger.debug("Received {} on {}", synInfo, stream);
 
-            Headers headers = synInfo.getHeaders();
+            Fields headers = synInfo.getHeaders();
             HttpTransportOverSPDY transport = new HttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy, stream, headers);
             HttpInputOverSPDY input = new HttpInputOverSPDY();
             HttpChannelOverSPDY channel = new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, stream);

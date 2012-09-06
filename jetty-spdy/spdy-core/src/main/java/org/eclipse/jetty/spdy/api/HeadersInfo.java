@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.spdy.api;
 
+import org.eclipse.jetty.util.Fields;
+
 /**
  * <p>A container for HEADERS frame metadata and headers.</p>
  */
@@ -40,16 +42,16 @@ public class HeadersInfo
 
     private final boolean close;
     private final boolean resetCompression;
-    private final Headers headers;
+    private final Fields headers;
 
     /**
      * <p>Creates a new {@link HeadersInfo} instance with the given headers,
      * the given close flag and no reset compression flag</p>
      *
-     * @param headers the {@link Headers}
+     * @param headers the {@link Fields}
      * @param close the value of the close flag
      */
-    public HeadersInfo(Headers headers, boolean close)
+    public HeadersInfo(Fields headers, boolean close)
     {
         this(headers, close, false);
     }
@@ -58,11 +60,11 @@ public class HeadersInfo
      * <p>Creates a new {@link HeadersInfo} instance with the given headers,
      * the given close flag and the given reset compression flag</p>
      *
-     * @param headers the {@link Headers}
+     * @param headers the {@link Fields}
      * @param close the value of the close flag
      * @param resetCompression the value of the reset compression flag
      */
-    public HeadersInfo(Headers headers, boolean close, boolean resetCompression)
+    public HeadersInfo(Fields headers, boolean close, boolean resetCompression)
     {
         this.headers = headers;
         this.close = close;
@@ -86,9 +88,9 @@ public class HeadersInfo
     }
 
     /**
-     * @return the {@link Headers}
+     * @return the {@link Fields}
      */
-    public Headers getHeaders()
+    public Fields getHeaders()
     {
         return headers;
     }

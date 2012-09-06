@@ -36,13 +36,13 @@ import junit.framework.Assert;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Ignore;
 
 @Ignore // TODO: update when jetty client is available
@@ -215,7 +215,7 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
 
             String primaryPath = "/" + j + ".html";
             String referrer = new StringBuilder("http://localhost:").append(connector.getLocalPort()).append(primaryPath).toString();
-            Headers headers = new Headers();
+            Fields headers = new Fields();
             headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
             headers.put(HTTPSPDYHeader.URI.name(version), primaryPath);
             headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
@@ -270,10 +270,10 @@ public class PushStrategyBenchmarkTest extends AbstractHTTPSPDYTest
         return result;
     }
 
-    private Headers createRequestHeaders(String referrer, String path)
+    private Fields createRequestHeaders(String referrer, String path)
     {
-        Headers headers;
-        headers = new Headers();
+        Fields headers;
+        headers = new Fields();
         headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
         headers.put(HTTPSPDYHeader.URI.name(version), path);
         headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");

@@ -37,7 +37,6 @@ import org.eclipse.jetty.spdy.ServerSPDYConnectionFactory;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -154,7 +154,7 @@ public class ProxyHTTPSPDYTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                Headers responseHeaders = new Headers();
+                Fields responseHeaders = new Fields();
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
                 stream.reply(new ReplyInfo(responseHeaders, true));
@@ -202,10 +202,10 @@ public class ProxyHTTPSPDYTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 Assert.assertTrue(synInfo.isClose());
-                Headers requestHeaders = synInfo.getHeaders();
+                Fields requestHeaders = synInfo.getHeaders();
                 Assert.assertNotNull(requestHeaders.get("via"));
 
-                Headers responseHeaders = new Headers();
+                Fields responseHeaders = new Fields();
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
                 ReplyInfo replyInfo = new ReplyInfo(responseHeaders, true);
@@ -263,10 +263,10 @@ public class ProxyHTTPSPDYTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 Assert.assertTrue(synInfo.isClose());
-                Headers requestHeaders = synInfo.getHeaders();
+                Fields requestHeaders = synInfo.getHeaders();
                 Assert.assertNotNull(requestHeaders.get("via"));
 
-                Headers responseHeaders = new Headers();
+                Fields responseHeaders = new Fields();
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
                 ReplyInfo replyInfo = new ReplyInfo(responseHeaders, false);
@@ -330,7 +330,7 @@ public class ProxyHTTPSPDYTest
                         dataInfo.consume(dataInfo.length());
                         if (dataInfo.isClose())
                         {
-                            Headers headers = new Headers();
+                            Fields headers = new Fields();
                             headers.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                             headers.put(HTTPSPDYHeader.STATUS.name(version), "303 See Other");
                             stream.reply(new ReplyInfo(headers, true));
@@ -393,7 +393,7 @@ public class ProxyHTTPSPDYTest
                         dataInfo.consume(dataInfo.length());
                         if (dataInfo.isClose())
                         {
-                            Headers responseHeaders = new Headers();
+                            Fields responseHeaders = new Fields();
                             responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                             responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
                             ReplyInfo replyInfo = new ReplyInfo(responseHeaders, false);
@@ -454,11 +454,11 @@ public class ProxyHTTPSPDYTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                Headers requestHeaders = synInfo.getHeaders();
+                Fields requestHeaders = synInfo.getHeaders();
                 Assert.assertNotNull(requestHeaders.get("via"));
                 Assert.assertNotNull(requestHeaders.get(header));
 
-                Headers responseHeaders = new Headers();
+                Fields responseHeaders = new Fields();
                 responseHeaders.put(header, "baz");
                 stream.reply(new ReplyInfo(responseHeaders, true));
                 return null;
@@ -469,7 +469,7 @@ public class ProxyHTTPSPDYTest
         Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Headers headers = new Headers();
+        Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
         headers.put(header, "bar");
         client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -477,7 +477,7 @@ public class ProxyHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Headers headers = replyInfo.getHeaders();
+                Fields headers = replyInfo.getHeaders();
                 Assert.assertNotNull(headers.get(header));
                 replyLatch.countDown();
             }
@@ -498,11 +498,11 @@ public class ProxyHTTPSPDYTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                Headers requestHeaders = synInfo.getHeaders();
+                Fields requestHeaders = synInfo.getHeaders();
                 Assert.assertNotNull(requestHeaders.get("via"));
                 Assert.assertNotNull(requestHeaders.get(header));
 
-                Headers responseHeaders = new Headers();
+                Fields responseHeaders = new Fields();
                 responseHeaders.put(header, "baz");
                 stream.reply(new ReplyInfo(responseHeaders, false));
                 stream.data(new BytesDataInfo(data, true));
@@ -515,7 +515,7 @@ public class ProxyHTTPSPDYTest
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        Headers headers = new Headers();
+        Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
         headers.put(header, "bar");
         client.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
@@ -525,7 +525,7 @@ public class ProxyHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Headers headers = replyInfo.getHeaders();
+                Fields headers = replyInfo.getHeaders();
                 Assert.assertNotNull(headers.get(header));
                 replyLatch.countDown();
             }
@@ -557,11 +557,11 @@ public class ProxyHTTPSPDYTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                Headers responseHeaders = new Headers();
+                Fields responseHeaders = new Fields();
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
 
-                Headers pushHeaders = new Headers();
+                Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
                 stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Callback.Empty<Stream>()
                 {
@@ -609,12 +609,12 @@ public class ProxyHTTPSPDYTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                Headers responseHeaders = new Headers();
+                Fields responseHeaders = new Fields();
                 responseHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
                 responseHeaders.put(HTTPSPDYHeader.STATUS.name(version), "200 OK");
                 stream.reply(new ReplyInfo(responseHeaders, false));
 
-                Headers pushHeaders = new Headers();
+                Fields pushHeaders = new Fields();
                 pushHeaders.put(HTTPSPDYHeader.URI.name(version), "/push");
                 stream.syn(new SynInfo(pushHeaders, false), 5, TimeUnit.SECONDS, new Callback.Empty<Stream>()
                 {
@@ -653,7 +653,7 @@ public class ProxyHTTPSPDYTest
             }
         }).get(5, TimeUnit.SECONDS);
 
-        Headers headers = new Headers();
+        Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -717,7 +717,7 @@ public class ProxyHTTPSPDYTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 Assert.assertTrue(synInfo.isClose());
-                Headers requestHeaders = synInfo.getHeaders();
+                Fields requestHeaders = synInfo.getHeaders();
                 Assert.assertNotNull(requestHeaders.get("via"));
 
                 stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM));
@@ -753,7 +753,7 @@ public class ProxyHTTPSPDYTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 Assert.assertTrue(synInfo.isClose());
-                Headers requestHeaders = synInfo.getHeaders();
+                Fields requestHeaders = synInfo.getHeaders();
                 Assert.assertNotNull(requestHeaders.get("via"));
 
                 stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM));
@@ -773,7 +773,7 @@ public class ProxyHTTPSPDYTest
             }
         }).get(5, TimeUnit.SECONDS);
 
-        Headers headers = new Headers();
+        Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.HOST.name(version), "localhost:" + proxyAddress.getPort());
         client.syn(new SynInfo(headers, true), null);
 

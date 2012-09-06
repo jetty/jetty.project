@@ -32,8 +32,8 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -97,13 +97,13 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         }
     }
 
-    public void requestStart(final Headers headers, final boolean endRequest)
+    public void requestStart(final Fields headers, final boolean endRequest)
     {
         if (!headers.isEmpty())
             requestHeaders(headers, endRequest);
     }
 
-    public void requestHeaders(Headers headers, boolean endRequest)
+    public void requestHeaders(Fields headers, boolean endRequest)
     {
         boolean proceed = performBeginRequest(headers);
         if (!proceed)
@@ -155,12 +155,12 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         }
     }
 
-    private boolean performBeginRequest(Headers headers)
+    private boolean performBeginRequest(Fields headers)
     {
         short version = stream.getSession().getVersion();
-        Headers.Header methodHeader = headers.get(HTTPSPDYHeader.METHOD.name(version));
-        Headers.Header uriHeader = headers.get(HTTPSPDYHeader.URI.name(version));
-        Headers.Header versionHeader = headers.get(HTTPSPDYHeader.VERSION.name(version));
+        Fields.Field methodHeader = headers.get(HTTPSPDYHeader.METHOD.name(version));
+        Fields.Field uriHeader = headers.get(HTTPSPDYHeader.URI.name(version));
+        Fields.Field versionHeader = headers.get(HTTPSPDYHeader.VERSION.name(version));
 
         if (methodHeader == null || uriHeader == null || versionHeader == null)
         {
@@ -175,15 +175,15 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         LOG.debug("HTTP > {} {} {}", httpMethod, uriString, httpVersion);
         startRequest(httpMethod, httpMethod.asString(), uriString, httpVersion);
 
-        Headers.Header schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
+        Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
         if (schemeHeader != null)
             getRequest().setScheme(schemeHeader.value());
         return true;
     }
 
-    private void performHeaders(Headers headers)
+    private void performHeaders(Fields headers)
     {
-        for (Headers.Header header : headers)
+        for (Fields.Field header : headers)
         {
             String name = header.name();
             HttpHeader httpHeader = HttpHeader.CACHE.get(name);

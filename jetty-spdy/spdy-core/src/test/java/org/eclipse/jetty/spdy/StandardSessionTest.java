@@ -32,7 +32,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardSession.FrameBytes;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
@@ -79,7 +79,7 @@ public class StandardSessionTest
     private StandardSession session;
     private Generator generator;
     private Scheduler scheduler;
-    private Headers headers;
+    private Fields headers;
 
     @Before
     public void setUp() throws Exception
@@ -90,7 +90,7 @@ public class StandardSessionTest
         scheduler.start();
         generator = new Generator(bufferPool, new StandardCompressionFactory.StandardCompressor());
         session = new StandardSession(SPDY.V2,bufferPool,threadPool,scheduler,controller,null,1,null,generator,new FlowControlStrategy.None());
-        headers = new Headers();
+        headers = new Fields();
     }
 
     @After

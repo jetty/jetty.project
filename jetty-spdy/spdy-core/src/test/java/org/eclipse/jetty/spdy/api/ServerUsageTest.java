@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -36,12 +37,12 @@ public class ServerUsageTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
             {
-                Headers synHeaders = streamInfo.getHeaders();
+                Fields synHeaders = streamInfo.getHeaders();
                 // Do something with headers, for example extract them and
                 // perform an http request via Jetty's LocalConnector
 
                 // Get the http response, fill headers and data
-                Headers replyHeaders = new Headers();
+                Fields replyHeaders = new Fields();
                 replyHeaders.put(synHeaders.get("host"));
                 // Sends a reply
                 stream.reply(new ReplyInfo(replyHeaders, false));
@@ -82,7 +83,7 @@ public class ServerUsageTest
                         // the client sends a rst frame.
                         // We have to atomically set some flag on the stream to signal it's closed
                         // and any operation on it will throw
-                        stream.headers(new HeadersInfo(new Headers(), true));
+                        stream.headers(new HeadersInfo(new Fields(), true));
                     }
                 });
             }
@@ -102,7 +103,7 @@ public class ServerUsageTest
 
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener
-                session.syn(new SynInfo(new Headers(), false, (byte)0), null, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
+                session.syn(new SynInfo(new Fields(), false, (byte)0), null, 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
                 {
                     @Override
                     public void completed(Stream pushStream)

@@ -26,13 +26,13 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,7 +41,7 @@ public class UnknownControlFrameTest
     @Test
     public void testUnknownControlFrame() throws Exception
     {
-        SynStreamFrame frame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, new Headers());
+        SynStreamFrame frame = new SynStreamFrame(SPDY.V2, SynInfo.FLAG_CLOSE, 1, 0, (byte)0, (short)0, new Fields());
         Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
         ByteBuffer buffer = generator.control(frame);
         // Change the frame type to unknown

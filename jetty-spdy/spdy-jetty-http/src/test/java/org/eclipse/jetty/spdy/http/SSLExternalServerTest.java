@@ -28,12 +28,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.SPDYClient;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -75,7 +75,7 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
         }
 
         Session session = startClient(version, address, null);
-        Headers headers = new Headers();
+        Fields headers = new Fields();
         headers.put(HTTPSPDYHeader.SCHEME.name(version), "https");
         headers.put(HTTPSPDYHeader.HOST.name(version), host + ":" + port);
         headers.put(HTTPSPDYHeader.METHOD.name(version), "GET");
@@ -87,8 +87,8 @@ public class SSLExternalServerTest extends AbstractHTTPSPDYTest
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Headers headers = replyInfo.getHeaders();
-                Headers.Header versionHeader = headers.get(HTTPSPDYHeader.STATUS.name(version));
+                Fields headers = replyInfo.getHeaders();
+                Fields.Field versionHeader = headers.get(HTTPSPDYHeader.STATUS.name(version));
                 if (versionHeader != null)
                 {
                     Matcher matcher = Pattern.compile("(\\d{3}).*").matcher(versionHeader.value());

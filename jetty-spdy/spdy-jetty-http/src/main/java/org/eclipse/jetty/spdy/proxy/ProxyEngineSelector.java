@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -60,9 +60,9 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
 
         final Session clientSession = clientStream.getSession();
         short clientVersion = clientSession.getVersion();
-        Headers headers = new Headers(clientSynInfo.getHeaders(), false);
+        Fields headers = new Fields(clientSynInfo.getHeaders(), false);
 
-        Headers.Header hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
+        Fields.Field hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
         if (hostHeader == null)
         {
             logger.debug("No host header found: " + headers);

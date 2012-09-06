@@ -22,11 +22,11 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ public class SynReplyGenerateParseTest
     {
         byte flags = ReplyInfo.FLAG_CLOSE;
         int streamId = 13;
-        Headers headers = new Headers();
+        Fields headers = new Fields();
         headers.put("a", "b");
         SynReplyFrame frame1 = new SynReplyFrame(SPDY.V2, flags, streamId, headers);
         Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
@@ -65,7 +65,7 @@ public class SynReplyGenerateParseTest
     {
         byte flags = ReplyInfo.FLAG_CLOSE;
         int streamId = 13;
-        Headers headers = new Headers();
+        Fields headers = new Fields();
         headers.put("a", "b");
         SynReplyFrame frame1 = new SynReplyFrame(SPDY.V2, flags, streamId, headers);
         Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());

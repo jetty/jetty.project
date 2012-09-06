@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.api;
+package org.eclipse.jetty.util;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,36 +27,36 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>A container for name/value pairs, known as headers.</p>
- * <p>A {@link Header} is composed of a case-insensitive name string and
+ * <p>A container for name/value pairs, known as fields.</p>
+ * <p>A {@link Field} is composed of a case-insensitive name string and
  * of a case-sensitive set of value strings.</p>
  * <p>The implementation of this class is not thread safe.</p>
  */
-public class Headers implements Iterable<Headers.Header>
+public class Fields implements Iterable<Fields.Field>
 {
-    private final Map<String, Header> headers;
+    private final Map<String, Field> fields;
 
     /**
-     * <p>Creates an empty modifiable {@link Headers} instance.</p>
-     * @see #Headers(Headers, boolean)
+     * <p>Creates an empty modifiable {@link Fields} instance.</p>
+     * @see #Fields(Fields, boolean)
      */
-    public Headers()
+    public Fields()
     {
-        headers = new LinkedHashMap<>();
+        fields = new LinkedHashMap<>();
     }
 
     /**
-     * <p>Creates a {@link Headers} instance by copying the headers from the given
-     * {@link Headers} and making it (im)mutable depending on the given {@code immutable} parameter</p>
+     * <p>Creates a {@link Fields} instance by copying the fields from the given
+     * {@link Fields} and making it (im)mutable depending on the given {@code immutable} parameter</p>
      *
-     * @param original the {@link Headers} to copy headers from
+     * @param original the {@link Fields} to copy fields from
      * @param immutable whether this instance is immutable
      */
-    public Headers(Headers original, boolean immutable)
+    public Fields(Fields original, boolean immutable)
     {
-        Map<String, Header> copy = new LinkedHashMap<>();
-        copy.putAll(original.headers);
-        headers = immutable ? Collections.unmodifiableMap(copy) : copy;
+        Map<String, Field> copy = new LinkedHashMap<>();
+        copy.putAll(original.fields);
+        fields = immutable ? Collections.unmodifiableMap(copy) : copy;
     }
 
     @Override
@@ -66,151 +66,156 @@ public class Headers implements Iterable<Headers.Header>
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        Headers that = (Headers)obj;
-        return headers.equals(that.headers);
+        Fields that = (Fields)obj;
+        return fields.equals(that.fields);
     }
 
     @Override
     public int hashCode()
     {
-        return headers.hashCode();
+        return fields.hashCode();
     }
 
     /**
-     * @return a set of header names
+     * @return a set of field names
      */
     public Set<String> names()
     {
         Set<String> result = new LinkedHashSet<>();
-        for (Header header : headers.values())
-            result.add(header.name);
+        for (Field field : fields.values())
+            result.add(field.name());
         return result;
     }
 
     /**
-     * @param name the header name
-     * @return the {@link Header} with the given name, or null if no such header exists
+     * @param name the field name
+     * @return the {@link Field} with the given name, or null if no such field exists
      */
-    public Header get(String name)
+    public Field get(String name)
     {
-        return headers.get(name.trim().toLowerCase());
+        return fields.get(name.trim().toLowerCase());
     }
 
     /**
-     * <p>Inserts or replaces the given name/value pair as a single-valued {@link Header}.</p>
+     * <p>Inserts or replaces the given name/value pair as a single-valued {@link Field}.</p>
      *
-     * @param name the header name
-     * @param value the header value
+     * @param name the field name
+     * @param value the field value
      */
     public void put(String name, String value)
     {
         name = name.trim();
-        Header header = new Header(name, value.trim());
-        headers.put(name.toLowerCase(), header);
+        // Preserve the case for the field name
+        Field field = new Field(name, value);
+        fields.put(name.toLowerCase(), field);
     }
 
     /**
-     * <p>Inserts or replaces the given {@link Header}, mapped to the {@link Header#name() header's name}</p>
+     * <p>Inserts or replaces the given {@link Field}, mapped to the {@link Field#name() field's name}</p>
      *
-     * @param header the header to add
+     * @param field the field to put
      */
-    public void put(Header header)
+    public void put(Field field)
     {
-        if (header != null)
-            headers.put(header.name().toLowerCase(), header);
+        if (field != null)
+            fields.put(field.name().toLowerCase(), field);
     }
 
     /**
-     * <p>Adds the given value to a header with the given name, creating a {@link Header} is none exists
-     * for the given name.</p>
+     * <p>Adds the given value to a field with the given name,
+     * creating a {@link Field} is none exists for the given name.</p>
      *
-     * @param name the header name
-     * @param value the header value to add
+     * @param name the field name
+     * @param value the field value to add
      */
     public void add(String name, String value)
     {
         name = name.trim();
-        Header header = headers.get(name.toLowerCase());
-        if (header == null)
+        Field field = fields.get(name.toLowerCase());
+        if (field == null)
         {
-            header = new Header(name, value.trim());
-            headers.put(name.toLowerCase(), header);
+            field = new Field(name, value);
+            fields.put(name.toLowerCase(), field);
         }
         else
         {
-            header = new Header(header.name(), header.value() + "," + value.trim());
-            headers.put(name.toLowerCase(), header);
+            field = new Field(field.name(), field.values(), value);
+            fields.put(name.toLowerCase(), field);
         }
     }
 
     /**
-     * <p>Removes the {@link Header} with the given name</p>
+     * <p>Removes the {@link Field} with the given name</p>
      *
-     * @param name the name of the header to remove
-     * @return the removed header, or null if no such header existed
+     * @param name the name of the field to remove
+     * @return the removed field, or null if no such field existed
      */
-    public Header remove(String name)
+    public Field remove(String name)
     {
         name = name.trim();
-        return headers.remove(name.toLowerCase());
+        return fields.remove(name.toLowerCase());
     }
 
     /**
-     * <p>Empties this {@link Headers} instance from all headers</p>
+     * <p>Empties this {@link Fields} instance from all fields</p>
      * @see #isEmpty()
      */
     public void clear()
     {
-        headers.clear();
+        fields.clear();
     }
 
     /**
-     * @return whether this {@link Headers} instance is empty
+     * @return whether this {@link Fields} instance is empty
      */
     public boolean isEmpty()
     {
-        return headers.isEmpty();
+        return fields.isEmpty();
     }
 
     /**
-     * @return the number of headers
+     * @return the number of fields
      */
     public int size()
     {
-        return headers.size();
+        return fields.size();
     }
 
     /**
-     * @return an iterator over the {@link Header} present in this instance
+     * @return an iterator over the {@link Field}s present in this instance
      */
     @Override
-    public Iterator<Header> iterator()
+    public Iterator<Field> iterator()
     {
-        return headers.values().iterator();
+        return fields.values().iterator();
     }
 
     @Override
     public String toString()
     {
-        return headers.toString();
+        return fields.toString();
     }
 
     /**
      * <p>A named list of string values.</p>
      * <p>The name is case-sensitive and there must be at least one value.</p>
      */
-    public static class Header
+    public static class Field
     {
         private final String name;
         private final String[] values;
 
-        private Header(String name, String value, String... values)
+        private Field(String name, String value)
+        {
+            this(name, new String[]{value});
+        }
+
+        private Field(String name, String[] values, String... moreValues)
         {
             this.name = name;
-            this.values = new String[values.length + 1];
-            this.values[0] = value;
-            if (values.length > 0)
-                System.arraycopy(values, 0, this.values, 1, values.length);
+            this.values = new String[values.length + moreValues.length];
+            System.arraycopy(values, 0, this.values, 0, values.length);
+            System.arraycopy(moreValues, 0, this.values, values.length, moreValues.length);
         }
 
         @Override
@@ -220,8 +225,8 @@ public class Headers implements Iterable<Headers.Header>
                 return true;
             if (obj == null || getClass() != obj.getClass())
                 return false;
-            Header that = (Header)obj;
-            // Header names must be lowercase, thus we lowercase them before transmission, but keep them as is
+            Field that = (Field)obj;
+            // Field names must be lowercase, thus we lowercase them before transmission, but keep them as is
             // internally. That's why we've to compare them case insensitive.
             return name.equalsIgnoreCase(that.name) && Arrays.equals(values, that.values);
         }
@@ -235,7 +240,7 @@ public class Headers implements Iterable<Headers.Header>
         }
 
         /**
-         * @return the header's name
+         * @return the field's name
          */
         public String name()
         {
@@ -243,7 +248,7 @@ public class Headers implements Iterable<Headers.Header>
         }
 
         /**
-         * @return the first header's value
+         * @return the first field's value
          */
         public String value()
         {
@@ -265,7 +270,7 @@ public class Headers implements Iterable<Headers.Header>
         }
 
         /**
-         * @return the header's values
+         * @return the field's values
          */
         public String[] values()
         {
@@ -273,22 +278,7 @@ public class Headers implements Iterable<Headers.Header>
         }
 
         /**
-         * @return the values as a comma separated list
-         */
-        public String valuesAsString()
-        {
-            StringBuilder result = new StringBuilder();
-            for (int i = 0; i < values.length; ++i)
-            {
-                if (i > 0)
-                    result.append(", ");
-                result.append(values[i]);
-            }
-            return result.toString();
-        }
-
-        /**
-         * @return whether the header has multiple values
+         * @return whether the field has multiple values
          */
         public boolean hasMultipleValues()
         {

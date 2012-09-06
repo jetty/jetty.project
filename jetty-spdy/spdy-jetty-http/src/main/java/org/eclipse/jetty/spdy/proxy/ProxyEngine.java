@@ -23,10 +23,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -71,7 +71,7 @@ public abstract class ProxyEngine
         return name;
     }
 
-    protected void addRequestProxyHeaders(Stream stream, Headers headers)
+    protected void addRequestProxyHeaders(Stream stream, Fields headers)
     {
         addViaHeader(headers);
         InetSocketAddress address = (InetSocketAddress)stream.getSession().getAttribute("org.eclipse.jetty.spdy.remoteAddress");
@@ -79,21 +79,21 @@ public abstract class ProxyEngine
             headers.add("X-Forwarded-For", address.getHostName());
     }
 
-    protected void addResponseProxyHeaders(Stream stream, Headers headers)
+    protected void addResponseProxyHeaders(Stream stream, Fields headers)
     {
         addViaHeader(headers);
     }
 
-    private void addViaHeader(Headers headers)
+    private void addViaHeader(Fields headers)
     {
         headers.add("Via", "http/1.1 " + getName());
     }
 
-    protected void customizeRequestHeaders(Stream stream, Headers headers)
+    protected void customizeRequestHeaders(Stream stream, Fields headers)
     {
     }
 
-    protected void customizeResponseHeaders(Stream stream, Headers headers)
+    protected void customizeResponseHeaders(Stream stream, Fields headers)
     {
     }
 

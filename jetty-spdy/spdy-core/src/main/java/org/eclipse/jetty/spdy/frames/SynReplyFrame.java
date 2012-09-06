@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.spdy.frames;
 
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.util.Fields;
 
 public class SynReplyFrame extends ControlFrame
 {
     private final int streamId;
-    private final Headers headers;
+    private final Fields headers;
 
-    public SynReplyFrame(short version, byte flags, int streamId, Headers headers)
+    public SynReplyFrame(short version, byte flags, int streamId, Fields headers)
     {
         super(version, ControlFrameType.SYN_REPLY, flags);
         this.streamId = streamId;
@@ -38,7 +38,7 @@ public class SynReplyFrame extends ControlFrame
         return streamId;
     }
 
-    public Headers getHeaders()
+    public Fields getHeaders()
     {
         return headers;
     }

@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.spdy.frames;
 
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.util.Fields;
 
 public class HeadersFrame extends ControlFrame
 {
     private final int streamId;
-    private final Headers headers;
+    private final Fields headers;
 
-    public HeadersFrame(short version, byte flags, int streamId, Headers headers)
+    public HeadersFrame(short version, byte flags, int streamId, Fields headers)
     {
         super(version, ControlFrameType.HEADERS, flags);
         this.streamId = streamId;
@@ -38,7 +38,7 @@ public class HeadersFrame extends ControlFrame
         return streamId;
     }
 
-    public Headers getHeaders()
+    public Fields getHeaders()
     {
         return headers;
     }

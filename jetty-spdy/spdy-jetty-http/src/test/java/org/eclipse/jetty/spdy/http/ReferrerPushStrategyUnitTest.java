@@ -20,10 +20,10 @@ package org.eclipse.jetty.spdy.http;
 
 import java.util.Set;
 
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,7 +61,7 @@ public class ReferrerPushStrategyUnitTest
     @Test
     public void testReferrerCallsAfterTimeoutAreNotAddedAsPushResources() throws InterruptedException
     {
-        Headers requestHeaders = getBaseHeaders(VERSION);
+        Fields requestHeaders = getBaseHeaders(VERSION);
         int referrerCallTimeout = 1000;
         referrerPushStrategy.setReferrerPushPeriod(referrerCallTimeout);
         setMockExpectations();
@@ -74,18 +74,18 @@ public class ReferrerPushStrategyUnitTest
 
         requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), "image2.jpg");
         requestHeaders.put("referer", referrerUrl);
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
         assertThat("pushResources is empty", pushResources.size(), is(0));
 
         requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
         // as the image2.jpg request has been a link and not a subresource, we expect that pushResources.size() is still 2
         assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
     }
 
-    private Headers getBaseHeaders(short version)
+    private Fields getBaseHeaders(short version)
     {
-        Headers requestHeaders = new Headers();
+        Fields requestHeaders = new Fields();
         requestHeaders.put(HTTPSPDYHeader.SCHEME.name(version), SCHEME);
         requestHeaders.put(HTTPSPDYHeader.HOST.name(version), HOST);
         requestHeaders.put(HTTPSPDYHeader.URI.name(version), MAIN_URI);
@@ -99,9 +99,9 @@ public class ReferrerPushStrategyUnitTest
         when(session.getVersion()).thenReturn(VERSION);
     }
 
-    private String fillPushStrategyCache(Headers requestHeaders)
+    private String fillPushStrategyCache(Fields requestHeaders)
     {
-        Set<String> pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        Set<String> pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
         assertThat("pushResources is empty", pushResources.size(), is(0));
 
         String origin = SCHEME + "://" + HOST;
@@ -109,15 +109,15 @@ public class ReferrerPushStrategyUnitTest
 
         requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), "image.jpg");
         requestHeaders.put("referer", referrerUrl);
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
         assertThat("pushResources is empty", pushResources.size(), is(0));
 
         requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), "style.css");
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
         assertThat("pushResources is empty", pushResources.size(), is(0));
 
         requestHeaders.put(HTTPSPDYHeader.URI.name(VERSION), MAIN_URI);
-        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Headers());
+        pushResources = referrerPushStrategy.apply(stream, requestHeaders, new Fields());
         assertThat("pushResources contains two elements image.jpg and style.css", pushResources.size(), is(2));
         return referrerUrl;
     }

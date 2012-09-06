@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -43,6 +42,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -131,7 +131,7 @@ public class ProtocolViolationsTest extends AbstractTest
     {
         Session session = startClient(startServer(null), null);
         Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
-        stream.headers(new HeadersInfo(new Headers(), true));
+        stream.headers(new HeadersInfo(new Fields(), true));
     }
 
     @Test //TODO: throws an ISException in StandardStream.updateCloseState(). But instead we should send a rst or something to the server probably?!
@@ -159,7 +159,7 @@ public class ProtocolViolationsTest extends AbstractTest
 
         Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
 
-        ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
+        ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Fields()));
         channel.write(writeBuffer);
         assertThat("SynReply is fully written", writeBuffer.hasRemaining(), is(false));
 

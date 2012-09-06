@@ -22,11 +22,11 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertThat;
 public class HeadersGenerateParseTest
 {
 
-    private Headers headers = new Headers();
+    private Fields headers = new Fields();
     private int streamId = 13;
     private byte flags = HeadersInfo.FLAG_RESET_COMPRESSION;
     private final TestSPDYParserListener listener = new TestSPDYParserListener();
@@ -52,7 +52,7 @@ public class HeadersGenerateParseTest
         buffer = createHeadersFrameBuffer(headers);
     }
 
-    private ByteBuffer createHeadersFrameBuffer(Headers headers)
+    private ByteBuffer createHeadersFrameBuffer(Fields headers)
     {
         HeadersFrame frame1 = new HeadersFrame(SPDY.V2, flags, streamId, headers);
         Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory().newCompressor());
@@ -80,15 +80,15 @@ public class HeadersGenerateParseTest
     @Test
     public void testHeadersAreTranslatedToLowerCase()
     {
-        Headers headers = new Headers();
+        Fields headers = new Fields();
         headers.put("Via","localhost");
         parser.parse(createHeadersFrameBuffer(headers));
         HeadersFrame parsedHeadersFrame = assertExpectationsAreMet(headers);
-        Headers.Header viaHeader = parsedHeadersFrame.getHeaders().get("via");
+        Fields.Field viaHeader = parsedHeadersFrame.getHeaders().get("via");
         assertThat("Via Header name is lowercase", viaHeader.name(), is("via"));
     }
 
-    private HeadersFrame assertExpectationsAreMet(Headers headers)
+    private HeadersFrame assertExpectationsAreMet(Fields headers)
     {
         ControlFrame parsedControlFrame = listener.getControlFrame();
         assertThat("listener received controlFrame", parsedControlFrame, notNullValue());

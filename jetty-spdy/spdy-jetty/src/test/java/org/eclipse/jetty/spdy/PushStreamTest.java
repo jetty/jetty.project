@@ -37,7 +37,6 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -60,6 +59,7 @@ import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.spdy.parser.Parser.Listener;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -418,7 +418,7 @@ public class PushStreamTest extends AbstractTest
         final SocketChannel channel = SocketChannel.open(serverAddress);
         final Generator generator = new Generator(new MappedByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
         int streamId = 1;
-        ByteBuffer writeBuffer = generator.control(new SynStreamFrame(version,(byte)0,streamId,0,(byte)0,(short)0,new Headers()));
+        ByteBuffer writeBuffer = generator.control(new SynStreamFrame(version,(byte)0,streamId,0,(byte)0,(short)0,new Fields()));
         channel.write(writeBuffer);
         assertThat("writeBuffer is fully written",writeBuffer.hasRemaining(), is(false));
 

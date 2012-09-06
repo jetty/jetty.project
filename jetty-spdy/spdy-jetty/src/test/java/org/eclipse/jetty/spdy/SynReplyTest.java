@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,7 +63,7 @@ public class SynReplyTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 Assert.assertTrue(stream.isHalfClosed());
-                stream.reply(new ReplyInfo(new Headers(), true));
+                stream.reply(new ReplyInfo(new Fields(), true));
                 synLatch.countDown();
                 return null;
             }
@@ -93,7 +93,7 @@ public class SynReplyTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(new Headers(), true), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)

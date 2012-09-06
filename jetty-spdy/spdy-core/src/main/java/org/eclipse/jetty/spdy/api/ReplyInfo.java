@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.spdy.api;
 
+import org.eclipse.jetty.util.Fields;
+
 /**
  * <p>A container for SYN_REPLY frames metadata and headers.</p>
  */
@@ -31,7 +33,7 @@ public class ReplyInfo
      */
     public static final byte FLAG_CLOSE = 1;
 
-    private final Headers headers;
+    private final Fields headers;
     private final boolean close;
 
     /**
@@ -41,25 +43,25 @@ public class ReplyInfo
      */
     public ReplyInfo(boolean close)
     {
-        this(new Headers(), close);
+        this(new Fields(), close);
     }
 
     /**
      * <p>Creates a {@link ReplyInfo} instance with the given headers and the given close flag.</p>
      *
-     * @param headers the {@link Headers}
+     * @param headers the {@link Fields}
      * @param close the value of the close flag
      */
-    public ReplyInfo(Headers headers, boolean close)
+    public ReplyInfo(Fields headers, boolean close)
     {
         this.headers = headers;
         this.close = close;
     }
 
     /**
-     * @return the {@link Headers}
+     * @return the {@link Fields}
      */
-    public Headers getHeaders()
+    public Fields getHeaders()
     {
         return headers;
     }

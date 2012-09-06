@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -119,7 +119,7 @@ public class ReferrerPushStrategy implements PushStrategy
     }
 
     @Override
-    public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
+    public Set<String> apply(Stream stream, Fields requestHeaders, Fields responseHeaders)
     {
         Set<String> result = Collections.<String>emptySet();
         short version = stream.getSession().getVersion();
@@ -138,7 +138,7 @@ public class ReferrerPushStrategy implements PushStrategy
             }
             else if (isPushResource(url, responseHeaders))
             {
-                Headers.Header referrerHeader = requestHeaders.get("referer");
+                Fields.Field referrerHeader = requestHeaders.get("referer");
                 if (referrerHeader != null)
                 {
                     String referrer = referrerHeader.value();
@@ -180,7 +180,7 @@ public class ReferrerPushStrategy implements PushStrategy
         return mainResource;
     }
 
-    private boolean isIfModifiedSinceHeaderPresent(Headers headers)
+    private boolean isIfModifiedSinceHeaderPresent(Fields headers)
     {
         return headers.get("if-modified-since") != null;
     }
@@ -190,18 +190,18 @@ public class ReferrerPushStrategy implements PushStrategy
         return "GET".equalsIgnoreCase(method);
     }
 
-    private boolean isMainResource(String url, Headers responseHeaders)
+    private boolean isMainResource(String url, Fields responseHeaders)
     {
         return !isPushResource(url, responseHeaders);
     }
 
-    private boolean isPushResource(String url, Headers responseHeaders)
+    private boolean isPushResource(String url, Fields responseHeaders)
     {
         for (Pattern pushRegexp : pushRegexps)
         {
             if (pushRegexp.matcher(url).matches())
             {
-                Headers.Header header = responseHeaders.get("content-type");
+                Fields.Field header = responseHeaders.get("content-type");
                 if (header == null)
                     return true;
 

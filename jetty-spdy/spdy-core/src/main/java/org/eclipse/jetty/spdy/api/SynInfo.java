@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.spdy.api;
 
+import org.eclipse.jetty.util.Fields;
+
 /**
  * <p>A container for SYN_STREAM frames metadata and data.</p>
  */
@@ -33,7 +35,7 @@ public class SynInfo
 
     private final boolean close;
     private final byte priority;
-    private final Headers headers;
+    private final Fields headers;
 
     /**
      * <p>Creates a new {@link SynInfo} instance with empty headers and the given close flag,
@@ -43,17 +45,17 @@ public class SynInfo
      */
     public SynInfo(boolean close)
     {
-        this(new Headers(), close);
+        this(new Fields(), close);
     }
 
     /**
      * <p>Creates a {@link ReplyInfo} instance with the given headers and the given close flag,
      * not unidirectional, without associated stream, and with default priority.</p>
      *
-     * @param headers the {@link Headers}
+     * @param headers the {@link Fields}
      * @param close the value of the close flag
      */
-    public SynInfo(Headers headers, boolean close)
+    public SynInfo(Fields headers, boolean close)
     {
         this(headers, close, (byte)0);
     }
@@ -62,21 +64,21 @@ public class SynInfo
      * <p>
      * Creates a {@link ReplyInfo} instance with the given headers, the given close flag and with the given priority.
      * </p>
-     * 
+     *
      * @param headers
-     *            the {@link Headers}
+     *            the {@link Fields}
      * @param close
      *            the value of the close flag
      * @param priority
      *            the priority
      */
-    public SynInfo(Headers headers, boolean close, byte priority)
+    public SynInfo(Fields headers, boolean close, byte priority)
     {
         this.close = close;
         this.priority = priority;
         this.headers = headers;
     }
-    
+
     /**
      * @return the value of the close flag
      */
@@ -94,13 +96,13 @@ public class SynInfo
     }
 
     /**
-     * @return the {@link Headers}
+     * @return the {@link Fields}
      */
-    public Headers getHeaders()
+    public Fields getHeaders()
     {
         return headers;
     }
-    
+
     /**
      * @return the close flag as integer
      * @see #FLAG_CLOSE

@@ -32,13 +32,13 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -51,9 +51,9 @@ public class HttpTransportOverSPDY implements HttpTransport
     private final EndPoint endPoint;
     private final PushStrategy pushStrategy;
     private final Stream stream;
-    private final Headers requestHeaders;
+    private final Fields requestHeaders;
 
-    public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Headers requestHeaders)
+    public HttpTransportOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, PushStrategy pushStrategy, Stream stream, Fields requestHeaders)
     {
         this.connector = connector;
         this.configuration = configuration;
@@ -67,7 +67,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException
     {
         short version = stream.getSession().getVersion();
-        Headers headers = new Headers();
+        Fields headers = new Fields();
 
         HttpVersion httpVersion = HttpVersion.HTTP_1_1;
         headers.put(HTTPSPDYHeader.VERSION.name(version), httpVersion.asString());
@@ -126,20 +126,20 @@ public class HttpTransportOverSPDY implements HttpTransport
         if (!stream.isUnidirectional())
             stream.reply(replyInfo);
 
-        Headers responseHeaders = replyInfo.getHeaders();
+        Fields responseHeaders = replyInfo.getHeaders();
         short version = stream.getSession().getVersion();
         if (responseHeaders.get(HTTPSPDYHeader.STATUS.name(version)).value().startsWith("200") && !stream.isClosed())
         {
             // We have a 200 OK with some content to send, check the push strategy
-            Headers.Header scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version));
-            Headers.Header host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version));
-            Headers.Header uri = requestHeaders.get(HTTPSPDYHeader.URI.name(version));
+            Fields.Field scheme = requestHeaders.get(HTTPSPDYHeader.SCHEME.name(version));
+            Fields.Field host = requestHeaders.get(HTTPSPDYHeader.HOST.name(version));
+            Fields.Field uri = requestHeaders.get(HTTPSPDYHeader.URI.name(version));
             Set<String> pushResources = pushStrategy.apply(stream, requestHeaders, responseHeaders);
 
             for (String pushResource : pushResources)
             {
-                Headers pushHeaders = createPushHeaders(scheme, host, pushResource);
-                final Headers pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
+                Fields pushHeaders = createPushHeaders(scheme, host, pushResource);
+                final Fields pushRequestHeaders = createRequestHeaders(scheme, host, uri, pushResource);
 
                 // TODO: handle the timeout better
                 stream.syn(new SynInfo(pushHeaders, false), 0, TimeUnit.MILLISECONDS, new Callback.Empty<Stream>()
@@ -155,9 +155,9 @@ public class HttpTransportOverSPDY implements HttpTransport
         }
     }
 
-    private Headers createRequestHeaders(Headers.Header scheme, Headers.Header host, Headers.Header uri, String pushResourcePath)
+    private Fields createRequestHeaders(Fields.Field scheme, Fields.Field host, Fields.Field uri, String pushResourcePath)
     {
-        final Headers requestHeaders = new Headers();
+        final Fields requestHeaders = new Fields();
         short version = stream.getSession().getVersion();
         requestHeaders.put(HTTPSPDYHeader.METHOD.name(version), "GET");
         requestHeaders.put(HTTPSPDYHeader.VERSION.name(version), "HTTP/1.1");
@@ -172,9 +172,9 @@ public class HttpTransportOverSPDY implements HttpTransport
         return requestHeaders;
     }
 
-    private Headers createPushHeaders(Headers.Header scheme, Headers.Header host, String pushResourcePath)
+    private Fields createPushHeaders(Fields.Field scheme, Fields.Field host, String pushResourcePath)
     {
-        final Headers pushHeaders = new Headers();
+        final Fields pushHeaders = new Fields();
         short version = stream.getSession().getVersion();
         if (version == SPDY.V2)
             pushHeaders.put(HTTPSPDYHeader.URI.name(version), scheme.value() + "://" + host.value() + pushResourcePath);
@@ -189,7 +189,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         return pushHeaders;
     }
 
-    private HttpChannelOverSPDY newHttpChannelOverSPDY(Stream pushStream, Headers pushRequestHeaders)
+    private HttpChannelOverSPDY newHttpChannelOverSPDY(Stream pushStream, Fields pushRequestHeaders)
     {
         HttpTransport transport = new HttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy, pushStream, pushRequestHeaders);
         HttpInputOverSPDY input = new HttpInputOverSPDY();

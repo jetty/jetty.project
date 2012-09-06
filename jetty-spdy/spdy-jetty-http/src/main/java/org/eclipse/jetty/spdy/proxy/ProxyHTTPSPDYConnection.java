@@ -41,7 +41,6 @@ import org.eclipse.jetty.spdy.StandardStream;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -51,11 +50,12 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 
 public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParser.RequestHandler<ByteBuffer>
 {
     private final short version;
-    private final Headers headers = new Headers();
+    private final Fields headers = new Fields();
     private final ProxyEngineSelector proxyEngineSelector;
     private final ISession session;
     private HTTPStream stream;
@@ -230,7 +230,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         {
             try
             {
-                Headers headers = new Headers(replyInfo.getHeaders(), false);
+                Fields headers = new Fields(replyInfo.getHeaders(), false);
 
                 headers.remove(HTTPSPDYHeader.SCHEME.name(version));
 
@@ -243,12 +243,12 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
                 HttpVersion httpVersion = HttpVersion.fromString(headers.remove(HTTPSPDYHeader.VERSION.name(version)).value());
 
                 // Convert the Host header from a SPDY special header to a normal header
-                Headers.Header host = headers.remove(HTTPSPDYHeader.HOST.name(version));
+                Fields.Field host = headers.remove(HTTPSPDYHeader.HOST.name(version));
                 if (host != null)
                     headers.put("host", host.value());
 
                 HttpFields fields = new HttpFields();
-                for (Headers.Header header : headers)
+                for (Fields.Field header : headers)
                 {
                     String name = camelize(header.name());
                     fields.put(name, header.value());

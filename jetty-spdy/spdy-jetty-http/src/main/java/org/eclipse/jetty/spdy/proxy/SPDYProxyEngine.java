@@ -30,7 +30,6 @@ import org.eclipse.jetty.spdy.SPDYClient;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -43,6 +42,7 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 
 /**
  * <p>{@link SPDYProxyEngine} implements a SPDY to SPDY proxy, that is, converts SPDY events received by
@@ -86,7 +86,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
 
     public StreamFrameListener proxy(final Stream clientStream, SynInfo clientSynInfo, ProxyEngineSelector.ProxyServerInfo proxyServerInfo)
     {
-        Headers headers = new Headers(clientSynInfo.getHeaders(), false);
+        Fields headers = new Fields(clientSynInfo.getHeaders(), false);
 
         short serverVersion = getVersion(proxyServerInfo.getProtocol());
         InetSocketAddress address = proxyServerInfo.getAddress();
@@ -182,13 +182,13 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         }
     }
 
-    private void convert(short fromVersion, short toVersion, Headers headers)
+    private void convert(short fromVersion, short toVersion, Fields headers)
     {
         if (fromVersion != toVersion)
         {
             for (HTTPSPDYHeader httpHeader : HTTPSPDYHeader.values())
             {
-                Headers.Header header = headers.remove(httpHeader.name(fromVersion));
+                Fields.Field header = headers.remove(httpHeader.name(fromVersion));
                 if (header != null)
                 {
                     String toName = httpHeader.name(toVersion);
@@ -221,7 +221,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
             logger.debug("S -> P {} on {}", replyInfo, stream);
 
             short serverVersion = stream.getSession().getVersion();
-            Headers headers = new Headers(replyInfo.getHeaders(), false);
+            Fields headers = new Fields(replyInfo.getHeaders(), false);
 
             addResponseProxyHeaders(stream, headers);
             customizeResponseHeaders(stream, headers);
@@ -449,7 +449,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
         {
             logger.debug("S -> P pushed {} on {}", serverSynInfo, serverStream);
 
-            Headers headers = new Headers(serverSynInfo.getHeaders(), false);
+            Fields headers = new Fields(serverSynInfo.getHeaders(), false);
 
             addResponseProxyHeaders(serverStream, headers);
             customizeResponseHeaders(serverStream, headers);
