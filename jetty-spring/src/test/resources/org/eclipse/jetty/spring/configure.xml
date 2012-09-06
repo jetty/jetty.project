@@ -12,20 +12,20 @@
     <property name="arguments"><list><value>test</value></list></property>
   </bean>
   
-  <bean id="root" name="Some,Names,Main" class="org.mortbay.jetty.spring.TestConfiguration">
+  <bean id="root" name="Some,Names,Main" class="org.eclipse.jetty.spring.TestConfiguration">
     <property name="testString1"><value>SetValue</value></property>
     <property name="testInt1"><value>1</value></property>
     <property name="nested" ref="nested"/>
     <property name="testString2" ref="testProperty"/>
   </bean>
   
-  <bean id="nested" class="org.mortbay.jetty.spring.TestConfiguration">
+  <bean id="nested" class="org.eclipse.jetty.spring.TestConfiguration">
     <property name="testInt2"><value>2</value></property>
     <property name="testString1"><value>nested</value></property>
     <property name="nested" ref="nestedDeep"/>
   </bean>
   
-  <bean id="nestedDeep" class="org.mortbay.jetty.spring.TestConfiguration">
+  <bean id="nestedDeep" class="org.eclipse.jetty.spring.TestConfiguration">
     <property name="testString1"><value>deep</value></property>
     <property name="testInt2"><value>2</value></property>
   </bean>

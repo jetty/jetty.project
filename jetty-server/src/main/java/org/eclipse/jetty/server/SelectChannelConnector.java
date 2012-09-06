@@ -58,12 +58,12 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     private volatile boolean _reuseAddress = true;
     private volatile int _lingerTime = -1;
 
-    public SelectChannelConnector(Server server)
+    public SelectChannelConnector(@Name("server") Server server)
     {
         this(server, null);
     }
 
-    public SelectChannelConnector(Server server, SslContextFactory sslContextFactory)
+    public SelectChannelConnector(@Name("server")Server server, @Name("sslContextFactory") SslContextFactory sslContextFactory)
     {
         this(server, null, null, null, sslContextFactory, 0, 0);
     }

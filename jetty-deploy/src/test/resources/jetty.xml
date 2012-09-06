@@ -15,18 +15,10 @@
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
     <Arg name="threadPool">
-      <!-- Default queued blocking threadpool -->
       <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
         <Set name="maxThreads">200</Set>
         <Set name="minThreads">10</Set>
       </New>
-
-      <!-- Optional Java 5 bounded threadpool with job queue
-      <New class="org.eclipse.thread.concurrent.ThreadPool">
-        <Set name="corePoolSize">50</Set>
-        <Set name="maximumPoolSize">50</Set>
-      </New>
-      -->
     </Arg>
 
     <!-- =========================================================== -->

@@ -7,7 +7,7 @@
 <!-- The simplest way to achieve this is to add etc/jetty-jmx.xml as the          -->
 <!-- first file in configuration file list at the end of start.ini file.          -->
 <!-- ============================================================================ -->
-<Configure id="Server" class="org.eclipse.jetty.server.Server">
+<Configure id="Container" class="org.eclipse.jetty.util.component.Container">
 
   <!-- =========================================================== -->
   <!-- Set the java.rmi.server.hostname property in case you've    -->
@@ -21,7 +21,7 @@
   -->
   
   <!-- =========================================================== -->
-  <!-- Initialize an mbean server                                  -->
+  <!-- Get the platform mbean server                               -->
   <!-- =========================================================== -->
   <Call id="MBeanServer" class="java.lang.management.ManagementFactory"
     name="getPlatformMBeanServer" />
@@ -35,16 +35,8 @@
   </New>
 
   <!-- Add to the Server to listen for object events -->
-  <Get id="Container" name="container">
-    <Call name="addEventListener">
-      <Arg><Ref id="MBeanContainer" /></Arg>
-    </Call>
-  </Get>
-
-  <!-- Add to the Server as a managed lifecycle -->
-  <Call name="addBean">
-    <Arg><Ref id="MBeanContainer"/></Arg>
-    <Arg type="boolean">true</Arg>
+  <Call name="addEventListener">
+    <Arg><Ref id="MBeanContainer" /></Arg>
   </Call>
 
   <!-- Add the static log -->
