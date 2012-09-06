@@ -34,7 +34,7 @@ import static junit.framework.Assert.assertEquals;
 
 public class SpringXmlConfigurationTest
 {
-    protected String _configure="org/mortbay/jetty/spring/configure.xml";
+    protected String _configure="org/eclipse/jetty/spring/configure.xml";
 
     @Before
     public void init() throws Exception
@@ -128,7 +128,7 @@ public class SpringXmlConfigurationTest
     @Test
     public void testJettyXml() throws Exception
     {
-        URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource("org/mortbay/jetty/spring/jetty.xml");
+        URL url = SpringXmlConfigurationTest.class.getClassLoader().getResource("org/eclipse/jetty/spring/jetty.xml");
         XmlConfiguration configuration = new XmlConfiguration(url);
 
         Server server = (Server)configuration.configure();
@@ -140,7 +140,7 @@ public class SpringXmlConfigurationTest
     @Test
     public void XmlConfigurationMain() throws Exception
     {
-        XmlConfiguration.main(new String[]{"src/test/resources/org/mortbay/jetty/spring/jetty.xml"});
+        XmlConfiguration.main(new String[]{"src/test/resources/org/eclipse/jetty/spring/jetty.xml"});
 
     }
 }

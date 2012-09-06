@@ -3,22 +3,24 @@
 
 <beans>
   <bean id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
-  <bean id="Server" name="Main" class="org.mortbay.jetty.spring.Server">
- 
-    <property name="threadPool">  
+  <bean id="Server" name="Main" class="org.eclipse.jetty.spring.Server">
+    <constructor-arg type="org.eclipse.jetty.util.thread.ThreadPool">
       <bean id="ThreadPool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
         <property name="minThreads" value="10"/>
         <property name="maxThreads" value="200"/>
       </bean>
-    </property>
- 
+    </constructor-arg>
+  
+  <!--  
     <property name="connectors">
       <list>
-        <bean id="Connector" class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+        <bean id="Connector" class="org.eclipse.jetty.server.SelectChannelConnector">
+          <constructor-arg type="org.eclipse.jetty.spring.Server"><ref bean="Server"/></constructor-arg>
           <property name="port" value="0"/>
         </bean>
       </list>
     </property>
+    -->
  
     <property name="handler">
       <bean id="handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
