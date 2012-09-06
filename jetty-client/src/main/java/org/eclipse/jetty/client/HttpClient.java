@@ -36,6 +36,7 @@ import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -94,6 +95,7 @@ public class HttpClient extends AggregateLifeCycle
 
     private final ConcurrentMap<String, Destination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
+    private final CookieStore cookieStore = new HttpCookieStore();
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
@@ -153,6 +155,11 @@ public class HttpClient extends AggregateLifeCycle
         LOG.debug("Stopping {}", this);
         super.doStop();
         LOG.info("Stopped {}", this);
+    }
+
+    public CookieStore getCookieStore()
+    {
+        return cookieStore;
     }
 
     public long getIdleTimeout()

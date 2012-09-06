@@ -130,21 +130,22 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
         client.setIdleTimeout(idleTimeout);
 
         HttpDestination destination = new HttpDestination(client, "http", "localhost", connector.getLocalPort());
-        destination.acquire();
-
-        // There are no queued requests, so the newly created connection will be idle
-        Connection connection1 = null;
-        long start = System.nanoTime();
-        while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+        Connection connection1 = destination.acquire();
+        if (connection1 == null)
         {
-            connection1 = destination.idleConnections().peek();
-            TimeUnit.MILLISECONDS.sleep(50);
+            // There are no queued requests, so the newly created connection will be idle
+            long start = System.nanoTime();
+            while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+            {
+                connection1 = destination.idleConnections().peek();
+                TimeUnit.MILLISECONDS.sleep(50);
+            }
+            Assert.assertNotNull(connection1);
+
+            TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+
+            connection1 = destination.idleConnections().poll();
+            Assert.assertNull(connection1);
         }
-        Assert.assertNotNull(connection1);
-
-        TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
-
-        connection1 = destination.idleConnections().poll();
-        Assert.assertNull(connection1);
     }
 }

@@ -18,12 +18,14 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -55,6 +57,11 @@ public class HttpConnection extends AbstractConnection implements Connection
     public HttpClient getHttpClient()
     {
         return client;
+    }
+
+    public HttpDestination getDestination()
+    {
+        return destination;
     }
 
     @Override
@@ -109,7 +116,6 @@ public class HttpConnection extends AbstractConnection implements Connection
             request.idleTimeout(client.getIdleTimeout());
 
         // TODO: follow redirects
-        // TODO: cookies
 
         HttpVersion version = request.version();
         HttpFields headers = request.headers();
@@ -135,6 +141,21 @@ public class HttpConnection extends AbstractConnection implements Connection
                     headers.put(HttpHeader.TRANSFER_ENCODING, "chunked");
             }
         }
+
+        // Cookies
+        List<HttpCookie> cookies = client.getCookieStore().getCookies(getDestination(), request.path());
+        StringBuilder cookieString = null;
+        for (int i = 0; i < cookies.size(); ++i)
+        {
+            if (cookieString == null)
+                cookieString = new StringBuilder();
+            if (i > 0)
+                cookieString.append("; ");
+            HttpCookie cookie = cookies.get(i);
+            cookieString.append(cookie.getName()).append("=").append(cookie.getValue());
+        }
+        if (cookieString != null)
+            request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
         // TODO: decoder headers
 

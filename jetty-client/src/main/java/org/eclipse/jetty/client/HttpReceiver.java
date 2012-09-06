@@ -21,10 +21,13 @@ package org.eclipse.jetty.client;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
@@ -115,6 +118,25 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     {
         HttpExchange exchange = connection.getExchange();
         exchange.response().headers().put(name, value);
+
+        switch (name.toLowerCase())
+        {
+            case "set-cookie":
+            case "set-cookie2":
+            {
+                CookieStore cookieStore = connection.getHttpClient().getCookieStore();
+                HttpDestination destination = connection.getDestination();
+                List<HttpCookie> cookies = HttpCookieParser.parseCookies(value);
+                for (HttpCookie cookie : cookies)
+                    cookieStore.addCookie(destination, cookie);
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+
         return false;
     }
 

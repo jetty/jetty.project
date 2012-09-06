@@ -18,174 +18,147 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.concurrent.TimeUnit;
+
 public class HttpCookie
 {
     private final String _name;
     private final String _value;
     private final String _comment;
     private final String _domain;
-    private final int _maxAge;
+    private final long _maxAge;
     private final String _path;
     private final boolean _secure;
     private final int _version;
     private final boolean _httpOnly;
+    private final long _expiration;
 
-    /* ------------------------------------------------------------ */
     public HttpCookie(String name, String value)
     {
-        super();
-        _name = name;
-        _value = value;
-        _comment = null;
-        _domain = null;
-        _httpOnly = false;
-        _maxAge = -1;
-        _path = null;
-        _secure = false;
-        _version = 0;
+        this(name, value, -1);
     }
 
-    /* ------------------------------------------------------------ */
     public HttpCookie(String name, String value, String domain, String path)
     {
-        super();
+        this(name, value, domain, path, -1, false, false);
+    }
+
+    public HttpCookie(String name, String value, long maxAge)
+    {
+        this(name, value, null, null, maxAge, false, false);
+    }
+
+    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure)
+    {
+        this(name, value, domain, path, maxAge, httpOnly, secure, null, 0);
+    }
+
+    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version)
+    {
         _name = name;
         _value = value;
-        _comment = null;
         _domain = domain;
-        _httpOnly = false;
-        _maxAge = -1;
         _path = path;
-        _secure = false;
-        _version = 0;
-
-    }
-
-    /* ------------------------------------------------------------ */
-    public HttpCookie(String name, String value, int maxAge)
-    {
-        super();
-        _name = name;
-        _value = value;
-        _comment = null;
-        _domain = null;
-        _httpOnly = false;
         _maxAge = maxAge;
-        _path = null;
-        _secure = false;
-        _version = 0;
-    }
-
-    /* ------------------------------------------------------------ */
-    public HttpCookie(String name, String value, String domain, String path, int maxAge, boolean httpOnly, boolean secure)
-    {
-        super();
-        _comment = null;
-        _domain = domain;
         _httpOnly = httpOnly;
-        _maxAge = maxAge;
-        _name = name;
-        _path = path;
         _secure = secure;
-        _value = value;
-        _version = 0;
-    }
-
-    /* ------------------------------------------------------------ */
-    public HttpCookie(String name, String value, String domain, String path, int maxAge, boolean httpOnly, boolean secure, String comment, int version)
-    {
-        super();
         _comment = comment;
-        _domain = domain;
-        _httpOnly = httpOnly;
-        _maxAge = maxAge;
-        _name = name;
-        _path = path;
-        _secure = secure;
-        _value = value;
         _version = version;
+        _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the name.
-     * @return the name
+    /**
+     * @return the cookie name
      */
     public String getName()
     {
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the value.
-     * @return the value
+    /**
+     * @return the cookie value
      */
     public String getValue()
     {
         return _value;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the comment.
-     * @return the comment
+    /**
+     * @return the cookie comment
      */
     public String getComment()
     {
         return _comment;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the domain.
-     * @return the domain
+    /**
+     * @return the cookie domain
      */
     public String getDomain()
     {
         return _domain;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the maxAge.
-     * @return the maxAge
+    /**
+     * @return the cookie max age in seconds
      */
-    public int getMaxAge()
+    public long getMaxAge()
     {
         return _maxAge;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the path.
-     * @return the path
+    /**
+     * @return the cookie path
      */
     public String getPath()
     {
         return _path;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the secure.
-     * @return the secure
+    /**
+     * @return whether the cookie is valid for secure domains
      */
     public boolean isSecure()
     {
         return _secure;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the version.
-     * @return the version
+    /**
+     * @return the cookie version
      */
     public int getVersion()
     {
         return _version;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the isHttpOnly.
-     * @return the isHttpOnly
+    /**
+     * @return whether the cookie is valid for the http protocol only
      */
     public boolean isHttpOnly()
     {
         return _httpOnly;
     }
 
+    /**
+     * @param timeNanos the time to check for cookie expiration, in nanoseconds
+     * @return whether the cookie is expired by the given time
+     */
+    public boolean isExpired(long timeNanos)
+    {
+        return _expiration >= 0 && timeNanos >= _expiration;
+    }
 
+    /**
+     * @return a string representation of this cookie
+     */
+    public String asString()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append(getName()).append("=").append(getValue());
+        if (getDomain() != null)
+            builder.append(";$Domain=").append(getDomain());
+        if (getPath() != null)
+            builder.append(";$Path=").append(getPath());
+        return builder.toString();
+    }
 }
