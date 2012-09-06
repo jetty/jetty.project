@@ -68,6 +68,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiMap;
@@ -1160,6 +1161,21 @@ public class Request implements HttpServletRequest
     public ServletResponse getServletResponse()
     {
         return _channel.getResponse();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
+     * Add @override when 3.1 api is available
+     */
+    public String changeSessionId()
+    {
+        HttpSession session = getSession(false);
+        if (session == null)
+            throw new IllegalStateException("No session");
+        
+        AbstractSessionManager.renewSession(this, session, getRemoteUser()!=null);
+        
+        return session.getId();
     }
 
     /* ------------------------------------------------------------ */
