@@ -1,4 +1,4 @@
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.client.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

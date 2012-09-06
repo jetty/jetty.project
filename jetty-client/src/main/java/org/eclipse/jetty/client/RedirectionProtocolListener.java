@@ -5,11 +5,11 @@ import java.net.URI;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 
-public class RedirectionListener extends Response.Listener.Adapter
+public class RedirectionProtocolListener extends Response.Listener.Adapter
 {
     private final HttpClient client;
 
-    public RedirectionListener(HttpClient client)
+    public RedirectionProtocolListener(HttpClient client)
     {
         this.client = client;
     }

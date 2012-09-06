@@ -1,4 +1,4 @@
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.client.util;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

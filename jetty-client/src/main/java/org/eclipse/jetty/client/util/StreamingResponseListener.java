@@ -11,11 +11,27 @@
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-package org.eclipse.jetty.client.api;
+package org.eclipse.jetty.client.util;
 
-public interface Authentication
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.client.api.Response;
+
+public class StreamingResponseListener extends Response.Listener.Adapter
 {
-    public class Kerberos implements Authentication
+    public Response get(long timeout, TimeUnit seconds)
+    {
+        return null;
+    }
+
+    public InputStream getInputStream()
+    {
+        return null;
+    }
+
+    public void writeTo(OutputStream outputStream)
     {
     }
 }

@@ -374,7 +374,7 @@ public class HttpClient extends AggregateLifeCycle
         {
             case 302:
             case 303:
-                return new RedirectionListener(this);
+                return new RedirectionProtocolListener(this);
         }
 
         return null;
