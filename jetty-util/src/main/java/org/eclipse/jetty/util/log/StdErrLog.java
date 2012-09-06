@@ -27,18 +27,62 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
- * StdErr Logging. This implementation of the Logging facade sends all logs to StdErr with minimal formatting.
+ * StdErr Logging implementation. 
  * <p>
- * If the system property "org.eclipse.jetty.LEVEL" is set to one of the following (ALL, DEBUG, INFO, WARN), then set
- * the eclipse jetty root level logger level to that specified level. (Default level is INFO)
+ * A Jetty {@link Logger} that sends all logs to STDERR ({@link System#err}) with basic formatting.
  * <p>
- * If the system property "org.eclipse.jetty.util.log.SOURCE" is set, then the source method/file of a log is logged.
- * For named debuggers, the system property name+".SOURCE" is checked. If it is not not set, then
- * "org.eclipse.jetty.util.log.SOURCE" is used as the default.
+ * Supports named loggers, and properties based configuration. 
  * <p>
- * If the system property "org.eclipse.jetty.util.log.LONG" is set, then the full, unabbreviated name of the logger is
- * used for logging. For named debuggers, the system property name+".LONG" is checked. If it is not not set, then
- * "org.eclipse.jetty.util.log.LONG" is used as the default.
+ * Configuration Properties:
+ * <dl>
+ *   <dt>${name|heirarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
+ *   <dd>
+ *   Sets the level that the Logger should log at.<br/>
+ *   Names can be a package name, or a fully qualified class name.<br/>
+ *   Default: INFO<br/>
+ *   <br/>
+ *   Examples:
+ *   <dl>
+ *   <dt>org.eclipse.jetty.LEVEL=WARN</dt>
+ *   <dd>indicates that all of the jetty specific classes, in any package that 
+ *   starts with <code>org.eclipse.jetty</code> should log at level WARN.</dd>
+ *   <dt>org.eclipse.jetty.io.ChannelEndPoint.LEVEL=ALL</dt>
+ *   <dd>indicates that the specific class, ChannelEndPoint, should log all
+ *   logging events that it can generate, including DEBUG, INFO, WARN (and even special
+ *   internally ignored exception cases).</dd>
+ *   </dl>  
+ *   </dd>
+ *   
+ *   <dt>${name}.SOURCE=(true|false)</dt>
+ *   <dd>
+ *   Logger specific, attempt to print the java source file name and line number
+ *   where the logging event originated from.<br/>
+ *   Name must be a fully qualified class name (package name hierarchy is not supported
+ *   by this configurable)<br/>
+ *   Warning: this is a slow operation and will have an impact on performance!<br/>
+ *   Default: false
+ *   </dd>
+ *   
+ *   <dt>${name}.STACKS=(true|false)</dt>
+ *   <dd>
+ *   Logger specific, control the display of stacktraces.<br/>
+ *   Name must be a fully qualified class name (package name hierarchy is not supported
+ *   by this configurable)<br/>
+ *   Default: true
+ *   </dd>
+ *   
+ *   <dt>org.eclipse.jetty.util.log.stderr.SOURCE=(true|false)</dt>
+ *   <dd>Special Global Configuration, attempt to print the java source file name and line number
+ *   where the logging event originated from.<br/>
+ *   Default: false
+ *   </dd>
+ *   
+ *   <dt>org.eclipse.jetty.util.log.stderr.LONG=(true|false)</dt>
+ *   <dd>Special Global Configuration, when true, output logging events to STDERR using
+ *   long form, fully qualified class names.  when false, use abbreviated package names<br/>
+ *   Default: false
+ *   </dd>
+ * </dl>
  */
 @ManagedObject("Jetty StdErr Logging Implementation")
 public class StdErrLog extends AbstractLogger
@@ -96,6 +140,17 @@ public class StdErrLog extends AbstractLogger
     private final String _abbrevname;
     private boolean _hideStacks = false;
 
+    /**
+     * Obtain a StdErrLog reference for the specified class, a convenience method used most often during testing to allow for control over a specific logger.
+     * <p>
+     * Must be actively using StdErrLog as the Logger implementation.
+     * 
+     * @param clazz
+     *            the Class reference for the logger to use.
+     * @return the StdErrLog logger
+     * @throws RuntimeException
+     *             if StdErrLog is not the active Logger implementation.
+     */
     public static StdErrLog getLogger(Class<?> clazz)
     {
         Logger log = Log.getLogger(clazz);
@@ -106,16 +161,35 @@ public class StdErrLog extends AbstractLogger
         throw new RuntimeException("Logger for " + clazz + " is not of type StdErrLog");
     }
 
+    /**
+     * Construct an anonymous StdErrLog (no name).
+     * <p>
+     * NOTE: Discouraged usage!
+     */
     public StdErrLog()
     {
         this(null);
     }
 
+    /**
+     * Construct a named StdErrLog using the {@link Log} defined properties
+     * 
+     * @param name
+     *            the name of the logger
+     */
     public StdErrLog(String name)
     {
         this(name,__props);
     }
 
+    /**
+     * Construct a named Logger using the provided properties to configure logger.
+     * 
+     * @param name
+     *            the name of the logger
+     * @param props
+     *            the configuration properties
+     */
     public StdErrLog(String name, Properties props)
     {
         if (props!=null && props!=__props)
@@ -132,6 +206,16 @@ public class StdErrLog extends AbstractLogger
         catch (AccessControlException ace)
         {
             _source = __source;
+        }
+
+        try
+        {
+            // allow stacktrace display to be controlled by properties as well
+            _hideStacks = !Boolean.parseBoolean(props.getProperty(_name + ".STACKS","true"));
+        }
+        catch (AccessControlException ignore)
+        {
+            /* ignore */
         }
     }
 
