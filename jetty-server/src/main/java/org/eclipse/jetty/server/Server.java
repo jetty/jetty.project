@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -68,17 +68,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = Log.getLogger(Server.class);
-
-    private static final String __version;
-    static
-    {
-        if (Server.class.getPackage()!=null &&
-            "Eclipse.org - Jetty".equals(Server.class.getPackage().getImplementationVendor()) &&
-             Server.class.getPackage().getImplementationVersion()!=null)
-            __version=Server.class.getPackage().getImplementationVersion();
-        else
-            __version=System.getProperty("jetty.version","9.x.y.z-SNAPSHOT");
-    }
 
     private final Container _container;
     private final AttributesMap _attributes = new AttributesMap();
@@ -144,7 +133,7 @@ public class Server extends HandlerWrapper implements Attributes
     @ManagedAttribute("version of this server")
     public static String getVersion()
     {
-        return __version;
+        return Jetty.VERSION;
     }
 
     /* ------------------------------------------------------------ */
@@ -289,8 +278,8 @@ public class Server extends HandlerWrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.register(this);
 
-        LOG.info("jetty-"+__version);
-        HttpGenerator.setServerVersion(__version);
+        LOG.info("jetty-"+getVersion());
+        HttpGenerator.setServerVersion(getVersion());
         MultiException mex=new MultiException();
 
         try
@@ -358,10 +347,6 @@ public class Server extends HandlerWrapper implements Attributes
                 {
                     if (!future.isDone())
                         future.get(Math.max(1L,stop_by-System.currentTimeMillis()),TimeUnit.MILLISECONDS);
-                }
-                catch (ExecutionException e)
-                {
-                    mex.add(e.getCause());
                 }
                 catch (Exception e)
                 {
