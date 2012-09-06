@@ -225,6 +225,13 @@ public class HttpConnection extends AbstractConnection implements Connection
     }
 
     @Override
+    public void close()
+    {
+        super.close();
+        LOG.debug("Closed {}", this);
+    }
+
+    @Override
     public String toString()
     {
         return String.format("%s@%x(l:%s <-> r:%s)",

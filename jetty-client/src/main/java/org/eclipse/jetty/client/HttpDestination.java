@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.nio.channels.AsynchronousCloseException;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpDestination implements Destination
+public class HttpDestination implements Destination, AutoCloseable
 {
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 
@@ -58,12 +59,12 @@ public class HttpDestination implements Destination
         this.activeConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
     }
 
-    protected BlockingQueue<Connection> idleConnections()
+    protected BlockingQueue<Connection> getIdleConnections()
     {
         return idleConnections;
     }
 
-    protected BlockingQueue<Connection> activeConnections()
+    protected BlockingQueue<Connection> getActiveConnections()
     {
         return activeConnections;
     }
@@ -103,7 +104,7 @@ public class HttpDestination implements Destination
             {
                 if (!client.isRunning() && requests.remove(requestPair))
                 {
-                    throw new RejectedExecutionException(HttpClient.class.getSimpleName() + " is stopping");
+                    throw new RejectedExecutionException(client + " is stopping");
                 }
                 else
                 {
@@ -121,7 +122,7 @@ public class HttpDestination implements Destination
         }
         else
         {
-            throw new RejectedExecutionException(HttpClient.class.getSimpleName() + " is stopped");
+            throw new RejectedExecutionException(client + " is stopped");
         }
     }
 
@@ -269,8 +270,22 @@ public class HttpDestination implements Destination
     public void release(Connection connection)
     {
         LOG.debug("Connection {} released", connection);
-        activeConnections.remove(connection);
-        idleConnections.offer(connection);
+        if (client.isRunning())
+        {
+            activeConnections.remove(connection);
+            idleConnections.offer(connection);
+            if (!client.isRunning())
+            {
+                LOG.debug("{} is stopping", client);
+                idleConnections.remove(connection);
+                connection.close();
+            }
+        }
+        else
+        {
+            LOG.debug("{} is stopped", client);
+            connection.close();
+        }
     }
 
     public void remove(Connection connection)
@@ -279,6 +294,30 @@ public class HttpDestination implements Destination
         connectionCount.decrementAndGet();
         activeConnections.remove(connection);
         idleConnections.remove(connection);
+    }
+
+    public void close()
+    {
+        for (Connection connection : idleConnections)
+            connection.close();
+        idleConnections.clear();
+
+        // A bit drastic, but we cannot wait for all requests to complete
+        for (Connection connection : activeConnections)
+            connection.close();
+        activeConnections.clear();
+
+        AsynchronousCloseException failure = new AsynchronousCloseException();
+        RequestPair pair;
+        while ((pair = requests.poll()) != null)
+        {
+            notifyRequestFailure(pair.request, failure);
+            notifyResponseFailure(pair.listener, failure);
+        }
+
+        connectionCount.set(0);
+
+        LOG.debug("Closed {}", this);
     }
 
     @Override

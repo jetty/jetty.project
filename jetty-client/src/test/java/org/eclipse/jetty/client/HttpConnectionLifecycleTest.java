@@ -41,10 +41,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
 
-        final BlockingQueue<Connection> idleConnections = destination.idleConnections();
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = destination.activeConnections();
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
@@ -92,10 +92,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
 
-        final BlockingQueue<Connection> idleConnections = destination.idleConnections();
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = destination.activeConnections();
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
@@ -142,10 +142,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
 
-        final BlockingQueue<Connection> idleConnections = destination.idleConnections();
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = destination.activeConnections();
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch successLatch = new CountDownLatch(2);
@@ -190,10 +190,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
 
-        final BlockingQueue<Connection> idleConnections = destination.idleConnections();
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = destination.activeConnections();
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         server.stop();

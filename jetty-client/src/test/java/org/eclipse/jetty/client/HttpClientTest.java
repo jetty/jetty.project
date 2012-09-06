@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
@@ -37,6 +38,33 @@ import org.junit.Test;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
+    @Test
+    public void testStoppingClosesConnections() throws Exception
+    {
+        start(new EmptyHandler());
+
+        String scheme = "http";
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        String path = "/";
+        Response response = client.GET(scheme + "://" + host + ":" + port + path).get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
+
+        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+        HttpConnection connection = (HttpConnection)destination.getIdleConnections().peek();
+        Assert.assertNotNull(connection);
+
+        client.getCookieStore().addCookie(destination, new HttpCookie("foo", "bar", null, path));
+
+        client.stop();
+
+        Assert.assertEquals(0, client.getDestinations().size());
+        Assert.assertEquals(0, destination.getIdleConnections().size());
+        Assert.assertEquals(0, destination.getActiveConnections().size());
+        Assert.assertEquals(0, client.getCookieStore().getCookies(destination, path).size());
+        Assert.assertFalse(connection.getEndPoint().isOpen());
+    }
+
     @Test
     public void test_DestinationCount() throws Exception
     {

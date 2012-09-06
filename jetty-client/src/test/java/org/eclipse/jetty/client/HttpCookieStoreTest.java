@@ -130,10 +130,21 @@ public class HttpCookieStoreTest
     {
         CookieStore cookies = new HttpCookieStore();
         Destination destination = new HttpDestination(client, "http", "localhost.org", 80);
-        Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/", 0, false, true)));
+        Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/", -1, false, true)));
 
         List<HttpCookie> result = cookies.getCookies(destination, "/");
         Assert.assertNotNull(result);
         Assert.assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testCookiesAreCleared() throws Exception
+    {
+        CookieStore cookies = new HttpCookieStore();
+        Destination destination = new HttpDestination(client, "http", "localhost.org", 80);
+        Assert.assertTrue(cookies.addCookie(destination, new HttpCookie("a", "1", null, "/", -1, false, true)));
+
+        cookies.clear();
+        Assert.assertEquals(0, cookies.getCookies(destination, "/").size());
     }
 }

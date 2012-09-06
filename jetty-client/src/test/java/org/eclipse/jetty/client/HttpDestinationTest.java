@@ -43,7 +43,7 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
         if (connection == null)
         {
             // There are no queued requests, so the newly created connection will be idle
-            connection = destination.idleConnections().poll(5, TimeUnit.SECONDS);
+            connection = destination.getIdleConnections().poll(5, TimeUnit.SECONDS);
         }
         Assert.assertNotNull(connection);
     }
@@ -59,7 +59,7 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
             long start = System.nanoTime();
             while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
             {
-                connection1 = destination.idleConnections().peek();
+                connection1 = destination.getIdleConnections().peek();
                 TimeUnit.MILLISECONDS.sleep(50);
             }
             Assert.assertNotNull(connection1);
@@ -101,9 +101,9 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
         latch.countDown();
 
         // There must be 2 idle connections
-        Connection connection = destination.idleConnections().poll(5, TimeUnit.SECONDS);
+        Connection connection = destination.getIdleConnections().poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection);
-        connection = destination.idleConnections().poll(5, TimeUnit.SECONDS);
+        connection = destination.getIdleConnections().poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection);
     }
 
@@ -113,7 +113,7 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
         HttpDestination destination = new HttpDestination(client, "http", "localhost", connector.getLocalPort());
         Connection connection1 = destination.acquire();
         if (connection1 == null)
-            connection1 = destination.idleConnections().poll(5, TimeUnit.SECONDS);
+            connection1 = destination.getIdleConnections().poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection1);
 
         destination.release(connection1);
@@ -137,14 +137,14 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
             long start = System.nanoTime();
             while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
             {
-                connection1 = destination.idleConnections().peek();
+                connection1 = destination.getIdleConnections().peek();
                 TimeUnit.MILLISECONDS.sleep(50);
             }
             Assert.assertNotNull(connection1);
 
             TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
 
-            connection1 = destination.idleConnections().poll();
+            connection1 = destination.getIdleConnections().poll();
             Assert.assertNull(connection1);
         }
     }

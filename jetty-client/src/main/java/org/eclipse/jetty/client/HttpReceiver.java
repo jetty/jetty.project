@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -77,6 +78,11 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
                     break;
                 }
             }
+        }
+        catch (EofException x)
+        {
+            LOG.ignore(x);
+            fail(x);
         }
         catch (IOException x)
         {

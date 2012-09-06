@@ -27,4 +27,6 @@ public interface CookieStore
     List<HttpCookie> getCookies(Destination destination, String path);
 
     boolean addCookie(Destination destination, HttpCookie cookie);
+
+    void clear();
 }

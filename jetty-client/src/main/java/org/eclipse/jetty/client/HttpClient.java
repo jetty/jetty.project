@@ -93,7 +93,7 @@ public class HttpClient extends AggregateLifeCycle
 {
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
-    private final ConcurrentMap<String, Destination> destinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
     private final CookieStore cookieStore = new HttpCookieStore();
     private volatile Executor executor;
@@ -153,6 +153,15 @@ public class HttpClient extends AggregateLifeCycle
     protected void doStop() throws Exception
     {
         LOG.debug("Stopping {}", this);
+
+        for (HttpDestination destination : destinations.values())
+            destination.close();
+        destinations.clear();
+
+        conversations.clear();
+
+        cookieStore.clear();
+
         super.doStop();
         LOG.info("Stopped {}", this);
     }
@@ -223,22 +232,28 @@ public class HttpClient extends AggregateLifeCycle
     public Destination getDestination(String scheme, String host, int port)
     {
         String address = address(scheme, host, port);
-        Destination destination = destinations.get(address);
+        HttpDestination destination = destinations.get(address);
         if (destination == null)
         {
             destination = new HttpDestination(this, scheme, host, port);
-            Destination existing = destinations.putIfAbsent(address, destination);
-            if (existing != null)
-                destination = existing;
-            else
-                LOG.debug("Created {}", destination);
+            if (isRunning())
+            {
+                HttpDestination existing = destinations.putIfAbsent(address, destination);
+                if (existing != null)
+                    destination = existing;
+                else
+                    LOG.debug("Created {}", destination);
+                if (!isRunning())
+                    destinations.remove(address);
+            }
+
         }
         return destination;
     }
 
     public List<Destination> getDestinations()
     {
-        return new ArrayList<>(destinations.values());
+        return new ArrayList<Destination>(destinations.values());
     }
 
     public String getUserAgent()
@@ -376,7 +391,6 @@ public class HttpClient extends AggregateLifeCycle
     {
         conversations.remove(conversation.id());
         LOG.debug("Removed {}", conversation);
-
     }
 
     public Response.Listener lookup(int status)

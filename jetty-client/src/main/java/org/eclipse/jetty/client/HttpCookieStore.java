@@ -21,8 +21,9 @@ package org.eclipse.jetty.client;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.client.api.CookieStore;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.http.HttpCookie;
 
 public class HttpCookieStore implements CookieStore
 {
-    private final ConcurrentMap<String, Map<String, HttpCookie>> allCookies = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Queue<HttpCookie>> allCookies = new ConcurrentHashMap<>();
 
     @Override
     public List<HttpCookie> getCookies(Destination destination, String path)
@@ -43,7 +44,7 @@ public class HttpCookieStore implements CookieStore
         String key = host + ":" + port + path;
 
         // First lookup: direct hit
-        Map<String, HttpCookie> cookies = allCookies.get(key);
+        Queue<HttpCookie> cookies = allCookies.get(key);
         if (cookies != null)
             accumulateCookies(destination, cookies, result);
 
@@ -71,9 +72,9 @@ public class HttpCookieStore implements CookieStore
         return result;
     }
 
-    private void accumulateCookies(Destination destination, Map<String, HttpCookie> cookies, List<HttpCookie> result)
+    private void accumulateCookies(Destination destination, Queue<HttpCookie> cookies, List<HttpCookie> result)
     {
-        for (Iterator<HttpCookie> iterator = cookies.values().iterator(); iterator.hasNext(); )
+        for (Iterator<HttpCookie> iterator = cookies.iterator(); iterator.hasNext(); )
         {
             HttpCookie cookie = iterator.next();
             if (cookie.isExpired(System.nanoTime()))
@@ -113,15 +114,21 @@ public class HttpCookieStore implements CookieStore
             path = "/";
 
         String key = destination.host() + ":" + destination.port() + path;
-        Map<String, HttpCookie> cookies = allCookies.get(key);
+        Queue<HttpCookie> cookies = allCookies.get(key);
         if (cookies == null)
         {
-            cookies = new ConcurrentHashMap<>();
-            Map<String, HttpCookie> existing = allCookies.putIfAbsent(key, cookies);
+            cookies = new ConcurrentLinkedQueue<>();
+            Queue<HttpCookie> existing = allCookies.putIfAbsent(key, cookies);
             if (existing != null)
                 cookies = existing;
         }
-        cookies.put(path, cookie);
+        cookies.add(cookie);
         return true;
+    }
+
+    @Override
+    public void clear()
+    {
+        allCookies.clear();
     }
 }
