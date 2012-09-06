@@ -108,7 +108,7 @@ public class HttpDestination implements Destination
                 else
                 {
                     LOG.debug("Queued {}", request);
-                    notifyRequestQueued(request.listener(), request);
+                    notifyRequestQueued(request);
                     Connection connection = acquire();
                     if (connection != null)
                         process(connection);
@@ -125,12 +125,40 @@ public class HttpDestination implements Destination
         }
     }
 
-    private void notifyRequestQueued(Request.Listener listener, Request request)
+    private void notifyRequestQueued(Request request)
     {
+        Request.Listener listener = request.listener();
         try
         {
             if (listener != null)
                 listener.onQueued(request);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    private void notifyRequestFailure(Request request, Throwable failure)
+    {
+        Request.Listener listener = request.listener();
+        try
+        {
+            if (listener != null)
+                listener.onFailure(request, failure);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    private void notifyResponseFailure(Response.Listener listener, Throwable failure)
+    {
+        try
+        {
+            if (listener != null)
+                listener.onFailure(null, failure);
         }
         catch (Exception x)
         {
@@ -181,9 +209,23 @@ public class HttpDestination implements Destination
                     }
 
                     @Override
-                    public void failed(Connection connection, Throwable x)
+                    public void failed(Connection connection, final Throwable x)
                     {
-                        // TODO: what here ?
+                        LOG.debug("Connection failed {} for {}", x, this);
+                        connectionCount.decrementAndGet();
+                        client.getExecutor().execute(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                RequestPair pair = requests.poll();
+                                if (pair != null)
+                                {
+                                    notifyRequestFailure(pair.request, x);
+                                    notifyResponseFailure(pair.listener, x);
+                                }
+                            }
+                        });
                     }
                 });
                 // Try again the idle connections

@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.client.api;
 
-import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Fields;
 
 public interface Request
 {
@@ -49,7 +49,7 @@ public interface Request
 
     Request version(HttpVersion version);
 
-    Map<String, String> params();
+    Fields params();
 
     Request param(String name, String value);
 

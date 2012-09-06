@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2012 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.client;
 
 import java.util.concurrent.BlockingQueue;
@@ -159,6 +177,49 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertEquals(1, idleConnections.size());
+        Assert.assertEquals(0, activeConnections.size());
+    }
+
+    @Test
+    public void test_ConnectionFailure_RemovesConnection() throws Exception
+    {
+        start(new EmptyHandler());
+
+        String scheme = "http";
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+
+        final BlockingQueue<Connection> idleConnections = destination.idleConnections();
+        Assert.assertEquals(0, idleConnections.size());
+
+        final BlockingQueue<Connection> activeConnections = destination.activeConnections();
+        Assert.assertEquals(0, activeConnections.size());
+
+        server.stop();
+
+        final CountDownLatch failureLatch = new CountDownLatch(2);
+        client.newRequest(host, port)
+                .listener(new Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onFailure(Request request, Throwable failure)
+                    {
+                        failureLatch.countDown();
+                    }
+                })
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onFailure(Response response, Throwable failure)
+                    {
+                        failureLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
     }
 }

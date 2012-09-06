@@ -443,6 +443,13 @@ public class HttpClient extends AggregateLifeCycle
         }
 
         @Override
+        protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+        {
+            ConnectionCallback callback = (ConnectionCallback)attachment;
+            callback.callback.failed(null, ex);
+        }
+
+        @Override
         protected void execute(Runnable task)
         {
             getExecutor().execute(task);

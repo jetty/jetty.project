@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.util.Map;
+import java.net.URLDecoder;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,6 +35,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FutureCallback;
 
 public class HttpRequest implements Request
@@ -47,11 +50,11 @@ public class HttpRequest implements Request
     private String path;
     private HttpMethod method;
     private HttpVersion version;
-    private String agent;
     private long idleTimeout;
     private Listener listener;
     private ContentProvider content;
     private final HttpFields headers = new HttpFields();
+    private final Fields params = new Fields();
 
     public HttpRequest(HttpClient client, URI uri)
     {
@@ -66,7 +69,28 @@ public class HttpRequest implements Request
         host = uri.getHost();
         port = uri.getPort();
         path(uri.getPath());
-        // TODO: query params
+        String query = uri.getRawQuery();
+        if (query != null)
+        {
+            for (String nameValue : query.split("&"))
+            {
+                String[] parts = nameValue.split("=");
+                param(parts[0], parts.length < 2 ? "" : urlDecode(parts[1]));
+            }
+        }
+    }
+
+    private String urlDecode(String value)
+    {
+        String charset = "UTF-8";
+        try
+        {
+            return URLDecoder.decode(value, charset);
+        }
+        catch (UnsupportedEncodingException x)
+        {
+            throw new UnsupportedCharsetException(charset);
+        }
     }
 
     @Override
@@ -142,13 +166,14 @@ public class HttpRequest implements Request
     @Override
     public Request param(String name, String value)
     {
+        params.add(name, value);
         return this;
     }
 
     @Override
-    public Map<String, String> params()
+    public Fields params()
     {
-        return null;
+        return params;
     }
 
     @Override
