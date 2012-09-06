@@ -24,8 +24,8 @@ import java.util.List;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthTypeStreamWrite;

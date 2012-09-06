@@ -378,7 +378,10 @@
     <module>jetty-annotations</module>
     <module>jetty-jndi</module>
     <module>jetty-jsp</module>
+    <module>jetty-distribution</module>
+
     <module>jetty-spring</module>
+
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     
@@ -533,7 +536,6 @@
         <!--
         <module>jetty-aggregate</module>
          -->
-        <module>jetty-distribution</module>
       </modules>
     </profile>
     <profile>

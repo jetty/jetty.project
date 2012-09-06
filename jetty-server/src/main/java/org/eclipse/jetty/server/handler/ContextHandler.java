@@ -167,7 +167,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private Map<String, Object> _managedAttributes;
     private String[] _protectedTargets;
    
-    public enum Availability { AVAILABLE,SHUTDOWN,UNAVAILABLE};
+    public enum Availability { UNAVAILABLE,STARTING,AVAILABLE,SHUTDOWN,};
     private volatile Availability _availability; 
 
     /* ------------------------------------------------------------ */
@@ -666,7 +666,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStart() throws Exception
     {
-        _availability = Availability.UNAVAILABLE;
+        _availability = Availability.STARTING;
 
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
@@ -696,6 +696,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             startContext();
 
             _availability = Availability.AVAILABLE;
+            LOG.info("started {}",this);
         }
         finally
         {
@@ -756,7 +757,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
         l.contextInitialized(e);
-        LOG.info("started {}",this);
     }
 
     /* ------------------------------------------------------------ */

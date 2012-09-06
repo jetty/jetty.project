@@ -142,9 +142,9 @@ public class Main
     {
         List<String> ini_args=new ArrayList<String>();
         File start_ini = new File(_jettyHome,"start.ini");
-        if (start_ini.exists())
-            ini_args.addAll(loadStartIni(start_ini));
-
+        
+        boolean start_ini_processed=!start_ini.exists();
+        
         File start_d = new File(_jettyHome,"start.d");
         if (start_d.isDirectory())
         {
@@ -156,9 +156,21 @@ public class Main
                 }
             });
             Arrays.sort(inis);
+            
             for (File i : inis)
+            {
+                if (!start_ini_processed && i.getName().charAt(0)>'0')
+                {
+                    start_ini_processed=true;
+                    ini_args.addAll(loadStartIni(start_ini));
+                }
                 ini_args.addAll(loadStartIni(i));
+            }
         }
+
+        if (!start_ini_processed )
+            ini_args.addAll(loadStartIni(start_ini));
+
         return ini_args;
     }
 
@@ -392,7 +404,7 @@ public class Main
                     }
                     else if (info.equals("@STARTINI"))
                     {
-                        List<String> ini = loadStartIni(new File(_jettyHome,"start.ini"));
+                        List<String> ini = parseStartIniFiles();
                         if (ini != null && ini.size() > 0)
                         {
                             for (String a : ini)
