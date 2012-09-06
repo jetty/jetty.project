@@ -381,7 +381,7 @@
     <module>jetty-distribution</module>
 
     <module>jetty-spring</module>
-    <module>jetty-client-new</module>
+    <module>jetty-client</module>
 
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
