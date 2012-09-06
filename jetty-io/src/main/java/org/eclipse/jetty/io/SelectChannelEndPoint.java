@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -75,7 +74,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
      */
     private volatile int _interestOps;
 
-    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout) throws IOException
+    public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
     {
         super(scheduler,channel);
         _selector = selector;

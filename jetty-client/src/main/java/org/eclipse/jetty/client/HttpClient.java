@@ -31,9 +31,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.client.api.Connection;
@@ -55,6 +53,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /**
  * <p>{@link HttpClient} provides an efficient, asynchronous, non-blocking implementation
@@ -96,7 +96,7 @@ public class HttpClient extends AggregateLifeCycle
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
-    private volatile ScheduledExecutorService scheduler;
+    private volatile Scheduler scheduler;
     private volatile SelectorManager selectorManager;
     private volatile SslContextFactory sslContextFactory;
 
@@ -131,7 +131,7 @@ public class HttpClient extends AggregateLifeCycle
         addBean(byteBufferPool);
 
         if (scheduler == null)
-            scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler = new TimerScheduler();
         addBean(scheduler);
 
         selectorManager = newSelectorManager();
