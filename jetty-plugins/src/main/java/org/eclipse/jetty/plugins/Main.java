@@ -18,17 +18,14 @@
 
 package org.eclipse.jetty.plugins;
 
-import java.util.List;
 import java.util.Map;
-
-import org.eclipse.jetty.plugins.impl.HttpMavenServiceImpl;
-import org.eclipse.jetty.plugins.impl.PluginManagerImpl;
+import java.util.Set;
 
 public class Main
 {
     private static final String JETTY_HOME = "JETTY_HOME";
 
-    private MavenService _mavenService = new HttpMavenServiceImpl();
+    private MavenService _mavenService = new HttpMavenService();
     private PluginManager _pluginManager;
     private String _jettyHome;
     private String _installPlugin;
@@ -36,6 +33,8 @@ public class Main
     private String _repositoryUrl;
     private String _groupId;
     private String _version;
+    private boolean _searchRemoteRepository = true;
+    private boolean _searchLocalRepository = false;
 
     public static void main(String[] args)
     {
@@ -49,41 +48,32 @@ public class Main
         parseCommandline(args);
         configureMavenService();
 
-        _pluginManager = new PluginManagerImpl(_mavenService, _jettyHome);
+        _pluginManager = new DefaultPluginManager(_mavenService, _jettyHome);
 
         if (_listPlugins)
-        {
             listPlugins();
-        }
         else if (_installPlugin != null)
-        {
             installPlugin();
-        }
     }
 
     private void configureMavenService()
     {
         if (_repositoryUrl != null)
-        {
             _mavenService.setRepositoryUrl(_repositoryUrl);
-        }
         if (_groupId != null)
-        {
             _mavenService.setGroupId(_groupId);
-        }
         if (_version != null)
-        {
             _mavenService.setVersion(_version);
-        }
+
+        _mavenService.setSearchLocalRepository(_searchLocalRepository);
+        _mavenService.setSearchRemoteRepository(_searchRemoteRepository);
     }
 
     private void listPlugins()
     {
-        List<String> availablePlugins = _pluginManager.listAvailablePlugins();
+        Set<String> availablePlugins = _pluginManager.listAvailablePlugins();
         for (String pluginName : availablePlugins)
-        {
             System.out.println(pluginName);
-        }
     }
 
     private void installPlugin()
@@ -97,9 +87,7 @@ public class Main
     {
         Map<String, String> env = System.getenv();
         if (env.containsKey(JETTY_HOME))
-        {
             _jettyHome = env.get(JETTY_HOME);
-        }
     }
 
     private void parseCommandline(String[] args)
@@ -110,40 +98,36 @@ public class Main
             i++;
 
             if (arg.startsWith("--jettyHome="))
-            {
                 _jettyHome = arg.substring(12);
-            }
             if (arg.startsWith("--repositoryUrl="))
-            {
                 _repositoryUrl = arg.substring(16);
-            }
             if (arg.startsWith("--groupId="))
-            {
                 _groupId = arg.substring(10);
-            }
             if (arg.startsWith("--version="))
-            {
                 _version = arg.substring(10);
-            }
+            if (arg.startsWith("--useLocalRepo="))
+                _searchLocalRepository = Boolean.valueOf(arg.substring(15));
+            if (arg.startsWith("--useRemoteRepo="))
+                _searchRemoteRepository = Boolean.valueOf(arg.substring(15));
             if (arg.startsWith("install"))
-            {
                 _installPlugin = args[i];
-            }
             if ("list".equals(arg))
-            {
                 _listPlugins = true;
-            }
         }
 
-        // TODO: Usage instead of throwing exceptions
         if (_jettyHome == null && _installPlugin != null)
-            throw new IllegalArgumentException(
-                    "No --jettyHome commandline option specified and no \"JETTY_HOME\" environment variable found!");
+            printUsage("No --jettyHome commandline option specified and no \"JETTY_HOME\" environment variable found!");
         if (_installPlugin == null && !_listPlugins)
-            throw new IllegalArgumentException(
-                    "Neither install <pluginname> nor list commandline option specified. Nothing to do for me!");
+            printUsage("Neither install <pluginname> nor list commandline option specified. Nothing to do for me!");
         if (_installPlugin != null && _listPlugins)
-            throw new IllegalArgumentException(
-                    "Please specify either install <pluginname> or list commandline options, but not both at the same time!");
+            printUsage("Please specify either install <pluginname> or list commandline options, " +
+                    "but not both at the same time!");
+    }
+
+    private void printUsage(String errorMessage)
+    {
+        System.out.println(errorMessage);
+        System.exit(1);
+        //TODO: print usage
     }
 }

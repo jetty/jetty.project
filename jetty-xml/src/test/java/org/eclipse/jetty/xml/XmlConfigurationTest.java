@@ -56,7 +56,7 @@ public class XmlConfigurationTest
 
         URL url = XmlConfigurationTest.class.getClassLoader().getResource(_configure);
         XmlConfiguration configuration = new XmlConfiguration(url);
-        TestConfiguration tc = new TestConfiguration();
+        TestConfiguration tc = new TestConfiguration("tc");
         configuration.getProperties().putAll(properties);
         configuration.configure(tc);
 

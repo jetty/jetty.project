@@ -20,12 +20,12 @@ package org.eclipse.jetty.websocket.io;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
-import java.util.concurrent.ScheduledFuture;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
 public abstract class FrameBytes<C> implements Callback<C>, Runnable
@@ -36,7 +36,7 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
     protected final C context;
     protected final WebSocketFrame frame;
     // Task used to timeout the bytes
-    protected volatile ScheduledFuture<?> task;
+    protected volatile Scheduler.Task task;
 
     protected FrameBytes(AbstractWebSocketConnection connection, Callback<C> callback, C context, WebSocketFrame frame)
     {
@@ -48,10 +48,10 @@ public abstract class FrameBytes<C> implements Callback<C>, Runnable
 
     private void cancelTask()
     {
-        ScheduledFuture<?> task = this.task;
+        Scheduler.Task task = this.task;
         if (task != null)
         {
-            task.cancel(false);
+            task.cancel();
         }
     }
 

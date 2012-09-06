@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
  * The nested class Task should be extended by users of this class to obtain call back notification of 
  * expires. 
  */
+@Deprecated
 public class Timeout
 {
     private static final Logger LOG = Log.getLogger(Timeout.class);

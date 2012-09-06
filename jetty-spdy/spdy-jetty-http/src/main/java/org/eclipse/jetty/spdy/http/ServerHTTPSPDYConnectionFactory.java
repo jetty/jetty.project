@@ -20,7 +20,6 @@
 package org.eclipse.jetty.spdy.http;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public class ServerHTTPSPDYConnectionFactory extends ServerSPDYConnectionFactory
 {
@@ -47,7 +47,7 @@ public class ServerHTTPSPDYConnectionFactory extends ServerSPDYConnectionFactory
     private final PushStrategy pushStrategy;
     private final HttpConfiguration configuration;
 
-    public ServerHTTPSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, Connector connector, PushStrategy pushStrategy)
+    public ServerHTTPSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, Scheduler scheduler, Connector connector, PushStrategy pushStrategy)
     {
         super(version, bufferPool, threadPool, scheduler);
         this.connector = connector;

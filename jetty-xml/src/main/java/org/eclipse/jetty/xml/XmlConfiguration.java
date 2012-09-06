@@ -346,6 +346,22 @@ public class XmlConfiguration
             if (id != null)
                 _idMap.put(id,obj);
 
+            // Object already constructed so skip any arguments
+            for (; i < cfg.size(); i++)
+            {
+                Object o = cfg.get(i);
+                if (o instanceof String)
+                    continue;
+                XmlParser.Node node = (XmlParser.Node)o;
+                if ("Arg".equals(node.getTag()))
+                {
+                    LOG.warn("Ignored arg: "+node);
+                    continue;
+                }
+                break;
+            }
+            
+            // Process real arguments
             for (; i < cfg.size(); i++)
             {
                 Object o = cfg.get(i);

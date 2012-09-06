@@ -9,7 +9,6 @@ to serve static html files and images.
 -->
 
 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
-  <Call class="org.eclipse.jetty.util.log.Log" name="debug"><Arg>Configure javadoc.xml</Arg></Call>
   <Set name="contextPath">/resources</Set>
   <Set name="resourceBase"><SystemProperty name="jetty.home" default="."/>/resources/</Set>
   <Set name="handler">

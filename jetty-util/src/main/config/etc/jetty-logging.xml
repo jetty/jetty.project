@@ -22,7 +22,9 @@
       </Arg>
     </New>
 
-    <Call class="org.eclipse.jetty.util.log.Log" name="info"><Arg>Redirecting stderr/stdout to <Ref id="ServerLogName"/></Arg></Call>
+    <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
+      <Call name="info"><Arg>Redirecting stderr/stdout to <Ref id="ServerLogName"/></Arg></Call>
+    </Get>
     <Call class="java.lang.System" name="setErr"><Arg><Ref id="ServerLog"/></Arg></Call>
     <Call class="java.lang.System" name="setOut"><Arg><Ref id="ServerLog"/></Arg></Call>
 

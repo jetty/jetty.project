@@ -25,10 +25,10 @@ public class Plugin
     private final String name;
     private final File pluginJar;
 
-    public Plugin(String name, File configJar)
+    public Plugin(String name, File pluginJar)
     {
         this.name = name;
-        this.pluginJar = configJar;
+        this.pluginJar = pluginJar;
     }
 
     public String getName()

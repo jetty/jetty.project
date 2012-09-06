@@ -19,7 +19,11 @@
 
 package org.eclipse.jetty.spring;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
+
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 
 /* ------------------------------------------------------------ */
@@ -30,10 +34,34 @@ import java.util.Collection;
  */
 public class Server extends org.eclipse.jetty.server.Server
 {
+    public Server()
+    {
+        super();
+    }
+
+    public Server(InetSocketAddress addr)
+    {
+        super(addr);
+    }
+
+    public Server(int port)
+    {
+        super(port);
+    }
+
+    public Server(ThreadPool pool, Container container)
+    {
+        super(pool,container);
+    }
+
+    public Server(ThreadPool pool)
+    {
+        super(pool);
+    }
+
     public void setBeans(Collection<Object> beans)
     {
         for (Object o:beans)
             addBean(o);
     }
-    
 }

@@ -348,6 +348,7 @@ public class StdErrLog extends AbstractLogger
      * Legacy interface where a programmatic configuration of the logger level
      * is done as a wholesale approach.
      */
+    @Override
     public void setDebugEnabled(boolean enabled)
     {
         if (enabled)

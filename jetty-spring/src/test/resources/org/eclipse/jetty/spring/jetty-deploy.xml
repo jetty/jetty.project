@@ -2,12 +2,12 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 
 <beans>
-  <bean id="Server" name="Main" class="org.mortbay.jetty.spring.Server">
+  <bean id="Server" name="Main" class="org.eclipse.jetty.spring.Server">
  
    <!-- 
     <property name="beans">
       <list>
-        <bean id="ContextDeployer" class="org.mortbay.jetty.spring.ContextDeployer">
+        <bean id="ContextDeployer" class="org.eclipse.jetty.spring.ContextDeployer">
           <property name="contexts" ref="contexts"/>
           <property name="contextsDir" value="contexts"/>
           <property name="scanInterval" value="5"/>

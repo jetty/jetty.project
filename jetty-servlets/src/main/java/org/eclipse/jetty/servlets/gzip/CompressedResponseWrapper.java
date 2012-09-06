@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http.gzip;
+package org.eclipse.jetty.servlets.gzip;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,7 +58,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setMimeTypes(java.util.Set)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setMimeTypes(java.util.Set)
      */
     public void setMimeTypes(Set<String> mimeTypes)
     {
@@ -67,7 +67,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setBufferSize(int)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setBufferSize(int)
      */
     @Override
     public void setBufferSize(int bufferSize)
@@ -77,7 +77,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setMinCompressSize(int)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setMinCompressSize(int)
      */
     public void setMinCompressSize(int minCompressSize)
     {
@@ -86,7 +86,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setContentType(java.lang.String)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setContentType(java.lang.String)
      */
     @Override
     public void setContentType(String ct)
@@ -110,7 +110,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setStatus(int, java.lang.String)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setStatus(int, java.lang.String)
      */
     @Override
     public void setStatus(int sc, String sm)
@@ -122,7 +122,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setStatus(int)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setStatus(int)
      */
     @Override
     public void setStatus(int sc)
@@ -134,7 +134,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setContentLength(int)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setContentLength(int)
      */
     @Override
     public void setContentLength(int length)
@@ -164,7 +164,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#addHeader(java.lang.String, java.lang.String)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#addHeader(java.lang.String, java.lang.String)
      */
     @Override
     public void addHeader(String name, String value)
@@ -193,7 +193,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#flushBuffer()
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#flushBuffer()
      */
     @Override
     public void flushBuffer() throws IOException
@@ -208,7 +208,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#reset()
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#reset()
      */
     @Override
     public void reset()
@@ -224,7 +224,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#resetBuffer()
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#resetBuffer()
      */
     @Override
     public void resetBuffer()
@@ -238,7 +238,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#sendError(int, java.lang.String)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#sendError(int, java.lang.String)
      */
     @Override
     public void sendError(int sc, String msg) throws IOException
@@ -249,7 +249,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#sendError(int)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#sendError(int)
      */
     @Override
     public void sendError(int sc) throws IOException
@@ -260,7 +260,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#sendRedirect(java.lang.String)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#sendRedirect(java.lang.String)
      */
     @Override
     public void sendRedirect(String location) throws IOException
@@ -271,7 +271,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#noCompression()
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#noCompression()
      */
     public void noCompression()
     {
@@ -291,7 +291,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#finish()
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#finish()
      */
     public void finish() throws IOException
     {
@@ -303,7 +303,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setHeader(java.lang.String, java.lang.String)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setHeader(java.lang.String, java.lang.String)
      */
     @Override
     public void setHeader(String name, String value)
@@ -330,7 +330,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#getOutputStream()
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#getOutputStream()
      */
     @Override
     public ServletOutputStream getOutputStream() throws IOException
@@ -353,7 +353,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#getWriter()
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#getWriter()
      */
     @Override
     public PrintWriter getWriter() throws IOException
@@ -377,7 +377,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setIntHeader(java.lang.String, int)
+     * @see org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper#setIntHeader(java.lang.String, int)
      */
     @Override
     public void setIntHeader(String name, int value)

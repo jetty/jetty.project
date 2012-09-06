@@ -96,20 +96,35 @@ public class ArrayByteBufferPool implements ByteBufferPool
     {
         if (size<=_min)
             return null;
-        int b=size/_inc;
+        int b=(size-1)/_inc;
         if (b>=_direct.length)
             return null;
-        return direct?_direct[b]:_indirect[b];
+        Bucket bucket = direct?_direct[b]:_indirect[b];
+                
+        return bucket;
     }
 
-    private static class Bucket
+    public static class Bucket
     {
-        final int _size;
-        final Queue<ByteBuffer> _queue= new ConcurrentLinkedQueue<>();
+        public final int _size;
+        public final Queue<ByteBuffer> _queue= new ConcurrentLinkedQueue<>();
 
         Bucket(int size)
         {
             _size=size;
         }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("Bucket@%x{%d,%d}",hashCode(),_size,_queue.size());
+        }
+    }
+    
+
+    // Package local for testing
+    Bucket[] bucketsFor(boolean direct)
+    {
+        return direct ? _direct : _indirect;
     }
 }

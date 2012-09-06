@@ -57,7 +57,7 @@ public class TrackingSocket extends WebSocketAdapter
 
     public void assertCloseCode(int expectedCode) throws InterruptedException
     {
-        Assert.assertThat("Was Closed",closeLatch.await(500,TimeUnit.MILLISECONDS),is(true));
+        Assert.assertThat("Was Closed",closeLatch.await(50,TimeUnit.MILLISECONDS),is(true));
         Assert.assertThat("Close Code",closeCode,is(expectedCode));
     }
 
@@ -163,7 +163,17 @@ public class TrackingSocket extends WebSocketAdapter
         }
     }
 
-    public void waitForMessage(TimeUnit timeoutUnit, int timeoutDuration) throws InterruptedException
+    public void waitForClose(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
+    {
+        Assert.assertThat("Client Socket Closed",closeLatch.await(timeoutDuration,timeoutUnit),is(true));
+    }
+
+    public void waitForConnected(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
+    {
+        Assert.assertThat("Client Socket Connected",openLatch.await(timeoutDuration,timeoutUnit),is(true));
+    }
+
+    public void waitForMessage(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
         Assert.assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
     }

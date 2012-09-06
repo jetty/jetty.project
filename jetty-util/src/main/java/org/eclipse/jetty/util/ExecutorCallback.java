@@ -103,6 +103,14 @@ public abstract class ExecutorCallback<C> implements Callback<C>
         {
             @Override
             public void run() { onFailed(context,x);}
+            @Override
+            public String toString() 
+            {
+                System.err.println(_executor);
+                new Throwable().printStackTrace();
+                x.printStackTrace();
+                return String.format("ExecutorCallback@%x{%s,%s}",hashCode(),context,x);
+            }
         };
 
         if (_executor==null)

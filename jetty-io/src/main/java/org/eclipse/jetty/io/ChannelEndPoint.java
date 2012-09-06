@@ -28,11 +28,11 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * Channel End Point.
@@ -47,7 +47,7 @@ public class ChannelEndPoint extends AbstractEndPoint
     private volatile boolean _ishut;
     private volatile boolean _oshut;
 
-    public ChannelEndPoint(ScheduledExecutorService scheduler,SocketChannel channel)
+    public ChannelEndPoint(Scheduler scheduler,SocketChannel channel) throws IOException
     {
         super(scheduler,
             (InetSocketAddress)channel.socket().getLocalSocketAddress(),
@@ -186,7 +186,7 @@ public class ChannelEndPoint extends AbstractEndPoint
         if (flushed>0)
         {
             notIdle();
-
+            
             // clear empty buffers to prevent position creeping up the buffer
             for (ByteBuffer b : buffers)
                 if (BufferUtil.isEmpty(b))

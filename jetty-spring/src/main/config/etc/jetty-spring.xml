@@ -8,7 +8,7 @@
 <!--                                                                 -->
 <!-- This file may be run with:                                      -->
 <!--   java -jar start.jar OPTIONS=Server,spring \                   -->
-<!--   start.class=org.mortbay.jetty.spring.Main \                   -->
+<!--   start.class=org.eclipse.jetty.spring.Main \                   -->
 <!--   etc/jetty-spring.xml                                          -->
 <!--                                                                 -->
 <!-- The spring and commons-logging jars may need to be added        -->

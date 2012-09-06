@@ -21,14 +21,14 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,18 +46,19 @@ import static org.junit.Assert.fail;
 @RunWith(AdvancedRunner.class)
 public class ByteArrayEndPointTest
 {
-    private ScheduledExecutorService _scheduler;
+    private Scheduler _scheduler;
 
     @Before
-    public void before()
+    public void before() throws Exception
     {
-        _scheduler = Executors.newSingleThreadScheduledExecutor();
+        _scheduler = new TimerScheduler();
+        _scheduler.start();
     }
 
     @After
-    public void after()
+    public void after() throws Exception
     {
-        _scheduler.shutdownNow();
+        _scheduler.stop();
     }
 
     @Test

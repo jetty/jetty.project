@@ -34,7 +34,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.GzipHandler;
+import org.eclipse.jetty.servlets.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;

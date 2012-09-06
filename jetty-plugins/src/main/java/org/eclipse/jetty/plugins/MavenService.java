@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.plugins;
 
-import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.plugins.model.Plugin;
 
 public interface MavenService
 {
-    public List<String> listAvailablePlugins();
+    public Set<String> listAvailablePlugins();
 
     public Plugin getPlugin(String pluginName);
 
@@ -33,4 +33,8 @@ public interface MavenService
     public void setRepositoryUrl(String repositoryUrl);
 
     public void setVersion(String version);
+
+    public void setSearchLocalRepository(boolean searchLocalRepository);
+
+    public void setSearchRemoteRepository(boolean searchRemoteRepository);
 }

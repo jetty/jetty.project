@@ -66,8 +66,8 @@ public abstract class AbstractHttpTest
     @After
     public void tearDown() throws Exception
     {
-        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
         server.stop();
+        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
     }
 
     protected SimpleHttpResponse executeRequest() throws URISyntaxException, IOException

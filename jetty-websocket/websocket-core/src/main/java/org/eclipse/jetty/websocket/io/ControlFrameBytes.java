@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BaseConnection;
 import org.eclipse.jetty.websocket.protocol.OpCode;
 import org.eclipse.jetty.websocket.protocol.WebSocketFrame;
 
@@ -45,8 +46,17 @@ public class ControlFrameBytes<C> extends FrameBytes<C>
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            // Disconnect the connection (no more packets/frames)
-            connection.disconnect(false);
+            // is this outgoing close frame a response to a close?
+            if (connection.getState() == BaseConnection.State.CLOSING)
+            {
+                // Disconnect the connection (no more packets/frames)
+                connection.disconnect(false);
+            }
+            else
+            {
+                // Then this is the initiator for a close handshake.
+                connection.notifyClosing();
+            }
         }
         else
         {

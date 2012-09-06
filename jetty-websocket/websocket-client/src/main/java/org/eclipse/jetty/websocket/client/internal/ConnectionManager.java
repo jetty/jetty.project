@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.FutureCallback;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -82,7 +82,7 @@ public class ConnectionManager extends AggregateLifeCycle
     private final Queue<WebSocketClient> clients = new ConcurrentLinkedQueue<>();
     private final WebSocketClientSelectorManager selector;
 
-    public ConnectionManager(ByteBufferPool bufferPool, Executor executor, ScheduledExecutorService scheduler, SslContextFactory sslContextFactory,
+    public ConnectionManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory,
             WebSocketPolicy policy)
     {
         selector = new WebSocketClientSelectorManager(bufferPool,executor,scheduler,policy);

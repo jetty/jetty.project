@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -34,6 +32,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -51,7 +51,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     private final ByteBufferPool bufferPool = new MappedByteBufferPool();
     private final Executor executor;
-    private final ScheduledExecutorService scheduler;
+    private final Scheduler scheduler;
     private final EventMethodsCache methodsCache;
     private final WebSocketPolicy policy;
     private final WebSocketExtensionRegistry extensionRegistry;
@@ -67,15 +67,15 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketClientFactory(Executor threadPool)
     {
-        this(threadPool,Executors.newSingleThreadScheduledExecutor());
+        this(threadPool,new TimerScheduler());
     }
 
-    public WebSocketClientFactory(Executor threadPool, ScheduledExecutorService scheduler)
+    public WebSocketClientFactory(Executor threadPool, Scheduler scheduler)
     {
         this(threadPool,scheduler,null);
     }
 
-    public WebSocketClientFactory(Executor executor, ScheduledExecutorService scheduler, SslContextFactory sslContextFactory)
+    public WebSocketClientFactory(Executor executor, Scheduler scheduler, SslContextFactory sslContextFactory)
     {
         LOG.debug("new WebSocketClientFactory()");
         if (executor == null)
@@ -90,6 +90,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             throw new IllegalArgumentException("Scheduler is required");
         }
         this.scheduler = scheduler;
+        addBean(scheduler);
 
         if (sslContextFactory != null)
         {
@@ -107,7 +108,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     public WebSocketClientFactory(SslContextFactory sslContextFactory)
     {
-        this(new QueuedThreadPool(),Executors.newSingleThreadScheduledExecutor(),sslContextFactory);
+        this(new QueuedThreadPool(),new TimerScheduler(),sslContextFactory);
     }
 
     @Override
@@ -160,7 +161,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         return policy;
     }
 
-    public ScheduledExecutorService getScheduler()
+    public Scheduler getScheduler()
     {
         return scheduler;
     }

@@ -152,6 +152,16 @@ public class BlockheadServer
             getOutputStream().flush();
         }
 
+        public ByteBufferPool getBufferPool()
+        {
+            return bufferPool;
+        }
+
+        public IncomingFramesCapture getIncomingFrames()
+        {
+            return incomingFrames;
+        }
+
         public InputStream getInputStream() throws IOException
         {
             if (in == null)
@@ -168,6 +178,16 @@ public class BlockheadServer
                 out = socket.getOutputStream();
             }
             return out;
+        }
+
+        public Parser getParser()
+        {
+            return parser;
+        }
+
+        public WebSocketPolicy getPolicy()
+        {
+            return policy;
         }
 
         @Override

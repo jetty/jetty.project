@@ -41,7 +41,6 @@ public class ManyConnectors
         SelectChannelConnector connector1 = new SelectChannelConnector(server);
         connector1.setHost("127.0.0.1");
         connector1.setPort(8888);
-        connector1.setName("admin");
 
         String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
         System.setProperty("jetty.home", jetty_home);

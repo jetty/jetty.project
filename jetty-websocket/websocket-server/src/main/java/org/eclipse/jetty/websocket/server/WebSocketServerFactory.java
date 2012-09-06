@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,9 +36,11 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.Extension;
 import org.eclipse.jetty.websocket.api.ExtensionRegistry;
@@ -61,7 +61,7 @@ import org.eclipse.jetty.websocket.server.handshake.HandshakeRFC6455;
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends AbstractLifeCycle implements WebSocketCreator
+public class WebSocketServerFactory extends AggregateLifeCycle implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
 
@@ -75,7 +75,7 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
      */
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final Scheduler scheduler = new TimerScheduler();
     private final String supportedVersions;
     private final WebSocketPolicy basePolicy;
     private final EventMethodsCache methodsCache;
@@ -91,6 +91,9 @@ public class WebSocketServerFactory extends AbstractLifeCycle implements WebSock
 
     public WebSocketServerFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
+        addBean(scheduler);
+        addBean(bufferPool);
+
         this.basePolicy = policy;
         this.methodsCache = new EventMethodsCache();
         this.bufferPool = bufferPool;

@@ -45,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-@Ignore("Ignore until other tests are working")
+@Ignore
 public class StressTest
 {
     private static final Logger LOG = Log.getLogger(StressTest.class);
@@ -117,6 +117,13 @@ public class StressTest
         _handled.set(0);
         for (Queue q : _latencies)
             q.clear();
+    }
+
+
+    @Test
+    public void testMinNonPersistent() throws Throwable
+    {
+        doThreads(2,2,false);
     }
 
     @Test

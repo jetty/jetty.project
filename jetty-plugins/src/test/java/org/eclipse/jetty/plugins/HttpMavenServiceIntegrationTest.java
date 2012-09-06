@@ -16,13 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.plugins.impl;
+package org.eclipse.jetty.plugins;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
-import org.eclipse.jetty.plugins.MavenService;
 import org.eclipse.jetty.plugins.model.Plugin;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -35,16 +34,15 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
- * This is currently more an integration test downloading real stuff from real
- * maven repositories. Actually it's preferred to have a real unit test or at
- * least a local repository server. But since HttpClient.send(exchange) has an
+ * This is currently more an integration test downloading real stuff from real maven repositories. Actually it's
+ * preferred to have a real unit test or at least a local repository server. But since HttpClient.send(exchange) has an
  * api which is really hard to mock, I will leave that exercise for later.
  * <p/>
  * However this tests should be disabled for the general build and ci.
  */
-public class HttpMavenServiceTest
+public class HttpMavenServiceIntegrationTest
 {
-    private MavenService _mavenService = new HttpMavenServiceImpl();
+    private HttpMavenService _mavenService = new HttpMavenService();
 
     private static final String JETTY_JMX_PLUGIN_NAME = "jetty-jmx";
     private static final String PRIVATE_NEXUS_REPOSITORY_URL = "http://gravity-design.de:8080/nexus/content/repositories/releases/";
@@ -60,7 +58,7 @@ public class HttpMavenServiceTest
     @Ignore("requires online repo")
     public void testListAvailablePlugins()
     {
-        List<String> pluginNames = _mavenService.listAvailablePlugins();
+        Set<String> pluginNames = _mavenService.listAvailablePlugins();
         assertThat(pluginNames.size(), is(2));
     }
 

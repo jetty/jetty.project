@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.DispatcherType;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 
 /* ------------------------------------------------------------ */
@@ -232,7 +232,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             {
                 try
                 {
-                    _request.setHandled(false); // TODO: is this right here ?
+                    _request.setHandled(false);
                     _response.getHttpOutput().reopen();
 
                     if (_state.isInitial())
@@ -617,7 +617,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         _connector.getExecutor().execute(task);
     }
 
-    public ScheduledExecutorService getScheduler()
+    public Scheduler getScheduler()
     {
         return _connector.getScheduler();
     }

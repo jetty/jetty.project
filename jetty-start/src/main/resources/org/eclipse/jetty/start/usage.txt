@@ -120,9 +120,12 @@ Defaults:
   which are used if no command line arguments are provided and override 
   the defaults in the start.config file. If the directory jetty.home/start.d
   exists, then multiple *.ini files will be read from that directory in 
-  alphabetical order. If --ini options are provided on  the command line,
-  then start.ini and start.d will NOT be read. 
+  alphabetical order. The contents of start.ini are processed after any
+  start.d files starting with a character <= "0".
   
-  The current start.ini arguments are:
+  If --ini options are provided on  the command line, then start.ini and 
+  start.d will NOT be read. 
+  
+  The current start.ini/start.d arguments are:
 
     @STARTINI@

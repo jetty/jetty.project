@@ -20,7 +20,6 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -30,21 +29,22 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public class ServerSPDYConnectionFactory implements ConnectionFactory
 {
     private final ByteBufferPool bufferPool;
     private final Executor executor;
-    private final ScheduledExecutorService scheduler;
+    private final Scheduler scheduler;
     private final short version;
     private final ServerSessionFrameListener listener;
 
-    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor executor, ScheduledExecutorService scheduler)
+    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor executor, Scheduler scheduler)
     {
         this(version, bufferPool, executor, scheduler, null);
     }
 
-    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor executor, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
+    public ServerSPDYConnectionFactory(short version, ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, ServerSessionFrameListener listener)
     {
         this.version = version;
         this.bufferPool = bufferPool;
@@ -98,7 +98,7 @@ public class ServerSPDYConnectionFactory implements ConnectionFactory
         return executor;
     }
 
-    public ScheduledExecutorService getScheduler()
+    public Scheduler getScheduler()
     {
         return scheduler;
     }

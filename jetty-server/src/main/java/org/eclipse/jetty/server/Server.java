@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Graceful;
@@ -79,7 +80,7 @@ public class Server extends HandlerWrapper implements Attributes
             __version=System.getProperty("jetty.version","9.x.y.z-SNAPSHOT");
     }
 
-    private final Container _container=new Container();
+    private final Container _container;
     private final AttributesMap _attributes = new AttributesMap();
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
@@ -101,7 +102,7 @@ public class Server extends HandlerWrapper implements Attributes
     /** Convenience constructor
      * Creates server and a {@link SelectChannelConnector} at the passed port.
      */
-    public Server(int port)
+    public Server(@Name("port")int port)
     {
         this((ThreadPool)null);
         SelectChannelConnector connector=new SelectChannelConnector(this);
@@ -113,7 +114,7 @@ public class Server extends HandlerWrapper implements Attributes
     /** Convenience constructor
      * Creates server and a {@link SelectChannelConnector} at the passed address.
      */
-    public Server(InetSocketAddress addr)
+    public Server(@Name("address")InetSocketAddress addr)
     {
         this((ThreadPool)null);
         SelectChannelConnector connector=new SelectChannelConnector(this);
@@ -124,9 +125,16 @@ public class Server extends HandlerWrapper implements Attributes
 
 
     /* ------------------------------------------------------------ */
-    public Server(ThreadPool pool)
+    public Server(@Name("threadpool") ThreadPool pool)
+    {
+        this(pool, null);
+    }
+
+    /* ------------------------------------------------------------ */
+    public Server(@Name("threadpool") ThreadPool pool,@Name("container") Container container)
     {
         _threadPool=pool!=null?pool:new QueuedThreadPool();
+        _container=container!=null?container:new Container();
         addBean(_threadPool);
         setServer(this);
     }

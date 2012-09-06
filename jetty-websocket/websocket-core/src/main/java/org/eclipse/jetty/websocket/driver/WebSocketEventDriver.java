@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.BaseConnection;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -169,7 +170,22 @@ public class WebSocketEventDriver implements IncomingFrames
                     {
                         events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());
                     }
-                    throw new CloseException(close.getStatusCode(),close.getReason());
+
+                    // Is this close frame a response to a prior close?
+                    if (session.getState() == BaseConnection.State.CLOSING)
+                    {
+                        // Then this is close response handshake (to a prior
+                        // outgoing close frame)
+                        session.disconnect();
+                    }
+                    else
+                    {
+                        // This is the initiator for a close handshake
+                        // Trigger close response handshake.
+                        session.notifyClosing();
+                        session.close(close.getStatusCode(),close.getReason());
+                    }
+                    return;
                 }
                 case OpCode.PING:
                 {

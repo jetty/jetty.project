@@ -25,6 +25,18 @@ import java.net.InetSocketAddress;
  */
 public interface BaseConnection
 {
+    public static enum State
+    {
+        /** Connection created, but not yet connected */
+        OPENING,
+        /** Connection created and connected */
+        OPENED,
+        /** Close handshake initiated, response pending. */
+        CLOSING,
+        /** Close handshake responded. */
+        CLOSED
+    }
+
     /**
      * Connection suspend token
      */
@@ -37,7 +49,7 @@ public interface BaseConnection
     }
 
     /**
-     * Terminate connection, {@link StatusCode#NORMAL}, without a reason.
+     * Send a websocket Close frame, {@link StatusCode#NORMAL}, without a reason.
      * <p>
      * Basic usage: results in an non-blocking async write, then connection close.
      * 
@@ -47,7 +59,7 @@ public interface BaseConnection
     void close();
 
     /**
-     * Terminate connection, with status code.
+     * Send a websocket Close frame, with status code.
      * <p>
      * Advanced usage: results in an non-blocking async write, then connection close.
      * 
@@ -60,11 +72,23 @@ public interface BaseConnection
     void close(int statusCode, String reason);
 
     /**
+     * Terminate the connection (no close frame sent)
+     */
+    void disconnect();
+
+    /**
      * Get the remote Address in use for this connection.
      * 
      * @return the remote address if available. (situations like mux extension and proxying makes this information unreliable)
      */
     InetSocketAddress getRemoteAddress();
+
+    /**
+     * Get the state of the connection.
+     * 
+     * @return the state of the connection.
+     */
+    State getState();
 
     /**
      * Simple test to see if connection is open (and not closed)
@@ -79,6 +103,11 @@ public interface BaseConnection
      * @return true if connection is actively attempting to read.
      */
     boolean isReading();
+
+    /**
+     * Notify that the connection has entered the closing handshake
+     */
+    void notifyClosing();
 
     /**
      * Suspend a the incoming read events on the connection.

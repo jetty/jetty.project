@@ -41,6 +41,7 @@ import static org.junit.Assert.assertThat;
 
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
+
 @RunWith(value = Parameterized.class)
 public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
 {

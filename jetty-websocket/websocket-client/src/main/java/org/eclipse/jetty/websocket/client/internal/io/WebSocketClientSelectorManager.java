@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.client.internal.IWebSocketClient;
@@ -42,12 +42,12 @@ public class WebSocketClientSelectorManager extends SelectorManager
 {
     private static final Logger LOG = Log.getLogger(WebSocketClientSelectorManager.class);
     private final Executor executor;
-    private final ScheduledExecutorService scheduler;
+    private final Scheduler scheduler;
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private SslContextFactory sslContextFactory;
 
-    public WebSocketClientSelectorManager(ByteBufferPool bufferPool, Executor executor, ScheduledExecutorService scheduler, WebSocketPolicy policy)
+    public WebSocketClientSelectorManager(ByteBufferPool bufferPool, Executor executor, Scheduler scheduler, WebSocketPolicy policy)
     {
         super();
         this.bufferPool = bufferPool;
