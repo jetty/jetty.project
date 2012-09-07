@@ -441,7 +441,14 @@ public class Response implements HttpServletResponse
         {
             StringBuilder buf = _channel.getRequest().getRootURL();
  
-            if (location.startsWith("/"))
+            if (location.startsWith("//"))
+            {
+                buf.delete(0, buf.length());
+                buf.append(_channel.getRequest().getScheme());
+                buf.append(":");
+                buf.append(location);
+            }
+            else if (location.startsWith("/"))
                 buf.append(location);
             else
             {
