@@ -331,7 +331,8 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public boolean canWrite()
     {
-        // TODO Auto-generated method stub
+        // TODO implement behaviour
+        // return true if data can be written without blocking
         return false;
     }
 
@@ -341,10 +342,16 @@ public class HttpOutput extends ServletOutputStream
         _writeListener = writeListener;
         
         // TODO implement behaviour
+        /*
+        Registering a WriteListener will start non-blocking IO. It is illegal to switch to
+        the traditional blocking IO at that point.
+        */
         
         /*   WriteListener.onWritePossible() will be called IFF (if and only if) canWrite has been
         called AND has returned false AND a writeListener has previously been
         set. 
          */
+    
+
     }
 }
