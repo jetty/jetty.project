@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.Ignore;
 import org.junit.Test;
 
+
 public class ServerCrossContextSessionTest extends AbstractServerCrossContextSessionTest
 {
     public AbstractTestServer createServer(int port)

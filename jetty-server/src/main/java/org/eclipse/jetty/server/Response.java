@@ -440,6 +440,7 @@ public class Response implements HttpServletResponse
         if (!URIUtil.hasScheme(location))
         {
             StringBuilder buf = _channel.getRequest().getRootURL();
+ 
             if (location.startsWith("/"))
                 buf.append(location);
             else
@@ -758,6 +759,12 @@ public class Response implements HttpServletResponse
         _contentLength = len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
     }
+    
+    @Override
+    public void setContentLengthLong(long length)
+    {
+        setLongContentLength(length);
+    }
 
     @Override
     public void setCharacterEncoding(String encoding)
@@ -1016,4 +1023,6 @@ public class Response implements HttpServletResponse
     {
         return String.format("%s %d %s%n%s", _channel.getRequest().getHttpVersion(), _status, _reason == null ? "" : _reason, _fields);
     }
+
+  
 }

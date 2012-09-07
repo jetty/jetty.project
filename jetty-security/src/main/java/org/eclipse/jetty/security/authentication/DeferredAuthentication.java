@@ -27,6 +27,7 @@ import java.util.Locale;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -311,6 +312,11 @@ public class DeferredAuthentication implements Authentication.Deferred
         public void setContentLength(int len)
         {
         }
+        
+        public void setContentLengthLong(long len)
+        {
+           
+        }
 
         @Override
         public void setContentType(String type)
@@ -346,6 +352,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 	    return 0;
 	}
 
+
     };
 
     /* ------------------------------------------------------------ */
@@ -363,6 +370,16 @@ public class DeferredAuthentication implements Authentication.Deferred
 
         public void println(String s) throws IOException
         {
+        }
+
+        public boolean canWrite()
+        {
+            return false;
+        }
+
+        public void setWriteListener(WriteListener writeListener)
+        {
+            
         }
     };
 

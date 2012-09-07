@@ -57,6 +57,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
+import javax.servlet.http.ProtocolHandler;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -443,6 +444,16 @@ public class Request implements HttpServletRequest
     public int getContentLength()
     {
         return (int)_fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
+     * @see javax.servlet.ServletRequest.getContentLengthLong()
+     */
+    @Override
+    public long getContentLengthLong()
+    {
+        return _fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -2142,5 +2153,13 @@ public class Request implements HttpServletRequest
 
         setParameters(parameters);
         setQueryString(query);
+    }
+
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void upgrade(ProtocolHandler arg0) throws IOException
+    {
+        // TODO Auto-generated method stub       
     }
 }

@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.zip.DeflaterOutputStream;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -335,6 +336,20 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     protected void setHeader(String name,String value)
     {
         _response.setHeader(name, value);
+    }
+
+    @Override
+    public boolean canWrite()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public void setWriteListener(WriteListener writeListener)
+    {
+        // TODO Auto-generated method stub
+        
     }
 
     /**
