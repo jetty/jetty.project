@@ -193,26 +193,27 @@ public class HttpDestination implements Destination, AutoCloseable
 
             if (next > maxConnections)
             {
-                LOG.debug("Max connections reached {}: {}", this, current);
+                LOG.debug("Max connections {} reached for {}", current, this);
                 // Try again the idle connections
                 return idleConnections.poll();
             }
 
             if (connectionCount.compareAndSet(current, next))
             {
+                LOG.debug("Creating connection {}/{} for {}", next, maxConnections, this);
                 newConnection(new Callback<Connection>()
                 {
                     @Override
                     public void completed(Connection connection)
                     {
-                        LOG.debug("Created connection {}/{} {} for {}", next, maxConnections, connection, this);
+                        LOG.debug("Created connection {}/{} {} for {}", next, maxConnections, connection, HttpDestination.this);
                         process(connection);
                     }
 
                     @Override
                     public void failed(Connection connection, final Throwable x)
                     {
-                        LOG.debug("Connection failed {} for {}", x, this);
+                        LOG.debug("Connection failed {} for {}", x, HttpDestination.this);
                         connectionCount.decrementAndGet();
                         client.getExecutor().execute(new Runnable()
                         {
@@ -249,12 +250,18 @@ public class HttpDestination implements Destination, AutoCloseable
         final RequestPair requestPair = requests.poll();
         if (requestPair == null)
         {
-            LOG.debug("Connection {} idle", connection);
+            LOG.debug("{} idle", connection);
             idleConnections.offer(connection);
+            if (!client.isRunning())
+            {
+                LOG.debug("{} is stopping", client);
+                remove(connection);
+                connection.close();
+            }
         }
         else
         {
-            LOG.debug("Connection {} active", connection);
+            LOG.debug("{} active", connection);
             activeConnections.offer(connection);
             client.getExecutor().execute(new Runnable()
             {
@@ -269,31 +276,36 @@ public class HttpDestination implements Destination, AutoCloseable
 
     public void release(Connection connection)
     {
-        LOG.debug("Connection {} released", connection);
+        LOG.debug("{} released", connection);
         if (client.isRunning())
         {
             activeConnections.remove(connection);
-            idleConnections.offer(connection);
-            if (!client.isRunning())
-            {
-                LOG.debug("{} is stopping", client);
-                idleConnections.remove(connection);
-                connection.close();
-            }
+            process(connection);
         }
         else
         {
             LOG.debug("{} is stopped", client);
+            remove(connection);
             connection.close();
         }
     }
 
     public void remove(Connection connection)
     {
-        LOG.debug("Connection {} removed", connection);
+        LOG.debug("{} removed", connection);
         connectionCount.decrementAndGet();
         activeConnections.remove(connection);
         idleConnections.remove(connection);
+
+        // We need to executed queued requests even if this connection failed.
+        // We may create a connection that is not needed, but it will eventually
+        // idle timeout, so no worries
+        if (!requests.isEmpty())
+        {
+            connection = acquire();
+            if (connection != null)
+                process(connection);
+        }
     }
 
     public void close()

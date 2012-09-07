@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -51,7 +53,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.status());
 
         HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
-        HttpConnection connection = (HttpConnection)destination.getIdleConnections().peek();
+
+        long start = System.nanoTime();
+        HttpConnection connection = null;
+        while (connection == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+        {
+            connection = (HttpConnection)destination.getIdleConnections().peek();
+            TimeUnit.MILLISECONDS.sleep(10);
+        }
         Assert.assertNotNull(connection);
 
         client.getCookieStore().addCookie(destination, new HttpCookie("foo", "bar", null, path));
@@ -86,7 +95,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_GET_ResponseWithContent() throws Exception
+    public void test_GET_ResponseWithoutContent() throws Exception
     {
         start(new EmptyHandler());
 
@@ -97,7 +106,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_GET_ResponseWithoutContent() throws Exception
+    public void test_GET_ResponseWithContent() throws Exception
     {
         final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
         start(new AbstractHandler()
@@ -184,5 +193,118 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.status());
         String content = new String(response.content(), "UTF-8");
         Assert.assertEquals(value11 + value12 + value2, content);
+    }
+
+    @Test
+    public void test_QueuedRequest_IsSent_WhenPreviousRequestSucceeded() throws Exception
+    {
+        start(new EmptyHandler());
+
+        client.setMaxConnectionsPerAddress(1);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch successLatch = new CountDownLatch(2);
+        client.newRequest("http://localhost:" + connector.getLocalPort())
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onBegin(org.eclipse.jetty.client.api.Request request)
+                    {
+                        try
+                        {
+                            latch.await();
+                        }
+                        catch (InterruptedException x)
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                })
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        Assert.assertEquals(200, response.status());
+                        successLatch.countDown();
+                    }
+                });
+
+        client.newRequest("http://localhost:" + connector.getLocalPort())
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onQueued(org.eclipse.jetty.client.api.Request request)
+                    {
+                        latch.countDown();
+                    }
+                })
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        Assert.assertEquals(200, response.status());
+                        successLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Slow
+    @Test
+    public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection() throws Exception
+    {
+        start(new EmptyHandler());
+
+        client.setMaxConnectionsPerAddress(1);
+        final long idleTimeout = 1000;
+        client.setIdleTimeout(idleTimeout);
+
+        final CountDownLatch latch = new CountDownLatch(3);
+        client.newRequest("http://localhost:" + connector.getLocalPort())
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onBegin(org.eclipse.jetty.client.api.Request request)
+                    {
+                        try
+                        {
+                            TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+                        }
+                        catch (InterruptedException x)
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(org.eclipse.jetty.client.api.Request request, Throwable failure)
+                    {
+                        latch.countDown();
+                    }
+                })
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onFailure(Response response, Throwable failure)
+                    {
+                        latch.countDown();
+                    }
+                });
+
+        client.newRequest("http://localhost:" + connector.getLocalPort())
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        Assert.assertEquals(200, response.status());
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 }

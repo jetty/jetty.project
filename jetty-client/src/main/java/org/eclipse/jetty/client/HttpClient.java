@@ -214,6 +214,11 @@ public class HttpClient extends AggregateLifeCycle
         return newRequest(URI.create(address("http", host, port)));
     }
 
+    public Request newRequest(String uri)
+    {
+        return newRequest(URI.create(uri));
+    }
+
     public Request newRequest(URI uri)
     {
         return new HttpRequest(this, uri);

@@ -74,13 +74,13 @@ public class HttpConnection extends AbstractConnection implements Connection
     @Override
     protected boolean onReadTimeout()
     {
+        LOG.debug("{} idle timeout", this);
+
         HttpExchange exchange = this.exchange.get();
         if (exchange != null)
             idleTimeout();
-
-        // We will be closing the connection, so remove it
-        LOG.debug("Connection {} idle timeout", this);
-        destination.remove(this);
+        else
+            destination.remove(this);
 
         return true;
     }
@@ -218,9 +218,12 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
         else
         {
-            destination.remove(this);
-            close();
-            throw new IllegalStateException();
+            // It is possible that the exchange has already been disassociated,
+            // for example if the connection idle timeouts: this will fail
+            // the response, but the request may still be under processing.
+            // Eventually the request will also fail as the connection is closed
+            // and will arrive here without an exchange being present.
+            // We just ignore this fact, as the exchange has already been processed
         }
     }
 
@@ -228,7 +231,7 @@ public class HttpConnection extends AbstractConnection implements Connection
     public void close()
     {
         super.close();
-        LOG.debug("Closed {}", this);
+        LOG.debug("{} closed", this);
     }
 
     @Override
