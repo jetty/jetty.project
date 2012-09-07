@@ -28,6 +28,7 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
@@ -55,6 +56,8 @@ public class HttpOutput extends ServletOutputStream
     private long _written;
     private ByteBuffer _aggregate;
     private int _bufferSize;
+    private WriteListener _writeListener;
+    
 
     public HttpOutput(HttpChannel<?> channel)
     {
@@ -323,5 +326,25 @@ public class HttpOutput extends ServletOutputStream
     {
         if (BufferUtil.hasContent(_aggregate))
             BufferUtil.clear(_aggregate);
+    }
+
+    @Override
+    public boolean canWrite()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public void setWriteListener(WriteListener writeListener)
+    {
+        _writeListener = writeListener;
+        
+        // TODO implement behaviour
+        
+        /*   WriteListener.onWritePossible() will be called IFF (if and only if) canWrite has been
+        called AND has returned false AND a writeListener has previously been
+        set. 
+         */
     }
 }

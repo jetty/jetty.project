@@ -32,9 +32,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
+import javax.servlet.http.ProtocolHandler;
 
 /* ------------------------------------------------------------ */
-/** Class to tunnel a ServletRequest via a HttpServletRequest
+/** 
+ * ServletRequestHttpWrapper
+ * 
+ * Class to tunnel a ServletRequest via a HttpServletRequest
  */
 public class ServletRequestHttpWrapper extends ServletRequestWrapper implements HttpServletRequest
 {
@@ -206,6 +210,14 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     public void logout() throws ServletException
     {
 
+    }
+
+    
+    @Override
+    public void upgrade(ProtocolHandler handler) throws IOException
+    {
+        // TODO Auto-generated method stub
+        
     }
 
 
