@@ -35,6 +35,7 @@ public class HttpExchange
     private final Request request;
     private final Response.Listener listener;
     private final HttpResponse response;
+    private volatile Throwable failure;
 
     public HttpExchange(HttpConversation conversation, HttpConnection connection, Request request, Response.Listener listener)
     {
@@ -93,6 +94,16 @@ public class HttpExchange
         {
             connection.completed(this, false);
         }
+    }
+
+    public boolean failed()
+    {
+        return failure != null;
+    }
+
+    public void failed(Throwable failure)
+    {
+        this.failure = failure;
     }
 
     @Override

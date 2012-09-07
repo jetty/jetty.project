@@ -44,7 +44,6 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private final AtomicBoolean complete = new AtomicBoolean();
     private final HttpParser parser = new HttpParser(this);
     private final HttpConnection connection;
-    private volatile boolean failed;
 
     public HttpReceiver(HttpConnection connection)
     {
@@ -171,7 +170,9 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     @Override
     public boolean messageComplete(long contentLength)
     {
-        if (!failed)
+        HttpExchange exchange = connection.getExchange();
+        // The exchange may be null if it was failed before
+        if (exchange != null && !exchange.failed())
             success();
         return true;
     }
@@ -184,7 +185,6 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         LOG.debug("Received {}", response);
 
         parser.reset();
-        failed = false;
         boolean complete = this.complete.getAndSet(false);
 
         exchange.responseComplete(true);
@@ -208,7 +208,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         LOG.debug("Failed {} {}", response, failure);
 
         parser.reset();
-        failed = true;
+        exchange.failed(failure);
         complete.set(false);
 
         exchange.responseComplete(false);
