@@ -442,6 +442,7 @@ public class ResponseTest
                 {"./l%20cation", "http://myhost:8888/path/l%20cation"},
                 {"../l%20cation", "http://myhost:8888/l%20cation"},
                 {"../locati%C3%abn", "http://myhost:8888/locati%C3%ABn"},
+                {"//foo.bar/some/location", "http://foo.bar/some/location"},
         };
 
         for (int i = 1; i < tests.length; i++)
