@@ -27,9 +27,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -80,7 +80,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         _server=server;
         _executor=executor!=null?executor:_server.getThreadPool();
         _scheduler=scheduler!=null?scheduler:new TimerScheduler();
-        _byteBufferPool = pool!=null?pool:new MappedByteBufferPool();
+        _byteBufferPool = pool!=null?pool:new ArrayByteBufferPool();
         _sslContextFactory = sslContextFactory;
 
         addBean(_server,false);
@@ -123,6 +123,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
         return _byteBufferPool;
     }
 
+    @Override
     public SslContextFactory getSslContextFactory()
     {
         return _sslContextFactory;

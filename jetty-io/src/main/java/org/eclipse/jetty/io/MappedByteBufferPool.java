@@ -64,6 +64,7 @@ public class MappedByteBufferPool implements ByteBufferPool
         return result;
     }
 
+    @Override
     public void release(ByteBuffer buffer)
     {
         if (buffer == null)
@@ -82,7 +83,7 @@ public class MappedByteBufferPool implements ByteBufferPool
                 byteBuffers = existing;
         }
 
-        buffer.clear();
+        BufferUtil.clear(buffer);
         byteBuffers.offer(buffer);
     }
 
