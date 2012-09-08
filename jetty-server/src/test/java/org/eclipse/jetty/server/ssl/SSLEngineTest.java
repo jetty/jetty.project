@@ -182,7 +182,7 @@ public class SSLEngineTest
         server.setHandler(new HelloWorldHandler());
         server.start();
 
-        final int loops=20;
+        final int loops=10;
         final int numConns=20;
 
         Socket[] client=new Socket[numConns];

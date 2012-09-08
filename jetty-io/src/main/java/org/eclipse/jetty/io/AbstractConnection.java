@@ -20,7 +20,7 @@ package org.eclipse.jetty.io;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExecutorCallback;
@@ -38,16 +38,18 @@ public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
-    private final AtomicBoolean _readInterested = new AtomicBoolean();
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback<Void> _readCallback;
+    
+    private enum State {IDLE,INTERESTED,FILLING,FILLING_INTERESTED};
+    private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
 
     public AbstractConnection(EndPoint endp, Executor executor)
     {
         this(endp, executor, true);
     }
-
+    
     public AbstractConnection(EndPoint endp, Executor executor, final boolean dispatchCompletion)
     {
         if (executor == null)
@@ -59,8 +61,41 @@ public abstract class AbstractConnection implements Connection
             @Override
             protected void onCompleted(Void context)
             {
-                if (_readInterested.compareAndSet(true, false))
-                    onFillable();
+                if (_state.compareAndSet(State.INTERESTED,State.FILLING))
+                {
+                    try
+                    {
+                        onFillable();
+                    }
+                    finally
+                    {
+                        loop:while(true)
+                        {
+                            switch(_state.get())
+                            {
+                                case IDLE:
+                                case INTERESTED:
+                                    throw new IllegalStateException();
+
+                                case FILLING:
+                                    if (_state.compareAndSet(State.FILLING,State.IDLE))
+                                        break loop;
+                                    break;
+
+                                case FILLING_INTERESTED:
+                                    if (_state.compareAndSet(State.FILLING_INTERESTED,State.INTERESTED))
+                                    {
+                                        getEndPoint().fillInterested(null, _readCallback);
+                                        break loop;
+                                    }
+                                    break;
+                            }
+                        }
+                        
+                    }
+                }
+                else
+                    LOG.warn(new Throwable());
             }
 
             @Override
@@ -97,8 +132,30 @@ public abstract class AbstractConnection implements Connection
     public void fillInterested()
     {
         LOG.debug("fillInterested {}",this);
-        if (_readInterested.compareAndSet(false, true))
-            getEndPoint().fillInterested(null, _readCallback);
+        
+        loop:while(true)
+        {
+            switch(_state.get())
+            {
+                case IDLE:
+                    if (_state.compareAndSet(State.IDLE,State.INTERESTED))
+                    {
+                        getEndPoint().fillInterested(null, _readCallback);
+                        break loop;
+                    }
+                    break;
+                    
+                case FILLING:
+
+                    if (_state.compareAndSet(State.FILLING,State.FILLING_INTERESTED))
+                        break loop;
+                    break;
+                    
+                case FILLING_INTERESTED:
+                case INTERESTED:
+                    break loop;
+            }
+        }
     }
 
     /**
@@ -165,6 +222,6 @@ public abstract class AbstractConnection implements Connection
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _readInterested.get() ? "R" : "");
+        return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _state.get());
     }
 }

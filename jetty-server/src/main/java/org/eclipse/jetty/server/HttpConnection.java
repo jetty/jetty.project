@@ -105,13 +105,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public void reset()
     {
-        releaseRequestBuffer();
-        if (_chunk!=null)
-        {
-            _bufferPool.release(_chunk);
-            _chunk=null;
-        }
-        
         // If we are still expecting
         if (_channel.isExpecting100Continue())
         {
@@ -130,6 +123,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
         _generator.reset();
         _channel.reset();
+        
+        releaseRequestBuffer();
+        if (_chunk!=null)
+        {
+            _bufferPool.release(_chunk);
+            _chunk=null;
+        }
     }
 
     @Override
@@ -178,6 +178,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         _requestBuffer = _bufferPool.acquire(_configuration.getRequestHeaderSize(), false);
 
                     int filled = getEndPoint().fill(_requestBuffer);
+                    if (filled==0) // Do a retry on fill 0 (optimisation for SSL connections)
+                        filled = getEndPoint().fill(_requestBuffer);
+                        
 
                     LOG.debug("{} filled {}", this, filled);
 
