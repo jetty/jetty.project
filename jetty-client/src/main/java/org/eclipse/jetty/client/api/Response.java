@@ -51,6 +51,8 @@ public interface Response
 
         public void onFailure(Response response, Throwable failure);
 
+        public void onComplete(Response response, Throwable failure);
+
         public static class Adapter implements Listener
         {
             @Override
@@ -75,6 +77,11 @@ public interface Response
 
             @Override
             public void onFailure(Response response, Throwable failure)
+            {
+            }
+
+            @Override
+            public void onComplete(Response response, Throwable failure)
             {
             }
         }

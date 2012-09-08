@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.UnsupportedCharsetException;
+import java.nio.file.Path;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -31,6 +33,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -200,6 +203,13 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request cookie(String name, String value)
+    {
+        // TODO: cookie are handled via CookieStore, not sure this method is useful
+        return this;
+    }
+
+    @Override
     public HttpFields headers()
     {
         return headers;
@@ -232,13 +242,21 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request decoder(ContentDecoder decoder)
+    public Request file(Path file) throws IOException
     {
-        return this;
+        return file(file, "application/octet-stream");
     }
 
     @Override
-    public Request cookie(String key, String value)
+    public Request file(Path file, String contentType) throws IOException
+    {
+        if (contentType != null)
+            header(HttpHeader.CONTENT_TYPE.asString(), contentType);
+        return content(new PathContentProvider(file));
+    }
+
+    @Override
+    public Request decoder(ContentDecoder decoder)
     {
         return this;
     }
@@ -269,17 +287,14 @@ public class HttpRequest implements Request
         BufferingResponseListener listener = new BufferingResponseListener()
         {
             @Override
-            public void onSuccess(Response response)
+            public void onComplete(Response response, Throwable failure)
             {
-                super.onSuccess(response);
-                result.completed(new HttpContentResponse(response, this));
-            }
-
-            @Override
-            public void onFailure(Response response, Throwable failure)
-            {
-                super.onFailure(response, failure);
-                result.failed(new HttpContentResponse(response, this), failure);
+                super.onComplete(response, failure);
+                HttpContentResponse contentResponse = new HttpContentResponse(response, content());
+                if (failure == null)
+                    result.completed(contentResponse);
+                else
+                    result.failed(contentResponse, failure);
             }
         };
         send(listener);

@@ -112,7 +112,7 @@ public class HttpDestination implements Destination, AutoCloseable
                     notifyRequestQueued(request);
                     Connection connection = acquire();
                     if (connection != null)
-                        process(connection);
+                        process(connection, false);
                 }
             }
             else
@@ -207,7 +207,7 @@ public class HttpDestination implements Destination, AutoCloseable
                     public void completed(Connection connection)
                     {
                         LOG.debug("Created connection {}/{} {} for {}", next, maxConnections, connection, HttpDestination.this);
-                        process(connection);
+                        process(connection, true);
                     }
 
                     @Override
@@ -245,7 +245,7 @@ public class HttpDestination implements Destination, AutoCloseable
      *
      * @param connection the new connection
      */
-    protected void process(final Connection connection)
+    protected void process(final Connection connection, boolean dispatch)
     {
         final RequestPair requestPair = requests.poll();
         if (requestPair == null)
@@ -263,14 +263,21 @@ public class HttpDestination implements Destination, AutoCloseable
         {
             LOG.debug("{} active", connection);
             activeConnections.offer(connection);
-            client.getExecutor().execute(new Runnable()
+            if (dispatch)
             {
-                @Override
-                public void run()
+                client.getExecutor().execute(new Runnable()
                 {
-                    connection.send(requestPair.request, requestPair.listener);
-                }
-            });
+                    @Override
+                    public void run()
+                    {
+                        connection.send(requestPair.request, requestPair.listener);
+                    }
+                });
+            }
+            else
+            {
+                connection.send(requestPair.request, requestPair.listener);
+            }
         }
     }
 
@@ -280,7 +287,7 @@ public class HttpDestination implements Destination, AutoCloseable
         if (client.isRunning())
         {
             activeConnections.remove(connection);
-            process(connection);
+            process(connection, false);
         }
         else
         {
@@ -304,7 +311,7 @@ public class HttpDestination implements Destination, AutoCloseable
         {
             connection = acquire();
             if (connection != null)
-                process(connection);
+                process(connection, false);
         }
     }
 

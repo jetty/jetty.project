@@ -99,7 +99,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
-        final CountDownLatch failureLatch = new CountDownLatch(2);
+        final CountDownLatch failureLatch = new CountDownLatch(3);
         client.newRequest(host, port).listener(new Request.Listener.Adapter()
         {
             @Override
@@ -118,6 +118,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         {
             @Override
             public void onFailure(Response response, Throwable failure)
+            {
+                failureLatch.countDown();
+            }
+
+            @Override
+            public void onComplete(Response response, Throwable failure)
             {
                 Assert.assertEquals(0, idleConnections.size());
                 Assert.assertEquals(0, activeConnections.size());

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.api;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -57,13 +59,18 @@ public interface Request
 
     Request header(String name, String value);
 
+    // TODO: keep or remove this method ?
+    Request cookie(String name, String value);
+
     ContentProvider content();
 
     Request content(ContentProvider buffer);
 
-    Request decoder(ContentDecoder decoder);
+    Request file(Path file) throws IOException;
 
-    Request cookie(String key, String value);
+    Request file(Path file, String contentType) throws IOException;
+
+    Request decoder(ContentDecoder decoder);
 
     String agent();
 

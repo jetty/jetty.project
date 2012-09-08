@@ -44,7 +44,7 @@ public class RedirectionTest extends AbstractHttpClientServerTest
     public void test_303() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .path("/localhost/303/localhost/done")
+                .path("/303/localhost/done")
                 .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
@@ -55,7 +55,7 @@ public class RedirectionTest extends AbstractHttpClientServerTest
     public void test_303_302() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .path("/localhost/303/localhost/302/localhost/done")
+                .path("/303/localhost/302/localhost/done")
                 .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
@@ -66,7 +66,7 @@ public class RedirectionTest extends AbstractHttpClientServerTest
     public void test_303_302_OnDifferentDestinations() throws Exception
     {
         Response response = client.newRequest("localhost", connector.getLocalPort())
-                .path("/127.0.0.1/303/localhost/302/localhost/done")
+                .path("/303/127.0.0.1/302/localhost/done")
                 .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
@@ -81,9 +81,9 @@ public class RedirectionTest extends AbstractHttpClientServerTest
             try
             {
                 String[] paths = target.split("/", 4);
-                String host = paths[1];
-                int status = Integer.parseInt(paths[2]);
+                int status = Integer.parseInt(paths[1]);
                 response.setStatus(status);
+                String host = paths[2];
                 response.setHeader("Location", request.getScheme() + "://" + host + ":" + request.getServerPort() + "/" + paths[3]);
             }
             catch (NumberFormatException x)

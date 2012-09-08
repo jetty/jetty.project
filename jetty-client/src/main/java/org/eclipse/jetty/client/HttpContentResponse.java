@@ -21,19 +21,18 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpContentResponse implements ContentResponse
 {
     private final Response response;
-    private final BufferingResponseListener listener;
+    private final byte[] content;
 
-    public HttpContentResponse(Response response, BufferingResponseListener listener)
+    public HttpContentResponse(Response response, byte[] content)
     {
         this.response = response;
-        this.listener = listener;
+        this.content = content;
     }
 
     @Override
@@ -81,6 +80,6 @@ public class HttpContentResponse implements ContentResponse
     @Override
     public byte[] content()
     {
-        return listener.content();
+        return content;
     }
 }

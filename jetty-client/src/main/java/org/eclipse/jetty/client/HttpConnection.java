@@ -76,7 +76,7 @@ public class HttpConnection extends AbstractConnection implements Connection
     {
         LOG.debug("{} idle timeout", this);
 
-        HttpExchange exchange = this.exchange.get();
+        HttpExchange exchange = getExchange();
         if (exchange != null)
             idleTimeout();
         else
@@ -98,6 +98,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
         conversation.add(exchange);
+        conversation.listener(listener);
         sender.send(exchange);
     }
 
@@ -201,9 +202,10 @@ public class HttpConnection extends AbstractConnection implements Connection
         receiver.receive();
     }
 
-    public void completed(HttpExchange exchange, boolean success)
+    public void complete(HttpExchange exchange, boolean success)
     {
-        if (this.exchange.compareAndSet(exchange, null))
+        HttpExchange existing = this.exchange.getAndSet(null);
+        if (existing == exchange)
         {
             LOG.debug("{} disassociated from {}", exchange, this);
             if (success)
@@ -216,7 +218,7 @@ public class HttpConnection extends AbstractConnection implements Connection
                 close();
             }
         }
-        else
+        else if (existing == null)
         {
             // It is possible that the exchange has already been disassociated,
             // for example if the connection idle timeouts: this will fail
@@ -224,6 +226,10 @@ public class HttpConnection extends AbstractConnection implements Connection
             // Eventually the request will also fail as the connection is closed
             // and will arrive here without an exchange being present.
             // We just ignore this fact, as the exchange has already been processed
+        }
+        else
+        {
+            throw new IllegalStateException();
         }
     }
 

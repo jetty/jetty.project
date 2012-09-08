@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Response;
@@ -41,9 +40,9 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
 {
     private static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
-    private final AtomicBoolean complete = new AtomicBoolean();
     private final HttpParser parser = new HttpParser(this);
     private final HttpConnection connection;
+    private volatile boolean failed;
 
     public HttpReceiver(HttpConnection connection)
     {
@@ -105,10 +104,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpResponse response = exchange.response();
         Response.Listener listener = client.lookup(status);
         if (listener == null)
-        {
             listener = conversation.first().listener();
-            complete.set(true);
-        }
         conversation.listener(listener);
 
         response.version(version).status(status).reason(reason);
@@ -172,29 +168,32 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     {
         HttpExchange exchange = connection.getExchange();
         // The exchange may be null if it was failed before
-        if (exchange != null && !exchange.failed())
+        if (exchange != null && !failed)
             success();
         return true;
     }
 
     protected void success()
     {
+        parser.reset();
+
         HttpExchange exchange = connection.getExchange();
-        HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Received {}", response);
 
-        parser.reset();
-        boolean complete = this.complete.getAndSet(false);
+        boolean exchangeComplete = exchange.responseComplete(true);
 
-        exchange.responseComplete(true);
+        HttpConversation conversation = exchange.conversation();
         notifySuccess(conversation.listener(), response);
-        if (complete)
-            conversation.complete();
+        if (exchangeComplete)
+            notifyComplete(conversation.listener(), exchange.response(), null);
     }
 
     protected void fail(Throwable failure)
     {
+        parser.close();
+        failed = true;
+
         HttpExchange exchange = connection.getExchange();
 
         // In case of a response error, the failure has already been notified
@@ -203,17 +202,15 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         if (exchange == null)
             return;
 
-        HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Failed {} {}", response, failure);
 
-        parser.reset();
-        exchange.failed(failure);
-        complete.set(false);
+        boolean exchangeComplete = exchange.responseComplete(false);
 
-        exchange.responseComplete(false);
+        HttpConversation conversation = exchange.conversation();
         notifyFailure(conversation.listener(), response, failure);
-        conversation.complete();
+        if (exchangeComplete)
+            notifyComplete(conversation.listener(), exchange.response(), failure);
     }
 
     @Override
@@ -289,6 +286,19 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         {
             if (listener != null)
                 listener.onFailure(response, failure);
+        }
+        catch (Exception x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    private void notifyComplete(Response.Listener listener, Response response, Throwable failure)
+    {
+        try
+        {
+            if (listener != null)
+                listener.onComplete(response, failure);
         }
         catch (Exception x)
         {
