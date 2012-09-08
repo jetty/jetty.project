@@ -26,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.CookieStore;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
@@ -186,7 +187,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpConversation conversation = exchange.conversation();
         notifySuccess(conversation.listener(), response);
         if (exchangeComplete)
-            notifyComplete(conversation.listener(), exchange.response(), null);
+        {
+            Result result = new Result(exchange.request(), exchange.response());
+            notifyComplete(conversation.listener(), result);
+        }
     }
 
     protected void fail(Throwable failure)
@@ -210,7 +214,10 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpConversation conversation = exchange.conversation();
         notifyFailure(conversation.listener(), response, failure);
         if (exchangeComplete)
-            notifyComplete(conversation.listener(), exchange.response(), failure);
+        {
+            Result result = new Result(exchange.request(), response, failure);
+            notifyComplete(conversation.listener(), result);
+        }
     }
 
     @Override
@@ -293,12 +300,12 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         }
     }
 
-    private void notifyComplete(Response.Listener listener, Response response, Throwable failure)
+    private void notifyComplete(Response.Listener listener, Result result)
     {
         try
         {
             if (listener != null)
-                listener.onComplete(response, failure);
+                listener.onComplete(result);
         }
         catch (Exception x)
         {

@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -131,8 +132,9 @@ public class HttpSenderTest
         connection.send(request, new Response.Listener.Adapter()
         {
             @Override
-            public void onFailure(Response response, Throwable failure)
+            public void onComplete(Result result)
             {
+                Assert.assertTrue(result.isFailed());
                 failureLatch.countDown();
             }
         });
@@ -159,8 +161,9 @@ public class HttpSenderTest
         connection.send(request, new Response.Listener.Adapter()
         {
             @Override
-            public void onFailure(Response response, Throwable failure)
+            public void onComplete(Result result)
             {
+                Assert.assertTrue(result.isFailed());
                 failureLatch.countDown();
             }
         });

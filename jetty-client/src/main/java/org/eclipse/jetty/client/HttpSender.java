@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -202,14 +203,19 @@ public class HttpSender
 
         // Notify after
         HttpExchange exchange = connection.getExchange();
-        LOG.debug("Sent {}", exchange.request());
+        Request request = exchange.request();
+        LOG.debug("Sent {}", request);
         boolean exchangeCompleted = exchange.requestComplete(true);
 
         // It is important to notify *after* we reset because
         // the notification may trigger another request/response
-        notifyRequestSuccess(exchange.request());
+        notifyRequestSuccess(request);
         if (exchangeCompleted)
-            notifyComplete(exchange.conversation().listener(), exchange.response(), null);
+        {
+            HttpConversation conversation = exchange.conversation();
+            Result result = new Result(request, exchange.response());
+            notifyComplete(conversation.listener(), result);
+        }
     }
 
     protected void fail(Throwable failure)
@@ -224,16 +230,19 @@ public class HttpSender
 
         // Notify after
         HttpExchange exchange = connection.getExchange();
-        LOG.debug("Failed {}", exchange.request());
+        Request request = exchange.request();
+        LOG.debug("Failed {}", request);
         boolean exchangeCompleted = exchange.requestComplete(false);
         if (!exchangeCompleted && !committed)
             exchangeCompleted = exchange.responseComplete(false);
 
-        notifyRequestFailure(exchange.request(), failure);
-        Response.Listener listener = exchange.conversation().listener();
-        notifyResponseFailure(listener, failure);
+        notifyRequestFailure(request, failure);
         if (exchangeCompleted)
-            notifyComplete(listener, exchange.response(), failure);
+        {
+            HttpConversation conversation = exchange.conversation();
+            Result result = new Result(request, failure, exchange.response());
+            notifyComplete(conversation.listener(), result);
+        }
     }
 
     private void releaseBuffers()
@@ -307,25 +316,12 @@ public class HttpSender
         }
     }
 
-    private void notifyResponseFailure(Response.Listener listener, Throwable failure)
+    private void notifyComplete(Response.Listener listener, Result result)
     {
         try
         {
             if (listener != null)
-                listener.onFailure(null, failure);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyComplete(Response.Listener listener, Response response, Throwable failure)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onComplete(response, failure);
+                listener.onComplete(result);
         }
         catch (Exception x)
         {

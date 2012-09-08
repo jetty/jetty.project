@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -33,12 +32,6 @@ public class HttpContentResponse implements ContentResponse
     {
         this.response = response;
         this.content = content;
-    }
-
-    @Override
-    public Request request()
-    {
-        return response.request();
     }
 
     @Override

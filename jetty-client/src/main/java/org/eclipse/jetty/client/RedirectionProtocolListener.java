@@ -18,10 +18,9 @@
 
 package org.eclipse.jetty.client;
 
-import java.net.URI;
-
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 
 public class RedirectionProtocolListener extends Response.Listener.Adapter
 {
@@ -33,10 +32,11 @@ public class RedirectionProtocolListener extends Response.Listener.Adapter
     }
 
     @Override
-    public void onComplete(Response response, Throwable failure)
+    public void onComplete(Result result)
     {
-        if (failure == null)
+        if (!result.isFailed())
         {
+            Response response = result.getResponse();
             switch (response.status())
             {
                 case 301: // GET or HEAD only allowed, keep the method
@@ -47,15 +47,16 @@ public class RedirectionProtocolListener extends Response.Listener.Adapter
                 case 303: // use GET for next request
                 {
                     String location = response.headers().get("location");
-                    Request redirect = client.newRequest(response.request().id(), URI.create(location));
+                    Request redirect = client.newRequest(result.getRequest().id(), location);
                     redirect.send(this);
+                    break;
                 }
             }
         }
         else
         {
             // TODO: here I should call on conversation.first().listener() both onFailure() and onComplete()
-            HttpConversation conversation = client.getConversation(response.request());
+            HttpConversation conversation = client.getConversation(result.getRequest());
         }
     }
 }

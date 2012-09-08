@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Assert;
 import org.junit.Test;
@@ -99,7 +100,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
-        final CountDownLatch failureLatch = new CountDownLatch(3);
+        final CountDownLatch failureLatch = new CountDownLatch(2);
         client.newRequest(host, port).listener(new Request.Listener.Adapter()
         {
             @Override
@@ -117,14 +118,9 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         }).send(new Response.Listener.Adapter()
         {
             @Override
-            public void onFailure(Response response, Throwable failure)
+            public void onComplete(Result result)
             {
-                failureLatch.countDown();
-            }
-
-            @Override
-            public void onComplete(Response response, Throwable failure)
-            {
+                Assert.assertTrue(result.isFailed());
                 Assert.assertEquals(0, idleConnections.size());
                 Assert.assertEquals(0, activeConnections.size());
                 failureLatch.countDown();

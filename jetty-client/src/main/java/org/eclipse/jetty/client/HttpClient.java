@@ -224,9 +224,9 @@ public class HttpClient extends AggregateLifeCycle
         return new HttpRequest(this, uri);
     }
 
-    protected Request newRequest(long id, URI uri)
+    protected Request newRequest(long id, String uri)
     {
-        return new HttpRequest(this, id, uri);
+        return new HttpRequest(this, id, URI.create(uri));
     }
 
     private String address(String scheme, String host, int port)

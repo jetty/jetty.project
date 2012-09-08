@@ -25,8 +25,6 @@ import org.eclipse.jetty.http.HttpVersion;
 
 public interface Response
 {
-    Request request();
-
     Listener listener();
 
     HttpVersion version();
@@ -51,7 +49,7 @@ public interface Response
 
         public void onFailure(Response response, Throwable failure);
 
-        public void onComplete(Response response, Throwable failure);
+        public void onComplete(Result result);
 
         public static class Adapter implements Listener
         {
@@ -81,7 +79,7 @@ public interface Response
             }
 
             @Override
-            public void onComplete(Response response, Throwable failure)
+            public void onComplete(Result result)
             {
             }
         }

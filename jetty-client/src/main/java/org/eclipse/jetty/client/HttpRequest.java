@@ -32,6 +32,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpFields;
@@ -283,22 +284,22 @@ public class HttpRequest implements Request
     @Override
     public Future<ContentResponse> send()
     {
-        final FutureCallback<ContentResponse> result = new FutureCallback<>();
+        final FutureCallback<ContentResponse> callback = new FutureCallback<>();
         BufferingResponseListener listener = new BufferingResponseListener()
         {
             @Override
-            public void onComplete(Response response, Throwable failure)
+            public void onComplete(Result result)
             {
-                super.onComplete(response, failure);
-                HttpContentResponse contentResponse = new HttpContentResponse(response, content());
-                if (failure == null)
-                    result.completed(contentResponse);
+                super.onComplete(result);
+                HttpContentResponse contentResponse = new HttpContentResponse(result.getResponse(), content());
+                if (!result.isFailed())
+                    callback.completed(contentResponse);
                 else
-                    result.failed(contentResponse, failure);
+                    callback.failed(contentResponse, result.getFailure());
             }
         };
         send(listener);
-        return result;
+        return callback;
     }
 
     @Override

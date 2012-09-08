@@ -41,6 +41,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -363,7 +364,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
 
                     @Override
-                    public void onComplete(Response response, Throwable failure)
+                    public void onComplete(Result result)
                     {
                         exchangeTime.set(System.nanoTime());
                         latch.countDown();
@@ -421,7 +422,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .send(new Response.Listener.Adapter()
                 {
                     @Override
-                    public void onComplete(Response response, Throwable failure)
+                    public void onComplete(Result result)
                     {
                         latch.countDown();
                     }
@@ -451,7 +452,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .send(new Response.Listener.Adapter()
                 {
                     @Override
-                    public void onComplete(Response response, Throwable failure)
+                    public void onComplete(Result result)
                     {
                         latch.countDown();
                     }

@@ -42,7 +42,7 @@ public class HttpExchange
         this.connection = connection;
         this.request = request;
         this.listener = listener;
-        this.response = new HttpResponse(request, listener);
+        this.response = new HttpResponse(listener);
     }
 
     public HttpConversation conversation()
