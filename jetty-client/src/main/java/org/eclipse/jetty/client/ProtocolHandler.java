@@ -18,20 +18,12 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 
-public class HttpResponseException extends RuntimeException
+public interface ProtocolHandler
 {
-    private final Response response;
+    public boolean accept(Request request, Response response);
 
-    public HttpResponseException(String message, Response response)
-    {
-        super(message);
-        this.response = response;
-    }
-
-    public Response getResponse()
-    {
-        return response;
-    }
+    public Response.Listener getResponseListener();
 }

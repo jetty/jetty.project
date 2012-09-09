@@ -19,32 +19,65 @@
 package org.eclipse.jetty.client.util;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 
 public class ByteBufferContentProvider implements ContentProvider
 {
     private final ByteBuffer[] buffers;
+    private final int length;
 
     public ByteBufferContentProvider(ByteBuffer... buffers)
     {
         this.buffers = buffers;
+        int length = 0;
+        for (ByteBuffer buffer : buffers)
+            length += buffer.remaining();
+        this.length = length;
     }
 
     @Override
     public long length()
     {
-        int length = 0;
-        for (ByteBuffer buffer : buffers)
-            length += buffer.remaining();
         return length;
     }
 
     @Override
     public Iterator<ByteBuffer> iterator()
     {
-        return Arrays.asList(buffers).iterator();
+        return new Iterator<ByteBuffer>()
+        {
+            private int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                return index < buffers.length;
+            }
+
+            @Override
+            public ByteBuffer next()
+            {
+                try
+                {
+                    ByteBuffer buffer = buffers[index];
+                    buffers[index] = buffer.slice();
+                    ++index;
+                    return buffer;
+                }
+                catch (ArrayIndexOutOfBoundsException x)
+                {
+                    throw new NoSuchElementException();
+                }
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 }

@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import javax.net.ssl.SSLEngine;
@@ -95,6 +96,7 @@ public class HttpClient extends AggregateLifeCycle
 
     private final ConcurrentMap<String, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
+    private final List<ProtocolHandler> handlers = new CopyOnWriteArrayList<>();
     private final CookieStore cookieStore = new HttpCookieStore();
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
@@ -108,6 +110,7 @@ public class HttpClient extends AggregateLifeCycle
     private volatile int maxQueueSizePerAddress = 1024;
     private volatile int requestBufferSize = 4096;
     private volatile int responseBufferSize = 4096;
+    private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout;
 
@@ -138,6 +141,8 @@ public class HttpClient extends AggregateLifeCycle
 
         selectorManager = newSelectorManager();
         addBean(selectorManager);
+
+        handlers.add(new RedirectProtocolHandler(this));
 
         super.doStart();
 
@@ -340,6 +345,16 @@ public class HttpClient extends AggregateLifeCycle
         this.responseBufferSize = responseBufferSize;
     }
 
+    public int getMaxRedirects()
+    {
+        return maxRedirects;
+    }
+
+    public void setMaxRedirects(int maxRedirects)
+    {
+        this.maxRedirects = maxRedirects;
+    }
+
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)
     {
         SocketChannel channel = null;
@@ -398,16 +413,14 @@ public class HttpClient extends AggregateLifeCycle
         LOG.debug("{} removed", conversation);
     }
 
-    public Response.Listener lookup(int status)
+    // TODO: find a better method name
+    public Response.Listener lookup(Request request, Response response)
     {
-        // TODO
-        switch (status)
+        for (ProtocolHandler handler : handlers)
         {
-            case 302:
-            case 303:
-                return new RedirectionProtocolListener(this);
+            if (handler.accept(request,  response))
+                return handler.getResponseListener();
         }
-
         return null;
     }
 

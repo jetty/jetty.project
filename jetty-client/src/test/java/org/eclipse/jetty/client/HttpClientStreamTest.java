@@ -68,5 +68,9 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(200, response.status());
         Assert.assertTrue(requestTime.get() <= responseTime);
+
+        // Give some time to the server to consume the request content
+        // This is just to avoid exception traces in the test output
+        Thread.sleep(1000);
     }
 }

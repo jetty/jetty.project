@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -393,12 +393,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 // Echo back
-                InputStream input = request.getInputStream();
-                OutputStream output = response.getOutputStream();
-                byte[] buffer = new byte[chunkSize];
-                int read;
-                while ((read = input.read(buffer)) >= 0)
-                    output.write(buffer, 0, read);
+                IO.copy(request.getInputStream(), response.getOutputStream());
             }
         });
 

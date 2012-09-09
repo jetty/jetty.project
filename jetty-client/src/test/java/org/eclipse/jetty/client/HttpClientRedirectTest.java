@@ -19,20 +19,28 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class RedirectionTest extends AbstractHttpClientServerTest
+import static org.junit.Assert.fail;
+
+public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
     @Before
     public void init() throws Exception
@@ -73,6 +81,76 @@ public class RedirectionTest extends AbstractHttpClientServerTest
         Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
     }
 
+    @Test
+    public void test_301() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .method(HttpMethod.HEAD)
+                .path("/301/localhost/done")
+                .send().get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
+    @Test
+    public void test_301_WithWrongMethod() throws Exception
+    {
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .method(HttpMethod.POST)
+                    .path("/301/localhost/done")
+                    .send().get(5, TimeUnit.SECONDS);
+            fail();
+        }
+        catch (ExecutionException x)
+        {
+            HttpResponseException xx = (HttpResponseException)x.getCause();
+            Response response = xx.getResponse();
+            Assert.assertNotNull(response);
+            Assert.assertEquals(301, response.status());
+            Assert.assertTrue(response.headers().containsKey(HttpHeader.LOCATION.asString()));
+        }
+    }
+
+    @Test
+    public void test_307_WithRequestContent() throws Exception
+    {
+        byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .method(HttpMethod.POST)
+                .path("/307/localhost/done")
+                .content(new ByteBufferContentProvider(ByteBuffer.wrap(data)))
+                .send().get(500, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
+        Assert.assertArrayEquals(data, response.content());
+    }
+
+    @Test
+    public void testMaxRedirections() throws Exception
+    {
+        client.setMaxRedirects(1);
+
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .path("/303/localhost/302/localhost/done")
+                    .send().get(5, TimeUnit.SECONDS);
+            fail();
+        }
+        catch (ExecutionException x)
+        {
+            HttpResponseException xx = (HttpResponseException)x.getCause();
+            Response response = xx.getResponse();
+            Assert.assertNotNull(response);
+            Assert.assertEquals(302, response.status());
+            Assert.assertTrue(response.headers().containsKey(HttpHeader.LOCATION.asString()));
+        }
+    }
+
     private class RedirectHandler extends AbstractHandler
     {
         @Override
@@ -89,6 +167,8 @@ public class RedirectionTest extends AbstractHttpClientServerTest
             catch (NumberFormatException x)
             {
                 response.setStatus(200);
+                // Echo content back
+                IO.copy(request.getInputStream(), response.getOutputStream());
             }
             finally
             {

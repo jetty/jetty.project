@@ -18,13 +18,19 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.util.Attributes;
 
-public class HttpConversation
+public class HttpConversation implements Attributes
 {
+    private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final Queue<HttpExchange> exchanges = new ConcurrentLinkedQueue<>();
     private final HttpClient client;
     private final long id;
@@ -64,6 +70,36 @@ public class HttpConversation
     public void complete()
     {
         client.removeConversation(this);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return attributes.get(name);
+    }
+
+    @Override
+    public void setAttribute(String name, Object attribute)
+    {
+        attributes.put(name, attribute);
+    }
+
+    @Override
+    public void removeAttribute(String name)
+    {
+        attributes.remove(name);
+    }
+
+    @Override
+    public Enumeration<String> getAttributeNames()
+    {
+        return Collections.enumeration(attributes.keySet());
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        attributes.clear();
     }
 
     @Override

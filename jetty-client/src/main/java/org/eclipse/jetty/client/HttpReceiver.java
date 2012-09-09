@@ -99,16 +99,17 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     {
         HttpExchange exchange = connection.getExchange();
         HttpConversation conversation = exchange.conversation();
-
-        // Probe the protocol listeners
-        HttpClient client = connection.getHttpClient();
         HttpResponse response = exchange.response();
-        Response.Listener listener = client.lookup(status);
+
+        response.version(version).status(status).reason(reason);
+
+        // Probe the protocol handlers
+        HttpClient client = connection.getHttpClient();
+        Response.Listener listener = client.lookup(exchange.request(), response);
         if (listener == null)
             listener = conversation.first().listener();
         conversation.listener(listener);
 
-        response.version(version).status(status).reason(reason);
         LOG.debug("Receiving {}", response);
 
         notifyBegin(listener, response);
@@ -231,8 +232,9 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     public void badMessage(int status, String reason)
     {
         HttpExchange exchange = connection.getExchange();
-        exchange.response().status(status).reason(reason);
-        fail(new HttpResponseException());
+        HttpResponse response = exchange.response();
+        response.status(status).reason(reason);
+        fail(new HttpResponseException("HTTP protocol violation: bad response", response));
     }
 
     private void notifyBegin(Response.Listener listener, Response response)
