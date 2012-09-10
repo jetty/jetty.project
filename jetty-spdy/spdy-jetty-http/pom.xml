@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>8.1.7.v20120910</version>
+        <version>8.1.8-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spdy-jetty-http</artifactId>
