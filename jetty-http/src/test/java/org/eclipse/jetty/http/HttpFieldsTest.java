@@ -115,9 +115,9 @@ public class HttpFieldsTest
         header.put("name:2", "value:\r\n2");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
-        buffer.clear();
+        BufferUtil.flipToFill(buffer);
         header.putTo(buffer);
-        buffer.flip();
+        BufferUtil.flipToFlush(buffer,0);
         String out = BufferUtil.toString(buffer);
         assertThat(out,containsString("name0: value??0"));
         assertThat(out,containsString("name??1: value1"));
@@ -134,9 +134,9 @@ public class HttpFieldsTest
         header.put("CONTENT-ENCODING", "gZIP");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
-        buffer.clear();
+        BufferUtil.flipToFill(buffer);
         header.putTo(buffer);
-        buffer.flip();
+        BufferUtil.flipToFlush(buffer,0);
         String out = BufferUtil.toString(buffer);
 
         Assert.assertThat(out,Matchers.containsString(HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE));

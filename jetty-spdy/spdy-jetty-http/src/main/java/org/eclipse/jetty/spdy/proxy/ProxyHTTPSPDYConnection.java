@@ -32,8 +32,9 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.spdy.ISession;
 import org.eclipse.jetty.spdy.IStream;
 import org.eclipse.jetty.spdy.StandardSession;
@@ -61,9 +62,9 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     private HTTPStream stream;
     private ByteBuffer content;
 
-    public ProxyHTTPSPDYConnection(Connector connector, EndPoint endPoint, short version, ProxyEngineSelector proxyEngineSelector)
+    public ProxyHTTPSPDYConnection(Connector connector, HttpChannelConfig config, EndPoint endPoint, short version, ProxyEngineSelector proxyEngineSelector)
     {
-        super(new HttpConfiguration(connector.getSslContextFactory(), connector.getSslContextFactory() != null), connector, endPoint);
+        super(config,connector,endPoint);
         this.version = version;
         this.proxyEngineSelector = proxyEngineSelector;
         this.session = new HTTPSession(version, connector);
@@ -80,7 +81,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     public boolean startRequest(HttpMethod method, String methodString, String uri, HttpVersion httpVersion)
     {
         Connector connector = getConnector();
-        String scheme = connector.getSslContextFactory() != null ? "https" : "http";
+        String scheme = connector.getConnectionFactory(SslConnectionFactory.class) != null ? "https" : "http";
         headers.put(HTTPSPDYHeader.SCHEME.name(version), scheme);
         headers.put(HTTPSPDYHeader.METHOD.name(version), methodString);
         headers.put(HTTPSPDYHeader.URI.name(version), uri);

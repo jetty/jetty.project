@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,10 +45,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 @Ignore
 public class StressTest
@@ -93,7 +94,7 @@ public class StressTest
 
         _server = new Server(_threads);
         _server.manage(_threads);
-        _connector = new SelectChannelConnector(_server,null,null,null,null,1,1);
+        _connector = new SelectChannelConnector(_server,null,null,null,1, 1,new HttpConnectionFactory());
         _connector.setAcceptQueueSize(5000);
         _connector.setIdleTimeout(30000);
         _server.addConnector(_connector);

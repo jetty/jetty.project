@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -94,7 +95,7 @@ public class Server extends HandlerWrapper implements Attributes
     public Server(@Name("port")int port)
     {
         this((ThreadPool)null);
-        SelectChannelConnector connector=new SelectChannelConnector(this);
+        SelectChannelConnector connector=new HttpServerConnector(this);
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
     }
@@ -106,7 +107,7 @@ public class Server extends HandlerWrapper implements Attributes
     public Server(@Name("address")InetSocketAddress addr)
     {
         this((ThreadPool)null);
-        SelectChannelConnector connector=new SelectChannelConnector(this);
+        SelectChannelConnector connector=new HttpServerConnector(this);
         connector.setHost(addr.getHostName());
         connector.setPort(addr.getPort());
         setConnectors(new Connector[]{connector});

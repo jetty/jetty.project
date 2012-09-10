@@ -25,13 +25,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -41,22 +38,31 @@ public class LocalConnector extends AbstractConnector
 {
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
 
+    
+    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
+    {
+        super(server,executor,scheduler,pool,acceptors,factories);
+        setIdleTimeout(30000);
+    }
+
     public LocalConnector(Server server)
     {
-        this(server,null);
+        this(server, null, null, null, 0, new HttpConnectionFactory());
     }
 
     public LocalConnector(Server server, SslContextFactory sslContextFactory)
     {
-        this(server, null, null, null, sslContextFactory, 0);
+        this(server, null, null, null, 0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
     }
 
-    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool,
-                          SslContextFactory sslContextFactory, int acceptors)
+    public LocalConnector(Server server, ConnectionFactory connectionFactory)
     {
-        super(server,executor,scheduler,pool, sslContextFactory, acceptors);
-        setIdleTimeout(30000);
-        setDefaultConnectionFactory(new HttpServerConnectionFactory(this));
+        this(server, null, null, null, 0, connectionFactory);
+    }
+    
+    public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory sslContextFactory)
+    {
+        this(server, null, null, null, 0,AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory));
     }
 
     @Override
@@ -159,29 +165,10 @@ public class LocalConnector extends AbstractConnector
         LocalEndPoint endPoint = _connects.take();
         endPoint.onOpen();
 
-        SslContextFactory sslContextFactory = getSslContextFactory();
-        if (sslContextFactory != null)
-        {
-            SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
-            engine.setUseClientMode(false);
-
-            SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
-            endPoint.setConnection(sslConnection);
-            connectionOpened(sslConnection);
-            sslConnection.onOpen();
-
-            EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
-            Connection connection = getDefaultConnectionFactory().newConnection(null, appEndPoint, null);
-            appEndPoint.setConnection(connection);
-            connection.onOpen();
-        }
-        else
-        {
-            Connection connection = getDefaultConnectionFactory().newConnection(null, endPoint, null);
-            endPoint.setConnection(connection);
-            connectionOpened(connection);
-            connection.onOpen();
-        }
+        Connection connection = getDefaultConnectionFactory().newConnection(this, endPoint);
+        endPoint.setConnection(connection);
+        connectionOpened(connection);
+        connection.onOpen();
     }
 
     public class LocalEndPoint extends ByteArrayEndPoint

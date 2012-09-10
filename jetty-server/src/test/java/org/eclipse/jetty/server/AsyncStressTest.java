@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -25,6 +27,7 @@ import java.net.Socket;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -43,8 +46,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class AsyncStressTest
 {
@@ -72,7 +73,7 @@ public class AsyncStressTest
     {
         _server.manage(_threads);
         _threads.setMaxThreads(50);
-        _connector = new SelectChannelConnector(_server);
+        _connector = new HttpServerConnector(_server);
         _connector.setIdleTimeout(120000);
         _server.setConnectors(new Connector[]{ _connector });
         _server.setHandler(_handler);

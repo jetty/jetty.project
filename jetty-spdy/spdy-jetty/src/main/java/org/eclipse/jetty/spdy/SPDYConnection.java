@@ -36,15 +36,23 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
     private static final Logger LOG = Log.getLogger(SPDYConnection.class);
     private final ByteBufferPool bufferPool;
     private final Parser parser;
+    private final int bufferSize;
     private volatile ISession session;
     private volatile boolean idle = false;
+    
 
     public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
+    {
+        this(endPoint,bufferPool,parser,executor,8192);
+    }
+    
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor,int bufferSize)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);
+        this.bufferSize=bufferSize;
     }
 
     @Override
@@ -57,7 +65,7 @@ public class SPDYConnection extends AbstractConnection implements Controller<Sta
     @Override
     public void onFillable()
     {
-        ByteBuffer buffer = bufferPool.acquire(8192, true); //TODO: 8k window?
+        ByteBuffer buffer = bufferPool.acquire(bufferSize, true); 
         boolean readMore = read(buffer) == 0;
         bufferPool.release(buffer);
         if (readMore)

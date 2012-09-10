@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,6 +29,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -36,10 +41,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.matchers.JUnitMatchers.containsString;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
@@ -243,14 +244,12 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // further writes will get broken pipe or similar
         try
         {
-            for (int i=0;i<1000;i++)
+            long end=System.currentTimeMillis()+MAX_IDLE_TIME+3000;
+            while (System.currentTimeMillis()<end)
             {
-                os.write((
-                        "GET / HTTP/1.0\r\n"+
-                        "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
-                        "connection: keep-alive\r\n"+
-                "\r\n").getBytes("utf-8"));
+                os.write("THIS DATA SHOULD NOT BE PARSED!\n\n".getBytes("utf-8"));
                 os.flush();
+                Thread.sleep(500);
             }
             Assert.fail("half close should have timed out");
         }
@@ -258,8 +257,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             // expected
         }
-
-        Thread.sleep(2 * MAX_IDLE_TIME);
 
         // check the server side is closed
         Assert.assertFalse(endPoint.isOpen());
@@ -467,6 +464,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     protected static class SlowResponseHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -485,6 +483,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     protected static class WaitHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);

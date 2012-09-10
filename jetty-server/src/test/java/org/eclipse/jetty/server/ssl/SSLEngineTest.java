@@ -23,6 +23,11 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +36,10 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -42,8 +49,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpServerConnectionFactory;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
@@ -55,11 +61,6 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -74,9 +75,11 @@ public class SSLEngineTest
     /** The request. */
     private static final String REQUEST0_HEADER="POST /r0 HTTP/1.1\n"+"Host: localhost\n"+"Content-Type: text/xml\n"+"Content-Length: ";
     private static final String REQUEST1_HEADER="POST /r1 HTTP/1.1\n"+"Host: localhost\n"+"Content-Type: text/xml\n"+"Connection: close\n"+"Content-Length: ";
-    private static final String REQUEST_CONTENT="<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"
-            +"<requests xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"+"        xsi:noNamespaceSchemaLocation=\"commander.xsd\" version=\""
-            +PROTOCOL_VERSION+"\">\n"+"</requests>";
+    private static final String REQUEST_CONTENT=
+        "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"+
+        "<requests xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"+
+        "        xsi:noNamespaceSchemaLocation=\"commander.xsd\" version=\""+PROTOCOL_VERSION+"\">\n"+
+        "</requests>";
 
     private static final String REQUEST0=REQUEST0_HEADER+REQUEST_CONTENT.getBytes().length+"\n\n"+REQUEST_CONTENT;
     private static final String REQUEST1=REQUEST1_HEADER+REQUEST_CONTENT.getBytes().length+"\n\n"+REQUEST_CONTENT;
@@ -101,12 +104,11 @@ public class SSLEngineTest
         sslContextFactory.setKeyManagerPassword("keypwd");
 
         server=new Server();
-        connector=new SelectChannelConnector(server, sslContextFactory);
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        http.setInputBufferSize(512);
+        http.getHttpChannelConfig().setRequestHeaderSize(512);
+        connector=new SelectChannelConnector(server, sslContextFactory, http);
         connector.setPort(0);
-        HttpConfiguration httpConfiguration = new HttpConfiguration(sslContextFactory, true);
-        httpConfiguration.setRequestBufferSize(512);
-        httpConfiguration.setRequestHeaderSize(512);
-        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector, httpConfiguration));
 
         server.addConnector(connector);
     }
@@ -223,7 +225,7 @@ public class SSLEngineTest
                         // System.err.println("read:"+i);
                         // Read the response.
                         String responses=readResponse(client[i]);
-                        // Check the response
+                        // Check the responses
                         assertEquals(String.format("responses loop=%d connection=%d",l,i),RESPONSE0+RESPONSE0+RESPONSE1,responses);
                     }
                 }
@@ -233,7 +235,13 @@ public class SSLEngineTest
                     {
                         if (client[i]!=null)
                         {
-                            client[i].close();
+                            try
+                            {
+                                assertEquals(-1,client[i].getInputStream().read());
+                            }
+                            catch(SocketException e)
+                            {
+                            }
                         }
                     }
                 }
@@ -340,12 +348,13 @@ public class SSLEngineTest
 
     private static class HelloWorldHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             String ssl_id = (String)request.getAttribute("javax.servlet.request.ssl_session_id");
             assertNotNull(ssl_id);
-
+            
             if (request.getParameter("dump")!=null)
             {
                 ServletOutputStream out=response.getOutputStream();

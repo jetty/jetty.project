@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.security.Principal;
 import java.util.Map;
+
 import javax.security.auth.Subject;
 
 /* ------------------------------------------------------------ */

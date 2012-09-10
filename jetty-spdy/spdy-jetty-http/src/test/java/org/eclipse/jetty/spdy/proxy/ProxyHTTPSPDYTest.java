@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYClient;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
-import org.eclipse.jetty.spdy.ServerSPDYConnectionFactory;
+import org.eclipse.jetty.spdy.SPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
@@ -100,8 +100,7 @@ public class ProxyHTTPSPDYTest
     {
         server = new Server();
         SPDYServerConnector serverConnector = new SPDYServerConnector(server, listener);
-        serverConnector.setDefaultConnectionFactory(new ServerSPDYConnectionFactory(version,
-                serverConnector.getByteBufferPool(), serverConnector.getExecutor(), serverConnector.getScheduler(), listener));
+        serverConnector.addConnectionFactory(new SPDYServerConnectionFactory(version,listener));
         serverConnector.setPort(0);
         server.addConnector(serverConnector);
         server.start();
@@ -464,7 +463,7 @@ public class ProxyHTTPSPDYTest
                 return null;
             }
         }));
-        proxyConnector.setDefaultConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
+        proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
 
         Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
 
@@ -509,7 +508,7 @@ public class ProxyHTTPSPDYTest
                 return null;
             }
         }));
-        proxyConnector.setDefaultConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
+        proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
 
         Session client = factory.newSPDYClient(version).connect(proxyAddress, null).get(5, TimeUnit.SECONDS);
 
@@ -630,7 +629,7 @@ public class ProxyHTTPSPDYTest
                 return null;
             }
         }));
-        proxyConnector.setDefaultConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
+        proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
 
         final CountDownLatch pushSynLatch = new CountDownLatch(1);
         final CountDownLatch pushDataLatch = new CountDownLatch(1);
@@ -689,7 +688,7 @@ public class ProxyHTTPSPDYTest
         // We just verify that it works
 
         InetSocketAddress proxyAddress = startProxy(startServer(new ServerSessionFrameListener.Adapter()));
-        proxyConnector.setDefaultConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
+        proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
 
         final CountDownLatch pingLatch = new CountDownLatch(1);
         Session client = factory.newSPDYClient(version).connect(proxyAddress, new SessionFrameListener.Adapter()
@@ -761,7 +760,7 @@ public class ProxyHTTPSPDYTest
                 return null;
             }
         }));
-        proxyConnector.setDefaultConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
+        proxyConnector.addConnectionFactory(proxyConnector.getConnectionFactory("spdy/" + version));
 
         final CountDownLatch resetLatch = new CountDownLatch(1);
         Session client = factory.newSPDYClient(version).connect(proxyAddress, new SessionFrameListener.Adapter()

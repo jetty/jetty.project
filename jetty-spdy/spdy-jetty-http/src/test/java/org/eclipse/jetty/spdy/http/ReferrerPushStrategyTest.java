@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
@@ -54,11 +55,12 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     }
 
     @Override
-    protected SPDYServerConnector newHTTPSPDYServerConnector(short version)
+    protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
-        SPDYServerConnector connector = super.newHTTPSPDYServerConnector(version);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, new ReferrerPushStrategy());
-        connector.setDefaultConnectionFactory(defaultFactory);
+        HTTPSPDYServerConnector connector = super.newHTTPSPDYServerConnector(version);
+        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), new ReferrerPushStrategy());
+        connector.addConnectionFactory(defaultFactory);
+        connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
         return connector;
     }
 
@@ -70,8 +72,9 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
-        connector.setDefaultConnectionFactory(defaultFactory);
+        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), pushStrategy);
+        connector.addConnectionFactory(defaultFactory);
+        connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
 
         Fields mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
         Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);
@@ -92,9 +95,9 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         int referrerPushPeriod = 1000;
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version,
-                connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
-        connector.setDefaultConnectionFactory(defaultFactory);
+        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), pushStrategy);
+        connector.addConnectionFactory(defaultFactory);
+        connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
 
         Fields mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
         Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);
@@ -114,9 +117,9 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
         ReferrerPushStrategy pushStrategy = new ReferrerPushStrategy();
         pushStrategy.setMaxAssociatedResources(1);
-        ConnectionFactory defaultFactory = new ServerHTTPSPDYConnectionFactory(version,
-                connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), connector, pushStrategy);
-        connector.setDefaultConnectionFactory(defaultFactory);
+        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), pushStrategy);
+        connector.addConnectionFactory(defaultFactory);
+        connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
 
         Fields mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
         Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);

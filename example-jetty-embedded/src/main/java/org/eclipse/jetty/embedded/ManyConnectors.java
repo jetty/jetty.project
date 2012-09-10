@@ -18,10 +18,23 @@
 
 package org.eclipse.jetty.embedded;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.HttpChannelConfig;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.spdy.NPNServerConnectionFactory;
+import org.eclipse.jetty.spdy.http.PushStrategy;
+import org.eclipse.jetty.spdy.http.ReferrerPushStrategy;
+import org.eclipse.jetty.spdy.http.HTTPSPDYServerConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 
 /* ------------------------------------------------------------ */
 /**
@@ -32,31 +45,73 @@ public class ManyConnectors
 {
     public static void main(String[] args) throws Exception
     {
+        String jetty_home = System.getProperty("jetty.home","../jetty-server/src/main/config");
+        System.setProperty("jetty.home", jetty_home);
+        
         Server server = new Server();
 
+        // HTTP connector
         SelectChannelConnector connector0 = new SelectChannelConnector(server);
         connector0.setPort(8080);
         connector0.setIdleTimeout(30000);
 
-        SelectChannelConnector connector1 = new SelectChannelConnector(server);
-        connector1.setHost("127.0.0.1");
-        connector1.setPort(8888);
-
-        String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
-        System.setProperty("jetty.home", jetty_home);
+        // HTTPS connector
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        SelectChannelConnector sslConnector = new SelectChannelConnector(server,sslContextFactory);
-        sslConnector.setPort(8443);
+        
+        SelectChannelConnector connector1 = new SelectChannelConnector(server,sslContextFactory);
+        connector1.setPort(8443);
+        
+        
+        // A verbosely fully configured connector with SSL, SPDY and HTTP
+        
+        HttpChannelConfig config = new HttpChannelConfig();
+        config.setSecureScheme("https");
+        config.setSecurePort(8443);
+        config.setOutputBufferSize(32768);
+        config.setRequestHeaderSize(8192);
+        config.setResponseHeaderSize(8192);
+        config.addCustomizer(new ForwardedRequestCustomizer());
+        config.addCustomizer(new SecureRequestCustomizer());
+        
+        HttpConnectionFactory http = new HttpConnectionFactory(config);
+        http.setInputBufferSize(16384);
+        
+        PushStrategy push = new ReferrerPushStrategy();
+        HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);
+        spdy2.setInputBufferSize(8192);
+        spdy2.setInitialWindowSize(32768);
+        
+        HTTPSPDYServerConnectionFactory spdy3 = new HTTPSPDYServerConnectionFactory(3,config,push);
+        spdy2.setInputBufferSize(8192);
+        
+        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(http.getProtocol(),spdy2.getProtocol(),spdy3.getProtocol());
+        npn.setDefaultProtocol(http.getProtocol());
+        npn.setInputBufferSize(1024);
+        
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol());
+ 
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setMaxThreads(256);
+        TimerScheduler scheduler = new TimerScheduler();
+        ByteBufferPool bufferPool= new ArrayByteBufferPool(32,4096,32768);
+        
+        SelectChannelConnector connector2 = new SelectChannelConnector(server,threadPool,scheduler,bufferPool,2,2,ssl,npn,spdy3,spdy2,http);            
+        connector2.setDefaultProtocol("ssl-npn");
+        connector2.setPort(8444);
+        connector2.setIdleTimeout(30000);
+        connector2.setSoLingerTime(10000);
+        
+        // Set the connectors
+        server.setConnectors(new Connector[] { connector0, connector1, connector2 });
 
-        server.setConnectors(new Connector[]
-        { connector0, connector1, sslConnector });
-
+        
         server.setHandler(new HelloHandler());
 
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

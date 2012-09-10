@@ -45,6 +45,8 @@ public abstract class AbstractConnection implements Connection
     private enum State {IDLE,INTERESTED,FILLING,FILLING_INTERESTED};
     private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
 
+    private int _inputBufferSize=8192;
+    
     public AbstractConnection(EndPoint endp, Executor executor)
     {
         this(endp, executor, true);
@@ -117,6 +119,16 @@ public abstract class AbstractConnection implements Connection
             }
         };
     }
+    
+    public int getInputBufferSize()
+    {
+        return _inputBufferSize;
+    }
+
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        _inputBufferSize = inputBufferSize;
+    }
 
     public Executor getExecutor()
     {
@@ -146,7 +158,6 @@ public abstract class AbstractConnection implements Connection
                     break;
                     
                 case FILLING:
-
                     if (_state.compareAndSet(State.FILLING,State.FILLING_INTERESTED))
                         break loop;
                     break;

@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.lessThan;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,8 +40,6 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.lessThan;
-
 public class SlowClientWithPipelinedRequestTest
 {
     private final AtomicInteger handles = new AtomicInteger();
@@ -49,13 +49,12 @@ public class SlowClientWithPipelinedRequestTest
     public void startServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new SelectChannelConnector(server);
-        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector)
+        connector = new SelectChannelConnector(server,new HttpConnectionFactory()
         {
             @Override
-            public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+            public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return new HttpConnection(getHttpConfiguration(), getConnector(), endPoint)
+                return new HttpConnection(new HttpChannelConfig(),connector,endPoint)
                 {
                     @Override
                     public void onFillable()
