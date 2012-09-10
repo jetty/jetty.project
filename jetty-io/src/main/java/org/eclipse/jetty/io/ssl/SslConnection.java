@@ -222,9 +222,17 @@ public class SslConnection extends AbstractConnection
     @Override
     public String toString()
     {
-        return String.format("SslConnection@%x{%s} -> %s",
+        ByteBuffer b = _encryptedInput;
+        int ei=b==null?-1:b.remaining(); 
+        b = _encryptedOutput;
+        int eo=b==null?-1:b.remaining();
+        b = _decryptedInput;
+        int di=b==null?-1:b.remaining();
+        
+        return String.format("SslConnection@%x{%s,eio=%d/%d,di=%d} -> %s",
                 hashCode(),
                 _sslEngine.getHandshakeStatus(),
+                ei,eo,di,
                 _decryptedEndPoint.getConnection());
     }
 
