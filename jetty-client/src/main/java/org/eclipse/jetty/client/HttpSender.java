@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -28,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -43,36 +42,30 @@ public class HttpSender
     private static final Logger LOG = Log.getLogger(HttpSender.class);
 
     private final HttpGenerator generator = new HttpGenerator();
-    private final AtomicReference<HttpExchange> exchange = new AtomicReference<>();
+    private final ResponseNotifier responseNotifier = new ResponseNotifier();
     private final HttpConnection connection;
-
+    private final RequestNotifier requestNotifier;
     private long contentLength;
     private Iterator<ByteBuffer> contentChunks;
     private ByteBuffer header;
     private ByteBuffer chunk;
-    private boolean headersComplete;
-    private boolean failed;
+    private volatile boolean committed;
+    private volatile boolean failed;
 
     public HttpSender(HttpConnection connection)
     {
         this.connection = connection;
+        this.requestNotifier = new RequestNotifier(connection.getHttpClient());
     }
 
     public void send(HttpExchange exchange)
     {
-        if (this.exchange.compareAndSet(null, exchange))
-        {
-            LOG.debug("Sending {}", exchange.request());
-            notifyRequestBegin(exchange.request());
-            ContentProvider content = exchange.request().content();
-            this.contentLength = content == null ? -1 : content.length();
-            this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
-            send();
-        }
-        else
-        {
-            throw new IllegalStateException();
-        }
+        LOG.debug("Sending {}", exchange.request());
+        requestNotifier.notifyBegin(exchange.request());
+        ContentProvider content = exchange.request().content();
+        this.contentLength = content == null ? -1 : content.length();
+        this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
+        send();
     }
 
     private void send()
@@ -81,8 +74,9 @@ public class HttpSender
         {
             HttpClient client = connection.getHttpClient();
             EndPoint endPoint = connection.getEndPoint();
+            HttpExchange exchange = connection.getExchange();
             ByteBufferPool byteBufferPool = client.getByteBufferPool();
-            final Request request = exchange.get().request();
+            final Request request = exchange.request();
             HttpGenerator.RequestInfo info = null;
             ByteBuffer content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
             boolean lastContent = !contentChunks.hasNext();
@@ -133,7 +127,8 @@ public class HttpSender
                             @Override
                             protected void pendingCompleted()
                             {
-                                notifyRequestHeaders(request);
+                                if (!committed)
+                                    committed(request);
                                 send();
                             }
 
@@ -153,11 +148,9 @@ public class HttpSender
 
                         if (callback.completed())
                         {
-                            if (!headersComplete)
-                            {
-                                headersComplete = true;
-                                notifyRequestHeaders(request);
-                            }
+                            if (!committed)
+                                committed(request);
+
                             releaseBuffers();
                             content = contentChunks.hasNext() ? contentChunks.next() : BufferUtil.EMPTY_BUFFER;
                             lastContent = !contentChunks.hasNext();
@@ -186,7 +179,7 @@ public class HttpSender
                 }
             }
         }
-        catch (IOException x)
+        catch (Exception x)
         {
             LOG.debug(x);
             fail(x);
@@ -197,20 +190,35 @@ public class HttpSender
         }
     }
 
+    protected void committed(Request request)
+    {
+        LOG.debug("Committed {}", request);
+        committed = true;
+        requestNotifier.notifyHeaders(request);
+    }
+
     protected void success()
     {
         // Cleanup first
         generator.reset();
-        headersComplete = false;
+        committed = false;
 
         // Notify after
-        HttpExchange exchange = this.exchange.getAndSet(null);
-        LOG.debug("Sent {}", exchange.request());
-        exchange.requestComplete(true);
+        HttpExchange exchange = connection.getExchange();
+        Request request = exchange.request();
+        LOG.debug("Sent {}", request);
+
+        boolean exchangeCompleted = exchange.requestComplete(true);
 
         // It is important to notify *after* we reset because
         // the notification may trigger another request/response
-        notifyRequestSuccess(exchange.request());
+        requestNotifier.notifySuccess(request);
+        if (exchangeCompleted)
+        {
+            HttpConversation conversation = exchange.conversation();
+            Result result = new Result(request, exchange.response());
+            responseNotifier.notifyComplete(conversation.listener(), result);
+        }
     }
 
     protected void fail(Throwable failure)
@@ -224,12 +232,21 @@ public class HttpSender
         failed = true;
 
         // Notify after
-        HttpExchange exchange = this.exchange.getAndSet(null);
-        LOG.debug("Failed {}", exchange.request());
-        exchange.requestComplete(false);
+        HttpExchange exchange = connection.getExchange();
+        Request request = exchange.request();
+        LOG.debug("Failed {}", request);
 
-        notifyRequestFailure(exchange.request(), failure);
-        notifyResponseFailure(exchange.listener(), failure);
+        boolean exchangeCompleted = exchange.requestComplete(false);
+        if (!exchangeCompleted && !committed)
+            exchangeCompleted = exchange.responseComplete(false);
+
+        requestNotifier.notifyFailure(request, failure);
+        if (exchangeCompleted)
+        {
+            HttpConversation conversation = exchange.conversation();
+            Result result = new Result(request, failure, exchange.response());
+            responseNotifier.notifyComplete(conversation.listener(), result);
+        }
     }
 
     private void releaseBuffers()
@@ -244,75 +261,6 @@ public class HttpSender
         {
             bufferPool.release(chunk);
             chunk = null;
-        }
-    }
-
-    private void notifyRequestBegin(Request request)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onBegin(request);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyRequestHeaders(Request request)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onHeaders(request);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyRequestSuccess(Request request)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onSuccess(request);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyRequestFailure(Request request, Throwable failure)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onFailure(request, failure);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyResponseFailure(Response.Listener listener, Throwable failure)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onFailure(null, failure);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 

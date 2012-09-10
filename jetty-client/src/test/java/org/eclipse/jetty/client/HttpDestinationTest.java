@@ -76,12 +76,12 @@ public class HttpDestinationTest extends AbstractHttpClientServerTest
         HttpDestination destination = new HttpDestination(client, "http", "localhost", connector.getLocalPort())
         {
             @Override
-            protected void process(Connection connection)
+            protected void process(Connection connection, boolean dispatch)
             {
                 try
                 {
                     latch.await(5, TimeUnit.SECONDS);
-                    super.process(connection);
+                    super.process(connection, dispatch);
                 }
                 catch (InterruptedException x)
                 {

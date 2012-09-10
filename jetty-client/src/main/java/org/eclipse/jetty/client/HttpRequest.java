@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.UnsupportedCharsetException;
+import java.nio.file.Path;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,7 +32,9 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -151,6 +155,18 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public String uri()
+    {
+        String scheme = scheme();
+        String result = scheme + "://" + host();
+        int port = port();
+        result += "http".equals(scheme) && port != 80 ? ":" + port : "";
+        result += "https".equals(scheme) && port != 443 ? ":" + port : "";
+        result += path();
+        return result;
+    }
+
+    @Override
     public HttpVersion version()
     {
         return version;
@@ -232,13 +248,21 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request decoder(ContentDecoder decoder)
+    public Request file(Path file) throws IOException
     {
-        return this;
+        return file(file, "application/octet-stream");
     }
 
     @Override
-    public Request cookie(String key, String value)
+    public Request file(Path file, String contentType) throws IOException
+    {
+        if (contentType != null)
+            header(HttpHeader.CONTENT_TYPE.asString(), contentType);
+        return content(new PathContentProvider(file));
+    }
+
+    @Override
+    public Request decoder(ContentDecoder decoder)
     {
         return this;
     }
@@ -265,25 +289,22 @@ public class HttpRequest implements Request
     @Override
     public Future<ContentResponse> send()
     {
-        final FutureCallback<ContentResponse> result = new FutureCallback<>();
+        final FutureCallback<ContentResponse> callback = new FutureCallback<>();
         BufferingResponseListener listener = new BufferingResponseListener()
         {
             @Override
-            public void onSuccess(Response response)
+            public void onComplete(Result result)
             {
-                super.onSuccess(response);
-                result.completed(new HttpContentResponse(response, this));
-            }
-
-            @Override
-            public void onFailure(Response response, Throwable failure)
-            {
-                super.onFailure(response, failure);
-                result.failed(new HttpContentResponse(response, this), failure);
+                super.onComplete(result);
+                HttpContentResponse contentResponse = new HttpContentResponse(result.getResponse(), content());
+                if (!result.isFailed())
+                    callback.completed(contentResponse);
+                else
+                    callback.failed(contentResponse, result.getFailure());
             }
         };
         send(listener);
-        return result;
+        return callback;
     }
 
     @Override

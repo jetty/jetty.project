@@ -22,14 +22,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpExchange
 {
-    private static final int REQUEST_SUCCESS = 1;
-    private static final int RESPONSE_SUCCESS = 2;
-    private static final int REQUEST_RESPONSE_SUCCESS = REQUEST_SUCCESS + RESPONSE_SUCCESS;
+    private static final Logger LOG = Log.getLogger(HttpExchange.class);
 
-    private final AtomicInteger done = new AtomicInteger();
+    private final AtomicInteger complete = new AtomicInteger();
     private final HttpConversation conversation;
     private final HttpConnection connection;
     private final Request request;
@@ -42,7 +42,7 @@ public class HttpExchange
         this.connection = connection;
         this.request = request;
         this.listener = listener;
-        this.response = new HttpResponse(request, listener);
+        this.response = new HttpResponse(listener);
     }
 
     public HttpConversation conversation()
@@ -70,29 +70,51 @@ public class HttpExchange
         connection.receive();
     }
 
-    public void requestComplete(boolean success)
+    public boolean requestComplete(boolean success)
     {
-        done(success, REQUEST_SUCCESS);
+        int requestSuccess = 0b0011;
+        int requestFailure = 0b0001;
+        return complete(success ? requestSuccess : requestFailure);
     }
 
-    public void responseComplete(boolean success)
+    public boolean responseComplete(boolean success)
     {
-        done(success, RESPONSE_SUCCESS);
+        int responseSuccess = 0b1100;
+        int responseFailure = 0b0100;
+        return complete(success ? responseSuccess : responseFailure);
     }
 
-    private void done(boolean success, int kind)
+    /**
+     * This method needs to atomically compute whether this exchange is completed,
+     * that is both request and responses are completed (either with a success or
+     * a failure).
+     *
+     * Furthermore, this method needs to atomically compute whether the exchange
+     * has completed successfully (both request and response are successful) or not.
+     *
+     * To do this, we use 2 bits for the request (one to indicate completion, one
+     * to indicate success), and similarly for the response.
+     * By using {@link AtomicInteger} to atomically sum these codes we can know
+     * whether the exchange is completed and whether is successful.
+     *
+     * @param code the bits representing the status code for either the request or the response
+     * @return whether the exchange completed (either successfully or not)
+     */
+    private boolean complete(int code)
     {
-        if (success)
+        int status = complete.addAndGet(code);
+        int completed = 0b0101;
+        if ((status & completed) == completed)
         {
-            if (done.addAndGet(kind) == REQUEST_RESPONSE_SUCCESS)
-            {
-                connection.completed(this, true);
-            }
+            LOG.debug("{} complete", this);
+            // Request and response completed
+            if (this == conversation.last())
+                conversation.complete();
+            int success = 0b1111;
+            connection.complete(this, status == success);
+            return true;
         }
-        else
-        {
-            connection.completed(this, false);
-        }
+        return false;
     }
 
     @Override
