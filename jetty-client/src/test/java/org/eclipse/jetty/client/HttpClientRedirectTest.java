@@ -122,7 +122,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 .method(HttpMethod.POST)
                 .path("/307/localhost/done")
                 .content(new ByteBufferContentProvider(ByteBuffer.wrap(data)))
-                .send().get(500, TimeUnit.SECONDS);
+                .send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
         Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
@@ -151,6 +151,17 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         }
     }
 
+    @Test
+    public void test_303_WithConnectionClose_WithBigRequest() throws Exception
+    {
+        Response response = client.newRequest("localhost", connector.getLocalPort())
+                .path("/303/localhost/done?close=true")
+                .send().get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.status());
+        Assert.assertFalse(response.headers().containsKey(HttpHeader.LOCATION.asString()));
+    }
+
     private class RedirectHandler extends AbstractHandler
     {
         @Override
@@ -159,10 +170,16 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             try
             {
                 String[] paths = target.split("/", 4);
+
                 int status = Integer.parseInt(paths[1]);
                 response.setStatus(status);
+
                 String host = paths[2];
                 response.setHeader("Location", request.getScheme() + "://" + host + ":" + request.getServerPort() + "/" + paths[3]);
+
+                String close = request.getParameter("close");
+                if (Boolean.parseBoolean(close))
+                    response.setHeader("Connection", "close");
             }
             catch (NumberFormatException x)
             {

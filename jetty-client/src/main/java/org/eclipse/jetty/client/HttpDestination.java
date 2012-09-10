@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -40,6 +41,7 @@ public class HttpDestination implements Destination, AutoCloseable
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final AtomicInteger connectionCount = new AtomicInteger();
+    private final ResponseNotifier responseNotifier = new ResponseNotifier();
     private final HttpClient client;
     private final String scheme;
     private final String host;
@@ -47,6 +49,7 @@ public class HttpDestination implements Destination, AutoCloseable
     private final Queue<RequestPair> requests;
     private final BlockingQueue<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
+    private final RequestNotifier requestNotifier;
 
     public HttpDestination(HttpClient client, String scheme, String host, int port)
     {
@@ -57,6 +60,7 @@ public class HttpDestination implements Destination, AutoCloseable
         this.requests = new ArrayBlockingQueue<>(client.getMaxQueueSizePerAddress());
         this.idleConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
         this.activeConnections = new ArrayBlockingQueue<>(client.getMaxConnectionsPerAddress());
+        this.requestNotifier = new RequestNotifier(client);
     }
 
     protected BlockingQueue<Connection> getIdleConnections()
@@ -109,7 +113,7 @@ public class HttpDestination implements Destination, AutoCloseable
                 else
                 {
                     LOG.debug("Queued {}", request);
-                    notifyRequestQueued(request);
+                    requestNotifier.notifyQueued(request);
                     Connection connection = acquire();
                     if (connection != null)
                         process(connection, false);
@@ -123,47 +127,6 @@ public class HttpDestination implements Destination, AutoCloseable
         else
         {
             throw new RejectedExecutionException(client + " is stopped");
-        }
-    }
-
-    private void notifyRequestQueued(Request request)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onQueued(request);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyRequestFailure(Request request, Throwable failure)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onFailure(request, failure);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyResponseFailure(Response.Listener listener, Throwable failure)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onFailure(null, failure);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 
@@ -223,8 +186,8 @@ public class HttpDestination implements Destination, AutoCloseable
                                 RequestPair pair = requests.poll();
                                 if (pair != null)
                                 {
-                                    notifyRequestFailure(pair.request, x);
-                                    notifyResponseFailure(pair.listener, x);
+                                    requestNotifier.notifyFailure(pair.request, x);
+                                    responseNotifier.notifyComplete(pair.listener, new Result(pair.request, x, null));
                                 }
                             }
                         });
@@ -251,7 +214,7 @@ public class HttpDestination implements Destination, AutoCloseable
         if (requestPair == null)
         {
             LOG.debug("{} idle", connection);
-            idleConnections.offer(connection);
+            idleConnections.offer(connection); // TODO: check return value ?
             if (!client.isRunning())
             {
                 LOG.debug("{} is stopping", client);
@@ -262,7 +225,7 @@ public class HttpDestination implements Destination, AutoCloseable
         else
         {
             LOG.debug("{} active", connection);
-            activeConnections.offer(connection);
+            activeConnections.offer(connection); // TODO: check return value ?
             if (dispatch)
             {
                 client.getExecutor().execute(new Runnable()
@@ -330,8 +293,8 @@ public class HttpDestination implements Destination, AutoCloseable
         RequestPair pair;
         while ((pair = requests.poll()) != null)
         {
-            notifyRequestFailure(pair.request, failure);
-            notifyResponseFailure(pair.listener, failure);
+            requestNotifier.notifyFailure(pair.request, failure);
+            responseNotifier.notifyComplete(pair.listener, new Result(pair.request, failure, null));
         }
 
         connectionCount.set(0);

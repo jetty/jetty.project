@@ -155,6 +155,18 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public String uri()
+    {
+        String scheme = scheme();
+        String result = scheme + "://" + host();
+        int port = port();
+        result += "http".equals(scheme) && port != 80 ? ":" + port : "";
+        result += "https".equals(scheme) && port != 443 ? ":" + port : "";
+        result += path();
+        return result;
+    }
+
+    @Override
     public HttpVersion version()
     {
         return version;
@@ -200,13 +212,6 @@ public class HttpRequest implements Request
             headers.remove(name);
         else
             headers.add(name, value);
-        return this;
-    }
-
-    @Override
-    public Request cookie(String name, String value)
-    {
-        // TODO: cookie are handled via CookieStore, not sure this method is useful
         return this;
     }
 

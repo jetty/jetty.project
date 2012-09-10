@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -43,7 +42,9 @@ public class HttpSender
     private static final Logger LOG = Log.getLogger(HttpSender.class);
 
     private final HttpGenerator generator = new HttpGenerator();
+    private final ResponseNotifier responseNotifier = new ResponseNotifier();
     private final HttpConnection connection;
+    private final RequestNotifier requestNotifier;
     private long contentLength;
     private Iterator<ByteBuffer> contentChunks;
     private ByteBuffer header;
@@ -54,12 +55,13 @@ public class HttpSender
     public HttpSender(HttpConnection connection)
     {
         this.connection = connection;
+        this.requestNotifier = new RequestNotifier(connection.getHttpClient());
     }
 
     public void send(HttpExchange exchange)
     {
         LOG.debug("Sending {}", exchange.request());
-        notifyRequestBegin(exchange.request());
+        requestNotifier.notifyBegin(exchange.request());
         ContentProvider content = exchange.request().content();
         this.contentLength = content == null ? -1 : content.length();
         this.contentChunks = content == null ? Collections.<ByteBuffer>emptyIterator() : content.iterator();
@@ -192,7 +194,7 @@ public class HttpSender
     {
         LOG.debug("Committed {}", request);
         committed = true;
-        notifyRequestHeaders(request);
+        requestNotifier.notifyHeaders(request);
     }
 
     protected void success()
@@ -205,16 +207,17 @@ public class HttpSender
         HttpExchange exchange = connection.getExchange();
         Request request = exchange.request();
         LOG.debug("Sent {}", request);
+
         boolean exchangeCompleted = exchange.requestComplete(true);
 
         // It is important to notify *after* we reset because
         // the notification may trigger another request/response
-        notifyRequestSuccess(request);
+        requestNotifier.notifySuccess(request);
         if (exchangeCompleted)
         {
             HttpConversation conversation = exchange.conversation();
             Result result = new Result(request, exchange.response());
-            notifyComplete(conversation.listener(), result);
+            responseNotifier.notifyComplete(conversation.listener(), result);
         }
     }
 
@@ -232,16 +235,17 @@ public class HttpSender
         HttpExchange exchange = connection.getExchange();
         Request request = exchange.request();
         LOG.debug("Failed {}", request);
+
         boolean exchangeCompleted = exchange.requestComplete(false);
         if (!exchangeCompleted && !committed)
             exchangeCompleted = exchange.responseComplete(false);
 
-        notifyRequestFailure(request, failure);
+        requestNotifier.notifyFailure(request, failure);
         if (exchangeCompleted)
         {
             HttpConversation conversation = exchange.conversation();
             Result result = new Result(request, failure, exchange.response());
-            notifyComplete(conversation.listener(), result);
+            responseNotifier.notifyComplete(conversation.listener(), result);
         }
     }
 
@@ -257,75 +261,6 @@ public class HttpSender
         {
             bufferPool.release(chunk);
             chunk = null;
-        }
-    }
-
-    private void notifyRequestBegin(Request request)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onBegin(request);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyRequestHeaders(Request request)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onHeaders(request);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyRequestSuccess(Request request)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onSuccess(request);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyRequestFailure(Request request, Throwable failure)
-    {
-        Request.Listener listener = request.listener();
-        try
-        {
-            if (listener != null)
-                listener.onFailure(request, failure);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyComplete(Response.Listener listener, Result result)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onComplete(result);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
         }
     }
 

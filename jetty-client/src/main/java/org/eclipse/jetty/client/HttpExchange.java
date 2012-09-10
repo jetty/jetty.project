@@ -108,7 +108,7 @@ public class HttpExchange
         {
             LOG.debug("{} complete", this);
             // Request and response completed
-            if (conversation().listener() == conversation.first().listener())
+            if (this == conversation.last())
                 conversation.complete();
             int success = 0b1111;
             connection.complete(this, status == success);

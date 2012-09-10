@@ -35,6 +35,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.CookieStore;
@@ -75,12 +76,12 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  *
  * // Building a request with a timeout
  * HTTPClient client = new HTTPClient();
- * Response response = client.newRequest("localhost:8080").send().get(5, TimeUnit.SECONDS);
+ * Response response = client.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
  * int status = response.status();
  *
  * // Asynchronously
  * HTTPClient client = new HTTPClient();
- * client.newRequest("localhost:8080").send(new Response.Listener.Adapter()
+ * client.newRequest("http://localhost:8080").send(new Response.Listener.Adapter()
  * {
  *     &#64;Override
  *     public void onSuccess(Response response)
@@ -97,7 +98,9 @@ public class HttpClient extends AggregateLifeCycle
     private final ConcurrentMap<String, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
     private final List<ProtocolHandler> handlers = new CopyOnWriteArrayList<>();
+    private final List<Request.Listener> requestListeners = new CopyOnWriteArrayList<>();
     private final CookieStore cookieStore = new HttpCookieStore();
+    private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
@@ -113,6 +116,16 @@ public class HttpClient extends AggregateLifeCycle
     private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout;
+
+    public HttpClient()
+    {
+        this(null);
+    }
+
+    public HttpClient(Executor executor)
+    {
+        this.executor = executor;
+    }
 
     public ByteBufferPool getByteBufferPool()
     {
@@ -143,6 +156,7 @@ public class HttpClient extends AggregateLifeCycle
         addBean(selectorManager);
 
         handlers.add(new RedirectProtocolHandler(this));
+        handlers.add(new AuthenticationProtocolHandler(this));
 
         super.doStart();
 
@@ -171,9 +185,19 @@ public class HttpClient extends AggregateLifeCycle
         LOG.info("Stopped {}", this);
     }
 
+    public List<Request.Listener> getRequestListeners()
+    {
+        return requestListeners;
+    }
+
     public CookieStore getCookieStore()
     {
         return cookieStore;
+    }
+
+    public AuthenticationStore getAuthenticationStore()
+    {
+        return authenticationStore;
     }
 
     public long getIdleTimeout()

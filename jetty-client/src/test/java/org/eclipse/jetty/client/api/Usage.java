@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.client.util.StreamingResponseListener;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.junit.Assert;
@@ -67,7 +68,6 @@ public class Usage
                 .param("a", "b")
                 .header("X-Header", "Y-value")
                 .agent("Jetty HTTP Client")
-                .cookie("cookie1", "value1")
                 .decoder(null)
                 .content(null)
                 .idleTimeout(5000L);
@@ -140,7 +140,8 @@ public class Usage
     public void testCookie() throws Exception
     {
         HttpClient client = new HttpClient();
-        Response response = client.newRequest("localhost", 8080).cookie("key", "value").send().get();
+        client.getCookieStore().addCookie(client.getDestination("http", "host", 8080), new HttpCookie("name", "value"));
+        Response response = client.newRequest("host", 8080).send().get();
         Assert.assertEquals(200, response.status());
     }
 

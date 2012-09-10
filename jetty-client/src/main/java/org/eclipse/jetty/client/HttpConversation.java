@@ -19,11 +19,11 @@
 package org.eclipse.jetty.client;
 
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.Attributes;
@@ -31,10 +31,11 @@ import org.eclipse.jetty.util.Attributes;
 public class HttpConversation implements Attributes
 {
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
-    private final Queue<HttpExchange> exchanges = new ConcurrentLinkedQueue<>();
+    private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private final HttpClient client;
     private final long id;
     private volatile Response.Listener listener;
+    private volatile HttpExchange last;
 
     public HttpConversation(HttpClient client, long id)
     {
@@ -47,6 +48,11 @@ public class HttpConversation implements Attributes
         return id;
     }
 
+    public Deque<HttpExchange> exchanges()
+    {
+        return exchanges;
+    }
+
     public Response.Listener listener()
     {
         return listener;
@@ -57,14 +63,16 @@ public class HttpConversation implements Attributes
         this.listener = listener;
     }
 
-    public void add(HttpExchange exchange)
+    public HttpExchange last()
     {
-        exchanges.offer(exchange);
+        return last;
     }
 
-    public HttpExchange first()
+    public void last(HttpExchange exchange)
     {
-        return exchanges.peek();
+        if (last == null)
+
+        last = exchange;
     }
 
     public void complete()

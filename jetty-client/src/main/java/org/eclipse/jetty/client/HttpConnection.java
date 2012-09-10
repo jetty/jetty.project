@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
@@ -97,7 +99,7 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpConversation conversation = client.getConversation(request);
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
-        conversation.add(exchange);
+        conversation.exchanges().offer(exchange);
         conversation.listener(listener);
         sender.send(exchange);
     }
@@ -158,6 +160,11 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (cookieString != null)
             request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
+        // Authorization
+        Authentication authentication = client.getAuthenticationStore().findAuthenticationResult(request.uri());
+        if (authentication != null)
+            authentication.authenticate(request);
+
         // TODO: decoder headers
 
         // If we are HTTP 1.1, add the Host header
@@ -210,7 +217,17 @@ public class HttpConnection extends AbstractConnection implements Connection
             LOG.debug("{} disassociated from {}", exchange, this);
             if (success)
             {
-                destination.release(this);
+                HttpFields responseHeaders = exchange.response().headers();
+                Collection<String> values = responseHeaders.getValuesCollection(HttpHeader.CONNECTION.asString());
+                if (values != null && values.contains("close"))
+                {
+                    destination.remove(this);
+                    close();
+                }
+                else
+                {
+                    destination.release(this);
+                }
             }
             else
             {

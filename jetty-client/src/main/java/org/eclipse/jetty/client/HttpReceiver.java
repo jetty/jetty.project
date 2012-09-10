@@ -42,6 +42,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
     private static final Logger LOG = Log.getLogger(HttpReceiver.class);
 
     private final HttpParser parser = new HttpParser(this);
+    private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpConnection connection;
     private volatile boolean failed;
 
@@ -104,15 +105,29 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         response.version(version).status(status).reason(reason);
 
         // Probe the protocol handlers
+        Response.Listener currentListener = exchange.listener();
+        Response.Listener initialListener = conversation.exchanges().peekFirst().listener();
         HttpClient client = connection.getHttpClient();
-        Response.Listener listener = client.lookup(exchange.request(), response);
-        if (listener == null)
-            listener = conversation.first().listener();
-        conversation.listener(listener);
+        Response.Listener handlerListener = client.lookup(exchange.request(), response);
+        if (handlerListener == null)
+        {
+            conversation.last(exchange);
+            if (currentListener == initialListener)
+                conversation.listener(initialListener);
+            else
+                conversation.listener(new MultipleResponseListener(currentListener, initialListener));
+        }
+        else
+        {
+            if (currentListener == initialListener)
+                conversation.listener(handlerListener);
+            else
+                conversation.listener(new MultipleResponseListener(currentListener, handlerListener));
+        }
 
         LOG.debug("Receiving {}", response);
 
-        notifyBegin(listener, response);
+        notifier.notifyBegin(conversation.listener(), response);
         return false;
     }
 
@@ -150,7 +165,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Headers {}", response);
-        notifyHeaders(conversation.listener(), response);
+        notifier.notifyHeaders(conversation.listener(), response);
         return false;
     }
 
@@ -161,7 +176,7 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         HttpConversation conversation = exchange.conversation();
         HttpResponse response = exchange.response();
         LOG.debug("Content {}: {} bytes", response, buffer.remaining());
-        notifyContent(conversation.listener(), response, buffer);
+        notifier.notifyContent(conversation.listener(), response, buffer);
         return false;
     }
 
@@ -186,11 +201,11 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         boolean exchangeComplete = exchange.responseComplete(true);
 
         HttpConversation conversation = exchange.conversation();
-        notifySuccess(conversation.listener(), response);
+        notifier.notifySuccess(conversation.listener(), response);
         if (exchangeComplete)
         {
-            Result result = new Result(exchange.request(), exchange.response());
-            notifyComplete(conversation.listener(), result);
+            Result result = new Result(exchange.request(), response);
+            notifier.notifyComplete(conversation.listener(), result);
         }
     }
 
@@ -213,11 +228,11 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         boolean exchangeComplete = exchange.responseComplete(false);
 
         HttpConversation conversation = exchange.conversation();
-        notifyFailure(conversation.listener(), response, failure);
+        notifier.notifyFailure(conversation.listener(), response, failure);
         if (exchangeComplete)
         {
             Result result = new Result(exchange.request(), response, failure);
-            notifyComplete(conversation.listener(), result);
+            notifier.notifyComplete(conversation.listener(), result);
         }
     }
 
@@ -237,86 +252,73 @@ public class HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
         fail(new HttpResponseException("HTTP protocol violation: bad response", response));
     }
 
-    private void notifyBegin(Response.Listener listener, Response response)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onBegin(response);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyHeaders(Response.Listener listener, Response response)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onHeaders(response);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyContent(Response.Listener listener, Response response, ByteBuffer buffer)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onContent(response, buffer);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifySuccess(Response.Listener listener, Response response)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onSuccess(response);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyFailure(Response.Listener listener, Response response, Throwable failure)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onFailure(response, failure);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
-    private void notifyComplete(Response.Listener listener, Result result)
-    {
-        try
-        {
-            if (listener != null)
-                listener.onComplete(result);
-        }
-        catch (Exception x)
-        {
-            LOG.info("Exception while notifying listener " + listener, x);
-        }
-    }
-
     public void idleTimeout()
     {
         fail(new TimeoutException());
+    }
+
+    private class MultipleResponseListener implements Response.Listener
+    {
+        private final ResponseNotifier notifier = new ResponseNotifier();
+        private final Response.Listener[] listeners;
+
+        private MultipleResponseListener(Response.Listener... listeners)
+        {
+            this.listeners = listeners;
+        }
+
+        @Override
+        public void onBegin(Response response)
+        {
+            for (Response.Listener listener : listeners)
+            {
+                notifier.notifyBegin(listener, response);
+            }
+        }
+
+        @Override
+        public void onHeaders(Response response)
+        {
+            for (Response.Listener listener : listeners)
+            {
+                notifier.notifyHeaders(listener, response);
+            }
+        }
+
+        @Override
+        public void onContent(Response response, ByteBuffer content)
+        {
+            for (Response.Listener listener : listeners)
+            {
+                notifier.notifyContent(listener, response, content);
+            }
+        }
+
+        @Override
+        public void onSuccess(Response response)
+        {
+            for (Response.Listener listener : listeners)
+            {
+                notifier.notifySuccess(listener, response);
+            }
+        }
+
+        @Override
+        public void onFailure(Response response, Throwable failure)
+        {
+            for (Response.Listener listener : listeners)
+            {
+                notifier.notifyFailure(listener, response, failure);
+            }
+        }
+
+        @Override
+        public void onComplete(Result result)
+        {
+            for (Response.Listener listener : listeners)
+            {
+                notifier.notifyComplete(listener, result);
+            }
+        }
     }
 }

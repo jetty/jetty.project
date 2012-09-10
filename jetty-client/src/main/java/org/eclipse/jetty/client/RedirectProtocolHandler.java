@@ -28,6 +28,7 @@ public class RedirectProtocolHandler extends Response.Listener.Adapter implement
 {
     private static final String ATTRIBUTE = RedirectProtocolHandler.class.getName() + ".redirect";
 
+    private final ResponseNotifier notifier = new ResponseNotifier();
     private final HttpClient client;
 
     public RedirectProtocolHandler(HttpClient client)
@@ -113,6 +114,8 @@ public class RedirectProtocolHandler extends Response.Listener.Adapter implement
             ++redirects;
             conversation.setAttribute(ATTRIBUTE, redirects);
 
+            // TODO: no, reuse the same request object, just have a setter for the URI
+
             Request redirect = client.newRequest(request.id(), location);
 
             // Use given method
@@ -138,10 +141,9 @@ public class RedirectProtocolHandler extends Response.Listener.Adapter implement
         Request request = result.getRequest();
         Response response = result.getResponse();
         HttpConversation conversation = client.getConversation(request);
-        Response.Listener listener = conversation.first().listener();
+        Response.Listener listener = conversation.exchanges().peekFirst().listener();
         // TODO: should we reply all event, or just the failure ?
-        // TODO: wrap these into try/catch as usual
-        listener.onFailure(response, failure);
-        listener.onComplete(new Result(request, response, failure));
+        notifier.notifyFailure(listener, response, failure);
+        notifier.notifyComplete(listener, new Result(request, response, failure));
     }
 }

@@ -47,6 +47,8 @@ public interface Request
 
     Request path(String path);
 
+    String uri();
+
     HttpVersion version();
 
     Request version(HttpVersion version);
@@ -58,9 +60,6 @@ public interface Request
     HttpFields headers();
 
     Request header(String name, String value);
-
-    // TODO: keep or remove this method ?
-    Request cookie(String name, String value);
 
     ContentProvider content();
 

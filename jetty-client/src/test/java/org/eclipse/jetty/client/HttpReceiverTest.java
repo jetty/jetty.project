@@ -64,7 +64,7 @@ public class HttpReceiverTest
     protected HttpExchange newExchange(Response.Listener listener)
     {
         HttpExchange exchange = new HttpExchange(conversation, connection, null, listener);
-        conversation.add(exchange);
+        conversation.exchanges().offer(exchange);
         connection.setExchange(exchange);
         return exchange;
     }
