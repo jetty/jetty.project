@@ -20,7 +20,6 @@ package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
 import java.util.EventListener;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -232,7 +231,7 @@ public class SessionHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     /**
      * Look for a requested session ID in cookies and URI parameters
-     * 
+     *
      * @param baseRequest
      * @param request
      */
@@ -268,7 +267,7 @@ public class SessionHandler extends ScopedHandler
                         requested_session_id = cookies[i].getValue();
                         requested_session_id_from_cookie = true;
 
-                        LOG.info("Got Session ID {} from cookie",requested_session_id);
+                        LOG.debug("Got Session ID {} from cookie",requested_session_id);
 
                         if (requested_session_id != null)
                         {
