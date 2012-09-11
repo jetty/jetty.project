@@ -49,7 +49,8 @@ public class AbstractHttpClientServerTest
 
     public void start(Handler handler) throws Exception
     {
-        server = new Server();
+        if (server == null)
+            server = new Server();
         connector = new SelectChannelConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
