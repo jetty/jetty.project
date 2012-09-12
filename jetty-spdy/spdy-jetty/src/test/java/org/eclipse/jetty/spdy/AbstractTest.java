@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -66,8 +67,10 @@ public abstract class AbstractTest
         if (connector == null)
             connector = newSPDYServerConnector(server, listener);
         if (listener == null)
-            listener = connector.getServerSessionFrameListener();
-        connector.setDefaultConnectionFactory(new ServerSPDYConnectionFactory(version, connector.getByteBufferPool(), connector.getExecutor(), connector.getScheduler(), listener));
+            listener = connector.getConnectionFactory(SPDYServerConnectionFactory.class).getServerSessionFrameListener();
+        
+        ConnectionFactory spdy = new SPDYServerConnectionFactory(version, listener);
+        connector.addConnectionFactory(spdy);
         connector.setPort(0);
         server.addConnector(connector);
         server.start();

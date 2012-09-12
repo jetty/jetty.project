@@ -28,7 +28,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -46,7 +46,7 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
     private boolean dispatched; // Guarded by synchronization on tasks
     private boolean headersComplete;
 
-    public HttpChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInputOverSPDY input, Stream stream)
+    public HttpChannelOverSPDY(Connector connector, HttpChannelConfig configuration, EndPoint endPoint, HttpTransport transport, HttpInputOverSPDY input, Stream stream)
     {
         super(connector, configuration, endPoint, transport, input);
         this.stream = stream;

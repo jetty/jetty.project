@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -28,12 +27,14 @@ import org.eclipse.jetty.io.EndPoint;
  */
 public interface ConnectionFactory
 {
+    public String getProtocol();
+    
     /**
      * <p>Creates a new {@link Connection} with the given parameters</p>
-     * @param channel the {@link SocketChannel} associated with the connection
+     * @param connector The {@link Connector} creating this connection
      * @param endPoint the {@link EndPoint} associated with the connection
-     * @param attachment the attachment associated with the connection
      * @return a new {@link Connection}
      */
-    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment);
+    public Connection newConnection(Connector connector, EndPoint endPoint);
+    
 }

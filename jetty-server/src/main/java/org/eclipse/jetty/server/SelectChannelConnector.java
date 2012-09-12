@@ -29,7 +29,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -37,9 +36,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -57,42 +54,40 @@ public class SelectChannelConnector extends AbstractNetworkConnector
     private volatile boolean _reuseAddress = true;
     private volatile int _lingerTime = -1;
 
-    public SelectChannelConnector(@Name("server") Server server)
+    
+    public SelectChannelConnector(Server server)
     {
-        this(server, null);
+        this(server,null,null,null,0,0,new HttpConnectionFactory());
     }
-
-    public SelectChannelConnector(@Name("server")Server server, @Name("sslContextFactory") SslContextFactory sslContextFactory)
+    
+    public SelectChannelConnector(Server server,ConnectionFactory... factories)
     {
-        this(server, null, null, null, sslContextFactory, 0, 0);
+        this(server,null,null,null,0,0,factories);
+    }
+    
+    public SelectChannelConnector(Server server,SslContextFactory sslContextFactory)
+    {
+        this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
+    }
+    
+    public SelectChannelConnector(Server server,SslContextFactory sslContextFactory,ConnectionFactory... factories)
+    {
+        this(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(sslContextFactory,factories));
     }
 
     /**
      * @param server    The server this connector will be added to. Must not be null.
+     * @param factory TODO
      * @param executor  An executor for this connector or null to use the servers executor
      * @param scheduler A scheduler for this connector or null to use the servers scheduler
      * @param pool      A buffer pool for this connector or null to use a default {@link ByteBufferPool}
      * @param acceptors the number of acceptor threads to use, or 0 for a default value.
      */
-    public SelectChannelConnector(
-            @Name("server") Server server,
-            @Name("executor") Executor executor,
-            @Name("scheduler") Scheduler scheduler,
-            @Name("bufferPool") ByteBufferPool pool,
-            @Name("sslContextFactory") SslContextFactory sslContextFactory,
-            @Name("acceptors") int acceptors,
-            @Name("selectors") int selectors)
+    public SelectChannelConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors,int selectors,ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, pool, sslContextFactory, acceptors);
+        super(server,executor,scheduler,pool,acceptors,factories);
         _manager = new ConnectorSelectorManager(selectors > 0 ? selectors : Math.max(1, (Runtime.getRuntime().availableProcessors()) / 4));
         addBean(_manager, true);
-
-        // TODO: why we need to set the linger time when in SSL mode ?
-        if (sslContextFactory != null)
-            setSoLingerTime(30000);
-
-        // TODO: we hardcode HTTP, but this is a generic connector that should not hardcode anything
-        setDefaultConnectionFactory(new HttpServerConnectionFactory(this));
     }
 
     @Override
@@ -257,25 +252,7 @@ public class SelectChannelConnector extends AbstractNetworkConnector
 
     protected Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
     {
-        SslContextFactory sslContextFactory = getSslContextFactory();
-        if (sslContextFactory != null)
-        {
-            SSLEngine engine = sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
-            engine.setUseClientMode(false);
-
-            SslConnection sslConnection = new SslConnection(getByteBufferPool(), getExecutor(), endPoint, engine);
-
-            EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
-            Connection connection = getDefaultConnectionFactory().newConnection(channel, appEndPoint, attachment);
-            appEndPoint.setConnection(connection);
-            connection.onOpen();
-
-            return sslConnection;
-        }
-        else
-        {
-            return getDefaultConnectionFactory().newConnection(channel, endPoint, attachment);
-        }
+        return getDefaultConnectionFactory().newConnection(this, endPoint);
     }
 
     /**

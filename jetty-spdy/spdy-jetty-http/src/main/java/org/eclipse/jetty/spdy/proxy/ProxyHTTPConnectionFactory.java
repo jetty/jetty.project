@@ -19,29 +19,40 @@
 
 package org.eclipse.jetty.spdy.proxy;
 
-import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannelConfig;
 
-public class ProxyHTTPConnectionFactory implements ConnectionFactory
+public class ProxyHTTPConnectionFactory extends AbstractConnectionFactory implements HttpChannelConfig.ConnectionFactory
 {
-    private final Connector connector;
     private final short version;
     private final ProxyEngineSelector proxyEngineSelector;
+    private final HttpChannelConfig httpChannelConfig;
 
-    public ProxyHTTPConnectionFactory(Connector connector, short version, ProxyEngineSelector proxyEngineSelector)
+    public ProxyHTTPConnectionFactory(HttpChannelConfig httpChannelConfig,short version, ProxyEngineSelector proxyEngineSelector)
     {
-        this.connector = connector;
+        // replaces http/1.1
+        super(HttpVersion.HTTP_1_1.asString());
         this.version = version;
         this.proxyEngineSelector = proxyEngineSelector;
+        this.httpChannelConfig=httpChannelConfig;
     }
 
     @Override
-    public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
+    public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return new ProxyHTTPSPDYConnection(connector, endPoint, version, proxyEngineSelector);
+        return new ProxyHTTPSPDYConnection(connector, httpChannelConfig, endPoint, version, proxyEngineSelector);
     }
+
+    @Override
+    public HttpChannelConfig getHttpChannelConfig()
+    {
+        return httpChannelConfig;
+    }
+
 }

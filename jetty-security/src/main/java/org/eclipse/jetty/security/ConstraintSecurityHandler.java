@@ -28,9 +28,10 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
@@ -87,12 +88,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     /**
      * @return Returns the constraintMappings.
      */
+    @Override
     public List<ConstraintMapping> getConstraintMappings()
     {
         return _constraintMappings;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Set<String> getRoles()
     {
         return _roles;
@@ -134,6 +137,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      *            The constraintMappings to set.
      * @param roles The known roles (or null to determine them from the mappings)
      */
+    @Override
     public void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles)
     {
         if (isStarted())
@@ -181,6 +185,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     /**
      * @see org.eclipse.jetty.security.ConstraintAware#addConstraintMapping(org.eclipse.jetty.security.ConstraintMapping)
      */
+    @Override
     public void addConstraintMapping(ConstraintMapping mapping)
     {
         _constraintMappings.add(mapping);
@@ -198,6 +203,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     /**
      * @see org.eclipse.jetty.security.ConstraintAware#addRole(java.lang.String)
      */
+    @Override
     public void addRole(String role)
     {
         boolean modified = _roles.add(role);
@@ -325,6 +331,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
+    @Override
     protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
     {
         Map<String, RoleInfo> mappings = _constraintMap.match(pathInContext);
@@ -354,34 +361,16 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
             return true;
 
-        HttpConfiguration httpConfiguration = HttpChannel.getCurrentHttpChannel().getHttpConfiguration();
+        HttpChannelConfig httpConfig = HttpChannel.getCurrentHttpChannel().getHttpChannelConfig();
 
-        if (dataConstraint == UserDataConstraint.Integral)
+        if (dataConstraint == UserDataConstraint.Confidential || dataConstraint == UserDataConstraint.Integral)
         {
-            if (httpConfiguration.isIntegral(request))
-                return true;
-            if (httpConfiguration.getIntegralPort() > 0)
-            {
-                String url = httpConfiguration.getIntegralScheme() + "://" + request.getServerName() + ":" + httpConfiguration.getIntegralPort() + request.getRequestURI();
-                if (request.getQueryString() != null)
-                    url += "?" + request.getQueryString();
-                response.setContentLength(0);
-                response.sendRedirect(url);
-            }
-            else
-                response.sendError(Response.SC_FORBIDDEN,"!Integral");
-
-            request.setHandled(true);
-            return false;
-        }
-        else if (dataConstraint == UserDataConstraint.Confidential)
-        {
-            if (httpConfiguration.isConfidential(request))
+            if (request.isSecure())
                 return true;
 
-            if (httpConfiguration.getConfidentialPort() > 0)
+            if (httpConfig.getSecurePort() > 0)
             {
-                String url = httpConfiguration.getConfidentialScheme() + "://" + request.getServerName() + ":" + httpConfiguration.getConfidentialPort()
+                String url = httpConfig.getSecureScheme() + "://" + request.getServerName() + ":" + httpConfig.getSecurePort()
                         + request.getRequestURI();
                 if (request.getQueryString() != null)
                     url += "?" + request.getQueryString();
@@ -390,7 +379,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 response.sendRedirect(url);
             }
             else
-                response.sendError(Response.SC_FORBIDDEN,"!Confidential");
+                response.sendError(HttpStatus.FORBIDDEN_403,"!Secure");
 
             request.setHandled(true);
             return false;
@@ -402,6 +391,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
     }
 
+    @Override
     protected boolean isAuthMandatory(Request baseRequest, Response base_response, Object constraintInfo)
     {
         return constraintInfo != null && ((RoleInfo)constraintInfo).isChecked();

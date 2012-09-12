@@ -19,14 +19,17 @@
 package org.eclipse.jetty.spdy;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
 import java.util.List;
+
+import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,15 +37,21 @@ import org.eclipse.jetty.util.log.Logger;
 public class NextProtoNegoServerConnection extends AbstractConnection implements NextProtoNego.ServerProvider
 {
     private final Logger logger = Log.getLogger(getClass());
-    private final SocketChannel channel;
-    private final SPDYServerConnector connector;
+    private final Connector connector;
+    private final SSLEngine engine;
+    private final List<String> protocols;
+    private final String defaultProtocol;
     private boolean completed; // No need to be volatile: it is modified and read by the same thread
-
-    public NextProtoNegoServerConnection(SocketChannel channel, EndPoint endPoint, SPDYServerConnector connector)
+    
+    
+    public NextProtoNegoServerConnection(DecryptedEndPoint endPoint, Connector connector, List<String>protocols, String defaultProtocol)
     {
         super(endPoint, connector.getExecutor());
-        this.channel = channel;
-        this.connector = connector;
+        this.connector = connector;      
+        this.protocols = protocols;
+        this.defaultProtocol=defaultProtocol;
+        engine = endPoint.getSslConnection().getSSLEngine();
+        NextProtoNego.put(engine,this);
     }
 
     @Override
@@ -51,6 +60,13 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         super.onOpen();
         fillInterested();
     }
+    
+    @Override
+    public void onClose() 
+    {
+        NextProtoNego.remove(engine);
+        super.onClose();
+    };
 
     @Override
     public void onFillable()
@@ -82,17 +98,13 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     @Override
     public void unsupported()
     {
-        ConnectionFactory connectionFactory = connector.getDefaultConnectionFactory();
-        EndPoint endPoint = getEndPoint();
-        Connection connection = connectionFactory.newConnection(channel, endPoint, connector);
-        connector.replaceConnection(endPoint, connection);
-        completed = true;
+        protocolSelected(defaultProtocol);
     }
 
     @Override
     public List<String> protocols()
     {
-        return connector.provideProtocols();
+        return protocols;
     }
 
     @Override
@@ -100,8 +112,9 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
     {
         ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
         EndPoint endPoint = getEndPoint();
-        Connection connection = connectionFactory.newConnection(channel, endPoint, connector);
-        connector.replaceConnection(endPoint, connection);
+        Connection connection = connectionFactory.newConnection(connector, endPoint);
+        endPoint.setConnection(connection);
+        NextProtoNego.remove(engine);
         completed = true;
     }
 }

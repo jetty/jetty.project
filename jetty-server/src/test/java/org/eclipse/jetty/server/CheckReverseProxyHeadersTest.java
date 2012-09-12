@@ -18,17 +18,18 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -97,11 +98,11 @@ public class CheckReverseProxyHeadersTest
     private void testRequest(String headers, RequestValidator requestValidator) throws Exception
     {
         Server server = new Server();
-        LocalConnector connector = new LocalConnector(server);
         // Activate reverse proxy headers checking
-        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
-        httpConfiguration.setForwarded(true);
-        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector, httpConfiguration));
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        http.getHttpChannelConfig().addCustomizer(new ForwardedRequestCustomizer());
+
+        LocalConnector connector = new LocalConnector(server,http);
 
         server.setConnectors(new Connector[] {connector});
         ValidationHandler validationHandler = new ValidationHandler(requestValidator);
@@ -159,6 +160,7 @@ public class CheckReverseProxyHeadersTest
             return _error;
         }
 
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try

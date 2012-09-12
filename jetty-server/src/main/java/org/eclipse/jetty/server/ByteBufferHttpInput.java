@@ -42,6 +42,5 @@ public class ByteBufferHttpInput extends HttpInput<ByteBuffer>
     @Override
     protected void onContentConsumed(ByteBuffer item)
     {
-        item.clear();
     }
 }

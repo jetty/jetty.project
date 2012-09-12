@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -118,28 +119,30 @@ public class Request implements HttpServletRequest
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
-    private final HttpChannel _channel;
+    private final HttpChannel<?> _channel;
     private final HttpFields _fields=new HttpFields();
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
-    private final HttpInput _input;
+    private final HttpInput<?> _input;
 
+    private boolean _secure;
     private boolean _asyncSupported = true;
+    private boolean _newContext;
+    private boolean _cookiesExtracted = false;
+    private boolean _handled = false;
+    private boolean _paramsExtracted;
+    private boolean _requestedSessionIdFromCookie = false;
     private volatile Attributes _attributes;
     private Authentication _authentication;
     private MultiMap<String> _baseParameters;
     private String _characterEncoding;
     private ContextHandler.Context _context;
-    private boolean _newContext;
     private String _contextPath;
     private CookieCutter _cookies;
-    private boolean _cookiesExtracted = false;
     private DispatcherType _dispatcherType;
-    private boolean _handled = false;
     private int _inputState = __NONE;
     private HttpMethod _httpMethod;
     private String _httpMethodString;
     private MultiMap<String> _parameters;
-    private boolean _paramsExtracted;
     private String _pathInfo;
     private int _port;
     private HttpVersion _httpVersion = HttpVersion.HTTP_1_1;
@@ -149,7 +152,6 @@ public class Request implements HttpServletRequest
     private String _readerEncoding;
     private InetSocketAddress _remote;
     private String _requestedSessionId;
-    private boolean _requestedSessionIdFromCookie = false;
     private String _requestURI;
     private Map<Object, HttpSession> _savedNewSessions;
     private String _scheme = URIUtil.HTTP;
@@ -164,7 +166,7 @@ public class Request implements HttpServletRequest
     private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
 
     /* ------------------------------------------------------------ */
-    public Request(HttpChannel channel, HttpInput input)
+    public Request(HttpChannel<?> channel, HttpInput<?> input)
     {
         _channel = channel;
         _input = input;
@@ -177,7 +179,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public HttpInput getHttpInput()
+    public HttpInput<?> getHttpInput()
     {
         return _input;
     }
@@ -394,7 +396,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the connection.
      */
-    public HttpChannel getHttpChannel()
+    public HttpChannel<?> getHttpChannel()
     {
         return _channel;
     }
@@ -613,7 +615,6 @@ public class Request implements HttpServletRequest
             return Collections.enumeration(__defaultLocale);
 
         List<Locale> langs = new ArrayList<>();
-        int size = acceptLanguage.size();
 
         // convert to locals
         for (String language : acceptLanguage)
@@ -1374,7 +1375,13 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isSecure()
     {
-        return _channel.getHttpConfiguration().isConfidential(this);
+        return _secure;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setSecure(boolean secure)
+    {
+        _secure=secure;
     }
 
     /* ------------------------------------------------------------ */

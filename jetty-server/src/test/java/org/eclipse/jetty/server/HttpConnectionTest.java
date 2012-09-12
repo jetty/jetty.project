@@ -24,10 +24,16 @@
  */
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,11 +50,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 /**
  *
  */
@@ -63,12 +64,13 @@ public class HttpConnectionTest
     public void init() throws Exception
     {
         server = new Server();
-        connector = new LocalConnector(server);
+
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        http.getHttpChannelConfig().setRequestHeaderSize(1024);
+        http.getHttpChannelConfig().setResponseHeaderSize(1024);
+        
+        connector = new LocalConnector(server,http,null);
         server.addConnector(connector);
-        HttpConfiguration httpConfiguration = new HttpConfiguration(null, false);
-        httpConfiguration.setRequestHeaderSize(1024);
-        httpConfiguration.setResponseHeaderSize(1024);
-        connector.setDefaultConnectionFactory(new HttpServerConnectionFactory(connector, httpConfiguration));
         server.setHandler(new DumpHandler());
         server.start();
     }

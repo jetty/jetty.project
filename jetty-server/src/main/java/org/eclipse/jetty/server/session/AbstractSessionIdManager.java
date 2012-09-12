@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import java.security.SecureRandom;
 import java.util.Random;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.SessionIdManager;

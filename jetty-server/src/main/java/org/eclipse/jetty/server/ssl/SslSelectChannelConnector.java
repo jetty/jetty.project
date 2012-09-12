@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import org.eclipse.jetty.server.AbstractConnectionFactory;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -33,6 +35,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector
 {
     public SslSelectChannelConnector(Server server)
     {
-        super(server,new SslContextFactory());
+        super(server,null,null,null,0,0,AbstractConnectionFactory.getFactories(new SslContextFactory(),new HttpConnectionFactory()));
     }
 }

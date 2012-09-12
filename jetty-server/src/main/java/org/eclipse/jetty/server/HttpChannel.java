@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 
@@ -63,14 +64,14 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
-    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
+    private static final ThreadLocal<HttpChannel<?>> __currentChannel = new ThreadLocal<>();
 
-    public static HttpChannel getCurrentHttpChannel()
+    public static HttpChannel<?> getCurrentHttpChannel()
     {
         return __currentChannel.get();
     }
 
-    protected static void setCurrentHttpChannel(HttpChannel channel)
+    protected static void setCurrentHttpChannel(HttpChannel<?> channel)
     {
         __currentChannel.set(channel);
     }
@@ -78,7 +79,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
-    private final HttpConfiguration _configuration;
+    private final HttpChannelConfig _configuration;
     private final EndPoint _endPoint;
     private final HttpTransport _transport;
     private final HttpURI _uri;
@@ -90,7 +91,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
 
-    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<T> input)
+    public HttpChannel(Connector connector, HttpChannelConfig configuration, EndPoint endPoint, HttpTransport transport, HttpInput<T> input)
     {
         _connector = connector;
         _configuration = configuration;
@@ -131,7 +132,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         return _connector.getByteBufferPool();
     }
 
-    public HttpConfiguration getHttpConfiguration()
+    public HttpChannelConfig getHttpChannelConfig()
     {
         return _configuration;
     }
@@ -237,8 +238,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
                     if (_state.isInitial())
                     {
+                        _request.setTimeStamp(System.currentTimeMillis());
                         _request.setDispatcherType(DispatcherType.REQUEST);
-                        getHttpConfiguration().customize(_request);
+                        
+                        for (HttpChannelConfig.Customizer customizer : _configuration.getCustomizers())
+                            customizer.customize(getConnector(),_configuration,_request);
                         getServer().handle(this);
                     }
                     else
@@ -321,7 +325,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             if (_state.isSuspended())
             {
                 HttpFields fields = new HttpFields();
-                ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, Response.SC_INTERNAL_SERVER_ERROR, null, _request.isHead());
+                ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, HttpStatus.INTERNAL_SERVER_ERROR_500, null, _request.isHead());
                 boolean committed = commitResponse(info, null, true);
                 if (!committed)
                     LOG.warn("Could not send response error 500: "+x);
@@ -515,7 +519,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("{} content {}", this, item);
         @SuppressWarnings("unchecked")
-        HttpInput<T> input = _request.getHttpInput();
+        HttpInput<T> input = (HttpInput<T>)_request.getHttpInput();
         input.content(item);
         return true;
     }

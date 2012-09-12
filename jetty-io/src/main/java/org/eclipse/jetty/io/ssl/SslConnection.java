@@ -19,7 +19,9 @@
 package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
@@ -31,6 +33,7 @@ import javax.net.ssl.SSLException;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -111,6 +114,19 @@ public class SslConnection extends AbstractConnection
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = new DecryptedEndPoint();
+        
+        // TODO ugly
+        if (endPoint instanceof ChannelEndPoint)
+        {
+            try
+            {
+                ((SocketChannel)((ChannelEndPoint)endPoint).getChannel()).socket().setSoLinger(true,30000);
+            }
+            catch (SocketException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
     }
 
     public SSLEngine getSSLEngine()
@@ -394,6 +410,18 @@ public class SslConnection extends AbstractConnection
                     return true;
                 }
             }
+        }
+
+        @Override
+        public void setConnection(Connection connection)
+        {
+            if (connection instanceof AbstractConnection)
+            {
+                AbstractConnection a = (AbstractConnection)connection;
+                if (a.getInputBufferSize()<_sslEngine.getSession().getApplicationBufferSize());
+                    a.setInputBufferSize(_sslEngine.getSession().getApplicationBufferSize());
+            }
+            super.setConnection(connection);
         }
 
         public SslConnection getSslConnection()

@@ -27,19 +27,44 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HttpServerConnector extends SelectChannelConnector
 {
-    public HttpServerConnector(Server server)
+    public HttpServerConnector(
+        @Name("server") Server server)
     {
-        this(server, null);
+        this(server,null,null,null,null,null,0,0);
     }
 
-    public HttpServerConnector(Server server, SslContextFactory sslContextFactory)
+    public HttpServerConnector(
+        @Name("server") Server server, 
+        @Name("sslContextFactory") SslContextFactory sslContextFactory)
     {
-        this(server, null, null, null, sslContextFactory, 0, 0);
+        this(server,null,sslContextFactory, null, null, null, 0, 0);
     }
 
-    public HttpServerConnector(@Name("server") Server server, @Name("executor") Executor executor, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool pool, @Name("sslContextFactory") SslContextFactory sslContextFactory, @Name("acceptors") int acceptors, @Name("selectors") int selectors)
+    public HttpServerConnector(
+        @Name("server") Server server, 
+        @Name("connectionFactory") HttpConnectionFactory connectionFactory)
     {
-        super(server, executor, scheduler, pool, sslContextFactory, acceptors, selectors);
-        setDefaultConnectionFactory(new HttpServerConnectionFactory(this));
+        this(server,connectionFactory,null, null, null, null, 0, 0);
+    }
+
+    public HttpServerConnector(
+        @Name("server") Server server, 
+        @Name("connectionFactory") HttpConnectionFactory connectionFactory,
+        @Name("sslContextFactory") SslContextFactory sslContextFactory)
+    {
+        this(server,connectionFactory,sslContextFactory, null, null, null, 0, 0);
+    }
+
+    public HttpServerConnector(
+        @Name("server") Server server, 
+        @Name("connectionFactory") HttpConnectionFactory connectionFactory,
+        @Name("sslContextFactory") SslContextFactory sslContextFactory, 
+        @Name("executor") Executor executor, 
+        @Name("scheduler") Scheduler scheduler, 
+        @Name("bufferPool") ByteBufferPool pool, 
+        @Name("acceptors") int acceptors, 
+        @Name("selectors") int selectors)
+    {
+        super(server,executor,scheduler,pool,acceptors,selectors,AbstractConnectionFactory.getFactories(sslContextFactory,connectionFactory==null?new HttpConnectionFactory():connectionFactory));
     }
 }

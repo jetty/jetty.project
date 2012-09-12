@@ -90,6 +90,11 @@ public abstract class ExecutorCallback<C> implements Callback<C>
         {
             @Override
             public void run() { onCompleted(context);}
+            @Override
+            public String toString()
+            {
+                return String.format("ExectorCB$Completed@%x{%s}",hashCode(),context);
+            }
         });
     }
 
@@ -110,7 +115,7 @@ public abstract class ExecutorCallback<C> implements Callback<C>
             @Override
             public String toString()
             {
-                return String.format("%s@%x{%s,%s}",ExecutorCallback.class.getSimpleName(),hashCode(),context,x);
+                return String.format("ExectorCB$Failed@%x{%s,%s}",hashCode(),context,x);
             }
         };
 

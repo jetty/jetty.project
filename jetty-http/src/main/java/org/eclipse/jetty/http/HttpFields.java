@@ -47,6 +47,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 // TODO: Make this class inherit from oej.util.Fields
+// TODO move this class to jetty-http?
+
 
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
@@ -787,11 +789,11 @@ public class HttpFields implements Iterable<HttpFields.Field>
         // Format value and params
         StringBuilder buf = new StringBuilder(128);
         String name_value_params;
-        boolean quoted = QuotedStringTokenizer.quoteIfNeeded(buf, name, delim);
+        QuotedStringTokenizer.quoteIfNeeded(buf, name, delim);
         buf.append('=');
         String start=buf.toString();
         if (value != null && value.length() > 0)
-            quoted|=QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);
+            QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);
 
 
         if (path != null && path.length() > 0)

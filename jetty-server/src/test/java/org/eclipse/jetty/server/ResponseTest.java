@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -26,6 +31,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Locale;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -49,11 +55,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 public class ResponseTest
 {
     private Server _server;
@@ -65,14 +66,15 @@ public class ResponseTest
     {
         _server = new Server();
         _scheduler = new TimerScheduler();
-        LocalConnector connector = new LocalConnector(_server, null, _scheduler, null, null, 1);
+        HttpChannelConfig config = new HttpChannelConfig();
+        LocalConnector connector = new LocalConnector(_server,null,_scheduler,null,1,new HttpConnectionFactory(config));
         _server.addConnector(connector);
         _server.setHandler(new DumpHandler());
         _server.start();
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
         ByteBufferHttpInput input = new ByteBufferHttpInput();
-        _channel = new HttpChannel(connector, new HttpConfiguration(null, false), endp, new HttpTransport()
+        _channel = new HttpChannel<ByteBuffer>(connector, new HttpChannelConfig(), endp, new HttpTransport()
         {
             @Override
             public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent) throws IOException

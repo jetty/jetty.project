@@ -30,6 +30,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -40,11 +41,8 @@ import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
-import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
-import org.eclipse.jetty.spdy.generator.Generator;
-import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -53,9 +51,9 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
 
 public class SPDYClient
 {
-    private final ConnectionFactory connectionFactory = new ClientSPDYConnectionFactory();
-    private final short version;
-    private final Factory factory;
+    private final SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
+    final short version;
+    final Factory factory;
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout = -1;
     private volatile int initialWindowSize;
@@ -135,7 +133,7 @@ public class SPDYClient
         return null;
     }
 
-    public ConnectionFactory getConnectionFactory()
+    public SPDYClientConnectionFactory getConnectionFactory()
     {
         return connectionFactory;
     }
@@ -164,9 +162,9 @@ public class SPDYClient
     public static class Factory extends AggregateLifeCycle
     {
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-        private final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        private final Scheduler scheduler = new TimerScheduler();
-        private final Executor executor;
+        final ByteBufferPool bufferPool = new MappedByteBufferPool();
+        final Scheduler scheduler = new TimerScheduler();
+        final Executor executor;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
         private final long idleTimeout;
@@ -223,13 +221,13 @@ public class SPDYClient
             super.doStop();
         }
 
-        private boolean sessionOpened(Session session)
+        boolean sessionOpened(Session session)
         {
             // Add sessions only if the factory is not stopping
             return isRunning() && sessions.offer(session);
         }
 
-        private boolean sessionClosed(Session session)
+        boolean sessionClosed(Session session)
         {
             // Remove sessions only if the factory is not stopping
             // to avoid concurrent removes during iterations
@@ -300,7 +298,7 @@ public class SPDYClient
                     }
                     else
                     {
-                        ConnectionFactory connectionFactory = new ClientSPDYConnectionFactory();
+                        SPDYClientConnectionFactory connectionFactory = new SPDYClientConnectionFactory();
                         return connectionFactory.newConnection(channel, endPoint, attachment);
                     }
                 }
@@ -313,11 +311,11 @@ public class SPDYClient
         }
     }
 
-    private static class SessionPromise extends Promise<Session>
+    static class SessionPromise extends Promise<Session>
     {
         private final SocketChannel channel;
-        private final SPDYClient client;
-        private final SessionFrameListener listener;
+        final SPDYClient client;
+        final SessionFrameListener listener;
 
         private SessionPromise(SocketChannel channel, SPDYClient client, SessionFrameListener listener)
         {
@@ -338,53 +336,6 @@ public class SPDYClient
             catch (IOException x)
             {
                 return true;
-            }
-        }
-    }
-
-    private static class ClientSPDYConnectionFactory implements ConnectionFactory
-    {
-        @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endPoint, Object attachment)
-        {
-            SessionPromise sessionPromise = (SessionPromise)attachment;
-            SPDYClient client = sessionPromise.client;
-            Factory factory = client.factory;
-
-            CompressionFactory compressionFactory = new StandardCompressionFactory();
-            Parser parser = new Parser(compressionFactory.newDecompressor());
-            Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
-
-            SPDYConnection connection = new ClientSPDYConnection(endPoint, factory.bufferPool, parser, factory);
-
-            FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
-
-            StandardSession session = new StandardSession(client.version, factory.bufferPool, factory.executor, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator, flowControlStrategy);
-            session.setWindowSize(client.getInitialWindowSize());
-            parser.addListener(session);
-            sessionPromise.completed(session);
-            connection.setSession(session);
-
-            factory.sessionOpened(session);
-
-            return connection;
-        }
-
-        private class ClientSPDYConnection extends SPDYConnection
-        {
-            private final Factory factory;
-
-            public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
-            {
-                super(endPoint, bufferPool, parser, factory.executor);
-                this.factory = factory;
-            }
-
-            @Override
-            public void onClose()
-            {
-                super.onClose();
-                factory.sessionClosed(getSession());
             }
         }
     }
