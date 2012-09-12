@@ -115,23 +115,20 @@ public class ByteArrayEndPointTest
         ByteArrayEndPoint endp = new ByteArrayEndPoint((byte[])null,15);
         endp.setGrowOutput(true);
 
-        assertEquals(11,endp.flush(BufferUtil.toBuffer("some output")));
+        assertEquals(true,endp.flush(BufferUtil.toBuffer("some output")));
         assertEquals("some output",endp.getOutputString());
 
-        assertEquals(10,endp.flush(BufferUtil.toBuffer(" some more")));
+        assertEquals(true,endp.flush(BufferUtil.toBuffer(" some more")));
         assertEquals("some output some more",endp.getOutputString());
 
-        assertEquals(0,endp.flush());
+        assertEquals(true,endp.flush());
         assertEquals("some output some more",endp.getOutputString());
 
-        assertEquals(0,endp.flush(BufferUtil.EMPTY_BUFFER));
+        assertEquals(true,endp.flush(BufferUtil.EMPTY_BUFFER));
         assertEquals("some output some more",endp.getOutputString());
 
-        assertEquals(9,endp.flush(BufferUtil.EMPTY_BUFFER,BufferUtil.toBuffer(" and"),BufferUtil.toBuffer(" more")));
+        assertEquals(true,endp.flush(BufferUtil.EMPTY_BUFFER,BufferUtil.toBuffer(" and"),BufferUtil.toBuffer(" more")));
         assertEquals("some output some more and more",endp.getOutputString());
-
-
-
     }
 
     @Test
@@ -142,13 +139,13 @@ public class ByteArrayEndPointTest
         endp.setOutput(BufferUtil.allocate(10));
 
         ByteBuffer data = BufferUtil.toBuffer("Some more data.");
-        assertEquals(10,endp.flush(data));
+        assertEquals(false,endp.flush(data));
         assertEquals("Some more ",endp.getOutputString());
         assertEquals("data.",BufferUtil.toString(data));
 
         assertEquals("Some more ",endp.takeOutputString());
 
-        assertEquals(5,endp.flush(data));
+        assertEquals(true,endp.flush(data));
         assertEquals("data.",BufferUtil.toString(endp.takeOutput()));
     }
 

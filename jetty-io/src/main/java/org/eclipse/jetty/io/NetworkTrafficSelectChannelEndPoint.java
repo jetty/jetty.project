@@ -49,23 +49,22 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     @Override
-    public int flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        int written=0;
+        boolean flushed=true;
         for (ByteBuffer b : buffers)
         {
             if (b.hasRemaining())
             {
                 int position = b.position();
-                int l = super.flush(b);
+                flushed|=super.flush(b);
+                int l=b.position()-position;
                 notifyOutgoing(b, position, l);
-                if (l==0)
+                if (!flushed)
                     break;
-                else
-                    written+=l;
             }
         }
-        return written;
+        return flushed;
     }
 
 

@@ -154,7 +154,7 @@ public class ChannelEndPoint extends AbstractEndPoint
     }
 
     @Override
-    public int flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(ByteBuffer... buffers) throws IOException
     {
         int flushed=0;
         try
@@ -172,7 +172,7 @@ public class ChannelEndPoint extends AbstractEndPoint
                         int l=_channel.write(b);
                         if (l>0)
                             flushed+=l;
-                        else
+                        if (b.hasRemaining())
                             break;
                     }
                 }
@@ -183,16 +183,23 @@ public class ChannelEndPoint extends AbstractEndPoint
         {
             throw new EofException(e);
         }
+        
+        boolean all_flushed=true;
         if (flushed>0)
         {
             notIdle();
 
             // clear empty buffers to prevent position creeping up the buffer
             for (ByteBuffer b : buffers)
+            {
                 if (BufferUtil.isEmpty(b))
                     BufferUtil.clear(b);
+                else
+                    all_flushed=false;
+            }
         }
-        return flushed;
+        
+        return all_flushed;
     }
 
     public ByteChannel getChannel()

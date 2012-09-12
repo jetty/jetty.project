@@ -59,12 +59,6 @@ public class EmptyEndPoint implements EndPoint
     {
         oshut = true;
     }
-
-    @Override
-    public boolean isBufferingOutput()
-    {
-        return false;
-    }
     
     @Override
     public boolean isOutputShutdown()
@@ -91,9 +85,9 @@ public class EmptyEndPoint implements EndPoint
     }
 
     @Override
-    public int flush(ByteBuffer... buffer) throws IOException
+    public boolean flush(ByteBuffer... buffer) throws IOException
     {
-        return 0;
+        return false;
     }
 
     @Override

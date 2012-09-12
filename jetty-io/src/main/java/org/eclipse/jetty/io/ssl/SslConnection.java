@@ -396,12 +396,6 @@ public class SslConnection extends AbstractConnection
             }
         }
 
-        @Override
-        public boolean isBufferingOutput()
-        {
-            return BufferUtil.hasContent(_encryptedOutput);
-        }
-
         public SslConnection getSslConnection()
         {
             return SslConnection.this;
@@ -613,7 +607,7 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
-        public synchronized int flush(ByteBuffer... appOuts) throws IOException
+        public synchronized boolean flush(ByteBuffer... appOuts) throws IOException
         {
             // TODO remove this when we are certain it is OK
             if (Thread.currentThread().getName().contains("selector"))
@@ -631,7 +625,7 @@ public class SslConnection extends AbstractConnection
             try
             {
                 if (_cannotAcceptMoreAppDataToFlush)
-                    return 0;
+                    return false;
 
                 // We will need a network buffer
                 if (_encryptedOutput == null)
@@ -647,13 +641,16 @@ public class SslConnection extends AbstractConnection
                     LOG.debug("{} wrap {}", SslConnection.this, wrapResult);
                     BufferUtil.flipToFlush(_encryptedOutput, pos);
                     if (wrapResult.bytesConsumed()>0)
-                    {
                         consumed+=wrapResult.bytesConsumed();
 
-                        // clear empty buffers to prevent position creeping up the buffer
-                        for (ByteBuffer b : appOuts)
-                            if (BufferUtil.isEmpty(b))
-                                BufferUtil.clear(b);
+                    boolean all_consumed=true;
+                    // clear empty buffers to prevent position creeping up the buffer
+                    for (ByteBuffer b : appOuts)
+                    {
+                        if (BufferUtil.isEmpty(b))
+                            BufferUtil.clear(b);
+                        else
+                            all_consumed=false;
                     }
 
                     // and deal with the results returned from the sslEngineWrap
@@ -669,15 +666,11 @@ public class SslConnection extends AbstractConnection
                                 // the write has progressed normally and let a subsequent call to flush (or WriteFlusher#onIncompleteFlushed)
                                 // to finish writing the close handshake.   The caller will find out about the close on a subsequent flush or fill.
                                 if (BufferUtil.hasContent(_encryptedOutput))
-                                    return consumed;
+                                    return false;
                             }
-
-                            // If we were flushing because of a fill needing to wrap, return normally and it will handle the closed state.
-                            if (appOuts[0]==__FILL_CALLED_FLUSH)
-                                return consumed;
-
+                            
                             // otherwise we have written, and the caller will close the underlying connection
-                            return consumed;
+                            return all_consumed;
 
                         case BUFFER_UNDERFLOW:
                             throw new IllegalStateException();
@@ -695,7 +688,7 @@ public class SslConnection extends AbstractConnection
                             {
                                 case NOT_HANDSHAKING:
                                     // Return with the number of bytes consumed (which may be 0)
-                                    return consumed;
+                                    return all_consumed&&BufferUtil.isEmpty(_encryptedOutput);
 
                                 case NEED_TASK:
                                     // run the task and continue
@@ -715,7 +708,7 @@ public class SslConnection extends AbstractConnection
                                         _flushRequiresFillToProgress = true;
                                         fill(__FLUSH_CALLED_FILL);
                                     }
-                                    return consumed;
+                                    return all_consumed&&BufferUtil.isEmpty(_encryptedOutput);
 
                                 case FINISHED:
                                     throw new IllegalStateException();
