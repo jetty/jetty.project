@@ -22,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.UnsupportedCharsetException;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
@@ -56,17 +57,47 @@ public class BasicAuthentication implements Authentication
     }
 
     @Override
-    public boolean authenticate(Request request, String params, Attributes context)
+    public Result authenticate(Request request, ContentResponse response, String wwwAuthenticate, Attributes context)
     {
         String encoding = StringUtil.__ISO_8859_1;
         try
         {
             String value = "Basic " + B64Code.encode(user + ":" + password, encoding);
-            request.header(HttpHeader.AUTHORIZATION.asString(), value);
+            return new BasicResult(request.uri(), value);
         }
         catch (UnsupportedEncodingException x)
         {
             throw new UnsupportedCharsetException(encoding);
+        }
+    }
+
+    private static class BasicResult implements Result
+    {
+        private final String uri;
+        private final String value;
+
+        public BasicResult(String uri, String value)
+        {
+            this.uri = uri;
+            this.value = value;
+        }
+
+        @Override
+        public String getURI()
+        {
+            return uri;
+        }
+
+        @Override
+        public void apply(Request request)
+        {
+            request.header(HttpHeader.AUTHORIZATION.asString(), value);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("Basic authentication result for %s", uri);
         }
     }
 }

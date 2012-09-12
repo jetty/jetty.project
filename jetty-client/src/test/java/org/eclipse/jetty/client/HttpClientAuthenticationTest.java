@@ -93,7 +93,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void test_DigestAuthentication() throws Exception
     {
         startDigest(new EmptyHandler());
-        test_Authentication(new DigestAuthentication("http://localhost:" + connector.getLocalPort(), realm));
+        test_Authentication(new DigestAuthentication("http://localhost:" + connector.getLocalPort(), realm, "digest", "digest"));
     }
 
     private void test_Authentication(Authentication authentication) throws Exception
@@ -113,7 +113,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         // Request without Authentication causes a 401
         Request request = client.newRequest("localhost", connector.getLocalPort()).path("/test");
-        ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = request.send().get(555, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(401, response.status());
         Assert.assertEquals(1, requests.get());
@@ -133,7 +133,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         // Request with authentication causes a 401 (no previous successful authentication) + 200
-        response = request.send().get(5, TimeUnit.SECONDS);
+        response = request.send().get(555, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
         Assert.assertEquals(2, requests.get());

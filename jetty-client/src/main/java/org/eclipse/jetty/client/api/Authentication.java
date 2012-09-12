@@ -24,27 +24,12 @@ public interface Authentication
 {
     boolean matches(String type, String uri, String realm);
 
-    boolean authenticate(Request request, String params, Attributes context);
+    Result authenticate(Request request, ContentResponse response, String wwwAuthenticate, Attributes context);
 
-    public static class Result
+    public static interface Result
     {
-        private final String uri;
-        private final Authentication authentication;
+        String getURI();
 
-        public Result(String uri, Authentication authentication)
-        {
-            this.uri = uri;
-            this.authentication = authentication;
-        }
-
-        public String getURI()
-        {
-            return uri;
-        }
-
-        public Authentication getAuthentication()
-        {
-            return authentication;
-        }
+        void apply(Request request);
     }
 }

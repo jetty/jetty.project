@@ -26,10 +26,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
@@ -65,19 +68,23 @@ public class DigestAuthentication implements Authentication
     }
 
     @Override
-    public boolean authenticate(Request request, String paramString, Attributes context)
+    public Result authenticate(Request request, ContentResponse response, String wwwAuthenticate, Attributes context)
     {
-        Map<String, String> params = parseParams(paramString);
+        // Avoid case sensitivity problems on the 'D' character
+        String type = "igest";
+        wwwAuthenticate = wwwAuthenticate.substring(wwwAuthenticate.indexOf(type) + type.length());
+
+        Map<String, String> params = parseParams(wwwAuthenticate);
         String nonce = params.get("nonce");
         if (nonce == null || nonce.length() == 0)
-            return false;
+            return null;
         String opaque = params.get("opaque");
         String algorithm = params.get("algorithm");
         if (algorithm == null)
             algorithm = "MD5";
         MessageDigest digester = getMessageDigest(algorithm);
         if (digester == null)
-            return false;
+            return null;
         String serverQOP = params.get("qop");
         String clientQOP = null;
         if (serverQOP != null)
@@ -89,32 +96,24 @@ public class DigestAuthentication implements Authentication
                 clientQOP = "auth-int";
         }
 
-        String hash = compute(digester, clientQOP, content, nonce);
-
-        StringBuilder value = new StringBuilder("Digest");
-        value.append(" username=\"").append(user).append("\"");
-        value.append(", realm=\"").append(realm).append("\"");
-        value.append(", nonce=\"").append(nonce).append("\"");
-        if (opaque != null)
-            value.append(", opaque=\"").append(opaque).append("\"");
-        value.append(", algorithm=\"").append(algorithm).append("\"");
-        value.append(", uri=\"").append(request.uri()).append("\"");
-        if (clientQOP != null)
-            value.append(", qop=\"").append(clientQOP).append("\"");
-        value.append(", response=\"").append(hash).append("\"");
-
-        request.header(HttpHeader.AUTHORIZATION.asString(), value.toString());
+        return new DigestResult(request.uri(), response.content(), realm, user, password, algorithm, nonce, clientQOP, opaque);
     }
 
-    private Map<String, String> parseParams(String paramString)
+    private Map<String, String> parseParams(String wwwAuthenticate)
     {
         Map<String, String> result = new HashMap<>();
-        List<String> parts = splitParams(paramString);
+        List<String> parts = splitParams(wwwAuthenticate);
         for (String part : parts)
         {
             Matcher matcher = PARAM_PATTERN.matcher(part);
             if (matcher.matches())
-                result.put(matcher.group(1).trim().toLowerCase(), matcher.group(2).trim());
+            {
+                String name = matcher.group(1).trim().toLowerCase();
+                String value = matcher.group(2).trim();
+                if (value.startsWith("\"") && value.endsWith("\""))
+                    value = value.substring(1, value.length() - 1);
+                result.put(name, value);
+            }
         }
         return result;
     }
@@ -129,6 +128,9 @@ public class DigestAuthentication implements Authentication
             char ch = paramString.charAt(i);
             switch (ch)
             {
+                case '\\':
+                    ++i;
+                    break;
                 case '"':
                     ++quotes;
                     break;
@@ -159,23 +161,108 @@ public class DigestAuthentication implements Authentication
         }
     }
 
-    private String compute(Request request, MessageDigest digester, String qop, byte[] content, String serverNonce)
+    private class DigestResult implements Result
     {
-        Charset charset = Charset.forName("ISO-8859-1");
-        String A1 = user + ":" + realm + ":" + password;
-        String hashA1 = TypeUtil.toHexString(digester.digest(A1.getBytes(charset)));
+        private final AtomicInteger nonceCount = new AtomicInteger();
+        private final String uri;
+        private final byte[] content;
+        private final String realm;
+        private final String user;
+        private final String password;
+        private final String algorithm;
+        private final String nonce;
+        private final String qop;
+        private final String opaque;
 
-        String A2 = request.method().asString() + ":" + request.uri();
-        if ("auth-int".equals(qop))
-            A2 += ":" + TypeUtil.toHexString(digester.digest(content));
-        String hashA2 = TypeUtil.toHexString(digester.digest(A2.getBytes(charset)));
+        public DigestResult(String uri, byte[] content, String realm, String user, String password, String algorithm, String nonce, String qop, String opaque)
+        {
+            this.uri = uri;
+            this.content = content;
+            this.realm = realm;
+            this.user = user;
+            this.password = password;
+            this.algorithm = algorithm;
+            this.nonce = nonce;
+            this.qop = qop;
+            this.opaque = opaque;
+        }
 
-        String A3;
-        if (qop != null)
-            A3 = hashA1 + ":" + serverNonce + ":" + nonceCount + ":" + clientNonce + ":" + qop + ":" + hashA2;
-        else
-            A3 = hashA1 + ":" + serverNonce + ":" + hashA2;
+        @Override
+        public String getURI()
+        {
+            return uri;
+        }
 
-        return TypeUtil.toHexString(digester.digest(A3.getBytes(charset)));
+        @Override
+        public void apply(Request request)
+        {
+            MessageDigest digester = getMessageDigest(algorithm);
+            if (digester == null)
+                return;
+
+            Charset charset = Charset.forName("ISO-8859-1");
+            String A1 = user + ":" + realm + ":" + password;
+            String hashA1 = toHexString(digester.digest(A1.getBytes(charset)));
+
+            String A2 = request.method().asString() + ":" + request.uri();
+            if ("auth-int".equals(qop))
+                A2 += ":" + toHexString(digester.digest(content));
+            String hashA2 = toHexString(digester.digest(A2.getBytes(charset)));
+
+            String nonceCount;
+            String clientNonce;
+            String A3;
+            if (qop != null)
+            {
+                nonceCount = nextNonceCount();
+                clientNonce = newClientNonce();
+                A3 = hashA1 + ":" + nonce + ":" +  nonceCount + ":" + clientNonce + ":" + qop + ":" + hashA2;
+            }
+            else
+            {
+                nonceCount = null;
+                clientNonce = null;
+                A3 = hashA1 + ":" + nonce + ":" + hashA2;
+            }
+            String hashA3 = toHexString(digester.digest(A3.getBytes(charset)));
+
+            StringBuilder value = new StringBuilder("Digest");
+            value.append(" username=\"").append(user).append("\"");
+            value.append(", realm=\"").append(realm).append("\"");
+            value.append(", nonce=\"").append(nonce).append("\"");
+            if (opaque != null)
+                value.append(", opaque=\"").append(opaque).append("\"");
+            value.append(", algorithm=\"").append(algorithm).append("\"");
+            value.append(", uri=\"").append(request.uri()).append("\"");
+            if (qop != null)
+            {
+                value.append(", qop=\"").append(qop).append("\"");
+                value.append(", nc=\"").append(nonceCount).append("\"");
+                value.append(", cnonce=\"").append(clientNonce).append("\"");
+            }
+            value.append(", response=\"").append(hashA3).append("\"");
+
+            request.header(HttpHeader.AUTHORIZATION.asString(), value.toString());
+        }
+
+        private String nextNonceCount()
+        {
+            String padding = "00000000";
+            String next = Integer.toHexString(nonceCount.incrementAndGet()).toLowerCase();
+            return padding.substring(0, padding.length() - next.length()) + next;
+        }
+
+        private String newClientNonce()
+        {
+            Random random = new Random();
+            byte[] bytes = new byte[8];
+            random.nextBytes(bytes);
+            return toHexString(bytes);
+        }
+
+        private String toHexString(byte[] bytes)
+        {
+            return TypeUtil.toHexString(bytes).toLowerCase();
+        }
     }
 }

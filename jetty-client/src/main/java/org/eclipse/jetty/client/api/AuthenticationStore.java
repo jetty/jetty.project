@@ -30,5 +30,5 @@ public interface AuthenticationStore
 
     public void removeAuthenticationResults();
 
-    public Authentication findAuthenticationResult(String uri);
+    public Authentication.Result findAuthenticationResult(String uri);
 }

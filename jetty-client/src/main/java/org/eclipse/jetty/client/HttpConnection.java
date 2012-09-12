@@ -161,9 +161,9 @@ public class HttpConnection extends AbstractConnection implements Connection
             request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
         // Authorization
-        Authentication authentication = client.getAuthenticationStore().findAuthenticationResult(request.uri());
-        if (authentication != null)
-            authentication.authenticate(request);
+        Authentication.Result authnResult = client.getAuthenticationStore().findAuthenticationResult(request.uri());
+        if (authnResult != null)
+            authnResult.apply(request);
 
         // TODO: decoder headers
 
