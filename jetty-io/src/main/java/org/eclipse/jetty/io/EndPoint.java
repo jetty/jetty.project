@@ -241,4 +241,10 @@ public interface EndPoint extends Closeable
      */
     void onClose();
 
+    
+    /**
+     * @return True if the endpoint is buffering output.
+     */
+    boolean isBufferingOutput();
+
 }

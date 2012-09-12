@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -36,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -44,14 +49,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class SelectChannelEndPointTest
 {
+    private static final Logger LOG = Log.getLogger(SelectChannelEndPointTest.class);
     protected CountDownLatch _lastEndPointLatch;
     protected volatile EndPoint _lastEndPoint;
     protected ServerSocketChannel _connector;
@@ -179,6 +179,7 @@ public class SelectChannelEndPointTest
                             _endp.write(null, blockingWrite, out.asReadOnlyBuffer());
                             blockingWrite.get();
                         }
+                        LOG.info("Finished writing {}", _writeCount);
                         progress = true;
                     }
 
@@ -601,23 +602,35 @@ public class SelectChannelEndPointTest
         String data = "Now is the time for all good men to come to the aid of the party";
         client.getOutputStream().write(data.getBytes("UTF-8"));
         BufferedInputStream in = new BufferedInputStream(client.getInputStream());
-
-        for (int i = 0; i < _writeCount; i++)
+        
+        int byteNum = 0;
+        try
         {
-            if (i % 1000 == 0)
-                TimeUnit.MILLISECONDS.sleep(200);
-
-            // Verify echo server to client
-            for (int j = 0; j < data.length(); j++)
+            for (int i = 0; i < _writeCount; i++)
             {
-                char c = data.charAt(j);
-                int b = in.read();
-                assertTrue(b > 0);
-                assertEquals("test-" + i + "/" + j, c, (char)b);
-            }
+                if (i % 1000 == 0)
+                    TimeUnit.MILLISECONDS.sleep(200);
 
-            if (i == 0)
-                _lastEndPoint.setIdleTimeout(60000);
+                // Verify echo server to client
+                for (int j = 0; j < data.length(); j++)
+                {
+                    char c = data.charAt(j);
+                    int b = in.read();
+                    byteNum++;
+                    assertTrue(b > 0);
+                    assertEquals("test-" + i + "/" + j,c,(char)b);
+                }
+
+                if (i == 0)
+                    _lastEndPoint.setIdleTimeout(60000);
+            }
+        }
+        catch (SocketTimeoutException e)
+        {
+            System.err.println("SelectorManager.dump() = " + _manager.dump());
+            LOG.warn("Server: " + server);
+            LOG.warn("Error reading byte #" + byteNum,e);
+            throw e;
         }
 
         client.close();

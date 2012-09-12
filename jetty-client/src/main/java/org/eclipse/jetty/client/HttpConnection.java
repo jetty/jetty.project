@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
@@ -76,7 +78,7 @@ public class HttpConnection extends AbstractConnection implements Connection
     {
         LOG.debug("{} idle timeout", this);
 
-        HttpExchange exchange = this.exchange.get();
+        HttpExchange exchange = getExchange();
         if (exchange != null)
             idleTimeout();
         else
@@ -97,7 +99,8 @@ public class HttpConnection extends AbstractConnection implements Connection
         HttpConversation conversation = client.getConversation(request);
         HttpExchange exchange = new HttpExchange(conversation, this, request, listener);
         setExchange(exchange);
-        conversation.add(exchange);
+        conversation.exchanges().offer(exchange);
+        conversation.listener(listener);
         sender.send(exchange);
     }
 
@@ -157,6 +160,11 @@ public class HttpConnection extends AbstractConnection implements Connection
         if (cookieString != null)
             request.header(HttpHeader.COOKIE.asString(), cookieString.toString());
 
+        // Authorization
+        Authentication authentication = client.getAuthenticationStore().findAuthenticationResult(request.uri());
+        if (authentication != null)
+            authentication.authenticate(request);
+
         // TODO: decoder headers
 
         // If we are HTTP 1.1, add the Host header
@@ -201,14 +209,25 @@ public class HttpConnection extends AbstractConnection implements Connection
         receiver.receive();
     }
 
-    public void completed(HttpExchange exchange, boolean success)
+    public void complete(HttpExchange exchange, boolean success)
     {
-        if (this.exchange.compareAndSet(exchange, null))
+        HttpExchange existing = this.exchange.getAndSet(null);
+        if (existing == exchange)
         {
             LOG.debug("{} disassociated from {}", exchange, this);
             if (success)
             {
-                destination.release(this);
+                HttpFields responseHeaders = exchange.response().headers();
+                Collection<String> values = responseHeaders.getValuesCollection(HttpHeader.CONNECTION.asString());
+                if (values != null && values.contains("close"))
+                {
+                    destination.remove(this);
+                    close();
+                }
+                else
+                {
+                    destination.release(this);
+                }
             }
             else
             {
@@ -216,7 +235,7 @@ public class HttpConnection extends AbstractConnection implements Connection
                 close();
             }
         }
-        else
+        else if (existing == null)
         {
             // It is possible that the exchange has already been disassociated,
             // for example if the connection idle timeouts: this will fail
@@ -224,6 +243,10 @@ public class HttpConnection extends AbstractConnection implements Connection
             // Eventually the request will also fail as the connection is closed
             // and will arrive here without an exchange being present.
             // We just ignore this fact, as the exchange has already been processed
+        }
+        else
+        {
+            throw new IllegalStateException();
         }
     }
 

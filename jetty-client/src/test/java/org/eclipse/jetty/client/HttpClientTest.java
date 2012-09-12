@@ -19,24 +19,38 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
@@ -306,5 +320,139 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 });
 
         Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+    }
+
+    @Slow
+    @Test
+    public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
+    {
+        start(new EmptyHandler());
+
+        // Prepare a big file to upload
+        Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
+        Files.createDirectories(targetTestsDir);
+        Path file = Paths.get(targetTestsDir.toString(), "http_client_conversation.big");
+        try (OutputStream output = Files.newOutputStream(file, CREATE))
+        {
+            byte[] kb = new byte[1024];
+            for (int i = 0; i < 10 * 1024; ++i)
+                output.write(kb);
+        }
+
+        final CountDownLatch latch = new CountDownLatch(3);
+        final AtomicLong exchangeTime = new AtomicLong();
+        final AtomicLong requestTime = new AtomicLong();
+        final AtomicLong responseTime = new AtomicLong();
+        client.newRequest("localhost", connector.getLocalPort())
+                .file(file)
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onSuccess(org.eclipse.jetty.client.api.Request request)
+                    {
+                        requestTime.set(System.nanoTime());
+                        latch.countDown();
+                    }
+                })
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        responseTime.set(System.nanoTime());
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        exchangeTime.set(System.nanoTime());
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+        Assert.assertTrue(requestTime.get() <= exchangeTime.get());
+        Assert.assertTrue(responseTime.get() <= exchangeTime.get());
+
+        // Give some time to the server to consume the request content
+        // This is just to avoid exception traces in the test output
+        Thread.sleep(1000);
+
+        Files.delete(file);
+    }
+
+    @Test
+    public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse() throws Exception
+    {
+        final int chunkSize = 16;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                // Echo back
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                // The second ByteBuffer set to null will throw an exception
+                .content(new ContentProvider()
+                {
+                    @Override
+                    public long length()
+                    {
+                        return -1;
+                    }
+
+                    @Override
+                    public Iterator<ByteBuffer> iterator()
+                    {
+                        return Arrays.asList(ByteBuffer.allocate(chunkSize), null).iterator();
+                    }
+                })
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void test_ExchangeIsComplete_WhenRequestFails_WithNoResponse() throws Exception
+    {
+        start(new EmptyHandler());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final String host = "localhost";
+        final int port = connector.getLocalPort();
+        client.newRequest(host, port)
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                {
+                    @Override
+                    public void onBegin(org.eclipse.jetty.client.api.Request request)
+                    {
+                        HttpDestination destination = (HttpDestination)client.getDestination("http", host, port);
+                        destination.getActiveConnections().peek().close();
+                    }
+                })
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

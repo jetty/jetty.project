@@ -18,14 +18,22 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,7 +56,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
-        final CountDownLatch successLatch = new CountDownLatch(2);
+        final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
                 .listener(new Request.Listener.Adapter()
                 {
@@ -71,6 +79,13 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
+                        successLatch.countDown();
+                    }
+
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertFalse(result.isFailed());
                         successLatch.countDown();
                     }
                 });
@@ -117,8 +132,9 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         }).send(new Response.Listener.Adapter()
         {
             @Override
-            public void onFailure(Response response, Throwable failure)
+            public void onComplete(Result result)
             {
+                Assert.assertTrue(result.isFailed());
                 Assert.assertEquals(0, idleConnections.size());
                 Assert.assertEquals(0, activeConnections.size());
                 failureLatch.countDown();
@@ -133,7 +149,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_BadRequest_ReturnsConnection() throws Exception
+    public void test_BadRequest_RemovesConnection() throws Exception
     {
         start(new EmptyHandler());
 
@@ -148,7 +164,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
-        final CountDownLatch successLatch = new CountDownLatch(2);
+        final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
                 .listener(new Request.Listener.Adapter()
                 {
@@ -170,13 +186,23 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
+                        Assert.assertEquals(400, response.status());
+                        // 400 response also come with a Connection: close,
+                        // so the connection is closed and removed
+                        successLatch.countDown();
+                    }
+
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertFalse(result.isFailed());
                         successLatch.countDown();
                     }
                 });
 
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(1, idleConnections.size());
+        Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());
     }
 
@@ -211,13 +237,102 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                 .send(new Response.Listener.Adapter()
                 {
                     @Override
-                    public void onFailure(Response response, Throwable failure)
+                    public void onComplete(Result result)
                     {
+                        Assert.assertTrue(result.isFailed());
                         failureLatch.countDown();
                     }
                 });
 
         Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertEquals(0, idleConnections.size());
+        Assert.assertEquals(0, activeConnections.size());
+    }
+
+    @Test
+    public void test_ResponseWithConnectionCloseHeader_RemovesConnection() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.setHeader("Connection", "close");
+                baseRequest.setHandled(true);
+            }
+        });
+
+        String scheme = "http";
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
+        Assert.assertEquals(0, idleConnections.size());
+
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
+        Assert.assertEquals(0, activeConnections.size());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest(host, port)
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertFalse(result.isFailed());
+                        Assert.assertEquals(0, idleConnections.size());
+                        Assert.assertEquals(0, activeConnections.size());
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertEquals(0, idleConnections.size());
+        Assert.assertEquals(0, activeConnections.size());
+    }
+
+    @Test
+    public void test_BigRequestContent_ResponseWithConnectionCloseHeader_RemovesConnection() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.setHeader("Connection", "close");
+                baseRequest.setHandled(true);
+            }
+        });
+
+        String scheme = "http";
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+
+        final BlockingQueue<Connection> idleConnections = destination.getIdleConnections();
+        Assert.assertEquals(0, idleConnections.size());
+
+        final BlockingQueue<Connection> activeConnections = destination.getActiveConnections();
+        Assert.assertEquals(0, activeConnections.size());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest(host, port)
+                .content(new ByteBufferContentProvider(ByteBuffer.allocate(16 * 1024 * 1024)))
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertEquals(0, idleConnections.size());
+                        Assert.assertEquals(0, activeConnections.size());
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         Assert.assertEquals(0, idleConnections.size());
         Assert.assertEquals(0, activeConnections.size());

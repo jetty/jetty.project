@@ -16,22 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.client.api;
 
-import org.eclipse.jetty.client.api.Response;
-
-public class HttpResponseException extends RuntimeException
+public interface Authentication
 {
-    private final Response response;
+    boolean matches(String type, String uri, String realm);
 
-    public HttpResponseException(String message, Response response)
-    {
-        super(message);
-        this.response = response;
-    }
+    void authenticate(Request request);
 
-    public Response getResponse()
+    public static class Result
     {
-        return response;
+        private final String uri;
+        private final Authentication authentication;
+
+        public Result(String uri, Authentication authentication)
+        {
+            this.uri = uri;
+            this.authentication = authentication;
+        }
+
+        public String getURI()
+        {
+            return uri;
+        }
+
+        public Authentication getAuthentication()
+        {
+            return authentication;
+        }
     }
 }

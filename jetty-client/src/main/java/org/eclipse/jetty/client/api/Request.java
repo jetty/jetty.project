@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.api;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -45,6 +47,8 @@ public interface Request
 
     Request path(String path);
 
+    String uri();
+
     HttpVersion version();
 
     Request version(HttpVersion version);
@@ -61,9 +65,11 @@ public interface Request
 
     Request content(ContentProvider buffer);
 
-    Request decoder(ContentDecoder decoder);
+    Request file(Path file) throws IOException;
 
-    Request cookie(String key, String value);
+    Request file(Path file, String contentType) throws IOException;
+
+    Request decoder(ContentDecoder decoder);
 
     String agent();
 

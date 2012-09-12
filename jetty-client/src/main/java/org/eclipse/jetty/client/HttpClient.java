@@ -30,10 +30,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.CookieStore;
@@ -74,12 +76,12 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
  *
  * // Building a request with a timeout
  * HTTPClient client = new HTTPClient();
- * Response response = client.newRequest("localhost:8080").send().get(5, TimeUnit.SECONDS);
+ * Response response = client.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
  * int status = response.status();
  *
  * // Asynchronously
  * HTTPClient client = new HTTPClient();
- * client.newRequest("localhost:8080").send(new Response.Listener.Adapter()
+ * client.newRequest("http://localhost:8080").send(new Response.Listener.Adapter()
  * {
  *     &#64;Override
  *     public void onSuccess(Response response)
@@ -95,7 +97,10 @@ public class HttpClient extends AggregateLifeCycle
 
     private final ConcurrentMap<String, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, HttpConversation> conversations = new ConcurrentHashMap<>();
+    private final List<ProtocolHandler> handlers = new CopyOnWriteArrayList<>();
+    private final List<Request.Listener> requestListeners = new CopyOnWriteArrayList<>();
     private final CookieStore cookieStore = new HttpCookieStore();
+    private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private volatile Executor executor;
     private volatile ByteBufferPool byteBufferPool;
     private volatile Scheduler scheduler;
@@ -108,8 +113,19 @@ public class HttpClient extends AggregateLifeCycle
     private volatile int maxQueueSizePerAddress = 1024;
     private volatile int requestBufferSize = 4096;
     private volatile int responseBufferSize = 4096;
+    private volatile int maxRedirects = 8;
     private volatile SocketAddress bindAddress;
     private volatile long idleTimeout;
+
+    public HttpClient()
+    {
+        this(null);
+    }
+
+    public HttpClient(Executor executor)
+    {
+        this.executor = executor;
+    }
 
     public ByteBufferPool getByteBufferPool()
     {
@@ -139,6 +155,9 @@ public class HttpClient extends AggregateLifeCycle
         selectorManager = newSelectorManager();
         addBean(selectorManager);
 
+        handlers.add(new RedirectProtocolHandler(this));
+        handlers.add(new AuthenticationProtocolHandler(this));
+
         super.doStart();
 
         LOG.info("Started {}", this);
@@ -166,9 +185,19 @@ public class HttpClient extends AggregateLifeCycle
         LOG.info("Stopped {}", this);
     }
 
+    public List<Request.Listener> getRequestListeners()
+    {
+        return requestListeners;
+    }
+
     public CookieStore getCookieStore()
     {
         return cookieStore;
+    }
+
+    public AuthenticationStore getAuthenticationStore()
+    {
+        return authenticationStore;
     }
 
     public long getIdleTimeout()
@@ -224,9 +253,9 @@ public class HttpClient extends AggregateLifeCycle
         return new HttpRequest(this, uri);
     }
 
-    protected Request newRequest(long id, URI uri)
+    protected Request newRequest(long id, String uri)
     {
-        return new HttpRequest(this, id, uri);
+        return new HttpRequest(this, id, URI.create(uri));
     }
 
     private String address(String scheme, String host, int port)
@@ -340,6 +369,16 @@ public class HttpClient extends AggregateLifeCycle
         this.responseBufferSize = responseBufferSize;
     }
 
+    public int getMaxRedirects()
+    {
+        return maxRedirects;
+    }
+
+    public void setMaxRedirects(int maxRedirects)
+    {
+        this.maxRedirects = maxRedirects;
+    }
+
     protected void newConnection(HttpDestination destination, Callback<Connection> callback)
     {
         SocketChannel channel = null;
@@ -376,7 +415,7 @@ public class HttpClient extends AggregateLifeCycle
         }
     }
 
-    public HttpConversation getConversation(Request request)
+    protected HttpConversation getConversation(Request request)
     {
         long id = request.id();
         HttpConversation conversation = conversations.get(id);
@@ -387,27 +426,25 @@ public class HttpClient extends AggregateLifeCycle
             if (existing != null)
                 conversation = existing;
             else
-                LOG.debug("Created {}", conversation);
+                LOG.debug("{} created", conversation);
         }
         return conversation;
     }
 
-    public void removeConversation(HttpConversation conversation)
+    protected void removeConversation(HttpConversation conversation)
     {
         conversations.remove(conversation.id());
-        LOG.debug("Removed {}", conversation);
+        LOG.debug("{} removed", conversation);
     }
 
-    public Response.Listener lookup(int status)
+    // TODO: find a better method name
+    public Response.Listener lookup(Request request, Response response)
     {
-        // TODO
-        switch (status)
+        for (ProtocolHandler handler : handlers)
         {
-            case 302:
-            case 303:
-                return new RedirectionProtocolListener(this);
+            if (handler.accept(request,  response))
+                return handler.getResponseListener();
         }
-
         return null;
     }
 

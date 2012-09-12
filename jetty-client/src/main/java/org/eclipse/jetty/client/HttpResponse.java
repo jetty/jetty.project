@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -26,15 +25,13 @@ import org.eclipse.jetty.http.HttpVersion;
 public class HttpResponse implements Response
 {
     private final HttpFields headers = new HttpFields();
-    private final Request request;
     private final Listener listener;
     private HttpVersion version;
     private int status;
     private String reason;
 
-    public HttpResponse(Request request, Response.Listener listener)
+    public HttpResponse(Response.Listener listener)
     {
-        this.request = request;
         this.listener = listener;
     }
 
@@ -76,12 +73,6 @@ public class HttpResponse implements Response
     public HttpFields headers()
     {
         return headers;
-    }
-
-    @Override
-    public Request request()
-    {
-        return request;
     }
 
     @Override

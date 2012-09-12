@@ -312,6 +312,17 @@ abstract public class WriteFlusher
                     return;
                 }
             }
+            
+            // Handle buffering endpoint
+            if (_endPoint.isBufferingOutput())
+            {
+                PendingState<?> pending=new PendingState<>(buffers, context, callback);
+                if (updateState(__WRITING,pending))
+                    onIncompleteFlushed();
+                else
+                    fail(new PendingState<>(buffers, context, callback));
+                return;
+            }
 
             // If updateState didn't succeed, we don't care as our buffers have been written
             if (!updateState(__WRITING,__IDLE))
@@ -371,7 +382,17 @@ abstract public class WriteFlusher
                     return;
                 }
             }
-
+            
+            // Handle buffering endpoint
+            if (_endPoint.isBufferingOutput())
+            {
+                if (updateState(__COMPLETING,pending))
+                    onIncompleteFlushed();
+                else
+                    fail(pending);
+                return;
+            }
+            
             // If updateState didn't succeed, we don't care as our buffers have been written
             if (!updateState(__COMPLETING,__IDLE))
                 ignoreFail();
