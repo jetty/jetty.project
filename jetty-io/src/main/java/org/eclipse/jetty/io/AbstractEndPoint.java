@@ -159,6 +159,12 @@ public abstract class AbstractEndPoint implements EndPoint
         _writeFlusher.write(context, callback, buffers);
     }
 
+    @Override
+    public boolean isBufferingOutput()
+    {
+        return false;
+    }
+
     protected abstract void onIncompleteFlush();
 
     protected abstract boolean needsFill() throws IOException;
@@ -221,7 +227,6 @@ public abstract class AbstractEndPoint implements EndPoint
     @Override
     public String toString()
     {
-
         return String.format("%s@%x{%s<r-l>%s,o=%b,is=%b,os=%b,fi=%s,wf=%s}{%s}",
                 getClass().getSimpleName(),
                 hashCode(),

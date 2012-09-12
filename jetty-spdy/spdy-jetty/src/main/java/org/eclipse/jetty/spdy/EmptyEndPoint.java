@@ -61,6 +61,12 @@ public class EmptyEndPoint implements EndPoint
     }
 
     @Override
+    public boolean isBufferingOutput()
+    {
+        return false;
+    }
+    
+    @Override
     public boolean isOutputShutdown()
     {
         return oshut;

@@ -228,8 +228,6 @@ public class SslConnection extends AbstractConnection
         private boolean _cannotAcceptMoreAppDataToFlush;
         private boolean _underFlown;
 
-        // TODO: use ExecutorCallback ?
-//        private final Callback<Void> _writeCallback = new ExecutorCallback<Void>(getExecutor())
         private final Callback<Void> _writeCallback = new Callback<Void>()
         {
             @Override
@@ -396,6 +394,12 @@ public class SslConnection extends AbstractConnection
                     return true;
                 }
             }
+        }
+
+        @Override
+        public boolean isBufferingOutput()
+        {
+            return BufferUtil.hasContent(_encryptedOutput);
         }
 
         public SslConnection getSslConnection()
