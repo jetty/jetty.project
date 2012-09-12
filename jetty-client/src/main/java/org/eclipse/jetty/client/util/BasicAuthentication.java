@@ -24,6 +24,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -55,7 +56,7 @@ public class BasicAuthentication implements Authentication
     }
 
     @Override
-    public void authenticate(Request request)
+    public boolean authenticate(Request request, String params, Attributes context)
     {
         String encoding = StringUtil.__ISO_8859_1;
         try

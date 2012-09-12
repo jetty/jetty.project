@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.client.api;
 
+import org.eclipse.jetty.util.Attributes;
+
 public interface Authentication
 {
     boolean matches(String type, String uri, String realm);
 
-    void authenticate(Request request);
+    boolean authenticate(Request request, String params, Attributes context);
 
     public static class Result
     {

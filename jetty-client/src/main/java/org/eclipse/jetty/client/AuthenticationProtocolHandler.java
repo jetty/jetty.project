@@ -69,16 +69,20 @@ public class AuthenticationProtocolHandler extends Response.Listener.Adapter imp
                 Request request = result.getRequest();
                 final String uri = request.uri();
                 Authentication authentication = null;
+                String params = null;
                 for (WWWAuthenticate wwwAuthenticate : wwwAuthenticates)
                 {
                     authentication = client.getAuthenticationStore().findAuthentication(wwwAuthenticate.type, uri, wwwAuthenticate.realm);
                     if (authentication != null)
+                    {
+                        params = wwwAuthenticate.params;
                         break;
+                    }
                 }
                 if (authentication != null)
                 {
                     final Authentication authn = authentication;
-                    authn.authenticate(request);
+                    authn.authenticate(request, params, client.getConversation(request));
                     request.send(new Adapter()
                     {
                         @Override
@@ -102,6 +106,7 @@ public class AuthenticationProtocolHandler extends Response.Listener.Adapter imp
 
     private List<WWWAuthenticate> parseWWWAuthenticate(Response response)
     {
+        // TODO: these should be ordered by strength
         List<WWWAuthenticate> result = new ArrayList<>();
         List<String> values = Collections.list(response.headers().getValues(HttpHeader.WWW_AUTHENTICATE.asString()));
         for (String value : values)

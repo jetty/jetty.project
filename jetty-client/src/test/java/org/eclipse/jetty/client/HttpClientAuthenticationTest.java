@@ -22,10 +22,12 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -84,7 +86,18 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     public void test_BasicAuthentication() throws Exception
     {
         startBasic(new EmptyHandler());
+        test_Authentication(new BasicAuthentication("http://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+    }
 
+    @Test
+    public void test_DigestAuthentication() throws Exception
+    {
+        startDigest(new EmptyHandler());
+        test_Authentication(new DigestAuthentication("http://localhost:" + connector.getLocalPort(), realm));
+    }
+
+    private void test_Authentication(Authentication authentication) throws Exception
+    {
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
 
         final AtomicInteger requests = new AtomicInteger();
@@ -99,7 +112,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         // Request without Authentication causes a 401
-        Request request = client.newRequest("localhost", connector.getLocalPort());
+        Request request = client.newRequest("localhost", connector.getLocalPort()).path("/test");
         ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(401, response.status());
@@ -107,9 +120,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().remove(requestListener);
         requests.set(0);
 
-        String user = "basic";
-        String password = "basic";
-        authenticationStore.addAuthentication(new BasicAuthentication("http://localhost:" + connector.getLocalPort(), realm, user, password));
+        authenticationStore.addAuthentication(authentication);
 
         requestListener = new Request.Listener.Adapter()
         {
@@ -148,15 +159,5 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertEquals(1, requests.get());
         client.getRequestListeners().remove(requestListener);
         requests.set(0);
-    }
-
-    @Test
-    public void test_DigestAuthentication() throws Exception
-    {
-        startDigest(new EmptyHandler());
-
-        Request request = client.newRequest("localhost", connector.getLocalPort());
-        ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(401, response.status());
     }
 }
