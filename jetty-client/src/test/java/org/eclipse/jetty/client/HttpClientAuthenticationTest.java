@@ -18,33 +18,87 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.DigestAuthenticator;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.security.Constraint;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 {
-    @Test
-    public void test_BasicAuthentication_WithChallenge() throws Exception
-    {
-        start(new BasicAuthenticationHandler());
+    private String realm = "TestRealm";
 
+    public void startBasic(Handler handler) throws Exception
+    {
+        start(new BasicAuthenticator(), handler);
+    }
+
+    public void startDigest(Handler handler) throws Exception
+    {
+        start(new DigestAuthenticator(), handler);
+    }
+
+    private void start(Authenticator authenticator, Handler handler) throws Exception
+    {
+        server = new Server();
+        File realmFile = MavenTestingUtils.getTestResourceFile("realm.properties");
+        LoginService loginService = new HashLoginService(realm, realmFile.getAbsolutePath());
+        server.addBean(loginService);
+
+        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
+
+        Constraint constraint = new Constraint();
+        constraint.setAuthenticate(true);
+        constraint.setRoles(new String[]{"*"});
+        ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setPathSpec("/*");
+        mapping.setConstraint(constraint);
+
+        securityHandler.addConstraintMapping(mapping);
+        securityHandler.setAuthenticator(authenticator);
+        securityHandler.setLoginService(loginService);
+        securityHandler.setStrict(false);
+
+        securityHandler.setHandler(handler);
+        start(securityHandler);
+    }
+
+    @Test
+    public void test_BasicAuthentication() throws Exception
+    {
+        startBasic(new EmptyHandler());
+        test_Authentication(new BasicAuthentication("http://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
+    }
+
+    @Test
+    public void test_DigestAuthentication() throws Exception
+    {
+        startDigest(new EmptyHandler());
+        test_Authentication(new DigestAuthentication("http://localhost:" + connector.getLocalPort(), realm, "digest", "digest"));
+    }
+
+    private void test_Authentication(Authentication authentication) throws Exception
+    {
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
-        String realm = "test";
 
         final AtomicInteger requests = new AtomicInteger();
         Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
@@ -58,20 +112,15 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         // Request without Authentication causes a 401
-        Request request = client.newRequest("localhost", connector.getLocalPort())
-                .path("/test")
-                .param("type", "Basic")
-                .param("realm", realm);
-        ContentResponse response = request.send().get(5, TimeUnit.SECONDS);
+        Request request = client.newRequest("localhost", connector.getLocalPort()).path("/test");
+        ContentResponse response = request.send().get(555, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(401, response.status());
         Assert.assertEquals(1, requests.get());
         client.getRequestListeners().remove(requestListener);
         requests.set(0);
 
-        String user = "jetty";
-        String password = "rocks";
-        authenticationStore.addAuthentication(new BasicAuthentication("http://localhost:" + connector.getLocalPort(), realm, user, password));
+        authenticationStore.addAuthentication(authentication);
 
         requestListener = new Request.Listener.Adapter()
         {
@@ -84,8 +133,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().add(requestListener);
 
         // Request with authentication causes a 401 (no previous successful authentication) + 200
-        request.param("user", user).param("password", password);
-        response = request.send().get(5, TimeUnit.SECONDS);
+        response = request.send().get(555, TimeUnit.SECONDS);
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.status());
         Assert.assertEquals(2, requests.get());
@@ -111,59 +159,5 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertEquals(1, requests.get());
         client.getRequestListeners().remove(requestListener);
         requests.set(0);
-    }
-
-    private class BasicAuthenticationHandler extends AbstractHandler
-    {
-        @Override
-        public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            try
-            {
-                String type = request.getParameter("type");
-                String authorization = request.getHeader(HttpHeader.AUTHORIZATION.asString());
-                if (authorization == null)
-                {
-                    String realm = request.getParameter("realm");
-                    response.setStatus(401);
-                    switch (type)
-                    {
-                        case "Basic":
-                        {
-                            response.setHeader("WWW-Authenticate", "Basic realm=\"" + realm + "\"");
-                            break;
-                        }
-                        default:
-                        {
-                            throw new IllegalStateException();
-                        }
-                    }
-                }
-                else
-                {
-                    switch (type)
-                    {
-                        case "Basic":
-                        {
-                            String user = request.getParameter("user");
-                            String password = request.getParameter("password");
-                            String expected = "Basic " + B64Code.encode(user + ":" + password);
-                            if (!expected.equals(authorization))
-                                throw new IOException(expected + " != " + authorization);
-                            IO.copy(request.getInputStream(), response.getOutputStream());
-                            break;
-                        }
-                        default:
-                        {
-                            throw new IllegalStateException();
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                baseRequest.setHandled(true);
-            }
-        }
     }
 }
