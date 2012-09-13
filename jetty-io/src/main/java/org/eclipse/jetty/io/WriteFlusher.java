@@ -371,7 +371,7 @@ abstract public class WriteFlusher
                     return;
                 }
             }
-            
+
             // If updateState didn't succeed, we don't care as our buffers have been written
             if (!updateState(__COMPLETING,__IDLE))
                 ignoreFail();
@@ -397,6 +397,7 @@ abstract public class WriteFlusher
             switch(current.getType())
             {
                 case IDLE:
+                case FAILED:
                     return;
 
                 case PENDING:
