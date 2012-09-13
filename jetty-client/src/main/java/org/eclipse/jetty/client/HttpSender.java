@@ -142,12 +142,17 @@ public class HttpSender
                             header = BufferUtil.EMPTY_BUFFER;
                         if (chunk == null)
                             chunk = BufferUtil.EMPTY_BUFFER;
+                        LOG.debug("Writing {} {} {}", header, chunk, content);
                         endPoint.write(null, callback, header, chunk, content);
                         if (callback.pending())
+                        {
+                            LOG.debug("Write incomplete {} {} {}", header, chunk, content);
                             return;
+                        }
 
                         if (callback.completed())
                         {
+                            LOG.debug("Write complete {} {} {}", header, chunk, content);
                             if (!committed)
                                 committed(request);
 
@@ -234,7 +239,7 @@ public class HttpSender
         // Notify after
         HttpExchange exchange = connection.getExchange();
         Request request = exchange.request();
-        LOG.debug("Failed {}", request);
+        LOG.debug("Failed {} {}", request, failure);
 
         boolean exchangeCompleted = exchange.requestComplete(false);
         if (!exchangeCompleted && !committed)
