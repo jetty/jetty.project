@@ -785,7 +785,7 @@ public class XmlConfiguration
         {
             String id = node.getAttribute("id");
             obj = _idMap.get(id);
-            if (obj == null)
+            if (obj == null && node.size()>0)
                 throw new IllegalStateException("No object for id=" + id);
             configure(obj,node,0);
             return obj;
