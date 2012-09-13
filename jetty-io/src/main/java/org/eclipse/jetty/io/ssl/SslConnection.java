@@ -21,7 +21,6 @@ package org.eclipse.jetty.io.ssl;
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
@@ -33,7 +32,6 @@ import javax.net.ssl.SSLException;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -115,7 +113,7 @@ public class SslConnection extends AbstractConnection
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = new DecryptedEndPoint();
-        
+
         if (endPoint instanceof SocketBased)
         {
             try
@@ -149,8 +147,9 @@ public class SslConnection extends AbstractConnection
             // Begin the handshake
             _sslEngine.beginHandshake();
 
-            if (_sslEngine.getUseClientMode())
-                getExecutor().execute(_runWriteEmpty);
+            // TODO: check that it is ok to remove this code
+//            if (_sslEngine.getUseClientMode())
+//                getExecutor().execute(_runWriteEmpty);
         }
         catch (SSLException x)
         {
@@ -223,12 +222,12 @@ public class SslConnection extends AbstractConnection
     public String toString()
     {
         ByteBuffer b = _encryptedInput;
-        int ei=b==null?-1:b.remaining(); 
+        int ei=b==null?-1:b.remaining();
         b = _encryptedOutput;
         int eo=b==null?-1:b.remaining();
         b = _decryptedInput;
         int di=b==null?-1:b.remaining();
-        
+
         return String.format("SslConnection@%x{%s,eio=%d/%d,di=%d} -> %s",
                 hashCode(),
                 _sslEngine.getHandshakeStatus(),
@@ -418,7 +417,7 @@ public class SslConnection extends AbstractConnection
             if (connection instanceof AbstractConnection)
             {
                 AbstractConnection a = (AbstractConnection)connection;
-                if (a.getInputBufferSize()<_sslEngine.getSession().getApplicationBufferSize());
+                if (a.getInputBufferSize()<_sslEngine.getSession().getApplicationBufferSize())
                     a.setInputBufferSize(_sslEngine.getSession().getApplicationBufferSize());
             }
 
@@ -699,7 +698,7 @@ public class SslConnection extends AbstractConnection
                                 if (BufferUtil.hasContent(_encryptedOutput))
                                     return false;
                             }
-                            
+
                             // otherwise we have written, and the caller will close the underlying connection
                             return all_consumed;
 
