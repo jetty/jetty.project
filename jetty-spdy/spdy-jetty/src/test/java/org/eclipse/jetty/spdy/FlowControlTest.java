@@ -189,7 +189,7 @@ public class FlowControlTest extends AbstractTest
                 }
             }
         });
-
+        
         DataInfo dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         checkThatWeAreFlowControlStalled(exchanger);
 

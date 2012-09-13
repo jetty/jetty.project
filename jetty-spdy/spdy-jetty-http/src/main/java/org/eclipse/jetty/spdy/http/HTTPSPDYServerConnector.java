@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.NPNServerConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.http.PushStrategy.None;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTPSPDYServerConnector extends SelectChannelConnector
@@ -54,17 +55,26 @@ public class HTTPSPDYServerConnector extends SelectChannelConnector
     {
         this(server,new HttpChannelConfig(),sslContextFactory,pushStrategies);
     }
+
+    public HTTPSPDYServerConnector(Server server, short version, HttpChannelConfig httpChannelConfig, PushStrategy push)
+    {
+        super(server,new HTTPSPDYServerConnectionFactory(version,httpChannelConfig,push));
+       
+    }
     
     public HTTPSPDYServerConnector(Server server, HttpChannelConfig config, SslContextFactory sslContextFactory, Map<Short, PushStrategy> pushStrategies)
     {
         super(server,AbstractConnectionFactory.getFactories(sslContextFactory,
             sslContextFactory==null
             ?new ConnectionFactory[] {new HttpConnectionFactory(config)}
-            :new ConnectionFactory[] {new NPNServerConnectionFactory("http/1.1","spdy/3","spdy/2"),
+            :new ConnectionFactory[] {new NPNServerConnectionFactory("spdy/3","spdy/2","http/1.1"),
                 new HttpConnectionFactory(config),
                 new HTTPSPDYServerConnectionFactory(SPDY.V3,new HttpChannelConfig(),getPushStrategy(SPDY.V3, pushStrategies)),
                 new HTTPSPDYServerConnectionFactory(SPDY.V2,new HttpChannelConfig(),getPushStrategy(SPDY.V2, pushStrategies))}));
+        if (getConnectionFactory(NPNServerConnectionFactory.class)!=null)
+            getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol("http/1.1");
     }
+
 
     private static PushStrategy getPushStrategy(short version, Map<Short, PushStrategy> pushStrategies)
     {

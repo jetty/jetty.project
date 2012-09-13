@@ -73,6 +73,12 @@ public abstract class AbstractTest
         connector.addConnectionFactory(spdy);
         connector.setPort(0);
         server.addConnector(connector);
+        
+        if (connector.getConnectionFactory(NPNServerConnectionFactory.class)!=null)
+            connector.getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol(spdy.getProtocol());
+        else
+            connector.setDefaultProtocol(spdy.getProtocol());
+        
         server.start();
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }

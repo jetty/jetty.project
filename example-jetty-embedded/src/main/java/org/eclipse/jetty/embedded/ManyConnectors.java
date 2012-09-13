@@ -87,7 +87,7 @@ public class ManyConnectors
         HTTPSPDYServerConnectionFactory spdy3 = new HTTPSPDYServerConnectionFactory(3,config,push);
         spdy2.setInputBufferSize(8192);
         
-        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(http.getProtocol(),spdy2.getProtocol(),spdy3.getProtocol());
+        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getProtocol());
         npn.setDefaultProtocol(http.getProtocol());
         npn.setInputBufferSize(1024);
         

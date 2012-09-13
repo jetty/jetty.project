@@ -40,10 +40,13 @@ public class SPDYServerConnector extends SelectChannelConnector
             sslContextFactory==null
             ?new ConnectionFactory[]{new SPDYServerConnectionFactory(SPDY.V2, listener)}
             :new ConnectionFactory[]{
-                new NPNServerConnectionFactory("http/1.1","spdy/2","spdy/3"),
+                new NPNServerConnectionFactory("spdy/3","spdy/2","http/1.1"),
                 new HttpConnectionFactory(),
                 new SPDYServerConnectionFactory(SPDY.V2, listener),
                 new SPDYServerConnectionFactory(SPDY.V3, listener)});
+        if (getConnectionFactory(NPNServerConnectionFactory.class)!=null)
+            getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol("http/1.1");
+        
     }
 
 }

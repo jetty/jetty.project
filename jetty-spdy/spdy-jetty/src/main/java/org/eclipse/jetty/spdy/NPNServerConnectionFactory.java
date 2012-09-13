@@ -34,21 +34,14 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
     private final List<String> _protocols;
     private String _defaultProtocol;
 
-    public NPNServerConnectionFactory()
-    {
-        this(new String[0]);
-    }
-    
     /* ------------------------------------------------------------ */
     /**
-     * @param protocols List of supported protocols. The first of these is set as the default protocol
+     * @param protocols List of supported protocols in priority order
      */
     public NPNServerConnectionFactory(String... protocols)
     {
         super("npn");
         _protocols=Arrays.asList(protocols);
-        if (_protocols.size()>0)
-            _defaultProtocol=_protocols.get(0);
     }
 
     public String getDefaultProtocol()
@@ -80,6 +73,10 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
                     i.remove();
             }
         }
+        
+        String dft=_defaultProtocol;
+        if (dft==null)
+            dft=_protocols.get(0);
         
         return new NextProtoNegoServerConnection((DecryptedEndPoint)endPoint, connector,protocols,_defaultProtocol);
     }

@@ -421,6 +421,9 @@ public class SslConnection extends AbstractConnection
                 if (a.getInputBufferSize()<_sslEngine.getSession().getApplicationBufferSize());
                     a.setInputBufferSize(_sslEngine.getSession().getApplicationBufferSize());
             }
+
+            connection.onOpen();
+
             super.setConnection(connection);
         }
 

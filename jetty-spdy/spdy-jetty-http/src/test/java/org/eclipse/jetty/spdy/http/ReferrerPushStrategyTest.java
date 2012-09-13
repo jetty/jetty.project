@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpChannelConfig;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.spdy.NPNServerConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -57,10 +58,8 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
     @Override
     protected HTTPSPDYServerConnector newHTTPSPDYServerConnector(short version)
     {
-        HTTPSPDYServerConnector connector = super.newHTTPSPDYServerConnector(version);
-        ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), new ReferrerPushStrategy());
-        connector.addConnectionFactory(defaultFactory);
-        connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
+        HTTPSPDYServerConnector connector =
+            new HTTPSPDYServerConnector(server,version,new HttpChannelConfig(),new ReferrerPushStrategy());
         return connector;
     }
 
@@ -74,6 +73,11 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
         ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), pushStrategy);
         connector.addConnectionFactory(defaultFactory);
+        if (connector.getConnectionFactory(NPNServerConnectionFactory.class)!=null)
+            connector.getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol(defaultFactory.getProtocol());
+        else
+            connector.setDefaultProtocol(defaultFactory.getProtocol());
+        
         connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
 
         Fields mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
@@ -97,7 +101,10 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         pushStrategy.setReferrerPushPeriod(referrerPushPeriod);
         ConnectionFactory defaultFactory = new HTTPSPDYServerConnectionFactory(version,new HttpChannelConfig(), pushStrategy);
         connector.addConnectionFactory(defaultFactory);
-        connector.setDefaultProtocol(defaultFactory.getProtocol()); // TODO I don't think this is right
+        if (connector.getConnectionFactory(NPNServerConnectionFactory.class)!=null)
+            connector.getConnectionFactory(NPNServerConnectionFactory.class).setDefaultProtocol(defaultFactory.getProtocol());
+        else
+            connector.setDefaultProtocol(defaultFactory.getProtocol());
 
         Fields mainRequestHeaders = createHeadersWithoutReferrer(mainResource);
         Session session1 = sendMainRequestAndCSSRequest(address, mainRequestHeaders);

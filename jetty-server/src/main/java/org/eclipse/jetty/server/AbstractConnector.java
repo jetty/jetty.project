@@ -324,9 +324,9 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Co
 
     public void setDefaultProtocol(String defaultProtocol)
     {
-        if(isRunning())
-            throw new IllegalStateException(getState());
         _defaultProtocol = defaultProtocol.toLowerCase();
+        if (isRunning())
+            _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
     }
 
     @Override
