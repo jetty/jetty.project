@@ -85,14 +85,14 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     @Test
     public void test_BasicAuthentication() throws Exception
     {
-        startBasic(new EmptyHandler());
+        startBasic(new EmptyServerHandler());
         test_Authentication(new BasicAuthentication("http://localhost:" + connector.getLocalPort(), realm, "basic", "basic"));
     }
 
     @Test
     public void test_DigestAuthentication() throws Exception
     {
-        startDigest(new EmptyHandler());
+        startDigest(new EmptyServerHandler());
         test_Authentication(new DigestAuthentication("http://localhost:" + connector.getLocalPort(), realm, "digest", "digest"));
     }
 

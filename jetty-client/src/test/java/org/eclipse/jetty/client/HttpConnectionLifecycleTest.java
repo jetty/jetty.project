@@ -42,7 +42,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_SuccessfulRequest_ReturnsConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -100,7 +100,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_FailedRequest_RemovesConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -151,7 +151,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_BadRequest_RemovesConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -209,7 +209,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @Test
     public void test_ConnectionFailure_RemovesConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";

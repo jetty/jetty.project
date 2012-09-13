@@ -57,7 +57,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testStoppingClosesConnections() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -91,7 +91,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_DestinationCount() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         String scheme = "http";
         String host = "localhost";
@@ -111,7 +111,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_GET_ResponseWithoutContent() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         Response response = client.GET("http://localhost:" + connector.getLocalPort()).get(5, TimeUnit.SECONDS);
 
@@ -212,7 +212,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestSucceeded() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         client.setMaxConnectionsPerAddress(1);
 
@@ -270,7 +270,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         client.setMaxConnectionsPerAddress(1);
         final long idleTimeout = 1000;
@@ -326,7 +326,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         // Prepare a big file to upload
         Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
@@ -429,7 +429,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_ExchangeIsComplete_WhenRequestFails_WithNoResponse() throws Exception
     {
-        start(new EmptyHandler());
+        start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
         final String host = "localhost";
