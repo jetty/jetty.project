@@ -201,7 +201,7 @@ public class MetaData
                 _metaDataComplete=true;
                 break;
             case False:
-                _metaDataComplete=true;
+                _metaDataComplete=false;
                 break;
             case NotSet:
                 break;
