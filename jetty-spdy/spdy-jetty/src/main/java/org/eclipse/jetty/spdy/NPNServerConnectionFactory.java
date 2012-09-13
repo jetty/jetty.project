@@ -26,12 +26,16 @@ import java.util.List;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class NPNServerConnectionFactory extends AbstractConnectionFactory
 {
+    private static final Logger LOG = Log.getLogger(NPNServerConnectionFactory.class);
     private final List<String> _protocols;
     private String _defaultProtocol;
 
@@ -43,6 +47,20 @@ public class NPNServerConnectionFactory extends AbstractConnectionFactory
     {
         super("npn");
         _protocols=Arrays.asList(protocols);
+
+        try
+        {
+            if (NextProtoNego.class.getClassLoader()!=null)
+            {
+                LOG.warn("NextProtoNego not from bootloader classloader: "+NextProtoNego.class.getClassLoader());
+                throw new IllegalStateException("NextProtoNego not on bootloader");
+            }
+        }
+        catch(Throwable th)
+        {
+            LOG.warn("NextProtoNego not available: "+th);
+            throw new IllegalStateException("NextProtoNego not available",th);
+        }
     }
 
     public String getDefaultProtocol()

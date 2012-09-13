@@ -298,10 +298,10 @@ public class XmlConfiguration
                     else
                     {
                         String namedAttribute = node.getAttribute("name");
+                        Object value=value(obj,(XmlParser.Node)o);
                         if (namedAttribute != null)
-                            namedArgMap.put(namedAttribute,value(obj,(XmlParser.Node)o));
-
-                        arguments.add(value(obj, (XmlParser.Node)o));
+                            namedArgMap.put(namedAttribute,value);
+                        arguments.add(value);
                     }
                 }
 
@@ -745,10 +745,10 @@ public class XmlConfiguration
                     continue;
 
                 String namedAttribute = argNode.getAttribute("name");
+                Object value=value(obj,(XmlParser.Node)o);
                 if (namedAttribute != null)
-                    namedArgMap.put(namedAttribute,value(obj,(XmlParser.Node)o));
-
-                arguments.add(value(obj,(XmlParser.Node)o));
+                    namedArgMap.put(namedAttribute,value);
+                arguments.add(value);
             }
 
             if (LOG.isDebugEnabled())
@@ -772,6 +772,7 @@ public class XmlConfiguration
             {
                 throw new IllegalStateException("No suitable constructor: " + node + " on " + obj);
             }
+            
             configure(n,node,argIndex);
             return n;
         }

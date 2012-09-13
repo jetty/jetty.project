@@ -843,6 +843,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
                     throws IOException, ServletException
             {
+                // TODO suppress stack from test log
                 throw new NullPointerException("thrown_explicitly_by_the_test");
             }
         }), null);

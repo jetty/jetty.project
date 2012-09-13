@@ -51,6 +51,7 @@ public class NextProtoNegoServerConnection extends AbstractConnection implements
         this.protocols = protocols;
         this.defaultProtocol=defaultProtocol;
         engine = endPoint.getSslConnection().getSSLEngine();
+        
         NextProtoNego.put(engine,this);
     }
 
