@@ -94,7 +94,15 @@ public class HttpURI
     public HttpURI(String raw)
     {
         _rawString=raw;
-        byte[] b = raw.getBytes();
+        byte[] b;
+        try
+        {
+            b = raw.getBytes(StringUtil.__UTF8);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+           throw new RuntimeException(e.getMessage());
+        }
         parse(b,0,b.length);
     }
 
@@ -700,7 +708,7 @@ public class HttpURI
         if (encoding==null || StringUtil.isUTF8(encoding))
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
-            UrlEncoded.decodeTo(toUtf8String(_query+1,_fragment-_query-1),parameters,encoding);
+            UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,encoding),parameters,encoding);
     }
 
     public void clear()

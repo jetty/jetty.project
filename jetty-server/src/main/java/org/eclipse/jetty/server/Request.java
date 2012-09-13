@@ -1739,6 +1739,7 @@ public class Request implements HttpServletRequest
     public void setQueryString(String queryString)
     {
         _queryString = queryString;
+        _queryEncoding = null; //assume utf-8
     }
 
     /* ------------------------------------------------------------ */
@@ -1922,7 +1923,7 @@ public class Request implements HttpServletRequest
     {
         // extract parameters from dispatch query
         MultiMap<String> parameters = new MultiMap<String>();
-        UrlEncoded.decodeTo(query,parameters,getCharacterEncoding());
+        UrlEncoded.decodeTo(query,parameters, StringUtil.__UTF8); //have to assume UTF-8 because we can't know otherwise
 
         boolean merge_old_query = false;
 
@@ -1957,10 +1958,11 @@ public class Request implements HttpServletRequest
             {
                 StringBuilder overridden_query_string = new StringBuilder();
                 MultiMap<String> overridden_old_query = new MultiMap<String>();
-                UrlEncoded.decodeTo(_queryString,overridden_old_query,getCharacterEncoding());
-
+                UrlEncoded.decodeTo(_queryString,overridden_old_query,getQueryEncoding());//decode using any queryencoding set for the request
+                
+                
                 MultiMap<String> overridden_new_query = new MultiMap<String>();
-                UrlEncoded.decodeTo(query,overridden_new_query,getCharacterEncoding());
+                UrlEncoded.decodeTo(query,overridden_new_query,StringUtil.__UTF8); //have to assume utf8 as we cannot know otherwise
 
                 Iterator<Entry<String, Object>> iter = overridden_old_query.entrySet().iterator();
                 while (iter.hasNext())
