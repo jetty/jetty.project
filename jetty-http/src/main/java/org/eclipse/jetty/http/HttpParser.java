@@ -1208,8 +1208,6 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     private void setState(State state)
     {
-        if (_state==State.CLOSED && state==State.END)
-            new Throwable().printStackTrace();
         _state=state;
     }
 
