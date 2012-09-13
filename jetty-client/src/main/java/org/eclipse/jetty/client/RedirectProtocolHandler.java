@@ -45,7 +45,7 @@ public class RedirectProtocolHandler extends Response.Listener.Adapter implement
             case 302:
             case 303:
             case 307:
-                return true;
+                return request.followRedirects() || client.isFollowRedirects();
         }
         return false;
     }

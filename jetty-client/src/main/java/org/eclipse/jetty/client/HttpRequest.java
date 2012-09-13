@@ -45,19 +45,20 @@ public class HttpRequest implements Request
 {
     private static final AtomicLong ids = new AtomicLong();
 
+    private final HttpFields headers = new HttpFields();
+    private final Fields params = new Fields();
     private final HttpClient client;
     private final long id;
-    private String scheme;
     private final String host;
     private final int port;
+    private String scheme;
     private String path;
     private HttpMethod method;
     private HttpVersion version;
     private long idleTimeout;
     private Listener listener;
     private ContentProvider content;
-    private final HttpFields headers = new HttpFields();
-    private final Fields params = new Fields();
+    private boolean followRedirects = true;
 
     public HttpRequest(HttpClient client, URI uri)
     {
@@ -267,8 +268,15 @@ public class HttpRequest implements Request
 //    }
 
     @Override
+    public boolean followRedirects()
+    {
+        return followRedirects;
+    }
+
+    @Override
     public Request followRedirects(boolean follow)
     {
+        this.followRedirects = follow;
         return this;
     }
 

@@ -181,7 +181,15 @@ public interface Request
      */
     Request idleTimeout(long timeout);
 
-    // TODO
+    /**
+     * @return whether this request follows redirects
+     */
+    boolean followRedirects();
+
+    /**
+     * @param follow whether this request follows redirects
+     * @return this request object
+     */
     Request followRedirects(boolean follow);
 
     /**

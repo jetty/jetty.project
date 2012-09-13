@@ -438,7 +438,7 @@ public class HttpClient extends AggregateLifeCycle
     }
 
     // TODO: find a better method name
-    public Response.Listener lookup(Request request, Response response)
+    protected Response.Listener lookup(Request request, Response response)
     {
         for (ProtocolHandler handler : handlers)
         {
