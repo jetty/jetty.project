@@ -101,7 +101,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
 
         final AtomicInteger requests = new AtomicInteger();
-        Request.Listener.Adapter requestListener = new Request.Listener.Adapter()
+        Request.Listener.Empty requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)
@@ -122,7 +122,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         authenticationStore.addAuthentication(authentication);
 
-        requestListener = new Request.Listener.Adapter()
+        requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)
@@ -140,7 +140,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().remove(requestListener);
         requests.set(0);
 
-        requestListener = new Request.Listener.Adapter()
+        requestListener = new Request.Listener.Empty()
         {
             @Override
             public void onSuccess(Request request)

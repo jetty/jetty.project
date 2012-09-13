@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.client.api.ContentDecoder;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -199,9 +198,9 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request agent(String userAgent)
+    public Request agent(String agent)
     {
-        headers.put(HttpHeader.USER_AGENT, userAgent);
+        headers.put(HttpHeader.USER_AGENT, agent);
         return this;
     }
 
@@ -261,11 +260,11 @@ public class HttpRequest implements Request
         return content(new PathContentProvider(file));
     }
 
-    @Override
-    public Request decoder(ContentDecoder decoder)
-    {
-        return this;
-    }
+//    @Override
+//    public Request decoder(ContentDecoder decoder)
+//    {
+//        return this;
+//    }
 
     @Override
     public Request followRedirects(boolean follow)

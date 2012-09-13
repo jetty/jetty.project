@@ -219,7 +219,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(2);
         client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onBegin(org.eclipse.jetty.client.api.Request request)
@@ -245,7 +245,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 });
 
         client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onQueued(org.eclipse.jetty.client.api.Request request)
@@ -278,7 +278,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(3);
         client.newRequest("http://localhost:" + connector.getLocalPort())
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onBegin(org.eclipse.jetty.client.api.Request request)
@@ -345,7 +345,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final AtomicLong responseTime = new AtomicLong();
         client.newRequest("localhost", connector.getLocalPort())
                 .file(file)
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(org.eclipse.jetty.client.api.Request request)
@@ -435,7 +435,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final String host = "localhost";
         final int port = connector.getLocalPort();
         client.newRequest(host, port)
-                .listener(new org.eclipse.jetty.client.api.Request.Listener.Adapter()
+                .listener(new org.eclipse.jetty.client.api.Request.Listener.Empty()
                 {
                     @Override
                     public void onBegin(org.eclipse.jetty.client.api.Request request)

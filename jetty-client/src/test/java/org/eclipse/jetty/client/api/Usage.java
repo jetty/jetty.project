@@ -68,7 +68,7 @@ public class Usage
                 .param("a", "b")
                 .header("X-Header", "Y-value")
                 .agent("Jetty HTTP Client")
-                .decoder(null)
+//                .decoder(null)
                 .content(null)
                 .idleTimeout(5000L);
         Future<ContentResponse> responseFuture = request.send();
@@ -102,7 +102,7 @@ public class Usage
     {
         HttpClient client = new HttpClient();
         Response response = client.newRequest("localhost", 8080)
-                .listener(new Request.Listener.Adapter()
+                .listener(new Request.Listener.Empty()
                 {
                     @Override
                     public void onSuccess(Request request)
